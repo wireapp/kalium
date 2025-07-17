@@ -2077,7 +2077,6 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
-            mlsClientProvider,
             preKeyRepository,
             userRepository,
             assetRepository,

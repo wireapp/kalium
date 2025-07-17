@@ -89,7 +89,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.newMessageEventHandler.handleNewMLSMessage(eq(newMLSMessageEvent), any())
+            arrangement.newMessageEventHandler.handleNewMLSMessage(any(), eq(newMLSMessageEvent), any())
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -108,7 +108,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.newConversationEventHandler.handle(eq(newConversationEvent))
+            arrangement.newConversationEventHandler.handle(any(), eq(newConversationEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -127,7 +127,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.deletedConversationEventHandler.handle(eq(deletedConversationEvent))
+            arrangement.deletedConversationEventHandler.handle(any(), eq(deletedConversationEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -148,7 +148,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(eq(memberJoinEvent))
+            arrangement.memberJoinEventHandler.handle(any(), eq(memberJoinEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -169,7 +169,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(eq(memberLeaveEvent))
+            arrangement.memberLeaveEventHandler.handle(any(), eq(memberLeaveEvent))
         }.wasInvoked(once)
 
         result.shouldSucceed()
@@ -189,7 +189,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.memberChangeEventHandler.handle(eq(memberChangeEvent))
+            arrangement.memberChangeEventHandler.handle(any(), eq(memberChangeEvent))
         }.wasInvoked(once)
         result.shouldSucceed()
     }
@@ -209,7 +209,7 @@ class ConversationEventReceiverTest {
         )
 
         coVerify {
-            arrangement.mlsWelcomeEventHandler.handle(eq(mlsWelcomeEvent))
+            arrangement.mlsWelcomeEventHandler.handle(any(), eq(mlsWelcomeEvent))
         }.wasInvoked(once)
         result.shouldSucceed()
     }
@@ -489,13 +489,13 @@ class ConversationEventReceiverTest {
 
         suspend fun withMemberLeaveSucceeded() = apply {
             coEvery {
-                memberLeaveEventHandler.handle(any())
+                memberLeaveEventHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withMemberJoinSucceeded() = apply {
             coEvery {
-                memberJoinEventHandler.handle(any())
+                memberJoinEventHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -519,7 +519,7 @@ class ConversationEventReceiverTest {
 
         suspend fun withMLSWelcomeEventSucceeded() = apply {
             coEvery {
-                mlsWelcomeEventHandler.handle(any())
+                mlsWelcomeEventHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
     }

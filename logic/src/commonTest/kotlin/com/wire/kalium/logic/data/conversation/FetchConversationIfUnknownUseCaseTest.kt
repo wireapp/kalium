@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.any
@@ -41,9 +43,9 @@ class FetchConversationIfUnknownUseCaseTest {
             withFetchConversationSuccess()
         }
 
-        useCase(TestConversation.ID)
+        useCase(arrangement.transactionContext, TestConversation.ID)
 
-        coVerify { arrangement.fetchConversation(eq(TestConversation.ID)) }.wasInvoked(once)
+        coVerify { arrangement.fetchConversation(any(), eq(TestConversation.ID)) }.wasInvoked(once)
     }
 
     @Test
@@ -52,9 +54,9 @@ class FetchConversationIfUnknownUseCaseTest {
             withGetConversationRight()
         }
 
-        useCase(TestConversation.ID)
+        useCase(arrangement.transactionContext, TestConversation.ID)
 
-        coVerify { arrangement.fetchConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.fetchConversation(any(), any()) }.wasNotInvoked()
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, FetchConversationIfUnknownUseCase> =
@@ -62,7 +64,8 @@ class FetchConversationIfUnknownUseCaseTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val fetchConversation = mock(FetchConversationUseCase::class)
 
@@ -79,7 +82,7 @@ class FetchConversationIfUnknownUseCaseTest {
         }
 
         suspend fun withFetchConversationSuccess() = apply {
-            coEvery { fetchConversation(eq(TestConversation.ID)) } returns Either.Right(Unit)
+            coEvery { fetchConversation(any(), eq(TestConversation.ID)) } returns Either.Right(Unit)
         }
 
         fun arrange(): Pair<Arrangement, FetchConversationIfUnknownUseCase> {

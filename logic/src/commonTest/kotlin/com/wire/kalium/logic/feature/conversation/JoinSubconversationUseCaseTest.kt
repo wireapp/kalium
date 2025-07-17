@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
@@ -45,14 +47,12 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class JoinSubconversationUseCaseTest {
 
     @Test
@@ -67,8 +67,7 @@ class JoinSubconversationUseCaseTest {
 
             coVerify {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
-                    groupID = eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)),
-                    parentId = any()
+                    any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)), any()
                 )
             }.wasInvoked(exactly = once)
         }
@@ -86,8 +85,7 @@ class JoinSubconversationUseCaseTest {
 
             coVerify {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                    groupID = eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)),
-                    groupInfo = any()
+                    any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)), any()
                 )
             }.wasInvoked(exactly = once)
         }
@@ -138,8 +136,9 @@ class JoinSubconversationUseCaseTest {
 
             coVerify {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
+                    any(),
                     eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)),
-                    any()
+                    any(),
                 )
             }.wasInvoked(exactly = once)
         }
@@ -157,6 +156,7 @@ class JoinSubconversationUseCaseTest {
 
         coVerify {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                any(),
                 eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)),
                 any()
             )
@@ -174,33 +174,40 @@ class JoinSubconversationUseCaseTest {
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationApi = mock(ConversationApi::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val subconversationRepository = mock(SubconversationRepository::class)
 
-        fun arrange() = this to JoinSubconversationUseCaseImpl(
+        suspend fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
             mlsConversationRepository,
-            subconversationRepository
-        )
+            subconversationRepository,
+            cryptoTransactionProvider
+        ).also {
+            withMLSTransactionReturning(Either.Right(Unit))
+        }
 
         suspend fun withEstablishMLSSubConversationGroupSuccessful() = apply {
             coEvery {
-                mlsConversationRepository.establishMLSSubConversationGroup(any(), any())
+                mlsConversationRepository.establishMLSSubConversationGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withJoinByExternalCommitSuccessful() = apply {
             coEvery {
-                mlsConversationRepository.joinGroupByExternalCommit(any(), any())
+                mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
             coEvery {
-                mlsConversationRepository.joinGroupByExternalCommit(matches { invocationCounter += 1; invocationCounter <= times }, any())
+                mlsConversationRepository.joinGroupByExternalCommit(
+                    any(),
+                    matches { invocationCounter += 1; invocationCounter <= times },
+                    any()
+                )
             }.returns(Either.Left(failure))
         }
 

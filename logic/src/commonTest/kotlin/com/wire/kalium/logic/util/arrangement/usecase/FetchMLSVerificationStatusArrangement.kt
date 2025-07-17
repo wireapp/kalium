@@ -33,6 +33,6 @@ internal class FetchMLSVerificationStatusArrangementImpl : FetchMLSVerificationS
     override val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase = mock(FetchMLSVerificationStatusUseCase::class)
 
     override suspend fun mockFetchMLSVerificationStatus() {
-        coEvery { fetchMLSVerificationStatusUseCase(any()) }.returns(Unit)
+        coEvery { fetchMLSVerificationStatusUseCase(any(), any()) }.returns(Unit)
     }
 }

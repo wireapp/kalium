@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE_DTO
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -56,6 +58,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
         coVerify { arrangement.conversationRepository.fetchConversationListDetails(any()) }.wasInvoked(once)
         coVerify {
             arrangement.persistConversations(
+                any(),
                 eq(CONVERSATION_RESPONSE_DTO.conversationsFound),
                 eq(false),
                 any()
@@ -75,10 +78,11 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
 
         // Then
         coVerify { arrangement.conversationRepository.fetchConversationListDetails(any()) }.wasNotInvoked()
-        coVerify { arrangement.persistConversations(any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.persistConversations(any(), any(), any(), any()) }.wasNotInvoked()
     }
 
-    private class Arrangement(private val dispatcher: KaliumDispatcher) {
+    private class Arrangement(private val dispatcher: KaliumDispatcher) :
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationRepository = mock(ConversationRepository::class)
         val persistConversations = mock(PersistConversationsUseCase::class)
 
@@ -96,15 +100,18 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
 
         suspend fun withPersistConversationsSuccess() = apply {
             coEvery {
-                persistConversations(any(), any(), any())
+                persistConversations(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
-        fun arrange(): Pair<Arrangement, RefreshConversationsWithoutMetadataUseCase> =
+        suspend fun arrange(): Pair<Arrangement, RefreshConversationsWithoutMetadataUseCase> =
             this to RefreshConversationsWithoutMetadataUseCaseImpl(
                 conversationRepository,
                 persistConversations,
+                cryptoTransactionProvider,
                 dispatcher
-            )
+            ).also {
+                withTransactionReturning(Either.Right(Unit))
+            }
     }
 }

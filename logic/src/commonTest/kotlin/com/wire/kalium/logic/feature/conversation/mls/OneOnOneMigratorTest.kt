@@ -26,6 +26,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -126,7 +128,7 @@ class OneOnOneMigratorTest {
             withResolveConversationReturning(Either.Right(TestConversation.ID))
         }
 
-        oneOneMigrator.migrateToMLS(user)
+        oneOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldSucceed()
 
         coVerify {
@@ -157,7 +159,7 @@ class OneOnOneMigratorTest {
             withResolveConversationReturning(Either.Left(failure))
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldFail {
                 assertEquals(failure, it)
             }
@@ -175,7 +177,7 @@ class OneOnOneMigratorTest {
             withMoveMessagesToAnotherConversation(Either.Left(failure))
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldFail {
                 assertEquals(failure, it)
             }
@@ -199,7 +201,7 @@ class OneOnOneMigratorTest {
         val user = TestUser.OTHER.copy(
             activeOneOnOneConversationId = null
         )
-        val (_, oneOnOneMigrator) = arrange {
+        val (arrangement, oneOnOneMigrator) = arrange {
             withResolveConversationReturning(Either.Right(TestConversation.ID))
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(listOf(TestConversation.ID)))
             withGetConversationByIdReturning(TestConversation.CONVERSATION.copy(id = TestConversation.ID))
@@ -208,7 +210,7 @@ class OneOnOneMigratorTest {
             withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldFail {
                 assertEquals(failure, it)
             }
@@ -230,7 +232,7 @@ class OneOnOneMigratorTest {
             withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldSucceed()
 
         coVerify {
@@ -262,7 +264,7 @@ class OneOnOneMigratorTest {
             withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldSucceed()
 
         coVerify {
@@ -296,7 +298,7 @@ class OneOnOneMigratorTest {
             withUpdateConversationModifiedDate(Either.Right(Unit))
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldSucceed()
 
         coVerify {
@@ -318,7 +320,7 @@ class OneOnOneMigratorTest {
             withCurrentInstant(lastModified)
         }
 
-        oneOnOneMigrator.migrateToMLS(user)
+        oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
             .shouldSucceed()
 
         coVerify {
@@ -331,7 +333,8 @@ class OneOnOneMigratorTest {
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val currentInstantProvider: CurrentInstantProvider = mock(CurrentInstantProvider::class)
 
         fun withCurrentInstant(currentInstant: Instant) {

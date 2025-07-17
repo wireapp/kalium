@@ -32,22 +32,23 @@ import io.mockative.mock
 internal interface CryptoTransactionProviderArrangement {
     val cryptoTransactionProvider: CryptoTransactionProvider
     val proteusContext: ProteusCoreCryptoContext
-    val mlsContext: MlsCoreCryptoContext?
+    val mlsContext: MlsCoreCryptoContext
     val transactionContext: CryptoTransactionContext
 
     suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement
     suspend fun <R> withProteusTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement
     suspend fun <R> withProteusTransactionResultOnly(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement
+    suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement
+
 }
 
 internal class CryptoTransactionProviderArrangementImpl : CryptoTransactionProviderArrangement {
 
     override val proteusContext: ProteusCoreCryptoContext = mock(ProteusCoreCryptoContext::class)
-    override val mlsContext: MlsCoreCryptoContext? = null
+    override val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
     override val transactionContext = mock(CryptoTransactionContext::class)
 
     override val cryptoTransactionProvider: CryptoTransactionProvider = mock(CryptoTransactionProvider::class)
-    val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
 
     init {
         every { transactionContext.proteus } returns proteusContext
@@ -82,5 +83,15 @@ internal class CryptoTransactionProviderArrangementImpl : CryptoTransactionProvi
         coEvery {
             cryptoTransactionProvider.proteusTransaction<R>(any(), any())
         }.returns(result)
+    }
+
+    override suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
+        coEvery {
+            cryptoTransactionProvider.mlsTransaction<R>(any(), any())
+        }.invokes { args ->
+            @Suppress("UNCHECKED_CAST")
+            val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
+            block(mlsContext)
+        }
     }
 }

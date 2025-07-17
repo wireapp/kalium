@@ -62,7 +62,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -87,7 +87,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -116,7 +116,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -135,10 +135,10 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent))
+            arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), eq(newMessageEvent))
         }.wasInvoked(exactly = once)
     }
 
@@ -161,14 +161,14 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.legalHoldHandler.handleNewMessage(any(), any())
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any())
+            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -181,10 +181,10 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent))
+            arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), eq(newMessageEvent))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -192,7 +192,7 @@ class NewMessageEventHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any())
+            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -210,7 +210,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -234,7 +234,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -256,7 +256,7 @@ class NewMessageEventHandlerTest {
             .withProteusUnpackerReturning(Either.Right(applicationMessage)).arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
@@ -271,7 +271,7 @@ class NewMessageEventHandlerTest {
             .arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
@@ -285,7 +285,7 @@ class NewMessageEventHandlerTest {
             .withProteusUnpackerReturning(Either.Right(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))).arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
@@ -300,9 +300,9 @@ class NewMessageEventHandlerTest {
             .arrange()
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        coVerify { arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), eq(newMessageEvent)) }.wasInvoked(exactly = once)
         coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
     }
 
@@ -323,7 +323,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -343,7 +343,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.proteusContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -371,10 +371,11 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.staleEpochVerifier.verifyEpoch(
+                any(),
                 eq(newMessageEvent.conversationId),
                 any(),
                 eq(newMessageEvent.messageInstant)
@@ -392,7 +393,7 @@ class NewMessageEventHandlerTest {
 
             val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-            newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+            newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
 
             coVerify {
                 arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
@@ -412,7 +413,7 @@ class NewMessageEventHandlerTest {
             }
             .arrange()
 
-        newMessageEventHandler.handleNewMLSMessage(event, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.applicationMessageHandler.handleDecryptionError(
@@ -475,13 +476,13 @@ class NewMessageEventHandlerTest {
         suspend fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =
             apply {
                 coEvery {
-                    mlsMessageUnpacker.unpackMlsMessage(any())
+                    mlsMessageUnpacker.unpackMlsMessage(any(), any())
                 }.returns(result)
             }
 
         suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                staleEpochVerifier.verifyEpoch(any(), any(), any())
+                staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
             }.returns(result)
         }
 

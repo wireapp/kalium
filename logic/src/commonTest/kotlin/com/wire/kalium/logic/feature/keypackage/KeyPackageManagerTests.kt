@@ -28,6 +28,8 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -54,7 +56,7 @@ class KeyPackageManagerTests {
             yield()
 
             coVerify {
-                arrangement.refillKeyPackagesUseCase.invoke()
+                arrangement.refillKeyPackagesUseCase.invoke(any())
             }.wasNotInvoked()
         }
 
@@ -69,7 +71,7 @@ class KeyPackageManagerTests {
             yield()
 
             coVerify {
-                arrangement.refillKeyPackagesUseCase.invoke()
+                arrangement.refillKeyPackagesUseCase.invoke(any())
             }.wasNotInvoked()
         }
 
@@ -85,7 +87,7 @@ class KeyPackageManagerTests {
             yield()
 
             coVerify {
-                arrangement.refillKeyPackagesUseCase.invoke()
+                arrangement.refillKeyPackagesUseCase.invoke(any())
             }.wasNotInvoked()
         }
 
@@ -105,7 +107,7 @@ class KeyPackageManagerTests {
             yield()
 
             coVerify {
-                arrangement.refillKeyPackagesUseCase.invoke()
+                arrangement.refillKeyPackagesUseCase.invoke(any())
             }.wasInvoked(once)
 
             coVerify {
@@ -129,7 +131,7 @@ class KeyPackageManagerTests {
             yield()
 
             coVerify {
-                arrangement.refillKeyPackagesUseCase.invoke()
+                arrangement.refillKeyPackagesUseCase.invoke(any())
             }.wasInvoked(once)
 
             coVerify {
@@ -137,7 +139,7 @@ class KeyPackageManagerTests {
             }.wasInvoked(once)
         }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val clientRepository = mock(ClientRepository::class)
@@ -154,7 +156,7 @@ class KeyPackageManagerTests {
 
         suspend fun withRefillKeyPackagesUseCaseSuccessful() = apply {
             coEvery {
-                refillKeyPackagesUseCase.invoke()
+                refillKeyPackagesUseCase.invoke(any())
             }.returns(RefillKeyPackagesResult.Success)
         }
 
@@ -193,14 +195,17 @@ class KeyPackageManagerTests {
             }.returns(Either.Right(result))
         }
 
-        fun arrange() = this to KeyPackageManagerImpl(
+        suspend fun arrange() = this to KeyPackageManagerImpl(
             featureSupport,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { refillKeyPackagesUseCase },
             lazy { keyPackageCountUseCase },
             lazy { timestampKeyRepository },
+            cryptoTransactionProvider,
             TestKaliumDispatcher
-        )
+        ).also {
+            withMLSTransactionReturning(Either.Right(Unit))
+        }
     }
 }

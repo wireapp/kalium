@@ -41,12 +41,13 @@ import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATI
 import com.wire.kalium.logic.framework.TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
@@ -461,7 +462,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(once)
 
             coVerify {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), eq(true))
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), eq(true))
             }.wasInvoked(once)
 
             coVerify {
@@ -504,7 +505,7 @@ class ConversationGroupRepositoryTest {
                 }.wasInvoked(once)
 
                 coVerify {
-                    mlsConversationRepository.establishMLSGroup(any(), any(), any(), eq(true))
+                    mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), eq(true))
                 }.wasInvoked(once)
 
                 coVerify {
@@ -528,7 +529,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddMemberAPISucceedChanged()
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -539,7 +540,7 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -553,7 +554,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withFetchUsersIfUnknownByIdsSuccessful()
             .withAddServiceAPISucceedChanged()
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.addService(serviceID, TestConversation.ID)
@@ -564,7 +565,7 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -581,7 +582,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -598,7 +599,7 @@ class ConversationGroupRepositoryTest {
             .shouldFail()
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -622,7 +623,7 @@ class ConversationGroupRepositoryTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -639,7 +640,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -657,7 +658,7 @@ class ConversationGroupRepositoryTest {
             .shouldFail()
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
 
         coVerify {
@@ -684,11 +685,12 @@ class ConversationGroupRepositoryTest {
 
         // this is called in the mlsRepo
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
                 eq(GROUP_ID),
                 eq(listOf(TestConversation.USER_1)),
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -703,7 +705,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -714,11 +716,12 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
                 eq(GROUP_ID),
                 eq(listOf(TestConversation.USER_1)),
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -732,7 +735,7 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulHandleMemberLeaveEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
@@ -743,7 +746,7 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -759,7 +762,7 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -775,7 +778,7 @@ class ConversationGroupRepositoryTest {
             .shouldFail()
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -786,20 +789,20 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulLeaveMLSGroup()
-            .withSuccessfulHandleMemberLeaveEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
             .shouldSucceed()
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.mlsConversationRepository.leaveGroup(eq(GROUP_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any())
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -816,10 +819,10 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         coVerify {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.mlsConversationRepository.leaveGroup(any())
+            arrangement.mlsConversationRepository.leaveGroup(any(), any())
         }.wasNotInvoked()
     }
 
@@ -830,7 +833,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
             .withSuccessfulRemoveMemberFromMLSGroup()
-            .withSuccessfulHandleMemberLeaveEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
@@ -841,11 +844,11 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberLeaveEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
         }.wasInvoked(exactly = once)
     }
 
@@ -865,7 +868,7 @@ class ConversationGroupRepositoryTest {
                 uri,
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -876,7 +879,7 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -896,7 +899,7 @@ class ConversationGroupRepositoryTest {
                 uri,
                 NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
             )
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -907,7 +910,7 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasNotInvoked()
     }
 
@@ -927,7 +930,7 @@ class ConversationGroupRepositoryTest {
                 uri,
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .withJoinExistingMlsConversationSucceeds()
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
@@ -940,18 +943,20 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.joinExistingMLSConversation.invoke(
-                ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
-                null
+                any(),
+                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any()
             )
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
                 eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
                 eq(listOf(TestUser.SELF.id)),
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -975,7 +980,7 @@ class ConversationGroupRepositoryTest {
                 uri,
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
-            .withSuccessfulHandleMemberJoinEvent()
+            .withEmitLocalEvent()
             .withJoinExistingMlsConversationSucceeds()
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
@@ -988,18 +993,20 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberJoinEventHandler.handle(any())
+            arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.joinExistingMLSConversation.invoke(
-                ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
-                null
+                any(),
+                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any()
             )
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
                 eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
                 eq(listOf(TestUser.SELF.id)),
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1244,7 +1251,7 @@ class ConversationGroupRepositoryTest {
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
                     arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, API_SUCCESS_MEMBER_ADDED)
                 )
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1272,7 +1279,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -1296,7 +1303,7 @@ class ConversationGroupRepositoryTest {
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
                     arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
                 )
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1310,7 +1317,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(exactly = twice)
 
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasNotInvoked()
 
             coVerify {
@@ -1337,7 +1344,7 @@ class ConversationGroupRepositoryTest {
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
                     arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
                 )
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1353,7 +1360,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasNotInvoked()
 
             coVerify {
@@ -1377,7 +1384,7 @@ class ConversationGroupRepositoryTest {
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
                     arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
                 )
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1391,7 +1398,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasNotInvoked()
 
             coVerify {
@@ -1412,7 +1419,7 @@ class ConversationGroupRepositoryTest {
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(arrayOf(FEDERATION_ERROR_GENERAL, FEDERATION_ERROR_GENERAL))
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1426,7 +1433,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasNotInvoked()
 
             coVerify {
@@ -1496,7 +1503,9 @@ class ConversationGroupRepositoryTest {
         val expectedValidUsersWithKeyPackagesCount = 1
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == expectedFullUserIdsForRequestCount
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1505,7 +1514,9 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1545,7 +1556,9 @@ class ConversationGroupRepositoryTest {
         val expectedValidUsersWithKeyPackagesCount = 1
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == expectedFullUserIdsForRequestCount
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1554,7 +1567,9 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1592,7 +1607,9 @@ class ConversationGroupRepositoryTest {
         val initialCountUsers = expectedInitialUsers.size
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == initialCountUsers
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1601,7 +1618,9 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == initialCountUsers - 1 // removed 1 failed users with key packages
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1610,7 +1629,9 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(), matches {
+                any(),
+                any(),
+                matches {
                     it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
@@ -1645,7 +1666,7 @@ class ConversationGroupRepositoryTest {
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, API_SUCCESS_MEMBER_ADDED))
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
                 .arrange()
@@ -1662,7 +1683,7 @@ class ConversationGroupRepositoryTest {
                 arrangement.conversationApi.addMember(matches { it.users == validUsers.ids().map { it.toApi() } }, any())
             }.wasInvoked(exactly = once)
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasInvoked(exactly = once)
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
@@ -1694,7 +1715,7 @@ class ConversationGroupRepositoryTest {
                 .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
                     arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, ERROR_MISSING_LEGALHOLD_CONSENT)
                 )
-                .withSuccessfulHandleMemberJoinEvent()
+                .withEmitLocalEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
                 .arrange()
@@ -1705,7 +1726,7 @@ class ConversationGroupRepositoryTest {
                 arrangement.conversationApi.addMember(any(), any())
             }.wasInvoked(exactly = twice)
             coVerify {
-                arrangement.memberJoinEventHandler.handle(any())
+                arrangement.localEventRepository.emitLocalEvent(any())
             }.wasNotInvoked()
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
@@ -1750,9 +1771,8 @@ class ConversationGroupRepositoryTest {
     }
 
     private class Arrangement :
-        MemberDAOArrangement by MemberDAOArrangementImpl() {
-        val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
-        val memberLeaveEventHandler = mock(MemberLeaveEventHandler::class)
+        MemberDAOArrangement by MemberDAOArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
         val userRepository: UserRepository = mock(UserRepository::class)
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
@@ -1764,13 +1784,13 @@ class ConversationGroupRepositoryTest {
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
         val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
+        val localEventRepository = mock(LocalEventRepository::class)
 
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
                 joinExistingMLSConversation,
-                memberJoinEventHandler,
-                memberLeaveEventHandler,
+                localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,
                 conversationApi,
@@ -1779,12 +1799,13 @@ class ConversationGroupRepositoryTest {
                 lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
                 selfTeamIdProvider,
-                legalHoldHandler
+                legalHoldHandler,
+                cryptoTransactionProvider
             )
 
         suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
         }
 
@@ -1831,7 +1852,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withJoinExistingMlsConversationSucceeds() = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any(), any())
+                joinExistingMLSConversation.invoke(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -1945,27 +1966,21 @@ class ConversationGroupRepositoryTest {
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withSuccessfulHandleMemberJoinEvent() = apply {
+        suspend fun withEmitLocalEvent() = apply {
             coEvery {
-                memberJoinEventHandler.handle(any())
-            }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withSuccessfulHandleMemberLeaveEvent() = apply {
-            coEvery {
-                memberLeaveEventHandler.handle(any())
-            }.returns(Either.Right(Unit))
+                localEventRepository.emitLocalEvent(any())
+            }.returns(Unit)
         }
 
         suspend fun withSuccessfulLeaveMLSGroup() = apply {
             coEvery {
-                mlsConversationRepository.leaveGroup(any())
+                mlsConversationRepository.leaveGroup(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withSuccessfulAddMemberToMLSGroup() = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -1974,13 +1989,13 @@ class ConversationGroupRepositoryTest {
          */
         suspend fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
             }.thenReturnSequentially(*results)
         }
 
         suspend fun withSuccessfulRemoveMemberFromMLSGroup() = apply {
             coEvery {
-                mlsConversationRepository.removeMembersFromMLSGroup(any(), any())
+                mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -2126,7 +2141,11 @@ class ConversationGroupRepositoryTest {
         }
 
 
-        fun arrange() = this to conversationGroupRepository
+        suspend fun arrange() = this to conversationGroupRepository
+            .also {
+                withMLSTransactionReturning(Either.Right(Unit))
+                withTransactionReturning(Either.Right(Unit))
+            }
     }
 
     private companion object {

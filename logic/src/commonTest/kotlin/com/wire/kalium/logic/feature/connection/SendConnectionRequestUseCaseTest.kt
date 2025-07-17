@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
@@ -55,7 +57,7 @@ class SendConnectionRequestUseCaseTest {
             arrangement.userRepository.fetchUserInfo(eq(userId))
         }.wasInvoked(once)
         coVerify {
-            arrangement.connectionRepository.sendUserConnection(eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
         }.wasInvoked(once)
     }
 
@@ -76,7 +78,7 @@ class SendConnectionRequestUseCaseTest {
             arrangement.userRepository.fetchUserInfo(eq(userId))
         }.wasInvoked(once)
         coVerify {
-            arrangement.connectionRepository.sendUserConnection(eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
         }.wasNotInvoked()
     }
 
@@ -94,7 +96,7 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
         coVerify {
-            arrangement.connectionRepository.sendUserConnection(eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
         }.wasInvoked(once)
     }
 
@@ -113,7 +115,7 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.FederationDenied::class, resultFailure::class)
         coVerify {
-            arrangement.connectionRepository.sendUserConnection(eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
         }.wasInvoked(once)
     }
 
@@ -136,17 +138,17 @@ class SendConnectionRequestUseCaseTest {
         // then
         assertEquals(SendConnectionRequestResult.Failure.MissingLegalHoldConsent::class, resultFailure::class)
         coVerify {
-            arrangement.connectionRepository.sendUserConnection(eq(userId))
+            arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
-                val connectionRepository = mock(ConnectionRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val connectionRepository = mock(ConnectionRepository::class)
         val userRepository = mock(UserRepository::class)
 
         suspend fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                connectionRepository.sendUserConnection(eq(userId))
+                connectionRepository.sendUserConnection(any(), eq(userId))
             }.returns(result)
         }
 
@@ -156,7 +158,8 @@ class SendConnectionRequestUseCaseTest {
             }.returns(result)
         }
 
-        fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository, userRepository)
+        suspend fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository, userRepository, cryptoTransactionProvider)
+            .also { withTransactionReturning(Either.Right(Unit)) }
     }
 
     private companion object {

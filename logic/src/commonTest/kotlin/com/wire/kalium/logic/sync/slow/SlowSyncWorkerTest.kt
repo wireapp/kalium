@@ -37,6 +37,8 @@ import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCas
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
@@ -497,7 +499,8 @@ class SlowSyncWorkerTest {
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.LEGAL_HOLD)) once else 0.times)
     }
 
-    private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
+    private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
@@ -514,6 +517,7 @@ class SlowSyncWorkerTest {
             runBlocking {
                 withLastSavedEventIdReturning(Either.Right("LastSavedEventId"))
                 withIsClientAsyncNotificationsCapableReturning(false)
+                withTransactionReturning(Either.Right(Unit))
             }
         }
 
@@ -529,7 +533,8 @@ class SlowSyncWorkerTest {
             updateSupportedProtocols = updateSupportedProtocols,
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
-            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider
+            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
+            transactionProvider = cryptoTransactionProvider
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -642,7 +647,7 @@ class SlowSyncWorkerTest {
 
         suspend fun withResolveOneOnOneConversationsSuccess() = apply {
             coEvery {
-                oneOnOneResolver.resolveAllOneOnOneConversations(any())
+                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any())
             }.returns(success)
         }
 

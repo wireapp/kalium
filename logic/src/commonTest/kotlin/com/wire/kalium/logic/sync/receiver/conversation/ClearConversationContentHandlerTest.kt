@@ -28,6 +28,8 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocally
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
@@ -59,11 +61,12 @@ class ClearConversationContentHandlerTest {
                     conversationId = CONVERSATION_ID,
                     time = Instant.DISTANT_PAST,
                     needToRemoveLocally = true
-                )
+                ),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
-            coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
             coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
 
@@ -83,11 +86,12 @@ class ClearConversationContentHandlerTest {
                     conversationId = CONVERSATION_ID,
                     time = Instant.DISTANT_PAST,
                     needToRemoveLocally = true
-                )
+                ),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
-            coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
             coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
         }
 
@@ -107,11 +111,12 @@ class ClearConversationContentHandlerTest {
                     conversationId = CONVERSATION_ID,
                     time = Instant.DISTANT_PAST,
                     needToRemoveLocally = false
-                )
+                ),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
-            coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+            coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
             coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
 
@@ -130,11 +135,12 @@ class ClearConversationContentHandlerTest {
                 conversationId = CONVERSATION_ID,
                 time = Instant.DISTANT_PAST,
                 needToRemoveLocally = false
-            )
+            ),
+            transactionContext = arrangement.transactionContext
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
     }
 
@@ -154,11 +160,12 @@ class ClearConversationContentHandlerTest {
                 conversationId = CONVERSATION_ID,
                 time = Instant.DISTANT_PAST,
                 needToRemoveLocally = true
-            )
+            ),
+            transactionContext = arrangement.transactionContext
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasInvoked(exactly = once)
     }
@@ -179,11 +186,12 @@ class ClearConversationContentHandlerTest {
                 conversationId = CONVERSATION_ID,
                 time = Instant.DISTANT_PAST,
                 needToRemoveLocally = true
-            )
+            ),
+            transactionContext = arrangement.transactionContext
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasNotInvoked()
     }
@@ -203,17 +211,19 @@ class ClearConversationContentHandlerTest {
                 conversationId = CONVERSATION_ID,
                 time = Instant.DISTANT_PAST,
                 needToRemoveLocally = false
-            )
+            ),
+            transactionContext = arrangement.transactionContext
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
     }
 
 
     private class Arrangement :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         DeleteConversationArrangement by DeleteConversationArrangementImpl() {
 
         val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
