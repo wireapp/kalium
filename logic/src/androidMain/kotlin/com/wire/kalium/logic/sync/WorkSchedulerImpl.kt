@@ -182,4 +182,3 @@ private const val HOUR_OF_EXECUTION = 4 // schedule at 4AM
 private const val EXECUTION_DEVIATION_IN_MINUTES = 60 // allow +/- 60 minutes deviation from the scheduled time
 private const val REPEAT_INTERVAL: Long = 24 // execute every 24 hours
 private val workerClass = WrapperWorker::class.java
-
