@@ -52,7 +52,7 @@ class ResetMLSConversationUseCaseTest {
     }
 
     @Test
-    fun whenUseCaseSuccess_thenResetMLSConversationCalled() = runTest {
+    fun givenRepositorySuccess_whenUseCaseCalled_thenResetMLSConversationCalled() = runTest {
 
         val (arrangement, useCase) = Arrangement()
             .withFeatureEnabled()
