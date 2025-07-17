@@ -37,7 +37,7 @@ internal class JoinExistingMLSConversationUseCaseArrangementImpl : JoinExistingM
 
     override suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {
         coEvery {
-            joinExistingMLSConversationUseCase.invoke(any(), any())
+            joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.returns(result)
     }
 }

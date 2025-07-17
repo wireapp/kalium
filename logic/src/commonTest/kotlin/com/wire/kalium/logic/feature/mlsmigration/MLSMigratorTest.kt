@@ -41,6 +41,8 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -78,7 +80,12 @@ class MLSMigratorTest {
         migrator.migrateProteusConversations()
 
         coVerify {
-            arrangement.updateConversationProtocol(conversation.id, Conversation.Protocol.MIXED, false)
+            arrangement.updateConversationProtocol(
+                any(),
+                eq(conversation.id),
+                eq(Conversation.Protocol.MIXED),
+                eq(false)
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -86,15 +93,17 @@ class MLSMigratorTest {
                 groupID = Arrangement.MIXED_PROTOCOL_INFO.groupId,
                 members = emptyList(),
                 publicKeys = null,
-                false
+                allowSkippingUsersWithoutKeyPackages = false,
+                mlsContext = arrangement.mlsContext
             )
         }
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                arrangement.mlsContext,
                 Arrangement.MIXED_PROTOCOL_INFO.groupId,
                 Arrangement.MEMBERS,
-                CIPHER_SUITE
+                CIPHER_SUITE,
             )
         }
     }
@@ -119,7 +128,12 @@ class MLSMigratorTest {
         migrator.migrateProteusConversations()
 
         coVerify {
-            arrangement.updateConversationProtocol(eq(conversation.id), eq(Conversation.Protocol.MIXED), eq(false))
+            arrangement.updateConversationProtocol(
+                any(),
+                eq(conversation.id),
+                eq(Conversation.Protocol.MIXED),
+                eq(false)
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -127,12 +141,14 @@ class MLSMigratorTest {
                 groupID = Arrangement.MIXED_PROTOCOL_INFO.groupId,
                 members = emptyList(),
                 publicKeys = null,
-                allowSkippingUsersWithoutKeyPackages = false
+                allowSkippingUsersWithoutKeyPackages = false,
+                mlsContext = arrangement.mlsContext
             )
         }
 
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
                 eq(Arrangement.MIXED_PROTOCOL_INFO.groupId),
                 eq(Arrangement.MEMBERS),
                 eq(CIPHER_SUITE)
@@ -190,7 +206,7 @@ class MLSMigratorTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.updateConversationProtocol(eq(conversation.id), eq(Conversation.Protocol.MLS), eq(false))
+            arrangement.updateConversationProtocol(any(), eq(conversation.id), eq(Conversation.Protocol.MLS), eq(false))
         }.wasInvoked(once)
     }
 
@@ -211,7 +227,7 @@ class MLSMigratorTest {
         result.shouldSucceed()
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val userRepository = mock(UserRepository::class)
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
@@ -256,25 +272,25 @@ class MLSMigratorTest {
 
         suspend fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
             coEvery {
-                updateConversationProtocol(any(), any(), any())
+                updateConversationProtocol(any(), any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withEstablishGroupSucceeds(additionResult: MLSAdditionResult) = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
         }
 
         suspend fun withEstablishGroupFails() = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             }.returns(Either.Left(NetworkFailure.ServerMiscommunication(MLS_STALE_MESSAGE_ERROR)))
         }
 
         suspend fun withAddMembersSucceeds() = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -298,11 +314,13 @@ class MLSMigratorTest {
             mlsConversationRepository,
             systemMessageInserter,
             callRepository,
-            updateConversationProtocol
+            updateConversationProtocol,
+            cryptoTransactionProvider
         ).also {
             coEvery {
                 selfTeamIdProvider.invoke()
             }.returns(Either.Right(TestTeam.TEAM_ID))
+            withTransactionReturning(Either.Right(Unit))
         }
 
         companion object {

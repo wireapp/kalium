@@ -26,6 +26,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
@@ -55,7 +57,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         assertIs<CreateConversationResult.Success>(result)
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
@@ -111,7 +113,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         assertIs<CreateConversationResult.Success>(result)
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(eq(OTHER_USER), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(OTHER_USER), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -121,14 +123,18 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+    {
 
         suspend fun arrange() = run {
+            withTransactionReturning(Either.Right(Unit))
             block()
             this@Arrangement to GetOrCreateOneToOneConversationUseCaseImpl(
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,
-                oneOnOneResolver = oneOnOneResolver
+                oneOnOneResolver = oneOnOneResolver,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }

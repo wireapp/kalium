@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -50,7 +52,7 @@ class MLSConversationsRecoveryManagerTests {
                 .arrange()
             mlsConversationsRecoveryManager.invoke()
             coVerify {
-                arrangement.recoverMLSConversationsUseCase.invoke()
+                arrangement.recoverMLSConversationsUseCase.invoke(any())
             }.wasInvoked(once)
             coVerify {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(eq(false))
@@ -71,7 +73,7 @@ class MLSConversationsRecoveryManagerTests {
             mlsConversationsRecoveryManager.invoke()
 
             coVerify {
-                arrangement.recoverMLSConversationsUseCase.invoke()
+                arrangement.recoverMLSConversationsUseCase.invoke(any())
             }.wasNotInvoked()
             coVerify {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(any())
@@ -87,7 +89,7 @@ class MLSConversationsRecoveryManagerTests {
                 .arrange()
 
             coVerify {
-                arrangement.recoverMLSConversationsUseCase.invoke()
+                arrangement.recoverMLSConversationsUseCase.invoke(arrangement.transactionContext)
             }.wasNotInvoked()
             coVerify {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(any())
@@ -106,7 +108,7 @@ class MLSConversationsRecoveryManagerTests {
                 .arrange()
 
             coVerify {
-                arrangement.recoverMLSConversationsUseCase.invoke()
+                arrangement.recoverMLSConversationsUseCase.invoke(arrangement.transactionContext)
             }.wasNotInvoked()
         }
 
@@ -124,14 +126,14 @@ class MLSConversationsRecoveryManagerTests {
             mlsConversationsRecoveryManager.invoke()
 
             coVerify {
-                arrangement.recoverMLSConversationsUseCase.invoke()
+                arrangement.recoverMLSConversationsUseCase.invoke(any())
             }.wasInvoked(once)
             coVerify {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(any())
             }.wasNotInvoked()
         }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val clientRepository = mock(ClientRepository::class)
@@ -147,7 +149,7 @@ class MLSConversationsRecoveryManagerTests {
 
         suspend fun withRecoverMLSConversationsResult(result: RecoverMLSConversationsResult) = apply {
             coEvery {
-                recoverMLSConversationsUseCase.invoke()
+                recoverMLSConversationsUseCase.invoke(any())
             }.returns(result)
         }
 
@@ -167,13 +169,16 @@ class MLSConversationsRecoveryManagerTests {
             every { incrementalSyncRepository.incrementalSyncState }.returns(flowOf(state))
         }
 
-        fun arrange() = this to MLSConversationsRecoveryManagerImpl(
+        suspend fun arrange() = this to MLSConversationsRecoveryManagerImpl(
             featureSupport,
             incrementalSyncRepository,
             clientRepository,
             recoverMLSConversationsUseCase,
             slowSyncRepository,
+            cryptoTransactionProvider,
             kaliumLogger
-        )
+        ).also {
+            withTransactionReturning(Either.Right(Unit))
+        }
     }
 }

@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -40,13 +41,13 @@ internal open class DeleteConversationArrangementImpl : DeleteConversationArrang
 
     override suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
         coEvery {
-            deleteConversation(io.mockative.matches { conversationId.matches(it) })
+            deleteConversation(any(), io.mockative.matches { conversationId.matches(it) })
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
         coEvery {
-            deleteConversation(io.mockative.matches { conversationId.matches(it) })
+            deleteConversation(any(), io.mockative.matches { conversationId.matches(it) })
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 

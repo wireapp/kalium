@@ -30,6 +30,8 @@ import com.wire.kalium.logic.util.arrangement.mls.OneOnOneMigratorArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneMigratorArrangementImpl
 import com.wire.kalium.logic.util.arrangement.protocol.OneOnOneProtocolSelectorArrangement
 import com.wire.kalium.logic.util.arrangement.protocol.OneOnOneProtocolSelectorArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -59,7 +61,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveAllOneOnOneConversations().shouldSucceed()
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
 
         // then
         coVerify {
@@ -82,7 +84,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveAllOneOnOneConversations(true).shouldSucceed()
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext, true).shouldSucceed()
 
         // then
         coVerify {
@@ -109,7 +111,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(oneOnOneUser, true).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, oneOnOneUser, true).shouldSucceed()
 
         // then
         coVerify {
@@ -136,7 +138,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(oneOnOneUser, true)
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, oneOnOneUser, true)
             // then
             .shouldSucceed()
 
@@ -157,7 +159,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUserId(oneOnOneUser.id, true).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUserId(arrangement.transactionContext, oneOnOneUser.id, true).shouldSucceed()
 
         // then
         coVerify {
@@ -185,7 +187,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUserId(oneOnOneUser.id, true)
+        resolver.resolveOneOnOneConversationWithUserId(arrangement.transactionContext, oneOnOneUser.id, true)
             // then
             .shouldSucceed()
 
@@ -205,11 +207,11 @@ class OneOnOneResolverTest {
         }
 
         coEvery {
-            arrangement.oneOnOneMigrator.migrateToMLS(eq(oneOnOneUsers.last()))
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
         }.returns(Either.Left(CoreFailure.Unknown(null)))
 
         // when then
-        resolver.resolveAllOneOnOneConversations().shouldFail()
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldFail()
     }
 
     @Test
@@ -221,11 +223,11 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, OTHER_USER, false).shouldSucceed()
 
         // then
         coVerify {
-            arrangement.oneOnOneMigrator.migrateToMLS(eq(OTHER_USER))
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(OTHER_USER))
         }.wasInvoked(exactly = once)
     }
 
@@ -238,7 +240,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, OTHER_USER, false).shouldSucceed()
 
         // then
         coVerify {
@@ -255,7 +257,7 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, OTHER_USER, false).shouldSucceed()
 
         // then
         coVerify {
@@ -267,6 +269,7 @@ class OneOnOneResolverTest {
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
         fun arrange() = run {
             runBlocking { block() }

@@ -28,6 +28,8 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -59,11 +61,11 @@ class E2EIClientProviderTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsClient.e2eiNewActivationEnrollment(any(), any(), any(), any())
+            arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsClient.e2eiNewRotateEnrollment(any(), any(), any(), any())
+            arrangement.mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -89,11 +91,11 @@ class E2EIClientProviderTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsClient.e2eiNewRotateEnrollment(any(), any(), any(), any())
+            arrangement.mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsClient.e2eiNewActivationEnrollment(any(), any(), any(), any())
+            arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -119,11 +121,11 @@ class E2EIClientProviderTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.mlsClient.e2eiNewRotateEnrollment(any(), any(), any(), any())
+            arrangement.mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.mlsClient.e2eiNewActivationEnrollment(any(), any(), any(), any())
+            arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -156,8 +158,7 @@ class E2EIClientProviderTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement :
-        E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
+    private class Arrangement : E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
         private lateinit var e2eiClientProvider: E2EIClientProvider
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
