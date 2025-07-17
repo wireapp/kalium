@@ -62,6 +62,7 @@ internal interface UserConfigSyncWorker : DefaultWorker {
     }
 }
 
+@Suppress("LongParameterList")
 internal class UserConfigSyncWorkerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,

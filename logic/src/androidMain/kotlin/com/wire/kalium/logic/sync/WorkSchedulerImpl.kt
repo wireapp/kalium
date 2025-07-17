@@ -126,10 +126,8 @@ private fun buildConnectedPeriodicWorkRequest(
     val timeNow: Instant = DateTimeUtil.currentInstant() // current time
     val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
         .let { localDateTimeNow ->
-            LocalDateTime(
-                localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth,
-                TIME_OF_EXECUTION, 0, 0, 0
-            ).toInstant(localTimeZone)
+            LocalDateTime(localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth, TIME_OF_EXECUTION, 0, 0, 0)
+                .toInstant(localTimeZone)
         }
     val initialDelayMillis = // delay calculated as a difference between now and next scheduled execution
         if (timeScheduledToExecute > timeNow) (timeScheduledToExecute - timeNow).inWholeMilliseconds
@@ -138,7 +136,9 @@ private fun buildConnectedPeriodicWorkRequest(
         .setInitialDelay(initialDelayMillis, TimeUnit.MILLISECONDS)
         .setConstraints(connectedConstraint)
         .setInputData(inputData)
-        .let { if (resetBackoff) it.setNextScheduleTimeOverride(System.currentTimeMillis()) else it.clearNextScheduleTimeOverride() }
+        .let {
+            if (resetBackoff) it.setNextScheduleTimeOverride(System.currentTimeMillis()) else it.clearNextScheduleTimeOverride()
+        }
         .build()
 }
 
@@ -157,6 +157,6 @@ private fun buildConnectedOneTimeWorkRequest(
         .build()
 }
 
-private const val TIME_OF_EXECUTION = 4  // schedule at 4AM
+private const val TIME_OF_EXECUTION = 4 // schedule at 4AM
 private const val REPEAT_INTERVAL: Long = 24 // execute every 24 hours
 private val workerClass = WrapperWorker::class.java

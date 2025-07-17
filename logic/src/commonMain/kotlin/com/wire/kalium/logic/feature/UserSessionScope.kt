@@ -2133,7 +2133,6 @@ class UserSessionScope internal constructor(
             sessionManager,
             selfTeamId,
             checkRevocationList,
-            syncFeatureConfigsUseCase,
             userScopedLogger,
             getTeamUrlUseCase,
             isMLSEnabled,

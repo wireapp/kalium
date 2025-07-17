@@ -40,6 +40,7 @@ interface ForegroundActionsUseCase {
     suspend operator fun invoke()
 }
 
+@Suppress("LongParameterList")
 internal class ForegroundActionsUseCaseImpl(
     private val updateApiVersionsUseCase: UpdateApiVersionsUseCase,
     private val userConfigSyncWorker: UserConfigSyncWorker,
