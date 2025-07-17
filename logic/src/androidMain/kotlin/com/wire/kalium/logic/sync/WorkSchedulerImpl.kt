@@ -41,10 +41,14 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
+import kotlinx.datetime.toDateTimePeriod
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 internal actual class WorkSchedulerProviderImpl(private val appContext: Context) : WorkSchedulerProvider {
     override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler =
@@ -132,8 +136,16 @@ private fun buildConnectedPeriodicWorkRequest(
     val timeNow: Instant = DateTimeUtil.currentInstant() // current time
     val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
         .let { localDateTimeNow ->
-            LocalDateTime(localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth, TIME_OF_EXECUTION, 0, 0, 0)
-                .toInstant(localTimeZone)
+            val executionTime = generateExecutionTime() // generate execution time within the allowed deviation
+            LocalDateTime(
+                year = localDateTimeNow.year,
+                monthNumber = localDateTimeNow.monthNumber,
+                dayOfMonth = localDateTimeNow.dayOfMonth,
+                hour = executionTime.hours,
+                minute = executionTime.minutes,
+                second = 0,
+                nanosecond = 0
+            ).toInstant(localTimeZone)
         }
     val initialDelayMillis = // delay calculated as a difference between now and next scheduled execution
         if (timeScheduledToExecute > timeNow) (timeScheduledToExecute - timeNow).inWholeMilliseconds
@@ -163,6 +175,11 @@ private fun buildConnectedOneTimeWorkRequest(
         .build()
 }
 
-private const val TIME_OF_EXECUTION = 4 // schedule at 4AM
+private fun generateExecutionTime() =
+    (HOUR_OF_EXECUTION.hours + Random.nextInt(-EXECUTION_DEVIATION_IN_MINUTES, EXECUTION_DEVIATION_IN_MINUTES).minutes).toDateTimePeriod()
+
+private const val HOUR_OF_EXECUTION = 4 // schedule at 4AM
+private const val EXECUTION_DEVIATION_IN_MINUTES = 60 // allow +/- 60 minutes deviation from the scheduled time
 private const val REPEAT_INTERVAL: Long = 24 // execute every 24 hours
 private val workerClass = WrapperWorker::class.java
+
