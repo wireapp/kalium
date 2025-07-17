@@ -414,8 +414,6 @@ $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl///PointingToDe
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl/onLog/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/on-log.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/create/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]create.html
 $dokka.location:com.wire.kalium.logic.network/NetworkStateObserverImpl/observeNetworkState/#/PointingToDeclaration/logic/com.wire.kalium.logic.network/-network-state-observer-impl/[jvm]observe-network-state.html
-$dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/scheduleImmediateApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-immediate-api-version-update.html
-$dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/schedulePeriodicApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-periodic-api-version-update.html
 $dokka.location:com.wire.kalium.logic.util/CurrentPlatform/type/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-current-platform/[jvm]type.html
 $dokka.location:com.wire.kalium.logic.util/DummyCallManager///PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/index.html
 $dokka.location:com.wire.kalium.logic.util/DummyCallManager/DummyCallManager/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/-dummy-call-manager.html
@@ -579,7 +577,6 @@ com.wire.kalium.logic.feature.message.confirmation
 com.wire.kalium.logic.feature.message.draft
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.message.receipt
-com.wire.kalium.logic.feature.mls
 com.wire.kalium.logic.feature.mlsmigration
 com.wire.kalium.logic.feature.notificationToken
 com.wire.kalium.logic.feature.personaltoteamaccount

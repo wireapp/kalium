@@ -94,24 +94,24 @@
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.sync</a><span class="delimiter">/</span><span class="current">UserSessionWorkScheduler</span></div>
   <div class="cover ">
     <h1 class="cover"><span>User</span><wbr><span>Session</span><wbr><span>Work</span><wbr><span><span>Scheduler</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">UserSessionWorkScheduler</a> : <a href="../../com.wire.kalium.logic.feature.message/-message-sending-scheduler/index.html">MessageSendingScheduler</a></div><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-user-session-work-scheduler-impl/index.html">UserSessionWorkSchedulerImpl</a></div></span></div><div></div></div></div></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">UserSessionWorkScheduler</a> : <a href="../../com.wire.kalium.logic.feature.message/-message-sending-scheduler/index.html">MessageSendingScheduler</a>, <a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-scheduler/index.html">UserConfigSyncScheduler</a></div><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-user-session-work-scheduler-impl/index.html">UserSessionWorkSchedulerImpl</a></div></span></div><div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="PROPERTY">
         <h2 class="">Properties</h2>
-        <div class="table"><a data-name="1125504036%2FProperties%2F867774983" anchor-label="userId" id="1125504036%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="-1551509924%2FProperties%2F867774983" anchor-label="scope" id="-1551509924%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="user-id.html"><span>user</span><wbr><span><span>Id</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1125504036%2FProperties%2F867774983"></span>
+                  <div><a href="scope.html"><span><span>scope</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1551509924%2FProperties%2F867774983"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">val </span><a href="user-id.html">userId</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">val </span><a href="scope.html">scope</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-user-session-scope/index.html">UserSessionScope</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -131,6 +131,36 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="../../com.wire.kalium.logic.feature.message/-message-sending-scheduler/cancel-scheduled-sending-of-pending-messages.html"><span class="token function">cancelScheduledSendingOfPendingMessages</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Cancels the scheduled execution of <a href="../-pending-messages-sender-worker/index.html">PendingMessagesSenderWorker</a>, which attempts to send all pending messages of this user, because the account has been logged out for instance.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1602967522%2FFunctions%2F867774983" anchor-label="resetBackoffForPeriodicUserConfigSync" id="-1602967522%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-scheduler/reset-backoff-for-periodic-user-config-sync.html"><span>reset</span><wbr><span>Backoff</span><wbr><span>For</span><wbr><span>Periodic</span><wbr><span>User</span><wbr><span>Config</span><wbr><span><span>Sync</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1602967522%2FFunctions%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-scheduler/reset-backoff-for-periodic-user-config-sync.html"><span class="token function">resetBackoffForPeriodicUserConfigSync</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Resets the backoff for the enqueued <a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-worker/index.html">UserConfigSyncWorker</a> if it's already waiting to be retried, so that it can be done instantly.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="340647535%2FFunctions%2F867774983" anchor-label="schedulePeriodicUserConfigSync" id="340647535%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-scheduler/schedule-periodic-user-config-sync.html"><span>schedule</span><wbr><span>Periodic</span><wbr><span>User</span><wbr><span>Config</span><wbr><span><span>Sync</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="340647535%2FFunctions%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-scheduler/schedule-periodic-user-config-sync.html"><span class="token function">schedulePeriodicUserConfigSync</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Schedules a periodic execution of <a href="../../com.wire.kalium.logic.sync.periodic/-user-config-sync-worker/index.html">UserConfigSyncWorker</a> that is responsible for syncing/refreshing user configurations:</p></div></div></div>
                 </div>
               </div>
             </div>
