@@ -78,7 +78,7 @@ class ACMECertificatesSyncUseCaseTest {
         }
     }
 
-    private companion object Companion {
+    private companion object {
         fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }
