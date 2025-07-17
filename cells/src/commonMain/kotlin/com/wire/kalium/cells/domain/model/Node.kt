@@ -30,6 +30,7 @@ public sealed class Node {
     public abstract val modifiedTime: Long?
     public abstract val remotePath: String?
     public abstract val size: Long?
+    public abstract val tags: List<String>
 
     public data class Folder(
         override val name: String?,
@@ -38,7 +39,8 @@ public sealed class Node {
         override val conversationName: String? = null,
         override val modifiedTime: Long?,
         override val remotePath: String?,
-        override val size: Long?
+        override val size: Long?,
+        override val tags: List<String> = emptyList(),
     ) : Node()
 
     /**
@@ -61,6 +63,7 @@ public sealed class Node {
         val previewUrl: String? = null,
         val metadata: AssetMetadata? = null,
         val publicLinkId: String? = null,
+        override val tags: List<String> = emptyList(),
     ) : Node()
 }
 
@@ -77,6 +80,7 @@ internal fun CellNode.toFileModel() = Node.File(
     size = size,
     publicLinkId = publicLinkId,
     modifiedTime = modified?.let { it * 1000 },
+    tags = tags,
 )
 
 @Suppress("MagicNumber")
@@ -86,4 +90,5 @@ internal fun CellNode.toFolderModel() = Node.Folder(
     modifiedTime = modified?.let { it * 1000 },
     remotePath = path,
     size = size,
+    tags = tags,
 )

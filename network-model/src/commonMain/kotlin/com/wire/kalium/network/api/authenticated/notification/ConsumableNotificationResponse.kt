@@ -33,16 +33,30 @@ sealed class ConsumableNotificationResponse {
     ) : ConsumableNotificationResponse()
 
     @Serializable
-    @SerialName("notifications.missed")
+    @SerialName("synchronization")
+    data class SynchronizationNotification(
+        @SerialName("data") val data: SynchronizationDataDTO
+    ) : ConsumableNotificationResponse()
+
+    @Serializable
+    @SerialName("notifications_missed")
     data object MissedNotification : ConsumableNotificationResponse()
 }
+
+@Serializable
+data class SynchronizationDataDTO(
+    @SerialName("delivery_tag")
+    val deliveryTag: ULong?,
+    @SerialName("marker_id")
+    val markerId: String
+)
 
 @Serializable
 data class EventDataDTO(
     @SerialName("delivery_tag")
     val deliveryTag: ULong?,
     @SerialName("event")
-    val event: EventResponse
+    val event: EventResponseToStore
 )
 
 @Serializable
@@ -50,13 +64,17 @@ enum class EventType {
     @SerialName("event")
     EVENT,
 
-    @SerialName("notifications.missed")
+    @SerialName("synchronization")
+    SYNCHRONIZATION,
+
+    @SerialName("notifications_missed")
     MISSED;
 
     override fun toString(): String {
         return when (this) {
             EVENT -> "event"
-            MISSED -> "notifications.missed"
+            SYNCHRONIZATION -> "synchronization"
+            MISSED -> "notifications_missed"
         }
     }
 }

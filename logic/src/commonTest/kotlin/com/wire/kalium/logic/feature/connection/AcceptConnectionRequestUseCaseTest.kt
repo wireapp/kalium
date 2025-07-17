@@ -33,6 +33,8 @@ import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArr
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -49,7 +51,7 @@ class AcceptConnectionRequestUseCaseTest {
         // given
         val (arrangement, acceptConnectionRequestUseCase) = arrange {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
             withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
@@ -70,7 +72,7 @@ class AcceptConnectionRequestUseCaseTest {
         // given
         val (arrangement, acceptConnectionRequestUseCase) = arrange {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withUpdateConversationModifiedDate(Either.Right(Unit))
             withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
@@ -91,7 +93,7 @@ class AcceptConnectionRequestUseCaseTest {
         // given
         val (arrangement, acceptConnectionRequestUseCase) = arrange {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
-            withFetchConversation(Either.Right(Unit))
+            withFetchConversationSucceeding()
             withPersistUnverifiedWarningMessageSuccess()
             withUpdateConversationModifiedDate(Either.Right(Unit))
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
@@ -129,6 +131,7 @@ class AcceptConnectionRequestUseCaseTest {
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
+        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
         suspend fun arrange() = run {
             block()
@@ -136,7 +139,8 @@ class AcceptConnectionRequestUseCaseTest {
                 connectionRepository = connectionRepository,
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
-                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
+                fetchConversation = fetchConversation
             )
         }
     }

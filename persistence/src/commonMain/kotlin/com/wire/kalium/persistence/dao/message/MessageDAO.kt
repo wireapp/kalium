@@ -71,6 +71,7 @@ interface MessageDAO {
 
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
+    suspend fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
@@ -172,4 +173,6 @@ interface MessageDAO {
         onPage: (List<MessageEntity>) -> Unit,
     )
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
+
+    suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
 }

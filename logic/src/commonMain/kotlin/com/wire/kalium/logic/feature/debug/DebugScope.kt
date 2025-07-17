@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventRepository
@@ -99,6 +100,7 @@ class DebugScope internal constructor(
     private val updateSelfClientCapabilityToConsumableNotifications:
     UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val selfServerConfig: SelfServerConfigUseCase,
+    private val fetchConversationUseCase: FetchConversationUseCase,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
@@ -145,7 +147,7 @@ class DebugScope internal constructor(
             clientRemoteRepository,
             messageRepository,
             messageSendingScheduler,
-            conversationRepository,
+            fetchConversationUseCase
         )
 
     private val sessionEstablisher: SessionEstablisher

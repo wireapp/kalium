@@ -47,10 +47,14 @@ fun Project.commonDokkaConfig() {
 
     plugins.apply("org.jetbrains.dokka")
     val rootProject = rootProject
-    rootProject.mkdir("build/$DOKKA_CACHE_DIR") // creating cache dir
+    // Ensure the cache directory exists at the root project level
+    val dokkaCacheDir = rootProject.layout.buildDirectory.dir(DOKKA_CACHE_DIR).get().asFile
+    if (!dokkaCacheDir.exists()) {
+        dokkaCacheDir.mkdirs()
+    }
 
     tasks.withType(AbstractDokkaLeafTask::class.java).configureEach {
-        cacheRoot.set(rootProject.buildDir.resolve(DOKKA_CACHE_DIR))  // set cache config dir to rootProject/buildDir
+        cacheRoot.set(dokkaCacheDir)  // set cache config dir to rootProject/buildDir
         offlineMode.set(true) // offline, since we don't do online package-list
 
         dokkaSourceSets.configureEach {
@@ -65,4 +69,3 @@ fun Project.commonDokkaConfig() {
         }
     }
 }
-

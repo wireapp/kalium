@@ -40,6 +40,8 @@ import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.ktor.util.encodeBase64
@@ -99,7 +101,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(CONVERSATION_ID))
+            arrangement.fetchConversationIfUnknown(eq(CONVERSATION_ID))
         }.wasInvoked(exactly = once)
     }
 
@@ -240,7 +242,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(WELCOME_EVENT)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(CONVERSATION_ID))
+            arrangement.fetchConversationIfUnknown(eq(CONVERSATION_ID))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -254,13 +256,14 @@ class MLSWelcomeEventHandlerTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-                val mlsClient: MLSClient = mock(MLSClient::class)
-        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-        val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
-        val checkRevocationList: RevocationListChecker = mock(RevocationListChecker::class)
-        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-        val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
+        val mlsClient = mock(MLSClient::class)
+        val mlsClientProvider = mock(MLSClientProvider::class)
+        val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
+        val checkRevocationList = mock(RevocationListChecker::class)
+        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
+        val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
 
         suspend fun withMLSClientProviderReturningMLSClient() = apply {
             coEvery {
@@ -308,7 +311,8 @@ class MLSWelcomeEventHandlerTest {
                 refillKeyPackages = refillKeyPackagesUseCase,
                 revocationListChecker = checkRevocationList,
                 certificateRevocationListRepository = certificateRevocationListRepository,
-                joinExistingMLSConversation = joinExistingMLSConversation
+                joinExistingMLSConversation = joinExistingMLSConversation,
+                fetchConversationIfUnknown = fetchConversationIfUnknown
             )
         }
     }

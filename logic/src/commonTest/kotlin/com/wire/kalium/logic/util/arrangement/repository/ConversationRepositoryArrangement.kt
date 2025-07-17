@@ -19,8 +19,10 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationProtocolUpdateStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
@@ -28,7 +30,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
@@ -52,18 +55,17 @@ internal interface ConversationRepositoryArrangement {
         domain: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
-    suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
     suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
     suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangement
     suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangement
     suspend fun withConversationByMLSGroupId(result: Either<StorageFailure, Conversation>): ConversationRepositoryArrangement
-    suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
+    suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, ConversationProtocolUpdateStatus>)
     suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
-    suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
-    suspend fun withFetchConversation(result: Either<CoreFailure, Unit>)
+    suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, ConversationResponse>)
     suspend fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
     suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>)
@@ -73,18 +75,6 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
     suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>)
-
-    suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
-        coEvery {
-            conversationRepository.fetchConversationIfUnknown(any())
-        }.returns(Either.Left(coreFailure))
-    }
-
-    suspend fun withFetchConversationIfUnknownSucceeding() {
-        coEvery {
-            conversationRepository.fetchConversationIfUnknown(any())
-        }.returns(Either.Right(Unit))
-    }
 
     suspend fun withObserveByIdReturning(conversation: Conversation) {
         coEvery {
@@ -117,6 +107,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withGetConversationMembers(result: List<UserId>)
 }
 
+@OptIn(ConversationPersistenceApi::class)
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
 
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
@@ -145,15 +136,15 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
+    override suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId>) {
         coEvery {
-            conversationRepository.deleteConversation(matches { conversationId.matches(it) })
+            conversationRepository.deleteConversationLocally(matches { conversationId.matches(it) })
         }.returns(Either.Right(Unit))
     }
 
-    override suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
+    override suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId>) {
         coEvery {
-            conversationRepository.deleteConversation(matches { conversationId.matches(it) })
+            conversationRepository.deleteConversationLocally(matches { conversationId.matches(it) })
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
@@ -187,7 +178,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>) {
+    override suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, ConversationProtocolUpdateStatus>) {
         coEvery {
             conversationRepository.updateProtocolLocally(any(), any())
         }.returns(result)
@@ -199,15 +190,9 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>) {
+    override suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, ConversationResponse>) {
         coEvery {
             conversationRepository.fetchMlsOneToOneConversation(any())
-        }.returns(result)
-    }
-
-    override suspend fun withFetchConversation(result: Either<CoreFailure, Unit>) {
-        coEvery {
-            conversationRepository.fetchConversation(any())
         }.returns(result)
     }
 

@@ -21,11 +21,18 @@ package com.wire.kalium.mocks.responses
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
-import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
+import com.wire.kalium.network.tools.KtxSerializer
 
 object ConsumableNotificationEventsResponseJson {
     val validEventDataJson = ConsumableNotificationResponse.EventNotification(
-        data = EventDataDTO((ULong.MAX_VALUE), EventResponse("some_id", listOf(EventContentDTOJson.validMemberJoin.serializableData)))
+        data = EventDataDTO(
+            (ULong.MAX_VALUE),
+            EventResponseToStore(
+                "some_id",
+                KtxSerializer.json.encodeToString(listOf(EventContentDTOJson.validMemberJoin.serializableData))
+            )
+        )
     ).toJsonString()
 
     val validMissedNotificationsJson = ConsumableNotificationResponse.MissedNotification.toJsonString()

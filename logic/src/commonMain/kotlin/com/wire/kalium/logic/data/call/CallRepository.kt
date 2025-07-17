@@ -64,6 +64,8 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
+import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -141,11 +143,13 @@ interface CallRepository {
 
     suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
     suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
+    suspend fun fetchServerTime(): String?
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val serverTimeApi: ServerTimeApi,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val persistMessage: PersistMessageUseCase,
     private val callDAO: CallDAO,
@@ -749,6 +753,15 @@ internal class CallDataSource(
 
     override fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo? =
         _callMetadataProfile.value.data[conversationId]?.protocol
+
+    override suspend fun fetchServerTime(): String? {
+        val result = serverTimeApi.getServerTime()
+        return if (result.isSuccessful()) {
+            result.value.time
+        } else {
+            null
+        }
+    }
 
     companion object {
         val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)

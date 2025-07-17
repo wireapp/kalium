@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -46,7 +47,7 @@ class SyncConversationsUseCaseTest {
         useCase.invoke()
 
         coVerify {
-            arrangement.conversationRepository.fetchConversations()
+            arrangement.fetchConversations()
         }.wasInvoked(exactly = once)
     }
 
@@ -88,10 +89,11 @@ class SyncConversationsUseCaseTest {
 
         val conversationRepository = mock(ConversationRepository::class)
         val systemMessageInserter = mock(SystemMessageInserter::class)
+        val fetchConversations = mock(FetchConversationsUseCase::class)
 
         suspend fun withFetchConversationsSuccessful() = apply {
             coEvery {
-                conversationRepository.fetchConversations()
+                fetchConversations()
             }.returns(Either.Right(Unit))
         }
 
@@ -111,7 +113,8 @@ class SyncConversationsUseCaseTest {
 
         fun arrange() = this to SyncConversationsUseCaseImpl(
             conversationRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            fetchConversations
         )
     }
 }

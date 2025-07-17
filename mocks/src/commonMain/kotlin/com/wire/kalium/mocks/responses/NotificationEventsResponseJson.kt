@@ -34,10 +34,12 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
+import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
@@ -361,9 +363,9 @@ object NotificationEventsResponseJson {
             time = "someTime",
             hasMore = false,
             notifications = listOf(
-                EventResponse(
+                EventResponseToStore(
                     id = "eventId",
-                    payload = listOf(EventContentDTOJson.validUpdateReceiptMode.serializableData),
+                    payload = KtxSerializer.json.encodeToString(listOf(EventContentDTOJson.validUpdateReceiptMode.serializableData)),
                     transient = false
                 )
             )
@@ -395,9 +397,9 @@ object NotificationEventsResponseJson {
         time = "2022-02-15T12:54:30Z",
         hasMore = false,
         notifications = listOf(
-            EventResponse(
+            EventResponseToStore(
                 id = "eventId",
-                payload = listOf(),
+                payload = KtxSerializer.json.encodeToString(listOf<EventContentDTO>()),
                 transient = false
             )
         )

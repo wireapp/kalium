@@ -39,6 +39,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -67,7 +68,6 @@ class MLSMigratorTest {
         val (arrangement, migrator) = Arrangement()
             .withGetProteusTeamConversationsReturning(listOf(conversation.id))
             .withUpdateProtocolReturns()
-            .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
             .withGetConversationMembersReturning(Arrangement.MEMBERS.right())
@@ -78,7 +78,7 @@ class MLSMigratorTest {
         migrator.migrateProteusConversations()
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolRemotely(conversation.id, Conversation.Protocol.MIXED)
+            arrangement.updateConversationProtocol(conversation.id, Conversation.Protocol.MIXED, false)
         }.wasInvoked(once)
 
         coVerify {
@@ -109,7 +109,6 @@ class MLSMigratorTest {
         val (arrangement, migrator) = Arrangement()
             .withGetProteusTeamConversationsReturning(listOf(conversation.id))
             .withUpdateProtocolReturns()
-            .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
             .withGetConversationMembersReturning(Arrangement.MEMBERS.right())
@@ -120,7 +119,7 @@ class MLSMigratorTest {
         migrator.migrateProteusConversations()
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolRemotely(eq(conversation.id), eq(Conversation.Protocol.MIXED))
+            arrangement.updateConversationProtocol(eq(conversation.id), eq(Conversation.Protocol.MIXED), eq(false))
         }.wasInvoked(once)
 
         coVerify {
@@ -159,7 +158,6 @@ class MLSMigratorTest {
         val (_, migrator) = Arrangement()
             .withGetProteusTeamConversationsReturning(listOf(conversation.id))
             .withUpdateProtocolReturns()
-            .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withGetConversationMembersReturning(StorageFailure.DataNotFound.left())
             .withEstablishGroupFails()
@@ -182,7 +180,6 @@ class MLSMigratorTest {
             .withFetchAllOtherUsersSucceeding()
             .withGetProteusTeamConversationsReadyForFinalisationReturning(listOf(conversation.id))
             .withUpdateProtocolReturns()
-            .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MLS_PROTOCOL_INFO)
             .arrange()
 
@@ -193,7 +190,7 @@ class MLSMigratorTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.updateProtocolRemotely(eq(conversation.id), eq(Conversation.Protocol.MLS))
+            arrangement.updateConversationProtocol(eq(conversation.id), eq(Conversation.Protocol.MLS), eq(false))
         }.wasInvoked(once)
     }
 
@@ -221,6 +218,7 @@ class MLSMigratorTest {
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val systemMessageInserter = mock(SystemMessageInserter::class)
         val callRepository = mock(CallRepository::class)
+        val updateConversationProtocol = mock(UpdateConversationProtocolUseCase::class)
 
         suspend fun withFetchAllOtherUsersSucceeding() = apply {
             coEvery {
@@ -256,15 +254,9 @@ class MLSMigratorTest {
             }.returns(result)
         }
 
-        suspend fun withFetchConversationSucceeding() = apply {
-            coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(Either.Right(Unit))
-        }
-
         suspend fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
             coEvery {
-                conversationRepository.updateProtocolRemotely(any(), any())
+                updateConversationProtocol(any(), any(), any())
             }.returns(result)
         }
 
@@ -305,7 +297,8 @@ class MLSMigratorTest {
             conversationRepository,
             mlsConversationRepository,
             systemMessageInserter,
-            callRepository
+            callRepository,
+            updateConversationProtocol
         ).also {
             coEvery {
                 selfTeamIdProvider.invoke()

@@ -18,18 +18,18 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
@@ -40,16 +40,16 @@ interface ProtocolUpdateEventHandler {
 }
 
 internal class ProtocolUpdateEventHandlerImpl(
-    private val conversationRepository: ConversationRepository,
     private val systemMessageInserter: SystemMessageInserter,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val updateConversationProtocol: UpdateConversationProtocolUseCase
 ) : ProtocolUpdateEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
-        return conversationRepository.updateProtocolLocally(event.conversationId, event.protocol)
+        return updateConversationProtocol(event.conversationId, event.protocol, localOnly = true)
             .onSuccess { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(

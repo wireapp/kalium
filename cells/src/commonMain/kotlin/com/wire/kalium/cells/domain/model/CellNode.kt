@@ -35,6 +35,7 @@ public data class CellNode(
     val ownerUserId: String? = null,
     val conversationId: String? = null,
     val publicLinkId: String? = null,
+    val tags: List<String> = emptyList(),
 )
 
 public enum class CellNodeType(public val value: String) {

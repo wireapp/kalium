@@ -155,7 +155,7 @@ class EventProcessorTest {
     @Test
     fun givenNonTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsUpdated() = runTest {
         // Given
-        val envelope = TestEvent.newConnection().wrapInEnvelope(isTransient = false)
+        val envelope = TestEvent.newConnection().wrapInEnvelope()
 
         val (arrangement, eventProcessor) = Arrangement(this).arrange {
             withUpdateLastProcessedEventId(envelope.event.id, Either.Right(Unit))

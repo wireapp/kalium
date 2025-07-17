@@ -51,13 +51,11 @@ fun LibraryExtension.commonAndroidLibConfig(
     sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
         minSdk = Android.Sdk.min
-        targetSdk = Android.Sdk.target
+        lint.targetSdk = Android.Sdk.target
         consumerProguardFiles("consumer-proguard-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
 

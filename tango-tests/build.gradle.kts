@@ -24,6 +24,9 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+    }
     sourceSets {
         val test by getting {
             kotlin.srcDir("src/integrationTest/kotlin")

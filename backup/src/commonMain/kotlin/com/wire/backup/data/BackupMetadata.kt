@@ -18,12 +18,19 @@
 
 package com.wire.backup.data
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.js.JsExport
 
 @JsExport
+@Serializable
 public data class BackupMetadata(
+    @SerialName("version")
     val version: String,
+    @SerialName("userId")
     val userId: BackupQualifiedId,
+    @SerialName("creationTime")
     val creationTime: BackupDateTime,
+    @SerialName("clientId")
     val clientId: String?
 )

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.DateTimeUtil
@@ -37,7 +38,8 @@ interface MemberChangeEventHandler {
 
 internal class MemberChangeEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
-) : MemberChangeEventHandler {
+    private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
+    ) : MemberChangeEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.MemberChanged) {
@@ -77,7 +79,7 @@ internal class MemberChangeEventHandlerImpl(
     private suspend fun handleMemberChangedRoleEvent(event: Event.Conversation.MemberChanged.MemberChangedRole) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+        fetchConversationIfUnknown(event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf("event" to event.toLogMap())

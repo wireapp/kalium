@@ -16,11 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import OnlyAffectedTestTask.TestTaskConfiguration
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-import java.io.File
+import org.gradle.kotlin.dsl.support.get
+import org.gradle.process.ExecOperations
 
 /**
  * This task will run only the tests for affected modules and dependants.
@@ -43,14 +43,16 @@ open class OnlyAffectedTestTask : DefaultTask() {
     init {
         group = "verification"
         description = "Installs and runs the tests for debug on connected devices (Only for affected modules)."
-
+        // TODO(refactor): The task should not exec other gradlew tasks,
+        //                 but rather be configured based on dagCommand, and add other tasks as dependency,
+        //                 simplifying the logic and making it cacheable
         setDependsOn(mutableListOf("dag-command"))
     }
 
     @TaskAction
     fun runOnlyAffectedConnectedTest() {
-        var affectedModules: Set<String> = mutableSetOf()
-        File("${project.buildDir}/dag-command/affected-modules.json").useLines {
+        var affectedModules: Set<String> = setOf()
+        project.layout.buildDirectory.file("dag-command/affected-modules.json").get().asFile.useLines {
             affectedModules = it.joinToString()
                 .removeSurrounding("[", "]")
                 .replace("\"", "")
@@ -86,19 +88,17 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     private fun runTargetTask(targetTask: String) {
         println("\uD83D\uDD27 Running tests on '$targetTask'.")
-        project.exec {
+        val execOperations = services.get<ExecOperations>()
+        execOperations.exec {
             args(targetTask)
-            executable("./gradlew")
+            executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
 
     /**
      * Get the predicate to compute if the module should be included or not in the test
      */
-    private fun computeModulesPredicate(allTests: Boolean, modulesPredicate: Boolean) = when {
-        allTests == true -> true
-        else -> modulesPredicate
-    }
+    private fun computeModulesPredicate(allTests: Boolean, modulesPredicate: Boolean) = allTests || modulesPredicate
 
     /**
      * Check if we have to run all tests, by looking at untracked by dag-command files [globalBuildSettingsFiles].

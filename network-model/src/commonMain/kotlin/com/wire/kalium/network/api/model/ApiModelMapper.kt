@@ -43,14 +43,14 @@ interface ApiModelMapper {
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
 
     /**
-     * Forcing new clients using >= v8 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
+     * Forcing new clients using >= v9 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
      */
-    fun toApiV8(request: RegisterClientRequest): RegisterClientRequest
+    fun toApiV9(request: RegisterClientRequest): RegisterClientRequest
 
     /**
-     * Forcing new clients using < v8 to have [legalhold-implicit-consent] capability.
+     * Forcing new clients using < v9 to have [legalhold-implicit-consent] capability.
      */
-    fun toApiV0ToV7(request: RegisterClientRequest): RegisterClientRequest
+    fun toApiV0ToV8(request: RegisterClientRequest): RegisterClientRequest
 }
 
 class ApiModelMapperImpl : ApiModelMapper {
@@ -156,7 +156,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             cellsState = response.cellsState
         )
 
-    override fun toApiV0ToV7(request: RegisterClientRequest): RegisterClientRequest = RegisterClientRequest(
+    override fun toApiV0ToV8(request: RegisterClientRequest): RegisterClientRequest = RegisterClientRequest(
         password = request.password,
         preKeys = request.preKeys,
         lastKey = request.lastKey,
@@ -171,7 +171,7 @@ class ApiModelMapperImpl : ApiModelMapper {
         secondFactorVerificationCode = request.secondFactorVerificationCode
     )
 
-    override fun toApiV8(request: RegisterClientRequest): RegisterClientRequest =
+    override fun toApiV9(request: RegisterClientRequest): RegisterClientRequest =
         RegisterClientRequest(
             password = request.password,
             preKeys = request.preKeys,

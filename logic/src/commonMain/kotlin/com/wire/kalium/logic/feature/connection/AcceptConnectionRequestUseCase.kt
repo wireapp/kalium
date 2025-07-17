@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.util.DateTimeUtil
 
 /**
@@ -48,13 +49,14 @@ internal class AcceptConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val fetchConversation: FetchConversationUseCase
 ) : AcceptConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
         return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
             .flatMap { connection ->
-                conversationRepository.fetchConversation(connection.qualifiedConversationId)
+                fetchConversation(connection.qualifiedConversationId)
                     .flatMap {
                         conversationRepository.updateConversationModifiedDate(
                             connection.qualifiedConversationId,

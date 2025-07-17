@@ -18,7 +18,9 @@
 package com.wire.backup.data
 
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
+@Serializable(BackupDateTimeSerializer::class)
 public actual data class BackupDateTime(val instant: Instant)
 
 public actual fun BackupDateTime(timestampMillis: Long): BackupDateTime {

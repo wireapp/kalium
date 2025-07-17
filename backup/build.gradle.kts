@@ -54,8 +54,8 @@ kotlin {
         }
     }
     targets.withType<KotlinNativeTarget> {
-        compilations.all {
-            kotlinOptions.freeCompilerArgs += "-Xexport-kdoc"
+        compilerOptions {
+            freeCompilerArgs.add("-Xexport-kdoc")
         }
     }
     js {
@@ -76,6 +76,7 @@ kotlin {
 
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
+                implementation(libs.ktxSerialization)
 
                 implementation(libs.okio.core)
 

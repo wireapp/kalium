@@ -20,8 +20,10 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -36,7 +38,6 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
@@ -81,7 +82,7 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(event)
 
         coVerify {
-            arrangement.conversationRepository.persistConversation(eq(event.conversation), eq(teamIdValue), any())
+            arrangement.persistConversation(eq(event.conversation), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -304,6 +305,7 @@ class NewConversationEventHandlerTest {
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
         private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
         val oneOnOneResolver = mock(OneOnOneResolver::class)
+        val persistConversation = mock(PersistConversationUseCase::class)
 
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
@@ -311,7 +313,8 @@ class NewConversationEventHandlerTest {
             userRepository,
             selfTeamIdProvider,
             newGroupConversationSystemMessagesCreator,
-            oneOnOneResolver
+            oneOnOneResolver,
+            persistConversation
         )
 
         suspend fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
@@ -322,7 +325,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
             coEvery {
-                conversationRepository.persistConversation(any(), any(), any())
+                persistConversation(any(), any())
             }.returns(result)
         }
 

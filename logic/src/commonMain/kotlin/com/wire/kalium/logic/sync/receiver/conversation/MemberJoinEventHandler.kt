@@ -19,21 +19,22 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -44,6 +45,7 @@ interface MemberJoinEventHandler {
     suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -51,6 +53,7 @@ internal class MemberJoinEventHandlerImpl(
     private val legalHoldHandler: LegalHoldHandler,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val selfUserId: UserId,
+    private val fetchConversation: FetchConversationUseCase
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -60,7 +63,7 @@ internal class MemberJoinEventHandlerImpl(
         // 1. self user is added/re-added to a group and we need to update the group info in case something changed form last time
         // 2. the new member is a bot in that case we need to make the group a bot 1:1
         // 3. fetch group info in case it is not stored in the first place
-        return conversationRepository.fetchConversation(event.conversationId)
+        return fetchConversation(event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf(

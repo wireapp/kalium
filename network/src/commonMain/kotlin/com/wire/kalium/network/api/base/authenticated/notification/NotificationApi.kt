@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.base.authenticated.notification
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -30,7 +31,7 @@ import kotlinx.coroutines.flow.Flow
 sealed class WebSocketEvent<BinaryPayloadType> {
     /**
      * @property shouldProcessPendingEvents if false, the client should skip pending events, due to new async notifications.
-     * @since API v8
+     * @since API v9
      */
     data class Open<BinaryPayloadType>(val shouldProcessPendingEvents: Boolean = true) : WebSocketEvent<BinaryPayloadType>()
 
@@ -51,7 +52,10 @@ sealed class WebSocketEvent<BinaryPayloadType> {
         }
     }
 
-    data class Close<BinaryPayloadType>(val cause: Throwable?) : WebSocketEvent<BinaryPayloadType>()
+    data class Close<BinaryPayloadType>(
+        val cause: Throwable?,
+        val payload: BinaryPayloadType? = null
+    ) : WebSocketEvent<BinaryPayloadType>()
 }
 
 @Mockable
@@ -60,18 +64,22 @@ interface NotificationApi : BaseApi {
 
     suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String): NetworkResponse<NotificationResponse>
 
-    suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse>
+    suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponseToStore>
 
     /**
      * request Notifications from the beginning of time
      */
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
-    suspend fun getServerTime(querySize: Int): NetworkResponse<String>
+    @Deprecated("Starting API v9 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
+    suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>>
 
-    @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
-    suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>>
-    suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
-    suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
+    /**
+     * Open a websocket connection to listen to live events.
+     * @param clientId the id of current the client.
+     * @param markerId a random id used to identify the end of the initial sync. This will be received in the events stream.
+     */
+    suspend fun consumeLiveEvents(clientId: String, markerId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
+    suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
 
 }
