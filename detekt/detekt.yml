@@ -293,6 +293,10 @@ formatting:
     PackageName:
         active: true
         autoCorrect: true
+    ParameterWrapping:
+      active: true
+      autoCorrect: true
+      maxLineLength: 140
     ParameterListWrapping:
         active: true
         autoCorrect: true
