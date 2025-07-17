@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
@@ -95,6 +96,7 @@ internal fun IncrementalSyncManager(
     incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
     networkStateObserver: NetworkStateObserver,
     userScopedLogger: KaliumLogger,
+    userSessionWorkScheduler: UserSessionWorkScheduler,
     exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
         IncrementalSyncManager.MIN_RETRY_DELAY,
         IncrementalSyncManager.MAX_RETRY_DELAY
@@ -158,6 +160,7 @@ internal fun IncrementalSyncManager(
                     EventSource.LIVE -> {
                         syncLogger.logSyncCompleted(duration = Clock.System.now() - syncData.second)
                         exponentialDurationHelper.reset()
+                        userSessionWorkScheduler.resetBackoffForPeriodicUserConfigSync()
                         IncrementalSyncStatus.Live
                     }
                 }

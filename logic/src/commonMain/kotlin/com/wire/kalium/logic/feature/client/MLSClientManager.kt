@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 
@@ -33,8 +34,13 @@ import kotlinx.coroutines.async
  * MLSClientManager is responsible for registering an MLS client when a user
  * upgrades to an MLS supported build.
  */
+@Mockable
+interface MLSClientManager {
+    suspend operator fun invoke()
+}
+
 @Suppress("LongParameterList")
-class MLSClientManager internal constructor(
+class MLSClientManagerImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val syncStateObserver: SyncStateObserver,
@@ -42,13 +48,13 @@ class MLSClientManager internal constructor(
     private val clientRepository: Lazy<ClientRepository>,
     private val registerMLSClient: Lazy<RegisterMLSClientUseCase>,
     private val userCoroutineScope: CoroutineScope,
-) {
+) : MLSClientManager {
     /**
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
 
-    suspend operator fun invoke() {
+    override suspend operator fun invoke() {
         syncStateObserver.waitUntilLiveOrFailure().onSuccess {
             registerMLSClientIfPossibleAndNeeded()
         }

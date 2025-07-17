@@ -60,4 +60,7 @@ internal class PendingMessagesSenderWorker(
         return Result.Success
     }
 
+    companion object {
+        const val NAME_PREFIX = "scheduled-message-"
+    }
 }

@@ -227,6 +227,7 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseIm
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
@@ -251,6 +252,7 @@ import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
@@ -258,8 +260,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
-import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
-import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
@@ -305,17 +307,14 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
-import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorker
-import com.wire.kalium.logic.feature.mls.MLSPublicKeysSyncWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefillerImpl
-import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
-import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -392,6 +391,7 @@ import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
+import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -409,6 +409,8 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorkerImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -513,13 +515,12 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
     userAgent: String,
-    private val userId: UserId,
+    internal val userId: UserId,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
-    private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
@@ -1290,6 +1291,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRecoveryHandler,
             networkStateObserver,
             userScopedLogger,
+            userSessionWorkScheduler,
         )
     }
 
@@ -1351,7 +1353,7 @@ class UserSessionScope internal constructor(
     )
 
     val keyingMaterialsManager: KeyingMaterialsManager
-        get() = KeyingMaterialsManager(
+        get() = KeyingMaterialsManagerImpl(
             featureSupport,
             syncStateObserver,
             lazy { clientRepository },
@@ -1361,7 +1363,7 @@ class UserSessionScope internal constructor(
         )
 
     val mlsClientManager: MLSClientManager
-        get() = MLSClientManager(
+        get() = MLSClientManagerImpl(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
             syncStateObserver,
@@ -1385,7 +1387,7 @@ class UserSessionScope internal constructor(
         )
 
     val mlsMigrationManager: MLSMigrationManager
-        get() = MLSMigrationManager(
+        get() = MLSMigrationManagerImpl(
             kaliumConfigs,
             isMLSEnabled,
             syncStateObserver,
@@ -1886,20 +1888,22 @@ class UserSessionScope internal constructor(
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
         get() = ProteusPreKeyRefillerImpl(preKeyRepository)
 
-    private val proteusSyncWorker: ProteusSyncWorker by lazy {
-        ProteusSyncWorkerImpl(
+    internal val userConfigSyncWorker: UserConfigSyncWorker by lazy {
+        UserConfigSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
+            syncFeatureConfigsUseCase = syncFeatureConfigsUseCase,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
-            preKeyRepository = preKeyRepository,
+            mlsPublicKeysRepository = mlsPublicKeysRepository,
+            acmeCertificatesSyncUseCase = acmeCertificatesSyncUseCase,
             kaliumLogger = userScopedLogger,
         )
     }
 
-    val mlsPublicKeysSyncWorker: MLSPublicKeysSyncWorker by lazy {
-        MLSPublicKeysSyncWorkerImpl(
-            incrementalSyncRepository = incrementalSyncRepository,
-            mlsPublicKeysRepository = mlsPublicKeysRepository,
-            kaliumLogger = userScopedLogger,
+    internal val pendingMessagesSenderWorker: PendingMessagesSenderWorker by lazy {
+        PendingMessagesSenderWorker(
+            messageRepository = messageRepository,
+            messageSender = messages.messageSender,
+            userId = userId,
         )
     }
 
@@ -1941,8 +1945,8 @@ class UserSessionScope internal constructor(
             userConfigRepository
         )
 
-    private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
-        ACMECertificatesSyncWorkerImpl(
+    private val acmeCertificatesSyncUseCase: ACMECertificatesSyncUseCase by lazy {
+        ACMECertificatesSyncUseCaseImpl(
             e2eiRepository = e2eiRepository,
             kaliumLogger = userScopedLogger,
             isE2EIEnabledUseCase = isE2EIEnabled
@@ -2128,11 +2132,14 @@ class UserSessionScope internal constructor(
             sessionManager,
             selfTeamId,
             checkRevocationList,
-            syncFeatureConfigsUseCase,
             userScopedLogger,
             getTeamUrlUseCase,
             isMLSEnabled,
-            mlsPublicKeysSyncWorker,
+            globalScope.updateApiVersions,
+            userConfigSyncWorker,
+            mlsClientManager,
+            mlsMigrationManager,
+            keyingMaterialsManager,
             this,
         )
     }
@@ -2431,6 +2438,8 @@ class UserSessionScope internal constructor(
             mlsConversationRepository = mlsConversationRepository,
         )
 
+    val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
+
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
@@ -2460,23 +2469,11 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            proteusSyncWorker.execute()
-        }
-
-        launch {
-            mlsPublicKeysSyncWorker.schedule()
-        }
-
-        launch {
             observeE2EIConversationsVerificationStatuses.invoke()
         }
 
         launch {
             typingIndicatorSyncManager.execute()
-        }
-
-        launch {
-            acmeCertificatesSyncWorker.execute()
         }
 
         launch {
@@ -2500,6 +2497,8 @@ class UserSessionScope internal constructor(
         launch {
             localEventManager.startProcessing()
         }
+
+        userSessionWorkScheduler.schedulePeriodicUserConfigSync()
     }
 }
 
