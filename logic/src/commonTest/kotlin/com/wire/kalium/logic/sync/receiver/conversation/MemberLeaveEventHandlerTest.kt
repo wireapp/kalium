@@ -19,8 +19,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
@@ -33,6 +31,8 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -81,7 +81,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationsDeleteQueue(emptyList())
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.memberDAO.deleteMembersByQualifiedID(event.removedList.map { it.toDao() }, qualifiedConversationIdEntity)
@@ -112,7 +112,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.memberDAO.deleteMembersByQualifiedID(event.removedList.map { it.toDao() }, qualifiedConversationIdEntity)
@@ -143,7 +143,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
@@ -175,7 +175,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
@@ -220,7 +220,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
@@ -260,7 +260,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationsDeleteQueue(emptyList())
             }
         // when
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
         // then
         coVerify {
             arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
@@ -286,13 +286,13 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
         }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.getConversationsDeleteQueue() }.wasInvoked(once)
-        coVerify { arrangement.deleteConversation(event.conversationId) }.wasInvoked(once)
+        coVerify { arrangement.deleteConversation(any(), eq(event.conversationId)) }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.removeConversationFromDeleteQueue(event.conversationId) }.wasInvoked(once)
     }
 
@@ -317,9 +317,9 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(mlsProtocolInfo1)
             }
 
-        memberLeaveEventHandler.handle(event)
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify { arrangement.mlsClient.wipeConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.mlsContext.wipeConversation(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -340,7 +340,7 @@ class MemberLeaveEventHandlerTest {
                 withGetConversationProtocolInfoReturns(null)
             }
 
-        memberLeaveEventHandler.handle(event).shouldSucceed()
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
 
         coVerify {
             arrangement.memberDAO.deleteMembersByQualifiedID(any(), any())
@@ -361,13 +361,12 @@ class MemberLeaveEventHandlerTest {
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
         DeleteConversationArrangement by DeleteConversationArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
         val conversationDAO = mock(ConversationDAO::class)
-        val mlsClient = mock(MLSClient::class)
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
@@ -383,10 +382,7 @@ class MemberLeaveEventHandlerTest {
             }.returns(Either.Right(Unit))
             withRemoveConversationToDeleteQueue()
             coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
-            coEvery {
-                mlsClient.wipeConversation(any())
+                mlsContext.wipeConversation(any())
             }.returns(Unit)
             coEvery {
                 updateConversationClientsForCurrentCall.invoke(any())

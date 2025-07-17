@@ -43,25 +43,25 @@ class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
     override val oneOnOneResolver = mock(OneOnOneResolver::class)
     override suspend fun withScheduleResolveOneOnOneConversationWithUserId() {
         coEvery {
-            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())
+            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
         }.returns(Job())
     }
 
     override suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
         coEvery {
-            oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(true))
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
         }.returns(result)
     }
 
     override suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>) {
         coEvery {
-            oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>) {
         coEvery {
-            oneOnOneResolver.resolveAllOneOnOneConversations(any())
+            oneOnOneResolver.resolveAllOneOnOneConversations(any(), any())
         }.returns(result)
     }
 

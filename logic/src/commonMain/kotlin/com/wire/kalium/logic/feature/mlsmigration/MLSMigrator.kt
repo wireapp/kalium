@@ -36,6 +36,8 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
@@ -46,6 +48,7 @@ interface MLSMigrator {
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseAllProteusConversations(): Either<CoreFailure, Unit>
 }
+
 @Suppress("LongParameterList")
 internal class MLSMigratorImpl(
     private val selfUserId: UserId,
@@ -55,7 +58,8 @@ internal class MLSMigratorImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val systemMessageInserter: SystemMessageInserter,
     private val callRepository: CallRepository,
-    private val updateConversationProtocol: UpdateConversationProtocolUseCase
+    private val updateConversationProtocol: UpdateConversationProtocolUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : MLSMigrator {
 
     override suspend fun migrateProteusConversations(): Either<CoreFailure, Unit> =
@@ -64,9 +68,11 @@ internal class MLSMigratorImpl(
         }.flatMap { teamId ->
             // TODO: Add support for channels here. Although... channels should always be MLS
             conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.PROTEUS, teamId)
-                .flatMap {
-                    it.foldToEitherWhileRight(Unit) { conversationId, _ ->
-                        migrate(conversationId)
+                .flatMap { conversations ->
+                    transactionProvider.transaction("migrateProteusConversations") { transactionContext ->
+                        conversations.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                            migrate(transactionContext, conversationId)
+                        }
                     }
                 }
         }
@@ -76,12 +82,14 @@ internal class MLSMigratorImpl(
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
             // TODO: Add support for channels here. Although... channels should always be MLS
-            conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.MIXED, teamId)
-                .flatMap {
-                    it.foldToEitherWhileRight(Unit) { conversationId, _ ->
-                        finalise(conversationId)
+            transactionProvider.transaction("finaliseAllProteusConversations") { transactionContext ->
+                conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.MIXED, teamId)
+                    .flatMap {
+                        it.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                            finalise(transactionContext, conversationId)
+                        }
                     }
-                }
+            }
         }
 
     override suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit> =
@@ -90,18 +98,20 @@ internal class MLSMigratorImpl(
         }.flatMap { teamId ->
             userRepository.fetchAllOtherUsers()
                 .flatMap {
-                    conversationRepository.getTeamConversationIdsReadyToCompleteMigration(teamId)
-                        .flatMap {
-                            it.foldToEitherWhileRight(Unit) { conversationId, _ ->
-                                finalise(conversationId)
+                    transactionProvider.transaction("finaliseProteusConversations") { transactionContext ->
+                        conversationRepository.getTeamConversationIdsReadyToCompleteMigration(teamId)
+                            .flatMap {
+                                it.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                                    finalise(transactionContext, conversationId)
+                                }
                             }
-                        }
+                    }
                 }
         }
 
-    private suspend fun migrate(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    private suspend fun migrate(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("migrating ${conversationId.toLogString()} to mixed")
-        return updateConversationProtocol(conversationId, Protocol.MIXED, localOnly = false)
+        return updateConversationProtocol(transactionContext, conversationId, Protocol.MIXED, localOnly = false)
             .flatMap { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -115,16 +125,16 @@ internal class MLSMigratorImpl(
                     }
                 }
                 kaliumLogger.i("migrating ${conversationId.toLogString()} to mls")
-                establishConversation(conversationId)
+                establishConversation(transactionContext, conversationId)
             }.flatMapLeft {
                 kaliumLogger.w("failed to migrate ${conversationId.toLogString()} to mixed: $it")
                 Either.Right(Unit)
             }
     }
 
-    private suspend fun finalise(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    private suspend fun finalise(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("finalising ${conversationId.toLogString()} to mls")
-        return updateConversationProtocol(conversationId, Protocol.MLS, localOnly = false)
+        return updateConversationProtocol(transactionContext, conversationId, Protocol.MLS, localOnly = false)
             .fold({ failure ->
                 kaliumLogger.w("failed to finalise ${conversationId.toLogString()} to mls: $failure")
                 Either.Right(Unit)
@@ -138,20 +148,27 @@ internal class MLSMigratorImpl(
             })
     }
 
-    private suspend fun establishConversation(conversationId: ConversationId) =
+    private suspend fun establishConversation(transactionContext: CryptoTransactionContext, conversationId: ConversationId) =
         conversationRepository.getConversationProtocolInfo(conversationId)
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
                     is Conversation.ProtocolInfo.Mixed -> {
-                        conversationRepository.getConversationMembers(conversationId).flatMap { members ->
-                            mlsConversationRepository.establishMLSGroup(
-                                protocolInfo.groupId,
-                                members,
-                                allowSkippingUsersWithoutKeyPackages = true
-                            )
+                        val mlsContext = transactionContext.mls
+                        if (mlsContext != null) {
+                            conversationRepository.getConversationMembers(conversationId).flatMap { members ->
+                                mlsConversationRepository.establishMLSGroup(
+                                    mlsContext,
+                                    protocolInfo.groupId,
+                                    members,
+                                    allowSkippingUsersWithoutKeyPackages = true
+                                )
+                            }
+                        } else {
+                            kaliumLogger.w("cannot migrate ${conversationId.toLogString()} to mixed, because mls is not supported")
                         }
                         Unit.right()
                     }
+
                     else -> Either.Right(Unit)
                 }
             }

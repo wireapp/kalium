@@ -21,6 +21,8 @@ package com.wire.kalium.cli.commands
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.requireObject
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import kotlinx.coroutines.runBlocking
@@ -30,9 +32,15 @@ class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
     private val userSession by requireObject<UserSessionScope>()
 
     override fun run() = runBlocking {
-        when (val result = userSession.client.refillKeyPackages()) {
-            is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
-            is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
+        userSession.cryptoTransactionProvider.transaction { transactionContext ->
+            transactionContext.wrapInMLSContext { mlsCoreCryptoContext ->
+                when (val result = userSession.client.refillKeyPackages(mlsCoreCryptoContext)) {
+                    is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
+                    is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
+                }
+                Unit.right()
+            }
         }
+        Unit
     }
 }

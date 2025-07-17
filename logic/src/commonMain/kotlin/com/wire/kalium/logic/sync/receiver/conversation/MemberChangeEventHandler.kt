@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -33,16 +34,16 @@ import io.mockative.Mockable
 
 @Mockable
 interface MemberChangeEventHandler {
-    suspend fun handle(event: Event.Conversation.MemberChanged)
+    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
 }
 
 internal class MemberChangeEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
-    ) : MemberChangeEventHandler {
+) : MemberChangeEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.MemberChanged) {
+    override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
@@ -64,7 +65,7 @@ internal class MemberChangeEventHandlerImpl(
             }
 
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
-                handleMemberChangedRoleEvent(event)
+                handleMemberChangedRoleEvent(transactionContext, event)
             }
 
             else -> {
@@ -76,10 +77,13 @@ internal class MemberChangeEventHandlerImpl(
         }
     }
 
-    private suspend fun handleMemberChangedRoleEvent(event: Event.Conversation.MemberChanged.MemberChangedRole) {
+    private suspend fun handleMemberChangedRoleEvent(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberChanged.MemberChangedRole
+    ) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        fetchConversationIfUnknown(event.conversationId)
+        fetchConversationIfUnknown(transactionContext, event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf("event" to event.toLogMap())

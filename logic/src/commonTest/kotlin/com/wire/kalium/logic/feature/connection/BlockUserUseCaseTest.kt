@@ -25,6 +25,8 @@ import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -56,18 +58,19 @@ class BlockUserUseCaseTest {
         assertTrue(result is BlockUserResult.Success)
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
-        val blockUser = BlockUserUseCaseImpl(connectionRepository)
+        val blockUser = BlockUserUseCaseImpl(connectionRepository, cryptoTransactionProvider)
 
         suspend fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
             coEvery {
-                connectionRepository.updateConnectionStatus(any(), any())
+                connectionRepository.updateConnectionStatus(any(), any(), any())
             }.returns(result)
         }
 
-        fun arrange() = this to blockUser
+        suspend fun arrange() = this to blockUser
+            .also { withTransactionReturning(Either.Right(Unit)) }
     }
 }

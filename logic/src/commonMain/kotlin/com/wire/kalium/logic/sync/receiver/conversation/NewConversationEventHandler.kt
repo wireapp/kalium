@@ -35,6 +35,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -43,7 +44,7 @@ import io.mockative.Mockable
 
 @Mockable
 interface NewConversationEventHandler {
-    suspend fun handle(event: Event.Conversation.NewConversation)
+    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
 }
 
 internal class NewConversationEventHandlerImpl(
@@ -55,12 +56,12 @@ internal class NewConversationEventHandlerImpl(
     private val persistConversation: PersistConversationUseCase,
 ) : NewConversationEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.NewConversation) {
+    override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
-        persistConversation(event.conversation, originatedFromEvent = true)
+        persistConversation(transactionContext, event.conversation, originatedFromEvent = true)
             .flatMap { isNewUnhandledConversation ->
-                resolveConversationIfOneOnOne(selfUserTeamId, event)
+                resolveConversationIfOneOnOne(transactionContext, selfUserTeamId, event)
                     .flatMap {
                         conversationRepository.updateConversationModifiedDate(
                             event.conversationId,
@@ -84,6 +85,7 @@ internal class NewConversationEventHandlerImpl(
     }
 
     private suspend fun resolveConversationIfOneOnOne(
+        transactionContext: CryptoTransactionContext,
         selfUserTeamId: TeamId?,
         event: Event.Conversation.NewConversation
     ) =
@@ -92,7 +94,8 @@ internal class NewConversationEventHandlerImpl(
                 event.conversation.members.otherMembers.first().id.toModel()
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                 userId = otherUserId,
-                invalidateCurrentKnownProtocols = true
+                invalidateCurrentKnownProtocols = true,
+                transactionContext = transactionContext
             ).map { Unit }
         } else Either.Right(Unit)
 

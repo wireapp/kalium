@@ -20,7 +20,10 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.id.GroupID
@@ -30,10 +33,6 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
@@ -42,6 +41,7 @@ import kotlinx.coroutines.flow.first
 interface MLSMessageCreator {
 
     suspend fun createOutgoingMLSMessage(
+        mlsContext: MlsCoreCryptoContext,
         groupId: GroupID,
         message: Message.Sendable
     ): Either<CoreFailure, MLSMessageApi.Message>
@@ -51,38 +51,39 @@ interface MLSMessageCreator {
 class MLSMessageCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val legalHoldStatusMapper: LegalHoldStatusMapper,
-    private val mlsClientProvider: MLSClientProvider,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MLSMessageCreator {
 
-    override suspend fun createOutgoingMLSMessage(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, MLSMessageApi.Message> {
-        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            kaliumLogger.i("Creating outgoing MLS message (groupID = ${groupId.toLogString()})")
+    override suspend fun createOutgoingMLSMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupId: GroupID,
+        message: Message.Sendable
+    ): Either<CoreFailure, MLSMessageApi.Message> {
+        kaliumLogger.i("Creating outgoing MLS message (groupID = ${groupId.toLogString()})")
+        val expectsReadConfirmation = when (message) {
+            is Message.Regular -> message.expectsReadConfirmation
+            else -> false
+        }
 
-            val expectsReadConfirmation = when (message) {
-                is Message.Regular -> message.expectsReadConfirmation
-                else -> false
-            }
+        val legalHoldStatus = conversationRepository.observeLegalHoldStatus(
+            message.conversationId
+        ).first().let {
+            legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
+        }
 
-            val legalHoldStatus = conversationRepository.observeLegalHoldStatus(
-                message.conversationId
-            ).first().let {
-                legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
-            }
-
-            val content = protoContentMapper.encodeToProtobuf(
-                protoContent = ProtoContent.Readable(
-                    messageUid = message.id,
-                    messageContent = message.content,
-                    expectsReadConfirmation = expectsReadConfirmation,
-                    expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
-                    legalHoldStatus = legalHoldStatus
-                )
+        val content = protoContentMapper.encodeToProtobuf(
+            protoContent = ProtoContent.Readable(
+                messageUid = message.id,
+                messageContent = message.content,
+                expectsReadConfirmation = expectsReadConfirmation,
+                expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
+                legalHoldStatus = legalHoldStatus
             )
-            wrapMLSRequest { MLSMessageApi.Message(mlsClient.encryptMessage(idMapper.toCryptoModel(groupId), content.data)) }
+        )
+        return wrapMLSRequest {
+            MLSMessageApi.Message(mlsContext.encryptMessage(idMapper.toCryptoModel(groupId), content.data))
         }
     }
-
 }

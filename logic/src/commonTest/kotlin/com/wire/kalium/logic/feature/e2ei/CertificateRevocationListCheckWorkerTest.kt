@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.any
@@ -54,7 +56,7 @@ class CertificateRevocationListCheckWorkerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.checkRevocationList.check(eq(DUMMY_URL))
+            arrangement.checkRevocationList.check(any(), eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -63,15 +65,21 @@ class CertificateRevocationListCheckWorkerTest {
 
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val checkRevocationList = mock(RevocationListChecker::class)
 
-        fun arrange() = this to SyncCertificateRevocationListUseCase(
-            certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
-        )
+        suspend fun arrange() = this to SyncCertificateRevocationListUseCase(
+            certificateRevocationListRepository,
+            incrementalSyncRepository,
+            checkRevocationList,
+            cryptoTransactionProvider,
+            kaliumLogger
+        ).also {
+            withMLSTransactionReturning(Either.Right(Unit))
+        }
 
         suspend fun withNoCRL() = apply {
             coEvery {
@@ -90,9 +98,10 @@ class CertificateRevocationListCheckWorkerTest {
                 certificateRevocationListRepository.getCRLs()
             }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
         }
+
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
-                checkRevocationList.check(any())
+                checkRevocationList.check(any(), any())
             }.returns(Either.Right(FUTURE_TIMESTAMP))
         }
 

@@ -24,11 +24,12 @@ import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
@@ -90,7 +91,7 @@ class PendingProposalSchedulerTest {
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -105,7 +106,7 @@ class PendingProposalSchedulerTest {
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
         }.wasNotInvoked()
     }
 
@@ -121,7 +122,7 @@ class PendingProposalSchedulerTest {
         advanceUntilIdle()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -139,7 +140,7 @@ class PendingProposalSchedulerTest {
         advanceUntilIdle()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -159,11 +160,11 @@ class PendingProposalSchedulerTest {
         advanceUntilIdle()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
         }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val mlsConversationRepository = mock(MLSConversationRepository::class)
@@ -173,10 +174,13 @@ class PendingProposalSchedulerTest {
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
+            cryptoTransactionProvider,
             TestKaliumDispatcher
         )
 
-        fun arrange() = this to pendingProposalScheduler
+        suspend fun arrange() = this to pendingProposalScheduler.also {
+            withTransactionReturning(Either.Right(Unit))
+        }
 
         suspend fun withSubconversationRepositoryDoesNotContainGroup() = apply {
             coEvery {
@@ -198,7 +202,7 @@ class PendingProposalSchedulerTest {
 
         suspend fun withCommitPendingProposalsSuccessful() = apply {
             coEvery {
-                mlsConversationRepository.commitPendingProposals(any())
+                mlsConversationRepository.commitPendingProposals(any(), any())
             }.returns(Either.Right(Unit))
         }
 

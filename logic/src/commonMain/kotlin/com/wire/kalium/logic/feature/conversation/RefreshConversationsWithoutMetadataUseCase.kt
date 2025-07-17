@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.util.KaliumDispatcher
@@ -40,6 +41,7 @@ interface RefreshConversationsWithoutMetadataUseCase {
 internal class RefreshConversationsWithoutMetadataUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val persistConversations: PersistConversationsUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
@@ -49,7 +51,9 @@ internal class RefreshConversationsWithoutMetadataUseCaseImpl(
                     kaliumLogger.d("Numbers of conversations to refresh: ${conversationIdList.size}")
                     conversationRepository.fetchConversationListDetails(conversationIdList)
                         .onSuccess {
-                            persistConversations(it.conversationsFound, false)
+                            transactionProvider.transaction("RefreshConversationsWithoutMetadata") { transactionContext ->
+                                persistConversations(transactionContext, it.conversationsFound, false)
+                            }
                         }
                 } else {
                     Either.Right(Unit)

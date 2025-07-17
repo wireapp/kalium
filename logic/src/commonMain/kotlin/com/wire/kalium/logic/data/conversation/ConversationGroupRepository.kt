@@ -21,6 +21,17 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -35,18 +46,9 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
@@ -99,8 +101,7 @@ interface ConversationGroupRepository {
 internal class ConversationGroupRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
-    private val memberJoinEventHandler: MemberJoinEventHandler,
-    private val memberLeaveEventHandler: MemberLeaveEventHandler,
+    private val localEventRepository: LocalEventRepository,
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
@@ -110,6 +111,7 @@ internal class ConversationGroupRepositoryImpl(
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val legalHoldHandler: LegalHoldHandler,
+    private val transactionProvider: CryptoTransactionProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
@@ -176,12 +178,16 @@ internal class ConversationGroupRepositoryImpl(
         }.flatMap {
             when (protocol) {
                 is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
-                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
-                    groupID = protocol.groupId,
-                    members = usersList + selfUserId,
-                    publicKeys = mlsPublicKeys,
-                    allowSkippingUsersWithoutKeyPackages = true,
-                ).map { it.notAddedUsers }
+                is Conversation.ProtocolInfo.MLSCapable ->
+                    transactionProvider.mlsTransaction("handleGroupConversationCreated") { mlsContext ->
+                        mlsConversationRepository.establishMLSGroup(
+                            mlsContext = mlsContext,
+                            groupID = protocol.groupId,
+                            members = usersList + selfUserId,
+                            publicKeys = mlsPublicKeys,
+                            allowSkippingUsersWithoutKeyPackages = true,
+                        ).map { it.notAddedUsers }
+                    }
             }
         }.flatMap { protocolSpecificAdditionFailures ->
             newConversationMembersRepository.persistMembersAdditionToTheConversation(
@@ -256,11 +262,14 @@ internal class ConversationGroupRepositoryImpl(
                         tryAddMembersToCloudAndStorage(userIdList, conversationId, LastUsersAttempt.None)
                             .flatMap {
                                 // best effort approach for migrated conversations, no retries
-                                mlsConversationRepository.addMemberToMLSGroup(
-                                    GroupID(protocol.groupId),
-                                    userIdList,
-                                    CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
-                                )
+                                transactionProvider.mlsTransaction("addMembers") { mlsContext ->
+                                    mlsConversationRepository.addMemberToMLSGroup(
+                                        mlsContext = mlsContext,
+                                        GroupID(protocol.groupId),
+                                        userIdList,
+                                        CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
+                                    )
+                                }
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
@@ -288,13 +297,16 @@ internal class ConversationGroupRepositoryImpl(
         cipherSuite: CipherSuite,
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
-        return when (
-            val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(
+
+        val addingMemberResult = transactionProvider.mlsTransaction("tryAddMembersToMLSGroup") { mlsContext ->
+            mlsConversationRepository.addMemberToMLSGroup(
+                mlsContext = mlsContext,
                 GroupID(groupId),
                 userIdList,
                 cipherSuite
             )
-        ) {
+        }
+        return when (addingMemberResult) {
             is Either.Right -> handleMLSMembersNotAdded(conversationId, lastUsersAttempt)
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
@@ -408,12 +420,11 @@ internal class ConversationGroupRepositoryImpl(
                             )
                         }.onSuccess { response ->
                             if (response is ServiceAddedResponse.Changed) {
-                                memberJoinEventHandler.handle(
-                                    eventMapper.conversationMemberJoin(
-                                        LocalId.generate(),
-                                        response.event,
-                                    )
+                                val event = eventMapper.fromEventContentDTO(
+                                    LocalId.generate(),
+                                    response.event
                                 )
+                                localEventRepository.emitLocalEvent(event)
                             }
                         }.map { Unit }
                     }
@@ -449,16 +460,18 @@ internal class ConversationGroupRepositoryImpl(
         lastUsersAttempt: LastUsersAttempt,
         conversationId: ConversationId
     ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
-        memberJoinEventHandler.handle(
-            eventMapper.conversationMemberJoin(LocalId.generate(), (apiResult.value as ConversationMemberAddedResponse.Changed).event)
-        ).flatMap {
-            if (lastUsersAttempt is LastUsersAttempt.Failed && lastUsersAttempt.failedUsers.isNotEmpty()) {
-                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                    conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
-                )
-            }
-            Either.Right(Unit)
+        val event = eventMapper.fromEventContentDTO(
+            LocalId.generate(),
+            (apiResult.value as ConversationMemberAddedResponse.Changed).event
+        )
+        localEventRepository.emitLocalEvent(event)
+
+        if (lastUsersAttempt is LastUsersAttempt.Failed && lastUsersAttempt.failedUsers.isNotEmpty()) {
+            newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+            )
         }
+        Either.Right(Unit)
     } else {
         Either.Right(Unit)
     }
@@ -505,7 +518,9 @@ internal class ConversationGroupRepositoryImpl(
                         deleteMemberFromCloudAndStorage(userId, conversationId)
 
                     is ConversationEntity.ProtocolInfo.MLSCapable ->
-                        deleteMemberFromMlsGroup(userId, conversationId, protocol)
+                        transactionProvider.transaction("deleteMember") { transactionContext ->
+                            deleteMemberFromMlsGroup(transactionContext, userId, conversationId, protocol)
+                        }
                 }
             }
 
@@ -519,18 +534,24 @@ internal class ConversationGroupRepositoryImpl(
     }.onSuccess { response ->
         if (response is ConversationMemberAddedResponse.Changed) {
             val conversationId = response.event.qualifiedConversation.toModel()
+            val event = eventMapper.fromEventContentDTO(
+                LocalId.generate(),
+                response.event
+            )
+            localEventRepository.emitLocalEvent(event)
 
-            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event))
-                .flatMap {
-                    wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
-                        .flatMap { protocol ->
-                            when (protocol) {
-                                is ConversationEntity.ProtocolInfo.Proteus ->
-                                    Either.Right(Unit)
+            wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+                .flatMap { protocol ->
+                    when (protocol) {
+                        is ConversationEntity.ProtocolInfo.Proteus ->
+                            Either.Right(Unit)
 
-                                is ConversationEntity.ProtocolInfo.MLSCapable -> {
-                                    joinExistingMLSConversation(conversationId).flatMap {
+                        is ConversationEntity.ProtocolInfo.MLSCapable -> {
+                            transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
+                                joinExistingMLSConversation(transactionContext, conversationId).flatMap {
+                                    transactionContext.wrapInMLSContext { mlsContext ->
                                         mlsConversationRepository.addMemberToMLSGroup(
+                                            mlsContext,
                                             GroupID(protocol.groupId),
                                             listOf(selfUserId),
                                             CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
@@ -539,6 +560,7 @@ internal class ConversationGroupRepositoryImpl(
                                 }
                             }
                         }
+                    }
                 }
         }
     }
@@ -550,24 +572,30 @@ internal class ConversationGroupRepositoryImpl(
         wrapApiRequest { conversationApi.fetchLimitedInformationViaCode(code, key) }
 
     private suspend fun deleteMemberFromMlsGroup(
+        transactionContext: CryptoTransactionContext,
         userId: UserId,
         conversationId: ConversationId,
         protocol: ConversationEntity.ProtocolInfo.MLSCapable
     ) = when (protocol) {
         is ConversationEntity.ProtocolInfo.MLS -> {
-            if (userId == selfUserId) {
-                deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                    mlsConversationRepository.leaveGroup(GroupID(protocol.groupId))
+            transactionContext.wrapInMLSContext { mlsContext ->
+                if (userId == selfUserId) {
+                    deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                        mlsConversationRepository.leaveGroup(mlsContext, GroupID(protocol.groupId))
+
+                    }
+                } else {
+                    // when removing a member from an MLS group, don't need to call the api
+                    mlsConversationRepository.removeMembersFromMLSGroup(mlsContext, GroupID(protocol.groupId), listOf(userId))
                 }
-            } else {
-                // when removing a member from an MLS group, don't need to call the api
-                mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
             }
         }
 
         is ConversationEntity.ProtocolInfo.Mixed -> {
             deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
+                transactionContext.wrapInMLSContext { mlsContext ->
+                    mlsConversationRepository.removeMembersFromMLSGroup(mlsContext, GroupID(protocol.groupId), listOf(userId))
+                }
             }
         }
     }
@@ -577,12 +605,11 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.removeMember(userId.toApi(), conversationId.toApi())
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
-                memberLeaveEventHandler.handle(
-                    eventMapper.conversationMemberLeave(
-                        LocalId.generate(),
-                        response.event,
-                    )
+                val event = eventMapper.fromEventContentDTO(
+                    LocalId.generate(),
+                    response.event
                 )
+                localEventRepository.emitLocalEvent(event)
             }
         }.map { }
 

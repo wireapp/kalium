@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 
@@ -44,12 +45,15 @@ interface SendConnectionRequestUseCase {
 
 internal class SendConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : SendConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): SendConnectionRequestResult {
         return userRepository.fetchUserInfo(userId).flatMap {
-            connectionRepository.sendUserConnection(userId)
+            transactionProvider.transaction("SendConnectionRequest") {
+                connectionRepository.sendUserConnection(it, userId)
+            }
         }.fold({ coreFailure ->
             kaliumLogger.e("An error occurred when sending a connection request to $userId")
             when (coreFailure) {

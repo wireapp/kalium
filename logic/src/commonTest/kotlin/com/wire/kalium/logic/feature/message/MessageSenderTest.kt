@@ -323,7 +323,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
+                arrangement.staleEpochVerifier.verifyEpoch(any(), eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
             }.wasInvoked(once)
         }
     }
@@ -369,7 +369,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             coVerify {
-                arrangement.mlsConversationRepository.commitPendingProposals(eq(Arrangement.GROUP_ID))
+                arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(Arrangement.GROUP_ID))
             }.wasInvoked(once)
         }
     }
@@ -642,7 +642,8 @@ class MessageSenderTest {
             // when
             val result = messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.AllUsers(100)
+                target = BroadcastMessageTarget.AllUsers(100),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
@@ -702,7 +703,8 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.AllUsers(2)
+                target = BroadcastMessageTarget.AllUsers(2),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
@@ -754,7 +756,8 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.OnlyTeam(100)
+                target = BroadcastMessageTarget.OnlyTeam(100),
+                transactionContext = arrangement.transactionContext
             )
 
             // then
@@ -928,7 +931,7 @@ class MessageSenderTest {
             messageSender.sendMessage(message)
             // then
             coVerify {
-                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(eq(failure), eq(message.conversationId))
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq(message.conversationId))
             }.wasInvoked()
             coVerify {
                 arrangement.legalHoldHandler.handleMessageSendFailure(eq(message.conversationId), eq(message.date), any())
@@ -952,10 +955,10 @@ class MessageSenderTest {
         }
         arrangement.testScope.runTest {
             // when
-            messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(100))
+            messageSender.broadcastMessage(arrangement.transactionContext, message, BroadcastMessageTarget.AllUsers(100))
             // then
             coVerify {
-                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(eq(failure), eq<ConversationId?>(null))
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq<ConversationId?>(null))
             }.wasInvoked()
             coVerify {
                 arrangement.legalHoldHandler.handleMessageSendFailure(any(), any(), any())
@@ -1099,7 +1102,7 @@ class MessageSenderTest {
 
         suspend fun withCommitPendingProposals(failing: Boolean = false) = apply {
             coEvery {
-                mlsConversationRepository.commitPendingProposals(any())
+                mlsConversationRepository.commitPendingProposals(any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
         }
 
@@ -1129,7 +1132,7 @@ class MessageSenderTest {
 
         suspend fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
             coEvery {
-                mlsMessageCreator.createOutgoingMLSMessage(any(), any())
+                mlsMessageCreator.createOutgoingMLSMessage(any(), any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 
@@ -1245,7 +1248,7 @@ class MessageSenderTest {
 
         suspend fun withHandleClientsHaveChangedFailure(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             coEvery {
-                messageSendFailureHandler.handleClientsHaveChangedFailure(any(), any())
+                messageSendFailureHandler.handleClientsHaveChangedFailure(any(), any(), any())
             }.returns(result)
         }
 

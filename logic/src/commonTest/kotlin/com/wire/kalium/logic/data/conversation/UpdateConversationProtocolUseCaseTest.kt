@@ -21,10 +21,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.mock
 import io.mockative.coEvery
+import io.mockative.eq
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +43,7 @@ class UpdateConversationProtocolUseCaseTest {
             .arrange()
 
         // When
-        val result = useCase(CONVERSATION_RESPONSE.id.toModel(), Protocol.MLS, localOnly = true)
+        val result = useCase(arrangement.transactionContext, CONVERSATION_RESPONSE.id.toModel(), Protocol.MLS, localOnly = true)
 
         // Then
         assertEquals(Either.Right(true), result)
@@ -54,7 +57,7 @@ class UpdateConversationProtocolUseCaseTest {
             .arrange()
 
         // When
-        val result = useCase(CONVERSATION_RESPONSE.id.toModel(), Protocol.PROTEUS, localOnly = false)
+        val result = useCase(arrangement.transactionContext, CONVERSATION_RESPONSE.id.toModel(), Protocol.PROTEUS, localOnly = false)
 
         // Then
         assertEquals(Either.Right(true), result)
@@ -69,41 +72,45 @@ class UpdateConversationProtocolUseCaseTest {
             .arrange()
 
         // When
-        val result = useCase(CONVERSATION_RESPONSE.id.toModel(), Protocol.MLS, localOnly = false)
+        val result = useCase(any(), eq(CONVERSATION_RESPONSE.id.toModel()), eq(Protocol.MLS),  eq(false))
 
         // Then
         assertEquals(Either.Right(true), result)
     }
 
-    class Arrangement {
+    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
         val persistConversations: PersistConversationsUseCase = mock(PersistConversationsUseCase::class)
 
         suspend fun withUpdateProtocolLocallySuccess() = apply {
             coEvery {
                 conversationRepository.updateProtocolLocally(any(), any())
-            }.returns(Either.Right(
-                ConversationProtocolUpdateStatus(
-                    response = CONVERSATION_RESPONSE,
-                    hasUpdated = true
+            }.returns(
+                Either.Right(
+                    ConversationProtocolUpdateStatus(
+                        response = CONVERSATION_RESPONSE,
+                        hasUpdated = true
+                    )
                 )
-            ))
+            )
         }
 
-       suspend fun withUpdateProtocolRemotelySuccess(hasUpdated: Boolean) = apply {
+        suspend fun withUpdateProtocolRemotelySuccess(hasUpdated: Boolean) = apply {
             coEvery {
                 conversationRepository.updateProtocolRemotely(any(), any())
-            }.returns(Either.Right(
-                ConversationProtocolUpdateStatus(
-                    response = CONVERSATION_RESPONSE,
-                    hasUpdated = hasUpdated
+            }.returns(
+                Either.Right(
+                    ConversationProtocolUpdateStatus(
+                        response = CONVERSATION_RESPONSE,
+                        hasUpdated = hasUpdated
+                    )
                 )
-            ))
+            )
         }
 
         suspend fun withPersistConversationsSuccess() = apply {
             coEvery {
-                persistConversations(listOf(CONVERSATION_RESPONSE), invalidateMembers = true)
+                persistConversations(any(), eq(listOf(CONVERSATION_RESPONSE)),  eq(true), any())
             } returns Either.Right(Unit)
         }
 

@@ -19,16 +19,18 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.SubConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangement
@@ -55,7 +57,7 @@ class StaleEpochVerifierTest {
             withGetConversationProtocolInfo(Either.Right(TestConversation.PROTEUS_PROTOCOL_INFO))
         }
 
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldFail()
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
         coVerify {
             arrangement.systemMessageInserter.insertLostCommitSystemMessage(any(), any())
@@ -70,10 +72,10 @@ class StaleEpochVerifierTest {
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
         }
 
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversation(eq(CONVERSATION_ID))
+            arrangement.fetchConversation(any(), eq(CONVERSATION_ID))
         }.wasInvoked(once)
     }
 
@@ -85,10 +87,10 @@ class StaleEpochVerifierTest {
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
         }
 
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(CONVERSATION_ID, null)
+            arrangement.joinExistingMLSConversationUseCase.invoke(arrangement.transactionContext, CONVERSATION_ID, null)
         }.wasNotInvoked()
     }
 
@@ -102,10 +104,14 @@ class StaleEpochVerifierTest {
             withInsertLostCommitSystemMessage(Either.Right(Unit))
         }
 
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(CONVERSATION_ID, null)
+            arrangement.joinExistingMLSConversationUseCase.invoke(
+                any(),
+                eq(CONVERSATION_ID),
+                any()
+            )
         }.wasInvoked(once)
     }
 
@@ -118,7 +124,7 @@ class StaleEpochVerifierTest {
             withJoinExistingMLSConversationUseCaseReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldFail()
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
         coVerify {
             arrangement.systemMessageInserter.insertLostCommitSystemMessage(eq(CONVERSATION_ID), any())
@@ -135,7 +141,7 @@ class StaleEpochVerifierTest {
             withInsertLostCommitSystemMessage(Either.Right(Unit))
         }
 
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
+        staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
             arrangement.systemMessageInserter.insertLostCommitSystemMessage(eq(CONVERSATION_ID), any())
@@ -150,7 +156,7 @@ class StaleEpochVerifierTest {
             withIsGroupOutOfSync(Either.Right(false))
         }
 
-        val result = staleEpochHandler.verifyEpoch(CONVERSATION_ID, subConversationId, null)
+        val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
 
         result.shouldSucceed()
 
@@ -160,8 +166,9 @@ class StaleEpochVerifierTest {
 
         coVerify {
             arrangement.mlsConversationRepository.isGroupOutOfSync(
-                TestSubConversationDetails.groupId,
-                TestSubConversationDetails.epoch
+                any(),
+                eq(TestSubConversationDetails.groupId),
+                eq(TestSubConversationDetails.epoch)
             )
         }.wasInvoked(once)
     }
@@ -176,7 +183,7 @@ class StaleEpochVerifierTest {
             withJoinGroupByExternalCommit(TestSubConversationDetails.groupId, TestGroupInfo, Either.Right(Unit))
         }
 
-        val result = staleEpochHandler.verifyEpoch(CONVERSATION_ID, subConversationId, null)
+        val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
 
         result.shouldSucceed()
 
@@ -185,7 +192,11 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.joinGroupByExternalCommit(TestSubConversationDetails.groupId, TestGroupInfo)
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                any(),
+                eq(TestSubConversationDetails.groupId),
+                eq(TestGroupInfo)
+            )
         }.wasInvoked(once)
     }
 
@@ -200,7 +211,7 @@ class StaleEpochVerifierTest {
             )
         }
 
-        val result = staleEpochHandler.verifyEpoch(CONVERSATION_ID, subConversationId, null)
+        val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
 
         result.shouldFail()
 
@@ -223,7 +234,7 @@ class StaleEpochVerifierTest {
             )
         }
 
-        val result = staleEpochHandler.verifyEpoch(CONVERSATION_ID, subConversationId, null)
+        val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
 
         result.shouldFail()
 
@@ -232,7 +243,9 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.joinGroupByExternalCommit(TestSubConversationDetails.groupId, TestGroupInfo)
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                any(), eq(TestSubConversationDetails.groupId), eq(TestGroupInfo)
+            )
         }.wasInvoked(once)
     }
 
@@ -244,7 +257,7 @@ class StaleEpochVerifierTest {
             withIsGroupOutOfSync(Either.Right(false))
         }
 
-        val result = staleEpochHandler.verifyEpoch(CONVERSATION_ID, subConversationId, null)
+        val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
 
         result.shouldSucceed()
 
@@ -253,7 +266,7 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.fetchConversation(any())
+            arrangement.fetchConversation(any(), any())
         }.wasNotInvoked()
     }
 
@@ -264,6 +277,7 @@ class StaleEpochVerifierTest {
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         SubconversationRepositoryArrangement by SubconversationRepositoryArrangementImpl(),
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
         suspend fun arrange() = run {
             block()

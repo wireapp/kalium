@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -32,6 +33,7 @@ import io.mockative.Mockable
 @Mockable
 internal interface ClearConversationContentHandler {
     suspend fun handle(
+        transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
         messageContent: MessageContent.Cleared
     )
@@ -46,6 +48,7 @@ internal class ClearConversationContentHandlerImpl(
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
         messageContent: MessageContent.Cleared
     ) {
@@ -57,11 +60,14 @@ internal class ClearConversationContentHandlerImpl(
         clearConversation(messageContent.conversationId)
 
         if (messageContent.needToRemoveLocally && isSelfSender) {
-            tryToRemoveConversation(messageContent.conversationId)
+            tryToRemoveConversation(transactionContext, messageContent.conversationId)
         }
     }
 
-    private suspend fun tryToRemoveConversation(conversationId: ConversationId) {
+    private suspend fun tryToRemoveConversation(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ) {
         conversationRepository.getConversationMembers(conversationId).fold({ false }, { it.contains(selfUserId) })
             .let { isMember ->
                 if (isMember) {
@@ -69,7 +75,7 @@ internal class ClearConversationContentHandlerImpl(
                     // In that case we couldn't delete it and should wait for user leave and delete after that.
                     conversationRepository.addConversationToDeleteQueue(conversationId)
                 } else {
-                    deleteConversation(conversationId)
+                    deleteConversation(transactionContext, conversationId)
                 }
             }
     }

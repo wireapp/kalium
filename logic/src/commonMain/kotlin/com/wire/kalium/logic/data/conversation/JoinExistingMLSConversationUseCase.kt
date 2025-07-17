@@ -31,8 +31,10 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
@@ -55,7 +57,11 @@ import kotlinx.coroutines.withContext
  */
 @Mockable
 internal interface JoinExistingMLSConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, mlsPublicKeys: MLSPublicKeys? = null): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        mlsPublicKeys: MLSPublicKeys? = null
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -72,7 +78,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
 
-    override suspend operator fun invoke(conversationId: ConversationId, mlsPublicKeys: MLSPublicKeys?): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        mlsPublicKeys: MLSPublicKeys?
+    ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -83,16 +93,17 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(conversation, mlsPublicKeys)
+                    joinOrEstablishMLSGroupAndRetry(transactionContext, conversation, mlsPublicKeys)
                 }
             })
         }
 
     private suspend fun joinOrEstablishMLSGroupAndRetry(
+        transactionContext: CryptoTransactionContext,
         conversation: Conversation,
         mlsPublicKeys: MLSPublicKeys?
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishMLSGroup(conversation, mlsPublicKeys)
+        joinOrEstablishMLSGroup(transactionContext, conversation, mlsPublicKeys)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
@@ -109,15 +120,15 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         // Re-fetch current epoch and try again
                         if (conversation.type == Conversation.Type.OneOnOne) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                fetchMLSOneToOneConversation(it.first()).map {
+                                fetchMLSOneToOneConversation(transactionContext, it.first()).map {
                                     it.mlsPublicKeys
                                 }
                             }
                         } else {
-                            fetchConversation(conversation.id)
+                            fetchConversation(transactionContext, conversation.id)
                         }.flatMap {
                             conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(conversation, null)
+                                joinOrEstablishMLSGroup(transactionContext, conversation, null)
                             }
                         }
                     } else if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsMissingGroupInfo()) {
@@ -132,7 +143,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
     @Suppress("LongMethod")
-    private suspend fun joinOrEstablishMLSGroup(conversation: Conversation, publicKeys: MLSPublicKeys?): Either<CoreFailure, Unit> {
+    private suspend fun joinOrEstablishMLSGroup(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        publicKeys: MLSPublicKeys?
+    ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         val type = conversation.type
         return when {
@@ -145,10 +160,13 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 wrapApiRequest {
                     conversationApi.fetchGroupInfo(conversation.id.toApi())
                 }.flatMap { groupInfo ->
-                    mlsConversationRepository.joinGroupByExternalCommit(
-                        protocol.groupId,
-                        groupInfo
-                    ).flatMapLeft { failure ->
+                    transactionContext.wrapInMLSContext { mlsContext ->
+                        mlsConversationRepository.joinGroupByExternalCommit(
+                            mlsContext,
+                            protocol.groupId,
+                            groupInfo
+                        )
+                    }.flatMapLeft { failure ->
                         if (MLSMessageFailureHandler.handleFailure(failure) is MLSMessageFailureResolution.Ignore) {
                             kaliumLogger.logStructuredJson(
                                 level = KaliumLogLevel.WARN,
@@ -193,10 +211,13 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 
             type == Conversation.Type.Self -> {
                 kaliumLogger.d("$TAG: Establish Self MLS Conversation ${conversation.id.toLogString()}")
-                mlsConversationRepository.establishMLSGroup(
-                    protocol.groupId,
-                    listOf(selfUserId)
-                )
+                transactionContext.wrapInMLSContext { mlsContext ->
+                    mlsConversationRepository.establishMLSGroup(
+                        mlsContext,
+                        protocol.groupId,
+                        listOf(selfUserId)
+                    )
+                }
                     .onSuccess {
                         kaliumLogger.logStructuredJson(
                             level = KaliumLogLevel.INFO,
@@ -214,11 +235,14 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             type == Conversation.Type.OneOnOne -> {
                 kaliumLogger.d("$TAG: Establish 1on1 MLS Conversation ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
-                    mlsConversationRepository.establishMLSGroup(
-                        protocol.groupId,
-                        members,
-                        publicKeys
-                    )
+                    transactionContext.wrapInMLSContext { mlsContext ->
+                        mlsConversationRepository.establishMLSGroup(
+                            mlsContext,
+                            protocol.groupId,
+                            members,
+                            publicKeys
+                        )
+                    }
                 }.onSuccess {
                     kaliumLogger.logStructuredJson(
                         level = KaliumLogLevel.INFO,

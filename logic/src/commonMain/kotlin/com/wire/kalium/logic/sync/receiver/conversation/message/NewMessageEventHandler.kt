@@ -33,7 +33,8 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -43,12 +44,16 @@ import io.mockative.Mockable
 @Mockable
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(
-        proteusContext: ProteusCoreCryptoContext,
+        transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMessage,
         deliveryInfo: EventDeliveryInfo
     )
 
-    suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo)
+    suspend fun handleNewMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewMLSMessage,
+        deliveryInfo: EventDeliveryInfo
+    )
 }
 
 @Suppress("LongParameterList")
@@ -66,13 +71,13 @@ internal class NewMessageEventHandlerImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handleNewProteusMessage(
-        proteusContext: ProteusCoreCryptoContext,
+        transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMessage,
         deliveryInfo: EventDeliveryInfo
     ) {
         val eventLogger = logger.createEventProcessingLogger(event)
-        proteusMessageUnpacker.unpackProteusMessage(proteusContext, event) {
-            processApplicationMessage(it, deliveryInfo)
+        proteusMessageUnpacker.unpackProteusMessage(transactionContext.proteus, event) {
+            processApplicationMessage(transactionContext, it, deliveryInfo)
             it
         }.onSuccess {
             eventLogger.logSuccess(
@@ -113,9 +118,13 @@ internal class NewMessageEventHandlerImpl(
         }
     }
 
-    override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
+    override suspend fun handleNewMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewMLSMessage,
+        deliveryInfo: EventDeliveryInfo
+    ) {
         var eventLogger = logger.createEventProcessingLogger(event)
-        mlsMessageUnpacker.unpackMlsMessage(event)
+        transactionContext.wrapInMLSContext { mlsMessageUnpacker.unpackMlsMessage(it, event) }
             .onFailure {
                 when (MLSMessageFailureHandler.handleFailure(it)) {
                     is MLSMessageFailureResolution.Ignore -> {
@@ -143,6 +152,7 @@ internal class NewMessageEventHandlerImpl(
                     is MLSMessageFailureResolution.OutOfSync -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
+                            transactionContext,
                             event.conversationId,
                             event.subconversationId,
                             event.messageInstant
@@ -152,7 +162,7 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess { batchResult ->
                 batchResult.forEach { message ->
                     if (message is MessageUnpackResult.ApplicationMessage) {
-                        processApplicationMessage(message, deliveryInfo)
+                        processApplicationMessage(transactionContext, message, deliveryInfo)
                     }
                     eventLogger.logSuccess(
                         "protocol" to "MLS",
@@ -166,13 +176,14 @@ internal class NewMessageEventHandlerImpl(
     }
 
     private suspend fun processApplicationMessage(
+        transactionContext: CryptoTransactionContext,
         it: MessageUnpackResult.ApplicationMessage,
         deliveryInfo: EventDeliveryInfo
     ) {
         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
             legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
         }
-        handleSuccessfulResult(it)
+        handleSuccessfulResult(transactionContext, it)
         onMessageInserted(it)
     }
 
@@ -196,8 +207,12 @@ internal class NewMessageEventHandlerImpl(
         }
     }
 
-    private suspend fun handleSuccessfulResult(result: MessageUnpackResult.ApplicationMessage) {
+    private suspend fun handleSuccessfulResult(
+        transactionContext: CryptoTransactionContext,
+        result: MessageUnpackResult.ApplicationMessage
+    ) {
         applicationMessageHandler.handleContent(
+            transactionContext = transactionContext,
             conversationId = result.conversationId,
             messageInstant = result.instant,
             senderUserId = result.senderUserId,

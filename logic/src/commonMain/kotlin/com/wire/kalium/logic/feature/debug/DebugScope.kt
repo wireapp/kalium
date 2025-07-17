@@ -24,7 +24,6 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenReposit
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
@@ -80,7 +79,6 @@ class DebugScope internal constructor(
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val userId: UserId,
@@ -168,7 +166,6 @@ class DebugScope internal constructor(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
-            mlsClientProvider = mlsClientProvider,
             legalHoldStatusMapper = LegalHoldStatusMapperImpl,
             selfUserId = userId,
             protoContentMapper = protoContentMapper

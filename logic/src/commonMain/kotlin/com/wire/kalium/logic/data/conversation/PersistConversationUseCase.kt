@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -43,6 +44,7 @@ import io.mockative.Mockable
 @Mockable
 internal interface PersistConversationUseCase {
     suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
         conversation: ConversationResponse,
         originatedFromEvent: Boolean = false,
     ): Either<CoreFailure, Boolean>
@@ -54,6 +56,7 @@ internal class PersistConversationUseCaseImpl(
 ) : PersistConversationUseCase {
 
     override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
         conversation: ConversationResponse,
         originatedFromEvent: Boolean
     ): Either<CoreFailure, Boolean> {
@@ -61,7 +64,7 @@ internal class PersistConversationUseCaseImpl(
         val isNewConversation = existingConversation.shouldPersistConversation()
 
         if (isNewConversation) {
-            persistConversations(listOf(conversation), false, originatedFromEvent)
+            persistConversations(transactionContext, listOf(conversation), false, originatedFromEvent)
                 .onSuccess {
                     kaliumLogger.withFeatureId(CONVERSATIONS)
                         .d("Persisted new conversation: ${conversation.id}")

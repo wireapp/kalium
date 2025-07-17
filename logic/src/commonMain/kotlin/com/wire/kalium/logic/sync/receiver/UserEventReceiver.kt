@@ -73,7 +73,7 @@ internal class UserEventReceiverImpl internal constructor(
         deliveryInfo: EventDeliveryInfo
     ): Either<CoreFailure, Unit> {
         return when (event) {
-            is Event.User.NewConnection -> handleNewConnection(event, deliveryInfo)
+            is Event.User.NewConnection -> handleNewConnection(transactionContext, event, deliveryInfo)
             is Event.User.ClientRemove -> handleClientRemove(event)
             is Event.User.UserDelete -> handleUserDelete(event)
             is Event.User.Update -> handleUserUpdate(event)
@@ -105,16 +105,21 @@ internal class UserEventReceiverImpl internal constructor(
             }
     }
 
-    private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    private suspend fun handleNewConnection(
+        transactionContext: CryptoTransactionContext,
+        event: Event.User.NewConnection,
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return userRepository.fetchUserInfo(event.connection.qualifiedToId)
             .flatMap {
                 val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
                     .map { it.connection.status }.getOrNull()
-                connectionRepository.insertConnectionFromEvent(event)
+                connectionRepository.insertConnectionFromEvent(transactionContext, event)
                     .flatMap {
                         if (event.connection.status == ConnectionState.ACCEPTED) {
                             oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                                transactionContext,
                                 event.connection.qualifiedToId,
                                 delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
                             )

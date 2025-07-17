@@ -33,6 +33,8 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import io.mockative.Mockable
 
 sealed class RecoverMLSConversationsResult {
@@ -46,7 +48,7 @@ sealed class RecoverMLSConversationsResult {
  */
 @Mockable
 internal interface RecoverMLSConversationsUseCase {
-    suspend operator fun invoke(): RecoverMLSConversationsResult
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext): RecoverMLSConversationsResult
 }
 
 @Suppress("LongParameterList")
@@ -57,7 +59,7 @@ internal class RecoverMLSConversationsUseCaseImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
 ) : RecoverMLSConversationsUseCase {
-    override suspend operator fun invoke(): RecoverMLSConversationsResult =
+    override suspend operator fun invoke(transactionContext: CryptoTransactionContext): RecoverMLSConversationsResult =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -66,7 +68,7 @@ internal class RecoverMLSConversationsUseCaseImpl(
         } else {
             conversationRepository.getConversationsByGroupState(GroupState.ESTABLISHED)
                 .flatMap { groups ->
-                    groups.map { recoverMLSGroup(it) }
+                    groups.map { recoverMLSGroup(transactionContext, it) }
                         .foldToEitherWhileRight(Unit) { value, _ -> value }
                 }.fold(
                     { RecoverMLSConversationsResult.Failure(it) },
@@ -74,15 +76,20 @@ internal class RecoverMLSConversationsUseCaseImpl(
                 )
         }
 
-    private suspend fun recoverMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
+    private suspend fun recoverMLSGroup(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation
+    ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         return if (protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.isGroupOutOfSync(protocol.groupId, protocol.epoch)
+            transactionContext.wrapInMLSContext { mlsContext ->
+                mlsConversationRepository.isGroupOutOfSync(mlsContext, protocol.groupId, protocol.epoch)
+            }
                 .fold({ checkEpochFailure ->
                     Either.Left(checkEpochFailure)
                 }, { isGroupOutOfSync ->
                     if (isGroupOutOfSync) {
-                        joinExistingMLSConversationUseCase(conversation.id).onFailure { joinFailure ->
+                        joinExistingMLSConversationUseCase(transactionContext, conversation.id).onFailure { joinFailure ->
                             Either.Left(joinFailure)
                         }
                     } else {

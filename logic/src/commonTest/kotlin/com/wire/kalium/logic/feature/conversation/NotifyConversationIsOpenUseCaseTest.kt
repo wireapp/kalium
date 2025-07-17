@@ -25,6 +25,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.any
@@ -70,7 +72,7 @@ class NotifyConversationIsOpenUseCaseTest {
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -91,8 +93,7 @@ class NotifyConversationIsOpenUseCaseTest {
 
         coVerify {
             arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(
-                user = eq(details.otherUser),
-                invalidateCurrentKnownProtocols = any()
+                any(), eq(details.otherUser), any()
             )
         }.wasInvoked(exactly = once)
     }
@@ -100,7 +101,8 @@ class NotifyConversationIsOpenUseCaseTest {
     private class Arrangement(
         private val configure: suspend Arrangement.() -> Unit
     ) : OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         private val deleteEphemeralMessageEndDate = mock(DeleteEphemeralMessagesAfterEndDateUseCase::class)
         private val slowSyncRepository = mock(SlowSyncRepository::class)
 
@@ -117,13 +119,15 @@ class NotifyConversationIsOpenUseCaseTest {
         }
 
         suspend fun arrange(): Pair<Arrangement, NotifyConversationIsOpenUseCase> = run {
+            withTransactionReturning(Either.Right(Unit))
             configure()
             this@Arrangement to NotifyConversationIsOpenUseCaseImpl(
                 oneOnOneResolver = oneOnOneResolver,
                 conversationRepository = conversationRepository,
                 kaliumLogger = kaliumLogger,
                 deleteEphemeralMessageEndDate = deleteEphemeralMessageEndDate,
-                slowSyncRepository = slowSyncRepository
+                slowSyncRepository = slowSyncRepository,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }

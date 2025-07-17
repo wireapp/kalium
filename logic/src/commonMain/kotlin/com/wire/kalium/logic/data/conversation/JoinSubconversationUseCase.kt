@@ -25,6 +25,8 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -55,21 +57,29 @@ internal interface JoinSubconversationUseCase {
 internal class JoinSubconversationUseCaseImpl(
     private val conversationApi: ConversationApi,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val subconversationRepository: SubconversationRepository
+    private val subconversationRepository: SubconversationRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : JoinSubconversationUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> = joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
+    ): Either<CoreFailure, Unit> = transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
+        joinOrEstablishSubconversationAndRetry(
+            mlsContext,
+            conversationId,
+            subconversationId
+        )
+    }
 
     private suspend fun joinOrEstablishSubconversation(
+        mlsContext: MlsCoreCryptoContext,
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
             conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
         }.flatMap { subconversationDetails ->
-            joinOrEstablishWithSubconversationDetails(subconversationDetails).onSuccess {
+            joinOrEstablishWithSubconversationDetails(mlsContext, subconversationDetails).onSuccess {
                 subconversationRepository.insertSubconversation(
                     conversationId,
                     subconversationId,
@@ -79,6 +89,7 @@ internal class JoinSubconversationUseCaseImpl(
         }
 
     private suspend fun joinOrEstablishWithSubconversationDetails(
+        mlsContext: MlsCoreCryptoContext,
         subconversationDetails: SubconversationResponse
     ): Either<CoreFailure, Unit> =
         if (subconversationDetails.epoch > INITIAL_EPOCH) {
@@ -94,6 +105,7 @@ internal class JoinSubconversationUseCaseImpl(
                     )
                 }.flatMap {
                     mlsConversationRepository.establishMLSSubConversationGroup(
+                        mlsContext,
                         GroupID(subconversationDetails.groupId),
                         subconversationDetails.parentId.toModel()
                     )
@@ -106,6 +118,7 @@ internal class JoinSubconversationUseCaseImpl(
                     )
                 }.flatMap { groupInfo ->
                     mlsConversationRepository.joinGroupByExternalCommit(
+                        mlsContext,
                         GroupID(subconversationDetails.groupId),
                         groupInfo
 
@@ -120,21 +133,23 @@ internal class JoinSubconversationUseCaseImpl(
             }
         } else {
             mlsConversationRepository.establishMLSSubConversationGroup(
+                mlsContext,
                 GroupID(subconversationDetails.groupId),
                 subconversationDetails.parentId.toModel()
             )
         }
 
     private suspend fun joinOrEstablishSubconversationAndRetry(
+        mlsContext: MlsCoreCryptoContext,
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishSubconversation(conversationId, subconversationId)
+        joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
                         kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
-                        joinOrEstablishSubconversation(conversationId, subconversationId)
+                        joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
                     } else {
                         Either.Left(failure)
                     }
@@ -149,6 +164,7 @@ internal class JoinSubconversationUseCaseImpl(
     }
 
 }
+
 private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
 

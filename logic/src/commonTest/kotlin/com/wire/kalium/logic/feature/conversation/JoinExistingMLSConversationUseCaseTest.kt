@@ -38,6 +38,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -69,12 +71,13 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withJoinByExternalCommitSuccessful()
                 .arrange()
 
-            joinExistingMLSConversationUseCase(Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
+            joinExistingMLSConversationUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
             coVerify {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                     groupID = any(),
-                    groupInfo = any()
+                    groupInfo = any(),
+                    mlsContext = any()
                 )
             }.wasNotInvoked()
         }
@@ -89,10 +92,11 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withJoinByExternalCommitSuccessful()
                 .arrange()
 
-            joinExistingMLSConversationsUseCase(Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
+            joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
             coVerify {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                    any(),
                     any(),
                     any()
                 )
@@ -110,12 +114,11 @@ class JoinExistingMLSConversationUseCaseTest {
             .withJoinByExternalCommitSuccessful()
             .arrange()
 
-        joinExistingMLSConversationsUseCase(conversation.id).shouldSucceed()
+        joinExistingMLSConversationsUseCase(arrangement.transactionContext, conversation.id).shouldSucceed()
 
         coVerify {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                groupID = eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId),
-                groupInfo = any()
+                any(), eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId), any()
             )
         }.wasInvoked(exactly = once)
     }
@@ -129,14 +132,18 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
                 .arrange()
 
-            joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id).shouldSucceed()
+            joinExistingMLSConversationsUseCase(
+                arrangement.transactionContext,
+                Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id
+            ).shouldSucceed()
 
             coVerify {
                 arrangement.mlsConversationRepository.establishMLSGroup(
                     groupID = Arrangement.GROUP_ID3,
                     members = emptyList(),
                     publicKeys = null,
-                    allowSkippingUsersWithoutKeyPackages = false
+                    allowSkippingUsersWithoutKeyPackages = false,
+                    mlsContext = arrangement.mlsContext
                 )
             }.wasNotInvoked()
         }
@@ -152,17 +159,18 @@ class JoinExistingMLSConversationUseCaseTest {
             .arrange()
 
         // WHEN
-        val result = joinExistingMLSConversationUseCase(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id)
+        val result = joinExistingMLSConversationUseCase(arrangement.transactionContext, Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id)
 
         // THEN
         result.shouldSucceed()
 
         coVerify {
             arrangement.mlsConversationRepository.establishMLSGroup(
-                groupID = Arrangement.GROUP_ID_SELF,
-                members = listOf(arrangement.selfUserId),
-                publicKeys = null,
-                allowSkippingUsersWithoutKeyPackages = false
+                any(),
+                eq(Arrangement.GROUP_ID_SELF),
+                eq(listOf(arrangement.selfUserId)),
+                any(),
+                eq(false)
             )
         }.wasInvoked(once)
     }
@@ -179,14 +187,18 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
                 .arrange()
 
-            joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.id).shouldSucceed()
+            joinExistingMLSConversationsUseCase(
+                arrangement.transactionContext,
+                Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.id
+            ).shouldSucceed()
 
             coVerify {
                 arrangement.mlsConversationRepository.establishMLSGroup(
-                    groupID = Arrangement.GROUP_ID_ONE_ON_ONE,
-                    members = members,
-                    publicKeys = null,
-                    allowSkippingUsersWithoutKeyPackages = false
+                    any(),
+                    eq(Arrangement.GROUP_ID_ONE_ON_ONE),
+                    eq(members),
+                    any(),
+                    eq(false)
                 )
             }.wasInvoked(once)
         }
@@ -203,21 +215,21 @@ class JoinExistingMLSConversationUseCaseTest {
             .withFetchingGroupInfoSuccessful()
             .arrange()
 
-        joinExistingMLSConversationsUseCase(Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
+        joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversation(eq(Arrangement.MLS_CONVERSATION1.id))
+            arrangement.fetchConversation(any(), eq(Arrangement.MLS_CONVERSATION1.id))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.joinGroupByExternalCommit(eq(Arrangement.GROUP_ID1), any())
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), eq(Arrangement.GROUP_ID1), any())
         }.wasInvoked(twice)
 
     }
 
     @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
-        val (_, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful()
@@ -225,10 +237,11 @@ class JoinExistingMLSConversationUseCaseTest {
             .withJoinByExternalCommitGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
             .arrange()
 
-        joinExistingMLSConversationsUseCase(Arrangement.MLS_CONVERSATION1.id).shouldFail()
+        joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldFail()
     }
 
-    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val featureSupport = mock(FeatureSupport::class)
         val conversationApi = mock(ConversationApi::class)
         val clientRepository = mock(ClientRepository::class)
@@ -239,7 +252,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         val selfUserId = TestUser.USER_ID
 
-        fun arrange() = this to JoinExistingMLSConversationUseCaseImpl(
+        suspend fun arrange() = this to JoinExistingMLSConversationUseCaseImpl(
             featureSupport,
             conversationApi,
             clientRepository,
@@ -249,7 +262,9 @@ class JoinExistingMLSConversationUseCaseTest {
             fetchConversation,
             selfUserId,
             dispatcher
-        )
+        ).also {
+            withTransactionReturning(Either.Right(Unit))
+        }
 
         @Suppress("MaxLineLength")
         suspend fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
@@ -261,7 +276,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withFetchConversationSuccessful() = apply {
             coEvery {
-                fetchConversation.invoke(any())
+                fetchConversation.invoke(any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -273,13 +288,13 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withEstablishMLSGroupSuccessful(additionResult: MLSAdditionResult) = apply {
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
         }
 
         suspend fun withJoinByExternalCommitSuccessful() = apply {
             coEvery {
-                mlsConversationRepository.joinGroupByExternalCommit(any(), any())
+                mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -287,11 +302,10 @@ class JoinExistingMLSConversationUseCaseTest {
             var invocationCounter = 0
             coEvery {
                 mlsConversationRepository.joinGroupByExternalCommit(
-                    groupID = matches {
+                    any(), matches {
                         invocationCounter += 1
                         invocationCounter <= times
-                    },
-                    groupInfo = any()
+                    }, any()
                 )
             }.returns(Either.Left(failure))
         }

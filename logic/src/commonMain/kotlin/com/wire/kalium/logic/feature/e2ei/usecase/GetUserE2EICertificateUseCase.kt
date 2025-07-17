@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * This use case is used to get the e2ei certificate status of specific user
@@ -34,12 +35,15 @@ interface IsOtherUserE2EIVerifiedUseCase {
 class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : IsOtherUserE2EIVerifiedUseCase {
     override suspend operator fun invoke(userId: UserId): Boolean =
         if (isE2EIEnabledUseCase()) {
             val nameHandle = userRepository.getNameAndHandle(userId).getOrNull()
-            mlsConversationRepository.getUserIdentity(userId).fold({ false }, { it.isUserMLSVerified(nameHandle) })
+            transactionProvider.mlsTransaction("IsOtherUserE2EIVerified") {
+                mlsConversationRepository.getUserIdentity(it, userId)
+            }.fold({ false }, { it.isUserMLSVerified(nameHandle) })
         } else {
             false
         }

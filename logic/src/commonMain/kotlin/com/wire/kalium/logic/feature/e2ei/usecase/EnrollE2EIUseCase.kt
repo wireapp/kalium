@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -55,6 +56,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
     private val userRepository: UserRepository,
     private val coroutineScope: CoroutineScope,
     private val conversationRepository: ConversationRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : EnrollE2EIUseCase {
     /**
      * Operation to initial E2EI certificate enrollment
@@ -219,11 +221,21 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 }
             }
 
-            e2EIRepository.rotateKeysAndMigrateConversations(
-                certificateRequest.response.decodeToString(),
-                groupIdList,
-                initializationResult.isNewClientRegistration,
-            ).onFailure { return it.left() }
+            transactionProvider.mlsTransaction("E2EIEnrollment") { mlsContext ->
+                e2EIRepository.rotateKeysAndMigrateConversations(
+                    mlsContext,
+                    certificateRequest.response.decodeToString(),
+                    groupIdList,
+                    initializationResult.isNewClientRegistration,
+                )
+            }
+                .onFailure {
+                    if (it is E2EIFailure) {
+                        return it.left()
+                    } else {
+                        E2EIFailure.RotationAndMigration(it).left()
+                    }
+                }
         }
 
         @Suppress("TooGenericExceptionCaught")

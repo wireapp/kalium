@@ -183,7 +183,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.connectionRepository.insertConnectionFromEvent(any())
+            arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -199,7 +199,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -216,7 +216,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
 
         coVerify {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(eq(event.connection.qualifiedToId), eq(ZERO))
+            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), eq(event.connection.qualifiedToId), eq(ZERO))
         }.wasInvoked(exactly = once)
     }
 
@@ -237,6 +237,7 @@ class UserEventReceiverTest {
 
             coVerify {
                 arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                    any(),
                     eq(event.connection.qualifiedToId),
                     eq(3.seconds)
                 )
@@ -381,7 +382,7 @@ class UserEventReceiverTest {
 
         suspend fun withInsertConnectionFromEventSucceeding() = apply {
             coEvery {
-                connectionRepository.insertConnectionFromEvent(any())
+                connectionRepository.insertConnectionFromEvent(any(), any())
             }.returns(Either.Right(Unit))
         }
 

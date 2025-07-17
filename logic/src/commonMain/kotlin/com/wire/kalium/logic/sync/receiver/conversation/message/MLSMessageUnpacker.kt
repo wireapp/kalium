@@ -18,9 +18,15 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
@@ -35,11 +41,6 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.sync.KaliumSyncException
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
@@ -48,7 +49,11 @@ import kotlin.time.Duration.Companion.seconds
 
 @Mockable
 internal interface MLSMessageUnpacker {
-    suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
+    suspend fun unpackMlsMessage(
+        mlsContext: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage
+    ): Either<CoreFailure, List<MessageUnpackResult>>
+
     suspend fun unpackMlsBundle(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
@@ -68,10 +73,12 @@ internal class MLSMessageUnpackerImpl(
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
-    override suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>> =
-        messageFromMLSMessage(event).map { bundles ->
+    override suspend fun unpackMlsMessage(
+        mlsContext: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage
+    ): Either<CoreFailure, List<MessageUnpackResult>> = messageFromMLSMessage(mlsContext, event)
+        .map { bundles ->
             if (bundles.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
-
             bundles.map { bundle ->
                 unpackMlsBundle(bundle, event.conversationId, event.messageInstant)
             }
@@ -120,6 +127,7 @@ internal class MLSMessageUnpackerImpl(
     }
 
     private suspend fun messageFromMLSMessage(
+        mlsContext: MlsCoreCryptoContext,
         messageEvent: Event.Conversation.NewMLSMessage
     ): Either<CoreFailure, List<DecryptedMessageBundle>> =
         messageEvent.subconversationId?.let { subConversationId ->
@@ -131,7 +139,7 @@ internal class MLSMessageUnpackerImpl(
                         "groupID" to groupID.toLogString()
                     )
                 )
-                mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), groupID)
+                mlsConversationRepository.decryptMessage(mlsContext, messageEvent.content.decodeBase64Bytes(), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
@@ -142,7 +150,7 @@ internal class MLSMessageUnpackerImpl(
                         "protocolInfo" to protocolInfo.toLogMap()
                     )
                 )
-                mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
+                mlsConversationRepository.decryptMessage(mlsContext, messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }

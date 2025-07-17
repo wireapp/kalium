@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.MLSCiphersuite
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -40,6 +42,7 @@ interface E2EIClientProviderArrangement {
     val e2eiClient: E2EIClient
     val userRepository: UserRepository
     val currentClientIdProvider: CurrentClientIdProvider
+    val mlsContext: MlsCoreCryptoContext
 
     suspend fun withGettingCoreCryptoSuccessful()
 
@@ -60,11 +63,12 @@ interface E2EIClientProviderArrangement {
 
 class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
     override val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-    override val mlsClient: MLSClient = mock(MLSClient::class)
     override val e2eiClient: E2EIClient = mock(E2EIClient::class)
     override val userRepository: UserRepository = mock(UserRepository::class)
     override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
     override val coreCryptoCentral = mock(CoreCryptoCentral::class)
+    override val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
+    override val mlsClient: MLSClient = DummyMLSClient(mlsContext)
 
     override suspend fun withGettingCoreCryptoSuccessful() {
         coEvery {
@@ -86,18 +90,18 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
 
     override suspend fun withE2EINewActivationEnrollmentSuccessful() {
         coEvery {
-            mlsClient.e2eiNewActivationEnrollment(any(), any(), any(), any())
+            mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
         }.returns(e2eiClient)
     }
     override suspend fun withE2EINewRotationEnrollmentSuccessful() {
         coEvery {
-            mlsClient.e2eiNewRotateEnrollment(any(), any(), any(), any())
+            mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
         }.returns(e2eiClient)
     }
 
     override suspend fun withE2EIEnabled(isEnabled: Boolean) {
         coEvery {
-            mlsClient.isE2EIEnabled()
+            mlsContext.isE2EIEnabled()
         }.returns(isEnabled)
     }
 
@@ -114,3 +118,25 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
     }
 
 }
+
+class DummyMLSClient(
+    private val context: MlsCoreCryptoContext
+) : MLSClient {
+    override fun getDefaultCipherSuite(): MLSCiphersuite {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun close() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun <R> transaction(name: String, block: suspend (context: MlsCoreCryptoContext) -> R): R {
+        return block(context)
+    }
+
+}
+

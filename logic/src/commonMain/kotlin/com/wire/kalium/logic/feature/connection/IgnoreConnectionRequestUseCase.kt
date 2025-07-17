@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * Use Case that allows a user to ignore a connection request from given user
@@ -38,11 +39,18 @@ fun interface IgnoreConnectionRequestUseCase {
 }
 
 internal class IgnoreConnectionRequestUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : IgnoreConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult {
-        return connectionRepository.ignoreConnectionRequest(userId)
+        return transactionProvider
+            .transaction("IgnoreConnectionRequest") { transactionContext ->
+                connectionRepository.ignoreConnectionRequest(
+                    transactionContext,
+                    userId
+                )
+            }
             .fold({
                 kaliumLogger.e("An error occurred when ignoring the connection request to $userId")
                 IgnoreConnectionRequestUseCaseResult.Failure(it)

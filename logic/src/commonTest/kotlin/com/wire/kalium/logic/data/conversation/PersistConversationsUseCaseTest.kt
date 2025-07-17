@@ -1,9 +1,8 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
@@ -17,6 +16,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -35,7 +35,7 @@ class PersistConversationsUseCaseTest {
             withMLSGroupEstablished(false)
         }
 
-        useCase(listOf(CONVERSATION_RESPONSE), invalidateMembers = true, originatedFromEvent = true)
+        useCase(arrangement.transactionContext, listOf(CONVERSATION_RESPONSE), invalidateMembers = true, originatedFromEvent = true)
 
         coVerify {
             arrangement.conversationRepository.persistConversations(
@@ -58,7 +58,7 @@ class PersistConversationsUseCaseTest {
             withConversationInsertSuccess()
         }
 
-        useCase(listOf(mlsConversation), invalidateMembers = true, originatedFromEvent = true)
+        useCase(arrangement.transactionContext, listOf(mlsConversation), invalidateMembers = true, originatedFromEvent = true)
 
         coVerify {
             arrangement.conversationRepository.persistConversations(
@@ -80,7 +80,7 @@ class PersistConversationsUseCaseTest {
             withUpdateMembers()
         }
 
-        useCase(listOf(CONVERSATION_RESPONSE), invalidateMembers = true, originatedFromEvent = false)
+        useCase(arrangement.transactionContext, listOf(CONVERSATION_RESPONSE), invalidateMembers = true, originatedFromEvent = false)
 
         coVerify { arrangement.conversationRepository.insertConversations(any()) }.wasNotInvoked()
     }
@@ -99,9 +99,9 @@ class PersistConversationsUseCaseTest {
             withUpdateMembers()
         }
 
-        useCase(listOf(mlsConversation), invalidateMembers = true, originatedFromEvent = true)
+        useCase(arrangement.transactionContext, listOf(mlsConversation), invalidateMembers = true, originatedFromEvent = true)
 
-        coVerify { arrangement.mlsClient.conversationExists(eq("groupId")) }.wasInvoked(once)
+        coVerify { arrangement.mlsContext.conversationExists(eq("groupId")) }.wasInvoked(once)
 
         coVerify {
             arrangement.conversationRepository.persistConversations(
@@ -122,17 +122,21 @@ class PersistConversationsUseCaseTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
+        val transactionContext = mock(CryptoTransactionContext::class)
+
+        init {
+            every { transactionContext.mls } returns mlsContext
+        }
 
         suspend fun withMLSGroupEstablished(exists: Boolean) = apply {
-            coEvery { mlsClientProvider.getMLSClient() } returns Either.Right(mlsClient)
-            coEvery { mlsClient.conversationExists(any()) } returns exists
+            every { transactionContext.mls } returns mlsContext
+            coEvery { mlsContext.conversationExists(any()) } returns exists
         }
 
         suspend fun withDisabledMLSClient() = apply {
-            coEvery { mlsClientProvider.getMLSClient() } returns Either.Left(CoreFailure.Unknown(null))
+            every { transactionContext.mls } returns null
         }
 
         suspend fun withConversationInsertSuccess() = apply {
@@ -152,7 +156,6 @@ class PersistConversationsUseCaseTest {
                 selfUserId = TestUser.SELF.id,
                 conversationRepository = conversationRepository,
                 selfTeamIdProvider = selfTeamIdProvider,
-                mlsClientProvider = mlsClientProvider
             )
         }
     }

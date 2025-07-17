@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * This use case is used to get the e2ei certificates of all the users in Conversation.
@@ -39,10 +40,18 @@ interface GetMembersE2EICertificateStatusesUseCase {
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val transactionProvider: CryptoTransactionProvider
 ) : GetMembersE2EICertificateStatusesUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean> =
-        mlsConversationRepository.getMembersIdentities(conversationId, userIds)
+        transactionProvider
+            .mlsTransaction("E2EIMembersCertificateStatuses") { mlsContext ->
+                mlsConversationRepository.getMembersIdentities(
+                    mlsContext,
+                    conversationId,
+                    userIds
+                )
+            }
             .map { identities ->
                 val usersNameAndHandle = conversationRepository.selectMembersNameAndHandle(conversationId).getOrElse(mapOf())
 
