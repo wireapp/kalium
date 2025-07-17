@@ -51,19 +51,19 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 internal actual class WorkSchedulerProviderImpl(private val appContext: Context) : WorkSchedulerProvider {
-    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler =
+    actual override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler =
         GlobalWorkSchedulerImpl(appContext, scope)
 
-    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler =
+    actual override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler =
         UserSessionWorkSchedulerImpl(appContext, scope)
 }
 
 internal actual class GlobalWorkSchedulerImpl(
     private val appContext: Context,
-    override val scope: GlobalKaliumScope,
+    actual override val scope: GlobalKaliumScope,
 ) : GlobalWorkScheduler {
 
-    override fun schedulePeriodicApiVersionUpdate() {
+    actual override fun schedulePeriodicApiVersionUpdate() {
         WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
             "${UpdateApiVersionsWorker.name}-periodic",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -71,7 +71,7 @@ internal actual class GlobalWorkSchedulerImpl(
         )
     }
 
-    override fun scheduleImmediateApiVersionUpdate() {
+    actual override fun scheduleImmediateApiVersionUpdate() {
         runBlocking {
             scope.updateApiVersionsWorker.doWork()
         }
@@ -80,11 +80,11 @@ internal actual class GlobalWorkSchedulerImpl(
 
 internal actual class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
-    override val scope: UserSessionScope,
+    actual override val scope: UserSessionScope,
 ) : UserSessionWorkScheduler {
     val userId: UserId get() = scope.userId
 
-    override fun scheduleSendingOfPendingMessages() {
+    actual override fun scheduleSendingOfPendingMessages() {
         WorkManager.getInstance(appContext).enqueueUniqueWork(
             PendingMessagesSenderWorker.NAME_PREFIX + userId.value,
             ExistingWorkPolicy.APPEND,
@@ -92,11 +92,11 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
-    override fun cancelScheduledSendingOfPendingMessages() {
+    actual override fun cancelScheduledSendingOfPendingMessages() {
         WorkManager.getInstance(appContext).cancelUniqueWork(PendingMessagesSenderWorker.NAME_PREFIX + userId.value)
     }
 
-    override fun schedulePeriodicUserConfigSync() {
+    actual override fun schedulePeriodicUserConfigSync() {
         WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
             UserConfigSyncWorker.NAME + userId.value + "-periodic",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -104,7 +104,7 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
-    override fun resetBackoffForPeriodicUserConfigSync() {
+    actual override fun resetBackoffForPeriodicUserConfigSync() {
         scope.launch {
             WorkManager.getInstance(appContext).getWorkInfosForUniqueWorkFlow(UserConfigSyncWorker.NAME + userId.value + "-periodic")
                 .firstOrNull()

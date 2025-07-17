@@ -28,15 +28,15 @@ import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.days
 
 internal actual class WorkSchedulerProviderImpl : WorkSchedulerProvider {
-    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler = GlobalWorkSchedulerImpl(scope)
-    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler = UserSessionWorkSchedulerImpl(scope)
+    actual override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler = GlobalWorkSchedulerImpl(scope)
+    actual override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler = UserSessionWorkSchedulerImpl(scope)
 }
 
 internal actual class GlobalWorkSchedulerImpl(
-    override val scope: GlobalKaliumScope,
+    actual override val scope: GlobalKaliumScope,
 ) : GlobalWorkScheduler {
 
-    override fun schedulePeriodicApiVersionUpdate() {
+    actual override fun schedulePeriodicApiVersionUpdate() {
         scope.launch {
             intervalFlow(1.days.inWholeMilliseconds).collect {
                 scope.updateApiVersionsWorker.doWork()
@@ -44,7 +44,7 @@ internal actual class GlobalWorkSchedulerImpl(
         }
     }
 
-    override fun scheduleImmediateApiVersionUpdate() {
+    actual override fun scheduleImmediateApiVersionUpdate() {
         runBlocking {
             scope.updateApiVersionsWorker.doWork()
         }
@@ -52,22 +52,22 @@ internal actual class GlobalWorkSchedulerImpl(
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
-    override val scope: UserSessionScope,
+    actual override val scope: UserSessionScope,
 ) : UserSessionWorkScheduler {
 
-    override fun scheduleSendingOfPendingMessages() {
+    actual override fun scheduleSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
 
-    override fun cancelScheduledSendingOfPendingMessages() {
+    actual override fun cancelScheduledSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Cancelling scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
 
-    override fun schedulePeriodicUserConfigSync() {
+    actual override fun schedulePeriodicUserConfigSync() {
         scope.launch {
             intervalFlow(1.days.inWholeMilliseconds).collect {
                 scope.userConfigSyncWorker.doWork()
@@ -75,7 +75,7 @@ internal actual class UserSessionWorkSchedulerImpl(
         }
     }
 
-    override fun resetBackoffForPeriodicUserConfigSync() {
+    actual override fun resetBackoffForPeriodicUserConfigSync() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Resetting backoff for user config sync is not supported on JVM as it doesn't have any backoff mechanism."
         )
