@@ -9,7 +9,7 @@
 
 ### Dependencies
 
-- JDK 17 (ex: openjdk-17-jdk on Ubuntu)
+- JDK 21 (ex: openjdk-21-jdk on Ubuntu)
 - [libsodium](https://github.com/jedisct1/libsodium)
 - [cryptobox-c](https://github.com/wireapp/cryptobox-c)
 - [cryptobox4j](https://github.com/wireapp/cryptobox4j)

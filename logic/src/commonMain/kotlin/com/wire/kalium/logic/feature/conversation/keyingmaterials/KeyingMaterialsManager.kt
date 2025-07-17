@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
@@ -38,17 +39,21 @@ import kotlin.time.Duration.Companion.hours
  * if a conversation's LastKeyingMaterialUpdate surpassed the threshold then
  * it'll send a new UpdateCommit for that conversation.
  */
+@Mockable
+interface KeyingMaterialsManager {
+    suspend operator fun invoke()
+}
 
-class KeyingMaterialsManager internal constructor(
+class KeyingMaterialsManagerImpl internal constructor(
     private val featureSupport: FeatureSupport,
     private val syncStateObserver: SyncStateObserver,
     private val clientRepository: Lazy<ClientRepository>,
     private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     private val userCoroutineScope: CoroutineScope,
-) {
+) : KeyingMaterialsManager {
 
-    suspend operator fun invoke() {
+    override suspend operator fun invoke() {
         syncStateObserver.waitUntilLiveOrFailure().onSuccess {
             if (
                 featureSupport.isMLSSupported &&

@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.mapLeft
@@ -30,10 +29,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.event.EventVersion
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import io.ktor.utils.io.errors.IOException
 import io.mockative.Mockable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -85,12 +81,12 @@ internal class EventGathererImpl(
         var hasEmitted = false
 
         // TODO(refactor): stop emitting Unit, emit status of the underlying event fetching for clarity
-        return receiveEventsFromRemoteAndInsertIntoLocalStorage().transform {
-            if (hasEmitted) return@transform
+        return receiveEventsFromRemoteAndInsertIntoLocalStorage().transform { syncPhase ->
+            if (syncPhase == IncrementalSyncPhase.CatchingUp || hasEmitted) return@transform
             hasEmitted = true
             emit(Unit)
         }.flatMapConcat { eventRepository.observeEvents() }.onEach { events ->
-            kaliumLogger.d("$TAG gathering ${events.size} events")
+            logger.d("$TAG gathering ${events.size} events")
         }.map { events ->
             if (events.isEmpty()) {
                 EventStreamData.IsUpToDate
@@ -100,16 +96,15 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<Unit> = flow {
+    private suspend fun receiveEventsFromRemoteAndInsertIntoLocalStorage(): Flow<IncrementalSyncPhase> = flow {
         /**
          * Fetches and saves live events and pending based on whether the client supports async notifications.
          * Throws [KaliumSyncException] if event retrieval fails.
          */
-        isClientAsyncNotificationsCapableProvider().flatMap { isAsyncNotifications ->
-            fetchEventFlow(isAsyncNotifications)
-                .onSuccess { emitEvents(it) }
-                .onFailure { throw KaliumSyncException("Failure when receiving events", it) }
-        }
+        val isAsyncNotifications = isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
+        fetchEventFlow(isAsyncNotifications)
+            .onSuccess { emitEvents(it) }
+            .onFailure { throw KaliumSyncException("Failure when receiving events", it) }
     }
 
     /**
@@ -131,44 +126,14 @@ internal class EventGathererImpl(
         }
     }
 
-    private suspend fun FlowCollector<Unit>.emitEvents(
-        webSocketEventFlow: Flow<WebSocketEvent<EventVersion>>
+    private suspend fun FlowCollector<IncrementalSyncPhase>.emitEvents(
+        webSocketEventFlow: Flow<IncrementalSyncPhase>
     ) = webSocketEventFlow
         .buffer(Channel.UNLIMITED)
         .cancellable()
-        .collect { handleWebsocketEvent(it) }
-
-    private suspend fun FlowCollector<Unit>.handleWebsocketEvent(
-        webSocketEvent: WebSocketEvent<EventVersion>
-    ) = when (webSocketEvent) {
-        is WebSocketEvent.Open -> onWebSocketOpen()
-        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived()
-        is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
-        is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
-    }
-
-    private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventVersion>) {
-        when (val cause = webSocketEvent.cause) {
-            null -> logger.i("Websocket closed normally")
-            is IOException ->
-                throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
-
-            else ->
-                throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
-        }
-    }
-
-    private suspend fun FlowCollector<Unit>.onWebSocketEventReceived() {
-        emit(Unit)
-    }
-
-    private suspend fun FlowCollector<Unit>.onWebSocketOpen() {
-        logger.i("Websocket Open")
-        emit(Unit)
-    }
+        .collect { emit(it) }
 
     companion object {
-        const val MAX_EVENTS_TO_SWITCH_TO_LIVE = 5
         const val TAG = "[EventGatherer]"
     }
 }

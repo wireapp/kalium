@@ -17,36 +17,42 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
 /**
  * This use case will wait until the sync is done and then check the CRLs if needed.
- *
+ */
+@Mockable
+interface SyncCertificateRevocationListUseCase {
+    suspend operator fun invoke()
+}
+
+/**
  * Base implementation of [SyncCertificateRevocationListUseCase].
  * @param certificateRevocationListRepository The CRL repository.
  * @param incrementalSyncRepository The incremental sync repository.
  * @param revocationListChecker The check revocation list use case.
- *
  */
-class SyncCertificateRevocationListUseCase internal constructor(
+class SyncCertificateRevocationListUseCaseImpl internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val revocationListChecker: RevocationListChecker,
     private val transactionProvider: CryptoTransactionProvider,
     kaliumLogger: KaliumLogger
-) {
+) : SyncCertificateRevocationListUseCase {
 
     private val logger = kaliumLogger.withTextTag("CertificateRevocationListCheckWorker")
 
-    suspend operator fun invoke() {
+    override suspend operator fun invoke() {
         logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState
             .first { it is IncrementalSyncStatus.Live }

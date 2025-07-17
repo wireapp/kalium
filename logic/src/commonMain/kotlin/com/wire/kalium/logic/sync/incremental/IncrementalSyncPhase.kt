@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.sync.incremental
 
-package com.wire.kalium.network.api.base.authenticated.serverpublickey
-
-import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
-import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
-
-@Mockable
-interface MLSPublicKeyApi {
+/**
+ * Incremental sync can be divided into two phases
+ */
+sealed class IncrementalSyncPhase {
     /**
-     * @return server public keys to consume as external-senders-keys in MLS conversations.
+     * This means in the old or new system getting pending events while the client was offline.
      */
-    suspend fun getMLSPublicKeys(): NetworkResponse<MLSPublicKeysDTO>
+    data object CatchingUp : IncrementalSyncPhase()
+
+    /**
+     * This means in the old or new system all pending events were fetched and stored locally and the client is ready to process them.
+     */
+    data object ReadyToProcess : IncrementalSyncPhase()
 }

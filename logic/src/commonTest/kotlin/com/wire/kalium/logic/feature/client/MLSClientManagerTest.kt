@@ -169,7 +169,7 @@ class MLSClientManagerTest {
             }.returns(result)
         }
 
-        fun arrange(testScope: TestScope) = this to MLSClientManager(
+        fun arrange(testScope: TestScope) = this to MLSClientManagerImpl(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
             syncStateObserver,

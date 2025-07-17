@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.Flow
 sealed class WebSocketEvent<BinaryPayloadType> {
     /**
      * @property shouldProcessPendingEvents if false, the client should skip pending events, due to new async notifications.
-     * @since API v8
+     * @since API v9
      */
     data class Open<BinaryPayloadType>(val shouldProcessPendingEvents: Boolean = true) : WebSocketEvent<BinaryPayloadType>()
 
@@ -71,9 +71,15 @@ interface NotificationApi : BaseApi {
      */
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
-    @Deprecated("Starting API v8 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
+    @Deprecated("Starting API v9 prefer consumeLiveEvents instead", ReplaceWith("consumeLiveEvents(clientId)"))
     suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>>
-    suspend fun consumeLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
-    suspend fun acknowledgeEvents(clientId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
+
+    /**
+     * Open a websocket connection to listen to live events.
+     * @param clientId the id of current the client.
+     * @param markerId a random id used to identify the end of the initial sync. This will be received in the events stream.
+     */
+    suspend fun consumeLiveEvents(clientId: String, markerId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
+    suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
 
 }

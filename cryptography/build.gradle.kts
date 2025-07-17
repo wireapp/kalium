@@ -90,8 +90,8 @@ kotlin {
         val jvmTest by getting
         val jsMain by getting {
             dependencies {
-                implementation(npm("@wireapp/cryptobox", "12.7.2", generateExternals = false))
-                implementation(npm("@wireapp/store-engine", "4.9.9", generateExternals = false))
+                implementation(npm("@wireapp/cryptobox", "12.7.2"))
+                implementation(npm("@wireapp/store-engine", "4.9.9"))
             }
         }
         val jsTest by getting

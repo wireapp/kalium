@@ -90,14 +90,10 @@ internal class SlowSyncWorkerImpl(
         ) = flatMap { performStep(slowSyncStep, step) }
 
         logger.d("Starting SlowSync")
-
-        val lastSavedEventIdToSaveOnSuccess =
-            isClientAsyncNotificationsCapableProvider().nullableFold({ null }, { isAsyncNotificationsCapable ->
-                when {
-                    !isAsyncNotificationsCapable -> getLastSavedEventIdToSaveOnSuccess()
-                    else -> null
-                }
-            })
+        val lastSavedEventIdToSaveOnSuccess = when (isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()) {
+            false -> getLastSavedEventIdToSaveOnSuccess()
+            true -> null
+        }
 
         performStep(SlowSyncStep.MIGRATION) {
             migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->

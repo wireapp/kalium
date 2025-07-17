@@ -44,6 +44,7 @@ internal class MissedNotificationsEventReceiverImpl(
         event: Event.AsyncMissed,
         deliveryInfo: EventDeliveryInfo
     ): Either<CoreFailure, Unit> {
+        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
         slowSyncRepository.clearLastSlowSyncCompletionInstant()
         return slowSyncRequester.invoke()
             .flatMap {

@@ -54,8 +54,8 @@ kotlin {
         }
     }
     targets.withType<KotlinNativeTarget> {
-        compilations.all {
-            kotlinOptions.freeCompilerArgs += "-Xexport-kdoc"
+        compilerOptions {
+            freeCompilerArgs.add("-Xexport-kdoc")
         }
     }
     js {
