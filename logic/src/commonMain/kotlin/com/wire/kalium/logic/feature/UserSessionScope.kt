@@ -515,13 +515,12 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
     userAgent: String,
-    private val userId: UserId,
+    internal val userId: UserId,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
-    private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
@@ -2438,6 +2437,8 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
         )
+
+    val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

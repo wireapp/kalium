@@ -27,9 +27,9 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.util.DateTimeUtil
@@ -46,9 +46,17 @@ import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
+internal actual class WorkSchedulerProviderImpl(private val appContext: Context) : WorkSchedulerProvider {
+    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler =
+        GlobalWorkSchedulerImpl(appContext, scope)
+
+    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler =
+        UserSessionWorkSchedulerImpl(appContext, scope)
+}
+
 internal actual class GlobalWorkSchedulerImpl(
     private val appContext: Context,
-    private val coreLogic: CoreLogic
+    override val scope: GlobalKaliumScope,
 ) : GlobalWorkScheduler {
 
     override fun schedulePeriodicApiVersionUpdate() {
@@ -61,20 +69,18 @@ internal actual class GlobalWorkSchedulerImpl(
 
     override fun scheduleImmediateApiVersionUpdate() {
         runBlocking {
-            coreLogic.globalScope {
-                UpdateApiVersionsWorker(updateApiVersions).doWork()
-            }
+            scope.updateApiVersionsWorker.doWork()
         }
     }
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
-    private val globalKaliumScope: GlobalKaliumScope,
-    actual override val userId: UserId
+    override val scope: UserSessionScope,
 ) : UserSessionWorkScheduler {
+    val userId: UserId get() = scope.userId
 
-    actual override fun scheduleSendingOfPendingMessages() {
+    override fun scheduleSendingOfPendingMessages() {
         WorkManager.getInstance(appContext).enqueueUniqueWork(
             PendingMessagesSenderWorker.NAME_PREFIX + userId.value,
             ExistingWorkPolicy.APPEND,
@@ -82,11 +88,11 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
-    actual override fun cancelScheduledSendingOfPendingMessages() {
+    override fun cancelScheduledSendingOfPendingMessages() {
         WorkManager.getInstance(appContext).cancelUniqueWork(PendingMessagesSenderWorker.NAME_PREFIX + userId.value)
     }
 
-    actual override fun schedulePeriodicUserConfigSync() {
+    override fun schedulePeriodicUserConfigSync() {
         WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
             UserConfigSyncWorker.NAME + userId.value + "-periodic",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -94,8 +100,8 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
-    actual override fun resetBackoffForPeriodicUserConfigSync() {
-        globalKaliumScope.launch {
+    override fun resetBackoffForPeriodicUserConfigSync() {
+        scope.launch {
             WorkManager.getInstance(appContext).getWorkInfosForUniqueWorkFlow(UserConfigSyncWorker.NAME + userId.value + "-periodic")
                 .firstOrNull()
                 ?.firstOrNull()

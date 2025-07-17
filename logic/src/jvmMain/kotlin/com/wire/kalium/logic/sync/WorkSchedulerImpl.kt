@@ -18,57 +18,66 @@
 
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.functional.intervalFlow
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.feature.UserSessionScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.days
+
+internal actual class WorkSchedulerProviderImpl : WorkSchedulerProvider {
+    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler = GlobalWorkSchedulerImpl(scope)
+    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler = UserSessionWorkSchedulerImpl(scope)
+}
 
 internal actual class GlobalWorkSchedulerImpl(
-    private val coreLogic: CoreLogic
+    override val scope: GlobalKaliumScope,
 ) : GlobalWorkScheduler {
 
     override fun schedulePeriodicApiVersionUpdate() {
-        kaliumLogger.w(
-            "Scheduling a periodic execution of checking the API version is not supported on JVM."
-        )
+        scope.launch {
+            intervalFlow(1.days.inWholeMilliseconds).collect {
+                scope.updateApiVersionsWorker.doWork()
+            }
+        }
     }
 
     override fun scheduleImmediateApiVersionUpdate() {
         runBlocking {
-            coreLogic.globalScope {
-                UpdateApiVersionsWorker(updateApiVersions).doWork()
-            }
+            scope.updateApiVersionsWorker.doWork()
         }
     }
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
-    actual override val userId: UserId,
+    override val scope: UserSessionScope,
 ) : UserSessionWorkScheduler {
 
-    actual override fun scheduleSendingOfPendingMessages() {
+    override fun scheduleSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
 
-    actual override fun cancelScheduledSendingOfPendingMessages() {
+    override fun cancelScheduledSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Cancelling scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
 
-    actual override fun schedulePeriodicUserConfigSync() {
-        kaliumLogger.withFeatureId(SYNC).w(
-            "Scheduling periodic user config sync is not supported on JVM."
-        )
+    override fun schedulePeriodicUserConfigSync() {
+        scope.launch {
+            intervalFlow(1.days.inWholeMilliseconds).collect {
+                scope.userConfigSyncWorker.doWork()
+            }
+        }
     }
 
-    actual override fun resetBackoffForPeriodicUserConfigSync() {
+    override fun resetBackoffForPeriodicUserConfigSync() {
         kaliumLogger.withFeatureId(SYNC).w(
-            "Resetting backoff for user config sync is not supported on JVM."
+            "Resetting backoff for user config sync is not supported on JVM as it doesn't have any backoff mechanism."
         )
     }
 }
