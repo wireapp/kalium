@@ -437,6 +437,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimer
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
@@ -1701,6 +1703,14 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
+    private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
+        get() = MLSResetConversationEventHandlerImpl(
+            selfUserId = userId,
+            userConfig = userConfigRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversation = fetchConversationUseCase,
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1719,6 +1729,7 @@ class UserSessionScope internal constructor(
             protocolUpdateEventHandler,
             channelAddPermissionUpdateEventHandler,
             conversationAccessUpdateEventHandler,
+            mlsResetConversationEventHandler,
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
