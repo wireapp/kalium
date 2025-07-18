@@ -228,6 +228,7 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
@@ -2498,7 +2499,9 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION) {
+            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
+                && sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
+            ) {
                 updateSelfClientCapabilityToConsumableNotifications()
             }
         }
