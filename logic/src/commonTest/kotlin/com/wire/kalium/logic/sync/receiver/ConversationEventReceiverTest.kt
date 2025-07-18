@@ -27,6 +27,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
@@ -462,6 +463,7 @@ class ConversationEventReceiverTest {
         val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
         val channelAddPermissionUpdateEventHandler = mock(ChannelAddPermissionUpdateEventHandler::class)
         val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
+        val mlsResetConversationEventHandler = mock(MLSResetConversationEventHandler::class)
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
@@ -479,7 +481,8 @@ class ConversationEventReceiverTest {
             typingIndicatorHandler = typingIndicatorHandler,
             protocolUpdateEventHandler = protocolUpdateEventHandler,
             channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
-            accessUpdateEventHandler = accessUpdateEventHandler
+            accessUpdateEventHandler = accessUpdateEventHandler,
+            mlsResetConversationEventHandler = mlsResetConversationEventHandler,
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {

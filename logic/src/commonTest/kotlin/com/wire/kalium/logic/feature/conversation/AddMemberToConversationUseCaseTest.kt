@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
@@ -89,11 +91,13 @@ class AddMemberToConversationUseCaseTest {
 
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
         val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
+        val resetMLSConversationUseCase = mock(ResetMLSConversationUseCase::class)
 
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
             conversationGroupRepository,
             userRepository,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            resetMLSConversationUseCase,
         )
 
         suspend fun withAddMembers(either: Either<CoreFailure, Unit>) = apply {
@@ -108,6 +112,13 @@ class AddMemberToConversationUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to addMemberUseCase }
+        suspend fun arrange(block: Arrangement.() -> Unit = { }): Pair<Arrangement, AddMemberToConversationUseCase> {
+
+            coEvery {
+                resetMLSConversationUseCase(any())
+            } returns Unit.right()
+
+            return apply(block).let { this to addMemberUseCase }
+        }
     }
 }

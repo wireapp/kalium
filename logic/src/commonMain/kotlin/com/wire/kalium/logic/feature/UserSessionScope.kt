@@ -111,6 +111,8 @@ import com.wire.kalium.logic.data.conversation.PersistConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCaseImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCaseImpl
@@ -436,6 +438,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimer
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
@@ -1136,6 +1140,7 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             fetchMLSOneToOneConversationUseCase,
             fetchConversationUseCase,
+            resetMlsConversation,
             userId,
         )
 
@@ -1585,7 +1590,8 @@ class UserSessionScope internal constructor(
                 messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
             userId,
-            staleEpochVerifier
+            staleEpochVerifier,
+            resetMlsConversation,
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -1700,6 +1706,15 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
+    private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
+        get() = MLSResetConversationEventHandlerImpl(
+            selfUserId = userId,
+            transactionProvider = cryptoTransactionProvider,
+            userConfig = userConfigRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversation = fetchConversationUseCase,
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1718,6 +1733,7 @@ class UserSessionScope internal constructor(
             protocolUpdateEventHandler,
             channelAddPermissionUpdateEventHandler,
             conversationAccessUpdateEventHandler,
+            mlsResetConversationEventHandler,
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -2040,8 +2056,7 @@ class UserSessionScope internal constructor(
             deleteConversationUseCase,
             persistConversationsUseCase,
             cryptoTransactionProvider,
-            userConfigRepository,
-            fetchConversationUseCase,
+            resetMlsConversation,
         )
     }
 
@@ -2467,6 +2482,15 @@ class UserSessionScope internal constructor(
         )
 
     val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
+
+    val resetMlsConversation: ResetMLSConversationUseCase
+        get() = ResetMLSConversationUseCaseImpl(
+            userConfig = userConfigRepository,
+            transactionProvider = cryptoTransactionProvider,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversationUseCase = fetchConversationUseCase,
+        )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

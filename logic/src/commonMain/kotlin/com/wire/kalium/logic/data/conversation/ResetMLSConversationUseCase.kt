@@ -58,7 +58,8 @@ internal class ResetMLSConversationUseCaseImpl(
             return Unit.right()
         }
 
-        return getMlsProtocolInfo(conversationId)
+        return fetchConversation(conversationId)
+            .flatMap { getMlsProtocolInfo(conversationId) }
             .flatMap { protocolInfo ->
                 conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
                     .map { protocolInfo.groupId }
@@ -68,11 +69,7 @@ internal class ResetMLSConversationUseCaseImpl(
                     mlsConversationRepository.leaveGroup(mlsContext, groupId)
                 }
             }
-            .flatMap {
-                transactionProvider.transaction("FetchConversation") { context ->
-                    fetchConversationUseCase(context, conversationId)
-                }
-            }
+            .flatMap { fetchConversation(conversationId) }
             .flatMap { getMlsProtocolInfo(conversationId) }
             .map { updatedProtocolInfo ->
 
@@ -90,6 +87,11 @@ internal class ResetMLSConversationUseCaseImpl(
                 }
             }
     }
+
+    private suspend fun fetchConversation(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        transactionProvider.transaction("FetchConversation") { context ->
+            fetchConversationUseCase(context, conversationId)
+        }
 
     private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo.MLS> {
         return conversationRepository.getConversationById(conversationId)
