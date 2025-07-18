@@ -33,14 +33,14 @@ public interface CreatePublicLinkUseCase {
 }
 
 internal class CreatePublicLinkUseCaseImpl(
-    private val cellsCredentials: CellsCredentials,
+    private val cellsCredentials: CellsCredentials?,
     private val cellsRepository: CellsRepository,
 ) : CreatePublicLinkUseCase {
     override suspend fun invoke(assetId: String, fileName: String): Either<CoreFailure, PublicLink> {
         return cellsRepository.createPublicLink(assetId, fileName)
             .map { link ->
                 link.copy(
-                    url = "${cellsCredentials.serverUrl}${link.url}"
+                    url = "${cellsCredentials?.serverUrl}${link.url}"
                 )
             }
     }

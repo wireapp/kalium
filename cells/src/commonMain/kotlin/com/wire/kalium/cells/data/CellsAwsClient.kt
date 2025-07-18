@@ -19,6 +19,8 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.session.SessionManager
 import okio.Path
 import okio.Sink
 
@@ -28,4 +30,8 @@ internal interface CellsAwsClient {
     suspend fun getPreSignedUrl(objectKey: String): String
 }
 
-internal expect fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient
+internal expect fun cellsAwsClient(
+    credentials: CellsCredentials?,
+    sessionManager: SessionManager,
+    accessTokenApi: AccessTokenApi
+): CellsAwsClient

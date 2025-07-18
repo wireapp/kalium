@@ -22,24 +22,22 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 
 /**
  * Provides credentials for Cells API based on current environment.
- * Temporary solution until we start using Wire API for cells.
+ * Temporary solution until we make we way to get the serverUrl and gateway secret.
  */
 internal object CellsCredentialsProvider {
-    internal fun getCredentials(userId: String, serverConfig: ServerConfigDTO) =
+    internal fun getCredentials(serverConfig: ServerConfigDTO) =
         when {
             serverConfig.links.api.endsWith("imai.wire.link") ->
                 CellsCredentials(
-                    serverUrl = "https://service.zeta.pydiocells.com",
-                    accessToken = "fybwjf05cs4bex54ufvmnktttttov1pw:$userId",
+                    serverUrl = "https://cells.imai.wire.link",
                     gatewaySecret = "gatewaysecret",
                 )
 
             serverConfig.links.api.endsWith("fulu.wire.link") -> CellsCredentials(
-                serverUrl = "https://shares.fulu.wire.link",
-                accessToken = "rnFZ9M3L27j2rxR3h8mvNs3X4ZKk2427ZH5gBnTt:$userId",
+                serverUrl = "https://cells.fulu.wire.link",
                 gatewaySecret = "gatewaysecret",
             )
 
-            else -> CellsCredentials("", "", "")
+            else -> CellsCredentials("", "")
         }
 }

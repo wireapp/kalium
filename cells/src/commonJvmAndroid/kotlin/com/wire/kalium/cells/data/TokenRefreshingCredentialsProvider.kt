@@ -17,33 +17,25 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.domain.model.CellsCredentials
+import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.collections.Attributes
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
-import okio.Path
-import okio.Sink
 
-internal actual fun cellsAwsClient(
-    credentials: CellsCredentials?,
-    sessionManager: SessionManager,
-    accessTokenApi: AccessTokenApi
-): CellsAwsClient = CellsAwsClientApple(credentials, sessionManager, accessTokenApi)
-
-private class CellsAwsClientApple(
-    private val credentials: CellsCredentials?,
+public class TokenRefreshingCredentialsProvider(
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi,
-) : CellsAwsClient {
-
-    override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
-        // Not implemented for iOS
+    private val secretAccessKey: String
+) : CredentialsProvider {
+    override suspend fun resolve(attributes: Attributes): Credentials {
+        val tokens = sessionManager.updateToken(
+            accessTokenAPI,
+            sessionManager.session()?.refreshToken ?: ""
+        )
+        return Credentials(
+            accessKeyId = tokens.accessToken,
+            secretAccessKey = secretAccessKey
+        )
     }
-
-    override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
-        // Not implemented for iOS
-    }
-
-    override suspend fun getPreSignedUrl(objectKey: String): String = ""
-
 }
