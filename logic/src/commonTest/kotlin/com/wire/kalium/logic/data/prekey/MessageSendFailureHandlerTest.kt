@@ -36,6 +36,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
@@ -69,7 +71,7 @@ class MessageSendFailureHandlerTest {
         val failureData =
             ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         coVerify {
             arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
@@ -88,7 +90,7 @@ class MessageSendFailureHandlerTest {
         val failureData =
             ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         coVerify {
             arrangement.clientRemoteRepository.fetchOtherUserClients(eq(listOf(arrangement.userOne.first, arrangement.userTwo.first)))
@@ -107,7 +109,9 @@ class MessageSendFailureHandlerTest {
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(
-            failureData, null
+            arrangement.transactionContext,
+            failureData,
+            null
         )
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
@@ -123,7 +127,7 @@ class MessageSendFailureHandlerTest {
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne), mapOf(), mapOf(), null)
 
-        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -139,7 +143,7 @@ class MessageSendFailureHandlerTest {
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne), mapOf(), mapOf(), null)
 
-        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -218,7 +222,7 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = null
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failure, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failure, null)
 
         coVerify {
             arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))
@@ -246,7 +250,7 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = null
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failure, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failure, null)
 
         coVerify {
             arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))
@@ -274,7 +278,7 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = null
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failure, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failure, null)
 
         coVerify {
             arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second)))
@@ -304,14 +308,14 @@ class MessageSendFailureHandlerTest {
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, arrangement.conversationId)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, arrangement.conversationId)
 
         coVerify {
             arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.fetchConversation(any())
+            arrangement.fetchConversation(any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -325,14 +329,14 @@ class MessageSendFailureHandlerTest {
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         coVerify {
             arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.fetchConversation(any())
+            arrangement.fetchConversation(any(), any())
         }.wasNotInvoked()
     }
 
@@ -348,15 +352,16 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = mapOf(arrangement.userOne, arrangement.userTwo)
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         coVerify {
-            arrangement.fetchConversation(any())
+            arrangement.fetchConversation(any(), any())
         }.wasNotInvoked()
     }
 
     class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
-        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl() {
+        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         internal val userRepository = mock(UserRepository::class)
         internal val messageRepository = mock(MessageRepository::class)
         val messageSendingScheduler = mock(MessageSendingScheduler::class)

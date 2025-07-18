@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import io.mockative.any
@@ -45,7 +47,6 @@ class DeleteTeamConversationUseCaseTest {
         val (arrangement, deleteTeamConversation) = Arrangement()
             .withGetSelfTeam()
             .withSuccessApiDeletingConversation()
-//             .withSuccessDeletingConversationLocally()
             .arrange {
                 withDeletingConversationSucceeding()
             }
@@ -60,7 +61,7 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
         }.wasInvoked(once)
         coVerify {
-            arrangement.deleteConversation(eq(TestConversation.ID))
+            arrangement.deleteConversation(any(), eq(TestConversation.ID))
         }.wasInvoked(once)
     }
 
@@ -83,7 +84,7 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
         }.wasInvoked(once)
         coVerify {
-            arrangement.deleteConversation(eq(TestConversation.ID))
+            arrangement.deleteConversation(any(), eq(TestConversation.ID))
         }.wasNotInvoked()
     }
 
@@ -106,11 +107,12 @@ class DeleteTeamConversationUseCaseTest {
             arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TestTeam.TEAM_ID))
         }.wasNotInvoked()
         coVerify {
-            arrangement.deleteConversation(eq(TestConversation.ID))
+            arrangement.deleteConversation(any(), eq(TestConversation.ID))
         }.wasNotInvoked()
     }
 
-    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl() {
+    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val teamRepository: TeamRepository = mock(TeamRepository::class)
@@ -137,7 +139,13 @@ class DeleteTeamConversationUseCaseTest {
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteTeamConversationUseCase> = run {
-            val useCase = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversation)
+            val useCase = DeleteTeamConversationUseCaseImpl(
+                selfTeamIdProvider,
+                teamRepository,
+                deleteConversation,
+                cryptoTransactionProvider
+            )
+            withTransactionReturning(Either.Right(Unit))
             block()
             this to useCase
         }

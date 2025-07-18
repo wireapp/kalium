@@ -42,7 +42,7 @@ class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
 
     override suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>) {
         coEvery {
-            oneOnOneMigrator.migrateToMLS(any())
+            oneOnOneMigrator.migrateToMLS(any(), any())
         }.returns(result)
     }
 

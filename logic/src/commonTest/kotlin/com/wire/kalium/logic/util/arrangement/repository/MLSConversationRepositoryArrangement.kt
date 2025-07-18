@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.every
@@ -52,11 +53,11 @@ internal open class MLSConversationRepositoryArrangementImpl :
     }
 
     override suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
-        coEvery { mlsConversationRepository.leaveGroup(eq(groupId)) }.returns(Either.Right(Unit))
+        coEvery { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Right(Unit))
     }
 
     override suspend fun withFailedLeaveGroup(groupId: GroupID) {
-        coEvery { mlsConversationRepository.leaveGroup(eq(groupId)) }.returns(Either.Left(CoreFailure.Unknown(null)))
+        coEvery { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Left(CoreFailure.Unknown(null)))
     }
 
 }

@@ -36,7 +36,7 @@ internal class MLSOneOnOneConversationResolverArrangementImpl : MLSOneOnOneConve
 
     override suspend fun withResolveConversationReturning(result: Either<CoreFailure, ConversationId>) {
         coEvery {
-            mlsOneOnOneConversationResolver.invoke(any())
+            mlsOneOnOneConversationResolver.invoke(any(), any())
         }.returns(result)
     }
 }

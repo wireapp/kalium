@@ -19,12 +19,15 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -32,53 +35,59 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class IgnoreConnectionRequestUseCaseTest {
 
-    private val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
-
-    lateinit var ignoreConnectionRequestUseCase: IgnoreConnectionRequestUseCase
-
-    @BeforeTest
-    fun setUp() {
-        ignoreConnectionRequestUseCase = IgnoreConnectionRequestUseCaseImpl(connectionRepository)
-    }
-
     @Test
     fun givenAConnectionRequest_whenInvokingIgnoreConnectionRequestAndOk_thenShouldReturnsASuccessResult() = runTest {
         // given
-        coEvery {
-            connectionRepository.ignoreConnectionRequest(userId)
-        }.returns(Either.Right(Unit))
+        val (arrangement, useCase) = Arrangement()
+            .withIgnoreResult(Either.Right(Unit))
+            .arrange()
 
         // when
-        val resultOk = ignoreConnectionRequestUseCase(userId)
+        val resultOk = useCase(userId)
 
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Success, resultOk)
         coVerify {
-            connectionRepository.ignoreConnectionRequest(eq(userId))
+            arrangement.connectionRepository.ignoreConnectionRequest(any(), eq(userId))
         }.wasInvoked(once)
     }
 
     @Test
     fun givenAConnectionRequest_whenInvokingIgnoreConnectionRequestAndFails_thenShouldReturnsAFailureResult() = runTest {
         // given
-        coEvery {
-            connectionRepository.ignoreConnectionRequest(eq(userId))
-        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        val (arrangement, useCase) = Arrangement()
+            .withIgnoreResult(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            .arrange()
 
         // when
-        val resultFailure = ignoreConnectionRequestUseCase(userId)
+        val resultFailure = useCase(userId)
 
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
         coVerify {
-            connectionRepository.ignoreConnectionRequest(eq(userId))
+            arrangement.connectionRepository.ignoreConnectionRequest(any(), eq(userId))
         }.wasInvoked(once)
+    }
+
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+
+        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
+
+        suspend fun withIgnoreResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                connectionRepository.ignoreConnectionRequest(any(), eq(userId))
+            }.returns(result)
+        }
+
+        val useCase = IgnoreConnectionRequestUseCaseImpl(connectionRepository, cryptoTransactionProvider)
+
+        suspend fun arrange() = this to useCase
+            .also { withTransactionReturning(Either.Right(Unit)) }
     }
 
     private companion object {

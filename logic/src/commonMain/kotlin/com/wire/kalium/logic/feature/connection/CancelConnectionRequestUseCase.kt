@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * Use Case that allows a user to cancel a [ConnectionState.PENDING] connection request to connect with another user
@@ -41,11 +42,19 @@ fun interface CancelConnectionRequestUseCase {
 }
 
 internal class CancelConnectionRequestUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : CancelConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): CancelConnectionRequestUseCaseResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.CANCELLED)
+        return transactionProvider
+            .transaction("CancelConnectionRequest") { transactionContext ->
+                connectionRepository.updateConnectionStatus(
+                    transactionContext,
+                    userId,
+                    ConnectionState.CANCELLED
+                )
+            }
             .fold({
                 kaliumLogger.e("An error occurred when cancelling the connection request to $userId")
                 CancelConnectionRequestUseCaseResult.Failure(it)

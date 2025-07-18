@@ -20,22 +20,22 @@ package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapMLSRequest
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mockable
 
@@ -59,7 +59,11 @@ interface KeyPackageRepository {
         cipherSuite: CipherSuite
     ): Either<CoreFailure, KeyPackageClaimResult>
 
-    suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
+    suspend fun uploadNewKeyPackages(
+        mlsContext: MlsCoreCryptoContext,
+        clientId: ClientId,
+        amount: Int = 100
+    ): Either<CoreFailure, Unit>
 
     suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
@@ -67,13 +71,15 @@ interface KeyPackageRepository {
 
     suspend fun getAvailableKeyPackageCount(clientId: ClientId, cipherSuite: CipherSuite): Either<NetworkFailure, KeyPackageCountDTO>
 
-    suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int>
+    suspend fun validKeyPackageCount(
+        mlsContext: MlsCoreCryptoContext,
+        clientId: ClientId
+    ): Either<CoreFailure, Int>
 }
 
 class KeyPackageDataSource(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageApi: KeyPackageApi,
-    private val mlsClientProvider: MLSClientProvider,
     private val selfUserId: UserId,
 ) : KeyPackageRepository {
 
@@ -105,14 +111,16 @@ class KeyPackageDataSource(
             KeyPackageClaimResult(claimedKeyPackages, failedUsers)
         }
 
-    override suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> =
-        mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.generateKeyPackages(amount)
-            }.flatMap { keyPackages ->
-                wrapApiRequest {
-                    keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
-                }
+    override suspend fun uploadNewKeyPackages(
+        mlsContext: MlsCoreCryptoContext,
+        clientId: ClientId,
+        amount: Int
+    ): Either<CoreFailure, Unit> =
+        wrapMLSRequest {
+            mlsContext.generateKeyPackages(amount)
+        }.flatMap { keyPackages ->
+            wrapApiRequest {
+                keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
             }
         }
 
@@ -133,11 +141,12 @@ class KeyPackageDataSource(
             keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() }, cipherSuite.tag)
         }
 
-    override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =
-        mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.validKeyPackageCount().toInt()
-            }
+    override suspend fun validKeyPackageCount(
+        mlsContext: MlsCoreCryptoContext,
+        clientId: ClientId
+    ): Either<CoreFailure, Int> =
+        wrapMLSRequest {
+            mlsContext.validKeyPackageCount().toInt()
         }
 
     override suspend fun getAvailableKeyPackageCount(

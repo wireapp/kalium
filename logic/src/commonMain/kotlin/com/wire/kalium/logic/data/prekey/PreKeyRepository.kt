@@ -39,6 +39,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
@@ -100,7 +101,6 @@ interface PreKeyRepository {
      * @see generateNewPreKeys
      */
     suspend fun generateNewLastResortKey(): Either<ProteusFailure, PreKeyCrypto>
-    suspend fun getLocalFingerprint(): Either<CoreFailure, ByteArray>
 
     /**
      * Returns the ID of the most recent "rolling" prekey that was generated.
@@ -122,10 +122,10 @@ interface PreKeyRepository {
      */
     suspend fun forceInsertMostRecentPreKeyId(newId: Int): Either<StorageFailure, Unit>
     suspend fun establishSessions(
+        proteusContext: ProteusCoreCryptoContext,
         missingContactClients: Map<UserId, List<ClientId>>
     ): Either<CoreFailure, UsersWithoutSessions>
 
-    suspend fun getFingerprintForPreKey(preKeyCrypto: PreKeyCrypto): Either<CoreFailure, ByteArray>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -174,13 +174,6 @@ class PreKeyDataSource(
             proteusClientProvider.getOrCreate().newLastResortPreKey()
         }
 
-    override suspend fun getLocalFingerprint(): Either<CoreFailure, ByteArray> =
-        proteusClientProvider.getOrError().flatMap { proteusClient ->
-            wrapProteusRequest {
-                proteusClient.getLocalFingerprint()
-            }
-        }
-
     override suspend fun mostRecentPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
         prekeyDAO.mostRecentPreKeyId()
     }
@@ -204,6 +197,7 @@ class PreKeyDataSource(
         }
 
     override suspend fun establishSessions(
+        proteusContext: ProteusCoreCryptoContext,
         missingContactClients: Map<UserId, List<ClientId>>
     ): Either<CoreFailure, UsersWithoutSessions> {
         if (missingContactClients.isEmpty()) {
@@ -212,7 +206,7 @@ class PreKeyDataSource(
 
         return preKeysOfClientsByQualifiedUsers(missingContactClients)
             .flatMap { listUserPrekeysResponse ->
-                establishProteusSessions(listUserPrekeysResponse.qualifiedUserClientPrekeys)
+                establishProteusSessions(proteusContext, listUserPrekeysResponse.qualifiedUserClientPrekeys)
                     .flatMap {
                         Either.Right(
                             preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(
@@ -223,13 +217,6 @@ class PreKeyDataSource(
             }
     }
 
-    override suspend fun getFingerprintForPreKey(preKeyCrypto: PreKeyCrypto): Either<CoreFailure, ByteArray> =
-        proteusClientProvider.getOrError().flatMap { proteusClient ->
-            wrapProteusRequest {
-                proteusClient.getFingerprintFromPreKey(preKeyCrypto)
-            }
-        }
-
     internal suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
     ): Either<NetworkFailure, ListPrekeysResponse> = wrapApiRequest {
@@ -237,19 +224,18 @@ class PreKeyDataSource(
     }
 
     private suspend fun establishProteusSessions(
+        proteusContext: ProteusCoreCryptoContext,
         preKeyInfoList: DomainToUserIdToClientsToPreKeyMap
-    ): Either<CoreFailure, Unit> =
-        proteusClientProvider.getOrError()
-            .flatMap { proteusClient ->
-                val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
-                wrapProteusRequest {
-                    proteusClient.createSessions(valid)
-                }.also {
-                    wrapStorageRequest {
-                        clientDAO.tryMarkInvalid(invalid)
-                    }
-                }
+    ): Either<CoreFailure, Unit> {
+        val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
+        return wrapProteusRequest {
+            proteusContext.createSessions(valid)
+        }.also {
+            wrapStorageRequest {
+                clientDAO.tryMarkInvalid(invalid)
             }
+        }
+    }
 
     private companion object {
         const val PREKEY_REFILL_INSTANT_KEY = "last_prekey_refill_instant"

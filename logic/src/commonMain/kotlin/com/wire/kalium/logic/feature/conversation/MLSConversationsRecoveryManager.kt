@@ -26,18 +26,23 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 internal interface MLSConversationsRecoveryManager {
     suspend fun invoke()
 }
 
+@Suppress("LongParameterList")
 internal class MLSConversationsRecoveryManagerImpl(
     private val featureSupport: FeatureSupport,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val clientRepository: ClientRepository,
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase,
     private val slowSyncRepository: SlowSyncRepository,
+    private val transactionProvider: CryptoTransactionProvider,
     kaliumLogger: KaliumLogger
 ) : MLSConversationsRecoveryManager {
 
@@ -71,16 +76,19 @@ internal class MLSConversationsRecoveryManagerImpl(
         }
     }
 
-    private suspend fun recoverMLSConversations() =
-        recoverMLSConversationsUseCase.invoke().let { result ->
+    private suspend fun recoverMLSConversations() = transactionProvider.transaction { transactionContext ->
+        recoverMLSConversationsUseCase.invoke(transactionContext).let { result ->
             when (result) {
-                is RecoverMLSConversationsResult.Failure ->
+                is RecoverMLSConversationsResult.Failure -> {
                     logger.w("Error while recovering MLS conversations: ${result.failure}")
-
+                    result.failure.left()
+                }
                 is RecoverMLSConversationsResult.Success -> {
                     logger.i("Successfully recovered MLS Conversations")
                     slowSyncRepository.setNeedsToRecoverMLSGroups(false)
+                    Unit.right()
                 }
             }
         }
+    }
 }

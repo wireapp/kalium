@@ -35,6 +35,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
@@ -93,7 +95,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID2)
 
         // when
-        val result = connectionRepository.fetchSelfUserConnections()
+        val result = connectionRepository.fetchSelfUserConnections(arrangement.transactionContext)
 
         // then
         coVerify {
@@ -114,7 +116,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
 
         // when
-        val result = connectionRepository.fetchSelfUserConnections()
+        val result = connectionRepository.fetchSelfUserConnections(arrangement.transactionContext)
 
         // then
         coVerify {
@@ -141,7 +143,7 @@ class ConnectionRepositoryTest {
             .withPersistConversationsSucceed()
 
         // when
-        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(arrangement.transactionContext, UserId(userId.value, userId.domain))
 
         // then
         result.shouldSucceed()
@@ -162,7 +164,7 @@ class ConnectionRepositoryTest {
             .withPersistConversationsSucceed()
 
         // when
-        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(arrangement.transactionContext, UserId(userId.value, userId.domain))
 
         // then
         result.shouldFail()
@@ -197,7 +199,7 @@ class ConnectionRepositoryTest {
             .withPersistConversationsSucceed()
 
         // when
-        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(arrangement.transactionContext, UserId(userId.value, userId.domain))
 
         // then
         coVerify {
@@ -220,7 +222,7 @@ class ConnectionRepositoryTest {
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
 
         // when
-        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
+        val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
@@ -240,7 +242,7 @@ class ConnectionRepositoryTest {
         arrangement.withSuccessfulUpdateConnectionStatusResponse(userId)
 
         // when
-        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)
+        val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)
 
         // then
         result.shouldFail {}
@@ -260,7 +262,7 @@ class ConnectionRepositoryTest {
         arrangement.withErrorUpdatingConnectionStatusResponse(userId)
 
         // when
-        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
+        val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
 
         // then
         result.shouldFail {}
@@ -280,7 +282,7 @@ class ConnectionRepositoryTest {
         arrangement.withErrorUpdatingConnectionStatusResponse(userId)
 
         // when
-        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.PENDING)
+        val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.PENDING)
 
         // then
         result.shouldFail {}
@@ -343,7 +345,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
         // when
-        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        val result = connectionRepository.ignoreConnectionRequest(arrangement.transactionContext, UserId(userId.value, userId.domain))
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
@@ -363,15 +365,17 @@ class ConnectionRepositoryTest {
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
         // when
-        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        val result = connectionRepository.ignoreConnectionRequest(arrangement.transactionContext, UserId(userId.value, userId.domain))
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
-            arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
-                lastUpdateDate = any(),
-                status = ConnectionEntity.State.IGNORED
-            ))
+            arrangement.connectionDAO.insertConnection(
+                arrangement.stubConnectionEntity.copy(
+                    lastUpdateDate = any(),
+                    status = ConnectionEntity.State.IGNORED
+                )
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -406,7 +410,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
         // when
-        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        val result = connectionRepository.ignoreConnectionRequest(arrangement.transactionContext, UserId(userId.value, userId.domain))
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
@@ -429,15 +433,17 @@ class ConnectionRepositoryTest {
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
         // when
-        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        val result = connectionRepository.ignoreConnectionRequest(arrangement.transactionContext, UserId(userId.value, userId.domain))
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
         coVerify {
-            arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
-                lastUpdateDate = any(),
-                status = ConnectionEntity.State.IGNORED
-            ))
+            arrangement.connectionDAO.insertConnection(
+                arrangement.stubConnectionEntity.copy(
+                    lastUpdateDate = any(),
+                    status = ConnectionEntity.State.IGNORED
+                )
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -452,14 +458,16 @@ class ConnectionRepositoryTest {
                 .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
             // when
-            val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+            val result = connectionRepository.ignoreConnectionRequest(arrangement.transactionContext, UserId(userId.value, userId.domain))
             result.shouldFail { Arrangement.stubConnectionOne }
 
             // then
             coVerify {
-                arrangement.connectionDAO.insertConnection(arrangement.stubConnectionEntity.copy(
-                    status = ConnectionEntity.State.IGNORED
-                ))
+                arrangement.connectionDAO.insertConnection(
+                    arrangement.stubConnectionEntity.copy(
+                        status = ConnectionEntity.State.IGNORED
+                    )
+                )
             }.wasInvoked(exactly = 0)
         }
 
@@ -491,7 +499,7 @@ class ConnectionRepositoryTest {
             )
             .arrange()
 
-        connectionRepository.updateRemoteConnectionStatus(userId, ConnectionState.ACCEPTED)
+        connectionRepository.updateRemoteConnectionStatus(arrangement.transactionContext, userId, ConnectionState.ACCEPTED)
 
         coVerify {
             arrangement.connectionDAO.insertConnection(ConnectionMapperImpl().fromApiToDao(expectedRecoveryResponse))
@@ -499,7 +507,8 @@ class ConnectionRepositoryTest {
     }
 
     private class Arrangement :
-        MemberDAOArrangement by MemberDAOArrangementImpl() {
+        MemberDAOArrangement by MemberDAOArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val conversationDAO = mock(ConversationDAO::class)
         val conversationRepository = mock(ConversationRepository::class)
@@ -589,7 +598,7 @@ class ConnectionRepositoryTest {
 
         suspend fun withPersistConversationsSucceed(): Arrangement {
             coEvery {
-                persistConversations(any(), any(), any())
+                persistConversations(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
             return this
         }

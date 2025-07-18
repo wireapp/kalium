@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -36,6 +38,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class SyncConversationsUseCaseTest {
+
     @Test
     fun givenUseCase_whenInvoked_thenFetchConversations() = runTest {
 
@@ -47,7 +50,7 @@ class SyncConversationsUseCaseTest {
         useCase.invoke()
 
         coVerify {
-            arrangement.fetchConversations()
+            arrangement.fetchConversations(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -85,7 +88,7 @@ class SyncConversationsUseCaseTest {
         }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val conversationRepository = mock(ConversationRepository::class)
         val systemMessageInserter = mock(SystemMessageInserter::class)
@@ -93,7 +96,7 @@ class SyncConversationsUseCaseTest {
 
         suspend fun withFetchConversationsSuccessful() = apply {
             coEvery {
-                fetchConversations()
+                fetchConversations(any())
             }.returns(Either.Right(Unit))
         }
 
@@ -111,10 +114,13 @@ class SyncConversationsUseCaseTest {
                 .doesNothing()
         }
 
-        fun arrange() = this to SyncConversationsUseCaseImpl(
+        suspend fun arrange() = this to SyncConversationsUseCaseImpl(
             conversationRepository,
             systemMessageInserter,
-            fetchConversations
-        )
+            fetchConversations,
+            cryptoTransactionProvider
+        ).also {
+            withTransactionReturning(Either.Right(Unit))
+        }
     }
 }

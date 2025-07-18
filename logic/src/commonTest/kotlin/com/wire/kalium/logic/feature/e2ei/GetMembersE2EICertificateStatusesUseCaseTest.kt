@@ -30,6 +30,8 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatu
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import kotlinx.coroutines.runBlocking
@@ -114,13 +116,18 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                withMLSTransactionReturning(Either.Right(Unit))
+                block()
+            }
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                conversationRepository = conversationRepository
+                conversationRepository = conversationRepository,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }

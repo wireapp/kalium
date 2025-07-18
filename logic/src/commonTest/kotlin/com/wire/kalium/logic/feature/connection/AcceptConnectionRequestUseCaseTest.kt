@@ -29,6 +29,8 @@ import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageC
 import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -63,7 +65,11 @@ class AcceptConnectionRequestUseCaseTest {
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
         coVerify {
-            arrangement.connectionRepository.updateConnectionStatus(eq(USER_ID), eq(ConnectionState.ACCEPTED))
+            arrangement.connectionRepository.updateConnectionStatus(
+                any(),
+                eq(USER_ID),
+                eq(ConnectionState.ACCEPTED)
+            )
         }.wasInvoked(once)
     }
 
@@ -105,7 +111,11 @@ class AcceptConnectionRequestUseCaseTest {
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(eq(CONNECTION.qualifiedToId), eq(true))
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                any(),
+                eq(CONNECTION.qualifiedToId),
+                eq(true)
+            )
         }.wasInvoked(once)
     }
 
@@ -123,7 +133,11 @@ class AcceptConnectionRequestUseCaseTest {
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
         coVerify {
-            arrangement.connectionRepository.updateConnectionStatus(eq(USER_ID), eq(ConnectionState.ACCEPTED))
+            arrangement.connectionRepository.updateConnectionStatus(
+                any(),
+                eq(USER_ID),
+                eq(ConnectionState.ACCEPTED)
+            )
         }.wasInvoked(once)
     }
 
@@ -132,15 +146,18 @@ class AcceptConnectionRequestUseCaseTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
-        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
+        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         suspend fun arrange() = run {
             block()
+            withTransactionReturning(Either.Right(Unit))
             this@Arrangement to AcceptConnectionRequestUseCaseImpl(
                 connectionRepository = connectionRepository,
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
-                fetchConversation = fetchConversation
+                fetchConversation = fetchConversation,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }

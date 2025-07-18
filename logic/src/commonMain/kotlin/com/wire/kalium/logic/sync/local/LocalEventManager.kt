@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.local
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.util.KaliumDispatcher
@@ -39,6 +40,7 @@ internal interface LocalEventManager {
 internal class LocalEventManagerImpl(
     private val localEventRepository: LocalEventRepository,
     private val eventProcessor: EventProcessor,
+    private val transactionProvider: CryptoTransactionProvider,
     scope: CoroutineScope,
     dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : LocalEventManager, CoroutineScope {
@@ -54,16 +56,20 @@ internal class LocalEventManagerImpl(
     }
 
     private suspend fun processEvent(eventEnvelope: EventEnvelope) {
-        when (val result = eventProcessor.processEvent(eventEnvelope)) {
-            is Either.Right -> {
-                kaliumLogger.i("Event processed successfully: ${eventEnvelope.event.id}", tag = LOCAL_EVENT)
-            }
+        transactionProvider.transaction("LocalEventManager") {
+            when (val result = eventProcessor.processEvent(it, eventEnvelope)) {
+                is Either.Right -> {
+                    kaliumLogger.i("Event processed successfully: ${eventEnvelope.event.id}", tag = LOCAL_EVENT)
+                    result
+                }
 
-            is Either.Left -> {
-                kaliumLogger.w(
-                    "Failed to process event: ${eventEnvelope.event.id}, error: ${result.value}",
-                    tag = LOCAL_EVENT
-                )
+                is Either.Left -> {
+                    kaliumLogger.w(
+                        "Failed to process event: ${eventEnvelope.event.id}, error: ${result.value}",
+                        tag = LOCAL_EVENT
+                    )
+                    result
+                }
             }
         }
     }

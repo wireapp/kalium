@@ -26,8 +26,8 @@ import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
-import com.wire.kalium.logic.sync.GlobalWorkScheduler
-import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
+import com.wire.kalium.logic.sync.WorkSchedulerProvider
+import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
@@ -80,10 +80,8 @@ actual class CoreLogic(
         )
     }
 
-    override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(
-        appContext = appContext,
-        coreLogic = this
-    )
+    override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl(appContext)
+
     override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
         appContext = appContext
     )

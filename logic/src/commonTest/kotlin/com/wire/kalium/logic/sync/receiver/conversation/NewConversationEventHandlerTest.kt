@@ -39,6 +39,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
@@ -79,10 +81,10 @@ class NewConversationEventHandlerTest {
             .withQualifiedId(creatorQualifiedId)
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.persistConversation(eq(event.conversation), any())
+            arrangement.persistConversation(any(), eq(event.conversation), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -112,7 +114,7 @@ class NewConversationEventHandlerTest {
             .withQualifiedId(creatorQualifiedId)
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.conversationRepository.updateConversationModifiedDate(eq(event.conversationId), matches { it.wasInTheLastSecond })
@@ -148,7 +150,7 @@ class NewConversationEventHandlerTest {
             .arrange()
 
         // when
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         // then
         coVerify {
@@ -207,7 +209,7 @@ class NewConversationEventHandlerTest {
                 .arrange()
 
             // when
-            eventHandler.handle(event)
+            eventHandler.handle(arrangement.transactionContext, event)
 
             // then
             coVerify {
@@ -252,17 +254,17 @@ class NewConversationEventHandlerTest {
                 .arrange()
 
             // when
-            eventHandler.handle(event)
+            eventHandler.handle(arrangement.transactionContext, event)
 
             // then
             coVerify {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(true))
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
             }.wasNotInvoked()
             coVerify {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
             }.wasNotInvoked()
             coVerify {
-                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())
+                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
             }.wasNotInvoked()
         }
 
@@ -290,16 +292,16 @@ class NewConversationEventHandlerTest {
                 .arrange()
 
             // when
-            eventHandler.handle(event)
+            eventHandler.handle(arrangement.transactionContext, event)
 
             // then
             coVerify {
-                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(eq(otherUserId), eq(true))
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(otherUserId), eq(true))
             }.wasInvoked(exactly = once)
         }
 
-    private class Arrangement {
-                val conversationRepository = mock(ConversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationRepository = mock(ConversationRepository::class)
         val userRepository = mock(UserRepository::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
@@ -325,7 +327,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
             coEvery {
-                persistConversation(any(), any())
+                persistConversation(any(), any(), any())
             }.returns(result)
         }
 
@@ -373,7 +375,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
             coEvery {
-                oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(true))
+                oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
             }.returns(result)
         }
 

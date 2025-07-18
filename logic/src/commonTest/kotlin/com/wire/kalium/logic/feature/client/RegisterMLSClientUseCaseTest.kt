@@ -33,7 +33,10 @@ import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrange
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSCiphersuite
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.client.toModel
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
@@ -52,16 +55,15 @@ class RegisterMLSClientUseCaseTest {
     fun givenRegisterMLSClientUseCaseAndE2EIIsRequired_whenInvokedAndE2EIIsEnrolled_thenRegisterMLSClient() =
         runTest {
             val e2eiIsRequired = true
-            val e2eiIsEnrolled = true
             val (arrangement, registerMLSClient) = Arrangement()
                 .withGetMLSClientSuccessful()
                 .withIsMLSClientInitialisedReturns()
-                .withMLSClientE2EIIsEnabledReturns(e2eiIsEnrolled)
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
+                .withMLSTransaction<Unit>()
                 .arrange()
 
             val result = registerMLSClient(TestClient.CLIENT_ID)
@@ -79,9 +81,7 @@ class RegisterMLSClientUseCaseTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-
-                arrangement.keyPackageRepository.uploadNewKeyPackages(eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
-
+                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
             }
         }
 
@@ -93,7 +93,6 @@ class RegisterMLSClientUseCaseTest {
             val (arrangement, registerMLSClient) = Arrangement()
                 .withGetMLSClientSuccessful()
                 .withIsMLSClientInitialisedReturns(false)
-                .withMLSClientE2EIIsEnabledReturns(e2eiIsEnrolled)
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
@@ -116,7 +115,7 @@ class RegisterMLSClientUseCaseTest {
             }.wasNotInvoked()
 
             coVerify {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
+                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
             }.wasNotInvoked()
         }
 
@@ -131,6 +130,7 @@ class RegisterMLSClientUseCaseTest {
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
+                .withMLSTransaction<Unit>()
                 .arrange()
 
             val result = registerMLSClient(TestClient.CLIENT_ID)
@@ -148,14 +148,13 @@ class RegisterMLSClientUseCaseTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-
-                arrangement.keyPackageRepository.uploadNewKeyPackages(eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
-
+                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
             }
         }
 
     private class Arrangement {
         val mlsClient = mock(MLSClient::class)
+        val mlsContext = mock(MlsCoreCryptoContext::class)
         var mlsClientProvider = mock(MLSClientProvider::class)
         val clientRepository = mock(ClientRepository::class)
         val keyPackageRepository = mock(KeyPackageRepository::class)
@@ -165,12 +164,6 @@ class RegisterMLSClientUseCaseTest {
         fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
             every {
                 userConfigRepository.getE2EISettings()
-            }.returns(result)
-        }
-
-        suspend fun withMLSClientE2EIIsEnabledReturns(result: Boolean) = apply {
-            coEvery {
-                mlsClient.isE2EIEnabled()
             }.returns(result)
         }
 
@@ -194,7 +187,7 @@ class RegisterMLSClientUseCaseTest {
 
         suspend fun withUploadKeyPackagesSuccessful() = apply {
             coEvery {
-                keyPackageRepository.uploadNewKeyPackages(eq(TestClient.CLIENT_ID), any())
+                keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -210,7 +203,17 @@ class RegisterMLSClientUseCaseTest {
             }.returns(Either.Right(mlsClient))
         }
 
-        fun arrange() = this to RegisterMLSClientUseCaseImpl(
+        suspend fun <R> withMLSTransaction() = apply {
+            coEvery {
+                mlsClient.transaction<R>(any(), any())
+            }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val block = args[1] as suspend (MlsCoreCryptoContext) -> R
+                block(mlsContext)
+            }
+        }
+
+        suspend fun arrange() = this to RegisterMLSClientUseCaseImpl(
             mlsClientProvider,
             clientRepository,
             keyPackageRepository,

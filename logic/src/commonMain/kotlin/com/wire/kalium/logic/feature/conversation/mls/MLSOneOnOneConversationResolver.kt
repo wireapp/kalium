@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import io.mockative.Mockable
 
@@ -46,7 +47,7 @@ internal interface MLSOneOnOneConversationResolver {
      * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
      * @param userId The user ID of the other participant.
      */
-    suspend operator fun invoke(userId: UserId): Either<CoreFailure, ConversationId>
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, ConversationId>
 }
 
 internal class MLSOneOnOneConversationResolverImpl(
@@ -55,7 +56,7 @@ internal class MLSOneOnOneConversationResolverImpl(
     private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase
 ) : MLSOneOnOneConversationResolver {
 
-    override suspend fun invoke(userId: UserId): Either<CoreFailure, ConversationId> =
+    override suspend fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, ConversationId> =
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
             // Look for an existing MLS-capable conversation one-on-one
             val initializedMLSOneOnOne = conversations.firstOrNull {
@@ -71,8 +72,12 @@ internal class MLSOneOnOneConversationResolverImpl(
                 Either.Right(initializedMLSOneOnOne.id)
             } else {
                 kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
-                fetchMLSOneToOneConversation(userId).flatMap { conversation ->
-                    joinExistingMLSConversationUseCase(conversation.id, conversation.mlsPublicKeys).map { conversation.id }
+                fetchMLSOneToOneConversation(transactionContext, userId).flatMap { conversation ->
+                    joinExistingMLSConversationUseCase(
+                        transactionContext,
+                        conversation.id,
+                        conversation.mlsPublicKeys
+                    ).map { conversation.id }
                 }
             }
         }

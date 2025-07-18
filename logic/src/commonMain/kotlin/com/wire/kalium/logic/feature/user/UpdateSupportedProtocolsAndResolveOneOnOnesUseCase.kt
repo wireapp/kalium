@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import io.mockative.Mockable
 
 /**
@@ -35,7 +36,7 @@ interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
      * @param synchroniseUsers if true we synchronize all known users from backend
      * in order to have to up-to-date information about which protocols are supported.
      */
-    suspend operator fun invoke(synchroniseUsers: Boolean): Either<CoreFailure, Unit>
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext, synchroniseUsers: Boolean): Either<CoreFailure, Unit>
 }
 
 internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
@@ -43,10 +44,10 @@ internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
     private val oneOnOneResolver: OneOnOneResolver
 ) : UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 
-    override suspend operator fun invoke(synchroniseUsers: Boolean) =
+    override suspend operator fun invoke(transactionContext: CryptoTransactionContext, synchroniseUsers: Boolean) =
         updateSupportedProtocols().flatMap { updated ->
             if (updated) {
-                oneOnOneResolver.resolveAllOneOnOneConversations(synchronizeUsers = synchroniseUsers)
+                oneOnOneResolver.resolveAllOneOnOneConversations(transactionContext, synchronizeUsers = synchroniseUsers)
             } else {
                 Either.Right(Unit)
             }

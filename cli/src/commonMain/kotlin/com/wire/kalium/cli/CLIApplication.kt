@@ -71,7 +71,6 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
             )
         )
 
-        currentContext.findObject<CoreLogic>()?.updateApiVersionsScheduler?.scheduleImmediateApiVersionUpdate()
         Unit
     }
 

@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.eq
 import io.mockative.mock
 
 interface MLSConversationRepositoryArrangement {
@@ -45,25 +46,25 @@ class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrang
 
     override suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
         coEvery {
-            mlsConversationRepository.isGroupOutOfSync(any(), any())
+            mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
         coEvery {
-            mlsConversationRepository.getUserIdentity(any())
+            mlsConversationRepository.getUserIdentity(any(), any())
         }.returns(result)
     }
 
     override suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
         coEvery {
-            mlsConversationRepository.getMembersIdentities(any(), any())
+            mlsConversationRepository.getMembersIdentities(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withJoinGroupByExternalCommit(groupId: GroupID, groupInfo: ByteArray, result: Either<CoreFailure, Unit>) = apply {
         coEvery {
-            mlsConversationRepository.joinGroupByExternalCommit(groupId, groupInfo)
+            mlsConversationRepository.joinGroupByExternalCommit(any(), eq(groupId), eq(groupInfo))
         }.returns(result)
     }
 }

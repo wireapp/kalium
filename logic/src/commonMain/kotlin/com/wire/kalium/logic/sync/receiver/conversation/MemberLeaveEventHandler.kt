@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
@@ -47,7 +48,10 @@ import io.mockative.Mockable
 
 @Mockable
 interface MemberLeaveEventHandler {
-    suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit>
+    suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberLeave
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -63,7 +67,10 @@ internal class MemberLeaveEventHandlerImpl(
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberLeave
+    ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         if (event.reason == MemberLeaveReason.UserDeleted) {
             userRepository.markAsDeleted(event.removedList)
@@ -73,7 +80,7 @@ internal class MemberLeaveEventHandlerImpl(
                 updateConversationClientsForCurrentCall.value(event.conversationId)
             }
             .onSuccess {
-                deleteConversationIfNeeded(event)
+                deleteConversationIfNeeded(transactionContext, event)
             }
             .onSuccess {
                 // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
@@ -131,7 +138,7 @@ internal class MemberLeaveEventHandlerImpl(
         }
     }
 
-    private suspend fun deleteConversationIfNeeded(event: Event.Conversation.MemberLeave) {
+    private suspend fun deleteConversationIfNeeded(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberLeave) {
         val isSelfUserLeftConversation = event.removedList == listOf(selfUserId) && event.reason == MemberLeaveReason.Left
         if (!isSelfUserLeftConversation) return
 
@@ -139,7 +146,7 @@ internal class MemberLeaveEventHandlerImpl(
 
         // User wanted to delete conversation fully, but MessageContent.Cleared event came before and we couldn't delete it then.
         // Now, when user left the conversation, we can delete it.
-        deleteConversation(event.conversationId)
+        deleteConversation(transactionContext, event.conversationId)
         conversationRepository.removeConversationFromDeleteQueue(event.conversationId)
     }
 

@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.sync.incremental.EventSource
+import io.mockative.Mockable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.asSharedFlow
  * LocalEventRepository stores local events that are produced by API responses but are not received through EventRepository.
  * It provides a flow that LocalEventManager can listen for processing these events.
  */
+@Mockable
 internal interface LocalEventRepository {
     /**
      * Emits a new local event.

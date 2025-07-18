@@ -26,10 +26,12 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 class MLSConfigHandler(
     private val userConfigRepository: UserConfigRepository,
-    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) {
     suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
@@ -45,9 +47,12 @@ class MLSConfigHandler(
                 userConfigRepository.setSupportedProtocols(mlsConfig.supportedProtocols)
             }.flatMap {
                 if (supportedProtocolsHasChanged) {
-                    updateSupportedProtocolsAndResolveOneOnOnes(
-                        synchroniseUsers = !duringSlowSync
-                    )
+                    transactionProvider.transaction("MLSConfigHandler") { transactionContext ->
+                        updateSupportedProtocolsAndResolveOneOnOnes(
+                            transactionContext = transactionContext,
+                            synchroniseUsers = !duringSlowSync
+                        )
+                    }
                 } else {
                     Either.Right(Unit)
                 }

@@ -30,6 +30,8 @@ import com.wire.kalium.logic.util.arrangement.mls.IsMlsEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsMlsEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coVerify
 import kotlinx.coroutines.runBlocking
@@ -109,19 +111,23 @@ class GetUserMlsClientIdentitiesUseCaseTest {
                 result
             )
             coVerify {
-                arrangement.mlsConversationRepository.getUserIdentity(any())
+                arrangement.mlsConversationRepository.getUserIdentity(any(), any())
             }.wasNotInvoked()
         }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         IsMlsEnabledUseCaseArrangement by IsMlsEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                withMLSTransactionReturning(Either.Right(Unit))
+                block() }
             this@Arrangement to GetUserMlsClientIdentitiesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
                 isMlsEnabledUseCase = isMlsEnabledUseCase,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }
