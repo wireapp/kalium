@@ -150,6 +150,8 @@ interface UserConfigRepository {
     suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setMlsConversationsResetEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isMlsConversationsResetEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -549,4 +551,10 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun getNextTimeForCallFeedback() = wrapStorageRequest { userConfigDAO.getNextTimeForCallFeedback() }
 
     override suspend fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigDAO.getShouldFetchE2EITrustAnchorHasRun()
+    override suspend fun setMlsConversationsResetEnabled(enabled: Boolean) =
+        wrapStorageRequest {
+            userConfigDAO.setMlsConversationsResetEnabled(enabled)
+        }
+
+    override suspend fun isMlsConversationsResetEnabled(): Boolean = userConfigDAO.getMlsConversationsResetEnabled()
 }

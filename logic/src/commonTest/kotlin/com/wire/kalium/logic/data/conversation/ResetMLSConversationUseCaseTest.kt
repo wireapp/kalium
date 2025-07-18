@@ -1,0 +1,184 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.data.conversation
+
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.feature.backup.UserId
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.mock
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertTrue
+
+class ResetMLSConversationUseCaseTest {
+
+    @Test
+    fun givenFeatureDisabled_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureDisabled()
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenRepositorySuccess_whenUseCaseCalled_thenResetMLSConversationCalled() = runTest {
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .arrange()
+
+        useCase(TestConversation.ID)
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasInvoked()
+    }
+
+    @Test
+    fun whenUseCaseSuccess_thenLeaveConversationCalled() = runTest {
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .arrange()
+
+        useCase(TestConversation.ID)
+
+        coVerify {
+            arrangement.mlsConversationRepository.leaveGroup(any(), any())
+        }.wasInvoked()
+    }
+
+    @Test
+    fun whenUseCaseInvoked_thenConversationFetchedAfterReset() = runTest {
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .arrange()
+
+        useCase(TestConversation.ID)
+
+        coVerify {
+            arrangement.fetchConversationUseCase(any(), any())
+        }.wasInvoked()
+    }
+
+    @Test
+    fun whenUseCaseInvoked_thenConversationEstablishedAfterReset() = runTest {
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .arrange()
+
+        useCase(TestConversation.ID)
+
+        coVerify {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }.wasInvoked()
+    }
+
+    private class Arrangement {
+
+        val userConfig = mock(UserConfigRepository::class)
+        val conversationRepository = mock(ConversationRepository::class)
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
+        val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+        val transactionProvider = mock(CryptoTransactionProvider::class)
+        val transactionContext: CryptoTransactionContext = mock(CryptoTransactionContext::class)
+        val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
+
+        suspend fun withFeatureDisabled() = apply {
+            coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
+        }
+
+        suspend fun withFeatureEnabled() = apply {
+            coEvery { userConfig.isMlsConversationsResetEnabled() } returns true
+        }
+
+        suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {
+
+            coEvery {
+                conversationRepository.getConversationById(any())
+            } returns TestConversation.MLS_CONVERSATION.right()
+
+            coEvery {
+                conversationRepository.resetMlsConversation(any(), any())
+            } returns Unit.right()
+
+            coEvery {
+                mlsConversationRepository.leaveGroup(any(), any())
+            } returns Unit.right()
+
+            coEvery {
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            } returns MLSAdditionResult(emptySet(), emptySet()).right()
+
+            coEvery {
+                fetchConversationUseCase(any(), any())
+            } returns Unit.right()
+
+            coEvery {
+                conversationRepository.getConversationMembers(any())
+            } returns listOf(UserId("test", "test@user")).right()
+
+            coEvery {
+                transactionProvider.mlsTransaction<Any>(any(), any())
+            }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, Any>
+                block(mlsContext)
+            }
+
+            coEvery {
+                transactionProvider.transaction<Any>(any(), any())
+            }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val block = args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Any>
+                block(transactionContext)
+            }
+
+            return this to ResetMLSConversationUseCaseImpl(
+                userConfig = userConfig,
+                transactionProvider = transactionProvider,
+                conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
+                fetchConversationUseCase = fetchConversationUseCase,
+            )
+        }
+    }
+}

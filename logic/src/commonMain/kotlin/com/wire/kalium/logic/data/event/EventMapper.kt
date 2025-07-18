@@ -551,6 +551,11 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
         )
 
+        is FeatureConfigData.AllowedGlobalOperations -> Event.FeatureConfig.AllowedGlobalOperationsUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AllowedGlobalOperations)
+        )
+
         // These features are NOT received through events. As FeatureConfig Events are deprecated
         is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,

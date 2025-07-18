@@ -404,6 +404,10 @@ internal open class ConversationApiV0 internal constructor(
         APINotSupported("updateChannelPermission api is only available on API V8")
     )
 
+    override suspend fun resetMlsConversation(groupId: String, epoch: ULong): NetworkResponse<Unit> = NetworkResponse.Error(
+        APINotSupported("resetMlsConversation api is only available on API V9")
+    )
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOperationsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
@@ -172,6 +173,10 @@ class FeatureConfigMapperTest {
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AllowedGlobalOperations(
+                AllowedGlobalOperationsConfigDTO(),
+                FeatureFlagStatusDTO.DISABLED
+            ),
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()
