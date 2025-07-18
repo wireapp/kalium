@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.user
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.BroadcastMessage
@@ -44,7 +43,6 @@ class UpdateSelfAvailabilityStatusUseCase internal constructor(
     private val messageSender: MessageSender,
     private val provideClientId: CurrentClientIdProvider,
     private val selfUserId: QualifiedID,
-    private val transactionProvider: CryptoTransactionProvider,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
@@ -65,10 +63,7 @@ class UpdateSelfAvailabilityStatusUseCase internal constructor(
                     status = Message.Status.Pending,
                     isSelfMessage = true
                 )
-
-                transactionProvider.transaction("UpdateSelfAvailabilityStatus") {
-                    messageSender.broadcastMessage(it, message, BroadcastMessageTarget.AllUsers(MAX_RECEIVERS))
-                }
+                messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(MAX_RECEIVERS))
             }
         }
     }

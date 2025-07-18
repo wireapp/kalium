@@ -642,8 +642,7 @@ class MessageSenderTest {
             // when
             val result = messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.AllUsers(100),
-                transactionContext = arrangement.transactionContext
+                target = BroadcastMessageTarget.AllUsers(100)
             )
 
             // then
@@ -703,8 +702,7 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.AllUsers(2),
-                transactionContext = arrangement.transactionContext
+                target = BroadcastMessageTarget.AllUsers(2)
             )
 
             // then
@@ -756,8 +754,7 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(
                 message = message,
-                target = BroadcastMessageTarget.OnlyTeam(100),
-                transactionContext = arrangement.transactionContext
+                target = BroadcastMessageTarget.OnlyTeam(100)
             )
 
             // then
@@ -955,7 +952,7 @@ class MessageSenderTest {
         }
         arrangement.testScope.runTest {
             // when
-            messageSender.broadcastMessage(arrangement.transactionContext, message, BroadcastMessageTarget.AllUsers(100))
+            messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(100))
             // then
             coVerify {
                 arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(any(), eq(failure), eq<ConversationId?>(null))

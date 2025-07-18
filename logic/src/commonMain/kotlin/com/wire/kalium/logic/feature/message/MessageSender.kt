@@ -127,7 +127,6 @@ interface MessageSender {
      *
      */
     suspend fun broadcastMessage(
-        transactionContext: CryptoTransactionContext,
         message: BroadcastMessage,
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit>
@@ -218,7 +217,6 @@ internal class MessageSenderImpl internal constructor(
             }
 
     override suspend fun broadcastMessage(
-        transactionContext: CryptoTransactionContext,
         message: BroadcastMessage,
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit> =
