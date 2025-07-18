@@ -38,6 +38,5 @@ fun coreLogic(
         userAgent = "Wire Infinite Monkeys",
         useInMemoryStorage = true
     )
-    coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
     return coreLogic
 }

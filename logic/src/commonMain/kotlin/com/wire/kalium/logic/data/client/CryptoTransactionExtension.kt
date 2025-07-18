@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.client
 
-package com.wire.kalium.cryptography
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 
-import kotlin.coroutines.CoroutineContext
-
-actual suspend fun cryptoboxProteusClient(
-    rootDir: String,
-    defaultContext: CoroutineContext,
-    ioContext: CoroutineContext
-): ProteusClient = TODO("Proteus cryptobox support not available")
+suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
+): Either<CoreFailure, T> {
+    return mls?.let {
+        block(it)
+    } ?: Either.Left(MLSFailure.Disabled)
+}

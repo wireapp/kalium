@@ -21,10 +21,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.WelcomeBundle
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -38,6 +36,8 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
@@ -66,7 +66,7 @@ class MLSWelcomeEventHandlerTest {
             withMLSClientProcessingOfWelcomeMessageFailsWith(exception)
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldFail()
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail()
 
         coVerify {
             arrangement.conversationRepository.updateConversationGroupState(any(), any())
@@ -81,7 +81,7 @@ class MLSWelcomeEventHandlerTest {
             withFetchConversationIfUnknownFailingWith(failure)
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldFail()
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail()
 
         coVerify {
             arrangement.conversationRepository.updateConversationGroupState(any(), any())
@@ -98,10 +98,10 @@ class MLSWelcomeEventHandlerTest {
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(eq(CONVERSATION_ID))
+            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID))
         }.wasInvoked(exactly = once)
     }
 
@@ -115,7 +115,7 @@ class MLSWelcomeEventHandlerTest {
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
             arrangement.conversationRepository.updateConversationGroupState(
@@ -136,10 +136,10 @@ class MLSWelcomeEventHandlerTest {
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION_ID))
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(eq(CONVERSATION_ONE_ONE.otherUser), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(CONVERSATION_ONE_ONE.otherUser), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -153,10 +153,10 @@ class MLSWelcomeEventHandlerTest {
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -164,13 +164,13 @@ class MLSWelcomeEventHandlerTest {
     fun givenUpdateGroupStateFails_thenShouldPropagateError() = runTest {
 
         val failure = Either.Left(StorageFailure.DataNotFound)
-        val (_, mlsWelcomeEventHandler) = arrange {
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(failure)
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldFail {
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail {
             assertEquals(failure.value, it)
         }
     }
@@ -179,7 +179,7 @@ class MLSWelcomeEventHandlerTest {
     fun givenResolveOneOnOneConversationFails_thenShouldPropagateError() = runTest {
 
         val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
-        val (_, mlsWelcomeEventHandler) = arrange {
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -187,7 +187,7 @@ class MLSWelcomeEventHandlerTest {
             withResolveOneOnOneConversationWithUserReturning(failure)
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldFail {
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail {
             assertEquals(failure.value, it)
         }
     }
@@ -203,10 +203,10 @@ class MLSWelcomeEventHandlerTest {
             withResolveOneOnOneConversationWithUserReturning(failure)
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT)
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
         coVerify {
-            arrangement.refillKeyPackagesUseCase.invoke()
+            arrangement.refillKeyPackagesUseCase.invoke(any())
         }.wasNotInvoked()
     }
 
@@ -220,10 +220,10 @@ class MLSWelcomeEventHandlerTest {
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT)
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
         coVerify {
-            arrangement.refillKeyPackagesUseCase.invoke()
+            arrangement.refillKeyPackagesUseCase.invoke(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -239,14 +239,14 @@ class MLSWelcomeEventHandlerTest {
             withUpdateGroupStateReturning(failure)
         }
 
-        mlsWelcomeEventHandler.handle(WELCOME_EVENT)
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(eq(CONVERSATION_ID))
+            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID))
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -257,55 +257,46 @@ class MLSWelcomeEventHandlerTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-        val mlsClient = mock(MLSClient::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
         val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
         val checkRevocationList = mock(RevocationListChecker::class)
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
         val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
 
-        suspend fun withMLSClientProviderReturningMLSClient() = apply {
-            coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
-        }
-
         suspend fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
             coEvery {
-                mlsClient.processWelcomeMessage(any())
+                mlsContext.processWelcomeMessage(any())
             }.throws(exception)
         }
 
         suspend fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
             coEvery {
-                mlsClient.processWelcomeMessage(any())
+                mlsContext.processWelcomeMessage(any())
             }.returns(welcomeBundle)
         }
 
         suspend fun withCheckRevocationListResult() {
             coEvery {
-                checkRevocationList.check(any())
+                checkRevocationList.check(any(), any())
             }.returns(Either.Right(1uL))
         }
 
         suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
             coEvery {
-                refillKeyPackagesUseCase.invoke()
+                refillKeyPackagesUseCase.invoke(any())
             }.returns(result)
         }
 
         suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                joinExistingMLSConversation(conversationId = any())
+                joinExistingMLSConversation(any(), conversationId = any())
             }.returns(result)
         }
 
         suspend fun arrange() = run {
-            withMLSClientProviderReturningMLSClient()
             block()
             this@Arrangement to MLSWelcomeEventHandlerImpl(
-                mlsClientProvider = mlsClientProvider,
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
                 refillKeyPackages = refillKeyPackagesUseCase,

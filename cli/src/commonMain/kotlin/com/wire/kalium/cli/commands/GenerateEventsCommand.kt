@@ -77,10 +77,10 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
             targetClient = QualifiedClientID(
                 clientId = targetClientId,
                 userId = targetUserId
-            ),
-            proteusClient = userSession.proteusClientProvider.getOrCreate()
+            )
         )
         val events: Flow<EventResponse> = generator.generateEvents(
+            userSession.cryptoTransactionProvider,
             limit = eventLimit,
             conversationId = ConversationId(conversationId, domain = selfUserId.domain)
         )

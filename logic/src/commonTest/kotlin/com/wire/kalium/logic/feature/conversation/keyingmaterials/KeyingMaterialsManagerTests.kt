@@ -204,7 +204,7 @@ class KeyingMaterialsManagerTests {
             }.returns(result)
         }
 
-        fun arrange(testScope: TestScope) = this to KeyingMaterialsManager(
+        fun arrange(testScope: TestScope) = this to KeyingMaterialsManagerImpl(
             featureSupport,
             syncStateObserver,
             lazy { clientRepository },

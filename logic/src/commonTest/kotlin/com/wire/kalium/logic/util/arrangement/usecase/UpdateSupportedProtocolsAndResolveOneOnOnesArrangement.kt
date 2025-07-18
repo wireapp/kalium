@@ -37,7 +37,7 @@ internal class UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
 
     override suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() {
         coEvery {
-            updateSupportedProtocolsAndResolveOneOnOnes.invoke(any())
+            updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
         }.returns(Either.Right(Unit))
     }
 

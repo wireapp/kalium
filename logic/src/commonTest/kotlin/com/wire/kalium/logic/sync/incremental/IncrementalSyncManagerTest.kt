@@ -23,6 +23,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
@@ -250,6 +251,25 @@ class IncrementalSyncManagerTest {
     }
 
     @Test
+    fun givenSyncIsLive_whenWorkerEmitsSources_thenShouldResetBackoffForUserConfigSync() = runTest {
+        val sourceFlow = Channel<EventSource>(Channel.UNLIMITED)
+
+        val (arrangement, incrementalSyncManager) = Arrangement()
+            .withWorkerReturning(sourceFlow.consumeAsFlow())
+            .arrange()
+
+        incrementalSyncManager.performSyncFlow().test {
+            sourceFlow.send(EventSource.LIVE)
+            advanceUntilIdle()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        verify {
+            arrangement.userSessionWorkScheduler.resetBackoffForPeriodicUserConfigSync()
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenWorkerFailure_whenPerformingSync_thenShouldCalculateNextExponentialDelay() = runTest {
         val (arrangement, incrementalSyncManager) = Arrangement()
             .withWorkerReturning(flowThatFailsOnFirstTime())
@@ -291,6 +311,7 @@ class IncrementalSyncManagerTest {
         val incrementalSyncRecoveryHandler = mock(IncrementalSyncRecoveryHandler::class)
         val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
         val exponentialDurationHelper: ExponentialDurationHelper = mock(ExponentialDurationHelper::class)
+        val userSessionWorkScheduler: UserSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
@@ -330,7 +351,8 @@ class IncrementalSyncManagerTest {
             incrementalSyncRecoveryHandler = incrementalSyncRecoveryHandler,
             networkStateObserver = networkStateObserver,
             exponentialDurationHelper = exponentialDurationHelper,
-            userScopedLogger = kaliumLogger
+            userScopedLogger = kaliumLogger,
+            userSessionWorkScheduler = userSessionWorkScheduler,
         )
     }
 }

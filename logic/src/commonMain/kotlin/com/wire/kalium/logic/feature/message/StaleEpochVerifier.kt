@@ -17,22 +17,24 @@
  */
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -40,6 +42,7 @@ import kotlinx.datetime.Instant
 @Mockable
 interface StaleEpochVerifier {
     suspend fun verifyEpoch(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         subConversationId: SubconversationId? = null,
         timestamp: Instant? = null
@@ -57,34 +60,40 @@ internal class StaleEpochVerifierImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
     override suspend fun verifyEpoch(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         subConversationId: SubconversationId?,
         timestamp: Instant?
     ): Either<CoreFailure, Unit> {
         return if (subConversationId != null) {
-            verifySubConversationEpoch(conversationId, subConversationId)
+            verifySubConversationEpoch(transactionContext, conversationId, subConversationId)
         } else {
-            verifyConversationEpoch(conversationId)
+            verifyConversationEpoch(transactionContext, conversationId)
         }
     }
 
-    private suspend fun verifyConversationEpoch(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    private suspend fun verifyConversationEpoch(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
-        return getUpdatedConversationProtocolInfo(conversationId).flatMap { protocol ->
+        return getUpdatedConversationProtocolInfo(transactionContext, conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
                 Either.Right(protocol)
             } else {
                 Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
             }
         }.flatMap { protocolInfo ->
-            mlsConversationRepository.isGroupOutOfSync(protocolInfo.groupId, protocolInfo.epoch)
+            transactionContext.wrapInMLSContext {
+                mlsConversationRepository.isGroupOutOfSync(it, protocolInfo.groupId, protocolInfo.epoch)
+            }
                 .map { epochIsStale ->
                     epochIsStale
                 }
         }.flatMap { hasMissedCommits ->
             if (hasMissedCommits) {
                 logger.w("Epoch stale due to missing commits, re-joining")
-                joinExistingMLSConversation(conversationId).flatMap {
+                joinExistingMLSConversation(transactionContext, conversationId).flatMap {
                     systemMessageInserter.insertLostCommitSystemMessage(
                         conversationId,
                         Clock.System.now()
@@ -98,13 +107,16 @@ internal class StaleEpochVerifierImpl(
     }
 
     private suspend fun verifySubConversationEpoch(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         subConversationId: SubconversationId
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for subconversation ${subConversationId.toLogString()}")
         return subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
             .flatMap { subConversationDetails ->
-                mlsConversationRepository.isGroupOutOfSync(subConversationDetails.groupId, subConversationDetails.epoch)
+                transactionContext.wrapInMLSContext {
+                    mlsConversationRepository.isGroupOutOfSync(it, subConversationDetails.groupId, subConversationDetails.epoch)
+                }
                     .map { epochIsStale ->
                         epochIsStale
                     }
@@ -113,7 +125,11 @@ internal class StaleEpochVerifierImpl(
                             logger.w("Epoch stale due to missing commits, joining by external commit")
                             subconversationRepository.fetchRemoteSubConversationGroupInfo(conversationId, subConversationId)
                                 .flatMap { groupInfo ->
-                                    mlsConversationRepository.joinGroupByExternalCommit(subConversationDetails.groupId, groupInfo)
+                                    mlsConversationRepository.joinGroupByExternalCommit(
+                                        transactionContext.mls!!,
+                                        subConversationDetails.groupId,
+                                        groupInfo
+                                    )
                                 }
                         } else {
                             logger.i("Epoch stale due to unprocessed events")
@@ -123,8 +139,11 @@ internal class StaleEpochVerifierImpl(
             }
     }
 
-    private suspend fun getUpdatedConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo> {
-        return fetchConversation(conversationId).flatMap {
+    private suspend fun getUpdatedConversationProtocolInfo(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Conversation.ProtocolInfo> {
+        return fetchConversation(transactionContext, conversationId).flatMap {
             conversationRepository.getConversationProtocolInfo(conversationId)
         }
     }

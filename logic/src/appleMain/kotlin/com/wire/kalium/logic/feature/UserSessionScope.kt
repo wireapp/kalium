@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -45,7 +44,6 @@ internal fun UserSessionScope(
     globalPreferences: GlobalPrefProvider,
     globalDatabaseBuilder: GlobalDatabaseBuilder,
     authenticationScopeProvider: AuthenticationScopeProvider,
-    userSessionWorkScheduler: UserSessionWorkScheduler,
     rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
@@ -66,7 +64,6 @@ internal fun UserSessionScope(
         globalDatabaseBuilder,
         globalPreferences,
         authenticationScopeProvider,
-        userSessionWorkScheduler,
         rootPathsProvider,
         dataStoragePaths,
         kaliumConfigs,

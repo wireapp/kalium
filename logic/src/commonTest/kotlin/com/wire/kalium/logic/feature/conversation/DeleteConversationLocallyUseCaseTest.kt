@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import io.mockative.any
@@ -54,7 +56,7 @@ class DeleteConversationLocallyUseCaseTest {
         // then
         assertIs<Either.Right<Unit>>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.deleteConversation(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -72,7 +74,7 @@ class DeleteConversationLocallyUseCaseTest {
         // then
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.deleteConversation(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -90,10 +92,11 @@ class DeleteConversationLocallyUseCaseTest {
         // then
         assertIs<Either.Left<Unit>>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.deleteConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
     }
 
-    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl() {
+    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val clearConversationContent = mock(ClearConversationContentUseCase::class)
 
@@ -107,9 +110,11 @@ class DeleteConversationLocallyUseCaseTest {
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
             val useCase = DeleteConversationLocallyUseCaseImpl(
                 clearConversationContent = clearConversationContent,
-                deleteConversation = deleteConversation
+                deleteConversation = deleteConversation,
+                transactionProvider = cryptoTransactionProvider
             )
             block()
+            withTransactionReturning(Either.Right(Unit))
             this to useCase
         }
     }

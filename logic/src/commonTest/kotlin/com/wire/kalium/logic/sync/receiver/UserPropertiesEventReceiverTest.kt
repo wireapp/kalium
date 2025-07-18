@@ -22,6 +22,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -29,6 +31,7 @@ import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -41,7 +44,7 @@ class UserPropertiesEventReceiverTest {
             .withUpdateReadReceiptsSuccess()
             .arrange()
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verify {
             arrangement.userConfigRepository.setReadReceiptsStatus(any())
@@ -55,14 +58,14 @@ class UserPropertiesEventReceiverTest {
             .withUpdateConversationFolders()
             .arrange()
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.conversationFolderRepository.updateConversationFolders(any())
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val userConfigRepository = mock(UserConfigRepository::class)
         val conversationFolderRepository = mock(ConversationFolderRepository::class)
@@ -84,6 +87,9 @@ class UserPropertiesEventReceiverTest {
              }.returns(Either.Right(Unit))
         }
 
-        fun arrange() = this to userPropertiesEventReceiver
+        fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
+            runBlocking { block() }
+            this to userPropertiesEventReceiver
+        }
     }
 }

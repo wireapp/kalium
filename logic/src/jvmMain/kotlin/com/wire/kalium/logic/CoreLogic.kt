@@ -25,8 +25,8 @@ import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
-import com.wire.kalium.logic.sync.GlobalWorkScheduler
-import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
+import com.wire.kalium.logic.sync.WorkSchedulerProvider
+import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -82,7 +82,7 @@ actual class CoreLogic(
         CoroutineScope(KaliumDispatcherImpl.io)
     )
 
-    override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
+    override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
     override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(

@@ -28,13 +28,13 @@ internal interface FetchConversationUseCaseArrangement {
     val fetchConversation: FetchConversationUseCase
     suspend fun withFetchConversationFailingWith(coreFailure: CoreFailure) {
         coEvery {
-            fetchConversation(any())
+            fetchConversation(any(), any())
         }.returns(Either.Left(coreFailure))
     }
 
     suspend fun withFetchConversationSucceeding() {
         coEvery {
-            fetchConversation(any())
+            fetchConversation(any(), any())
         }.returns(Either.Right(Unit))
     }
 

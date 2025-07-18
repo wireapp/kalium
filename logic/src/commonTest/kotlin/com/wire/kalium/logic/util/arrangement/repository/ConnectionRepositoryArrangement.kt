@@ -71,13 +71,13 @@ internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryAr
 
     override suspend fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>) {
         coEvery {
-            connectionRepository.updateConnectionStatus(any(), any())
+            connectionRepository.updateConnectionStatus(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withIgnoreConnectionRequest(result: Either<CoreFailure, Unit>) {
         coEvery {
-            connectionRepository.ignoreConnectionRequest(any())
+            connectionRepository.ignoreConnectionRequest(any(), any())
         }.returns(result)
     }
 }

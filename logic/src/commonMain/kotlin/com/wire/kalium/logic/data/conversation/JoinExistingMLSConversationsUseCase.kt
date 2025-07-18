@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mockable
 
@@ -46,7 +47,8 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
-    private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
+    private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : JoinExistingMLSConversationsUseCase {
 
     override suspend operator fun invoke(keepRetryingOnFailure: Boolean): Either<CoreFailure, Unit> =
@@ -56,50 +58,51 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
-                kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
+            transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
+                conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
+                    kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
+                    pendingConversations.map { conversation ->
+                        joinExistingMLSConversationUseCase(transactionContext, conversation.id)
+                            .flatMapLeft {
+                                when (it) {
+                                    is NetworkFailure -> {
+                                        if (it is NetworkFailure.ServerMiscommunication
+                                            && it.kaliumException is KaliumException.InvalidRequestError
+                                        ) {
+                                            kaliumLogger.w(
+                                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                        "due to invalid request error, skipping."
+                                            )
+                                            Either.Right(Unit)
+                                        } else {
+                                            kaliumLogger.w(
+                                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                        "due to network failure"
+                                            )
+                                            Either.Left(it)
+                                        }
+                                    }
 
-                return pendingConversations.map { conversation ->
-                    joinExistingMLSConversationUseCase(conversation.id)
-                        .flatMapLeft {
-                            when (it) {
-                                is NetworkFailure -> {
-                                    if (it is NetworkFailure.ServerMiscommunication
-                                        && it.kaliumException is KaliumException.InvalidRequestError
-                                    ) {
+                                    is CoreFailure.MissingKeyPackages -> {
                                         kaliumLogger.w(
                                             "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                    "due to invalid request error, skipping."
+                                                    "since some participants are out of key packages, skipping."
                                         )
                                         Either.Right(Unit)
-                                    } else {
+                                    }
+
+                                    else -> {
                                         kaliumLogger.w(
                                             "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                    "due to network failure"
+                                                    "due to $it, skipping.."
                                         )
-                                        Either.Left(it)
+                                        Either.Right(Unit)
                                     }
                                 }
-
-                                is CoreFailure.MissingKeyPackages -> {
-                                    kaliumLogger.w(
-                                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                "since some participants are out of key packages, skipping."
-                                    )
-                                    Either.Right(Unit)
-                                }
-
-                                else -> {
-                                    kaliumLogger.w(
-                                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                "due to $it, skipping.."
-                                    )
-                                    Either.Right(Unit)
-                                }
                             }
-                        }
-                }.foldToEitherWhileRight(Unit) { value, _ ->
-                    value
+                    }.foldToEitherWhileRight(Unit) { value, _ ->
+                        value
+                    }
                 }
             }
         }

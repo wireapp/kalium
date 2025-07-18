@@ -29,6 +29,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.util.DateTimeUtil
 
@@ -50,29 +51,33 @@ internal class AcceptConnectionRequestUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val oneOnOneResolver: OneOnOneResolver,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
-    private val fetchConversation: FetchConversationUseCase
+    private val fetchConversation: FetchConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : AcceptConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
-            .flatMap { connection ->
-                fetchConversation(connection.qualifiedConversationId)
-                    .flatMap {
-                        conversationRepository.updateConversationModifiedDate(
-                            connection.qualifiedConversationId,
-                            DateTimeUtil.currentInstant()
-                        )
-                    }.flatMap {
-                        oneOnOneResolver.resolveOneOnOneConversationWithUserId(
-                            userId = connection.qualifiedToId,
-                            invalidateCurrentKnownProtocols = true
-                        ).map { }
-                    }.flatMap {
-                        newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                            connection.qualifiedConversationId
-                        )
-                    }
-            }
+        return transactionProvider.transaction("AcceptConnection") { transactionContext ->
+            connectionRepository.updateConnectionStatus(transactionContext, userId, ConnectionState.ACCEPTED)
+                .flatMap { connection ->
+                    fetchConversation(transactionContext, connection.qualifiedConversationId)
+                        .flatMap {
+                            conversationRepository.updateConversationModifiedDate(
+                                connection.qualifiedConversationId,
+                                DateTimeUtil.currentInstant()
+                            )
+                        }.flatMap {
+                            oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                                transactionContext = transactionContext,
+                                userId = connection.qualifiedToId,
+                                invalidateCurrentKnownProtocols = true
+                            ).map { }
+                        }.flatMap {
+                            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                                connection.qualifiedConversationId
+                            )
+                        }
+                }
+        }
             .fold({
                 kaliumLogger.e("An error occurred when accepting the connection request from ${userId.toLogString()}: $it")
                 AcceptConnectionRequestUseCaseResult.Failure(it)

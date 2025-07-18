@@ -25,10 +25,13 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
+import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
@@ -161,7 +164,7 @@ class MLSConfigHandlerTest {
         )
 
         coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(true))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -183,7 +186,7 @@ class MLSConfigHandlerTest {
         )
 
         coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(false))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(false))
         }.wasInvoked(exactly = once)
     }
 
@@ -230,18 +233,21 @@ class MLSConfigHandlerTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
-        fun arrange() = run {
+        suspend fun arrange() = run {
+            withTransactionReturning(Either.Right(Unit))
             runBlocking { block() }
             this@Arrangement to MLSConfigHandler(
                 userConfigRepository = userConfigRepository,
-                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes
+                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val SELF_USER_ID = TestUser.USER_ID
         val MLS_CONFIG = MLSModel(

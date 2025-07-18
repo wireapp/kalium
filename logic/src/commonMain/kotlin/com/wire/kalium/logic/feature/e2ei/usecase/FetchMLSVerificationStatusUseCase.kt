@@ -18,12 +18,20 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -36,14 +44,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.error.wrapMLSRequest
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
@@ -55,7 +55,7 @@ typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
  */
 @Mockable
 internal interface FetchMLSVerificationStatusUseCase {
-    suspend operator fun invoke(groupId: GroupID)
+    suspend operator fun invoke(mlsContext: MlsCoreCryptoContext, groupId: GroupID)
 }
 
 data class VerificationStatusData(
@@ -68,7 +68,6 @@ data class VerificationStatusData(
 internal class FetchMLSVerificationStatusUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val mlsClientProvider: MLSClientProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val selfUserId: UserId,
     private val userRepository: UserRepository,
@@ -77,22 +76,19 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
 
     private val logger = kaliumLogger.withTextTag("FetchMLSVerificationStatusUseCaseImpl")
 
-    override suspend fun invoke(groupId: GroupID) {
-        mlsClientProvider.getMLSClient()
-            .flatMap { mlsClient ->
-                wrapMLSRequest { mlsClient.isGroupVerified(groupId.value) }.map {
-                    it.toModel()
-                }
-            }.flatMap { ccGroupStatus ->
+    override suspend fun invoke(mlsContext: MlsCoreCryptoContext, groupId: GroupID) {
+        wrapMLSRequest { mlsContext.isGroupVerified(groupId.value) }
+            .map { it.toModel() }
+            .flatMap { ccGroupStatus ->
                 if (ccGroupStatus == VerificationStatus.VERIFIED) {
-                    verifyUsersStatus(groupId)
+                    verifyUsersStatus(mlsContext, groupId)
                 } else {
                     conversationRepository.getConversationByMLSGroupId(groupId).map {
                         VerificationStatusData(
                             conversationId = it.id,
                             currentPersistedStatus = it.mlsVerificationStatus,
                             newStatus =
-                            ccGroupStatus
+                                ccGroupStatus
                         )
                     }
                 }
@@ -101,10 +97,11 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
             }
     }
 
-    private suspend fun verifyUsersStatus(groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
+    private suspend fun verifyUsersStatus(mlsContext: MlsCoreCryptoContext, groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
         conversationRepository.getGroupStatusMembersNamesAndHandles(groupId)
             .flatMap { epochChangesData ->
                 mlsConversationRepository.getMembersIdentities(
+                    mlsContext,
                     epochChangesData.conversationId,
                     epochChangesData.members.keys.toList()
                 )

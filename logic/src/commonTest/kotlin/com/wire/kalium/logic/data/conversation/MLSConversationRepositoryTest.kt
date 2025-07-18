@@ -64,6 +64,8 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
@@ -110,15 +112,14 @@ class MLSConversationRepositoryTest {
                 crlNewDistributionPoints = listOf("url")
             )
             val (arrangement, mlsConversationRepository) = Arrangement()
-                .withGetMLSClientSuccessful()
                 .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
                 .withCheckRevocationListResult()
                 .arrange()
 
-            mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+            mlsConversationRepository.decryptMessage(arrangement.mlsContext, Arrangement.COMMIT, Arrangement.GROUP_ID)
 
             coVerify {
-                arrangement.checkRevocationList.check(any())
+                arrangement.checkRevocationList.check(any(), any())
             }.wasInvoked(once)
 
             coVerify {
@@ -132,20 +133,24 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
+        val result = mlsConversationRepository.establishMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_1),
+            publicKeys = null
+        )
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.createConversation(Arrangement.RAW_GROUP_ID, Arrangement.CRYPTO_MLS_PUBLIC_KEY)
+            arrangement.mlsContext.createConversation(Arrangement.RAW_GROUP_ID, Arrangement.CRYPTO_MLS_PUBLIC_KEY)
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasInvoked(once)
     }
 
@@ -157,12 +162,12 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = usersMissingKeyPackages)
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.establishMLSGroup(
+            arrangement.mlsContext,
             Arrangement.GROUP_ID,
             listOf(TestConversation.USER_1, userMissingKeyPackage)
         )
@@ -172,15 +177,15 @@ class MLSConversationRepositoryTest {
         }
 
         coVerify {
-            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.mlsClient.wipeConversation(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.wipeConversation(eq(Arrangement.RAW_GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -195,12 +200,12 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.establishMLSGroup(
+            arrangement.mlsContext,
             Arrangement.GROUP_ID,
             (usersWithKeyPackages + userMissingKeyPackage).toList(),
             allowSkippingUsersWithoutKeyPackages = true
@@ -211,15 +216,15 @@ class MLSConversationRepositoryTest {
         }
 
         coVerify {
-            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), matches { it.size == usersWithKeyPackages.size })
+            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), matches { it.size == usersWithKeyPackages.size })
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsClient.wipeConversation(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.wipeConversation(eq(Arrangement.RAW_GROUP_ID))
         }.wasNotInvoked()
     }
 
@@ -229,24 +234,28 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .arrange()
 
         val result =
-            mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = MLS_PUBLIC_KEY)
+            mlsConversationRepository.establishMLSGroup(
+                arrangement.mlsContext,
+                Arrangement.GROUP_ID,
+                listOf(TestConversation.USER_1),
+                publicKeys = MLS_PUBLIC_KEY
+            )
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.createConversation(
+            arrangement.mlsContext.createConversation(
                 groupId = eq(Arrangement.RAW_GROUP_ID),
                 externalSenders = any()
             )
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsClient.addMember(
+            arrangement.mlsContext.addMember(
                 groupId = eq(Arrangement.RAW_GROUP_ID),
                 membersKeyPackages = any()
             )
@@ -263,21 +272,25 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .arrange()
 
         val result =
-            mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
+            mlsConversationRepository.establishMLSGroup(
+                arrangement.mlsContext,
+                Arrangement.GROUP_ID,
+                listOf(TestConversation.USER_1),
+                publicKeys = null
+            )
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -291,18 +304,22 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful(listOf("url"))
             .withCheckRevocationListResult()
             .arrange()
 
         val result =
-            mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = MLS_PUBLIC_KEY)
+            mlsConversationRepository.establishMLSGroup(
+                arrangement.mlsContext,
+                Arrangement.GROUP_ID,
+                listOf(TestConversation.USER_1),
+                publicKeys = MLS_PUBLIC_KEY
+            )
         result.shouldSucceed()
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasInvoked(once)
     }
 
@@ -311,16 +328,20 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful(crlNewDistributionPoints = listOf("url"))
             .withCheckRevocationListResult()
             .arrange()
 
-        mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -334,16 +355,20 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
-            .withAddMLSMemberThrowing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withAddMLSMemberThrowing(MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
+        val result = mlsConversationRepository.establishMLSGroup(
+            mlsContext = arrangement.mlsContext,
+            groupID = Arrangement.GROUP_ID,
+            members = listOf(TestConversation.USER_1),
+            publicKeys = null
+        )
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.addMember(any(), any())
+            arrangement.mlsContext.addMember(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -353,20 +378,24 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberThrowing(Exception(Arrangement.MLS_STALE_MESSAGE_ERROR.message))
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
+        val result = mlsConversationRepository.establishMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_1),
+            publicKeys = null
+        )
         result.shouldFail()
 
         coVerify {
-            arrangement.mlsClient.addMember(any(), any())
+            arrangement.mlsContext.addMember(any(), any())
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsClient.wipeConversation(Arrangement.RAW_GROUP_ID)
+            arrangement.mlsContext.wipeConversation(Arrangement.RAW_GROUP_ID)
         }.wasInvoked(once)
     }
 
@@ -376,12 +405,16 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1), publicKeys = null)
+        val result = mlsConversationRepository.establishMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_1),
+            publicKeys = null
+        )
         result.shouldSucceed()
 
         coVerify {
@@ -400,16 +433,16 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = emptyList())
-            .withGetMLSClientSuccessful()
             .withKeyForCipherSuite()
             .withUpdateKeyingMaterialSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, emptyList(), publicKeys = null)
+        val result =
+            mlsConversationRepository.establishMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, emptyList(), publicKeys = null)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.updateKeyingMaterial(Arrangement.RAW_GROUP_ID)
+            arrangement.mlsContext.updateKeyingMaterial(Arrangement.RAW_GROUP_ID)
         }.wasInvoked(once)
     }
 
@@ -418,15 +451,14 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.addMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasInvoked(once)
     }
 
@@ -435,15 +467,14 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -452,15 +483,14 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
-            .withAddMLSMemberThrowing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withAddMLSMemberThrowing(MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.addMember(any(), any())
+            arrangement.mlsContext.addMember(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -468,13 +498,12 @@ class MLSConversationRepositoryTest {
     fun givenNonRecoverableError_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withAddMLSMemberThrowing(Arrangement.INVALID_REQUEST_ERROR, times = 1)
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldFail()
     }
 
@@ -482,27 +511,25 @@ class MLSConversationRepositoryTest {
     fun givenRetryLimitIsReached_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withClaimKeyPackagesSuccessful()
-            .withGetMLSClientSuccessful()
             .withAddMLSMemberThrowing(Arrangement.INVALID_REQUEST_ERROR, times = Int.MAX_VALUE)
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
         result.shouldFail()
     }
 
     @Test
     fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_ThenGroupStateIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withJoinByExternalCommitSuccessful()
             .arrange()
 
-        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+        mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         coVerify {
-            arrangement.mlsClient.joinByExternalCommit(any())
+            arrangement.mlsContext.joinByExternalCommit(any())
         }.wasInvoked(once)
 
         coVerify {
@@ -513,7 +540,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasNotInvoked()
     }
 
@@ -521,15 +548,14 @@ class MLSConversationRepositoryTest {
     fun givenMlsClientReturnsNewCrlDistributionPoints_whenJoiningGroupByExternalCommit_thenCheckRevocationList() = runTest {
         val welcomeBundleWithDistributionPoints = WELCOME_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withCheckRevocationListResult()
             .withJoinByExternalCommitSuccessful(welcomeBundleWithDistributionPoints)
             .arrange()
 
-        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+        mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -540,39 +566,36 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenNonRecoverableError_whenCallingJoinByExternalCommit_ThenReturnFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withJoinByExternalCommitThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
-        val result = mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+        val result = mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
         result.shouldFail()
     }
 
     @Test
     fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.commitPendingProposals(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
         }.wasInvoked(once)
     }
 
     @Test
     fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenProposalTimerIsClearedOnSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.commitPendingProposals(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldSucceed()
 
         coVerify {
@@ -583,11 +606,10 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenNonRecoverableError_whenCallingCommitPendingProposals_thenProposalTimerIsNotCleared() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withCommitPendingProposalsThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
-        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.commitPendingProposals(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldFail()
 
         coVerify {
@@ -598,11 +620,10 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenRetryLimitIsReached_whenCallingCommitPendingProposals_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withCommitPendingProposalsThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
             .arrange()
 
-        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.commitPendingProposals(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldFail()
     }
 
@@ -610,17 +631,16 @@ class MLSConversationRepositoryTest {
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
-            .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
-        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, users)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasInvoked(once)
     }
 
@@ -628,17 +648,16 @@ class MLSConversationRepositoryTest {
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenPendingProposalsAreFirstCommitted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
-            .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
-        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, users)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -646,13 +665,12 @@ class MLSConversationRepositoryTest {
     fun givenNonRecoverableError_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
-        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, users)
         result.shouldFail()
     }
 
@@ -660,13 +678,12 @@ class MLSConversationRepositoryTest {
     fun givenRetryLimitIsReached_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
-        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, users)
         result.shouldFail()
     }
 
@@ -674,17 +691,16 @@ class MLSConversationRepositoryTest {
     fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
-            .withRemoveMemberThrowing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withRemoveMemberThrowing(MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
-        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, users)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.removeMember(any(), any())
+            arrangement.mlsContext.removeMember(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -692,18 +708,17 @@ class MLSConversationRepositoryTest {
     fun givenStaleMessageError_whenCallingRemoveMemberFromGroup_thenRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing(times = 1)
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearProposalTimerSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
-        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, users)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.removeMember(any(), any())
+            arrangement.mlsContext.removeMember(any(), any())
         }.wasInvoked(twice)
     }
 
@@ -713,7 +728,6 @@ class MLSConversationRepositoryTest {
 
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
-            .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withMembers(clients.map {
@@ -724,11 +738,11 @@ class MLSConversationRepositoryTest {
             })
             .arrange()
 
-        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasInvoked(once)
     }
 
@@ -738,17 +752,16 @@ class MLSConversationRepositoryTest {
 
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
-            .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withMembers(listOf())
             .arrange()
 
-        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
+            arrangement.mlsContext.removeMember(eq(Arrangement.RAW_GROUP_ID), any())
         }.wasNotInvoked()
     }
 
@@ -758,7 +771,6 @@ class MLSConversationRepositoryTest {
 
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
-            .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withMembers(clients.map {
@@ -769,11 +781,11 @@ class MLSConversationRepositoryTest {
             })
             .arrange()
 
-        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
+            arrangement.mlsContext.commitPendingProposals(eq(Arrangement.RAW_GROUP_ID))
         }.wasInvoked(once)
     }
 
@@ -781,13 +793,12 @@ class MLSConversationRepositoryTest {
     fun givenNonRecoverableError_whenCallingRemoveClientsFromGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
         val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
-        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, clients)
         result.shouldFail()
     }
 
@@ -795,13 +806,12 @@ class MLSConversationRepositoryTest {
     fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
-            .withRemoveMemberThrowing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withRemoveMemberThrowing(MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
         val clients = listOf(QualifiedClientID(ClientId("client_a"), TestUser.USER_ID))
-        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, clients)
         result.shouldFail()
     }
 
@@ -811,7 +821,6 @@ class MLSConversationRepositoryTest {
 
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing(times = 1)
-            .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearProposalTimerSuccessful()
@@ -823,37 +832,35 @@ class MLSConversationRepositoryTest {
             })
             .arrange()
 
-        val result = mlsConversationRepository.removeClientsFromMLSGroup(Arrangement.GROUP_ID, clients)
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, clients)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.removeMember(any(), any())
+            arrangement.mlsContext.removeMember(any(), any())
         }.wasInvoked(twice)
     }
 
     @Test
     fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.updateKeyingMaterial(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.updateKeyingMaterial(any())
+            arrangement.mlsContext.updateKeyingMaterial(any())
         }.wasInvoked(once)
     }
 
     @Test
     fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenKeyingMaterialTimestampIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.updateKeyingMaterial(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldSucceed()
 
         coVerify {
@@ -864,24 +871,22 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenNonRecoverableError_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
-        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.updateKeyingMaterial(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldFail()
     }
 
     @Test
     fun givenRetryLimitIsReached_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withUpdateKeyingMaterialThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
             .arrange()
 
-        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.updateKeyingMaterial(arrangement.mlsContext, Arrangement.GROUP_ID)
         result.shouldFail()
     }
 
@@ -890,23 +895,21 @@ class MLSConversationRepositoryTest {
         val returnEpoch = 10UL
         val conversationEpoch = 5UL
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetGroupEpochReturn(returnEpoch)
             .arrange()
 
-        val result = mlsConversationRepository.isGroupOutOfSync(Arrangement.GROUP_ID, conversationEpoch)
+        val result = mlsConversationRepository.isGroupOutOfSync(arrangement.mlsContext, Arrangement.GROUP_ID, conversationEpoch)
         result.shouldSucceed()
 
         coVerify {
-            arrangement.mlsClient.conversationEpoch(any())
+            arrangement.mlsContext.conversationEpoch(any())
         }.wasInvoked(once)
 
     }
 
     @Test
     fun givenSuccessResponse_whenSendingCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
-        val (_, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withUpdateKeyingMaterialSuccessful()
             .arrange()
 
@@ -915,15 +918,14 @@ class MLSConversationRepositoryTest {
         }
         yield()
 
-        mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        mlsConversationRepository.updateKeyingMaterial(arrangement.mlsContext, Arrangement.GROUP_ID)
 
         assertEquals(Arrangement.GROUP_ID, epochChange.await())
     }
 
     @Test
     fun givenSuccessResponse_whenSendingExternalCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
-        val (_, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withJoinByExternalCommitSuccessful()
             .arrange()
 
@@ -932,7 +934,7 @@ class MLSConversationRepositoryTest {
         }
         yield()
 
-        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, ByteArray(0))
+        mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, ByteArray(0))
 
         assertEquals(Arrangement.GROUP_ID, epochChange.await())
     }
@@ -940,7 +942,6 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessResponse_whenRotatingKeysAndMigratingConversation_thenReturnsSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsSuccessful()
             .withSaveX509CredentialsSuccessful(listOf())
@@ -952,6 +953,7 @@ class MLSConversationRepositoryTest {
         assertEquals(
             Either.Right(Unit),
             mlsConversationRepository.rotateKeysAndMigrateConversations(
+                arrangement.mlsContext,
                 TestClient.CLIENT_ID,
                 arrangement.e2eiClient,
                 "",
@@ -960,7 +962,7 @@ class MLSConversationRepositoryTest {
         )
 
         coVerify {
-            arrangement.mlsClient.e2eiRotateGroups(any())
+            arrangement.mlsContext.e2eiRotateGroups(any())
         }.wasInvoked(once)
 
         coVerify {
@@ -968,18 +970,17 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.mlsClient.removeStaleKeyPackages()
+            arrangement.mlsContext.removeStaleKeyPackages()
         }.wasInvoked(once)
     }
 
     @Test
     fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsSuccessful()
             .withSaveX509CredentialsSuccessful(listOf("url"))
@@ -991,14 +992,17 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result = mlsConversationRepository.rotateKeysAndMigrateConversations(
-            TestClient.CLIENT_ID, arrangement.e2eiClient, "",
-            listOf(Arrangement.GROUP_ID)
+            mlsContext = arrangement.mlsContext,
+            clientId = TestClient.CLIENT_ID,
+            e2eiClient = arrangement.e2eiClient,
+            certificateChain = "",
+            groupIdList = listOf(Arrangement.GROUP_ID)
         )
 
         result.shouldSucceed()
 
         coVerify {
-            arrangement.checkRevocationList.check(any())
+            arrangement.checkRevocationList.check(any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1009,7 +1013,6 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsSuccessful()
             .withKeyPackageLimits(10)
@@ -1021,13 +1024,16 @@ class MLSConversationRepositoryTest {
         assertEquals(
             E2EIFailure.RotationAndMigration(TEST_FAILURE.value).left(),
             mlsConversationRepository.rotateKeysAndMigrateConversations(
-                TestClient.CLIENT_ID, arrangement.e2eiClient, "",
+                arrangement.mlsContext,
+                TestClient.CLIENT_ID,
+                arrangement.e2eiClient,
+                "",
                 listOf(Arrangement.GROUP_ID)
             )
         )
 
         coVerify {
-            arrangement.mlsClient.e2eiRotateGroups(any())
+            arrangement.mlsContext.e2eiRotateGroups(any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1038,7 +1044,6 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSendingCommitBundlesFails_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withRotateGroupsThrowing(MLS_CLIENT_MISMATCH_ERROR)
             .withSaveX509CredentialsSuccessful(listOf())
@@ -1048,6 +1053,7 @@ class MLSConversationRepositoryTest {
 
 
         val result = mlsConversationRepository.rotateKeysAndMigrateConversations(
+            arrangement.mlsContext,
             TestClient.CLIENT_ID,
             arrangement.e2eiClient,
             "",
@@ -1056,7 +1062,7 @@ class MLSConversationRepositoryTest {
         result.shouldFail()
 
         coVerify {
-            arrangement.mlsClient.e2eiRotateGroups(any())
+            arrangement.mlsContext.e2eiRotateGroups(any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1067,15 +1073,14 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdSucceed_thenReturnsIdentity() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
-        assertEquals(Either.Right(WIRE_IDENTITY), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
+        assertEquals(Either.Right(WIRE_IDENTITY), mlsConversationRepository.getClientIdentity(arrangement.mlsContext, TestClient.CLIENT_ID))
 
         coVerify {
-            arrangement.mlsClient.getDeviceIdentities(any(), any())
+            arrangement.mlsContext.getDeviceIdentities(any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1086,15 +1091,17 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdFails_thenReturnsError() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(null)
             .arrange()
 
-        assertEquals(Either.Left(StorageFailure.DataNotFound), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
+        assertEquals(
+            Either.Left(StorageFailure.DataNotFound),
+            mlsConversationRepository.getClientIdentity(arrangement.mlsContext, TestClient.CLIENT_ID)
+        )
 
         coVerify {
-            arrangement.mlsClient.getDeviceIdentities(any(), any())
+            arrangement.mlsContext.getDeviceIdentities(any(), any())
         }.wasNotInvoked()
 
         coVerify {
@@ -1105,15 +1112,14 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenGetClientId_whenGetUserIdentitiesEmpty_thenReturnsNull() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(emptyList())
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
-        assertEquals(Either.Right(null), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
+        assertEquals(Either.Right(null), mlsConversationRepository.getClientIdentity(arrangement.mlsContext, TestClient.CLIENT_ID))
 
         coVerify {
-            arrangement.mlsClient.getDeviceIdentities(any(), any())
+            arrangement.mlsContext.getDeviceIdentities(any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1125,7 +1131,6 @@ class MLSConversationRepositoryTest {
     fun givenSelfUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetUserIdentitiesReturn(
                 mapOf(
@@ -1135,10 +1140,13 @@ class MLSConversationRepositoryTest {
             )
             .arrange()
 
-        assertEquals(Either.Right(listOf(WIRE_IDENTITY)), mlsConversationRepository.getUserIdentity(TestUser.USER_ID))
+        assertEquals(
+            Either.Right(listOf(WIRE_IDENTITY)),
+            mlsConversationRepository.getUserIdentity(arrangement.mlsContext, TestUser.USER_ID)
+        )
 
         coVerify {
-            arrangement.mlsClient.getUserIdentities(eq(groupId), any())
+            arrangement.mlsContext.getUserIdentities(eq(groupId), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1154,7 +1162,6 @@ class MLSConversationRepositoryTest {
     fun givenOtherUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(
                 mapOf(
                     TestUser.OTHER_USER_ID.value to listOf(WIRE_IDENTITY),
@@ -1164,10 +1171,13 @@ class MLSConversationRepositoryTest {
             .withGetMLSGroupIdByUserIdReturns(groupId)
             .arrange()
 
-        assertEquals(Either.Right(listOf(WIRE_IDENTITY)), mlsConversationRepository.getUserIdentity(TestUser.OTHER_USER_ID))
+        assertEquals(
+            Either.Right(listOf(WIRE_IDENTITY)),
+            mlsConversationRepository.getUserIdentity(arrangement.mlsContext, TestUser.OTHER_USER_ID)
+        )
 
         coVerify {
-            arrangement.mlsClient.getUserIdentities(eq(groupId), any())
+            arrangement.mlsContext.getUserIdentities(eq(groupId), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.conversationDAO.getMLSGroupIdByUserId(any())
@@ -1181,7 +1191,6 @@ class MLSConversationRepositoryTest {
         val member2 = TestUser.USER_ID.copy(value = "member_2_id")
         val member3 = TestUser.USER_ID.copy(value = "member_3_id")
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(
                 mapOf(
                     member1.value to listOf(WIRE_IDENTITY),
@@ -1198,11 +1207,11 @@ class MLSConversationRepositoryTest {
                     member2 to listOf(WIRE_IDENTITY.copy(clientId = CRYPTO_CLIENT_ID.copy("member_2_client_id")))
                 )
             ),
-            mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(member1, member2, member3))
+            mlsConversationRepository.getMembersIdentities(arrangement.mlsContext, TestConversation.ID, listOf(member1, member2, member3))
         )
 
         coVerify {
-            arrangement.mlsClient.getUserIdentities(eq(groupId), any())
+            arrangement.mlsContext.getUserIdentities(eq(groupId), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1218,7 +1227,6 @@ class MLSConversationRepositoryTest {
             val (arrangement, mlsConversationRepository) = Arrangement()
                 .withCommitPendingProposalsReturningNothing()
                 .withClaimKeyPackagesSuccessful(emptyList()) // empty cause members is empty in case of establishMLSSubConversationGroup
-                .withGetMLSClientSuccessful()
                 .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
                 .withGetExternalSenderKeySuccessful()
                 .withKeyForCipherSuite()
@@ -1226,15 +1234,19 @@ class MLSConversationRepositoryTest {
                 .withGetDefaultCipherSuite(defaultCipherSuite)
                 .arrange()
 
-            val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+            val result = mlsConversationRepository.establishMLSSubConversationGroup(
+                arrangement.mlsContext,
+                Arrangement.GROUP_ID,
+                TestConversation.ID
+            )
             result.shouldSucceed()
 
             coVerify {
-                arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.EXTERNAL_SENDER_KEY.value))
+                arrangement.mlsContext.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.EXTERNAL_SENDER_KEY.value))
             }.wasInvoked(once)
 
             coVerify {
-                arrangement.mlsClient.updateKeyingMaterial(any())
+                arrangement.mlsContext.updateKeyingMaterial(any())
             }.wasInvoked(once)
         }
 
@@ -1251,13 +1263,12 @@ class MLSConversationRepositoryTest {
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
-        val (_, mlsConversationRepository) = Arrangement()
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
-            .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
             .arrange()
         // when
-        val result = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
+        val result = mlsConversationRepository.getUserIdentity(arrangement.mlsContext, TestUser.USER_ID)
         // then
         result.shouldSucceed() {
             it.forEach {
@@ -1281,13 +1292,12 @@ class MLSConversationRepositoryTest {
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
-        val (_, mlsConversationRepository) = Arrangement()
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSGroupIdByConversationIdReturns(groupId)
-            .withGetMLSClientSuccessful()
             .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
             .arrange()
         // when
-        val result = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
+        val result = mlsConversationRepository.getMembersIdentities(arrangement.mlsContext, TestConversation.ID, listOf(TestUser.USER_ID))
         // then
         result.shouldSucceed() {
             it.values.forEach {
@@ -1305,7 +1315,6 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(emptyList())
-            .withGetMLSClientSuccessful()
             .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
             .withGetExternalSenderKeySuccessful()
             .withGetDefaultCipherSuiteSuccessful()
@@ -1313,11 +1322,12 @@ class MLSConversationRepositoryTest {
             .withUpdateKeyingMaterialThrowing(Arrangement.MLS_COMMIT_MISSING_REFERENCES_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+        val result =
+            mlsConversationRepository.establishMLSSubConversationGroup(arrangement.mlsContext, Arrangement.GROUP_ID, TestConversation.ID)
 
         result.shouldSucceed()
 
-        coVerify { arrangement.mlsClient.updateKeyingMaterial(any()) }.wasInvoked(2) // Retry should occur
+        coVerify { arrangement.mlsContext.updateKeyingMaterial(any()) }.wasInvoked(2) // Retry should occur
     }
 
     @Test
@@ -1325,7 +1335,6 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsSuccessful()
             .withClaimKeyPackagesSuccessful(emptyList())
-            .withGetMLSClientSuccessful()
             .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
             .withGetExternalSenderKeySuccessful()
             .withKeyForCipherSuite()
@@ -1333,11 +1342,11 @@ class MLSConversationRepositoryTest {
             .withUpdateKeyingMaterialThrowing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.updateKeyingMaterial(arrangement.mlsContext, Arrangement.GROUP_ID)
 
         result.shouldSucceed()
 
-        coVerify { arrangement.mlsClient.updateKeyingMaterial(any()) }.wasInvoked(2) // Retry should occur
+        coVerify { arrangement.mlsContext.updateKeyingMaterial(any()) }.wasInvoked(2) // Retry should occur
     }
 
     @Test
@@ -1345,7 +1354,6 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(emptyList())
-            .withGetMLSClientSuccessful()
             .withGetDefaultCipherSuiteSuccessful()
             .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
             .withGetExternalSenderKeySuccessful()
@@ -1354,21 +1362,20 @@ class MLSConversationRepositoryTest {
             .withUpdateKeyingMaterialThrowing(Arrangement.INVALID_REQUEST_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+        val result =
+            mlsConversationRepository.establishMLSSubConversationGroup(arrangement.mlsContext, Arrangement.GROUP_ID, TestConversation.ID)
 
         result.shouldFail()
 
-        coVerify { arrangement.mlsClient.updateKeyingMaterial(any()) }.wasInvoked(1) // No retry should happen
+        coVerify { arrangement.mlsContext.updateKeyingMaterial(any()) }.wasInvoked(1) // No retry should happen
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val keyPackageRepository = mock(KeyPackageRepository::class)
         val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
         val conversationDAO = mock(ConversationDAO::class)
         val clientApi = mock(ClientApi::class)
-        val mlsClient = mock(MLSClient::class)
         val e2eiClient = mock(E2EIClient::class)
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
         val checkRevocationList = mock(RevocationListChecker::class)
@@ -1382,7 +1389,6 @@ class MLSConversationRepositoryTest {
         suspend fun arrange() = this to MLSConversationDataSource(
             TestUser.SELF.id,
             keyPackageRepository,
-            mlsClientProvider,
             conversationDAO,
             clientApi,
             mlsPublicKeysRepository,
@@ -1431,33 +1437,27 @@ class MLSConversationRepositoryTest {
             }.returns(Either.Right(CRYPTO_MLS_PUBLIC_KEY))
         }
 
-        suspend fun withGetMLSClientSuccessful() = apply {
-            coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
-        }
-
         fun withGetDefaultCipherSuiteSuccessful() = apply {
             every {
-                mlsClient.getDefaultCipherSuite()
+                mlsContext.getDefaultCipherSuite()
             }.returns(CIPHER_SUITE.toCrypto())
         }
 
         suspend fun withGetExternalSenderKeySuccessful() = apply {
             coEvery {
-                mlsClient.getExternalSenders(any())
+                mlsContext.getExternalSenders(any())
             }.returns(EXTERNAL_SENDER_KEY)
         }
 
         suspend fun withRotateGroupsSuccessful() = apply {
             coEvery {
-                mlsClient.e2eiRotateGroups(any())
+                mlsContext.e2eiRotateGroups(any())
             }.returns(Unit)
         }
 
         suspend fun withRotateGroupsThrowing(exception: Exception, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            coEvery { mlsClient.e2eiRotateGroups(any()) }
+            coEvery { mlsContext.e2eiRotateGroups(any()) }
                 .invokes { _ ->
                     if (invocationCounter < times) {
                         invocationCounter++
@@ -1470,25 +1470,25 @@ class MLSConversationRepositoryTest {
 
         suspend fun withSaveX509CredentialsSuccessful(distributionPoints: List<String>?) = apply {
             coEvery {
-                mlsClient.saveX509Credential(any(), any())
+                mlsContext.saveX509Credential(any(), any())
             }.returns(distributionPoints)
         }
 
         suspend fun removeStaleKeyPackages() = apply {
             coEvery {
-                mlsClient.removeStaleKeyPackages()
+                mlsContext.removeStaleKeyPackages()
             }.returns(Unit)
         }
 
         suspend fun withGenerateKeyPackageSuccessful(keyPackages: List<ByteArray>) = apply {
             coEvery {
-                mlsClient.generateKeyPackages(any())
+                mlsContext.generateKeyPackages(any())
             }.returns(keyPackages)
         }
 
         suspend fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {
             coEvery {
-                mlsClient.getDeviceIdentities(any(), any())
+                mlsContext.getDeviceIdentities(any(), any())
             }.returns(identities)
         }
 
@@ -1506,7 +1506,7 @@ class MLSConversationRepositoryTest {
 
         suspend fun withAddMLSMemberSuccessful(crlNewDistributionPoints: List<String>? = null) = apply {
             coEvery {
-                mlsClient.addMember(any(), any())
+                mlsContext.addMember(any(), any())
             }.returns(crlNewDistributionPoints)
         }
 
@@ -1515,7 +1515,7 @@ class MLSConversationRepositoryTest {
             crlNewDistributionPoints: List<String>? = null
         ) = apply {
             var invocationCounter = 0
-            coEvery { mlsClient.addMember(any(), any()) }
+            coEvery { mlsContext.addMember(any(), any()) }
                 .invokes { _ ->
                     if (invocationCounter < times) {
                         invocationCounter++
@@ -1528,14 +1528,14 @@ class MLSConversationRepositoryTest {
 
         suspend fun withGetGroupEpochReturn(epoch: ULong) = apply {
             coEvery {
-                mlsClient.conversationEpoch(any())
+                mlsContext.conversationEpoch(any())
             }.returns(epoch)
         }
 
 
         suspend fun withJoinByExternalCommitSuccessful(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
             coEvery {
-                mlsClient.joinByExternalCommit(any())
+                mlsContext.joinByExternalCommit(any())
             }.returns(welcomeBundle)
         }
 
@@ -1544,7 +1544,7 @@ class MLSConversationRepositoryTest {
             welcomeBundle: WelcomeBundle = WELCOME_BUNDLE,
         ) = apply {
             var invocationCounter = 0
-            coEvery { mlsClient.joinByExternalCommit(any()) }
+            coEvery { mlsContext.joinByExternalCommit(any()) }
                 .invokes { _ ->
                     if (invocationCounter < times) {
                         invocationCounter++
@@ -1557,13 +1557,13 @@ class MLSConversationRepositoryTest {
 
         suspend fun withCommitPendingProposalsSuccessful() = apply {
             coEvery {
-                mlsClient.commitPendingProposals(any())
+                mlsContext.commitPendingProposals(any())
             }.returns(Unit)
         }
 
         suspend fun withCommitPendingProposalsThrowing(exception: Exception, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            coEvery { mlsClient.commitPendingProposals(any()) }
+            coEvery { mlsContext.commitPendingProposals(any()) }
                 .invokes { _ ->
                     if (invocationCounter < times) {
                         invocationCounter++
@@ -1578,19 +1578,19 @@ class MLSConversationRepositoryTest {
             withCommitPendingProposalsSuccessful()
             var invocationCounter = 0
             coEvery {
-                mlsClient.commitPendingProposals(matches { invocationCounter += 1; invocationCounter <= times })
+                mlsContext.commitPendingProposals(matches { invocationCounter += 1; invocationCounter <= times })
             }.returns(Unit)
         }
 
         suspend fun withUpdateKeyingMaterialSuccessful() = apply {
             coEvery {
-                mlsClient.updateKeyingMaterial(any())
+                mlsContext.updateKeyingMaterial(any())
             }.returns(Unit)
         }
 
         suspend fun withUpdateKeyingMaterialThrowing(exception: Exception, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            coEvery { mlsClient.updateKeyingMaterial(any()) }
+            coEvery { mlsContext.updateKeyingMaterial(any()) }
                 .invokes { _ ->
                     if (invocationCounter < times) {
                         invocationCounter++
@@ -1603,31 +1603,31 @@ class MLSConversationRepositoryTest {
 
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
-                checkRevocationList.check(any())
+                checkRevocationList.check(any(), any())
             }.returns(Either.Right(1uL))
         }
 
         suspend fun withRemoveStaleKeyPackages() = apply {
             coEvery {
-                mlsClient.removeStaleKeyPackages()
+                mlsContext.removeStaleKeyPackages()
             }.returns(Unit)
         }
 
         suspend fun withDecryptMLSMessageSuccessful(decryptedMessage: com.wire.kalium.cryptography.DecryptedMessageBundle) = apply {
             coEvery {
-                mlsClient.decryptMessage(any(), any())
+                mlsContext.decryptMessage(any(), any())
             }.returns(listOf(decryptedMessage))
         }
 
         suspend fun withRemoveMemberSuccessful() = apply {
             coEvery {
-                mlsClient.removeMember(any(), any())
+                mlsContext.removeMember(any(), any())
             }.returns(Unit)
         }
 
         suspend fun withRemoveMemberThrowing(exception: Exception, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            coEvery { mlsClient.removeMember(any(), any()) }
+            coEvery { mlsContext.removeMember(any(), any()) }
                 .invokes { _ ->
                     if (invocationCounter < times) {
                         invocationCounter++
@@ -1659,19 +1659,19 @@ class MLSConversationRepositoryTest {
 
         suspend fun withGetUserIdentitiesReturn(identitiesMap: Map<String, List<WireIdentity>>) = apply {
             coEvery {
-                mlsClient.getUserIdentities(any(), any())
+                mlsContext.getUserIdentities(any(), any())
             }.returns(identitiesMap)
         }
 
         fun withGetDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
             every {
-                mlsClient.getDefaultCipherSuite()
+                mlsContext.getDefaultCipherSuite()
             }.returns(cipherSuite.toCrypto())
         }
 
         suspend fun withMembers(members: List<CryptoQualifiedClientId>) = apply {
             coEvery {
-                mlsClient.members(any())
+                mlsContext.members(any())
             }.returns(members)
         }
 

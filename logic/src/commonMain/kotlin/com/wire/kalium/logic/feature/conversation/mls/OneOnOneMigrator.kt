@@ -35,6 +35,7 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 import io.mockative.Mockable
@@ -54,7 +55,7 @@ interface OneOnOneMigrator {
     /**
      * Perform migration of Proteus to MLS keeping history and marking the new conversation as active.
      */
-    suspend fun migrateToMLS(user: OtherUser): Either<CoreFailure, ConversationId>
+    suspend fun migrateToMLS(transactionContext: CryptoTransactionContext, user: OtherUser): Either<CoreFailure, ConversationId>
 }
 
 @Suppress("LongParameterList")
@@ -92,8 +93,8 @@ internal class OneOnOneMigratorImpl(
             Either.Right(conversationId)
         }
 
-    override suspend fun migrateToMLS(user: OtherUser): Either<CoreFailure, ConversationId> {
-        return getResolvedMLSOneOnOne(user.id)
+    override suspend fun migrateToMLS(transactionContext: CryptoTransactionContext, user: OtherUser): Either<CoreFailure, ConversationId> {
+        return getResolvedMLSOneOnOne(transactionContext, user.id)
             .flatMap { mlsConversation ->
                 if (user.activeOneOnOneConversationId == mlsConversation) {
                     kaliumLogger.d(

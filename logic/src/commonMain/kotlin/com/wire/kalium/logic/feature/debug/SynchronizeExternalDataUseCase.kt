@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 
 fun interface SynchronizeExternalDataUseCase {
@@ -44,18 +45,22 @@ sealed class SynchronizeExternalDataResult {
 
 internal class SynchronizeExternalDataUseCaseImpl(
     val eventRepository: EventRepository,
-    val eventProcessor: EventProcessor
+    val eventProcessor: EventProcessor,
+    private val transactionProvider: CryptoTransactionProvider
 ) : SynchronizeExternalDataUseCase {
 
     override suspend operator fun invoke(
         data: String,
     ): SynchronizeExternalDataResult {
-        return eventRepository.parseExternalEvents(data).foldToEitherWhileRight(Unit) { event, _ ->
-            eventProcessor.processEvent(event)
-        }.fold({
-            return@fold SynchronizeExternalDataResult.Failure(it)
-        }, {
-            return@fold SynchronizeExternalDataResult.Success
-        })
+        return transactionProvider.transaction("SynchronizeExternalData") { transactionContext ->
+            eventRepository.parseExternalEvents(data).foldToEitherWhileRight(Unit) { event, _ ->
+                eventProcessor.processEvent(transactionContext, event)
+            }
+        }
+            .fold({
+                return@fold SynchronizeExternalDataResult.Failure(it)
+            }, {
+                return@fold SynchronizeExternalDataResult.Success
+            })
     }
 }

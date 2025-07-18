@@ -17,8 +17,11 @@
  */
 package com.wire.kalium.logic.feature.featureConfig.handler
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
@@ -61,7 +64,7 @@ class MLSMigrationConfigHandlerTest {
         )
 
         coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(true))
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -80,18 +83,23 @@ class MLSMigrationConfigHandlerTest {
         )
 
         coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any())
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
         }.wasNotInvoked()
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                withTransactionReturning(Either.Right(Unit))
+                block()
+            }
             this@Arrangement to MLSMigrationConfigHandler(
                 userConfigRepository = userConfigRepository,
-                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes
+                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }

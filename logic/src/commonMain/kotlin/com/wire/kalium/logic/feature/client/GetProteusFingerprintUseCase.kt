@@ -19,8 +19,9 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * Use case to get fingerprint of current user client (device). Only applies to proteus devices.
@@ -30,14 +31,19 @@ interface GetProteusFingerprintUseCase {
 }
 
 class GetProteusFingerprintUseCaseImpl internal constructor(
-    private val preKeyRepository: PreKeyRepository
+    private val transactionProvider: CryptoTransactionProvider
 ) : GetProteusFingerprintUseCase {
     override suspend fun invoke(): GetProteusFingerprintResult {
-        return preKeyRepository.getLocalFingerprint().fold({
-            GetProteusFingerprintResult.Failure(it)
-        }, {
-            GetProteusFingerprintResult.Success(it.decodeToString())
-        })
+        return transactionProvider.proteusTransaction("GetProteusFingerprint") {
+            wrapProteusRequest {
+                it.getLocalFingerprint()
+            }
+        }
+            .fold({
+                GetProteusFingerprintResult.Failure(it)
+            }, {
+                GetProteusFingerprintResult.Success(it.decodeToString())
+            })
     }
 }
 

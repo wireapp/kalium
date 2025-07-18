@@ -19,12 +19,15 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -32,53 +35,59 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CancelConnectionRequestUseCaseTest {
 
-    private val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
-
-    lateinit var cancelConnectionRequestUseCase: CancelConnectionRequestUseCase
-
-    @BeforeTest
-    fun setUp() {
-        cancelConnectionRequestUseCase = CancelConnectionRequestUseCaseImpl(connectionRepository)
-    }
-
     @Test
     fun givenAConnectionRequest_whenInvokingCancelConnectionRequestAndOk_thenShouldReturnsASuccessResult() = runTest {
         // given
-        coEvery {
-            connectionRepository.updateConnectionStatus(eq(userId), eq(ConnectionState.CANCELLED))
-        }.returns(Either.Right(connection))
+        val (arrangement, useCase) = Arrangement()
+            .withCancelResult(Either.Right(connection))
+            .arrange()
 
         // when
-        val resultOk = cancelConnectionRequestUseCase(userId)
+        val resultOk = useCase(userId)
 
         // then
         assertEquals(CancelConnectionRequestUseCaseResult.Success, resultOk)
         coVerify {
-            connectionRepository.updateConnectionStatus(eq(userId), eq(ConnectionState.CANCELLED))
+            arrangement.connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
         }.wasInvoked(once)
     }
 
     @Test
     fun givenAConnectionRequest_whenInvokingCancelConnectionRequestAndFails_thenShouldReturnsAFailureResult() = runTest {
         // given
-        coEvery {
-            connectionRepository.updateConnectionStatus(eq(userId), eq(ConnectionState.CANCELLED))
-        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        val (arrangement, useCase) = Arrangement()
+            .withCancelResult(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            .arrange()
 
         // when
-        val resultFailure = cancelConnectionRequestUseCase(userId)
+        val resultFailure = useCase(userId)
 
         // then
         assertEquals(CancelConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
         coVerify {
-            connectionRepository.updateConnectionStatus(eq(userId), eq(ConnectionState.CANCELLED))
+            arrangement.connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
         }.wasInvoked(once)
+    }
+
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+
+        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
+
+        suspend fun withCancelResult(result: Either<CoreFailure, Connection>) = apply {
+            coEvery {
+                connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
+            }.returns(result)
+        }
+
+        val useCase = CancelConnectionRequestUseCaseImpl(connectionRepository, cryptoTransactionProvider)
+
+        suspend fun arrange() = this to useCase
+            .also { withTransactionReturning(Either.Right(Unit)) }
     }
 
     private companion object {

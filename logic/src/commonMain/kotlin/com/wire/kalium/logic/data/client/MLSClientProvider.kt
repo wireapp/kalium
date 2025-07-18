@@ -204,6 +204,7 @@ class MLSClientProviderImpl(
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,
     ): Either<CoreFailure, MLSClient> {
+        // TODO KBX should we switch to first get mls config instead of getting core crypto?
         return getCoreCrypto(clientId).flatMap { cc ->
             getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
                 cc.mlsClient(

@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIConversationState
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
@@ -36,8 +36,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
@@ -67,7 +67,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(arrangement.mlsContext, TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -93,7 +93,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(arrangement.mlsContext, TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -123,7 +123,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withConversationByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(arrangement.mlsContext, TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -165,7 +165,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withGetMembersIdentities(Either.Right(ccMembersIdentity))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(arrangement.mlsContext, TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -210,7 +210,7 @@ class FetchMLSVerificationStatusUseCaseTest {
             withGetMembersIdentities(Either.Right(ccMembersIdentity))
         }
 
-        handler(TestConversation.GROUP_ID)
+        handler(arrangement.mlsContext, TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -235,21 +235,20 @@ class FetchMLSVerificationStatusUseCaseTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         suspend fun withIsGroupVerified(result: E2EIConversationState) {
             coEvery {
-                mlsClient.isGroupVerified(any())
+                mlsContext.isGroupVerified(any())
             }.returns(result)
         }
 
         suspend fun withGetMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
             coEvery {
-                mlsConversationRepository.getMembersIdentities(any(), any())
+                mlsConversationRepository.getMembersIdentities(any(), any(), any())
             }.returns(result)
         }
 
@@ -257,9 +256,6 @@ class FetchMLSVerificationStatusUseCaseTest {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
             withSetDegradedConversationNotifiedFlag(Either.Right(Unit))
-            coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
             block()
             this to FetchMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
@@ -267,7 +263,6 @@ class FetchMLSVerificationStatusUseCaseTest {
                 selfUserId = TestUser.USER_ID,
                 kaliumLogger = kaliumLogger,
                 userRepository = userRepository,
-                mlsClientProvider = mlsClientProvider,
                 mlsConversationRepository = mlsConversationRepository
             )
         }

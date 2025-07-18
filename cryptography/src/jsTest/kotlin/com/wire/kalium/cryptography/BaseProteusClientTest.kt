@@ -31,9 +31,9 @@ actual open class BaseProteusClientTest actual constructor() {
 
     actual suspend fun createProteusClient(
         proteusStore: ProteusStoreRef,
-        databaseKey: ProteusDBSecret?
+        databaseKey: ProteusDBSecret
     ): ProteusClient {
-        return cryptoboxProteusClient(proteusStore.value, ioContext = testCoroutineScheduler, defaultContext = testCoroutineScheduler)
+        TODO()
     }
 
 }

@@ -32,6 +32,8 @@ import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangemen
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
@@ -151,7 +153,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             assertFalse(result)
 
             coVerify {
-                arrangement.mlsConversationRepository.getUserIdentity(any())
+                arrangement.mlsConversationRepository.getUserIdentity(any(), any())
             }.wasNotInvoked()
         }
 
@@ -214,20 +216,23 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
-        fun arrange() = run {
+        suspend fun arrange() = run {
             runBlocking { block() }
+            withMLSTransactionReturning(Either.Right(Unit))
             this@Arrangement to IsOtherUserE2EIVerifiedUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase,
-                userRepository = userRepository
+                userRepository = userRepository,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =

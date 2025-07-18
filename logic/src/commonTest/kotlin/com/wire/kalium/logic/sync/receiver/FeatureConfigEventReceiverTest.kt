@@ -42,6 +42,8 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
@@ -52,6 +54,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.DurationUnit
@@ -67,6 +70,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
             event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -84,6 +88,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
             event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -101,6 +106,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
             event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -118,6 +124,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
             arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED, false)),
             TestEvent.liveDeliveryInfo
         )
@@ -139,6 +146,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
             event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED, false)),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -168,6 +176,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
             arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
             TestEvent.liveDeliveryInfo
         )
@@ -194,6 +203,7 @@ class FeatureConfigEventReceiverTest {
                 .arrange()
 
             featureConfigEventReceiver.onEvent(
+                arrangement.transactionContext,
                 arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
                 TestEvent.liveDeliveryInfo
             )
@@ -221,6 +231,7 @@ class FeatureConfigEventReceiverTest {
                 .arrange()
 
             featureConfigEventReceiver.onEvent(
+                arrangement.transactionContext,
                 arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
                 TestEvent.liveDeliveryInfo
             )
@@ -245,6 +256,7 @@ class FeatureConfigEventReceiverTest {
                 .arrange()
 
             featureConfigEventReceiver.onEvent(
+                arrangement.transactionContext,
                 arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
                 TestEvent.liveDeliveryInfo
             )
@@ -268,6 +280,7 @@ class FeatureConfigEventReceiverTest {
                 .arrange()
 
             featureConfigEventReceiver.onEvent(
+                arrangement.transactionContext,
                 arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
                 TestEvent.liveDeliveryInfo
             )
@@ -290,6 +303,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
+            transactionContext = arrangement.transactionContext,
             event = arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
@@ -306,13 +320,17 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenUnknownFeatureConfig_whenPrecessing_thenReturnSuccess() = runTest {
         val newUnknownFeatureUpdate = TestEvent.newUnknownFeatureUpdate()
-        val (_, handler) = Arrangement()
+        val (arrangement, handler) = Arrangement()
             .arrange()
 
-        handler.onEvent(newUnknownFeatureUpdate, TestEvent.liveDeliveryInfo).shouldSucceed()
+        handler.onEvent(
+            arrangement.transactionContext,
+            newUnknownFeatureUpdate,
+            TestEvent.liveDeliveryInfo
+        ).shouldSucceed()
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         var kaliumConfigs = KaliumConfigs()
 
@@ -323,8 +341,8 @@ class FeatureConfigEventReceiverTest {
             FeatureConfigEventReceiverImpl(
                 GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
                 FileSharingConfigHandler(userConfigRepository),
-                MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
-                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
+                MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
+                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
@@ -394,6 +412,9 @@ class FeatureConfigEventReceiverTest {
             model: SelfDeletingMessagesModel
         ) = Event.FeatureConfig.SelfDeletingMessagesConfig("eventId", model)
 
-        fun arrange() = this to featureConfigEventReceiver
+        fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
+            runBlocking { block() }
+            this to featureConfigEventReceiver
+        }
     }
 }

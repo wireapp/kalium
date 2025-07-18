@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.model.QualifiedID
@@ -54,7 +56,7 @@ class LeaveSubconversationUseCaseTest {
             .withDeleteSubconversationSuccessful()
             .arrange()
 
-        leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
         coVerify {
             arrangement.conversationApi.leaveSubconversation(
@@ -71,7 +73,7 @@ class LeaveSubconversationUseCaseTest {
             .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH)
             .arrange()
 
-        leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
         coVerify {
             arrangement.conversationApi.leaveSubconversation(
@@ -88,7 +90,7 @@ class LeaveSubconversationUseCaseTest {
             .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH)
             .arrange()
 
-        leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
         coVerify {
             arrangement.conversationApi.fetchSubconversationDetails(
@@ -107,10 +109,10 @@ class LeaveSubconversationUseCaseTest {
             .withDeleteSubconversationSuccessful()
             .arrange()
 
-        leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
         coVerify {
-            arrangement.mlsClient.wipeConversation(eq(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto()))
+            arrangement.mlsContext.wipeConversation(eq(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto()))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -118,24 +120,17 @@ class LeaveSubconversationUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationApi = mock(ConversationApi::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
         val subconversationRepository = mock(SubconversationRepository::class)
         val selfClientIdProvider = mock(CurrentClientIdProvider::class)
 
         suspend fun arrange() = this to LeaveSubconversationUseCaseImpl(
             conversationApi,
-            mlsClientProvider,
             subconversationRepository,
             TestUser.SELF.id,
             selfClientIdProvider
         ).also {
-            coEvery {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
-
             coEvery {
                 selfClientIdProvider.invoke()
             }.returns(Either.Right(TestClient.CLIENT_ID))
@@ -167,7 +162,7 @@ class LeaveSubconversationUseCaseTest {
 
         suspend fun withWipeMlsConversationSuccessful() = apply {
             coEvery {
-                mlsClient.wipeConversation(any())
+                mlsContext.wipeConversation(any())
             }.returns(Unit)
         }
 

@@ -18,16 +18,22 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.error.wrapProteusRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.ProteusFailure
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -35,13 +41,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.common.error.wrapProteusRequest
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mockable
 
@@ -49,6 +49,7 @@ import io.mockative.Mockable
 internal interface ProteusMessageUnpacker {
 
     suspend fun <T : Any> unpackProteusMessage(
+        proteusContext: ProteusCoreCryptoContext,
         event: Event.Conversation.NewMessage,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
     ): Either<CoreFailure, T>
@@ -56,7 +57,6 @@ internal interface ProteusMessageUnpacker {
 }
 
 internal class ProteusMessageUnpackerImpl(
-    private val proteusClientProvider: ProteusClientProvider,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -65,6 +65,7 @@ internal class ProteusMessageUnpackerImpl(
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
     override suspend fun <T : Any> unpackProteusMessage(
+        proteusContext: ProteusCoreCryptoContext,
         event: Event.Conversation.NewMessage,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
     ): Either<CoreFailure, T> {
@@ -73,24 +74,22 @@ internal class ProteusMessageUnpackerImpl(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),
             CryptoClientId(event.senderClientId.value)
         )
-        return proteusClientProvider.getOrError()
-            .flatMap {
-                wrapProteusRequest {
-                    it.decrypt(decodedContentBytes, cryptoSessionId) {
-                        val plainMessageBlob = PlainMessageBlob(it)
-                        getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
-                            val appMessage = MessageUnpackResult.ApplicationMessage(
-                                conversationId = event.conversationId,
-                                instant = event.messageInstant,
-                                senderUserId = event.senderUserId,
-                                senderClientId = event.senderClientId,
-                                content = readableContent
-                            )
-                            handleMessage(appMessage)
-                        }
-                    }
+        return wrapProteusRequest {
+            proteusContext.decryptMessage(cryptoSessionId, decodedContentBytes) {
+                val plainMessageBlob = PlainMessageBlob(it)
+                getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
+                    val appMessage = MessageUnpackResult.ApplicationMessage(
+                        conversationId = event.conversationId,
+                        instant = event.messageInstant,
+                        senderUserId = event.senderUserId,
+                        senderClientId = event.senderClientId,
+                        content = readableContent
+                    )
+                    handleMessage(appMessage)
                 }
-            }.flatMap { it }
+            }
+        }
+            .flatMap { it }
             .onFailure { logUnpackingError(it, event, cryptoSessionId) }
     }
 
