@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -42,7 +43,8 @@ fun interface DeleteTeamConversationUseCase {
 internal class DeleteTeamConversationUseCaseImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
-    private val deleteConversation: DeleteConversationUseCase
+    private val deleteConversation: DeleteConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : DeleteTeamConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Result {
@@ -55,7 +57,9 @@ internal class DeleteTeamConversationUseCaseImpl(
             }.fold({
                 Result.Failure.GenericFailure(it)
             }, {
-                deleteConversation(conversationId)
+                transactionProvider.transaction("DeleteTeamConversation") {
+                    deleteConversation(it, conversationId)
+                }
                 Result.Success
             })
     }

@@ -38,6 +38,7 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
@@ -57,7 +58,9 @@ import kotlin.time.toDuration
 @Mockable
 internal interface ApplicationMessageHandler {
 
+    @Suppress("LongParameterList")
     suspend fun handleContent(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         messageInstant: Instant,
         senderUserId: UserId,
@@ -101,6 +104,7 @@ internal class ApplicationMessageHandlerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         messageInstant: Instant,
         senderUserId: UserId,
@@ -159,13 +163,13 @@ internal class ApplicationMessageHandlerImpl(
                         )
                     }
                 )
-                processSignaling(signalingMessage)
+                processSignaling(transactionContext, signalingMessage)
             }
         }
     }
 
     @Suppress("CyclomaticComplexMethod")
-    private suspend fun processSignaling(signaling: Message.Signaling) {
+    private suspend fun processSignaling(transactionContext: CryptoTransactionContext, signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
                 logger.i(message = "Ignored Signaling Message received: ${signaling.content.getType()}")
@@ -207,7 +211,7 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
-            is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
+            is MessageContent.Cleared -> clearConversationContentHandler.handle(transactionContext, signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
             is MessageContent.ButtonAction -> {
                 /* no-op */

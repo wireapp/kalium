@@ -18,8 +18,7 @@
 
 package com.wire.kalium.logic.data.keypackage
 
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
@@ -27,14 +26,15 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.any
@@ -53,12 +53,11 @@ class KeyPackageRepositoryTest {
     @Test
     fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeGeneratedAndPassedToApi() = runTest {
         val (arrangement, keyPackageRepository) = Arrangement()
-            .withMLSClient()
             .withGeneratingKeyPackagesSuccessful()
             .withUploadingKeyPackagesSuccessful()
             .arrange()
 
-        keyPackageRepository.uploadNewKeyPackages(Arrangement.SELF_CLIENT_ID, 1)
+        keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 1)
 
         coVerify {
             arrangement.keyPackageApi.uploadKeyPackages(eq(Arrangement.SELF_CLIENT_ID.value), eq(Arrangement.KEY_PACKAGES_BASE64))
@@ -69,7 +68,6 @@ class KeyPackageRepositoryTest {
     fun givenExistingClient_whenGettingAvailableKeyPackageCount_thenResultShouldBePropagated() = runTest {
         val cipherSuite = CipherSuite.fromTag(1)
         val (_, keyPackageRepository) = Arrangement()
-            .withMLSClient()
             .withGetAvailableKeyPackageCountSuccessful()
             .arrange()
 
@@ -118,26 +116,27 @@ class KeyPackageRepositoryTest {
     }
 
     @Test
-    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
-        val usersWithout = setOf(
-            Arrangement.USER_ID.copy(value = "missingKP"),
-            Arrangement.USER_ID.copy(value = "alsoMissingKP"),
-        )
-        val (_, keyPackageRepository) = Arrangement()
-            .withCurrentClientId().also { arrangement ->
-                usersWithout.forEach { userWithout ->
-                    arrangement.withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithout)
+    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessWitheEmptySuccessKeyPackages() =
+        runTest {
+            val usersWithout = setOf(
+                Arrangement.USER_ID.copy(value = "missingKP"),
+                Arrangement.USER_ID.copy(value = "alsoMissingKP"),
+            )
+            val (_, keyPackageRepository) = Arrangement()
+                .withCurrentClientId().also { arrangement ->
+                    usersWithout.forEach { userWithout ->
+                        arrangement.withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithout)
+                    }
                 }
+                .arrange()
+
+            val result = keyPackageRepository.claimKeyPackages(usersWithout.toList(), CIPHER_SUITE)
+
+            result.shouldSucceed { keyPackages ->
+                assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+                assertEquals(usersWithout, keyPackages.usersWithoutKeyPackagesAvailable)
             }
-            .arrange()
-
-        val result = keyPackageRepository.claimKeyPackages(usersWithout.toList(), CIPHER_SUITE)
-
-        result.shouldSucceed { keyPackages ->
-            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
-            assertEquals(usersWithout, keyPackages.usersWithoutKeyPackagesAvailable)
         }
-    }
 
     @Test
     fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
@@ -170,16 +169,9 @@ class KeyPackageRepositoryTest {
         }
     }
 
-    class Arrangement {
+    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val keyPackageApi = mock(KeyPackageApi::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
-
-        suspend fun withMLSClient() = apply {
-            coEvery {
-                mlsClientProvider.getMLSClient(eq(SELF_CLIENT_ID))
-            }.returns(Either.Right(MLS_CLIENT))
-        }
 
         suspend fun withCurrentClientId() = apply {
             coEvery {
@@ -189,7 +181,7 @@ class KeyPackageRepositoryTest {
 
         suspend fun withGeneratingKeyPackagesSuccessful() = apply {
             coEvery {
-                MLS_CLIENT.generateKeyPackages(eq(1))
+                mlsContext.generateKeyPackages(eq(1))
             }.returns(KEY_PACKAGES)
         }
 
@@ -227,7 +219,7 @@ class KeyPackageRepositoryTest {
             }.returns(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
-        fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, mlsClientProvider, SELF_USER_ID)
+        fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID)
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
@@ -247,8 +239,6 @@ class KeyPackageRepositoryTest {
                     KeyPackageDTO(OTHER_CLIENT_ID.value, "wire.com", KeyPackage(), KeyPackageRef(), "user_id")
                 )
             )
-
-                        val MLS_CLIENT = mock(MLSClient::class)
         }
     }
 }

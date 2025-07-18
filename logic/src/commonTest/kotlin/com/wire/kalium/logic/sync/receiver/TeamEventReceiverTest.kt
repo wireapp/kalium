@@ -23,6 +23,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
@@ -47,7 +49,11 @@ class TeamEventReceiverTest {
                 withPersistMessageSuccess()
             }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(
+            arrangement.transactionContext,
+            event,
+            TestEvent.liveDeliveryInfo
+        )
 
         coVerify {
             arrangement.persistMessageUseCase.invoke(any())
@@ -55,7 +61,8 @@ class TeamEventReceiverTest {
 
     }
 
-    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val persistMessageUseCase = mock(PersistMessageUseCase::class)
 
         private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(

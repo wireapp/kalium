@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.functional.distinct
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -67,6 +69,7 @@ internal class PendingProposalSchedulerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     private val subconversationRepository: Lazy<SubconversationRepository>,
+    private val transactionProvider: CryptoTransactionProvider,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : PendingProposalScheduler {
 
@@ -93,7 +96,11 @@ internal class PendingProposalSchedulerImpl(
         kaliumLogger.d("Start listening for pending proposals to commit")
         timers().cancellable().collect() { groupID ->
             kaliumLogger.d("Committing pending proposals in ${groupID.toLogString()}")
-            mlsConversationRepository.value.commitPendingProposals(groupID)
+            transactionProvider.transaction("PendingProposalScheduler") { transactionContext ->
+                transactionContext.wrapInMLSContext { mlsContext ->
+                    mlsConversationRepository.value.commitPendingProposals(mlsContext, groupID)
+                }
+            }
                 .onFailure {
                     kaliumLogger.e("Failed to commit pending proposals in ${groupID.toLogString()}: $it")
                 }

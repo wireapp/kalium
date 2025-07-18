@@ -33,7 +33,6 @@ import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -58,7 +57,6 @@ internal actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
-        val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
         return UserSessionScope(
             PlatformUserStorageProperties(rootPathsProvider.rootPath, rootStoragePath),
             userId,
@@ -67,7 +65,6 @@ internal actual class UserSessionScopeProviderImpl(
             globalPreferences,
             globalDatabaseBuilder,
             authenticationScopeProvider,
-            userSessionWorkScheduler,
             rootPathsProvider,
             dataStoragePaths,
             kaliumConfigs,

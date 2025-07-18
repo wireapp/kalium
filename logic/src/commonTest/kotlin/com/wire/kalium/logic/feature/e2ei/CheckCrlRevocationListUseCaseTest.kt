@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.any
@@ -48,7 +50,7 @@ class CheckCrlRevocationListUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.checkRevocationList.check(eq(DUMMY_URL))
+            arrangement.checkRevocationList.check(any(), eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -71,7 +73,7 @@ class CheckCrlRevocationListUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.checkRevocationList.check(eq(DUMMY_URL))
+            arrangement.checkRevocationList.check(any(), eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -79,14 +81,17 @@ class CheckCrlRevocationListUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
         val checkRevocationList = mock(RevocationListChecker::class)
 
-        fun arrange() = this to CheckCrlRevocationListUseCase(
-            certificateRevocationListRepository, checkRevocationList, kaliumLogger
+        suspend fun arrange() = this to CheckCrlRevocationListUseCase(
+            certificateRevocationListRepository, checkRevocationList, cryptoTransactionProvider, kaliumLogger
         )
+            .also {
+                withMLSTransactionReturning(Either.Right(Unit))
+            }
 
         suspend fun withNoCRL() = apply {
             coEvery {
@@ -107,7 +112,7 @@ class CheckCrlRevocationListUseCaseTest {
         }
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
-                checkRevocationList.check(any())
+                checkRevocationList.check(any(), any())
             }.returns(Either.Right(FUTURE_TIMESTAMP))
         }
     }

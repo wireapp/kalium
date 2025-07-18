@@ -56,6 +56,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -1172,7 +1174,6 @@ class CallRepositoryTest {
             .givenJoinSubconversationSuccessful()
             .givenObserveEpochChangesReturns(emptyFlow())
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
-            .givenGetMLSClientSucceeds()
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
@@ -1197,7 +1198,6 @@ class CallRepositoryTest {
             .givenJoinSubconversationSuccessful()
             .givenObserveEpochChangesReturns(emptyFlow())
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
-            .givenGetMLSClientSucceeds()
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
@@ -1227,7 +1227,6 @@ class CallRepositoryTest {
             .givenJoinSubconversationSuccessful()
             .givenObserveEpochChangesReturns(epochFlow)
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
-            .givenGetMLSClientSucceeds()
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
@@ -1260,7 +1259,6 @@ class CallRepositoryTest {
             .givenJoinSubconversationSuccessful()
             .givenObserveEpochChangesReturns(epochFlow)
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
-            .givenGetMLSClientSucceeds()
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
@@ -1294,7 +1292,6 @@ class CallRepositoryTest {
             .givenJoinSubconversationSuccessful()
             .givenObserveEpochChangesReturns(epochFlow)
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
-            .givenGetMLSClientSucceeds()
             .givenGetMlsEpochReturns(1UL)
             .givenMlsMembersReturns(emptyList())
             .givenDeriveSecretSuccessful()
@@ -1310,7 +1307,7 @@ class CallRepositoryTest {
         advanceUntilIdle()
 
         coVerify {
-            arrangement.leaveSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
         }.wasInvoked(exactly = once)
     }
 
@@ -1324,7 +1321,7 @@ class CallRepositoryTest {
         callRepository.advanceEpoch(Arrangement.conversationId)
 
         coVerify {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(eq(Arrangement.subconversationGroupId))
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), eq(Arrangement.subconversationGroupId))
         }.wasInvoked(exactly = once)
     }
 
@@ -1361,6 +1358,7 @@ class CallRepositoryTest {
 
         coVerify {
             arrangement.mlsConversationRepository.removeClientsFromMLSGroup(
+                mlsContext = any(),
                 groupID = eq(Arrangement.subconversationGroupId),
                 clientIdList = eq(listOf(Arrangement.qualifiedClientID))
             )
@@ -1415,6 +1413,7 @@ class CallRepositoryTest {
 
         coVerify {
             arrangement.mlsConversationRepository.removeClientsFromMLSGroup(
+                mlsContext = any(),
                 groupID = eq(Arrangement.subconversationGroupId),
                 clientIdList = eq(listOf(Arrangement.qualifiedClientID))
             )
@@ -1441,7 +1440,7 @@ class CallRepositoryTest {
 
         // then
         coVerify {
-            arrangement.leaveSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
         }.wasInvoked(exactly = once)
 
     }
@@ -1740,7 +1739,7 @@ class CallRepositoryTest {
         activeSpeakers = mapOf()
     )
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val callApi = mock(CallApi::class)
         val conversationRepository = mock(ConversationRepository::class)
@@ -1749,8 +1748,6 @@ class CallRepositoryTest {
         val sessionRepository = mock(SessionRepository::class)
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
         val persistMessage = mock(PersistMessageUseCase::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
         val joinSubconversationUseCase = mock(JoinSubconversationUseCase::class)
         val leaveSubconversationUseCase = mock(LeaveSubconversationUseCase::class)
         val subconversationRepository = mock(SubconversationRepository::class)
@@ -1774,12 +1771,12 @@ class CallRepositoryTest {
             epochChangesObserver = epochChangesObserver,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
-            mlsClientProvider = mlsClientProvider,
             joinSubconversation = joinSubconversationUseCase,
             leaveSubconversation = leaveSubconversationUseCase,
             callMapper = callMapper,
             federatedIdMapper = federatedIdMapper,
-            kaliumDispatchers = TestKaliumDispatcher
+            kaliumDispatchers = TestKaliumDispatcher,
+            transactionProvider = cryptoTransactionProvider
         )
 
         init {
@@ -1800,7 +1797,10 @@ class CallRepositoryTest {
             }.returns(QualifiedID("callerId", ""))
         }
 
-        fun arrange() = this to callRepository
+        suspend fun arrange() = this to callRepository.also {
+            withMLSTransactionReturning(Either.Right(Unit))
+            withTransactionReturning(Either.Right(Unit))
+        }
 
         fun givenEstablishedCall(callEntity: CallEntity) = apply {
             every {
@@ -1898,7 +1898,7 @@ class CallRepositoryTest {
 
         suspend fun givenLeaveSubconversationSuccessful() = apply {
             coEvery {
-                leaveSubconversationUseCase.invoke(any(), any())
+                leaveSubconversationUseCase.invoke(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -1910,13 +1910,13 @@ class CallRepositoryTest {
 
         suspend fun givenUpdateKeyMaterialSucceeds() = apply {
             coEvery {
-                mlsConversationRepository.updateKeyingMaterial(any())
+                mlsConversationRepository.updateKeyingMaterial(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun givenRemoveClientsFromMLSGroupSucceeds() = apply {
             coEvery {
-                mlsConversationRepository.removeClientsFromMLSGroup(any(), any())
+                mlsConversationRepository.removeClientsFromMLSGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -1926,27 +1926,21 @@ class CallRepositoryTest {
             }.returns(groupId)
         }
 
-        suspend fun givenGetMLSClientSucceeds() = apply {
-            coEvery {
-                mlsClientProvider.getMLSClient(null)
-            }.returns(Either.Right(mlsClient))
-        }
-
         suspend fun givenGetMlsEpochReturns(epoch: ULong) = apply {
             coEvery {
-                mlsClient.conversationEpoch(any())
+                mlsContext.conversationEpoch(any())
             }.returns(epoch)
         }
 
         suspend fun givenMlsMembersReturns(members: List<CryptoQualifiedClientId>) = apply {
             coEvery {
-                mlsClient.members(any())
+                mlsContext.members(any())
             }.returns(members)
         }
 
         suspend fun givenDeriveSecretSuccessful() = apply {
             coEvery {
-                mlsClient.deriveSecret(any(), any())
+                mlsContext.deriveSecret(any(), any())
             }.returns(ByteArray(32))
         }
 

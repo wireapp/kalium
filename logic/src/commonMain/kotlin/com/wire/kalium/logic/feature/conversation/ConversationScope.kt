@@ -24,6 +24,7 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -132,6 +133,7 @@ class ConversationScope internal constructor(
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val deleteConversationUseCase: DeleteConversationUseCase,
     private val persistConversationsUseCase: PersistConversationsUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -171,6 +173,7 @@ class ConversationScope internal constructor(
             conversationRepository,
             deleteEphemeralMessageEndDate,
             slowSyncRepository,
+            transactionProvider,
             kaliumLogger
         )
 
@@ -186,7 +189,7 @@ class ConversationScope internal constructor(
         )
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
-        get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversationUseCase)
+        get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversationUseCase, transactionProvider)
 
     internal val createGroupConversation: GroupConversationCreator
         get() = GroupConversationCreatorImpl(
@@ -214,7 +217,8 @@ class ConversationScope internal constructor(
         get() = GetOrCreateOneToOneConversationUseCaseImpl(
             conversationRepository,
             userRepository,
-            oneOnOneResolver
+            oneOnOneResolver,
+            transactionProvider
         )
 
     val isOneToOneConversationCreatedUseCase: IsOneToOneConversationCreatedUseCase
@@ -276,7 +280,7 @@ class ConversationScope internal constructor(
         )
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
-        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
+        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, transactionProvider)
 
     val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
         get() = ClearConversationAssetsLocallyUseCaseImpl(
@@ -297,7 +301,8 @@ class ConversationScope internal constructor(
     val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
         get() = DeleteConversationLocallyUseCaseImpl(
             clearConversationContent,
-            deleteConversationUseCase
+            deleteConversationUseCase,
+            transactionProvider
         )
 
     val joinConversationViaCode: JoinConversationViaCodeUseCase
@@ -344,7 +349,8 @@ class ConversationScope internal constructor(
     val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
         get() = RefreshConversationsWithoutMetadataUseCaseImpl(
             conversationRepository = conversationRepository,
-            persistConversations = persistConversationsUseCase
+            persistConversations = persistConversationsUseCase,
+            transactionProvider = transactionProvider
         )
 
     val canCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase

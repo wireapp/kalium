@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCa
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
@@ -49,7 +51,7 @@ class MLSOneOnOneConversationResolverTest {
             withConversationsForUserIdReturning(Either.Right(ALL_CONVERSATIONS))
         }
 
-        getOrEstablishMlsOneToOneUseCase(userId)
+        getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
         coVerify {
             arrangement.conversationRepository.getConversationsByUserId(eq(userId))
@@ -64,7 +66,7 @@ class MLSOneOnOneConversationResolverTest {
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
         }
 
-        val result = getOrEstablishMlsOneToOneUseCase(userId)
+        val result = getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
         result.shouldFail {
             assertEquals(cause, it)
@@ -75,17 +77,17 @@ class MLSOneOnOneConversationResolverTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.wasNotInvoked()
     }
 
     @Test
     fun givenOneOnOneMLSConversationAlreadyExists_thenShouldReturnIt() = runTest {
-        val (_, getOrEstablishMlsOneToOneUseCase) = arrange {
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
             withConversationsForUserIdReturning(Either.Right(ALL_CONVERSATIONS))
         }
 
-        val result = getOrEstablishMlsOneToOneUseCase(userId)
+        val result = getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
         result.shouldSucceed {
             assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
@@ -95,7 +97,7 @@ class MLSOneOnOneConversationResolverTest {
     @Test
     fun givenNoInitializedMLSAndFetchingFails_thenShouldPropagateFailure() = runTest {
         val cause = CoreFailure.Unknown(null)
-        val (_, getOrEstablishMlsOneToOneUseCase) = arrange {
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
             withConversationsForUserIdReturning(
                 Either.Right(
                     ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
@@ -104,7 +106,7 @@ class MLSOneOnOneConversationResolverTest {
             withFetchMLSOneToOneConversation(Either.Left(cause))
         }
 
-        val result = getOrEstablishMlsOneToOneUseCase(userId)
+        val result = getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
         result.shouldFail {
             assertEquals(cause, it)
@@ -123,14 +125,14 @@ class MLSOneOnOneConversationResolverTest {
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
         }
 
-        val result = getOrEstablishMlsOneToOneUseCase(userId)
+        val result = getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
         result.shouldSucceed {
             assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
         }
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -139,12 +141,14 @@ class MLSOneOnOneConversationResolverTest {
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
+        JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+    {
             val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
 
         suspend fun withFetchMLSOneToOneConversation(result: Either<CoreFailure, Conversation>) = apply {
             coEvery {
-                fetchMLSOneToOneConversation(any())
+                fetchMLSOneToOneConversation(any(), any())
             }.returns(result)
         }
 

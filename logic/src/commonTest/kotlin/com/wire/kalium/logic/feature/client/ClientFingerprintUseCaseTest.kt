@@ -17,16 +17,16 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
-import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -34,6 +34,7 @@ import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,7 +51,9 @@ class ClientFingerprintUseCaseTest {
 
         val (arrange, userCase) = Arrangement()
             .withRemoteFingerprintSuccess(fingerprint)
-            .arrange()
+            .arrange {
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
 
         userCase(userId, clientId).also { result ->
             assertIs<Result.Success>(result)
@@ -58,11 +61,11 @@ class ClientFingerprintUseCaseTest {
         }
 
         coVerify {
-            arrange.proteusClient.remoteFingerPrint(any())
+            arrange.proteusContext.remoteFingerPrint(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrange.preKeyRepository.establishSessions(any())
+            arrange.preKeyRepository.establishSessions(any(), any())
         }.wasNotInvoked()
     }
 
@@ -76,7 +79,9 @@ class ClientFingerprintUseCaseTest {
         val (arrange, userCase) = Arrangement()
             .withSessionNotFound(fingerprint)
             .withEstablishSession(Either.Right(UsersWithoutSessions.EMPTY))
-            .arrange()
+            .arrange {
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
 
         userCase(userId, clientId).also { result ->
             assertIs<Result.Success>(result)
@@ -84,11 +89,11 @@ class ClientFingerprintUseCaseTest {
         }
 
         coVerify {
-            arrange.proteusClient.remoteFingerPrint(any())
+            arrange.proteusContext.remoteFingerPrint(any())
         }.wasInvoked(exactly = twice)
 
         coVerify {
-            arrange.preKeyRepository.establishSessions(eq(mapOf(userId to listOf(clientId))))
+            arrange.preKeyRepository.establishSessions(any(), eq(mapOf(userId to listOf(clientId))))
         }.wasInvoked(exactly = once)
     }
 
@@ -101,7 +106,9 @@ class ClientFingerprintUseCaseTest {
 
         val (arrange, userCase) = Arrangement()
             .withRemoteFingerprintFailure(error)
-            .arrange()
+            .arrange {
+                withProteusTransactionReturning(Either.Right(Unit))
+            }
 
         userCase(userId, clientId).also { result ->
             assertIs<Result.Failure>(result)
@@ -110,34 +117,32 @@ class ClientFingerprintUseCaseTest {
         }
 
         coVerify {
-            arrange.proteusClient.remoteFingerPrint(any())
+            arrange.proteusContext.remoteFingerPrint(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrange.preKeyRepository.establishSessions(any())
+            arrange.preKeyRepository.establishSessions(any(), any())
         }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val preKeyRepository = mock(PreKeyRepository::class)
-        private val proteusClientProvider = mock(ProteusClientProvider::class)
-        val proteusClient = mock(ProteusClient::class)
 
         val userCase = ClientFingerprintUseCaseImpl(
-            proteusClientProvider = proteusClientProvider,
-            prekeyRepository = preKeyRepository
+            prekeyRepository = preKeyRepository,
+            transactionProvider = cryptoTransactionProvider
         )
 
         suspend fun withRemoteFingerprintFailure(error: ProteusException) = apply {
             coEvery {
-                proteusClient.remoteFingerPrint(any())
+                proteusContext.remoteFingerPrint(any())
             }.throws(error)
         }
 
         private var getSessionCalled = 0
         suspend fun withSessionNotFound(secondTimeResult: ByteArray) = apply {
-            coEvery { proteusClient.remoteFingerPrint(any()) }
+            coEvery { proteusContext.remoteFingerPrint(any()) }
                 .invokes { _ ->
                     if (getSessionCalled == 0) {
                         getSessionCalled++
@@ -149,20 +154,19 @@ class ClientFingerprintUseCaseTest {
 
         suspend fun withRemoteFingerprintSuccess(result: ByteArray) = apply {
             coEvery {
-                proteusClient.remoteFingerPrint(any())
+                proteusContext.remoteFingerPrint(any())
             }.returns(result)
         }
 
         suspend fun withEstablishSession(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
             coEvery {
-                preKeyRepository.establishSessions(any())
+                preKeyRepository.establishSessions(any(), any())
             }.returns(result)
         }
 
-        suspend fun arrange() = this to userCase.also {
-            coEvery {
-                proteusClientProvider.getOrError()
-            }.returns(Either.Right(proteusClient))
+        fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            runBlocking { block() }
+            this to userCase
         }
     }
 }

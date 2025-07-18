@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 import io.mockative.Mockable
 
@@ -40,12 +41,13 @@ internal interface SyncConversationsUseCase {
 internal class SyncConversationsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val systemMessageInserter: SystemMessageInserter,
-    private val fetchConversations: FetchConversationsUseCase
+    private val fetchConversations: FetchConversationsUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : SyncConversationsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Conversation.Protocol.PROTEUS)
             .flatMap { proteusConversationIds ->
-                fetchConversations()
+                transactionProvider.transaction("SyncConversations") { fetchConversations(it) }
                     .flatMap {
                         reportConversationsWithPotentialHistoryLoss(proteusConversationIds)
                     }

@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -42,7 +43,10 @@ import io.mockative.Mockable
 
 @Mockable
 interface MemberJoinEventHandler {
-    suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit>
+    suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberJoin
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -57,13 +61,16 @@ internal class MemberJoinEventHandlerImpl(
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit> {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberJoin
+    ): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
         // the group info need to be fetched for the following cases:
         // 1. self user is added/re-added to a group and we need to update the group info in case something changed form last time
         // 2. the new member is a bot in that case we need to make the group a bot 1:1
         // 3. fetch group info in case it is not stored in the first place
-        return fetchConversation(event.conversationId)
+        return fetchConversation(transactionContext, event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf(

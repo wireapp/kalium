@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -64,43 +65,47 @@ internal class ConversationEventReceiverImpl(
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
     private val accessUpdateEventHandler: AccessUpdateEventHandler
 ) : ConversationEventReceiver {
-    override suspend fun onEvent(event: Event.Conversation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation,
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
         //       onEvent now requires Either, so we can propagate errors,
         //       but not all handlers are using it yet.
         //       Returning Either.Right is the equivalent of how it was originally working.
         return when (event) {
             is Event.Conversation.NewMessage -> {
-                newMessageHandler.handleNewProteusMessage(event, deliveryInfo)
+                newMessageHandler.handleNewProteusMessage(transactionContext, event, deliveryInfo)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.NewMLSMessage -> {
-                newMessageHandler.handleNewMLSMessage(event, deliveryInfo)
+                newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.NewConversation -> {
-                newConversationHandler.handle(event)
+                newConversationHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.DeletedConversation -> {
-                deletedConversationHandler.handle(event)
+                deletedConversationHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.MemberJoin -> memberJoinHandler.handle(event)
+            is Event.Conversation.MemberJoin -> memberJoinHandler.handle(transactionContext, event)
 
-            is Event.Conversation.MemberLeave -> memberLeaveHandler.handle(event)
+            is Event.Conversation.MemberLeave -> memberLeaveHandler.handle(transactionContext, event)
 
             is Event.Conversation.MemberChanged -> {
-                memberChangeHandler.handle(event)
+                memberChangeHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.MLSWelcome -> {
-                mlsWelcomeHandler.handle(event)
+                mlsWelcomeHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 
@@ -120,8 +125,9 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
             is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)
             is Event.Conversation.ConversationProtocol -> {
-                protocolUpdateEventHandler.handle(event)
+                protocolUpdateEventHandler.handle(transactionContext, event)
             }
+
             is Event.Conversation.ConversationChannelAddPermission -> {
                 channelAddPermissionUpdateEventHandler.handle(event)
             }

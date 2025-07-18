@@ -22,10 +22,12 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
 import com.wire.kalium.common.functional.onSuccess
+import io.mockative.Mockable
 
 /**
  * Use case to observe certificate revocation for self client.
  */
+@Mockable
 interface ObserveCertificateRevocationForSelfClientUseCase {
     suspend operator fun invoke()
 }

@@ -46,6 +46,8 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -85,6 +87,7 @@ class ApplicationMessageHandlerTest {
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
         messageHandler.handleContent(
+            arrangement.transactionContext,
             messageEvent.conversationId,
             messageEvent.messageInstant,
             messageEvent.senderUserId,
@@ -122,6 +125,7 @@ class ApplicationMessageHandlerTest {
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
         messageHandler.handleContent(
+            arrangement.transactionContext,
             messageEvent.conversationId,
             messageEvent.messageInstant,
             messageEvent.senderUserId,
@@ -159,6 +163,7 @@ class ApplicationMessageHandlerTest {
 
         // when
         messageHandler.handleContent(
+            arrangement.transactionContext,
             messageEvent.conversationId,
             messageEvent.messageInstant,
             messageEvent.senderUserId,
@@ -194,6 +199,7 @@ class ApplicationMessageHandlerTest {
 
         // when
         messageHandler.handleContent(
+            arrangement.transactionContext,
             messageEvent.conversationId,
             messageEvent.messageInstant,
             messageEvent.senderUserId,
@@ -207,7 +213,7 @@ class ApplicationMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock(PersistMessageUseCase::class)
         val messageRepository = mock(MessageRepository::class)

@@ -38,6 +38,8 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHan
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
@@ -66,7 +68,7 @@ class UserEventReceiverTest {
             withLogoutUseCaseSucceed()
         }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(true))
@@ -81,7 +83,7 @@ class UserEventReceiverTest {
             withLogoutUseCaseSucceed()
         }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.logoutUseCase.invoke(any(), any())
@@ -95,7 +97,7 @@ class UserEventReceiverTest {
             withLogoutUseCaseSucceed()
         }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(true))
@@ -112,7 +114,7 @@ class UserEventReceiverTest {
             )
         }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify { arrangement.userRepository.markUserAsDeletedAndRemoveFromGroupConversations(any()) }
             .wasInvoked(exactly = once)
@@ -125,7 +127,7 @@ class UserEventReceiverTest {
             withUpdateUserSuccess()
         }
 
-        val result = eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         assertIs<Either.Right<Unit>>(result)
         coVerify {
@@ -136,11 +138,11 @@ class UserEventReceiverTest {
     @Test
     fun givenUserUpdateEvent_whenUserIsNotFoundInLocalDB_thenShouldIgnoreThisEventFailure() = runTest {
         val event = TestEvent.updateUser(userId = OTHER_USER_ID)
-        val (_, eventReceiver) = arrange {
+        val (arrangement, eventReceiver) = arrange {
             withUpdateUserFailure(StorageFailure.DataNotFound)
         }
 
-        val result = eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         assertIs<Either.Right<Unit>>(result)
     }
@@ -148,11 +150,11 @@ class UserEventReceiverTest {
     @Test
     fun givenUserUpdateEvent_whenFailsWitOtherError_thenShouldFail() = runTest {
         val event = TestEvent.updateUser(userId = OTHER_USER_ID)
-        val (_, eventReceiver) = arrange {
+        val (arrangement, eventReceiver) = arrange {
             withUpdateUserFailure(StorageFailure.Generic(Throwable("error")))
         }
 
-        val result = eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         assertIs<Either.Left<StorageFailure.Generic>>(result)
     }
@@ -162,7 +164,7 @@ class UserEventReceiverTest {
         val event = TestEvent.newClient()
         val (arrangement, eventReceiver) = arrange { }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
             arrangement.clientRepository.saveNewClientEvent(any())
@@ -178,10 +180,10 @@ class UserEventReceiverTest {
             withPersistUnverifiedWarningMessageSuccess()
         }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.connectionRepository.insertConnectionFromEvent(any())
+            arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -194,10 +196,10 @@ class UserEventReceiverTest {
             withPersistUnverifiedWarningMessageSuccess()
         }
 
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -211,10 +213,10 @@ class UserEventReceiverTest {
             withPersistUnverifiedWarningMessageSuccess()
         }
 
-        eventReceiver.onEvent(event, TestEvent.nonLiveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
 
         coVerify {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(eq(event.connection.qualifiedToId), eq(ZERO))
+            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), eq(event.connection.qualifiedToId), eq(ZERO))
         }.wasInvoked(exactly = once)
     }
 
@@ -230,11 +232,12 @@ class UserEventReceiverTest {
                 withPersistUnverifiedWarningMessageSuccess()
             }
 
-            eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             advanceUntilIdle()
 
             coVerify {
                 arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                    any(),
                     eq(event.connection.qualifiedToId),
                     eq(3.seconds)
                 )
@@ -253,7 +256,7 @@ class UserEventReceiverTest {
                 withPersistUnverifiedWarningMessageSuccess()
             }
             // when
-            eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
@@ -275,7 +278,7 @@ class UserEventReceiverTest {
                 withPersistUnverifiedWarningMessageSuccess()
             }
             // when
-            eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
@@ -297,7 +300,7 @@ class UserEventReceiverTest {
                 withPersistUnverifiedWarningMessageSuccess()
             }
             // when
-            eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
             coVerify {
                 arrangement.legalHoldHandler.handleNewConnection(eq(event))
@@ -323,7 +326,7 @@ class UserEventReceiverTest {
             )
         }
         // when
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
         // then
         coVerify {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
@@ -342,7 +345,7 @@ class UserEventReceiverTest {
             withGetConnectionResult(Either.Left(StorageFailure.DataNotFound))
         }
         // when
-        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
         // then
         coVerify {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
@@ -354,8 +357,9 @@ class UserEventReceiverTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-                val connectionRepository = mock(ConnectionRepository::class)
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val connectionRepository = mock(ConnectionRepository::class)
         val logoutUseCase = mock(LogoutUseCase::class)
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val clientRepository = mock(ClientRepository::class)
@@ -378,7 +382,7 @@ class UserEventReceiverTest {
 
         suspend fun withInsertConnectionFromEventSucceeding() = apply {
             coEvery {
-                connectionRepository.insertConnectionFromEvent(any())
+                connectionRepository.insertConnectionFromEvent(any(), any())
             }.returns(Either.Right(Unit))
         }
 

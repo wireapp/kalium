@@ -18,21 +18,40 @@
 
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
+import com.wire.kalium.logic.sync.periodic.UserConfigSyncScheduler
 import io.mockative.Mockable
 
-interface GlobalWorkScheduler : UpdateApiVersionsScheduler
-
-@Mockable
-interface UserSessionWorkScheduler : MessageSendingScheduler {
-    val userId: UserId
+interface WorkSchedulerProvider {
+    fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler
+    fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler
 }
 
-internal expect class GlobalWorkSchedulerImpl : GlobalWorkScheduler
+interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
+    val scope: GlobalKaliumScope
+}
+
+@Mockable
+interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler {
+    val scope: UserSessionScope
+}
+
+internal expect class WorkSchedulerProviderImpl : WorkSchedulerProvider {
+    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler
+    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler
+}
+internal expect class GlobalWorkSchedulerImpl : GlobalWorkScheduler {
+    override val scope: GlobalKaliumScope
+    override fun schedulePeriodicApiVersionUpdate()
+    override fun scheduleImmediateApiVersionUpdate()
+}
 internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
-    override val userId: UserId
+    override val scope: UserSessionScope
     override fun scheduleSendingOfPendingMessages()
     override fun cancelScheduledSendingOfPendingMessages()
+    override fun schedulePeriodicUserConfigSync()
+    override fun resetBackoffForPeriodicUserConfigSync()
 }

@@ -24,6 +24,8 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.ktor.utils.io.errors.IOException
 import io.mockative.any
 import io.mockative.coEvery
@@ -47,7 +49,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val actual = updateKeyingMaterialsUseCase()
 
         coVerify {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), any())
         }.wasInvoked(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size)
 
         assertIs<UpdateKeyingMaterialsResult.Success>(actual)
@@ -63,7 +65,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val actual = updateKeyingMaterialsUseCase()
 
         coVerify {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), any())
         }.wasInvoked(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size)
 
         assertIs<UpdateKeyingMaterialsResult.Success>(actual)
@@ -79,7 +81,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val actual = updateKeyingMaterialsUseCase()
 
         coVerify {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), any())
         }.wasInvoked(1)
         assertIs<UpdateKeyingMaterialsResult.Failure>(actual)
     }
@@ -94,7 +96,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val actual = updateKeyingMaterialsUseCase()
 
         coVerify {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), any())
         }.wasNotInvoked()
 
         assertIs<UpdateKeyingMaterialsResult.Success>(actual)
@@ -110,18 +112,19 @@ class UpdateKeyingMaterialsUseCaseTests {
         val actual = updateKeyingMaterialsUseCase()
 
         coVerify {
-            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any(), any())
         }.wasNotInvoked()
 
         assertIs<UpdateKeyingMaterialsResult.Failure>(actual)
     }
 
-    private class Arrangement {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         private var updateKeyingMaterialsUseCase = UpdateKeyingMaterialsUseCaseImpl(
             mlsConversationRepository,
+            cryptoTransactionProvider
         )
 
         suspend fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<GroupID>>) = apply {
@@ -132,20 +135,22 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         suspend fun withUpdateKeyingMaterialsSuccessful() = apply {
             coEvery {
-                mlsConversationRepository.updateKeyingMaterial(any())
+                mlsConversationRepository.updateKeyingMaterial(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withUpdateKeyingMaterialsFailsFor(failedGroupId: GroupID, error: CoreFailure) = apply {
             coEvery {
-                mlsConversationRepository.updateKeyingMaterial(eq(failedGroupId))
+                mlsConversationRepository.updateKeyingMaterial(any(), eq(failedGroupId))
             }.returns(Either.Left(error))
             coEvery {
-                mlsConversationRepository.updateKeyingMaterial(matches { it != failedGroupId })
+                mlsConversationRepository.updateKeyingMaterial(any(), matches { it != failedGroupId })
             }.returns(Either.Right(Unit))
         }
 
-        fun arrange() = this to updateKeyingMaterialsUseCase
+        suspend fun arrange() = this to updateKeyingMaterialsUseCase.also {
+            withMLSTransactionReturning(Either.Right(Unit))
+        }
 
         companion object {
             val OUTDATED_KEYING_MATERIALS_GROUPS = listOf(GroupID("group1"), GroupID("group2"),  GroupID("group3"))

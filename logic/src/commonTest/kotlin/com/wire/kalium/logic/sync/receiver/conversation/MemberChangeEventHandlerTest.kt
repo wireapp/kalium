@@ -21,13 +21,15 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -51,10 +53,10 @@ class MemberChangeEventHandlerTest {
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(eq(event.conversationId))
+            arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId))
         }.wasInvoked(exactly = once)
     }
 
@@ -68,7 +70,7 @@ class MemberChangeEventHandlerTest {
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.conversationRepository.updateMutedStatusLocally(eq(event.conversationId), any(), any())
@@ -86,7 +88,7 @@ class MemberChangeEventHandlerTest {
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.conversationRepository.updateArchivedStatusLocally(
@@ -108,7 +110,7 @@ class MemberChangeEventHandlerTest {
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
@@ -125,7 +127,7 @@ class MemberChangeEventHandlerTest {
             .withUpdateMemberSucceeding()
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
@@ -142,18 +144,18 @@ class MemberChangeEventHandlerTest {
             .withUpdateMemberSucceeding()
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(eq(event.conversationId))
+            arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId))
         }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val conversationRepository = mock(ConversationRepository::class)
         private val userRepository = mock(UserRepository::class)
@@ -166,13 +168,13 @@ class MemberChangeEventHandlerTest {
 
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             coEvery {
-                fetchConversationIfUnknown(any())
+                fetchConversationIfUnknown(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
             coEvery {
-                fetchConversationIfUnknown(any())
+                fetchConversationIfUnknown(any(), any())
             }.returns(Either.Left(coreFailure))
         }
 

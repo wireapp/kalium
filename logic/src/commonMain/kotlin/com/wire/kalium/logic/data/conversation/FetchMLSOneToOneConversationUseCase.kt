@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
@@ -31,7 +32,7 @@ import io.mockative.Mockable
 
 @Mockable
 internal interface FetchMLSOneToOneConversationUseCase {
-    suspend operator fun invoke(userId: UserId): Either<CoreFailure, Conversation>
+    suspend operator fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Conversation>
 }
 
 internal class FetchMLSOneToOneConversationUseCaseImpl(
@@ -41,11 +42,12 @@ internal class FetchMLSOneToOneConversationUseCaseImpl(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
 ) : FetchMLSOneToOneConversationUseCase {
 
-    override suspend fun invoke(userId: UserId): Either<CoreFailure, Conversation> {
+    override suspend fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Conversation> {
         return conversationRepository.fetchMlsOneToOneConversation(userId)
             .map { addOtherMemberIfMissing(it, userId) }
             .flatMap { response ->
                 persistConversations(
+                    transactionContext,
                     conversations = listOf(response),
                     invalidateMembers = false
                 )

@@ -62,6 +62,10 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.GlobalWorkScheduler
+import com.wire.kalium.logic.sync.WorkSchedulerProvider
+import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
+import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
@@ -89,6 +93,7 @@ class GlobalKaliumScope internal constructor(
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     val logoutCallbackManager: LogoutCallbackManager,
+    val workSchedulerProvider: WorkSchedulerProvider,
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -187,4 +192,13 @@ class GlobalKaliumScope internal constructor(
 
     val observeIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
         get() = ObserveIsAppLockEditableUseCaseImpl(userSessionScopeProvider.value, sessionRepository)
+
+    internal val updateApiVersionsWorker: UpdateApiVersionsWorker by lazy { UpdateApiVersionsWorker(updateApiVersions) }
+
+    private val globalWorkScheduler: GlobalWorkScheduler = workSchedulerProvider.globalWorkScheduler(this)
+    val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
+
+    init {
+        globalWorkScheduler.schedulePeriodicApiVersionUpdate()
+    }
 }

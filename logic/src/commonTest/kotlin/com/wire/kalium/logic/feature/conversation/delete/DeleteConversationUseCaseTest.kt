@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
@@ -29,6 +31,7 @@ import com.wire.kalium.logic.util.arrangement.repository.MLSConversationReposito
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
@@ -48,11 +51,11 @@ class DeleteConversationUseCaseTest {
             }
 
         // when
-        val result = useCase(CONVERSATION_ID)
+        val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.mlsConversationRepository.leaveGroup(eq(GROUP_ID)) }.wasInvoked(once)
+        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }.wasInvoked(once)
     }
 
@@ -66,12 +69,12 @@ class DeleteConversationUseCaseTest {
             }
 
         // when
-        val result = useCase(CONVERSATION_ID)
+        val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         // then
         result.shouldFail()
         coVerify { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }.wasInvoked(once)
-        coVerify { arrangement.mlsConversationRepository.leaveGroup(eq(GROUP_ID)) }.wasNotInvoked()
+        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }.wasNotInvoked()
     }
 
     @Test
@@ -85,17 +88,18 @@ class DeleteConversationUseCaseTest {
             }
 
         // when
-        val result = useCase(CONVERSATION_ID)
+        val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
         // then
         result.shouldFail()
         coVerify { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }.wasInvoked(once)
-        coVerify { arrangement.mlsConversationRepository.leaveGroup(eq(GROUP_ID)) }.wasInvoked(once)
+        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }.wasInvoked(once)
     }
 
     private class Arrangement :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationUseCase> = run {
             val useCase = DeleteConversationUseCaseImpl(

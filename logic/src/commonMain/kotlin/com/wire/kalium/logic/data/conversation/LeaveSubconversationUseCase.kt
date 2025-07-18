@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -30,6 +29,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 import io.mockative.Mockable
@@ -39,27 +39,32 @@ import io.mockative.Mockable
  */
 @Mockable
 internal interface LeaveSubconversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): Either<CoreFailure, Unit>
 }
 
 internal class LeaveSubconversationUseCaseImpl(
     val conversationApi: ConversationApi,
-    val mlsClientProvider: MLSClientProvider,
     val subconversationRepository: SubconversationRepository,
     val selfUserId: UserId,
     val selfClientIdProvider: CurrentClientIdProvider
 ) : LeaveSubconversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit> =
+    override suspend fun invoke(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): Either<CoreFailure, Unit> =
         retrieveSubconversationGroupId(conversationId, subconversationId).flatMap { groupId ->
             groupId?.let { groupId ->
                 wrapApiRequest {
                     conversationApi.leaveSubconversation(conversationId.toApi(), subconversationId.toApi())
                 }.flatMap {
                     subconversationRepository.deleteSubconversation(conversationId, subconversationId)
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapMLSRequest {
-                            mlsClient.wipeConversation(groupId.toCrypto())
-                        }
+                    wrapMLSRequest {
+                        mlsContext.wipeConversation(groupId.toCrypto())
                     }
                 }
             } ?: Either.Right(Unit)

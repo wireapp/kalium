@@ -43,7 +43,9 @@ class E2EIClientTest : BaseMLSClientTest() {
             epochObserver,
             TestScope()
         )
-            .e2eiNewActivationEnrollment(user.name, user.handle, user.teamId, 90.days)
+            .transaction {
+                it.e2eiNewActivationEnrollment(user.name, user.handle, user.teamId, 90.days)
+            }
     }
 
     @Test

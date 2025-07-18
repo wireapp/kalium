@@ -18,10 +18,11 @@
 
 package com.wire.kalium.logic.feature.keypackage
 
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -32,9 +33,8 @@ import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Ar
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT_DTO
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.NETWORK_FAILURE
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.client.toCrypto
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
@@ -45,7 +45,6 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -131,7 +130,7 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-         coVerify {
+        coVerify {
             arrangement.userConfigRepository.isMLSEnabled()
         }.wasInvoked(once)
 
@@ -141,13 +140,12 @@ class MLSKeyPackageCountUseCaseTest {
         assertIs<MLSKeyPackageCountResult.Failure.NotEnabled>(actual)
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val keyPackageRepository = mock(KeyPackageRepository::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {
             coEvery {
@@ -169,12 +167,12 @@ class MLSKeyPackageCountUseCaseTest {
 
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
             every {
-                mlsClient.getDefaultCipherSuite()
+                mlsContext.getDefaultCipherSuite()
             }.returns(cipherSuite.toCrypto())
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit) = apply {
-            coEvery { mlsClientProvider.getMLSClient() }.returns(mlsClient.right())
+            withMLSTransactionReturning(Either.Right(Unit))
         }.apply {
             runBlocking { block() }
         }.let {
@@ -183,7 +181,7 @@ class MLSKeyPackageCountUseCaseTest {
                 currentClientIdProvider = currentClientIdProvider,
                 keyPackageLimitsProvider = keyPackageLimitsProvider,
                 userConfigRepository = userConfigRepository,
-                mlsClientProvider = mlsClientProvider,
+                transactionProvider = cryptoTransactionProvider
             )
         }
 

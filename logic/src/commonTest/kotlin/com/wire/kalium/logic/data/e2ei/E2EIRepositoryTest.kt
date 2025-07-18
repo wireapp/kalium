@@ -43,6 +43,8 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
@@ -741,7 +743,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.rotateKeysAndMigrateConversations("", listOf(Arrangement.GROUP_ID))
+        val result = e2eiRepository.rotateKeysAndMigrateConversations(arrangement.mlsContext, "", listOf(Arrangement.GROUP_ID))
 
         // Then
         result.shouldSucceed()
@@ -755,7 +757,7 @@ class E2EIRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any())
+            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -769,7 +771,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.rotateKeysAndMigrateConversations("", listOf(Arrangement.GROUP_ID))
+        val result = e2eiRepository.rotateKeysAndMigrateConversations(arrangement.mlsContext, "", listOf(Arrangement.GROUP_ID))
 
         // Then
         result.shouldFail()
@@ -783,7 +785,7 @@ class E2EIRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any())
+            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -983,7 +985,7 @@ class E2EIRepositoryTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         suspend fun withGetE2EIClientSuccessful() = apply {
             coEvery {
@@ -1041,7 +1043,7 @@ class E2EIRepositoryTest {
 
         suspend fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
             coEvery {
-                mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any())
+                mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
             }.returns(result)
         }
 
