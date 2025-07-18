@@ -25,13 +25,15 @@ import okio.Path
 import okio.Sink
 
 internal actual fun cellsAwsClient(
-    credentials: CellsCredentials,
+    credentials: CellsCredentials?,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
-): CellsAwsClient = CellsAwsClientApple(credentials)
+): CellsAwsClient = CellsAwsClientApple(credentials, sessionManager, accessTokenApi)
 
 private class CellsAwsClientApple(
-    private val credentials: CellsCredentials
+    private val credentials: CellsCredentials?,
+    private val sessionManager: SessionManager,
+    private val accessTokenAPI: AccessTokenApi,
 ) : CellsAwsClient {
 
     override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
