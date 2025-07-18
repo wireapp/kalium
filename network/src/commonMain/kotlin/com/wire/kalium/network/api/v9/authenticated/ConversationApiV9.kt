@@ -43,6 +43,6 @@ internal open class ConversationApiV9 internal constructor(
 
     private companion object {
         const val PATH_MLS = "mls"
-        private const val PATH_RESET_CONVERSATION = "mls-reset-conversation"
+        private const val PATH_RESET_CONVERSATION = "reset-conversation"
     }
 }

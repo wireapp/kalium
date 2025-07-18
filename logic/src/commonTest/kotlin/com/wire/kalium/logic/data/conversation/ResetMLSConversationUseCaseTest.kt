@@ -17,9 +17,14 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.feature.backup.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -47,7 +52,7 @@ class ResetMLSConversationUseCaseTest {
         assertTrue(result.isRight())
 
         coVerify {
-            arrangement.conversationApi.resetMlsConversation(any(), any())
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasNotInvoked()
     }
 
@@ -61,7 +66,7 @@ class ResetMLSConversationUseCaseTest {
         useCase(TestConversation.ID)
 
         coVerify {
-            arrangement.conversationApi.resetMlsConversation(any(), any())
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasInvoked()
     }
 
@@ -75,7 +80,7 @@ class ResetMLSConversationUseCaseTest {
         useCase(TestConversation.ID)
 
         coVerify {
-            arrangement.mlsConversationRepository.leaveGroup(any())
+            arrangement.mlsConversationRepository.leaveGroup(any(), any())
         }.wasInvoked()
     }
 
@@ -89,7 +94,7 @@ class ResetMLSConversationUseCaseTest {
         useCase(TestConversation.ID)
 
         coVerify {
-            arrangement.fetchConversationUseCase(any())
+            arrangement.fetchConversationUseCase(any(), any())
         }.wasInvoked()
     }
 
@@ -103,7 +108,7 @@ class ResetMLSConversationUseCaseTest {
         useCase(TestConversation.ID)
 
         coVerify {
-            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
         }.wasInvoked()
     }
 
@@ -113,7 +118,9 @@ class ResetMLSConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
-        val conversationApi = mock(ConversationApi::class)
+        val transactionProvider = mock(CryptoTransactionProvider::class)
+        val transactionContext: CryptoTransactionContext = mock(CryptoTransactionContext::class)
+        val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
 
         suspend fun withFeatureDisabled() = apply {
             coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
@@ -130,31 +137,47 @@ class ResetMLSConversationUseCaseTest {
             } returns TestConversation.MLS_CONVERSATION.right()
 
             coEvery {
-                conversationApi.resetMlsConversation(any(), any())
-            } returns NetworkResponse.Success(Unit, mapOf(), 200)
-
-            coEvery {
-                mlsConversationRepository.leaveGroup(any())
+                conversationRepository.resetMlsConversation(any(), any())
             } returns Unit.right()
 
             coEvery {
-                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any())
+                mlsConversationRepository.leaveGroup(any(), any())
+            } returns Unit.right()
+
+            coEvery {
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             } returns MLSAdditionResult(emptySet(), emptySet()).right()
 
             coEvery {
-                fetchConversationUseCase(any())
+                fetchConversationUseCase(any(), any())
             } returns Unit.right()
 
             coEvery {
                 conversationRepository.getConversationMembers(any())
             } returns listOf(UserId("test", "test@user")).right()
 
+            coEvery {
+                transactionProvider.mlsTransaction<Any>(any(), any())
+            }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, Any>
+                block(mlsContext)
+            }
+
+            coEvery {
+                transactionProvider.transaction<Any>(any(), any())
+            }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val block = args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Any>
+                block(transactionContext)
+            }
+
             return this to ResetMLSConversationUseCaseImpl(
                 userConfig = userConfig,
+                transactionProvider = transactionProvider,
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
                 fetchConversationUseCase = fetchConversationUseCase,
-                conversationApi = conversationApi,
             )
         }
     }

@@ -2039,7 +2039,9 @@ class UserSessionScope internal constructor(
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
             persistConversationsUseCase,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            userConfigRepository,
+            fetchConversationUseCase,
         )
     }
 

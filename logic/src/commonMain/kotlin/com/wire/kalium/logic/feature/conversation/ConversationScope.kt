@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -28,9 +29,12 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
@@ -134,6 +138,8 @@ class ConversationScope internal constructor(
     private val deleteConversationUseCase: DeleteConversationUseCase,
     private val persistConversationsUseCase: PersistConversationsUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val userConfigRepository: UserConfigRepository,
+    private val fetchConversationUseCase: FetchConversationUseCase,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -412,4 +418,12 @@ class ConversationScope internal constructor(
         get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
     val createConversationFolder: CreateConversationFolderUseCase
         get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
+    val resetMlsConversation: ResetMLSConversationUseCase
+        get() = ResetMLSConversationUseCaseImpl(
+            userConfig = userConfigRepository,
+            transactionProvider = transactionProvider,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversationUseCase = fetchConversationUseCase,
+        )
 }

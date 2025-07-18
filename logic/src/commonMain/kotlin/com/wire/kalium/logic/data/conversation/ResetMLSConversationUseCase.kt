@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrFail
@@ -27,8 +26,8 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 
 /**
  * Reset an MLS conversation which cannot be recovered by any other means.
@@ -39,17 +38,17 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
  *  - Fetching the conversation to update group ID
  *  - Re-establishing the MLS group with the updated group ID and current members.
  */
-internal interface ResetMLSConversationUseCase {
+interface ResetMLSConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("ReturnCount")
 internal class ResetMLSConversationUseCaseImpl(
     private val userConfig: UserConfigRepository,
+    private val transactionProvider: CryptoTransactionProvider,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversationUseCase: FetchConversationUseCase,
-    private val conversationApi: ConversationApi,
 ) : ResetMLSConversationUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
@@ -61,14 +60,19 @@ internal class ResetMLSConversationUseCaseImpl(
 
         return getMlsProtocolInfo(conversationId)
             .flatMap { protocolInfo ->
-                wrapApiRequest {
-                    conversationApi.resetMlsConversation(protocolInfo.groupId.value, protocolInfo.epoch)
-                }.map { protocolInfo.groupId }
+                conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
+                    .map { protocolInfo.groupId }
             }
             .flatMap { groupId ->
-                mlsConversationRepository.leaveGroup(groupId)
+                transactionProvider.mlsTransaction("LeaveGroup") { mlsContext ->
+                    mlsConversationRepository.leaveGroup(mlsContext, groupId)
+                }
             }
-            .flatMap { fetchConversationUseCase(conversationId) }
+            .flatMap {
+                transactionProvider.transaction("FetchConversation") { context ->
+                    fetchConversationUseCase(context, conversationId)
+                }
+            }
             .flatMap { getMlsProtocolInfo(conversationId) }
             .map { updatedProtocolInfo ->
 
@@ -77,10 +81,13 @@ internal class ResetMLSConversationUseCaseImpl(
                     return it.left()
                 }
 
-                mlsConversationRepository.establishMLSGroup(
-                    groupID = updatedProtocolInfo.groupId,
-                    members = members,
-                )
+                transactionProvider.mlsTransaction { mlsContext ->
+                    mlsConversationRepository.establishMLSGroup(
+                        mlsContext = mlsContext,
+                        groupID = updatedProtocolInfo.groupId,
+                        members = members,
+                    )
+                }
             }
     }
 
