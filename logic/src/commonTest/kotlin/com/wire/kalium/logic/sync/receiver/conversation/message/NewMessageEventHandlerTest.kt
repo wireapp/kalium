@@ -36,6 +36,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -435,6 +436,7 @@ class NewMessageEventHandlerTest {
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
         val confirmationDeliveryHandler = mock(ConfirmationDeliveryHandler::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
+        val resetMlsConversation = mock(ResetMLSConversationUseCase::class)
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker,
@@ -451,7 +453,8 @@ class NewMessageEventHandlerTest {
                 confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
             SELF_USER_ID,
-            staleEpochVerifier
+            staleEpochVerifier,
+            resetMlsConversation,
         )
 
         suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult.ApplicationMessage>) = apply {
