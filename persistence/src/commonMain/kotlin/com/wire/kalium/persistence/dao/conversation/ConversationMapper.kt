@@ -82,6 +82,7 @@ data object ConversationMapper {
         folderId: String?,
         folderName: String?,
         wireCell: String?,
+        deletedLocally: Boolean,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
