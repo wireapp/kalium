@@ -162,7 +162,7 @@ WHERE
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectConversationDetailsByQualifiedId:
-SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
+SELECT * FROM ConversationDetails WHERE qualifiedId = ? AND deletedLocally = 0;
 
 selectActiveOneOnOneConversationDetails:
 SELECT * FROM ConversationDetails
