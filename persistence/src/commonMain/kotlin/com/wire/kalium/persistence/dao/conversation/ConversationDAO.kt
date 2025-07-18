@@ -82,7 +82,8 @@ interface ConversationDAO {
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
-    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
+    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
+    suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity): Boolean
 
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,

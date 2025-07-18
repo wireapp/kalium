@@ -39,31 +39,6 @@ import kotlin.test.assertIs
 class ClearConversationContentUseCaseTest {
 
     @Test
-    fun givenClearConversationFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
-        // given
-        val (arrangement, useCase) = Arrangement()
-            .withClearConversationContent(false)
-            .withClearConversationAssetsLocally(true)
-            .withMessageSending(true)
-            .withCurrentClientId((true))
-            .withSelfConversationIds(listOf(selfConversationId))
-            .arrange()
-
-        // when
-        val result = useCase(ConversationId("someValue", "someDomain"))
-
-        // then
-        assertIs<ClearConversationContentUseCase.Result.Failure>(result)
-
-        with(arrangement) {
-            coVerify { conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
-            coVerify { currentClientIdProvider.invoke() }.wasInvoked(exactly = once)
-            coVerify { messageSender.sendMessage(any(), any()) }.wasInvoked(exactly = once)
-            coVerify { clearConversationAssetsLocally(any()) }.wasNotInvoked()
-        }
-    }
-
-    @Test
     fun givenGettingClientIdFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
         // given
         val (arrangement, useCase) = Arrangement()
@@ -81,9 +56,10 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
 
         with(arrangement) {
-            coVerify { conversationRepository.clearContent(any()) }.wasNotInvoked()
             coVerify { currentClientIdProvider.invoke() }.wasInvoked(exactly = once)
             coVerify { messageSender.sendMessage(any(), any()) }.wasNotInvoked()
+            coVerify { clearConversationAssetsLocally(any()) }.wasNotInvoked()
+            coVerify { conversationRepository.clearContent(any()) }.wasNotInvoked()
         }
     }
 
@@ -105,9 +81,10 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
 
         with(arrangement) {
-            coVerify { conversationRepository.clearContent(any()) }.wasNotInvoked()
             coVerify { currentClientIdProvider.invoke() }.wasInvoked(exactly = once)
             coVerify { messageSender.sendMessage(any(), any()) }.wasInvoked(exactly = once)
+            coVerify { clearConversationAssetsLocally(any()) }.wasNotInvoked()
+            coVerify { conversationRepository.clearContent(any()) }.wasNotInvoked()
         }
     }
 
@@ -129,10 +106,35 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
 
         with(arrangement) {
-            coVerify { conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
             coVerify { currentClientIdProvider.invoke() }.wasInvoked(exactly = once)
             coVerify { messageSender.sendMessage(any(), any()) }.wasInvoked(exactly = once)
             coVerify { clearConversationAssetsLocally(any()) }.wasInvoked(exactly = once)
+            coVerify { conversationRepository.clearContent(any()) }.wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenClearConversationFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
+        // given
+        val (arrangement, useCase) = Arrangement()
+            .withClearConversationContent(false)
+            .withClearConversationAssetsLocally(true)
+            .withMessageSending(true)
+            .withCurrentClientId((true))
+            .withSelfConversationIds(listOf(selfConversationId))
+            .arrange()
+
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        assertIs<ClearConversationContentUseCase.Result.Failure>(result)
+
+        with(arrangement) {
+            coVerify { currentClientIdProvider.invoke() }.wasInvoked(exactly = once)
+            coVerify { messageSender.sendMessage(any(), any()) }.wasInvoked(exactly = once)
+            coVerify { clearConversationAssetsLocally(any()) }.wasInvoked(exactly = once)
+            coVerify { conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
     }
 
@@ -154,9 +156,10 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Success>(result)
 
         with(arrangement) {
-            coVerify { conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
             coVerify { currentClientIdProvider.invoke() }.wasInvoked(exactly = once)
             coVerify { messageSender.sendMessage(any(), any()) }.wasInvoked(exactly = once)
+            coVerify { clearConversationAssetsLocally(any()) }.wasInvoked(exactly = once)
+            coVerify { conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
         }
     }
 
