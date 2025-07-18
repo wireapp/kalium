@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -30,6 +31,7 @@ interface MLSResetConversationEventHandler {
 
 internal class MLSResetConversationEventHandlerImpl(
     private val selfUserId: UserId,
+    private val transactionProvider: CryptoTransactionProvider,
     private val userConfig: UserConfigRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversation: FetchConversationUseCase,
@@ -42,11 +44,15 @@ internal class MLSResetConversationEventHandlerImpl(
         }
 
         if (event.from != selfUserId) {
-            mlsConversationRepository.leaveGroup(event.groupID)
+            transactionProvider.mlsTransaction("LeaveGroup") { mlsContext ->
+                mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
+            }
 
             // Will be replaced by updating Group ID when it is added in a new
             // version of mls-reset event.
-            fetchConversation(event.conversationId)
+            transactionProvider.transaction("FetchConversation") { context ->
+                fetchConversation(context, event.conversationId)
+            }
         }
     }
 }

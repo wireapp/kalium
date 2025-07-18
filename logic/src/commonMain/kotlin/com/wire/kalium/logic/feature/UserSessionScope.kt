@@ -111,6 +111,8 @@ import com.wire.kalium.logic.data.conversation.PersistConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCaseImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCaseImpl
@@ -1139,6 +1141,7 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             fetchMLSOneToOneConversationUseCase,
             fetchConversationUseCase,
+            resetMlsConversation,
             userId,
         )
 
@@ -1588,7 +1591,8 @@ class UserSessionScope internal constructor(
                 messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
             userId,
-            staleEpochVerifier
+            staleEpochVerifier,
+            resetMlsConversation,
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -1706,6 +1710,7 @@ class UserSessionScope internal constructor(
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
         get() = MLSResetConversationEventHandlerImpl(
             selfUserId = userId,
+            transactionProvider = cryptoTransactionProvider,
             userConfig = userConfigRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversation = fetchConversationUseCase,
@@ -2052,8 +2057,7 @@ class UserSessionScope internal constructor(
             deleteConversationUseCase,
             persistConversationsUseCase,
             cryptoTransactionProvider,
-            userConfigRepository,
-            fetchConversationUseCase,
+            resetMlsConversation,
         )
     }
 
@@ -2479,6 +2483,15 @@ class UserSessionScope internal constructor(
         )
 
     val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
+
+    val resetMlsConversation: ResetMLSConversationUseCase
+        get() = ResetMLSConversationUseCaseImpl(
+            userConfig = userConfigRepository,
+            transactionProvider = cryptoTransactionProvider,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversationUseCase = fetchConversationUseCase,
+        )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

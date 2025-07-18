@@ -64,6 +64,8 @@ private fun mapMessageRejected(message: String): MLSFailure.MessageRejected {
         "mls-stale-message" -> MLSFailure.MessageRejected.MlsStaleMessage
         "mls-client-mismatch" -> MLSFailure.MessageRejected.MlsClientMismatch
         "mls-commit-missing-references" -> MLSFailure.MessageRejected.MlsCommitMissingReferences
+        "mls-invalid-leaf-node-index" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
+        "mls-invalid-leaf-node-signature" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
         else -> MLSFailure.MessageRejected.Other(reason = reason)
     }
 }
