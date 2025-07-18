@@ -58,16 +58,14 @@ internal class ResetMLSConversationUseCaseImpl(
             return Unit.right()
         }
 
-        return getMlsProtocolInfo(conversationId)
+        return fetchConversationUseCase(conversationId)
+            .flatMap { getMlsProtocolInfo(conversationId) }
             .flatMap { protocolInfo ->
                 conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
                     .map { protocolInfo.groupId }
             }
-            .flatMap { groupId ->
-                transactionProvider.mlsTransaction("LeaveGroup") { mlsContext ->
-                    mlsConversationRepository.leaveGroup(mlsContext, groupId)
-                }
-            }
+            .flatMap { groupId ->transactionProvider.mlsTransaction("LeaveGroup") { mlsContext ->
+                    mlsConversationRepository.leaveGroup(mlsContext,groupId) }}
             .flatMap {
                 transactionProvider.transaction("FetchConversation") { context ->
                     fetchConversationUseCase(context, conversationId)

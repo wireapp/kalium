@@ -37,6 +37,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigDat
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.authenticated.notification.conversation.MlsConversationResetData
 import com.wire.kalium.network.api.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.authenticated.notification.user.UserUpdateEventData
@@ -342,6 +343,14 @@ sealed class EventContentDTO {
             @SerialName("from") val from: String,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             @SerialName("time") val time: Instant
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.mls-reset")
+        data class MlsResetConversationDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("data") val data: MlsConversationResetData,
         ) : Conversation()
     }
 
