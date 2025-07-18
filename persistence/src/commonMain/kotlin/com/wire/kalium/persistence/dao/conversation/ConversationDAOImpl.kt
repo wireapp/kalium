@@ -362,7 +362,17 @@ internal class ConversationDAOImpl internal constructor(
         }
 
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
-        conversationQueries.deleteConversation(qualifiedID)
+        conversationQueries.transactionWithResult {
+            conversationQueries.deleteConversation(qualifiedID)
+            conversationQueries.selectChanges().executeAsOne() > 0
+        }
+    }
+
+    override suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.transactionWithResult {
+            conversationQueries.markAsDeletedLocally(qualifiedID)
+            conversationQueries.selectChanges().executeAsOne() > 0
+        }
     }
 
     override suspend fun updateConversationMutedStatus(

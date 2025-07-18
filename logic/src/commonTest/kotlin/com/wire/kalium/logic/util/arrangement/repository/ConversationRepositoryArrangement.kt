@@ -55,6 +55,8 @@ internal interface ConversationRepositoryArrangement {
         domain: Matcher<String> = AnyMatcher(valueOf())
     )
 
+    suspend fun withMarkConversationAsDeletedLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withMarkConversationAsDeletedLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
@@ -134,6 +136,18 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
                 matches { domain.matches(it) }
             )
         }.returns(result)
+    }
+
+    override suspend fun withMarkConversationAsDeletedLocallySucceeding(conversationId: Matcher<ConversationId>) {
+        coEvery {
+            conversationRepository.markConversationAsDeletedLocally(matches { conversationId.matches(it) })
+        }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withMarkConversationAsDeletedLocallyFailing(conversationId: Matcher<ConversationId>) {
+        coEvery {
+            conversationRepository.markConversationAsDeletedLocally(matches { conversationId.matches(it) })
+        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
     override suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId>) {
