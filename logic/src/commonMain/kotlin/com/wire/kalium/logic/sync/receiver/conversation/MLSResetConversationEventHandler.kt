@@ -24,7 +24,9 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mockable
 
+@Mockable
 interface MLSResetConversationEventHandler {
     suspend fun handle(event: Event.Conversation.MLSReset)
 }
