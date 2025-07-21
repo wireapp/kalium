@@ -327,6 +327,52 @@ class RegisterClientUseCaseTest {
     }
 
     @Test
+    fun givenRegistering_whenAsyncNotificationsAllowed_thenConsumableNotificationCapabilityShouldBeAdded() = runTest {
+        val registeredClient = CLIENT
+
+        val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
+            .withRegisterClient(Either.Right(registeredClient))
+            .withRegisterMLSClient(Either.Right(RegisterMLSClientResult.Success))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .withIsAllowedToUseAsyncNotifications(true)
+            .arrange()
+
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, null))
+
+        coVerify {
+            arrangement.clientRepository.registerClient(matches {
+                it.capabilities?.contains(ClientCapability.ConsumableNotifications) == true
+            })
+        }
+        assertIs<RegisterClientResult.Success>(result)
+        assertEquals(registeredClient, result.client)
+    }
+
+    @Test
+    fun givenRegistering_whenAsyncNotificationsIsNOTAllowed_thenConsumableNotificationCapabilityShouldNOTBeAdded() = runTest {
+        val registeredClient = CLIENT
+
+        val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
+            .withRegisterClient(Either.Right(registeredClient))
+            .withRegisterMLSClient(Either.Right(RegisterMLSClientResult.Success))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .withIsAllowedToUseAsyncNotifications(false)
+            .arrange()
+
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, null))
+
+        coVerify {
+            arrangement.clientRepository.registerClient(matches {
+                it.capabilities?.contains(ClientCapability.ConsumableNotifications) == false
+            })
+        }
+        assertIs<RegisterClientResult.Success>(result)
+        assertEquals(registeredClient, result.client)
+    }
+
+    @Test
     fun givenProteusClient_whenNewPreKeysThrowException_thenReturnProteusFailure() = runTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
 
@@ -423,10 +469,12 @@ class RegisterClientUseCaseTest {
         val sessionRepository = mock(SessionRepository::class)
         val userRepository = mock(UserRepository::class)
         val registerMLSClient = mock(RegisterMLSClientUseCase::class)
+        val isAllowedToUseAsyncNotifications = mock(IsAllowedToUseAsyncNotificationsUseCase::class)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
 
         private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
+            isAllowedToUseAsyncNotifications,
             isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
@@ -456,7 +504,15 @@ class RegisterClientUseCaseTest {
                 coEvery {
                     isAllowedToRegisterMLSClient.invoke()
                 }.returns(true)
+
+                withIsAllowedToUseAsyncNotifications(false)
             }
+        }
+
+        fun withIsAllowedToUseAsyncNotifications(isAllowed: Boolean = false) = apply {
+            every {
+                isAllowedToUseAsyncNotifications()
+            }.returns(isAllowed)
         }
 
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
