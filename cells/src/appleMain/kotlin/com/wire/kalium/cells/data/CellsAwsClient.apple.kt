@@ -30,10 +30,11 @@ internal actual fun cellsAwsClient(
     accessTokenApi: AccessTokenApi
 ): CellsAwsClient = CellsAwsClientApple(credentials, sessionManager, accessTokenApi)
 
+@Suppress("UnusedPrivateProperty")
 private class CellsAwsClientApple(
     private val credentials: CellsCredentials?,
     private val sessionManager: SessionManager,
-    private val accessTokenAPI: AccessTokenApi,
+    private val accessTokenAPI: AccessTokenApi
 ) : CellsAwsClient {
 
     override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
