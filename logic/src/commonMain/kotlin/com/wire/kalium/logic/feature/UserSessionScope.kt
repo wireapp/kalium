@@ -228,6 +228,7 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
@@ -460,6 +461,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
@@ -1868,6 +1870,9 @@ class UserSessionScope internal constructor(
     private val appLockConfigHandler
         get() = AppLockConfigHandler(userConfigRepository)
 
+    private val allowedGlobalOperationsHandler
+        get() = AllowedGlobalOperationsHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1878,7 +1883,8 @@ class UserSessionScope internal constructor(
             conferenceCallingConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
-            appLockConfigHandler
+            appLockConfigHandler,
+            allowedGlobalOperationsHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2034,7 +2040,9 @@ class UserSessionScope internal constructor(
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
             persistConversationsUseCase,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            userConfigRepository,
+            fetchConversationUseCase,
         )
     }
 
@@ -2498,7 +2506,9 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION) {
+            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
+                && sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
+            ) {
                 updateSelfClientCapabilityToConsumableNotifications()
             }
         }

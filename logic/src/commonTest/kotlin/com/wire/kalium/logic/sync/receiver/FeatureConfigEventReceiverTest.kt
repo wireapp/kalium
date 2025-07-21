@@ -44,6 +44,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
@@ -347,7 +348,8 @@ class FeatureConfigEventReceiverTest {
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
                 E2EIConfigHandler(userConfigRepository),
-                AppLockConfigHandler(userConfigRepository)
+                AppLockConfigHandler(userConfigRepository),
+                AllowedGlobalOperationsHandler(userConfigRepository),
             )
         }
 
