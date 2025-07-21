@@ -228,6 +228,8 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
+import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
@@ -495,7 +497,6 @@ import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -1973,6 +1974,12 @@ class UserSessionScope internal constructor(
             userRepository
         )
 
+    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase
+        get() = IsAllowedToUseAsyncNotificationsUseCaseImpl(
+            isAllowedByFeatureFlag = kaliumConfigs.enableAsyncNotifications,
+            isAllowedByCurrentBackendVersion = sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope by lazy {
         ClientScope(
@@ -1999,7 +2006,8 @@ class UserSessionScope internal constructor(
             registerMLSClientUseCase,
             syncFeatureConfigsUseCase,
             userConfigRepository,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            isAllowedToUseAsyncNotifications
         )
     }
     val conversations: ConversationScope by lazy {
@@ -2499,9 +2507,7 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
-                && sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
-            ) {
+            if (isAllowedToUseAsyncNotifications()) {
                 updateSelfClientCapabilityToConsumableNotifications()
             }
         }

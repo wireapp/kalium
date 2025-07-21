@@ -19,30 +19,7 @@
 package com.wire.kalium.network.api.v9.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.client.ClientDTO
-import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
-import com.wire.kalium.network.api.model.ApiModelMapper
-import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.v8.authenticated.ClientApiV8
-import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 
-internal open class ClientApiV9 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient,
-    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
-    private val shouldEnableAsyncNotificationsClientRegistration: Boolean = ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
-) : ClientApiV8(authenticatedNetworkClient) {
-    override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
-        if (shouldEnableAsyncNotificationsClientRegistration) {
-            wrapKaliumResponse {
-                httpClient.post(PATH_CLIENTS) {
-                    setBody(apiModelMapper.toApiV9(registerClientRequest))
-                }
-            }
-        } else {
-            super.registerClient(registerClientRequest)
-        }
-}
+internal open class ClientApiV9 internal constructor(authenticatedNetworkClient: AuthenticatedNetworkClient) :
+    ClientApiV8(authenticatedNetworkClient)

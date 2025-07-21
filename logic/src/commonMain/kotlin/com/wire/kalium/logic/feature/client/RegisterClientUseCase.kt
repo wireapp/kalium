@@ -97,7 +97,8 @@ internal interface RegisterClientUseCase {
 }
 
 @Suppress("LongParameterList")
-class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constructor(
+internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constructor(
+    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -130,7 +131,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                 kaliumLogger.withTextTag(TAG).e("There was an error while registering the client $error")
                 RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
-                clientRepository.registerClient(registerClientParam)
+                val params = registerClientParam.withConsumableNotificationCapabilityWhenAllowed()
+                clientRepository.registerClient(params)
                     // todo? separate this in mls client usesCase register! separate everything
                     .flatMap { registeredClient ->
                         if (isAllowedToRegisterMLSClient()) {
@@ -141,7 +143,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                             }
                         } else {
                             Either.Right(registeredClient)
-                        }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                        }.map { client -> client to params.preKeys.maxOfOrNull { it.id } }
                     }.flatMap { (client, otrLastKeyId) ->
                         otrLastKeyId?.let { preKeyRepository.updateMostRecentPreKeyId(it) }
                         Either.Right(client)
@@ -151,6 +153,30 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                         RegisterClientResult.Success(client)
                     })
             })
+    }
+
+    /**
+     * Depending if the build is able to use async notifications and the BE allows it, then add the capability for
+     * [ClientCapability.ConsumableNotifications] otherwise fallback to the current behavior,
+     * just with the [ClientCapability.LegalHoldImplicitConsent] capability.
+     *
+     * When ACK is stable from BE perspective, this can be later moved to the API level, like it was before this change.
+     */
+    private suspend fun RegisterClientParameters.withConsumableNotificationCapabilityWhenAllowed(): RegisterClientParameters {
+        return if (isAllowedToUseAsyncNotifications()) {
+            this.copy(
+                capabilities = capabilities?.toMutableSet()?.apply {
+                    add(ClientCapability.LegalHoldImplicitConsent)
+                    add(ClientCapability.ConsumableNotifications)
+                }?.toList() ?: listOf(ClientCapability.LegalHoldImplicitConsent, ClientCapability.ConsumableNotifications),
+            )
+        } else {
+            this.copy(
+                capabilities = capabilities?.toMutableSet()?.apply { add(ClientCapability.LegalHoldImplicitConsent) }?.toList() ?: listOf(
+                    ClientCapability.LegalHoldImplicitConsent
+                ),
+            )
+        }
     }
 
     private suspend fun currentlyStoredVerificationCode(): String? {
