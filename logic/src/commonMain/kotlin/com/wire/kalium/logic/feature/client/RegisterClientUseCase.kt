@@ -163,8 +163,8 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
      * When ACK is stable from BE perspective, this can be later moved to the API level, like it was before this change.
      */
     private suspend fun RegisterClientParameters.withConsumableNotificationCapabilityWhenAllowed(): RegisterClientParameters {
-        this.copy(
-            capabilities =  capabilities.orEmpty().toMutableSet().apply {
+        return this.copy(
+            capabilities = capabilities.orEmpty().toMutableSet().apply {
                 add(ClientCapability.LegalHoldImplicitConsent)
                 if (isAllowedToUseAsyncNotifications()) {
                     add(ClientCapability.ConsumableNotifications)
