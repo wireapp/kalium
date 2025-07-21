@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandle
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
@@ -52,7 +53,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
     private val e2EIConfigHandler: E2EIConfigHandler,
-    private val appLockConfigHandler: AppLockConfigHandler
+    private val appLockConfigHandler: AppLockConfigHandler,
+    private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(
@@ -84,7 +86,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     arrayOf("info" to "Ignoring unknown feature config update")
                 )
 
-                Either.Right(Unit)
-            }
+            Either.Right(Unit)
         }
+        is Event.FeatureConfig.AllowedGlobalOperationsUpdated -> allowedGlobalOperationsHandler.handle(event.model)
+    }
 }

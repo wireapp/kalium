@@ -192,6 +192,11 @@ interface ConversationApi : BaseApi {
         conversationId: ConversationId
     ): NetworkResponse<ConversationInviteLinkResponse>
 
+    suspend fun resetMlsConversation(
+        groupId: String,
+        epoch: ULong,
+    ): NetworkResponse<Unit>
+
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")

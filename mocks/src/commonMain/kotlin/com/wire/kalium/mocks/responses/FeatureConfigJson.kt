@@ -18,6 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
+import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOperationsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
@@ -143,6 +144,10 @@ object FeatureConfigJson {
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AllowedGlobalOperations(
+                AllowedGlobalOperationsConfigDTO(),
+                FeatureFlagStatusDTO.DISABLED
+            ),
         ),
         featureConfigResponseSerializer
     )

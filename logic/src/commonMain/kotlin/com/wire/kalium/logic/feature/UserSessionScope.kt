@@ -461,6 +461,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
@@ -1869,6 +1870,9 @@ class UserSessionScope internal constructor(
     private val appLockConfigHandler
         get() = AppLockConfigHandler(userConfigRepository)
 
+    private val allowedGlobalOperationsHandler
+        get() = AllowedGlobalOperationsHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1879,7 +1883,8 @@ class UserSessionScope internal constructor(
             conferenceCallingConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
-            appLockConfigHandler
+            appLockConfigHandler,
+            allowedGlobalOperationsHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2035,7 +2040,9 @@ class UserSessionScope internal constructor(
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
             persistConversationsUseCase,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            userConfigRepository,
+            fetchConversationUseCase,
         )
     }
 
