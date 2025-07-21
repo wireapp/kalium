@@ -73,8 +73,7 @@ internal class ResetMLSConversationUseCaseImpl(
                     mlsConversationRepository.leaveGroup(mlsContext, groupId)
                 }
                 .flatMap { fetchConversation(transaction, conversationId) }
-                .flatMap { fetchConversation(conversationId) }
-            .flatMap { getMlsProtocolInfo(conversationId) }
+                .flatMap { getMlsProtocolInfo(conversationId) }
                 .map { updatedProtocolInfo ->
 
                     val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
@@ -90,11 +89,6 @@ internal class ResetMLSConversationUseCaseImpl(
                 }.map {}
         }
     }
-
-    private suspend fun fetchConversation(
-        transaction: CryptoTransactionContext,
-        conversationId: ConversationId
-    ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId)
 
     private suspend fun fetchConversation(
         transaction: CryptoTransactionContext,
