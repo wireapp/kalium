@@ -108,6 +108,11 @@ data class E2EIConfigModel(
     val crlProxy: String?,
 )
 
+data class AllowedGlobalOperationsModel(
+    val mlsConversationsReset: Boolean,
+    val status: Status,
+)
+
 @Serializable
 sealed interface ChannelFeatureConfiguration {
 

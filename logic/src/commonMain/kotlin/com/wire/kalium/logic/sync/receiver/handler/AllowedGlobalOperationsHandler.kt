@@ -15,9 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.logic.sync.receiver.handler
 
-internal data class CellsCredentials(
-    val serverUrl: String,
-    val gatewaySecret: String,
-)
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
+
+class AllowedGlobalOperationsHandler(
+    private val userConfigRepository: UserConfigRepository
+) {
+suspend fun handle(model: AllowedGlobalOperationsModel): Either<CoreFailure, Unit> =
+         userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
+}

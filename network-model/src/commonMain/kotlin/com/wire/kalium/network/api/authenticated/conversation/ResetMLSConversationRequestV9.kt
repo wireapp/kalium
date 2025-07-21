@@ -15,9 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.network.api.authenticated.conversation
 
-internal data class CellsCredentials(
-    val serverUrl: String,
-    val gatewaySecret: String,
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class ResetMLSConversationRequestV9(
+    @SerialName("epoch")
+    val epoch: ULong,
+    @SerialName("group_id")
+    val groupId: String,
 )

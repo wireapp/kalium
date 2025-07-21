@@ -19,13 +19,22 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.session.SessionManager
 import okio.Path
 import okio.Sink
 
-internal actual fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient = CellsAwsClientApple(credentials)
+internal actual fun cellsAwsClient(
+    credentials: CellsCredentials?,
+    sessionManager: SessionManager,
+    accessTokenApi: AccessTokenApi
+): CellsAwsClient = CellsAwsClientApple(credentials, sessionManager, accessTokenApi)
 
+@Suppress("UnusedPrivateProperty")
 private class CellsAwsClientApple(
-    private val credentials: CellsCredentials
+    private val credentials: CellsCredentials?,
+    private val sessionManager: SessionManager,
+    private val accessTokenAPI: AccessTokenApi
 ) : CellsAwsClient {
 
     override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
