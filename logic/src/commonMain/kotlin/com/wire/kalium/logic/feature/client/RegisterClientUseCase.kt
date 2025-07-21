@@ -172,9 +172,9 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
             )
         } else {
             this.copy(
-                capabilities = capabilities?.toMutableSet()?.apply { add(ClientCapability.LegalHoldImplicitConsent) }?.toList() ?: listOf(
-                    ClientCapability.LegalHoldImplicitConsent
-                ),
+                capabilities = capabilities?.toMutableSet()?.apply {
+                    add(ClientCapability.LegalHoldImplicitConsent)
+                }?.toList() ?: listOf(ClientCapability.LegalHoldImplicitConsent),
             )
         }
     }

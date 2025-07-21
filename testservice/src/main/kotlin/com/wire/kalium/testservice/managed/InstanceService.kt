@@ -90,7 +90,10 @@ class InstanceService(
         // metrics
         metricRegistry.register(
             MetricRegistry.name("testservice", "instances", "total", "size"),
-            Gauge { instances.size })
+            Gauge {
+                instances.size
+            }
+        )
         metricRegistry.register(
             MetricRegistry.name("testservice", "instances", "startup", "avg"),
             Gauge {
