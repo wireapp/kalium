@@ -26,7 +26,7 @@ interface IsAllowedToUseAsyncNotificationsUseCase {
 
 internal class IsAllowedToUseAsyncNotificationsUseCaseImpl(
     private val isAllowedByFeatureFlag: Boolean,
-    private val isAllowedByCurrentBackendVersion: Boolean
+    private val isAllowedByCurrentBackendVersionProvider: () -> Boolean
 ) : IsAllowedToUseAsyncNotificationsUseCase {
-    override fun invoke(): Boolean = isAllowedByFeatureFlag && isAllowedByCurrentBackendVersion
+    override fun invoke(): Boolean = isAllowedByFeatureFlag && isAllowedByCurrentBackendVersionProvider.invoke()
 }
