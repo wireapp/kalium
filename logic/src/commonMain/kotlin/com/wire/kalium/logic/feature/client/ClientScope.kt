@@ -78,7 +78,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val transactionProvider: CryptoTransactionProvider
 ) {
     @OptIn(DelicateKaliumApi::class)
-    val register: RegisterClientUseCase
+    internal val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
             isAllowedToRegisterMLSClient,
             clientRepository,

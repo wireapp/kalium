@@ -21,8 +21,8 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.client.RegisterClientParam
 import com.wire.kalium.logic.feature.client.RegisterClientResult
-import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 
 object ClientActions {
 
@@ -32,7 +32,7 @@ object ClientActions {
         coreLogic: CoreLogic
     ): UserSessionScope {
         val userSession = coreLogic.getSessionScope(userId)
-        val registerClientParam = RegisterClientUseCase.RegisterClientParam(
+        val registerClientParam = RegisterClientParam(
             password = password,
             capabilities = emptyList(),
             clientType = ClientType.Temporary

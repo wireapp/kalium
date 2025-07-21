@@ -23,7 +23,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.client.RegisterClientParameters
 import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toApi
@@ -45,7 +45,7 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Mockable
 interface ClientRemoteRepository {
-    suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
+    suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(
         clientId: ClientId,
         publicKey: String,
@@ -71,7 +71,7 @@ class ClientRemoteDataSource(
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
 ) : ClientRemoteRepository {
 
-    override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
+    override suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client> =
         wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(clientConfig, param)) }
             .map { clientResponse -> clientMapper.fromClientDto(clientResponse) }
 

@@ -467,7 +467,7 @@ class ClientRepositoryTest {
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
         const val SECOND_FACTOR_CODE = "123456"
-        val REGISTER_CLIENT_PARAMS = RegisterClientParam(
+        val REGISTER_CLIENT_PARAMS = RegisterClientParameters(
             password = "pass",
             preKeys = listOf(),
             lastKey = PreKeyCrypto(2, "2"),

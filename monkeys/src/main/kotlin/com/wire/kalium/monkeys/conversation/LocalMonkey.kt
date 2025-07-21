@@ -33,8 +33,8 @@ import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
+import com.wire.kalium.logic.feature.client.RegisterClientParam
 import com.wire.kalium.logic.feature.client.RegisterClientResult
-import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.conversation.CreateConversationResult
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
@@ -88,7 +88,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
             }
         }
         val sessionScope = coreLogic.getSessionScope(loginResult.authData.userId)
-        val registerClientParam = RegisterClientUseCase.RegisterClientParam(
+        val registerClientParam = RegisterClientParam(
             password = userData.password,
             capabilities = emptyList(),
             clientType = ClientType.Temporary,

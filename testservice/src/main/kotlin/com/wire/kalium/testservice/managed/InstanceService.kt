@@ -20,9 +20,10 @@ package com.wire.kalium.testservice.managed
 
 import com.codahale.metrics.Gauge
 import com.codahale.metrics.MetricRegistry
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -36,11 +37,10 @@ import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.client.GetProteusFingerprintResult
+import com.wire.kalium.logic.feature.client.RegisterClientParam
 import com.wire.kalium.logic.feature.client.RegisterClientResult
-import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
@@ -88,7 +88,8 @@ class InstanceService(
         log.info("Instance service started.")
 
         // metrics
-        metricRegistry.register(MetricRegistry.name("testservice", "instances", "total", "size"),
+        metricRegistry.register(
+            MetricRegistry.name("testservice", "instances", "total", "size"),
             Gauge { instances.size })
         metricRegistry.register(
             MetricRegistry.name("testservice", "instances", "startup", "avg"),
@@ -225,7 +226,7 @@ class InstanceService(
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.getOrRegister(
-                        RegisterClientUseCase.RegisterClientParam(
+                        RegisterClientParam(
                             password = instanceRequest.password,
                             capabilities = emptyList(),
                             clientType = ClientType.Permanent,
@@ -260,18 +261,25 @@ class InstanceService(
                             }
                             return@runBlocking instance
                         }
+
                         is RegisterClientResult.E2EICertificateRequired ->
                             throw WebApplicationException("Instance $instanceId: Client registration blocked by e2ei")
+
                         is RegisterClientResult.Failure.TooManyClients ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
+
                         is RegisterClientResult.Failure.InvalidCredentials.Invalid2FA ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, invalid 2FA code")
+
                         is RegisterClientResult.Failure.InvalidCredentials.InvalidPassword ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, invalid password")
+
                         is RegisterClientResult.Failure.InvalidCredentials.Missing2FA ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, 2FA code needed for account")
+
                         is RegisterClientResult.Failure.PasswordAuthRequired ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, missing password")
+
                         is RegisterClientResult.Failure.Generic ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed")
                     }

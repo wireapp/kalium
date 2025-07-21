@@ -39,7 +39,7 @@ import io.mockative.Mockable
 @Mockable
 interface GetOrRegisterClientUseCase {
     suspend operator fun invoke(
-        registerClientParam: RegisterClientUseCase.RegisterClientParam
+        registerClientParam: RegisterClientParam
     ): RegisterClientResult
 }
 
@@ -56,7 +56,7 @@ internal class GetOrRegisterClientUseCaseImpl(
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 ) : GetOrRegisterClientUseCase {
 
-    override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
+    override suspend fun invoke(registerClientParam: RegisterClientParam): RegisterClientResult {
         syncFeatureConfigsUseCase()
 
         val result: RegisterClientResult = clientRepository.retainedClientId()
