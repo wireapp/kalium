@@ -34,8 +34,11 @@ kotlin {
                 implementation(project(":network"))
                 implementation(project(":data"))
                 implementation(project(":util"))
+                implementation(project(":cryptography"))
                 implementation(project(":persistence"))
                 implementation(libs.coroutines.core)
+                implementation(libs.sqldelight.coroutinesExtension)
+                implementation(libs.ktxDateTime)
             }
         }
         val commonTest by getting {
@@ -43,6 +46,7 @@ kotlin {
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
+                implementation(project(":persistence-test"))
             }
         }
 
