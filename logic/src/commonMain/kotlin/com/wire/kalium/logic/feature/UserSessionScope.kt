@@ -494,6 +494,7 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.api.cells.AuthenticatedNetworkContainerCells
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
@@ -504,6 +505,7 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
+import io.ktor.client.HttpClient
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -654,6 +656,15 @@ class UserSessionScope internal constructor(
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
+
+    val cellsClient: HttpClient
+        get() = AuthenticatedNetworkContainerCells(
+            sessionManager = sessionManager,
+            certificatePinning = kaliumConfigs.certPinningConfig,
+            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+            mockWebSocketSession = if (kaliumConfigs.mockedWebSocket) MockWebSocketSession() else null,
+            kaliumLogger = userScopedLogger
+        ).cellsClient
 
     val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
@@ -2445,8 +2456,7 @@ class UserSessionScope internal constructor(
 
     val cells: CellsScope by lazy {
         CellsScope(
-            cellsClient = globalScope.unboundNetworkContainer.cellsClient,
-            userId = userId.toString(),
+            cellsClient = cellsClient,
             dao = with(userStorage.database) {
                 CellsScope.CellScopeDao(
                     attachmentDraftDao = messageAttachmentDraftDao,
@@ -2456,12 +2466,12 @@ class UserSessionScope internal constructor(
                     userDao = userDAO,
                 )
             },
-            // Temporary workaround for switching between fulu / imai environments
-            serverConfig = sessionManager.serverConfig(),
+            sessionManager = sessionManager,
+            accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
         )
     }
 
-    val deleteConversationUseCase: DeleteConversationUseCase
+    private val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
