@@ -20,10 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.feature.backup.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -117,9 +114,6 @@ class ResetMLSConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
-        val transactionProvider = mock(CryptoTransactionProvider::class)
-        val transactionContext: CryptoTransactionContext = mock(CryptoTransactionContext::class)
-        val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
 
         suspend fun withFeatureDisabled() = apply {
             coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
@@ -157,22 +151,6 @@ class ResetMLSConversationUseCaseTest {
             coEvery {
                 conversationRepository.getConversationMembers(any())
             } returns listOf(UserId("test", "test@user")).right()
-
-            coEvery {
-                transactionProvider.mlsTransaction<Any>(any(), any())
-            }.invokes { args ->
-                @Suppress("UNCHECKED_CAST")
-                val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, Any>
-                block(mlsContext)
-            }
-
-            coEvery {
-                transactionProvider.transaction<Any>(any(), any())
-            }.invokes { args ->
-                @Suppress("UNCHECKED_CAST")
-                val block = args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Any>
-                block(transactionContext)
-            }
 
             return this to ResetMLSConversationUseCaseImpl(
                 userConfig = userConfig,

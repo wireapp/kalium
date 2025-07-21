@@ -96,10 +96,10 @@ internal class ResetMLSConversationUseCaseImpl(
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId)
 
-    private suspend fun fetchConversation(conversationId: ConversationId): Either<CoreFailure, Unit> =
-        transactionProvider.transaction("FetchConversation") { context ->
-            fetchConversationUseCase(context, conversationId)
-        }
+    private suspend fun fetchConversation(
+        transaction: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId)
 
     private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo.MLS> {
         return conversationRepository.getConversationById(conversationId)
