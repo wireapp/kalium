@@ -30,8 +30,8 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
+import com.wire.kalium.logic.feature.client.RegisterClientParam
 import com.wire.kalium.logic.feature.client.RegisterClientResult
-import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.server.GetServerConfigResult
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.runBlocking
@@ -127,7 +127,7 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         coreLogic.sessionScope(userId) {
-            when (client.getOrRegister(RegisterClientUseCase.RegisterClientParam(password, emptyList()))) {
+            when (client.getOrRegister(RegisterClientParam(password, emptyList()))) {
                 is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                 is RegisterClientResult.Success -> echo("Login successful")
                 is RegisterClientResult.E2EICertificateRequired -> echo("Login successful and e2ei is required")

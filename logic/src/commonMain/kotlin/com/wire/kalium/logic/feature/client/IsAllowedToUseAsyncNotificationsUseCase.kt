@@ -15,4 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.utils
+package com.wire.kalium.logic.feature.client
+
+import io.mockative.Mockable
+
+/**
+ * This use case is responsible for determining if the client is allowed to use async notifications.
+ * This by build feature flag and backend current API version.
+ */
+@Mockable
+interface IsAllowedToUseAsyncNotificationsUseCase {
+    operator fun invoke(): Boolean
+}
+
+internal class IsAllowedToUseAsyncNotificationsUseCaseImpl(
+    private val isAllowedByFeatureFlag: Boolean,
+    private val isAllowedByCurrentBackendVersionProvider: () -> Boolean
+) : IsAllowedToUseAsyncNotificationsUseCase {
+    override fun invoke(): Boolean = isAllowedByFeatureFlag && isAllowedByCurrentBackendVersionProvider.invoke()
+}

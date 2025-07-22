@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.common.functional.fold
 
 interface ImportClientUseCase {
 
@@ -29,7 +29,7 @@ interface ImportClientUseCase {
      * @param registerClientParam: register client parameters for the case when client isn't already registered
      * @return success if the client was successfully imported, failure otherwise
      */
-    suspend operator fun invoke(clientId: ClientId, registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult
+    suspend operator fun invoke(clientId: ClientId, registerClientParam: RegisterClientParam): RegisterClientResult
 }
 
 internal class ImportClientUseCaseImpl(
@@ -39,7 +39,7 @@ internal class ImportClientUseCaseImpl(
 
     override suspend fun invoke(
         clientId: ClientId,
-        registerClientParam: RegisterClientUseCase.RegisterClientParam
+        registerClientParam: RegisterClientParam
     ): RegisterClientResult {
         return clientRepository.persistRetainedClientId(clientId)
             .fold(
