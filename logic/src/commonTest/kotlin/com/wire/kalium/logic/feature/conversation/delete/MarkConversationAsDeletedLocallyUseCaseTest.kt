@@ -20,11 +20,12 @@ package com.wire.kalium.logic.feature.conversation.delete
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.coVerify
 import io.mockative.eq
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertIs
 
 class MarkConversationAsDeletedLocallyUseCaseTest {
 
@@ -39,7 +40,7 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
         val result = useCase(CONVERSATION_ID)
 
         // then
-        assertIs<MarkConversationAsDeletedLocallyUseCase.Result.Success>(result)
+        result.shouldSucceed()
         coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(eq(CONVERSATION_ID)) }.wasInvoked(exactly = 1)
     }
 
@@ -54,7 +55,7 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
         val result = useCase(CONVERSATION_ID)
 
         // then
-        assertIs<MarkConversationAsDeletedLocallyUseCase.Result.Failure>(result)
+        result.shouldFail()
         coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(eq(CONVERSATION_ID)) }.wasInvoked(exactly = 1)
     }
 

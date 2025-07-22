@@ -141,7 +141,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override suspend fun withMarkConversationAsDeletedLocallySucceeding(conversationId: Matcher<ConversationId>) {
         coEvery {
             conversationRepository.markConversationAsDeletedLocally(matches { conversationId.matches(it) })
-        }.returns(Either.Right(Unit))
+        }.returns(Either.Right(true))
     }
 
     override suspend fun withMarkConversationAsDeletedLocallyFailing(conversationId: Matcher<ConversationId>) {
@@ -153,7 +153,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId>) {
         coEvery {
             conversationRepository.deleteConversationLocally(matches { conversationId.matches(it) })
-        }.returns(Either.Right(Unit))
+        }.returns(Either.Right(true))
     }
 
     override suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId>) {

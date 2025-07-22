@@ -227,9 +227,9 @@ interface ConversationRepository {
         message = "Calling this function directly does not support MLS conversations",
         replaceWith = ReplaceWith("com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase")
     )
-    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
-    suspend fun markConversationAsDeletedLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun markConversationAsDeletedLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
     suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
@@ -761,12 +761,10 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun deleteConversationLocally(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
-        Unit
     }
 
-    override suspend fun markConversationAsDeletedLocally(conversationId: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
+    override suspend fun markConversationAsDeletedLocally(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.markConversationAsDeletedLocally(conversationId.toDao())
-        Unit
     }
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
