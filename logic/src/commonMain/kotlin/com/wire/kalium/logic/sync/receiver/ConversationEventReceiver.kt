@@ -122,7 +122,7 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.MLSReset -> {
-                mlsResetConversationEventHandler.handle(event)
+                mlsResetConversationEventHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 

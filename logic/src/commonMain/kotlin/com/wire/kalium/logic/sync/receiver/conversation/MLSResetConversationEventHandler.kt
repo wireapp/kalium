@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -28,17 +28,16 @@ import io.mockative.Mockable
 
 @Mockable
 interface MLSResetConversationEventHandler {
-    suspend fun handle(event: Event.Conversation.MLSReset)
+    suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
 }
 
 internal class MLSResetConversationEventHandlerImpl(
     private val selfUserId: UserId,
-    private val transactionProvider: CryptoTransactionProvider,
     private val userConfig: UserConfigRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversation: FetchConversationUseCase,
 ) : MLSResetConversationEventHandler {
-    override suspend fun handle(event: Event.Conversation.MLSReset) {
+    override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
 
         if (!userConfig.isMlsConversationsResetEnabled()) {
             kaliumLogger.i("MLS conversation reset feature is disabled.")
@@ -46,14 +45,12 @@ internal class MLSResetConversationEventHandlerImpl(
         }
 
         if (event.from != selfUserId) {
-            transactionProvider.mlsTransaction("LeaveGroup") { mlsContext ->
+            transaction.mls?.let { mlsContext ->
                 mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
-            }
 
-            // Will be replaced by updating Group ID when it is added in a new
-            // version of mls-reset event.
-            transactionProvider.transaction("FetchConversation") { context ->
-                fetchConversation(context, event.conversationId)
+                // Will be replaced by updating Group ID when it is added in a new
+                // version of mls-reset event.
+                fetchConversation(transaction, event.conversationId)
             }
         }
     }
