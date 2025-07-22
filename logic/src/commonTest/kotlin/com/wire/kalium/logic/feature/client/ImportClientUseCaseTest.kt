@@ -20,9 +20,9 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -86,7 +86,7 @@ class ImportClientUseCaseTest {
         fun arrange() = this to ImportClientUseCaseImpl(clientRepository, getOrRegisterClientUseCase)
 
         companion object {
-            val REGISTER_CLIENT_PARAM = RegisterClientUseCase.RegisterClientParam(
+            val REGISTER_CLIENT_PARAM = RegisterClientParam(
                 password = null,
                 capabilities = null
             )

@@ -18,19 +18,21 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.auth.verification.FakeSecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.client.RegisterClientParameters
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -38,8 +40,6 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -75,7 +75,7 @@ class RegisterClientUseCaseTest {
             .arrange()
 
         registerClient(
-            RegisterClientUseCase.RegisterClientParam(
+            RegisterClientParam(
                 password = TEST_PASSWORD,
                 capabilities = TEST_CAPABILITIES,
                 secondFactorVerificationCode = SECOND_FACTOR_CODE
@@ -107,7 +107,7 @@ class RegisterClientUseCaseTest {
         arrangement.secondFactorVerificationRepository.storeVerificationCode(SELF_USER_EMAIL, stored2FACode)
 
         registerClient(
-            RegisterClientUseCase.RegisterClientParam(
+            RegisterClientParam(
                 password = TEST_PASSWORD,
                 capabilities = TEST_CAPABILITIES,
                 secondFactorVerificationCode = null
@@ -136,7 +136,7 @@ class RegisterClientUseCaseTest {
         arrangement.secondFactorVerificationRepository.storeVerificationCode(SELF_USER_EMAIL, stored2FACode)
 
         registerClient(
-            RegisterClientUseCase.RegisterClientParam(
+            RegisterClientParam(
                 password = TEST_PASSWORD,
                 capabilities = TEST_CAPABILITIES,
                 secondFactorVerificationCode = passed2FACode
@@ -165,7 +165,7 @@ class RegisterClientUseCaseTest {
         arrangement.secondFactorVerificationRepository.storeVerificationCode(SELF_USER_EMAIL, stored2FACode)
 
         registerClient(
-            RegisterClientUseCase.RegisterClientParam(
+            RegisterClientParam(
                 password = TEST_PASSWORD,
                 capabilities = TEST_CAPABILITIES,
                 secondFactorVerificationCode = null
@@ -185,7 +185,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.PasswordAuthRequired>(result)
 
@@ -207,7 +207,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
@@ -229,7 +229,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertSame(genericFailure, result.genericFailure)
@@ -244,7 +244,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.TooManyClients>(result)
     }
@@ -258,7 +258,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials.Missing2FA>(result)
     }
@@ -272,7 +272,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials.Invalid2FA>(result)
     }
@@ -285,7 +285,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         coVerify {
             arrangement.clientRepository.persistClientId(any())
@@ -302,7 +302,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         coVerify {
             arrangement.clientRepository.persistClientId(any())
@@ -320,8 +320,54 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
+        assertIs<RegisterClientResult.Success>(result)
+        assertEquals(registeredClient, result.client)
+    }
+
+    @Test
+    fun givenRegistering_whenAsyncNotificationsAllowed_thenConsumableNotificationCapabilityShouldBeAdded() = runTest {
+        val registeredClient = CLIENT
+
+        val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
+            .withRegisterClient(Either.Right(registeredClient))
+            .withRegisterMLSClient(Either.Right(RegisterMLSClientResult.Success))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .withIsAllowedToUseAsyncNotifications(true)
+            .arrange()
+
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, null))
+
+        coVerify {
+            arrangement.clientRepository.registerClient(matches {
+                it.capabilities?.contains(ClientCapability.ConsumableNotifications) == true
+            })
+        }
+        assertIs<RegisterClientResult.Success>(result)
+        assertEquals(registeredClient, result.client)
+    }
+
+    @Test
+    fun givenRegistering_whenAsyncNotificationsIsNOTAllowed_thenConsumableNotificationCapabilityShouldNOTBeAdded() = runTest {
+        val registeredClient = CLIENT
+
+        val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
+            .withRegisterClient(Either.Right(registeredClient))
+            .withRegisterMLSClient(Either.Right(RegisterMLSClientResult.Success))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
+            .withIsAllowedToUseAsyncNotifications(false)
+            .arrange()
+
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, null))
+
+        coVerify {
+            arrangement.clientRepository.registerClient(matches {
+                it.capabilities?.contains(ClientCapability.ConsumableNotifications) == false
+            })
+        }
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(registeredClient, result.client)
     }
@@ -335,7 +381,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(failure, result.genericFailure)
@@ -350,7 +396,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(failure, result.genericFailure)
@@ -365,7 +411,7 @@ class RegisterClientUseCaseTest {
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
@@ -395,7 +441,7 @@ class RegisterClientUseCaseTest {
 
         val PRE_KEYS = listOf(PreKeyCrypto(id = 1, encodedData = "1"), PreKeyCrypto(id = 2, encodedData = "2"))
         val LAST_KEY = PreKeyCrypto(id = 99, encodedData = "99")
-        val REGISTER_PARAMETERS = RegisterClientParam(
+        val REGISTER_PARAMETERS = RegisterClientParameters(
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,
             lastKey = LAST_KEY,
@@ -423,10 +469,12 @@ class RegisterClientUseCaseTest {
         val sessionRepository = mock(SessionRepository::class)
         val userRepository = mock(UserRepository::class)
         val registerMLSClient = mock(RegisterMLSClientUseCase::class)
+        val isAllowedToUseAsyncNotifications = mock(IsAllowedToUseAsyncNotificationsUseCase::class)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
 
         private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
+            isAllowedToUseAsyncNotifications,
             isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
@@ -456,7 +504,15 @@ class RegisterClientUseCaseTest {
                 coEvery {
                     isAllowedToRegisterMLSClient.invoke()
                 }.returns(true)
+
+                withIsAllowedToUseAsyncNotifications(false)
             }
+        }
+
+        fun withIsAllowedToUseAsyncNotifications(isAllowed: Boolean = false) = apply {
+            every {
+                isAllowedToUseAsyncNotifications()
+            }.returns(isAllowed)
         }
 
         suspend fun withSelfUser(selfUser: SelfUser) = apply {

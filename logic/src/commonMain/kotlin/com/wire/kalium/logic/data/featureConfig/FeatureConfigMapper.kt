@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatu
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 
+@Suppress("TooManyFunctions")
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
     fun fromDTO(status: FeatureFlagStatusDTO): Status
@@ -43,6 +44,7 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel
     fun fromModel(status: Status): FeatureFlagStatusDTO
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
+    fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
 }
 
 @Suppress("TooManyFunctions")
@@ -174,6 +176,12 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 null
             ),
             Status.DISABLED
+        )
+
+    override fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel =
+        AllowedGlobalOperationsModel(
+            mlsConversationsReset = data.config.mlsConversationsReset,
+            status = fromDTO(data.status)
         )
 
     override fun fromModel(status: Status): FeatureFlagStatusDTO =

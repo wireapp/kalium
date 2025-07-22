@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOperationsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
@@ -172,7 +173,11 @@ class FeatureConfigRepositoryTest {
                 MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AllowedGlobalOperations(
+                AllowedGlobalOperationsConfigDTO(),
+                FeatureFlagStatusDTO.DISABLED
+            ),
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

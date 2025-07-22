@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.completeMultipartUpload
 import aws.sdk.kotlin.services.s3.createMultipartUpload
@@ -28,13 +27,14 @@ import aws.sdk.kotlin.services.s3.presigners.presignGetObject
 import aws.sdk.kotlin.services.s3.putObject
 import aws.sdk.kotlin.services.s3.uploadPart
 import aws.sdk.kotlin.services.s3.withConfig
-import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.asByteStream
 import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.session.SessionManager
 import okhttp3.internal.http2.Header
 import okio.Path
 import okio.Sink
@@ -44,10 +44,16 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import kotlin.time.Duration.Companion.hours
 
-internal actual fun cellsAwsClient(credentials: CellsCredentials): CellsAwsClient = CellsAwsClientJvm(credentials)
+internal actual fun cellsAwsClient(
+    credentials: CellsCredentials?,
+    sessionManager: SessionManager,
+    accessTokenApi: AccessTokenApi
+): CellsAwsClient = CellsAwsClientJvm(credentials, sessionManager, accessTokenApi)
 
 private class CellsAwsClientJvm(
-    private val credentials: CellsCredentials
+    private val credentials: CellsCredentials?,
+    private val sessionManager: SessionManager,
+    private val accessTokenAPI: AccessTokenApi,
 ) : CellsAwsClient {
 
     private companion object {
@@ -63,13 +69,8 @@ private class CellsAwsClientJvm(
         S3Client {
             region = DEFAULT_REGION
             enableAwsChunked = false
-            credentialsProvider = StaticCredentialsProvider(
-                Credentials(
-                    accessKeyId = accessToken,
-                    secretAccessKey = gatewaySecret,
-                )
-            )
-            endpointUrl = Url.parse(serverUrl)
+            endpointUrl = Url.parse(this@with?.serverUrl ?: "")
+            credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
         }
     }
 

@@ -32,7 +32,7 @@ public interface GetPublicLinkUseCase {
 }
 
 internal class GetPublicLinkUseCaseImpl(
-    private val cellsCredentials: CellsCredentials,
+    private val cellsCredentials: CellsCredentials?,
     private val cellsRepository: CellsRepository,
 ) : GetPublicLinkUseCase {
     override suspend fun invoke(linkUuid: String): Either<CoreFailure, PublicLink> {
@@ -40,7 +40,7 @@ internal class GetPublicLinkUseCaseImpl(
             .map {
                 PublicLink(
                     uuid = linkUuid,
-                    url = "${cellsCredentials.serverUrl}$it"
+                    url = "${cellsCredentials?.serverUrl}$it"
                 )
             }
     }

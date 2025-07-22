@@ -20,24 +20,23 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
-import com.wire.kalium.logic.data.client.Client
-import com.wire.kalium.logic.data.client.ClientCapability
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientType
-import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
-import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
+import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.client.ClientCapability
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.ClientType
+import com.wire.kalium.logic.data.client.RegisterClientParameters
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -91,37 +90,15 @@ sealed class RegisterClientResult {
  * @see RequestSecondFactorVerificationCodeUseCase
  */
 @Mockable
-interface RegisterClientUseCase {
+internal interface RegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientParam
     ): RegisterClientResult
-
-    /**
-     * The required data needed to register a client
-     * password
-     * capabilities :Hints provided by the client for the backend so it can behave in a backwards-compatible way.
-     * ex : legalHoldConsent
-     * preKeysToSend : the initial public keys to start a conversation with another client
-     * @see [RegisterClientParam]
-     */
-    data class RegisterClientParam(
-        val password: String?,
-        val capabilities: List<ClientCapability>?,
-        val clientType: ClientType? = null,
-        val model: String? = null,
-        val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
-        val secondFactorVerificationCode: String? = null,
-        val modelPostfix: String? = null
-    )
-
-    companion object {
-        const val FIRST_KEY_ID = 0
-        const val DEFAULT_PRE_KEYS_COUNT = 100
-    }
 }
 
 @Suppress("LongParameterList")
-class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constructor(
+internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constructor(
+    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -135,7 +112,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
 
     @OptIn(DelicateKaliumApi::class)
     override suspend operator fun invoke(
-        registerClientParam: RegisterClientUseCase.RegisterClientParam
+        registerClientParam: RegisterClientParam
     ): RegisterClientResult = with(registerClientParam) {
         val verificationCode = registerClientParam.secondFactorVerificationCode ?: currentlyStoredVerificationCode()
         sessionRepository.cookieLabel(selfUserId)
@@ -154,7 +131,8 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                 kaliumLogger.withTextTag(TAG).e("There was an error while registering the client $error")
                 RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
-                clientRepository.registerClient(registerClientParam)
+                val params = registerClientParam.withConsumableNotificationCapabilityWhenAllowed()
+                clientRepository.registerClient(params)
                     // todo? separate this in mls client usesCase register! separate everything
                     .flatMap { registeredClient ->
                         if (isAllowedToRegisterMLSClient()) {
@@ -165,7 +143,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                             }
                         } else {
                             Either.Right(registeredClient)
-                        }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                        }.map { client -> client to params.preKeys.maxOfOrNull { it.id } }
                     }.flatMap { (client, otrLastKeyId) ->
                         otrLastKeyId?.let { preKeyRepository.updateMostRecentPreKeyId(it) }
                         Either.Right(client)
@@ -175,6 +153,24 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                         RegisterClientResult.Success(client)
                     })
             })
+    }
+
+    /**
+     * Depending if the build is able to use async notifications and the BE allows it, then add the capability for
+     * [ClientCapability.ConsumableNotifications] otherwise fallback to the current behavior,
+     * just with the [ClientCapability.LegalHoldImplicitConsent] capability.
+     *
+     * When ACK is stable from BE perspective, this can be later moved to the API level, like it was before this change.
+     */
+    private suspend fun RegisterClientParameters.withConsumableNotificationCapabilityWhenAllowed(): RegisterClientParameters {
+        return this.copy(
+            capabilities = capabilities.orEmpty().toMutableSet().apply {
+                add(ClientCapability.LegalHoldImplicitConsent)
+                if (isAllowedToUseAsyncNotifications()) {
+                    add(ClientCapability.ConsumableNotifications)
+                }
+            }.toList()
+        )
     }
 
     private suspend fun currentlyStoredVerificationCode(): String? {
@@ -232,7 +228,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
             preKeyRepository.generateNewLastResortKey().flatMap { lastKey ->
                 Either.Right(
-                    RegisterClientParam(
+                    RegisterClientParameters(
                         password = password,
                         capabilities = capabilities,
                         preKeys = preKeys,

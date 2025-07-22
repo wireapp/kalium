@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.mocks.responses
 
+import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOperationsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
@@ -30,7 +31,6 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMess
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
 
 object FeatureConfigResponseJson {
     private const val VERIFICATION_EXPIRATION = 1_000_000L
@@ -78,6 +78,10 @@ object FeatureConfigResponseJson {
             FeatureFlagStatusDTO.ENABLED
         ),
         FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
+        FeatureConfigData.AllowedGlobalOperations(
+            AllowedGlobalOperationsConfigDTO(),
+            FeatureFlagStatusDTO.DISABLED
+        ),
     )
     val valid = KtxSerializer.json.encodeToString(featureConfigResponse)
 

@@ -19,11 +19,9 @@
 package com.wire.kalium.network.tools
 
 import com.wire.kalium.network.api.authenticated.notification.eventSerializationModule
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.plus
 
-@OptIn(ExperimentalSerializationApi::class)
 object KtxSerializer {
     val json = Json {
         isLenient = true

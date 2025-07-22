@@ -75,11 +75,14 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val registerMLSClientUseCase: RegisterMLSClientUseCase,
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
     private val userConfigRepository: UserConfigRepository,
-    private val transactionProvider: CryptoTransactionProvider
+    private val transactionProvider: CryptoTransactionProvider,
+    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase,
 ) {
+
     @OptIn(DelicateKaliumApi::class)
-    val register: RegisterClientUseCase
+    internal val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
+            isAllowedToUseAsyncNotifications,
             isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,

@@ -58,7 +58,9 @@ data class FeatureConfigResponse(
     @SerialName("mlsMigration")
     val mlsMigration: FeatureConfigData.MLSMigration?,
     @SerialName("channels")
-    val channels: FeatureConfigData.Channels?
+    val channels: FeatureConfigData.Channels?,
+    @SerialName("allowedGlobalOperations")
+    val allowedGlobalOperations: FeatureConfigData.AllowedGlobalOperations?,
 )
 
 @Serializable
@@ -148,6 +150,12 @@ data class E2EIConfigDTO(
     val shouldUseProxy: Boolean?,
     @SerialName("verificationExpiration")
     val verificationExpirationSeconds: Long
+)
+
+@Serializable
+data class AllowedGlobalOperationsConfigDTO(
+    @SerialName("mlsConversationReset20250709")
+    val mlsConversationsReset: Boolean = false,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -285,6 +293,15 @@ sealed class FeatureConfigData {
     data class Channels(
         @SerialName("config")
         val config: ChannelsConfigDTO?,
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("allowedGlobalOperations")
+    @Serializable
+    data class AllowedGlobalOperations(
+        @SerialName("config")
+        val config: AllowedGlobalOperationsConfigDTO,
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()

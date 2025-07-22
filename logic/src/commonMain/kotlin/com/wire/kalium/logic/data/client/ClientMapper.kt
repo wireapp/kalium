@@ -47,7 +47,7 @@ class ClientMapper(
 
     fun toRegisterClientRequest(
         clientConfig: ClientConfig,
-        param: RegisterClientParam,
+        param: RegisterClientParameters,
     ): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),

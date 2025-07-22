@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.client
+package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 
-data class RegisterClientParam(
-    val password: String?,
-    val preKeys: List<PreKeyCrypto>,
-    val lastKey: PreKeyCrypto,
-    val deviceType: DeviceType?,
-    val label: String?,
-    val capabilities: List<ClientCapability>?,
-    val clientType: ClientType?,
-    val model: String?,
-    val cookieLabel: String?,
-    val secondFactorVerificationCode: String? = null,
-    val modelPostfix: String? = null
-)
+class AllowedGlobalOperationsHandler(
+    private val userConfigRepository: UserConfigRepository
+) {
+suspend fun handle(model: AllowedGlobalOperationsModel): Either<CoreFailure, Unit> =
+         userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
+}
