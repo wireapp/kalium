@@ -57,7 +57,7 @@ interface E2EIClient {
     suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
     suspend fun createDpopToken(backendNonce: String): DpopToken
     suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
-    suspend fun getNewOidcChallengeRequest(idToken: String, refreshToken: String, previousNonce: String): JsonRawData
+    suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
     suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData)
     suspend fun setDPoPChallengeResponse(challenge: JsonRawData)
     suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
@@ -65,5 +65,5 @@ interface E2EIClient {
     suspend fun finalizeRequest(previousNonce: String): JsonRawData
     suspend fun finalizeResponse(finalize: JsonRawData): String
     suspend fun certificateRequest(previousNonce: String): JsonRawData
-    suspend fun getOAuthRefreshToken(): String?
+//     suspend fun getOAuthRefreshToken(): String?
 }

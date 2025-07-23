@@ -27,11 +27,15 @@ import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
 import com.wire.crypto.DatabaseKey
 import com.wire.crypto.EpochObserver
+import com.wire.crypto.HistorySecret
+import com.wire.crypto.MLSGroupId
 import com.wire.crypto.MlsTransport
+import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.setLogger
 import com.wire.crypto.setMaxLogLevel
 import com.wire.kalium.cryptography.exceptions.CryptographyException
+import com.wire.kalium.cryptography.utils.toBase64
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import io.ktor.util.encodeBase64
@@ -97,6 +101,10 @@ class CoreCryptoCentralImpl(
         try {
 
             cc.provideTransport(object : MlsTransport {
+                override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {
+                    TODO("Not yet implemented")
+                }
+
                 override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
                     return mlsTransporter.sendCommitBundle(commitBundle.toCryptography()).toCrypto()
                 }
@@ -108,7 +116,7 @@ class CoreCryptoCentralImpl(
 
             cc.transaction("initMLS") { context ->
                 context.mlsInit(
-                    ClientId(clientId.toString()),
+                    ClientId(clientId.toString().toByteArray()),
                     Ciphersuites(allowedCipherSuites.map { it.toCrypto() }.toSet()),
                 )
             }
@@ -116,8 +124,8 @@ class CoreCryptoCentralImpl(
             cc.registerEpochObserver(
                 coroutineScope,
                 epochObserver = object : EpochObserver {
-                    override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
-                        epochObserver.onEpochChange(conversationId.encodeBase64(), epoch)
+                    override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
+                        epochObserver.onEpochChange(conversationId.toBase64(), epoch)
                     }
                 }
             )
@@ -141,6 +149,10 @@ class CoreCryptoCentralImpl(
         // todo: use DPs list from here, and return alongside with the mls client
 
         cc.provideTransport(object : MlsTransport {
+            override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {
+                TODO("Not yet implemented")
+            }
+
             override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
                 return mlsTransporter.sendCommitBundle(commitBundle.toCryptography()).toCrypto()
             }
@@ -161,8 +173,8 @@ class CoreCryptoCentralImpl(
         cc.registerEpochObserver(
             coroutineScope,
             epochObserver = object : EpochObserver {
-                override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
-                    epochObserver.onEpochChange(conversationId.encodeBase64(), epoch)
+                override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
+                    epochObserver.onEpochChange(conversationId.toBase64(), epoch)
                 }
             }
         )

@@ -121,11 +121,11 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val oidcAuthorizations = authorizations.oidcAuthorization
         val dPopAuthorizations = authorizations.dpopAuthorization
 
-        val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
+//         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = oidcAuthorizations.challenge.target,
-            oAuthState = oAuthState,
+//             oAuthState = oAuthState,
             oAuthClaims = getOAuthClaims(
                 oidcAuthorizations.keyAuth.toString(),
                 oidcAuthorizations.challenge.url
@@ -284,7 +284,7 @@ sealed interface E2EIEnrollmentResult {
     @Suppress("LongParameterList")
     data class Initialized(
         val target: String,
-        val oAuthState: String?,
+//         val oAuthState: String?,
         val oAuthClaims: JsonObject,
         val lastNonce: Nonce,
         val orderLocation: String,

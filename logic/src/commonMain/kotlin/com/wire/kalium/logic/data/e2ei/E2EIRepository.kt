@@ -96,7 +96,7 @@ interface E2EIRepository {
     ): Either<E2EIFailure, Unit>
 
     suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
-    suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
+//     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
     fun discoveryUrl(): Either<E2EIFailure, String>
@@ -361,9 +361,9 @@ class E2EIRepositoryImpl(
         }
     }
 
-    override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
-        e2EIClient.getOAuthRefreshToken().right()
-    }
+//     override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
+//         e2EIClient.getOAuthRefreshToken().right()
+//     }
 
     override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
         wrapApiRequest {

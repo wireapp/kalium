@@ -25,10 +25,14 @@ import com.wire.crypto.Ciphersuite
 import com.wire.crypto.CommitBundle
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.E2eiConversationState
+import com.wire.crypto.GroupInfo
+import com.wire.crypto.MLSGroupId
+import com.wire.crypto.MLSKeyPackage
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.PreKey
+import com.wire.crypto.Welcome
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.cryptography.CryptoCertificateStatus
@@ -75,8 +79,8 @@ fun com.wire.kalium.cryptography.MlsTransportResponse.toCrypto(): MlsTransportRe
 }
 
 fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = com.wire.kalium.cryptography.CommitBundle(
-    commit = commit.value,
-    welcome = welcome?.value,
+    commit = commit,
+    welcome = welcome?.toByteArray(),
     groupInfoBundle = groupInfoBundle.toCrypto(),
     crlNewDistributionPoints = crlNewDistributionPoints?.lower()
 )
@@ -84,7 +88,7 @@ fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = c
 fun com.wire.crypto.GroupInfoBundle.toCrypto(): GroupInfoBundle = GroupInfoBundle(
     ratchetTreeType = ratchetTreeType.toCryptography(),
     encryptionType = encryptionType.toCryptography(),
-    payload = payload.value
+    payload = payload.toByteArray()
 )
 
 fun MlsRatchetTreeType.toCryptography(): RatchetTreeType = when (this) {
@@ -103,7 +107,7 @@ fun PreKeyCrypto.toCrypto(): PreKey = PreKey(id.toUShort(), encodedData.decodeBa
 fun PreKey.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), data.encodeBase64())
 
 fun com.wire.crypto.WelcomeBundle.toCryptography() = WelcomeBundle(
-    id.value.encodeBase64(),
+    id.toBase64(),
     crlNewDistributionPoints?.value?.map { it.toString() }
 )
 
@@ -147,7 +151,7 @@ fun com.wire.crypto.E2eiConversationState.toCryptography(): E2EIConversationStat
 fun DecryptedMessage.toBundle() = DecryptedMessageBundle(
     message,
     commitDelay,
-    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
+    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value.encodeBase64()) },
     hasEpochChanged,
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() }
@@ -156,7 +160,7 @@ fun DecryptedMessage.toBundle() = DecryptedMessageBundle(
 fun BufferedDecryptedMessage.toBundle() = DecryptedMessageBundle(
     message,
     commitDelay,
-    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value) },
+    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value.encodeBase64()) },
     hasEpochChanged,
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() }
@@ -176,3 +180,30 @@ fun CRLRegistration.toCryptography() = CrlRegistration(
     dirty,
     expiration?.toULong()
 )
+
+// TODO workaround because copyBytes is not available
+fun MLSGroupId.toBase64(): String =
+    toString()
+        .chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+        .encodeBase64()
+
+// TODO workaround because copyBytes is not available
+fun Welcome.toByteArray(): ByteArray =
+    toString()
+        .chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+
+fun GroupInfo.toByteArray(): ByteArray =
+    toString()
+        .chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+
+fun MLSKeyPackage.toByteArray(): ByteArray =
+    toString()
+        .chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()

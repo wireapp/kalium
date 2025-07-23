@@ -26,14 +26,15 @@ import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.GroupInfo
 import com.wire.crypto.MlsException
-import com.wire.crypto.MlsMessage
-import com.wire.crypto.PlaintextMessage
 import com.wire.crypto.Welcome
+import com.wire.crypto.toGroupId
 import com.wire.kalium.cryptography.utils.toBundle
+import com.wire.kalium.cryptography.utils.toByteArray
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import com.wire.kalium.cryptography.utils.toExternalSenderKey
 import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
 import kotlin.time.Duration
 
 typealias ConversationId = ByteArray
@@ -55,7 +56,7 @@ class MLSClientImpl(
     override suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite> {
         return coreCrypto.transaction("getPublicKey") { cc ->
             val mlsCredentialType = if (cc.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
-            cc.getPublicKey(defaultCipherSuite, mlsCredentialType.toCrypto()).value to defaultCipherSuite.toCryptography()
+            cc.getPublicKey(defaultCipherSuite, mlsCredentialType.toCrypto()) to defaultCipherSuite.toCryptography()
         }
     }
 
@@ -72,7 +73,7 @@ class MLSClientImpl(
 
         override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
             val mlsCredentialType = if (context.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
-            return context.generateKeyPackages(amount.toUInt(), defaultCipherSuite, mlsCredentialType.toCrypto()).map { it.value }
+            return context.generateKeyPackages(amount.toUInt(), defaultCipherSuite, mlsCredentialType.toCrypto()).map { it.toByteArray() }
         }
 
         override suspend fun validKeyPackageCount(): ULong {
@@ -81,60 +82,58 @@ class MLSClientImpl(
         }
 
         override suspend fun updateKeyingMaterial(groupId: MLSGroupId) {
-            return context.updateKeyingMaterial(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
+            return context.updateKeyingMaterial(groupId.decodeBase64Bytes().toGroupId())
         }
 
         override suspend fun joinByExternalCommit(publicGroupState: ByteArray): WelcomeBundle {
             val mlsCredentialType = if (context.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
             return context.joinByExternalCommit(
-                GroupInfo(publicGroupState),
+                publicGroupState.toGroupInfo(),
                 mlsCredentialType.toCrypto(),
             ).toCryptography()
         }
 
         override suspend fun conversationExists(groupId: MLSGroupId): Boolean {
-            return context.conversationExists(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
+            return context.conversationExists(groupId.decodeBase64Bytes().toGroupId())
         }
 
         override suspend fun conversationEpoch(groupId: MLSGroupId): ULong {
-            return context.conversationEpoch(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
+            return context.conversationEpoch(groupId.decodeBase64Bytes().toGroupId())
         }
 
         override suspend fun createConversation(groupId: MLSGroupId, externalSenders: ByteArray) {
             kaliumLogger.d("createConversation: using defaultCipherSuite=$defaultCipherSuite")
             val mlsCredentialType = credentialType(context)
             return context.createConversation(
-                com.wire.crypto.MLSGroupId(
-                    groupId.decodeBase64Bytes()
-                ),
+                groupId.decodeBase64Bytes().toGroupId(),
                 defaultCipherSuite,
                 mlsCredentialType.toCrypto(),
-                listOf(com.wire.crypto.ExternalSenderKey(externalSenders))
+                listOf(externalSenders)
             )
         }
 
         override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
             return toExternalSenderKey(
                 context.getExternalSender(
-                    com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes())
+                    groupId.decodeBase64Bytes().toGroupId()
                 ).value
             )
         }
 
         override suspend fun wipeConversation(groupId: MLSGroupId) {
-            return context.wipeConversation(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
+            return context.wipeConversation(groupId.decodeBase64Bytes().toGroupId())
         }
 
         override suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle {
-            return context.processWelcomeMessage(Welcome(message)).toCryptography()
+            return context.processWelcomeMessage(message.toWelcomeMessage()).toCryptography()
         }
 
         override suspend fun commitPendingProposals(groupId: MLSGroupId) {
-            return context.commitPendingProposals(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
+            return context.commitPendingProposals(groupId.decodeBase64Bytes().toGroupId())
         }
 
         override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
-            return context.encryptMessage(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()), PlaintextMessage(message)).value
+            return context.encryptMessage(groupId.decodeBase64Bytes().toGroupId(), message)
         }
 
         @Suppress("TooGenericExceptionCaught")
@@ -145,8 +144,8 @@ class MLSClientImpl(
             var decryptedMessage: DecryptedMessage? = null
             try {
                 val result = context.decryptMessage(
-                    com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
-                    MlsMessage(message)
+                    groupId.decodeBase64Bytes().toGroupId(),
+                    message
                 )
                 decryptedMessage = result
 
@@ -174,16 +173,16 @@ class MLSClientImpl(
         }
 
         override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
-            return context.members(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes())).mapNotNull {
-                CryptoQualifiedClientId.fromEncodedString(it.value)
+            return context.members(groupId.decodeBase64Bytes().toGroupId()).mapNotNull {
+                CryptoQualifiedClientId.fromEncodedString(it.value.encodeBase64())
             }
         }
 
         override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>): List<String>? {
             return if (membersKeyPackages.isNotEmpty()) {
                 context.addMember(
-                    com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
-                    membersKeyPackages.map { keyPackage -> com.wire.crypto.MLSKeyPackage(keyPackage) }
+                    groupId.decodeBase64Bytes().toGroupId(),
+                    membersKeyPackages.map { keyPackage -> keyPackage.toKeyPackage() }
                 )
             } else {
                 null
@@ -193,14 +192,14 @@ class MLSClientImpl(
         override suspend fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>) {
             if (members.isNotEmpty()) {
                 context.removeMember(
-                    com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
-                    members.map { ClientId(it.toString()) }
+                    groupId.decodeBase64Bytes().toGroupId(),
+                    members.map { ClientId(it.toString().decodeBase64Bytes()) }
                 )
             }
         }
 
         override suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
-            return context.deriveAvsSecret(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()), keyLength).value
+            return context.deriveAvsSecret(groupId.decodeBase64Bytes().toAvsSecret(), keyLength)
         }
 
         override suspend fun e2eiNewActivationEnrollment(
@@ -251,14 +250,14 @@ class MLSClientImpl(
         }
 
         override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
-            return context.e2eiConversationState(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes())).toCryptography()
+            return context.e2eiConversationState(groupId.decodeBase64Bytes().toGroupId()).toCryptography()
         }
 
         override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> {
             return context.getDeviceIdentities(
-                com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()),
+                groupId.decodeBase64Bytes().toGroupId(),
                 clients.map {
-                    ClientId(it.toString())
+                    ClientId(it.toString().decodeBase64Bytes())
                 }
             )
                 .mapNotNull {
@@ -273,7 +272,7 @@ class MLSClientImpl(
             val usersIds = users.map {
                 it.value
             }
-            return context.getUserIdentities(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()), usersIds)
+            return context.getUserIdentities(groupId.decodeBase64Bytes().toGroupId(), usersIds)
                 .mapValues {
                     it.value.mapNotNull { identity -> identity.toCryptography() }
                 }
@@ -290,7 +289,7 @@ class MLSClientImpl(
 
         override suspend fun e2eiRotateGroups(groupList: List<MLSGroupId>) {
             groupList.forEach { groupId ->
-                context.e2eiRotate(com.wire.crypto.MLSGroupId(groupId.decodeBase64Bytes()))
+                context.e2eiRotate(groupId.decodeBase64Bytes().toGroupId())
             }
         }
 
