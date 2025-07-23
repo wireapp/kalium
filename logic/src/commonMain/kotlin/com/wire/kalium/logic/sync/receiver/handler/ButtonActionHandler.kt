@@ -39,6 +39,7 @@ internal interface ButtonActionHandler {
 }
 
 internal class ButtonActionHandlerImpl internal constructor(
+    private val selfUserId: UserId,
     private val compositeMessageRepository: CompositeMessageRepository,
     private val messageMetadataRepository: MessageMetadataRepository
 ) : ButtonActionHandler {
@@ -49,6 +50,10 @@ internal class ButtonActionHandlerImpl internal constructor(
         messageId: MessageId,
         buttonId: MessageButtonId
     ): Either<CoreFailure, Unit> {
+        if (senderId != selfUserId) {
+            return Either.Left(CoreFailure.InvalidEventSenderID)
+        }
+
         return messageMetadataRepository.originalSenderId(conversationId, messageId)
             .flatMap {
                 compositeMessageRepository.markSelected(
