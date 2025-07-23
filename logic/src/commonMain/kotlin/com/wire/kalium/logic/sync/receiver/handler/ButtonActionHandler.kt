@@ -19,12 +19,10 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
-import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
@@ -40,8 +38,7 @@ internal interface ButtonActionHandler {
 
 internal class ButtonActionHandlerImpl internal constructor(
     private val selfUserId: UserId,
-    private val compositeMessageRepository: CompositeMessageRepository,
-    private val messageMetadataRepository: MessageMetadataRepository
+    private val compositeMessageRepository: CompositeMessageRepository
 ) : ButtonActionHandler {
 
     override suspend fun handle(
@@ -53,14 +50,11 @@ internal class ButtonActionHandlerImpl internal constructor(
         if (senderId != selfUserId) {
             return Either.Left(CoreFailure.InvalidEventSenderID)
         }
-
-        return messageMetadataRepository.originalSenderId(conversationId, messageId)
-            .flatMap {
-                compositeMessageRepository.markSelected(
-                    messageId = messageId,
-                    conversationId = conversationId,
-                    buttonId = buttonId
-                )
-            }
+        return compositeMessageRepository.markSelected(
+            messageId = messageId,
+            conversationId = conversationId,
+            buttonId = buttonId
+        )
     }
+
 }

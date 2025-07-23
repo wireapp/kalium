@@ -139,7 +139,7 @@ class MessageScope internal constructor(
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl,
+    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
