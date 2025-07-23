@@ -18,7 +18,6 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.Ciphersuites
-import com.wire.crypto.ClientId
 import com.wire.crypto.CommitBundle
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoContext
@@ -34,6 +33,7 @@ import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.setLogger
 import com.wire.crypto.setMaxLogLevel
+import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
@@ -115,7 +115,7 @@ class CoreCryptoCentralImpl(
 
             cc.transaction("initMLS") { context ->
                 context.mlsInit(
-                    ClientId(clientId.toString().toByteArray()),
+                    clientId.toString().toClientId(),
                     Ciphersuites(allowedCipherSuites.map { it.toCrypto() }.toSet()),
                 )
             }

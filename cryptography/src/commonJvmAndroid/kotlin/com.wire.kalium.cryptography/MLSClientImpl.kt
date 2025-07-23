@@ -19,7 +19,6 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.Ciphersuite
-import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
@@ -266,9 +265,7 @@ class MLSClientImpl(
         override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> {
             return context.getDeviceIdentities(
                 groupId.decodeBase64Bytes().toGroupId(),
-                clients.map {
-                    ClientId(it.toString().decodeBase64Bytes())
-                }
+                clients.map { it.toString().toClientId() }
             )
                 .mapNotNull {
                     it.toCryptography()

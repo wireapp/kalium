@@ -359,10 +359,6 @@ class E2EIRepositoryImpl(
         }
     }
 
-//     override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
-//         e2EIClient.getOAuthRefreshToken().right()
-//     }
-
     override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
         wrapApiRequest {
             acmeApi.getACMEFederationCertificateChain(it)

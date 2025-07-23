@@ -280,7 +280,6 @@ sealed interface E2EIEnrollmentResult {
     @Suppress("LongParameterList")
     data class Initialized(
         val target: String,
-//         val oAuthState: String?,
         val oAuthClaims: JsonObject,
         val lastNonce: Nonce,
         val orderLocation: String,
