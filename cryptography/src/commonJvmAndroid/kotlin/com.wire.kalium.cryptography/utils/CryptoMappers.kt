@@ -17,6 +17,7 @@
  */
 
 @file: Suppress("TooManyFunctions")
+
 package com.wire.kalium.cryptography.utils
 
 import com.wire.crypto.BufferedDecryptedMessage
@@ -25,14 +26,10 @@ import com.wire.crypto.Ciphersuite
 import com.wire.crypto.CommitBundle
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.E2eiConversationState
-import com.wire.crypto.GroupInfo
-import com.wire.crypto.MLSGroupId
-import com.wire.crypto.MLSKeyPackage
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.PreKey
-import com.wire.crypto.Welcome
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.cryptography.CryptoCertificateStatus
@@ -80,7 +77,7 @@ fun com.wire.kalium.cryptography.MlsTransportResponse.toCrypto(): MlsTransportRe
 
 fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = com.wire.kalium.cryptography.CommitBundle(
     commit = commit,
-    welcome = welcome?.toByteArray(),
+    welcome = welcome?.copyBytes(),
     groupInfoBundle = groupInfoBundle.toCrypto(),
     crlNewDistributionPoints = crlNewDistributionPoints?.lower()
 )
@@ -88,7 +85,7 @@ fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = c
 fun com.wire.crypto.GroupInfoBundle.toCrypto(): GroupInfoBundle = GroupInfoBundle(
     ratchetTreeType = ratchetTreeType.toCryptography(),
     encryptionType = encryptionType.toCryptography(),
-    payload = payload.toByteArray()
+    payload = payload.copyBytes()
 )
 
 fun MlsRatchetTreeType.toCryptography(): RatchetTreeType = when (this) {
@@ -107,7 +104,7 @@ fun PreKeyCrypto.toCrypto(): PreKey = PreKey(id.toUShort(), encodedData.decodeBa
 fun PreKey.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), data.encodeBase64())
 
 fun com.wire.crypto.WelcomeBundle.toCryptography() = WelcomeBundle(
-    id.toBase64(),
+    id.copyBytes().encodeBase64(),
     crlNewDistributionPoints?.value?.map { it.toString() }
 )
 
@@ -180,30 +177,3 @@ fun CRLRegistration.toCryptography() = CrlRegistration(
     dirty,
     expiration?.toULong()
 )
-
-// TODO workaround because copyBytes is not available
-fun MLSGroupId.toBase64(): String =
-    toString()
-        .chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-        .encodeBase64()
-
-// TODO workaround because copyBytes is not available
-fun Welcome.toByteArray(): ByteArray =
-    toString()
-        .chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-
-fun GroupInfo.toByteArray(): ByteArray =
-    toString()
-        .chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-
-fun MLSKeyPackage.toByteArray(): ByteArray =
-    toString()
-        .chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()

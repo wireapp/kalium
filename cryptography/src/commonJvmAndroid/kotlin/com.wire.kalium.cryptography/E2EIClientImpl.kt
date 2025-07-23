@@ -18,7 +18,6 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.E2EIEnrollment
-import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)

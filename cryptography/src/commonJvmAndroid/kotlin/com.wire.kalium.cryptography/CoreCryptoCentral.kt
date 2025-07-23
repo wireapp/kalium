@@ -35,7 +35,6 @@ import com.wire.crypto.MlsTransportResponse
 import com.wire.crypto.setLogger
 import com.wire.crypto.setMaxLogLevel
 import com.wire.kalium.cryptography.exceptions.CryptographyException
-import com.wire.kalium.cryptography.utils.toBase64
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import io.ktor.util.encodeBase64
@@ -125,7 +124,7 @@ class CoreCryptoCentralImpl(
                 coroutineScope,
                 epochObserver = object : EpochObserver {
                     override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
-                        epochObserver.onEpochChange(conversationId.toBase64(), epoch)
+                        epochObserver.onEpochChange(conversationId.copyBytes().encodeBase64(), epoch)
                     }
                 }
             )
@@ -174,7 +173,7 @@ class CoreCryptoCentralImpl(
             coroutineScope,
             epochObserver = object : EpochObserver {
                 override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
-                    epochObserver.onEpochChange(conversationId.toBase64(), epoch)
+                    epochObserver.onEpochChange(conversationId.copyBytes().encodeBase64(), epoch)
                 }
             }
         )

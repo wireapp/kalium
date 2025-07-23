@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
@@ -121,11 +120,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val oidcAuthorizations = authorizations.oidcAuthorization
         val dPopAuthorizations = authorizations.dpopAuthorization
 
-//         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
-
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = oidcAuthorizations.challenge.target,
-//             oAuthState = oAuthState,
             oAuthClaims = getOAuthClaims(
                 oidcAuthorizations.keyAuth.toString(),
                 oidcAuthorizations.challenge.url

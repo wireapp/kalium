@@ -24,12 +24,14 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.DecryptedMessage
-import com.wire.crypto.GroupInfo
 import com.wire.crypto.MlsException
-import com.wire.crypto.Welcome
+import com.wire.crypto.toClientId
+import com.wire.crypto.toExternalSenderKey
 import com.wire.crypto.toGroupId
+import com.wire.crypto.toGroupInfo
+import com.wire.crypto.toMLSKeyPackage
+import com.wire.crypto.toWelcome
 import com.wire.kalium.cryptography.utils.toBundle
-import com.wire.kalium.cryptography.utils.toByteArray
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import com.wire.kalium.cryptography.utils.toExternalSenderKey
@@ -73,8 +75,18 @@ class MLSClientImpl(
 
         override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
             val mlsCredentialType = if (context.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
-            return context.generateKeyPackages(amount.toUInt(), defaultCipherSuite, mlsCredentialType.toCrypto()).map { it.toByteArray() }
+            return context.generateKeyPackages(amount.toUInt(), defaultCipherSuite, mlsCredentialType.toCrypto()).map {
+                it.toByteArray()
+            }
         }
+
+        // // TODO workaround because copyBytes is not available
+        @Suppress("MagicNumber")
+        fun com.wire.crypto.MLSKeyPackage.toByteArray(): ByteArray =
+            toString()
+                .chunked(2)
+                .map { it.toInt(16).toByte() }
+                .toByteArray()
 
         override suspend fun validKeyPackageCount(): ULong {
             val mlsCredentialType = if (context.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
@@ -108,15 +120,13 @@ class MLSClientImpl(
                 groupId.decodeBase64Bytes().toGroupId(),
                 defaultCipherSuite,
                 mlsCredentialType.toCrypto(),
-                listOf(externalSenders)
+                listOf(externalSenders.toExternalSenderKey())
             )
         }
 
         override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
             return toExternalSenderKey(
-                context.getExternalSender(
-                    groupId.decodeBase64Bytes().toGroupId()
-                ).value
+                context.getExternalSender(groupId.decodeBase64Bytes().toGroupId()).copyBytes()
             )
         }
 
@@ -125,7 +135,7 @@ class MLSClientImpl(
         }
 
         override suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle {
-            return context.processWelcomeMessage(message.toWelcomeMessage()).toCryptography()
+            return context.processWelcomeMessage(message.toWelcome()).toCryptography()
         }
 
         override suspend fun commitPendingProposals(groupId: MLSGroupId) {
@@ -182,7 +192,7 @@ class MLSClientImpl(
             return if (membersKeyPackages.isNotEmpty()) {
                 context.addMember(
                     groupId.decodeBase64Bytes().toGroupId(),
-                    membersKeyPackages.map { keyPackage -> keyPackage.toKeyPackage() }
+                    membersKeyPackages.map { keyPackage -> keyPackage.toMLSKeyPackage() }
                 )
             } else {
                 null
@@ -193,13 +203,13 @@ class MLSClientImpl(
             if (members.isNotEmpty()) {
                 context.removeMember(
                     groupId.decodeBase64Bytes().toGroupId(),
-                    members.map { ClientId(it.toString().decodeBase64Bytes()) }
+                    members.map { it.toString().toClientId() }
                 )
             }
         }
 
         override suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
-            return context.deriveAvsSecret(groupId.decodeBase64Bytes().toAvsSecret(), keyLength)
+            return context.deriveAvsSecret(groupId.decodeBase64Bytes().toGroupId(), keyLength).copyBytes()
         }
 
         override suspend fun e2eiNewActivationEnrollment(
