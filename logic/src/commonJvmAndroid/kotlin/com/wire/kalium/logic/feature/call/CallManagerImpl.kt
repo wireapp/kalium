@@ -323,7 +323,7 @@ class CallManagerImpl internal constructor(
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
 
-            if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+            if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.joinMlsConference(
                     conversationId = conversationId,
                     onJoined = {
@@ -368,7 +368,7 @@ class CallManagerImpl internal constructor(
             )
             val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
 
-            if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+            if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.joinMlsConference(
                     conversationId = conversationId,
                     onJoined = {
@@ -551,7 +551,7 @@ class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         clients: String
     ) {
-        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.Proteus) {
+        if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.Proteus) {
             withCalling {
                 wcall_set_clients_for_conv(
                     it,
