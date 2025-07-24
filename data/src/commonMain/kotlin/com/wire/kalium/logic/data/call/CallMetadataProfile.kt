@@ -30,7 +30,9 @@ import kotlinx.datetime.Instant
 class CallMetadataProfile(
     data: Map<ConversationId, CallMetadata> = emptyMap()
 ) {
-    private val flowData: Map<ConversationId, MutableStateFlow<CallMetadata>> = data.mapValues { MutableStateFlow(it.value) }
+    private val flowData: Map<ConversationId, MutableStateFlow<CallMetadata>> = data.mapValues {
+        MutableStateFlow(it.value)
+    }
 
     operator fun get(conversationId: ConversationId): MutableStateFlow<CallMetadata>? = flowData[conversationId]
 
