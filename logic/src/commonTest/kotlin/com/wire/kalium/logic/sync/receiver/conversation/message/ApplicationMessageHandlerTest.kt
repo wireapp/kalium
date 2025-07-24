@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
@@ -34,9 +35,9 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
@@ -101,6 +102,40 @@ class ApplicationMessageHandlerTest {
                     it.content is MessageContent.Asset
                 }
             )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenButtonActionMessage_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        val messageId = "messageId"
+        val validImageContent = MessageContent.ButtonAction(
+            referencedMessageId = messageId,
+            buttonId = "buttonId"
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            validImageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withButtonAction()
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        coVerify {
+            arrangement.buttonActionHandler.handle(any(), any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -213,7 +248,7 @@ class ApplicationMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock(PersistMessageUseCase::class)
         val messageRepository = mock(MessageRepository::class)
@@ -231,6 +266,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
         val inCallReactionsRepository = mock(InCallReactionsRepository::class)
         val dataTransferEventHandler = mock(DataTransferEventHandler::class)
+        val buttonActionHandler = mock(ButtonActionHandler::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -249,6 +285,7 @@ class ApplicationMessageHandlerTest {
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            buttonActionHandler,
             TestUser.SELF.id
         )
 
@@ -281,6 +318,12 @@ class ApplicationMessageHandlerTest {
             coEvery {
                 buttonActionConfirmationHandler.handle(any(), any(), any())
             }.returns(result)
+        }
+
+        suspend fun withButtonAction() = apply {
+            coEvery {
+                buttonActionHandler.handle(any(), any(), any(), any())
+            }.returns(Unit)
         }
 
         fun arrange() = this to applicationMessageHandler

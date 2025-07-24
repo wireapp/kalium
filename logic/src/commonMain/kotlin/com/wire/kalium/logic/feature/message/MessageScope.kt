@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -134,6 +135,7 @@ class MessageScope internal constructor(
     private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val compositeMessageRepository: CompositeMessageRepository,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -441,7 +443,8 @@ class MessageScope internal constructor(
             messageSender = messageSender,
             selfUserId = selfUserId,
             currentClientIdProvider = currentClientIdProvider,
-            messageMetadataRepository = messageMetadataRepository
+            messageMetadataRepository = messageMetadataRepository,
+            compositeMessageRepository = compositeMessageRepository
         )
 
     val sendButtonMessage: SendButtonMessageUseCase

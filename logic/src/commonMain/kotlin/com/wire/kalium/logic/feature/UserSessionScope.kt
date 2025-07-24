@@ -466,6 +466,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
@@ -1543,6 +1545,10 @@ class UserSessionScope internal constructor(
         InCallReactionsDataSource()
     }
 
+    private val buttonActionHandler: ButtonActionHandler by lazy {
+        ButtonActionHandlerImpl(userId, compositeMessageRepository, userScopedLogger)
+    }
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -1572,6 +1578,7 @@ class UserSessionScope internal constructor(
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            buttonActionHandler,
             userId,
         )
 
@@ -2141,6 +2148,7 @@ class UserSessionScope internal constructor(
             cells.deleteAttachmentsUseCase,
             fetchConversationUseCase,
             cryptoTransactionProvider,
+            compositeMessageRepository,
             this,
             userScopedLogger,
         )
