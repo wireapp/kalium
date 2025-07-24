@@ -156,7 +156,7 @@ internal class UserEventReceiverImpl internal constructor(
         val logger = kaliumLogger.createEventProcessingLogger(event)
 
         if (shouldSkipCurrentClientId(event)) {
-            logger.logSuccess("info" to "SKIPPED_CURRENT_CLIENT_ID")
+            logger.logSuccess()
             return Unit.right()
         }
 
@@ -174,7 +174,8 @@ internal class UserEventReceiverImpl internal constructor(
             fnL = { false },
             fnR = { currentClientId ->
                 currentClientId == event.client.id
-            })
+            }
+        )
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> {
