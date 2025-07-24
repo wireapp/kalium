@@ -35,6 +35,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -65,7 +66,8 @@ internal class NewMessageEventHandlerImpl(
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val enqueueConfirmationDelivery: suspend (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
-    private val staleEpochVerifier: StaleEpochVerifier
+    private val staleEpochVerifier: StaleEpochVerifier,
+    private val resetMLSConversation: ResetMLSConversationUseCase,
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -157,6 +159,11 @@ internal class NewMessageEventHandlerImpl(
                             event.subconversationId,
                             event.messageInstant
                         )
+                    }
+
+                    MLSMessageFailureResolution.ResetConversation -> {
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                        resetMLSConversation(event.conversationId)
                     }
                 }
             }.onSuccess { batchResult ->

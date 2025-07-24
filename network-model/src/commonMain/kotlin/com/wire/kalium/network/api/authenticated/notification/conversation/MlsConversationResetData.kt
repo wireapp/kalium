@@ -15,16 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.sync.receiver.handler
+package com.wire.kalium.network.api.authenticated.notification.conversation
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-class AllowedGlobalOperationsHandler(
-    private val userConfigRepository: UserConfigRepository
-) {
-    suspend fun handle(model: AllowedGlobalOperationsModel): Either<CoreFailure, Unit> =
-        userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
-}
+@Serializable
+data class MlsConversationResetData(
+    @SerialName("group_id")
+    val groupId: String,
+    @SerialName("new_group_id")
+    val newGroupId: String? = null, // Will be added in new event version
+)
