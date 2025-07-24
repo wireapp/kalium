@@ -105,7 +105,7 @@ object TestEvent {
     )
 
     fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
-        eventId, TestClient.CLIENT
+        eventId, TestClient.CLIENT.copy(id = clientId)
     )
 
     fun newConnection(eventId: String = "eventId", status: ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
