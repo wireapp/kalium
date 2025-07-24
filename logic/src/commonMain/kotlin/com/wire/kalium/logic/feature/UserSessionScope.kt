@@ -1546,7 +1546,7 @@ class UserSessionScope internal constructor(
     }
 
     private val buttonActionHandler: ButtonActionHandler by lazy {
-        ButtonActionHandlerImpl(userId, compositeMessageRepository)
+        ButtonActionHandlerImpl(userId, compositeMessageRepository, userScopedLogger)
     }
 
     private val applicationMessageHandler: ApplicationMessageHandler

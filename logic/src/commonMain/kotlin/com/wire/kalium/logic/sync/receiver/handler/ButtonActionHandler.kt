@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
@@ -33,24 +33,28 @@ internal interface ButtonActionHandler {
         senderId: UserId,
         messageId: MessageId,
         buttonId: MessageButtonId,
-    ): Either<CoreFailure, Unit>
+    )
 }
 
 internal class ButtonActionHandlerImpl internal constructor(
     private val selfUserId: UserId,
-    private val compositeMessageRepository: CompositeMessageRepository
+    private val compositeMessageRepository: CompositeMessageRepository,
+    logger: KaliumLogger = kaliumLogger,
 ) : ButtonActionHandler {
+
+    private val logger = logger.withTextTag("ButtonActionHandler")
 
     override suspend fun handle(
         conversationId: ConversationId,
         senderId: UserId,
         messageId: MessageId,
         buttonId: MessageButtonId
-    ): Either<CoreFailure, Unit> {
+    ) {
         if (senderId != selfUserId) {
-            return Either.Left(CoreFailure.InvalidEventSenderID)
+            logger.d("Ignoring button action from ${senderId.toLogString()}, as it is not from self user.")
+            return
         }
-        return compositeMessageRepository.markSelected(
+        compositeMessageRepository.markSelected(
             messageId = messageId,
             conversationId = conversationId,
             buttonId = buttonId
