@@ -88,7 +88,7 @@ internal class ClearConversationContentUseCaseImpl(
                 }
             }
         }
-            .flatMap { conversationRepository.clearContent(conversationId) }
             .flatMap { clearLocalConversationAssets(conversationId) }
+            .flatMap { conversationRepository.clearContent(conversationId) }
             .fold({ ClearConversationContentUseCase.Result.Failure(it) }, { ClearConversationContentUseCase.Result.Success })
 }

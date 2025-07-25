@@ -111,7 +111,8 @@ END AS interactionEnabled,
 LabeledConversation.folder_id IS NOT NULL AS isFavorite,
 CurrentFolder.id AS folderId,
 CurrentFolder.name AS folderName,
-Conversation.wire_cell AS wireCell
+Conversation.wire_cell AS wireCell,
+Conversation.deleted_locally AS deletedLocally
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -145,6 +146,7 @@ WHERE
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
     AND isActive
+    AND deletedLocally = 0
     AND CASE
             -- When filter is ALL, do not apply additional filters on conversation type
             WHEN :conversationFilter = 'ALL' THEN 1 = 1
@@ -160,8 +162,8 @@ WHERE
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectConversationDetailsByQualifiedId:
-SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
+SELECT * FROM ConversationDetails WHERE qualifiedId = ? AND deletedLocally = 0;
 
 selectActiveOneOnOneConversationDetails:
 SELECT * FROM ConversationDetails
-WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
+WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id) AND deletedLocally = 0;

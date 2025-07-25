@@ -27,7 +27,6 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
@@ -42,10 +41,7 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
-import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -125,13 +121,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-        val result = try {
+        val deleteResult = conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
+        val getResult = try {
             conversationDAO.getConversationDetailsById(conversationEntity1.id)
         } catch (npe: NullPointerException) {
             null
         }
-        assertNull(result)
+        assertTrue(deleteResult)
+        assertNull(getResult)
     }
 
     @Test
@@ -283,12 +280,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest(dispatcher) {
-        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
         conversationDAO.updateConversationGroupState(
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
-            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         )
-        val result = conversationDAO.getConversationDetailsById(conversationEntity2.id)
+        val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
@@ -296,13 +293,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest(dispatcher) {
-        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
         conversationDAO.updateMlsGroupStateAndCipherSuite(
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+            (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
         )
-        val result = conversationDAO.getConversationDetailsById(conversationEntity2.id)
+        val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
@@ -324,14 +321,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest(dispatcher) {
-        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
         conversationDAO.updateConversationMutedStatus(
-            conversationId = conversationEntity2.id,
+            conversationId = conversationEntity3.id,
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             mutedStatusTimestamp = 1649702788L
         )
 
-        val result = conversationDAO.getConversationDetailsById(conversationEntity2.id)
+        val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
 
         assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED, result?.mutedStatus)
     }
@@ -390,13 +387,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // given
         val expectedLastReadDate = Instant.fromEpochMilliseconds(1648654560000)
 
-        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity3)
 
         // when
-        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
+        conversationDAO.updateConversationReadDate(conversationEntity3.id, expectedLastReadDate)
 
         // then
-        val actual = conversationDAO.getConversationDetailsById(conversationEntity1.id)
+        val actual = conversationDAO.getConversationDetailsById(conversationEntity3.id)
 
         assertNotNull(actual)
         assertEquals(expectedLastReadDate, actual.lastReadDate)
@@ -411,19 +408,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
             teamDAO.insertTeam(team)
             launch {
                 // when
-                conversationDAO.observeConversationDetailsById(conversationEntity1.id).test {
+                conversationDAO.observeConversationDetailsById(conversationEntity3.id).test {
                     // then
                     val initialConversation = awaitItem()
 
                     assertTrue(initialConversation == null)
 
-                    conversationDAO.insertConversation(conversationEntity1)
+                    conversationDAO.insertConversation(conversationEntity3)
 
                     val conversationAfterInsert = awaitItem()
 
                     assertTrue(conversationAfterInsert != null)
 
-                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate)
+                    conversationDAO.updateConversationReadDate(conversationEntity3.id, expectedConversationSeenDate)
 
                     val conversationAfterUpdate = awaitItem()
 
@@ -851,13 +848,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenAConversation_whenUpdatingReceiptMode_itReturnsTheUpdatedValue() = runTest(dispatcher) {
         // given
-        conversationDAO.insertConversation(conversationEntity1.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED))
+        conversationDAO.insertConversation(conversationEntity3.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED))
 
         // when
-        conversationDAO.updateConversationReceiptMode(conversationEntity1.id, ConversationEntity.ReceiptMode.DISABLED)
+        conversationDAO.updateConversationReceiptMode(conversationEntity3.id, ConversationEntity.ReceiptMode.DISABLED)
 
         // then
-        val conversation = conversationDAO.getConversationDetailsById(conversationEntity1.id)
+        val conversation = conversationDAO.getConversationDetailsById(conversationEntity3.id)
         assertEquals(ConversationEntity.ReceiptMode.DISABLED, conversation?.receiptMode)
     }
 
@@ -1121,7 +1118,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val fromArchive = false
         val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
         conversationDAO.insertConversation(conversation)
-        insertTeamUserAndMember(team, user1, conversation.id)
+
+        // incomplete metadata for 1:1 conversation means empty other user so insert only self as a member
+        memberDAO.insertMembersWithQualifiedId(listOf(MemberEntity(selfUserId, MemberEntity.Role.Member)), conversationEntity1.id)
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
@@ -2368,6 +2367,28 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertContentEquals(listOf(channel.id), ids)
     }
 
+    @Test
+    fun givenExistingConversation_whenMarkedAsDeletedLocally_thenDoNotReturnConversationDetails() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity1)
+        val markResult = conversationDAO.markConversationAsDeletedLocally(conversationEntity1.id)
+        val getResult = try {
+            conversationDAO.getConversationDetailsById(conversationEntity1.id)
+        } catch (npe: NullPointerException) {
+            null
+        }
+        assertTrue(markResult)
+        assertNull(getResult)
+    }
+
+    @Test
+    fun givenExistingConversation_whenMarkedAsDeletedLocally_thenConversationCanStillBeDeleted() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity1)
+        val markResult = conversationDAO.markConversationAsDeletedLocally(conversationEntity1.id)
+        val deleteResult = conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
+        assertTrue(markResult)
+        assertTrue(deleteResult)
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?
@@ -2429,7 +2450,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
-            userActiveOneOnOneConversationId = null,
+            userActiveOneOnOneConversationId =
+                if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.activeOneOnOneConversationId else null,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
             accentId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.accentId ?: 0 else 0,
             isFavorite = false,
@@ -2444,25 +2466,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     private companion object {
         const val teamId = "teamId"
-
-        val user1 = newUserEntity(id = "1").copy(team = teamId)
-        val user2 = newUserEntity(id = "2").copy(team = teamId)
-        val user3 = newUserEntity(id = "3").copy(team = teamId)
         val messageTimer = 5000L
-
-        val insertedClient = InsertClientParam(
-            userId = user1.id,
-            id = "id0",
-            deviceType = null,
-            clientType = null,
-            label = null,
-            model = null,
-            registrationDate = null,
-            lastActive = null,
-            mlsPublicKeys = null,
-            isMLSCapable = false,
-            isAsyncNotificationsCapable = false,
-        )
 
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
             "group2",
@@ -2658,6 +2662,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
             wireCell = null,
         )
 
+        val user1 = newUserEntity(id = "1").copy(team = teamId, activeOneOnOneConversationId = conversationEntity1.id)
+        val user2 = newUserEntity(id = "2").copy(team = teamId, activeOneOnOneConversationId = conversationEntity2.id)
+        val user3 = newUserEntity(id = "3").copy(team = teamId, activeOneOnOneConversationId = conversationEntity3.id)
+        val insertedClient = InsertClientParam(
+            userId = user1.id,
+            id = "id0",
+            deviceType = null,
+            clientType = null,
+            label = null,
+            model = null,
+            registrationDate = null,
+            lastActive = null,
+            mlsPublicKeys = null,
+            isMLSCapable = false,
+            isAsyncNotificationsCapable = false,
+        )
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
         val member2 = MemberEntity(user2.id, MemberEntity.Role.Member)
         val member3 = MemberEntity(user3.id, MemberEntity.Role.Admin)

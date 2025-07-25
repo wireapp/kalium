@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation.delete
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -56,7 +57,7 @@ internal class DeleteConversationUseCaseImpl(
                 }
 
                 is Conversation.ProtocolInfo.Proteus -> {
-                    conversationRepository.deleteConversationLocally(conversationId)
+                    conversationRepository.deleteConversationLocally(conversationId).map {}
                 }
             }
         }

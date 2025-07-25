@@ -82,6 +82,7 @@ data object ConversationMapper {
         folderId: String?,
         folderName: String?,
         wireCell: String?,
+        deletedLocally: Boolean,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -178,6 +179,7 @@ data object ConversationMapper {
         channelAccess: ConversationEntity.ChannelAccess?,
         channelAddPermission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
+        deletedLocally: Boolean,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -251,6 +253,7 @@ data object ConversationMapper {
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
+        deleted_lcoally: Boolean,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
