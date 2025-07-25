@@ -493,7 +493,7 @@ class E2EIRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>(), any<String>())
+            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
         }.wasInvoked(once)
 
         coVerify {
@@ -523,7 +523,7 @@ class E2EIRepositoryTest {
         result.shouldFail()
 
         coVerify {
-            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>(), any<String>())
+            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
         }.wasInvoked(once)
 
         coVerify {
@@ -553,7 +553,7 @@ class E2EIRepositoryTest {
         result.shouldFail()
 
         coVerify {
-            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>(), any<String>())
+            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
         }.wasInvoked(once)
 
         coVerify {
@@ -1073,7 +1073,7 @@ class E2EIRepositoryTest {
 
         suspend fun withGetNewOidcChallengeRequest() = apply {
             coEvery {
-                e2eiClient.getNewOidcChallengeRequest(any(), any(), any())
+                e2eiClient.getNewOidcChallengeRequest(any(), any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
