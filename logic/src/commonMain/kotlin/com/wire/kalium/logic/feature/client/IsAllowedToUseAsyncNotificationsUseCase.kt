@@ -22,7 +22,7 @@ import io.mockative.Mockable
 
 /**
  * This use case is responsible for determining if the client is allowed to use async notifications.
- * This by build feature flag, team feature flag and backend current API version.
+ * This by feature flag and backend current API version.
  */
 @Mockable
 interface IsAllowedToUseAsyncNotificationsUseCase {
@@ -31,9 +31,8 @@ interface IsAllowedToUseAsyncNotificationsUseCase {
 
 internal class IsAllowedToUseAsyncNotificationsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
-    private val isAllowedByFeatureFlag: Boolean,
     private val isAllowedByCurrentBackendVersionProvider: () -> Boolean
 ) : IsAllowedToUseAsyncNotificationsUseCase {
     override suspend fun invoke(): Boolean =
-        isAllowedByFeatureFlag && userConfigRepository.isAsyncNotificationsEnabled() && isAllowedByCurrentBackendVersionProvider.invoke()
+        userConfigRepository.isAsyncNotificationsEnabled() && isAllowedByCurrentBackendVersionProvider.invoke()
 }

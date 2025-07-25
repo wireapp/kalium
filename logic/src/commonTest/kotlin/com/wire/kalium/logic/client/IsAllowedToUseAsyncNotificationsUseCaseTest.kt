@@ -32,7 +32,7 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
     fun givenAllowedByFeatureFlagAndBE_whenChecking_thenReturnTrue() = runTest {
         val (_, sut) = Arrangement()
             .withAsyncNotificationsEnabled(isEnabled = true)
-            .arrange(isAllowedByFeatureFlag = true, isAllowedByApiVersion = true)
+            .arrange(isAllowedByApiVersion = true)
 
         val result = sut()
 
@@ -43,18 +43,7 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
     fun givenAllowedByFeatureFlagButNotFromBE_whenChecking_thenReturnFalse() = runTest {
         val (_, sut) = Arrangement()
             .withAsyncNotificationsEnabled(isEnabled = true)
-            .arrange(isAllowedByFeatureFlag = true, isAllowedByApiVersion = false)
-
-        val result = sut()
-
-        assertFalse(result)
-    }
-
-    @Test
-    fun givenNOTAllowedByFeatureFlag_whenChecking_thenReturnFalse() = runTest {
-        val (_, sut) = Arrangement()
-            .withAsyncNotificationsEnabled(isEnabled = true)
-            .arrange(isAllowedByFeatureFlag = false, isAllowedByApiVersion = true)
+            .arrange(isAllowedByApiVersion = false)
 
         val result = sut()
 
@@ -65,7 +54,7 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
     fun givenNOTAllowedByTeamFeatureFlag_whenChecking_thenReturnFalse() = runTest {
         val (_, sut) = Arrangement()
             .withAsyncNotificationsEnabled(isEnabled = false)
-            .arrange(isAllowedByFeatureFlag = true, isAllowedByApiVersion = true)
+            .arrange(isAllowedByApiVersion = true)
 
         val result = sut()
 
@@ -80,9 +69,8 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
             coEvery { userConfigRepository.isAsyncNotificationsEnabled() }.returns(isEnabled)
         }
 
-        fun arrange(isAllowedByFeatureFlag: Boolean, isAllowedByApiVersion: Boolean) = this to IsAllowedToUseAsyncNotificationsUseCaseImpl(
+        fun arrange(isAllowedByApiVersion: Boolean) = this to IsAllowedToUseAsyncNotificationsUseCaseImpl(
             userConfigRepository = userConfigRepository,
-            isAllowedByFeatureFlag = isAllowedByFeatureFlag,
             isAllowedByCurrentBackendVersionProvider = { isAllowedByApiVersion }
         )
     }

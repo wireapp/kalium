@@ -2004,7 +2004,6 @@ class UserSessionScope internal constructor(
     private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase
         get() = IsAllowedToUseAsyncNotificationsUseCaseImpl(
             userConfigRepository = userConfigRepository,
-            isAllowedByFeatureFlag = kaliumConfigs.enableAsyncNotifications,
             isAllowedByCurrentBackendVersionProvider = {
                 sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
             }
