@@ -78,6 +78,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -88,9 +89,13 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.math.max
@@ -103,14 +108,12 @@ internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
-    fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetadataProfile)
-    fun getCallMetadataProfile(): CallMetadataProfile
+    fun getCallMetadata(conversationId: ConversationId): CallMetadata?
     suspend fun callsFlow(): Flow<List<Call>>
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun outgoingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
-    fun getEstablishedCall(): Call
     suspend fun establishedCallConversationId(): ConversationId?
 
     @Suppress("LongParameterList")
@@ -168,10 +171,11 @@ internal class CallDataSource(
     private val transactionProvider: CryptoTransactionProvider,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    initialCallMetadataProfile: CallMetadataProfile = CallMetadataProfile(), // For testing purposes
 ) : CallRepository {
 
-    private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
+    private var _callMetadataProfile: MutableStateFlow<CallMetadataProfile> = MutableStateFlow(initialCallMetadataProfile)
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
@@ -197,11 +201,7 @@ internal class CallDataSource(
         callApi.connectToSFT(url = url, data = data)
     }
 
-    override fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetadataProfile) {
-        _callMetadataProfile.value = callMetadataProfile
-    }
-
-    override fun getCallMetadataProfile(): CallMetadataProfile = _callMetadataProfile.value
+    override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
 
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
 
@@ -253,7 +253,7 @@ internal class CallDataSource(
             activeSpeakers = mapOf()
         )
 
-        val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId)
+        val isCallInCurrentSession = _callMetadataProfile.value.containsKey(conversationId)
         val lastCallStatus = callDAO.getCallStatusByConversationId(conversationId = callEntity.conversationId)
 
         val isOneOnOneCall = callEntity.conversationType == ConversationEntity.Type.ONE_ON_ONE
@@ -271,10 +271,9 @@ internal class CallDataSource(
                     "| status: [$status]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
-            updateCallMetadata(
-                conversationId = conversationId,
-                metadata = metadata
-            )
+            _callMetadataProfile.update { callMetadataProfile ->
+                callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
+            }
             val callNewStatus = if (isGroupCall) CallStatus.STILL_ONGOING else CallStatus.CLOSED
             if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
                 callingLogger.i("[CallRepository][createCall] -> Update.1 | callNewStatus: [$callNewStatus]")
@@ -308,58 +307,37 @@ internal class CallDataSource(
                 }
 
                 // Save into metadata
-                updateCallMetadata(
-                    conversationId = conversationId,
-                    metadata = metadata
-                )
+                _callMetadataProfile.update { callMetadataProfile ->
+                    callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
+                }
             }
         }
-    }
-
-    private fun updateCallMetadata(conversationId: ConversationId, metadata: CallMetadata) {
-        val callMetadataProfile = _callMetadataProfile.value
-        val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-            this[conversationId] = metadata
-        }
-
-        _callMetadataProfile.value = callMetadataProfile.copy(
-            data = updatedCallMetadata
-        )
     }
 
     override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
-        val callMetadataProfile = _callMetadataProfile.value
-
-        // Update Call in Database
-        wrapStorageRequest {
-            callDAO.updateLastCallStatusByConversationId(
-                status = callMapper.toCallEntityStatus(callStatus = status),
-                conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                    conversationId = conversationId
+            // Update Call in Database
+            wrapStorageRequest {
+                callDAO.updateLastCallStatusByConversationId(
+                    status = callMapper.toCallEntityStatus(callStatus = status),
+                    conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
+                        conversationId = conversationId
+                    )
                 )
-            )
-            callingLogger.i(
-                "[CallRepository][UpdateCallStatusById] ->" +
-                        " ConversationId: [${conversationId.value.obfuscateId()}" +
-                        "@${conversationId.domain.obfuscateDomain()}]" +
-                        " " + "| status: [$status]"
-            )
-        }
-
-        callMetadataProfile.data[conversationId]?.let { call ->
-            val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                val establishedTime = if (status == CallStatus.ESTABLISHED) DateTimeUtil.currentIsoDateTimeString()
-                else call.establishedTime
-
-                // Update Metadata
-                this[conversationId] = call.copy(
-                    establishedTime = establishedTime,
-                    callStatus = status
+                callingLogger.i(
+                    "[CallRepository][UpdateCallStatusById] ->" +
+                            " ConversationId: [${conversationId.value.obfuscateId()}" +
+                            "@${conversationId.domain.obfuscateDomain()}]" +
+                            " " + "| status: [$status]"
                 )
             }
 
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetadata
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            callMetadata.copy(
+                callStatus = status,
+                establishedTime = when (status) {
+                    CallStatus.ESTABLISHED -> DateTimeUtil.currentIsoDateTimeString()
+                    else -> callMetadata.establishedTime
+                },
             )
         }
     }
@@ -388,107 +366,72 @@ internal class CallDataSource(
     }
 
     override fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean) {
-        val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId]?.let { callMetadata ->
-            val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = callMetadata.copy(
-                    isMuted = isMuted
-                )
-            }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetaData
-            )
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            callMetadata.copy(isMuted = isMuted)
         }
     }
 
     override fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
-        val callMetadataProfile = _callMetadataProfile.value
-        val conversationId = getEstablishedCall().conversationId
-        callMetadataProfile.data[conversationId]?.let { callMetadata ->
-            val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = callMetadata.copy(
-                    isCbrEnabled = isCbrEnabled
-                )
-            }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetaData
-            )
+        val conversationId = callDAO.getEstablishedCall().conversationId.toModel()
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            callMetadata.copy(isCbrEnabled = isCbrEnabled)
         }
     }
 
     override fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean) {
-        val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId]?.let { call ->
-            val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = call.copy(
-                    isCameraOn = isCameraOn
-                )
-            }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetadata
-            )
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            callMetadata.copy(isCameraOn = isCameraOn)
         }
     }
 
     @Suppress("NestedBlockDepth")
     override suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>) {
-        val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId]?.let { call ->
-            if (call.participants != participants) {
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            if (callMetadata.participants != participants) {
                 callingLogger.i(
                     "updateCallParticipants() -" +
                             " conversationId: ${conversationId.toLogString()}" +
                             " with size of: ${participants.size}"
                 )
 
-                val currentParticipantIds = call.participants.map { it.userId }.toSet()
+                val currentParticipantIds = callMetadata.participants.map { it.userId }.toSet()
                 val newParticipantIds = participants.map { it.userId }.toSet()
                 val sharingScreenParticipantIds = participants.filter { it.isSharingScreen }
                     .map { participant -> participant.id }
 
-                val updatedUsers = call.users.toMutableList()
+                val updatedUsers = callMetadata.users.toMutableList()
 
                 newParticipantIds.minus(currentParticipantIds).let { missedUserIds ->
                     if (missedUserIds.isNotEmpty())
                         updatedUsers.addAll(
                             userRepository.getUsersMinimizedByQualifiedIDs(missedUserIds.toList()).getOrElse { listOf() }
                         )
-
                 }
 
-                val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                    this[conversationId] = call.copy(
-                        participants = participants,
-                        maxParticipants = max(call.maxParticipants, participants.size),
-                        users = updatedUsers,
-                        screenShareMetadata = updateScreenSharingMetadata(
-                            metadata = call.screenShareMetadata,
-                            usersCurrentlySharingScreen = sharingScreenParticipantIds
-                        )
+                callMetadata.copy(
+                    participants = participants,
+                    maxParticipants = max(callMetadata.maxParticipants, participants.size),
+                    users = updatedUsers,
+                    screenShareMetadata = updateScreenSharingMetadata(
+                        metadata = callMetadata.screenShareMetadata,
+                        usersCurrentlySharingScreen = sharingScreenParticipantIds
                     )
-                }
-
-                _callMetadataProfile.value = callMetadataProfile.copy(
-                    data = updatedCallMetadata
                 )
+            } else {
+                callMetadata
             }
-        }
-
-        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
-            _callMetadataProfile.value[conversationId]?.conversationType is Conversation.Type.Group
-        ) {
-            transactionProvider.transaction("removeStaleParticipantAfterTimeout") { transactionContext ->
-                participants.forEach { participant ->
-                    if (participant.hasEstablishedAudio) {
-                        clearStaleParticipantTimeout(participant)
-                    } else {
-                        removeStaleParticipantAfterTimeout(transactionContext, participant, conversationId)
+        }?.let { callMetadata ->
+            if (callMetadata.protocol is Conversation.ProtocolInfo.MLS && callMetadata.conversationType is Conversation.Type.Group) {
+                transactionProvider.transaction("removeStaleParticipantAfterTimeout") { transactionContext ->
+                    participants.forEach { participant ->
+                        if (participant.hasEstablishedAudio) {
+                            clearStaleParticipantTimeout(participant)
+                        } else {
+                            removeStaleParticipantAfterTimeout(transactionContext, participant, conversationId)
+                        }
                     }
+                    Unit.right()
                 }
-                Unit.right()
             }
         }
     }
@@ -563,9 +506,7 @@ internal class CallDataSource(
     }
 
     override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>) {
-        val callMetadataProfile = _callMetadataProfile.value
-
-        callMetadataProfile.data[conversationId]?.let { call ->
+        _callMetadataProfile.update(conversationId) { callMetadata ->
             callingLogger.i(
                 "updateActiveSpeakers() -" +
                         " conversationId: ${conversationId.value.obfuscateId()}" +
@@ -573,13 +514,7 @@ internal class CallDataSource(
                         "with size of: ${activeSpeakers.size}"
             )
 
-            val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = call.copy(activeSpeakers = activeSpeakers)
-            }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetadata
-            )
+            callMetadata.copy(activeSpeakers = activeSpeakers)
         }
     }
 
@@ -603,31 +538,25 @@ internal class CallDataSource(
             .firstOrNull()
             ?.conversationId
 
-    override fun getEstablishedCall(): Call {
-        val callEntity = callDAO.getEstablishedCall()
-        val conversationId = ConversationId(
-            value = callEntity.conversationId.value,
-            domain = callEntity.conversationId.domain
-        )
-        val call = callMapper.toCall(
-            callEntity = callEntity,
-            metadata = _callMetadataProfile.value.data[conversationId]
-        )
-        return call
-    }
-
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
-        this.combine(_callMetadataProfile) { calls, metadata ->
-            calls.map { call ->
-                val conversationId = ConversationId(
-                    value = call.conversationId.value,
-                    domain = call.conversationId.domain
-                )
-
-                callMapper.toCall(
-                    callEntity = call,
-                    metadata = metadata.data[conversationId]
-                )
+        this.combine(_callMetadataProfile) { calls, callMetadataProfile ->
+            calls.map { callEntity ->
+                callMetadataProfile[callEntity.conversationId.toModel()] // get flow of metadata for each call
+                    ?.map { callMetadata -> callEntity to callMetadata } // associate each CallEntity with CallMetadata
+                    ?: flowOf(callEntity to null)
+            }
+        }.flatMapLatest { listOfCallDataFlows ->
+            if (listOfCallDataFlows.isEmpty()) { // If there are no calls, return an empty flow as combine does not work with empty lists
+                flowOf(emptyList())
+            } else {
+                // Combine all flows for each call with metadata into a single flow with list of calls with metadata
+                combine(listOfCallDataFlows) { flowOfCallDataArray: Array<Pair<CallEntity, CallMetadata?>> ->
+                    flowOfCallDataArray.toList()
+                        .map { (callEntity, callMetadata) ->
+                            callMapper.toCall(callEntity = callEntity, metadata = callMetadata)
+                        }
+                }
             }
         }
 
@@ -775,7 +704,7 @@ internal class CallDataSource(
     }
 
     override fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo? =
-        _callMetadataProfile.value.data[conversationId]?.protocol
+        _callMetadataProfile[conversationId]?.protocol
 
     override suspend fun fetchServerTime(): String? {
         val result = serverTimeApi.getServerTime()
@@ -790,3 +719,8 @@ internal class CallDataSource(
         val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)
     }
 }
+
+private inline operator fun MutableStateFlow<CallMetadataProfile>.get(conversationId: ConversationId) = value[conversationId]?.value
+
+private inline fun MutableStateFlow<CallMetadataProfile>.update(conversationId: ConversationId, function: (CallMetadata) -> CallMetadata) =
+    value[conversationId]?.updateAndGet(function)

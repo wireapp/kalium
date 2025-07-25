@@ -52,6 +52,10 @@ class OnParticipantListChanged internal constructor(
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {
 
         val participantsChange = jsonDecoder.decodeFromString<CallParticipants>(data)
+        callingLogger.i(
+            "[OnParticipantListChanged] -> ConversationId: ${remoteConversationId.obfuscateId()}" +
+                    " | Participants: ${participantsChange.members.size}"
+        )
 
         callingScope.launch {
             val participants = mutableListOf<ParticipantMinimized>()

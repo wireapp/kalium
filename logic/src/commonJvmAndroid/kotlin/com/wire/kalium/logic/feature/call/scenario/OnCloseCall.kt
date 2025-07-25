@@ -64,7 +64,7 @@ class OnCloseCall(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
-            val callMetadata = callRepository.getCallMetadataProfile()[conversationIdWithDomain]
+            val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
 
             val isConnectedToInternet =
                 networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
@@ -98,7 +98,7 @@ class OnCloseCall(
     ): Boolean {
         if (callStatus == CallStatus.MISSED)
             return true
-        return callRepository.getCallMetadataProfile().data[conversationId]?.let {
+        return callRepository.getCallMetadata(conversationId)?.let {
             val isGroupCall = it.conversationType is Conversation.Type.Group
             (callStatus == CallStatus.CLOSED &&
                     isGroupCall &&
