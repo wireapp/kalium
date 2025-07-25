@@ -72,6 +72,8 @@ interface UserConfigDAO {
     suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
     suspend fun setMlsConversationsResetEnabled(enabled: Boolean)
     suspend fun getMlsConversationsResetEnabled(): Boolean
+    suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean)
+    suspend fun getAsyncNotificationsEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -237,6 +239,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getMlsConversationsResetEnabled(): Boolean =
         metadataDAO.valueByKey(MLS_CONVERSATIONS_RESET)?.toBoolean() ?: false
 
+    override suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean) {
+        metadataDAO.insertValue(isAsyncNotificationsEnabled.toString(), ASYNC_NOTIFICATIONS_ENABLED)
+    }
+
+    override suspend fun getAsyncNotificationsEnabled(): Boolean =
+        metadataDAO.valueByKey(ASYNC_NOTIFICATIONS_ENABLED)?.toBoolean() ?: false
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -250,5 +259,6 @@ internal class UserConfigDAOImpl internal constructor(
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
         const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
+        const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
     }
 }

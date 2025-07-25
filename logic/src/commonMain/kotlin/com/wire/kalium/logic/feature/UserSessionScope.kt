@@ -279,6 +279,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerifi
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.AsyncNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -1892,6 +1893,9 @@ class UserSessionScope internal constructor(
     private val conferenceCallingConfigHandler
         get() = ConferenceCallingConfigHandler(userConfigRepository)
 
+    private val asyncNotificationsConfigHandler
+        get() = AsyncNotificationsConfigHandler(userConfigRepository)
+
     private val secondFactorPasswordChallengeConfigHandler
         get() = SecondFactorPasswordChallengeConfigHandler(userConfigRepository)
 
@@ -2014,7 +2018,7 @@ class UserSessionScope internal constructor(
 
     private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase
         get() = IsAllowedToUseAsyncNotificationsUseCaseImpl(
-            isAllowedByFeatureFlag = kaliumConfigs.enableAsyncNotifications,
+            userConfigRepository = userConfigRepository,
             isAllowedByCurrentBackendVersionProvider = {
                 sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
             }
@@ -2335,7 +2339,8 @@ class UserSessionScope internal constructor(
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
             appLockConfigHandler,
-            channels.channelsFeatureConfigHandler
+            channels.channelsFeatureConfigHandler,
+            asyncNotificationsConfigHandler
         )
 
     val team: TeamScope

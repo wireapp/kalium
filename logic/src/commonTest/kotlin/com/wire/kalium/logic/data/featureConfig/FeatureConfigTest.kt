@@ -56,6 +56,7 @@ object FeatureConfigTest {
             Status.ENABLED
         ),
         channelFeatureConfiguration: ChannelFeatureConfiguration = ChannelFeatureConfiguration.Disabled,
+        asyncNotificationsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED)
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -73,6 +74,7 @@ object FeatureConfigTest {
         mlsModel,
         e2EIModel,
         mlsMigrationModel,
-        channelFeatureConfiguration
+        channelFeatureConfiguration,
+        asyncNotificationsModel
     )
 }

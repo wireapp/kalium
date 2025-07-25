@@ -40,6 +40,7 @@ import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
 
+@Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
 @Mockable
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -86,8 +87,9 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     arrayOf("info" to "Ignoring unknown feature config update")
                 )
 
-            Either.Right(Unit)
+                Either.Right(Unit)
+            }
+
+            is Event.FeatureConfig.AllowedGlobalOperationsUpdated -> allowedGlobalOperationsHandler.handle(event.model)
         }
-        is Event.FeatureConfig.AllowedGlobalOperationsUpdated -> allowedGlobalOperationsHandler.handle(event.model)
-    }
 }
