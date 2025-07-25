@@ -67,6 +67,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.doesNothing
+import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -687,6 +688,40 @@ class SyncFeatureConfigsUseCaseTest {
         arrangement.channelsConfigurationStorage.observePersistedChannelsConfiguration().test {
             assertEquals(expectedConfiguration, awaitItem())
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenAsyncNotificationsAreEnabled_whenSyncing_thenItShouldBeStoredCorrectlyAsEnabled() = runTest {
+        val expectedModel = ConfigsStatusModel(Status.ENABLED)
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(asyncNotificationsModel = expectedModel)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(true))
+        }
+    }
+
+    @Test
+    fun givenAsyncNotificationsAreDisabled_whenSyncing_thenItShouldBeStoredCorrectlyAsEnabled() = runTest {
+        val expectedModel = ConfigsStatusModel(Status.DISABLED)
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(asyncNotificationsModel = expectedModel)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(false))
         }
     }
 
