@@ -249,7 +249,7 @@ class SessionManagerIntegrationTest {
         override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
         override suspend fun updateToken(
             accessTokenApi: AccessTokenApi,
-            oldRefreshToken: String
+            oldRefreshToken: String?
         ): SessionDTO = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
 
         override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")

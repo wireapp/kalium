@@ -47,11 +47,9 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList")
 class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
@@ -90,7 +88,7 @@ class SessionManagerImpl internal constructor(
 
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
-        oldRefreshToken: String
+        oldRefreshToken: String?
     ): SessionDTO {
         val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {

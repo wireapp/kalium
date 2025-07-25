@@ -47,6 +47,8 @@ import io.ktor.utils.io.close
 import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.writePacket
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
