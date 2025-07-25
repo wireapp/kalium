@@ -82,6 +82,7 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
                     override val version: HttpProtocolVersion = response.version
                     override val requestTime: GMTDate = response.requestTime
                     override val responseTime: GMTDate = response.responseTime
+
                     @InternalAPI
                     override val rawContent: ByteReadChannel get() = response.rawContent
                     override val headers get() = headers
