@@ -23,10 +23,12 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -64,7 +66,7 @@ internal class UserEventReceiverImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
-    private val legalHoldHandler: LegalHoldHandler
+    private val legalHoldHandler: LegalHoldHandler,
 ) : UserEventReceiver {
 
     override suspend fun onEvent(
@@ -152,9 +154,28 @@ internal class UserEventReceiverImpl internal constructor(
 
     private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
+
+        if (shouldSkipCurrentClientId(event)) {
+            logger.logSuccess()
+            return Unit.right()
+        }
+
         return clientRepository.saveNewClientEvent(event)
             .onSuccess { logger.logSuccess() }
             .onFailure { logger.logFailure(it) }
+    }
+
+    /**
+     * For some reasons we receive the current client id as a NewClient event.
+     * Then skip it, because is not needed to be processed.
+     */
+    private suspend fun shouldSkipCurrentClientId(event: Event.User.NewClient): Boolean {
+        return currentClientIdProvider().fold(
+            fnL = { false },
+            fnR = { currentClientId ->
+                currentClientId == event.client.id
+            }
+        )
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> {

@@ -25,6 +25,6 @@ import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 class AllowedGlobalOperationsHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-suspend fun handle(model: AllowedGlobalOperationsModel): Either<CoreFailure, Unit> =
-         userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
+    suspend fun handle(model: AllowedGlobalOperationsModel): Either<CoreFailure, Unit> =
+        userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
 }
