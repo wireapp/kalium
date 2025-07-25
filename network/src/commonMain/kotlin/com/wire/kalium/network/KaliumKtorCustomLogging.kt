@@ -21,7 +21,6 @@ package com.wire.kalium.network
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.utils.obfuscatePath
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
@@ -31,7 +30,6 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpSendPipeline
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.client.statement.HttpResponsePipeline
-import io.ktor.client.statement.readBytes
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.Url
 import io.ktor.http.content.OutgoingContent
@@ -156,21 +154,18 @@ class KaliumKtorCustomLogging private constructor(
 
         if (!level.body) return
 
-        client.receivePipeline.intercept(HttpReceivePipeline.State) { response ->
+        client.receivePipeline.intercept(HttpReceivePipeline.After) { response ->
             if (level == LogLevel.NONE || response.call.attributes.contains(DisableLogging)) {
-                proceedWith(subject)
                 return@intercept
             }
 
             val logger = response.call.attributes[KaliumHttpCustomLogger]
+
             try {
-                val bytes = response.readRawBytes()
-                logger.logResponseBody(response.contentType(), ByteReadChannel(bytes))
-                proceedWith(response.body())
-            } catch (e: Throwable) {
-                logger.logResponseException(response.call.request, e)
+                logger.logResponseBody(response.contentType(), ByteReadChannel(response.readRawBytes()))
+            } catch (_: Throwable) {
+            } finally {
                 logger.closeResponseLog()
-                throw e
             }
         }
     }
@@ -197,7 +192,6 @@ class KaliumKtorCustomLogging private constructor(
         override fun install(plugin: KaliumKtorCustomLogging, scope: HttpClient) {
             plugin.setupRequestLogging(scope)
             plugin.setupResponseLogging(scope)
-            scope.engineConfig
         }
     }
 
