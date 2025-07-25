@@ -709,7 +709,7 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenAsyncNotificationsAreDisabled_whenSyncing_thenItShouldBeStoredCorrectlyAsEnabled() = runTest {
+    fun givenAsyncNotificationsAreDisabled_whenSyncing_thenItShouldBeStoredCorrectlyAsDisabled() = runTest {
         val expectedModel = ConfigsStatusModel(Status.DISABLED)
         val (arrangement, syncFeatureConfigsUseCase) = arrangement()
             .withRemoteFeatureConfigsSucceeding(
@@ -723,6 +723,22 @@ class SyncFeatureConfigsUseCaseTest {
         coVerify {
             arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(false))
         }
+    }
+
+    @Test
+    fun givenAsyncNotificationsNotPresent_whenSyncing_thenItShouldNotBeCalled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(asyncNotificationsModel = null)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(any())
+        }.wasNotInvoked()
     }
 
     @OptIn(ExperimentalStdlibApi::class)
