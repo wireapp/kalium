@@ -35,7 +35,7 @@ internal interface AccessTokenRefresher {
      * @return Either a [CoreFailure] if the operation fails, or the [AccountTokens] with the new access token and refresh token.
      */
     suspend fun refreshTokenAndPersistSession(
-        currentRefreshToken: String,
+        currentRefreshToken: String?,
         clientId: ClientId? = null,
     ): Either<CoreFailure, AccountTokens>
 }
@@ -44,7 +44,7 @@ internal class AccessTokenRefresherImpl(
     private val repository: AccessTokenRepository,
 ) : AccessTokenRefresher {
     override suspend fun refreshTokenAndPersistSession(
-        currentRefreshToken: String,
+        currentRefreshToken: String?,
         clientId: ClientId?
     ): Either<CoreFailure, AccountTokens> {
         return repository.getNewAccessToken(

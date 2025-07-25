@@ -31,7 +31,7 @@ import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 
 internal open class AccessTokenApiV0(private val httpClient: HttpClient) : AccessTokenApi {
-    override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
+    override suspend fun getToken(refreshToken: String?, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
         wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post(PATH_ACCESS) {
                 header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")

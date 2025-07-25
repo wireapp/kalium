@@ -21,26 +21,26 @@ package com.wire.kalium.network
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.utils.obfuscatePath
 import io.ktor.client.HttpClient
-import io.ktor.client.HttpClientConfig
+import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.observer.ResponseHandler
-import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpSendPipeline
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.client.statement.HttpResponsePipeline
+import io.ktor.client.statement.readBytes
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.Url
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
-import io.ktor.util.InternalAPI
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.core.readText
+import io.ktor.utils.io.readRemaining
 import kotlin.coroutines.cancellation.CancellationException
 
 private val KaliumHttpCustomLogger = AttributeKey<KaliumHttpLogger>("KaliumHttpLogger")
@@ -120,7 +120,6 @@ class KaliumKtorCustomLogging private constructor(
         }
     }
 
-    @OptIn(InternalAPI::class)
     private fun setupResponseLogging(client: HttpClient) {
         client.receivePipeline.intercept(HttpReceivePipeline.State) { response ->
             if (level == LogLevel.NONE || response.call.attributes.contains(DisableLogging)) return@intercept
@@ -157,20 +156,23 @@ class KaliumKtorCustomLogging private constructor(
 
         if (!level.body) return
 
-        val observer: ResponseHandler = observer@{
-            if (level == LogLevel.NONE || it.call.attributes.contains(DisableLogging)) {
-                return@observer
+        client.receivePipeline.intercept(HttpReceivePipeline.State) { response ->
+            if (level == LogLevel.NONE || response.call.attributes.contains(DisableLogging)) {
+                proceedWith(subject)
+                return@intercept
             }
 
-            val logger = it.call.attributes[KaliumHttpCustomLogger]
+            val logger = response.call.attributes[KaliumHttpCustomLogger]
             try {
-                logger.logResponseBody(it.contentType(), it.content)
-            } catch (_: Throwable) {
-            } finally {
+                val bytes = response.readRawBytes()
+                logger.logResponseBody(response.contentType(), ByteReadChannel(bytes))
+                proceedWith(response.body())
+            } catch (e: Throwable) {
+                logger.logResponseException(response.call.request, e)
                 logger.closeResponseLog()
+                throw e
             }
         }
-        ResponseObserver.install(ResponseObserver(observer), client)
     }
 
     private fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
@@ -195,6 +197,7 @@ class KaliumKtorCustomLogging private constructor(
         override fun install(plugin: KaliumKtorCustomLogging, scope: HttpClient) {
             plugin.setupRequestLogging(scope)
             plugin.setupResponseLogging(scope)
+            scope.engineConfig
         }
     }
 
@@ -211,14 +214,6 @@ class KaliumKtorCustomLogging private constructor(
             )
         }
     }
-}
-
-/**
- * Configure and install [Logging] in [HttpClient].
- */
-@Suppress("FunctionNaming")
-fun HttpClientConfig<*>.Logging(block: Logging.Config.() -> Unit = {}) {
-    install(Logging, block)
 }
 
 @Suppress("TooGenericExceptionCaught")
