@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTim
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.AsyncNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -692,7 +693,8 @@ class SyncFeatureConfigsUseCaseTest {
     @OptIn(ExperimentalStdlibApi::class)
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
-    private class Arrangement(dispatcher: TestDispatcher): CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement(dispatcher: TestDispatcher) :
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         private val inMemoryStorage = inMemoryUserConfigStorage()
         private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
@@ -795,7 +797,8 @@ class SyncFeatureConfigsUseCaseTest {
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
-                ChannelsFeatureConfigurationHandler(channelsConfigurationStorage)
+                ChannelsFeatureConfigurationHandler(channelsConfigurationStorage),
+                AsyncNotificationsConfigHandler(userConfigRepository)
             )
             return this to syncFeatureConfigsUseCase
         }

@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOpe
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.AppLock
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
@@ -39,7 +40,6 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigDat
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -113,6 +113,9 @@ object FeatureConfigJson {
             |  },
             |  "channels": {
             |    "status": "disabled"
+            |  },
+            |  "asyncNotifications": {
+            |    "status": "disabled"
             |  }
             |}
         """.trimMargin()
@@ -148,6 +151,7 @@ object FeatureConfigJson {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
+            FeatureConfigData.AsyncNotifications(FeatureFlagStatusDTO.DISABLED)
         ),
         featureConfigResponseSerializer
     )

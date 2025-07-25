@@ -509,8 +509,8 @@ class RegisterClientUseCaseTest {
             }
         }
 
-        fun withIsAllowedToUseAsyncNotifications(isAllowed: Boolean = false) = apply {
-            every {
+        suspend fun withIsAllowedToUseAsyncNotifications(isAllowed: Boolean = false) = apply {
+            coEvery {
                 isAllowedToUseAsyncNotifications()
             }.returns(isAllowed)
         }
