@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v9.authenticated.networkContainer
+package com.wire.kalium.network.api.v10.authenticated.networkContainer
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
@@ -44,28 +44,28 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserId
-import com.wire.kalium.network.api.v9.authenticated.AccessTokenApiV9
-import com.wire.kalium.network.api.v9.authenticated.AssetApiV9
-import com.wire.kalium.network.api.v9.authenticated.CallApiV9
-import com.wire.kalium.network.api.v9.authenticated.ClientApiV9
-import com.wire.kalium.network.api.v9.authenticated.ConnectionApiV9
-import com.wire.kalium.network.api.v9.authenticated.ConversationApiV9
-import com.wire.kalium.network.api.v9.authenticated.E2EIApiV9
-import com.wire.kalium.network.api.v9.authenticated.FeatureConfigApiV9
-import com.wire.kalium.network.api.v9.authenticated.KeyPackageApiV9
-import com.wire.kalium.network.api.v9.authenticated.LogoutApiV9
-import com.wire.kalium.network.api.v9.authenticated.MLSMessageApiV9
-import com.wire.kalium.network.api.v9.authenticated.MLSPublicKeyApiV9
-import com.wire.kalium.network.api.v9.authenticated.MessageApiV9
-import com.wire.kalium.network.api.v9.authenticated.NotificationApiV9
-import com.wire.kalium.network.api.v9.authenticated.PreKeyApiV9
-import com.wire.kalium.network.api.v9.authenticated.PropertiesApiV9
-import com.wire.kalium.network.api.v9.authenticated.SelfApiV9
-import com.wire.kalium.network.api.v9.authenticated.ServerTimeApiV9
-import com.wire.kalium.network.api.v9.authenticated.TeamsApiV9
-import com.wire.kalium.network.api.v9.authenticated.UpgradePersonalToTeamApiV9
-import com.wire.kalium.network.api.v9.authenticated.UserDetailsApiV9
-import com.wire.kalium.network.api.v9.authenticated.UserSearchApiV9
+import com.wire.kalium.network.api.v10.authenticated.AccessTokenApiV10
+import com.wire.kalium.network.api.v10.authenticated.AssetApiV10
+import com.wire.kalium.network.api.v10.authenticated.CallApiV10
+import com.wire.kalium.network.api.v10.authenticated.ClientApiV10
+import com.wire.kalium.network.api.v10.authenticated.ConnectionApiV10
+import com.wire.kalium.network.api.v10.authenticated.ConversationApiV10
+import com.wire.kalium.network.api.v10.authenticated.E2EIApiV10
+import com.wire.kalium.network.api.v10.authenticated.FeatureConfigApiV10
+import com.wire.kalium.network.api.v10.authenticated.KeyPackageApiV10
+import com.wire.kalium.network.api.v10.authenticated.LogoutApiV10
+import com.wire.kalium.network.api.v10.authenticated.MLSMessageApiV10
+import com.wire.kalium.network.api.v10.authenticated.MLSPublicKeyApiV10
+import com.wire.kalium.network.api.v10.authenticated.MessageApiV10
+import com.wire.kalium.network.api.v10.authenticated.NotificationApiV10
+import com.wire.kalium.network.api.v10.authenticated.PreKeyApiV10
+import com.wire.kalium.network.api.v10.authenticated.PropertiesApiV10
+import com.wire.kalium.network.api.v10.authenticated.SelfApiV10
+import com.wire.kalium.network.api.v10.authenticated.ServerTimeApiV10
+import com.wire.kalium.network.api.v10.authenticated.TeamsApiV10
+import com.wire.kalium.network.api.v10.authenticated.UpgradePersonalToTeamApiV10
+import com.wire.kalium.network.api.v10.authenticated.UserDetailsApiV10
+import com.wire.kalium.network.api.v10.authenticated.UserSearchApiV10
 import com.wire.kalium.network.api.vcommon.WildCardApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
@@ -77,7 +77,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.websocket.WebSocketSession
 
 @Suppress("LongParameterList")
-internal class AuthenticatedNetworkContainerV9 internal constructor(
+internal class AuthenticatedNetworkContainerV10 internal constructor(
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
     certificatePinning: CertificatePinning,
@@ -92,7 +92,7 @@ internal class AuthenticatedNetworkContainerV9 internal constructor(
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager = sessionManager,
-        accessTokenApi = { httpClient -> AccessTokenApiV9(httpClient) },
+        accessTokenApi = { httpClient -> AccessTokenApiV10(httpClient) },
         engine = engine,
         kaliumLogger = kaliumLogger,
         webSocketSessionProvider = if (mockWebSocketSession != null) {
@@ -102,64 +102,64 @@ internal class AuthenticatedNetworkContainerV9 internal constructor(
         }
     ) {
 
-    override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV9(networkClient.httpClient)
+    override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV10(networkClient.httpClient)
 
-    override val logoutApi: LogoutApi get() = LogoutApiV9(networkClient, sessionManager)
+    override val logoutApi: LogoutApi get() = LogoutApiV10(networkClient, sessionManager)
 
-    override val clientApi: ClientApi get() = ClientApiV9(networkClient)
+    override val clientApi: ClientApi get() = ClientApiV10(networkClient)
 
     override val messageApi: MessageApi
-        get() = MessageApiV9(
+        get() = MessageApiV10(
             networkClient,
             EnvelopeProtoMapperImpl()
         )
 
-    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV9(networkClient)
+    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV10(networkClient)
 
-    override val e2eiApi: E2EIApi get() = E2EIApiV9(networkClient)
+    override val e2eiApi: E2EIApi get() = E2EIApiV10(networkClient)
 
-    override val conversationApi: ConversationApi get() = ConversationApiV9(networkClient)
+    override val conversationApi: ConversationApi get() = ConversationApiV10(networkClient)
 
-    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV9(networkClient)
+    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV10(networkClient)
 
-    override val preKeyApi: PreKeyApi get() = PreKeyApiV9(networkClient)
+    override val preKeyApi: PreKeyApi get() = PreKeyApiV10(networkClient)
 
-    override val assetApi: AssetApi get() = AssetApiV9(networkClientWithoutCompression, selfUserId)
+    override val assetApi: AssetApi get() = AssetApiV10(networkClientWithoutCompression, selfUserId)
 
     // It is important that this is lazy, since we need a single instance of the websocket client
     override val notificationApi: NotificationApi by lazy {
-        NotificationApiV9(
+        NotificationApiV10(
             networkClient,
             websocketClient,
             backendConfig
         )
     }
 
-    override val teamsApi: TeamsApi get() = TeamsApiV9(networkClient)
+    override val teamsApi: TeamsApi get() = TeamsApiV10(networkClient)
 
-    override val selfApi: SelfApi get() = SelfApiV9(networkClient, sessionManager)
+    override val selfApi: SelfApi get() = SelfApiV10(networkClient, sessionManager)
 
-    override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV9(networkClient)
+    override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV10(networkClient)
 
-    override val userSearchApi: UserSearchApi get() = UserSearchApiV9(networkClient)
+    override val userSearchApi: UserSearchApi get() = UserSearchApiV10(networkClient)
 
-    override val callApi: CallApi get() = CallApiV9(networkClient)
+    override val callApi: CallApi get() = CallApiV10(networkClient)
 
-    override val connectionApi: ConnectionApi get() = ConnectionApiV9(networkClient)
+    override val connectionApi: ConnectionApi get() = ConnectionApiV10(networkClient)
 
-    override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV9(networkClient)
+    override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV10(networkClient)
 
-    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV9(networkClient)
+    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV10(networkClient)
 
-    override val propertiesApi: PropertiesApi get() = PropertiesApiV9(networkClient)
+    override val propertiesApi: PropertiesApi get() = PropertiesApiV10(networkClient)
 
     override val wildCardApi: WildCardApi get() = WildCardApiImpl(networkClient)
 
     override val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
-        get() = UpgradePersonalToTeamApiV9(
+        get() = UpgradePersonalToTeamApiV10(
             networkClient
         )
 
     override val serverTimeApi: ServerTimeApi
-        get() = ServerTimeApiV9(networkClient)
+        get() = ServerTimeApiV10(networkClient)
 }
