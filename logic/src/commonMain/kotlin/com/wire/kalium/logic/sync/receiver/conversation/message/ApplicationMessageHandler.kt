@@ -18,6 +18,10 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -35,12 +39,9 @@ import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
@@ -97,6 +98,7 @@ internal class ApplicationMessageHandlerImpl(
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val dataTransferEventHandler: DataTransferEventHandler,
     private val inCallReactionsRepository: InCallReactionsRepository,
+    private val buttonActionHandler: ButtonActionHandler,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -213,16 +215,20 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(transactionContext, signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
-            is MessageContent.ButtonAction -> {
-                /* no-op */
-                // TODO(services): we need handle this event if kalium need to support services
-            }
-
-            is MessageContent.ButtonActionConfirmation -> buttonActionConfirmationHandler.handle(
+            is MessageContent.ButtonAction -> buttonActionHandler.handle(
                 signaling.conversationId,
                 signaling.senderUserId,
-                content
+                content.referencedMessageId,
+                content.buttonId
             )
+
+            is MessageContent.ButtonActionConfirmation -> {
+                buttonActionConfirmationHandler.handle(
+                    signaling.conversationId,
+                    signaling.senderUserId,
+                    content
+                )
+            }
 
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
             is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(

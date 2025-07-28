@@ -27,6 +27,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
@@ -63,7 +64,8 @@ internal class ConversationEventReceiverImpl(
     private val typingIndicatorHandler: TypingIndicatorHandler,
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler,
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler,
-    private val accessUpdateEventHandler: AccessUpdateEventHandler
+    private val accessUpdateEventHandler: AccessUpdateEventHandler,
+    private val mlsResetConversationEventHandler: MLSResetConversationEventHandler,
 ) : ConversationEventReceiver {
     override suspend fun onEvent(
         transactionContext: CryptoTransactionContext,
@@ -116,6 +118,11 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.ConversationReceiptMode -> {
                 receiptModeUpdateEventHandler.handle(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.MLSReset -> {
+                mlsResetConversationEventHandler.handle(transactionContext, event)
                 Either.Right(Unit)
             }
 

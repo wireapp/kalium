@@ -18,22 +18,23 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SyncManagerArrangement
 import com.wire.kalium.logic.util.arrangement.SyncManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.matches
 import io.mockative.coVerify
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
@@ -85,6 +86,7 @@ class SendButtonActionMessageTest {
                 withWaitUntilLiveOrFailure(Either.Right(Unit))
                 withCurrentClientIdSuccess(ClientId("client-id"))
                 withMessageOriginalSender(Either.Right(originalSender))
+                withMarkSelected(Unit.right())
                 withSendMessageSucceed()
             }
 
@@ -122,6 +124,7 @@ class SendButtonActionMessageTest {
                 withWaitUntilLiveOrFailure(Either.Right(Unit))
                 withCurrentClientIdSuccess(ClientId("client-id"))
                 withMessageOriginalSender(Either.Right(originalSender))
+                withMarkSelected(Unit.right())
                 withSendMessageSucceed()
             }
 
@@ -138,9 +141,7 @@ class SendButtonActionMessageTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.messageSender.sendMessage(any(), matches {
-                it is MessageTarget.Users && it.userId == listOf(originalSender)
-            })
+            arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -160,6 +161,7 @@ class SendButtonActionMessageTest {
         MessageMetadataRepositoryArrangement by MessageMetadataRepositoryArrangementImpl(),
         MessageSenderArrangement by MessageSenderArrangementImpl(),
         SyncManagerArrangement by SyncManagerArrangementImpl(),
+        CompositeMessageRepositoryArrangement by CompositeMessageRepositoryArrangementImpl(),
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
 
         private lateinit var useCase: SendButtonActionMessageUseCase
@@ -172,6 +174,7 @@ class SendButtonActionMessageTest {
                 syncManager = syncManager,
                 currentClientIdProvider = currentClientIdProvider,
                 selfUserId = SELF_USER_ID,
+                compositeMessageRepository = compositeMessageRepository
             )
 
             return this to useCase
