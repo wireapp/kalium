@@ -420,6 +420,35 @@ class MLSClientTest : BaseMLSClientTest() {
         )
     }
 
+    @Test
+    fun givenDestroyedMLSClient_whenCallingTransaction_shouldReturnClientRemoved() = runTest {
+        val arrangement = create(
+            ALICE1,
+            ::createMLSClient
+        )
+
+        val client = arrangement.mlsClient
+
+        client.close()
+
+        val result = runCatching {
+            client.transaction {
+                it.generateKeyPackages(2)
+            }
+        }
+
+        assertTrue(
+            result.isFailure,
+            "Transaction on destroyed client should fail."
+        )
+
+        val exception = result.exceptionOrNull()
+        assertTrue(
+            exception is IllegalStateException && exception.message?.contains("destroyed") == true,
+            "Expected exception about destroyed client, got: ${exception?.message}"
+        )
+    }
+
     companion object {
         val externalSenderKey = ByteArray(32)
         val DEFAULT_CIPHER_SUITES = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
