@@ -61,6 +61,8 @@ data class FeatureConfigResponse(
     val channels: FeatureConfigData.Channels?,
     @SerialName("allowedGlobalOperations")
     val allowedGlobalOperations: FeatureConfigData.AllowedGlobalOperations?,
+    @SerialName("asyncNotifications")
+    val asyncNotifications: FeatureConfigData.AsyncNotifications?
 )
 
 @Serializable
@@ -305,4 +307,12 @@ sealed class FeatureConfigData {
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
+
+    @SerialName("asyncNotifications")
+    @Serializable
+    data class AsyncNotifications(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
 }
