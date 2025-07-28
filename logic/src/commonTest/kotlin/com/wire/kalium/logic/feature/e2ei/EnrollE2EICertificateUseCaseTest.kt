@@ -119,9 +119,6 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.getOAuthRefreshToken()
-        }.wasNotInvoked()
-        coVerify {
             arrangement.e2EIRepository.getWireNonce()
         }.wasNotInvoked()
         coVerify {
@@ -185,9 +182,6 @@ class EnrollE2EICertificateUseCaseTest {
         }.wasNotInvoked()
         coVerify {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.getOAuthRefreshToken()
         }.wasNotInvoked()
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -260,9 +254,6 @@ class EnrollE2EICertificateUseCaseTest {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.e2EIRepository.getOAuthRefreshToken()
-        }.wasNotInvoked()
-        coVerify {
             arrangement.e2EIRepository.getWireNonce()
         }.wasNotInvoked()
         coVerify {
@@ -333,9 +324,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         coVerify {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.getOAuthRefreshToken()
         }.wasNotInvoked()
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -412,9 +400,6 @@ class EnrollE2EICertificateUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.e2EIRepository.getOAuthRefreshToken()
-        }.wasNotInvoked()
-        coVerify {
             arrangement.e2EIRepository.getWireNonce()
         }.wasNotInvoked()
         coVerify {
@@ -454,7 +439,6 @@ class EnrollE2EICertificateUseCaseTest {
             withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
             withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
             withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-            withGettingRefreshTokenSucceeding()
             withGettingChallenges(Either.Right(AUTHORIZATIONS))
             withSelfUserFetched(true)
         }
@@ -494,10 +478,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         coVerify {
             arrangement.e2EIRepository.getAuthorizations(any<Nonce>(), any<List<String>>())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.e2EIRepository.getOAuthRefreshToken()
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1055,7 +1035,6 @@ class EnrollE2EICertificateUseCaseTest {
             withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
             withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
             withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-            withGettingRefreshTokenSucceeding()
             withGettingChallenges(Either.Right(AUTHORIZATIONS))
             withSelfUserFetched(false)
             withFetchSelfUser(Unit.right())
@@ -1145,12 +1124,6 @@ class EnrollE2EICertificateUseCaseTest {
             coEvery {
                 e2EIRepository.getAuthorizations(any(), any())
             }.returns(result)
-        }
-
-        suspend fun withGettingRefreshTokenSucceeding() = apply {
-            coEvery {
-                e2EIRepository.getOAuthRefreshToken()
-            }.ensuresSelfUserFetchedAndReturns(Either.Right(REFRESH_TOKEN), e2EIRepository::getOAuthRefreshToken.name)
         }
 
         suspend fun withGetWireNonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
@@ -1304,7 +1277,8 @@ class EnrollE2EICertificateUseCaseTest {
 
         val INITIALIZATION_RESULT = E2EIEnrollmentResult.Initialized(
             target = ACME_CHALLENGE.target,
-            oAuthState = REFRESH_TOKEN, dPopAuthorizations = DPOP_AUTHZ, oidcAuthorizations = OIDC_AUTHZ,
+            dPopAuthorizations = DPOP_AUTHZ,
+            oidcAuthorizations = OIDC_AUTHZ,
             oAuthClaims = OAUTH_CLAIMS,
             lastNonce = RANDOM_NONCE,
             orderLocation = RANDOM_LOCATION

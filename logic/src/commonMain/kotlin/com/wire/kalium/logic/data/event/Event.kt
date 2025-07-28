@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
@@ -455,6 +456,20 @@ sealed class Event(open val id: String) {
                 conversationIdKey to conversationId.toLogString(),
                 "channelAddPermission" to channelAddPermission.name,
                 senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class MLSReset(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val from: UserId,
+            val groupID: GroupID,
+            val newGroupID: GroupID? = null,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.MlsReset",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
             )
         }
     }
