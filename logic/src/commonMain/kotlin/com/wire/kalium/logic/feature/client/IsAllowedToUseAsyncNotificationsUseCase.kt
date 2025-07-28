@@ -17,20 +17,22 @@
  */
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import io.mockative.Mockable
 
 /**
  * This use case is responsible for determining if the client is allowed to use async notifications.
- * This by build feature flag and backend current API version.
+ * This by feature flag and backend current API version.
  */
 @Mockable
 interface IsAllowedToUseAsyncNotificationsUseCase {
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 }
 
 internal class IsAllowedToUseAsyncNotificationsUseCaseImpl(
-    private val isAllowedByFeatureFlag: Boolean,
+    private val userConfigRepository: UserConfigRepository,
     private val isAllowedByCurrentBackendVersionProvider: () -> Boolean
 ) : IsAllowedToUseAsyncNotificationsUseCase {
-    override fun invoke(): Boolean = isAllowedByFeatureFlag && isAllowedByCurrentBackendVersionProvider.invoke()
+    override suspend fun invoke(): Boolean =
+        userConfigRepository.isAsyncNotificationsEnabled() && isAllowedByCurrentBackendVersionProvider.invoke()
 }

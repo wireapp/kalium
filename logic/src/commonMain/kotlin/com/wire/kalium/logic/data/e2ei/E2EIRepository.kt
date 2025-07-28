@@ -49,7 +49,6 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
 import io.mockative.Mockable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Mockable
@@ -96,7 +95,6 @@ interface E2EIRepository {
     ): Either<E2EIFailure, Unit>
 
     suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
-    suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
     fun discoveryUrl(): Either<E2EIFailure, String>
@@ -264,7 +262,7 @@ class E2EIRepositoryImpl(
 
     override suspend fun validateOIDCChallenge(idToken: String, refreshToken: String, prevNonce: Nonce, acmeChallenge: AcmeChallenge) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, refreshToken, prevNonce.value)
+            val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
             }.fold({
@@ -359,10 +357,6 @@ class E2EIRepositoryImpl(
                 mlsClientProvider.initMLSClientWithCertificate(e2eiClient, certificateChain, clientId)
             })
         }
-    }
-
-    override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
-        e2EIClient.getOAuthRefreshToken().right()
     }
 
     override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {

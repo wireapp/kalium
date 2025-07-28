@@ -28,6 +28,7 @@ sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()
     data object InformUser : MLSMessageFailureResolution()
     data object OutOfSync : MLSMessageFailureResolution()
+    data object ResetConversation : MLSMessageFailureResolution()
 }
 
 internal object MLSMessageFailureHandler {
@@ -35,6 +36,9 @@ internal object MLSMessageFailureHandler {
         return when (failure) {
             // Received messages targeting a future epoch (outside epoch bounds), we might have lost messages.
             is MLSFailure.WrongEpoch -> MLSMessageFailureResolution.OutOfSync
+
+            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
+            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
 
             // Received already sent or received message, can safely be ignored.
             is MLSFailure.DuplicateMessage,

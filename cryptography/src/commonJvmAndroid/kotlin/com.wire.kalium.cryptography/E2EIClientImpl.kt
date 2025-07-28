@@ -18,7 +18,6 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.E2EIEnrollment
-import kotlin.coroutines.cancellation.CancellationException
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -55,13 +54,11 @@ class E2EIClientImpl(
     override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
         wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce)
 
-    override suspend fun getNewOidcChallengeRequest(idToken: String, refreshToken: String, previousNonce: String) =
-        wireE2eIdentity.newOidcChallengeRequest(idToken, refreshToken, previousNonce)
+    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String) =
+        wireE2eIdentity.newOidcChallengeRequest(idToken, previousNonce)
 
     override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) =
-        (coreCrypto as CoreCryptoCentralImpl).transaction { cc ->
-            wireE2eIdentity.contextOidcChallengeResponse(cc, challenge)
-        }
+        wireE2eIdentity.contextOidcChallengeResponse(challenge)
 
     override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) {
         wireE2eIdentity.dpopChallengeResponse(challenge)
@@ -81,15 +78,6 @@ class E2EIClientImpl(
 
     override suspend fun certificateRequest(previousNonce: String) =
         wireE2eIdentity.certificateRequest(previousNonce)
-
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun getOAuthRefreshToken() = try {
-        wireE2eIdentity.getRefreshToken()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        null
-    }
 
     companion object {
         fun toAcmeDirectory(value: com.wire.crypto.AcmeDirectory) = AcmeDirectory(

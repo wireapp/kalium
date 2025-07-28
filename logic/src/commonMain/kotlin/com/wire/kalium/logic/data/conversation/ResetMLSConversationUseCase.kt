@@ -29,6 +29,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import io.mockative.Mockable
 
 /**
  * Reset an MLS conversation which cannot be recovered by any other means.
@@ -39,6 +40,7 @@ import com.wire.kalium.logic.data.id.ConversationId
  *  - Fetching the conversation to update group ID
  *  - Re-establishing the MLS group with the updated group ID and current members.
  */
+@Mockable
 interface ResetMLSConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 }

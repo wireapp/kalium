@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
+import com.wire.kalium.persistence.HistoryClientQueries
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.backup.DatabaseExporterImpl
@@ -172,6 +173,7 @@ class UserDatabaseBuilder internal constructor(
         ConversationFolderAdapter = TableMapper.conversationFolderAdapter,
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
+        HistoryClientAdapter = TableMapper.historyClientAdapter,
     )
 
     init {
@@ -326,6 +328,9 @@ class UserDatabaseBuilder internal constructor(
 
     val messageAttachmentDraftDao: MessageAttachmentDraftDao
         get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries)
+
+    val historyClientQueries: HistoryClientQueries
+        get() = database.historyClientQueries
 
     val messageAttachments: MessageAttachmentsDao
         get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries)

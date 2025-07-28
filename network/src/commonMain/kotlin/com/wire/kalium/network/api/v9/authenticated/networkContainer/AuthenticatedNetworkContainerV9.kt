@@ -126,6 +126,7 @@ internal class AuthenticatedNetworkContainerV9 internal constructor(
 
     override val assetApi: AssetApi get() = AssetApiV9(networkClientWithoutCompression, selfUserId)
 
+    // It is important that this is lazy, since we need a single instance of the websocket client
     override val notificationApi: NotificationApi by lazy {
         NotificationApiV9(
             networkClient,

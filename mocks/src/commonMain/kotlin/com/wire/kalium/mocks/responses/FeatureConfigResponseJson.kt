@@ -82,6 +82,7 @@ object FeatureConfigResponseJson {
             AllowedGlobalOperationsConfigDTO(),
             FeatureFlagStatusDTO.DISABLED
         ),
+        FeatureConfigData.AsyncNotifications(FeatureFlagStatusDTO.DISABLED)
     )
     val valid = KtxSerializer.json.encodeToString(featureConfigResponse)
 

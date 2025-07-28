@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -249,6 +251,7 @@ class JoinExistingMLSConversationUseCaseTest {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
         val fetchConversation = mock(FetchConversationUseCase::class)
+        val resetMlsConversation = mock(ResetMLSConversationUseCase::class)
 
         val selfUserId = TestUser.USER_ID
 
@@ -260,10 +263,15 @@ class JoinExistingMLSConversationUseCaseTest {
             mlsConversationRepository,
             fetchMLSOneToOneConversation,
             fetchConversation,
+            resetMlsConversation,
             selfUserId,
             dispatcher
         ).also {
             withTransactionReturning(Either.Right(Unit))
+
+            coEvery {
+                resetMlsConversation.invoke(any())
+            } returns Unit.right()
         }
 
         @Suppress("MaxLineLength")

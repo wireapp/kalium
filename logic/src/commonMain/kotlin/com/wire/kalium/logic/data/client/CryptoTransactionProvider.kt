@@ -18,11 +18,12 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
@@ -80,8 +81,17 @@ class CryptoTransactionProviderImpl(
     ): Either<CoreFailure, R> {
         return proteusClientProvider.getOrError()
             .flatMap { proteus ->
-                proteus.transaction(name.toTransactionName("proteus")) { proteusContext ->
-                    block(proteusContext)
+                try {
+                    proteus.transaction(name.toTransactionName("proteus")) { proteusContext ->
+                        block(proteusContext)
+                    }
+                } catch (e: IllegalStateException) {
+                    if (e.message?.contains("already been destroyed") == true) {
+                        kaliumLogger.w("Tried to use destroyed ProteusClient in transaction '$name'", e)
+                        CoreFailure.MissingClientRegistration.left()
+                    } else {
+                        throw e
+                    }
                 }
             }
     }
@@ -92,8 +102,17 @@ class CryptoTransactionProviderImpl(
     ): Either<CoreFailure, R> {
         return mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
-                mlsClient.transaction(name.toTransactionName("mls")) { mlsContext ->
-                    block(mlsContext)
+                try {
+                    mlsClient.transaction(name.toTransactionName("mls")) { mlsContext ->
+                        block(mlsContext)
+                    }
+                } catch (e: IllegalStateException) {
+                    if (e.message?.contains("already been destroyed") == true) {
+                        kaliumLogger.w("Tried to use destroyed MLSClient in transaction '$name'", e)
+                        MLSFailure.Disabled.left()
+                    } else {
+                        throw e
+                    }
                 }
             }
     }
@@ -103,15 +122,22 @@ class CryptoTransactionProviderImpl(
         name: String?,
         block: suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R> {
-
-        val proteusClient = proteusClientProvider.getOrError().getOrFail { return it.left() }
+        val proteusClient = proteusClientProvider.getOrError().getOrNull()
+            ?: return CoreFailure.MissingClientRegistration.left()
         val mlsClient = mlsClientProvider.getMLSClient().getOrNull()
 
-        return proteusClient.transaction(name.toTransactionName("proteus")) { proteusCtx ->
-            mlsClient?.transaction(name.toTransactionName("mls")) { mlsCtx ->
-                block(withCryptoContext(proteusCtx, mlsCtx))
-            } ?: run {
-                block(withCryptoContext(proteusCtx, null))
+        return try {
+            proteusClient.transaction(name.toTransactionName("proteus")) { proteusCtx ->
+                mlsClient?.transaction(name.toTransactionName("mls")) { mlsCtx ->
+                    block(withCryptoContext(proteusCtx, mlsCtx))
+                } ?: block(withCryptoContext(proteusCtx, null))
+            }
+        } catch (e: IllegalStateException) {
+            if (e.message?.contains("already been destroyed") == true) {
+                kaliumLogger.w("Tried to use destroyed crypto client in combined transaction '$name'", e)
+                CoreFailure.MissingClientRegistration.left()
+            } else {
+                throw e
             }
         }
     }

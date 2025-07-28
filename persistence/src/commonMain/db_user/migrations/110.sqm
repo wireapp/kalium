@@ -1,0 +1,13 @@
+
+CREATE TABLE HistoryClient (
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      id TEXT NOT NULL,
+      secret BLOB NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE SET NULL,
+      PRIMARY KEY (conversation_id, id)
+);
+
+CREATE INDEX history_client_id ON HistoryClient(id);
+CREATE INDEX history_client_conversation_date ON HistoryClient(conversation_id, creation_date);

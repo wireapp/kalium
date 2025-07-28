@@ -262,8 +262,8 @@ class MLSClientTest : BaseMLSClientTest() {
         val carolClient = carolArrangement.mlsClient
 
         val clientKeyPackageList = listOf(
-            aliceClient.transaction { it.generateKeyPackages(1)}.first(),
-            carolClient.transaction { it.generateKeyPackages(1)}.first()
+            aliceClient.transaction { it.generateKeyPackages(1) }.first(),
+            carolClient.transaction { it.generateKeyPackages(1) }.first()
         )
 
         bobClient.transaction {
@@ -275,9 +275,9 @@ class MLSClientTest : BaseMLSClientTest() {
 
 
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
-        bobClient.transaction {  it.removeMember(welcomeBundle.groupId, clientRemovalList) }
+        bobClient.transaction { it.removeMember(welcomeBundle.groupId, clientRemovalList) }
         val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
-        assertNull(aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, commit)}.first().message)
+        assertNull(aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, commit) }.first().message)
     }
 
     @Test
@@ -299,7 +299,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         // Bob creates a conversation.
         val bobClient = bobArrangement.mlsClient
-        bobClient.transaction {  it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)}
+        bobClient.transaction { it.createConversation(MLS_CONVERSATION_ID, externalSenderKey) }
 
         // Bob adds Alice, Alice processes the welcome.
         val aliceClient = aliceArrangement.mlsClient
@@ -307,7 +307,7 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.transaction {
             it.addMember(
                 MLS_CONVERSATION_ID,
-                listOf(aliceClient.transaction { it.generateKeyPackages(1)}.first())
+                listOf(aliceClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
         val welcomeAlice = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
@@ -318,12 +318,12 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.transaction {
             it.addMember(
                 MLS_CONVERSATION_ID,
-                listOf(carolClient.transaction {  it.generateKeyPackages(1)}.first())
+                listOf(carolClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
 
         // Bob immediately removes Carol => definitely out of order for Alice.
-        bobClient.transaction {  it.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId)) }
+        bobClient.transaction { it.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId)) }
         val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         // Alice tries to decrypt the removeCarol commit, which references an epoch Alice hasn't seen yet.
@@ -374,7 +374,7 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.transaction {
             it.addMember(
                 MLS_CONVERSATION_ID,
-                listOf(aliceClient.transaction { it.generateKeyPackages(1)} .first())
+                listOf(aliceClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
         val welcomeForAlice = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
@@ -385,7 +385,7 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.transaction {
             it.addMember(
                 MLS_CONVERSATION_ID,
-                listOf(carolClient.transaction { it.generateKeyPackages(1)}.first())
+                listOf(carolClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
         val commitAddCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
@@ -417,6 +417,35 @@ class MLSClientTest : BaseMLSClientTest() {
             2UL,
             epoch.second,
             "Epoch should be incremented after processing the 'addCarol' and 'removeCarol' commit."
+        )
+    }
+
+    @Test
+    fun givenDestroyedMLSClient_whenCallingTransaction_shouldReturnClientRemoved() = runTest {
+        val arrangement = create(
+            ALICE1,
+            ::createMLSClient
+        )
+
+        val client = arrangement.mlsClient
+
+        client.close()
+
+        val result = runCatching {
+            client.transaction {
+                it.generateKeyPackages(2)
+            }
+        }
+
+        assertTrue(
+            result.isFailure,
+            "Transaction on destroyed client should fail."
+        )
+
+        val exception = result.exceptionOrNull()
+        assertTrue(
+            exception is IllegalStateException && exception.message?.contains("destroyed") == true,
+            "Expected exception about destroyed client, got: ${exception?.message}"
         )
     }
 

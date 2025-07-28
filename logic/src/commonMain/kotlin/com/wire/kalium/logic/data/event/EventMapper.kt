@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
@@ -138,6 +139,7 @@ class EventMapper(
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
             EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
         }
 
@@ -447,6 +449,17 @@ class EventMapper(
         reason = eventContentDTO.removedUsers.reason.toModel()
     )
 
+    fun mlsConversationReset(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MlsResetConversationDTO
+    ) = Event.Conversation.MLSReset(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        from = eventContentDTO.qualifiedFrom.toModel(),
+        groupID = GroupID(eventContentDTO.data.groupId),
+        newGroupID = eventContentDTO.data.newGroupId?.let { GroupID(it) },
+    )
+
     private fun memberUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO,
@@ -557,6 +570,7 @@ class EventMapper(
         )
 
         // These features are NOT received through events. As FeatureConfig Events are deprecated
+        is FeatureConfigData.AsyncNotifications,
         is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,
         is FeatureConfigData.Legalhold,
