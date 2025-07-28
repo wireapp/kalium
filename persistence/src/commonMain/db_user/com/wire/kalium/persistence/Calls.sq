@@ -100,3 +100,18 @@ SET status = 'CLOSED'
 WHERE
     status != 'CLOSED'
     AND status != 'MISSED';
+
+selectLastCallIfActiveByConversationId:
+SELECT *
+FROM Call
+WHERE -- consider only the last call and return it only if it has one of the active statuses
+    id = (
+            SELECT id
+            FROM Call
+            WHERE conversation_id = :conversationId
+            ORDER BY created_at DESC
+            LIMIT 1
+        )
+    AND conversation_id = :conversationId
+    AND status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+LIMIT 1;

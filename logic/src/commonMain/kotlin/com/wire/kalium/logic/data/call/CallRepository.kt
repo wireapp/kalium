@@ -115,6 +115,7 @@ interface CallRepository {
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
+    fun observeLastCallIfActiveByConversationId(conversationId: ConversationId): Flow<Call?>
 
     @Suppress("LongParameterList")
     suspend fun createCall(
@@ -560,6 +561,11 @@ internal class CallDataSource(
             }
         }
 
+    private fun Flow<CallEntity?>.combineWithCallMetadata(): Flow<Call?> =
+        this.map { listOfNotNull(it) } // create a list to re-use combineWithCallsMetadata
+            .combineWithCallsMetadata()
+            .map { it.firstOrNull() } // get the call from the list or null if there is no call
+
     override suspend fun leavePreviouslyJoinedMlsConferences() {
         callingLogger.i("Leaving previously joined MLS conferences")
 
@@ -714,6 +720,10 @@ internal class CallDataSource(
             null
         }
     }
+
+    override fun observeLastCallIfActiveByConversationId(conversationId: ConversationId): Flow<Call?> =
+        callDAO.observeLastCallIfActiveByConversationId(callMapper.fromConversationIdToQualifiedIDEntity(conversationId))
+            .combineWithCallMetadata()
 
     companion object {
         val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)

@@ -66,4 +66,5 @@ interface CallDAO {
     suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type?
     suspend fun updateOpenCallsToClosedStatus()
+    fun observeLastCallIfActiveByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?>
 }

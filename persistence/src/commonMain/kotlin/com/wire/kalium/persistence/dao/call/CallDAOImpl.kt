@@ -146,4 +146,10 @@ internal class CallDAOImpl(
     override suspend fun updateOpenCallsToClosedStatus() = withContext(queriesContext) {
         callsQueries.updateOpenCallsToClosedStatus()
     }
+
+    override fun observeLastCallIfActiveByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?> =
+        callsQueries.selectLastCallIfActiveByConversationId(conversationId, mapper = mapper::fromCalls)
+            .asFlow()
+            .flowOn(queriesContext)
+            .mapToOneOrNull()
 }
