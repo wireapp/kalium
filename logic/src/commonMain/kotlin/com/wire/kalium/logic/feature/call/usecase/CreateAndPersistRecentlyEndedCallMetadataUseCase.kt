@@ -46,7 +46,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : CreateAndPersistRecentlyEndedCallMetadataUseCase {
     override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {
-        callRepository.getCallMetadataProfile()[conversationId]?.createMetadata(
+        callRepository.getCallMetadata(conversationId)?.createMetadata(
             conversationId = conversationId,
             callEndedReason = callEndedReason
         )?.let { metadata ->

@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.call.CallMetadata
-import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.ParticipantMinimized
@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseC
 import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_MINIMIZED
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -149,36 +148,19 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
     }
 
     private class Arrangement {
-        
+
         val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val callRepository = mock(CallRepository::class)
 
         fun withOutgoingCall() = apply {
-            every { callRepository.getCallMetadataProfile() }
-                .returns(
-                    CallMetadataProfile(
-                        mapOf(
-                            CONVERSATION_ID to callMetadata().copy(
-                                callStatus = CallStatus.STARTED
-                            )
-                        )
-                    )
-                )
+            every { callRepository.getCallMetadata(CONVERSATION_ID) }
+                .returns(callMetadata().copy(callStatus = CallStatus.STARTED))
         }
 
         fun withIncomingCall() = apply {
-            every { callRepository.getCallMetadataProfile() }
-                .returns(
-                    CallMetadataProfile(
-                        mapOf(
-                            CONVERSATION_ID to callMetadata().copy(
-                                callerId = CALLER_ID.copy(value = "external"),
-                                callStatus = CallStatus.INCOMING
-                            )
-                        )
-                    )
-                )
+            every { callRepository.getCallMetadata(CONVERSATION_ID) }
+                .returns(callMetadata().copy(callerId = CALLER_ID.copy(value = "external"), callStatus = CallStatus.INCOMING))
         }
 
         suspend fun withConversationMembers() = apply {
