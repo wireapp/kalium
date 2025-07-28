@@ -19,13 +19,8 @@
 package com.wire.kalium.network.api.v10.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.conversation.ResetMLSConversationRequestV9
 import com.wire.kalium.network.api.v9.authenticated.ConversationApiV9
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 
 internal open class ConversationApiV10 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
-) : ConversationApiV9(authenticatedNetworkClient) 
+) : ConversationApiV9(authenticatedNetworkClient)

@@ -18,11 +18,7 @@
 package com.wire.kalium.network.api.v10.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.v9.authenticated.ServerTimeApiV9
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.get
 
 internal open class ServerTimeApiV10(authenticatedNetworkClient: AuthenticatedNetworkClient) :
     ServerTimeApiV9(authenticatedNetworkClient)
