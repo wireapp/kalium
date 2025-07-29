@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
@@ -32,12 +33,15 @@ import io.mockative.Mockable
 @Mockable
 interface FetchConversationUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun fetchWithTransaction(conversationId: ConversationId): Either<CoreFailure, Unit>
+
 }
 
 @OptIn(ConversationPersistenceApi::class)
 internal class FetchConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val persistConversations: PersistConversationsUseCase
+    private val persistConversations: PersistConversationsUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : FetchConversationUseCase {
 
     override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
@@ -49,5 +53,18 @@ internal class FetchConversationUseCaseImpl(
                     invalidateMembers = true
                 )
             }
+    }
+
+    override suspend fun fetchWithTransaction(conversationId: ConversationId): Either<CoreFailure, Unit> {
+        return transactionProvider.transaction { transaction ->
+            conversationRepository.fetchConversation(conversationId)
+                .flatMap {
+                    persistConversations(
+                        transaction,
+                        listOf(it),
+                        invalidateMembers = true
+                    )
+                }
+        }
     }
 }
