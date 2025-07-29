@@ -30,7 +30,9 @@ import com.wire.kalium.logic.data.user.UserId
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -52,7 +54,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             assertEquals(call, awaitItem())
             awaitComplete()
         }
-        coVerify {
+        verify {
             arrangement.callRepository.observeLastCallIfActiveByConversationId(establishedCall.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
@@ -74,7 +76,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             assertEquals(call, awaitItem())
             awaitComplete()
         }
-        coVerify {
+        verify {
             arrangement.callRepository.observeLastCallIfActiveByConversationId(call.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
@@ -98,7 +100,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             assertEquals(updatedCall, awaitItem())
             awaitComplete()
         }
-        coVerify {
+        verify {
             arrangement.callRepository.observeLastCallIfActiveByConversationId(establishedCall.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
@@ -122,7 +124,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             assertEquals(updatedCall, awaitItem())
             awaitComplete()
         }
-        coVerify {
+        verify {
             arrangement.callRepository.observeLastCallIfActiveByConversationId(establishedCall.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
@@ -143,8 +145,8 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
                 callingParticipantsOrder.reorderItems(any())
             }.returns(result)
         }
-        suspend fun withObserveLastCallIfActiveByConversationIdReturning(result: Flow<Call?>) = apply {
-            coEvery {
+        fun withObserveLastCallIfActiveByConversationIdReturning(result: Flow<Call?>) = apply {
+            every {
                 callRepository.observeLastCallIfActiveByConversationId(any())
             }.returns(result)
         }
