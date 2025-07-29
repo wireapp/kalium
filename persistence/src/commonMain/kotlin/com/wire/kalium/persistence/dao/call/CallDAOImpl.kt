@@ -60,6 +60,7 @@ internal object CallMapper {
     )
 }
 
+@Suppress("TooManyFunctions")
 internal class CallDAOImpl(
     private val callsQueries: CallsQueries,
     private val queriesContext: CoroutineContext,
