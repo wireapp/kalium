@@ -81,6 +81,8 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
           target: ${{ steps.avd-info.outputs.target }}
+          profile: Nexus 6
+          emulator-build: 7425822
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
