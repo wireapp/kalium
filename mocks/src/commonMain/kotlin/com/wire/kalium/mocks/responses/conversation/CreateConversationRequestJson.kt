@@ -42,7 +42,8 @@ object CreateConversationRequestJson {
         protocol = ConvProtocol.PROTEUS,
         creatorClient = null,
         groupConversationType = GroupConversationType.CHANNEL,
-        cellEnabled = null
+        cellEnabled = null,
+        skipCreator = false,
     )
 
     val v0 = ValidJsonProvider(

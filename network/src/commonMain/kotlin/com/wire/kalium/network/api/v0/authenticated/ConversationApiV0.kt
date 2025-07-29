@@ -405,7 +405,7 @@ internal open class ConversationApiV0 internal constructor(
     )
 
     override suspend fun resetMlsConversation(groupId: String, epoch: ULong): NetworkResponse<Unit> = NetworkResponse.Error(
-        APINotSupported("resetMlsConversation api is only available on API V9")
+        APINotSupported("resetMlsConversation api is only available on API V10")
     )
 
     protected companion object {

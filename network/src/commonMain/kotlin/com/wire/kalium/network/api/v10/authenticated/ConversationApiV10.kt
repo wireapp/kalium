@@ -19,8 +19,47 @@
 package com.wire.kalium.network.api.v10.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV10
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.ResetMLSConversationRequestV9
+import com.wire.kalium.network.api.model.ApiModelMapper
+import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.v9.authenticated.ConversationApiV9
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class ConversationApiV10 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : ConversationApiV9(authenticatedNetworkClient)
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl(),
+) : ConversationApiV9(authenticatedNetworkClient) {
+
+    override suspend fun createNewConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV10> {
+        httpClient.post(PATH_CONVERSATIONS) {
+            setBody(apiModelMapper.toApiV10(createConversationRequest))
+        }
+    }.mapSuccess { conversationResponseV10 ->
+        apiModelMapper.fromApiV10(conversationResponseV10)
+    }
+
+    override suspend fun resetMlsConversation(groupId: String, epoch: ULong): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post("$PATH_MLS/$PATH_RESET_CONVERSATION") {
+            setBody(
+                ResetMLSConversationRequestV9(
+                    epoch = epoch,
+                    groupId = groupId
+                )
+            )
+        }
+    }
+
+    private companion object {
+        const val PATH_MLS = "mls"
+        private const val PATH_RESET_CONVERSATION = "reset-conversation"
+    }
+}
