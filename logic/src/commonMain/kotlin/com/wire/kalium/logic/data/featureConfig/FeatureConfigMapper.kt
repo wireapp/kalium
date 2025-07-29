@@ -71,7 +71,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 e2EIModel = fromDTO(mlsE2EI),
                 mlsMigrationModel = mlsMigration?.let { fromDTO(it) },
                 channelsModel = fromDTO(channels),
-                asyncNotificationsModel = asyncNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) }
+                consumableNotifications = consumableNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) }
             )
         }
 

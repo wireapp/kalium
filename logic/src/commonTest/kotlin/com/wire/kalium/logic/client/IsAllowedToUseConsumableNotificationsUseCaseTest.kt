@@ -26,7 +26,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class IsAllowedToUseAsyncNotificationsUseCaseTest {
+class IsAllowedToUseConsumableNotificationsUseCaseTest {
 
     @Test
     fun givenAllowedByFeatureFlagAndBE_whenChecking_thenReturnTrue() = runTest {

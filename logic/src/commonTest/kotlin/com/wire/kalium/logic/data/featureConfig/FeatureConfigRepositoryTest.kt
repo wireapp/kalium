@@ -179,7 +179,7 @@ class FeatureConfigRepositoryTest {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
-            FeatureConfigData.AsyncNotifications(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)
