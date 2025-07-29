@@ -73,7 +73,8 @@ object CreateConversationRequestJson {
         |   "team": {
         |       "managed": false,
         |       "teamid": "${it.convTeamInfo?.teamId}"
-        |   }
+        |   },
+        |   "skip_creator": ${it.skipCreator}
         |}
         """.trimMargin()
     }
