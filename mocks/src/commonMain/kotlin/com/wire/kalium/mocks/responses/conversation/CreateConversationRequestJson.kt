@@ -141,7 +141,11 @@ object CreateConversationRequestJson {
         """.trimMargin()
     }
 
-    fun v10() = ValidJsonProvider(createConversationRequest) {
+    fun v10() = ValidJsonProvider(
+        createConversationRequest.copy(
+            skipCreator = false
+        )
+    ) {
         """
         |{
         |   "qualified_users": [
