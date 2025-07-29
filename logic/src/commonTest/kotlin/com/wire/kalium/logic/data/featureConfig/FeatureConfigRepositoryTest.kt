@@ -90,7 +90,7 @@ class FeatureConfigRepositoryTest {
                 Status.ENABLED
             ),
             channelsModel = ChannelFeatureConfiguration.Disabled,
-            asyncNotificationsModel = ConfigsStatusModel(Status.DISABLED)
+            consumableNotificationsModel = ConfigsStatusModel(Status.DISABLED)
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
