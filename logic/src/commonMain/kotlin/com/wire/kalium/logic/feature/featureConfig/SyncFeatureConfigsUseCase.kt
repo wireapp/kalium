@@ -80,7 +80,11 @@ internal class SyncFeatureConfigsUseCaseImpl(
             it.e2EIModel.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
             appLockConfigHandler.handle(it.appLockModel)
             channelsConfigHandler.handle(it.channelsModel)
-            it.consumableNotifications?.let { consumableNotifications -> consumableNotificationsConfigHandler.handle(consumableNotifications) }
+            it.consumableNotificationsModel?.let { consumableNotificationsModel ->
+                consumableNotificationsConfigHandler.handle(
+                    consumableNotificationsModel
+                )
+            }
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
