@@ -39,7 +39,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -82,7 +81,6 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -393,7 +391,7 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenProteusConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
+    fun givenProteusConversation_WhenDeletingTheConversationLocally_ThenShouldCallProperUseCaseAndSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withGetConversationProtocolInfoReturns(PROTEUS_PROTOCOL_INFO)
             .withSuccessfulConversationDeletion()
@@ -405,6 +403,23 @@ class ConversationRepositoryTest {
         with(arrangement) {
             coVerify {
                 conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
+            }.wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenProteusConversation_WhenMarkingAsDeletedLocally_ThenShouldCallProperUseCaseAndSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withGetConversationProtocolInfoReturns(PROTEUS_PROTOCOL_INFO)
+            .withSuccessfulMarkAsDeletedLocally()
+            .arrange()
+        val conversationId = ConversationId("conv_id", "conv_domain")
+
+        conversationRepository.markConversationAsDeletedLocally(conversationId).shouldSucceed()
+
+        with(arrangement) {
+            coVerify {
+                conversationDAO.markConversationAsDeletedLocally(eq(conversationId.toDao()))
             }.wasInvoked(once)
         }
     }
@@ -1300,7 +1315,13 @@ class ConversationRepositoryTest {
         suspend fun withSuccessfulConversationDeletion() = apply {
             coEvery {
                 conversationDAO.deleteConversationByQualifiedID(any())
-            }.returns(Unit)
+            }.returns(true)
+        }
+
+        suspend fun withSuccessfulMarkAsDeletedLocally() = apply {
+            coEvery {
+                conversationDAO.markConversationAsDeletedLocally(any())
+            }.returns(true)
         }
 
         suspend fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {
