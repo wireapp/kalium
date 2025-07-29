@@ -85,7 +85,7 @@ jobs:
           ram-size: 4096M
           heap-size: 2048M
           disable-animations: true
-          script: ./gradlew connectedAndroidOnlyAffectedTest
+          script: ./gradlew connectedAndroidOnlyAffectedTest --info
 
       - name: Archive Test Reports
         if: always()
