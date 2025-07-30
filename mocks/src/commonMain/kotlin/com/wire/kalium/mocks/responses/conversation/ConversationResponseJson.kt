@@ -203,7 +203,9 @@ private fun JsonObjectBuilder.putConversation(
     putQualifiedId(conversationResponse.id)
     conversationResponse.groupId?.let { put("group_id", it) }
     putJsonObject("members") {
-        putSelfMember(conversationResponse.members.self)
+        conversationResponse.members.self?.let { selfMember ->
+            putSelfMember(selfMember)
+        }
         putJsonArray("others") {
             conversationResponse.members.otherMembers.forEach { otherMember ->
                 addJsonObject {
@@ -235,7 +237,9 @@ private fun JsonObjectBuilder.putConversationV8(
     putQualifiedId(conversationResponse.id)
     conversationResponse.groupId?.let { put("group_id", it) }
     putJsonObject("members") {
-        putSelfMember(conversationResponse.members.self)
+        conversationResponse.members.self?.let { selfMember ->
+            putSelfMember(selfMember)
+        }
         putJsonArray("others") {
             conversationResponse.members.otherMembers.forEach { otherMember ->
                 addJsonObject {
