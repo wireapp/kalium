@@ -29,7 +29,8 @@ data class CreateConversationParam(
     val protocol: Protocol = Protocol.PROTEUS,
     val creatorClientId: ClientId? = null,
     val groupType: GroupType = GroupType.REGULAR_GROUP,
-    val channelAddPermission: ChannelAddPermission = ChannelAddPermission.ADMINS
+    val channelAddPermission: ChannelAddPermission = ChannelAddPermission.ADMINS,
+    val skipCreator: Boolean = false,
 ) {
     enum class Protocol {
         PROTEUS, MLS;
