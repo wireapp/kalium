@@ -55,16 +55,6 @@ internal class FetchConversationUseCaseImpl(
             }
     }
 
-    override suspend fun fetchWithTransaction(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return transactionProvider.transaction { transaction ->
-            conversationRepository.fetchConversation(conversationId)
-                .flatMap {
-                    persistConversations(
-                        transaction,
-                        listOf(it),
-                        invalidateMembers = true
-                    )
-                }
-        }
-    }
+    override suspend fun fetchWithTransaction(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        transactionProvider.transaction { invoke(it, conversationId) }
 }
