@@ -73,7 +73,7 @@ class MemberMapperTest {
         val result = memberMapper.fromApiModel(membersResponse)
 
         assertEquals(otherID, result.otherMembers.first().id)
-        assertEquals(selfID, result.self.id)
+        assertEquals(selfID, result.self?.id)
         assertEquals(OTHER_MEMBER.role, result.otherMembers.first().role)
     }
 
