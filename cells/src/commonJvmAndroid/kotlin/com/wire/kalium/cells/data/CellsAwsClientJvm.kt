@@ -28,7 +28,7 @@ import aws.sdk.kotlin.services.s3.putObject
 import aws.sdk.kotlin.services.s3.uploadPart
 import aws.sdk.kotlin.services.s3.withConfig
 import aws.smithy.kotlin.runtime.content.ByteStream
-import aws.smithy.kotlin.runtime.content.asByteStream
+import aws.smithy.kotlin.runtime.content.fromFile
 import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.wire.kalium.cells.data.model.CellNodeDTO
@@ -68,7 +68,7 @@ private class CellsAwsClientJvm(
     private fun buildS3Client() = with(credentials) {
         S3Client {
             region = DEFAULT_REGION
-            enableAwsChunked = false
+            enableAwsChunked = true
             endpointUrl = Url.parse(this@with?.serverUrl ?: "")
             credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
         }
@@ -106,7 +106,8 @@ private class CellsAwsClientJvm(
                 bucket = DEFAULT_BUCKET_NAME
                 key = node.path
                 metadata = node.createDraftNodeMetaData()
-                body = path.toFile().asByteStream()
+                body = ByteStream.fromFile(path.toFile())
+                contentLength = path.toFile().length()
             }
         }
     }
@@ -179,6 +180,7 @@ private class CellsAwsClientJvm(
             if (uploadProgressListener != null) {
                 Header.TARGET_PATH
                 interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
+                interceptors.add(RemoveExpectInterceptor())
             }
             if (downloadProgressListener != null) {
                 interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
