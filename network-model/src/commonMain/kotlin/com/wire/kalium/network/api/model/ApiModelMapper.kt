@@ -29,6 +29,8 @@ import com.wire.kalium.network.api.authenticated.conversation.CreateConversation
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV8
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTOV10
 
 /**
  * Mapping between the base API model and the versioned API models.
@@ -41,6 +43,7 @@ interface ApiModelMapper {
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
+    fun fromApiV10(response: DomainRegistrationDTOV10): DomainRegistrationDTO
 
     /**
      * Forcing new clients using >= v9 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
@@ -187,4 +190,13 @@ class ApiModelMapperImpl : ApiModelMapper {
             cookieLabel = request.cookieLabel,
             secondFactorVerificationCode = request.secondFactorVerificationCode
         )
+
+    override fun fromApiV10(response: DomainRegistrationDTOV10): DomainRegistrationDTO {
+        return DomainRegistrationDTO(
+            backendUrl = response.backend?.configUrl,
+            domainRedirect = response.domainRedirect,
+            ssoCode = response.ssoCode,
+            dueToExistingAccount = response.dueToExistingAccount
+        )
+    }
 }
