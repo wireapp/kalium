@@ -941,10 +941,11 @@ class UserSessionScope internal constructor(
             persistConversations = persistConversationsUseCase
         )
 
-    private val fetchConversationUseCase: FetchConversationUseCase
+    val fetchConversationUseCase: FetchConversationUseCase
         get() = FetchConversationUseCaseImpl(
             conversationRepository = conversationRepository,
-            persistConversations = persistConversationsUseCase
+            persistConversations = persistConversationsUseCase,
+            transactionProvider = cryptoTransactionProvider,
         )
 
     private val fetchConversationIfUnknownUseCase: FetchConversationIfUnknownUseCase
