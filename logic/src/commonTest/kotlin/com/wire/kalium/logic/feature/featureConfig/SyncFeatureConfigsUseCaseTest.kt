@@ -40,7 +40,7 @@ import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTim
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.AsyncNotificationsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -849,7 +849,7 @@ class SyncFeatureConfigsUseCaseTest {
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
                 ChannelsFeatureConfigurationHandler(channelsConfigurationStorage),
-                AsyncNotificationsConfigHandler(userConfigRepository)
+                ConsumableNotificationsConfigHandler(userConfigRepository)
             )
             return this to syncFeatureConfigsUseCase
         }
