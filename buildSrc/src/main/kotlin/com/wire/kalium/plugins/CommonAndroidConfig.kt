@@ -64,6 +64,7 @@ fun LibraryExtension.commonAndroidLibConfig(
         jniLibs.pickFirsts.add("**/libsodium.so")
     }
 
+    testOptions.unitTests.all { it.enabled = false }
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))
 
