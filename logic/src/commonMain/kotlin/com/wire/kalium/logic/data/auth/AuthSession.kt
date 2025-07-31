@@ -69,7 +69,7 @@ data class AccountTokens(
     constructor(
         userId: UserId,
         accessToken: String,
-        refreshToken: String?,
+        refreshToken: String,
         tokenType: String,
         cookieLabel: String?
     ) : this(userId, AccessToken(accessToken, tokenType), RefreshToken(refreshToken), cookieLabel)

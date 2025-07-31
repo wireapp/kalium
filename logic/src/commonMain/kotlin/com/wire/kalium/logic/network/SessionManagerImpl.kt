@@ -88,7 +88,7 @@ class SessionManagerImpl internal constructor(
 
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
-        oldRefreshToken: String?
+        oldRefreshToken: String
     ): SessionDTO {
         val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {

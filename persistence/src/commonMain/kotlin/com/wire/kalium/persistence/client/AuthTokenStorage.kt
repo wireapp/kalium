@@ -28,7 +28,7 @@ import kotlinx.serialization.Serializable
 data class AuthTokenEntity(
     @SerialName("user_id") val userId: UserIDEntity,
     @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String?,
+    @SerialName("refresh_token") val refreshToken: String,
     @SerialName("token_type") val tokenType: String,
     @SerialName("cookie_label") val cookieLabel: String?
 )

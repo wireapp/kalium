@@ -48,7 +48,7 @@ internal interface AccessTokenRepository {
      * @return Either a [CoreFailure] or the new access token.
      */
     suspend fun getNewAccessToken(
-        refreshToken: String?,
+        refreshToken: String,
         clientId: String? = null
     ): Either<NetworkFailure, AccessTokenRefreshResult>
 
@@ -72,7 +72,7 @@ internal class AccessTokenRepositoryImpl(
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : AccessTokenRepository {
     override suspend fun getNewAccessToken(
-        refreshToken: String?,
+        refreshToken: String,
         clientId: String?
     ): Either<NetworkFailure, AccessTokenRefreshResult> = wrapApiRequest {
         accessTokenApi.getToken(refreshToken, clientId)

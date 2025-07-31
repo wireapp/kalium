@@ -36,4 +36,4 @@ data class AccessToken(
 )
 
 @JvmInline
-value class RefreshToken(val value: String?)
+value class RefreshToken(val value: String)

@@ -22,7 +22,7 @@ data class SessionDTO(
     val userId: QualifiedID,
     val tokenType: String,
     val accessToken: String,
-    val refreshToken: String?,
+    val refreshToken: String,
     val cookieLabel: String?
 )
 

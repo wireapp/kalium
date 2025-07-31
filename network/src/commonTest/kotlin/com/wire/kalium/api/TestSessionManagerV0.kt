@@ -33,7 +33,7 @@ class TestSessionManagerV0 : SessionManager {
     override fun serverConfig(): ServerConfigDTO = serverConfig
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
-        oldRefreshToken: String?
+        oldRefreshToken: String
     ): SessionDTO {
         TODO("Not yet implemented")
     }

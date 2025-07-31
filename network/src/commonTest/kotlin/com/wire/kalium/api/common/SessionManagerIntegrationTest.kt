@@ -72,7 +72,7 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldRefreshToken = oldTokens!!.refreshToken
+                oldRefreshToken = oldTokens!!.refreshToken ?: error("Old refresh token is null!")
             )
             newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
@@ -118,7 +118,7 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldRefreshToken = oldTokens!!.refreshToken
+                oldRefreshToken = oldTokens!!.refreshToken ?: error("Old refresh token is null!")
             )
             newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
@@ -156,7 +156,7 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 AccessTokenApiV0(client),
-                oldTokens!!.refreshToken
+                oldTokens!!.refreshToken ?: error("Old refresh token is null!")
             )
             newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
@@ -249,7 +249,7 @@ class SessionManagerIntegrationTest {
         override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
         override suspend fun updateToken(
             accessTokenApi: AccessTokenApi,
-            oldRefreshToken: String?
+            oldRefreshToken: String
         ): SessionDTO = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
 
         override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")
