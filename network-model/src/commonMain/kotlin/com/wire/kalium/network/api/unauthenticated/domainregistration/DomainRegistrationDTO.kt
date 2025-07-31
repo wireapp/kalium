@@ -33,6 +33,26 @@ data class DomainRegistrationDTO(
 )
 
 @Serializable
+data class DomainRegistrationDTOV10(
+    @SerialName("backend")
+    val backend: Backend?,
+    @SerialName("domain_redirect")
+    val domainRedirect: DomainRedirect,
+    @SerialName("sso_code")
+    val ssoCode: String?,
+    @SerialName("due_to_existing_account")
+    val dueToExistingAccount: Boolean?
+)
+
+@Serializable
+data class Backend(
+    @SerialName("config_url")
+    val configUrl: String,
+    @SerialName("webapp_url")
+    val webappUrl: String?
+)
+
+@Serializable
 enum class DomainRedirect {
     @SerialName("none")
     NONE,

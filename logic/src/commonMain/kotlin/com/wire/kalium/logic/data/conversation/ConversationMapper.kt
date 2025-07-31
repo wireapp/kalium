@@ -133,8 +133,8 @@ internal class ConversationMapperImpl(
             type = type,
             teamId = apiModel.teamId,
             protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
-            mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
-            mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+            mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self?.otrMutedStatus),
+            mutedTime = apiModel.members.self?.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
             removedBy = null,
             creatorId = apiModel.creator ?: selfUserId.value, // NOTE mls 1-1 does not have the creator field set.
             lastReadDate = Instant.UNIX_FIRST_DATE,
@@ -147,8 +147,8 @@ internal class ConversationMapperImpl(
             messageTimer = apiModel.messageTimer,
             userMessageTimer = null, // user picked self deletion timer is only persisted locally
             hasIncompleteMetadata = false,
-            archived = apiModel.members.self.otrArchived ?: false,
-            archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
+            archived = apiModel.members.self?.otrArchived ?: false,
+            archivedInstant = apiModel.members.self?.otrArchivedRef?.toInstant(),
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
@@ -432,6 +432,7 @@ internal class ConversationMapperImpl(
         groupConversationType = options.groupType.toApiModel(),
         channelAddPermissionTypeDTO = options.channelAddPermission.toApi(),
         cellEnabled = options.wireCellEnabled,
+        skipCreator = options.skipCreator,
     )
 
     private fun CreateConversationParam.GroupType.toApiModel(): GroupConversationType = when (this) {
