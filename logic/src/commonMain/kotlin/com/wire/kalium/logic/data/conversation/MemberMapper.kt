@@ -46,8 +46,8 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
         Conversation.Member(conversationMember.id.toModel(), roleMapper.fromApi(conversationMember.conversationRole))
 
     override fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
-        val self = with(conversationMembersResponse.self) {
-            Conversation.Member(id.toModel(), roleMapper.fromApi(conversationRole))
+        val self = conversationMembersResponse.self?.let { selfUser ->
+            Conversation.Member(selfUser.id.toModel(), roleMapper.fromApi(selfUser.conversationRole))
         }
         val others = conversationMembersResponse.otherMembers.map { member ->
             Conversation.Member(member.id.toModel(), roleMapper.fromApi(member.conversationRole))
@@ -59,10 +59,14 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
         val otherMembers = conversationMembersResponse.otherMembers.map { member ->
             MemberEntity(member.id.toDao(), roleMapper.fromApiModelToDaoModel(member.conversationRole))
         }
-        val selfMember = with(conversationMembersResponse.self) {
-            MemberEntity(id.toDao(), roleMapper.fromApiModelToDaoModel(conversationRole))
-        }
-        return otherMembers + selfMember
+
+        return conversationMembersResponse.self?.let { selfUser ->
+            val selfMember = MemberEntity(
+                selfUser.id.toDao(),
+                roleMapper.fromApiModelToDaoModel(selfUser.conversationRole)
+            )
+            otherMembers + selfMember
+        } ?: otherMembers
     }
 
     override fun toDaoModel(member: Conversation.Member): MemberEntity = with(member) {

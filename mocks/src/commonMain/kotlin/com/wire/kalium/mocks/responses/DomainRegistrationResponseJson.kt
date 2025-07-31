@@ -18,12 +18,36 @@
 package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.unauthenticated.domainregistration.Backend
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTOV10
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 object DomainRegistrationResponseJson {
+
+    val successV10 = ValidJsonProvider(
+        serializableData = DomainRegistrationDTOV10(
+            backend = Backend("https://example.com", "https://webapp.example.com"),
+            domainRedirect = DomainRedirect.NONE,
+            ssoCode = "sso-code",
+            dueToExistingAccount = false
+        ),
+        jsonProvider = { serializable ->
+            """
+            {
+                "backend": {
+                    "config_url": "${serializable.backend?.configUrl}",
+                    "webapp_url": "${serializable.backend?.webappUrl}"
+                },
+                "domain_redirect": "${serializable.domainRedirect}",
+                "sso_code": "${serializable.ssoCode}",
+                "due_to_existing_account": ${serializable.dueToExistingAccount}
+            }
+            """.trimIndent()
+        }
+    )
 
     val success = ValidJsonProvider(
         serializableData = DomainRegistrationDTO(

@@ -27,6 +27,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -165,9 +166,11 @@ class MLSClientTest : BaseMLSClientTest() {
         val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
         val applicationMessage = aliceClient.transaction { it.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray()) }
-        val plainMessage = bobClient.transaction { it.decryptMessage(welcomeBundle.groupId, applicationMessage).first().message }
+        val bundle = bobClient.transaction { it.decryptMessage(welcomeBundle.groupId, applicationMessage).first() }
 
-        assertEquals(PLAIN_TEXT, plainMessage?.decodeToString())
+        assertNotNull(bundle.senderClientId)
+        assertEquals(PLAIN_TEXT, bundle.message?.decodeToString())
+
     }
 
     @Test
@@ -417,6 +420,35 @@ class MLSClientTest : BaseMLSClientTest() {
             2UL,
             epoch.second,
             "Epoch should be incremented after processing the 'addCarol' and 'removeCarol' commit."
+        )
+    }
+
+    @Test
+    fun givenDestroyedMLSClient_whenCallingTransaction_shouldReturnClientRemoved() = runTest {
+        val arrangement = create(
+            ALICE1,
+            ::createMLSClient
+        )
+
+        val client = arrangement.mlsClient
+
+        client.close()
+
+        val result = runCatching {
+            client.transaction {
+                it.generateKeyPackages(2)
+            }
+        }
+
+        assertTrue(
+            result.isFailure,
+            "Transaction on destroyed client should fail."
+        )
+
+        val exception = result.exceptionOrNull()
+        assertTrue(
+            exception is IllegalStateException && exception.message?.contains("destroyed") == true,
+            "Expected exception about destroyed client, got: ${exception?.message}"
         )
     }
 

@@ -24,11 +24,11 @@ import io.mockative.Mockable
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val SupportedApiVersions: Set<Int> = setOf(0, 1, 2, 4, 5, 6, 7, 8, 9)
+val SupportedApiVersions: Set<Int> = setOf(0, 1, 2, 4, 5, 6, 7, 8, 9, 10)
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val DevelopmentApiVersions: Set<Int> = setOf(10)
+val DevelopmentApiVersions: Set<Int> = setOf()
 
 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to
 // bump API version and generate all needed classes

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
-import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -28,13 +28,13 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -52,44 +52,45 @@ class FeatureConfigRepositoryTest {
     fun whenFeatureConfigSuccess_thenTheSuccessIsReturned() = runTest {
         // Given
         val featureConfigModel = FeatureConfigModel(
-            AppLockModel(
+            appLockModel = AppLockModel(
                 status = Status.ENABLED,
                 inactivityTimeoutSecs = 0
             ),
-            ClassifiedDomainsModel(
+            classifiedDomainsModel = ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
                 Status.ENABLED
             ),
-            ConferenceCallingModel(Status.ENABLED, false),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            SelfDeletingMessagesModel(
+            conferenceCallingModel = ConferenceCallingModel(Status.ENABLED, false),
+            conversationGuestLinksModel = ConfigsStatusModel(Status.ENABLED),
+            digitalSignaturesModel = ConfigsStatusModel(Status.ENABLED),
+            fileSharingModel = ConfigsStatusModel(Status.ENABLED),
+            guestRoomLinkModel = ConfigsStatusModel(Status.ENABLED),
+            legalHoldModel = ConfigsStatusModel(Status.ENABLED),
+            searchVisibilityModel = ConfigsStatusModel(Status.ENABLED),
+            selfDeletingMessagesModel = SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
                 Status.ENABLED
             ),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED),
-            MLSModel(
+            secondFactorPasswordChallengeModel = ConfigsStatusModel(Status.ENABLED),
+            ssoModel = ConfigsStatusModel(Status.ENABLED),
+            validateSAMLEmailsModel = ConfigsStatusModel(Status.ENABLED),
+            mlsModel = MLSModel(
                 defaultProtocol = SupportedProtocol.PROTEUS,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS),
                 status = Status.ENABLED,
                 supportedCipherSuite = null
             ),
-            E2EIModel(
+            e2EIModel = E2EIModel(
                 E2EIConfigModel("url", 1000000L, false, null),
                 Status.ENABLED
             ),
-            MLSMigrationModel(
+            mlsMigrationModel = MLSMigrationModel(
                 Instant.DISTANT_FUTURE,
                 Instant.DISTANT_FUTURE,
                 Status.ENABLED
             ),
-            ChannelFeatureConfiguration.Disabled
+            channelsModel = ChannelFeatureConfiguration.Disabled,
+            consumableNotificationsModel = ConfigsStatusModel(Status.DISABLED)
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -178,6 +179,7 @@ class FeatureConfigRepositoryTest {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

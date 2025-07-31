@@ -35,7 +35,11 @@ internal object MLSMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
         return when (failure) {
             // Received messages targeting a future epoch (outside epoch bounds), we might have lost messages.
-            is MLSFailure.WrongEpoch -> MLSMessageFailureResolution.OutOfSync
+            is MLSFailure.WrongEpoch,
+            is MLSFailure.InvalidGroupId -> MLSMessageFailureResolution.OutOfSync
+
+            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
+            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
 
             is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
             is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
@@ -80,6 +84,7 @@ internal object MLSMessageFailureHandler {
             is ProteusFailure,
             StorageFailure.DataNotFound,
             is StorageFailure.Generic,
+            is MLSFailure.InvalidGroupId,
             is CoreFailure.Unknown -> MLSMessageFailureResolution.InformUser
         }
     }

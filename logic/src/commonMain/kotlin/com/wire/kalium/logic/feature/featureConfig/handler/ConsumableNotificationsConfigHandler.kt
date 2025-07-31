@@ -15,24 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.client
+package com.wire.kalium.logic.feature.featureConfig.handler
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.Mockable
+import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.Status
 
 /**
- * This use case is responsible for determining if the client is allowed to use async notifications.
- * This by feature flag and backend current API version.
+ * Consumable Notifications Config Handler aka. Async Notifications.
  */
-@Mockable
-interface IsAllowedToUseAsyncNotificationsUseCase {
-    suspend operator fun invoke(): Boolean
-}
-
-internal class IsAllowedToUseAsyncNotificationsUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository,
-    private val isAllowedByCurrentBackendVersionProvider: () -> Boolean
-) : IsAllowedToUseAsyncNotificationsUseCase {
-    override suspend fun invoke(): Boolean =
-        userConfigRepository.isAsyncNotificationsEnabled() && isAllowedByCurrentBackendVersionProvider.invoke()
+class ConsumableNotificationsConfigHandler(
+    private val userConfigRepository: UserConfigRepository
+) {
+    suspend fun handle(consumableNotificationsConfigModel: ConfigsStatusModel): Either<CoreFailure, Unit> {
+        val isAsyncNotificationsEnabled = consumableNotificationsConfigModel.status == Status.ENABLED
+        return userConfigRepository.setAsyncNotificationsEnabled(isAsyncNotificationsEnabled)
+    }
 }

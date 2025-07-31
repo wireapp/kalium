@@ -17,7 +17,11 @@
  */
 package com.wire.kalium.logic.client
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
+import io.mockative.coEvery
+import io.mockative.mock
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -25,11 +29,10 @@ import kotlin.test.assertTrue
 class IsAllowedToUseAsyncNotificationsUseCaseTest {
 
     @Test
-    fun givenAllowedByFeatureFlagAndBE_whenChecking_thenReturnTrue() {
-        val sut = IsAllowedToUseAsyncNotificationsUseCaseImpl(
-            isAllowedByFeatureFlag = true,
-            isAllowedByCurrentBackendVersionProvider = { true }
-        )
+    fun givenAllowedByFeatureFlagAndBE_whenChecking_thenReturnTrue() = runTest {
+        val (_, sut) = Arrangement()
+            .withAsyncNotificationsEnabled(isEnabled = true)
+            .arrange(isAllowedByApiVersion = true)
 
         val result = sut()
 
@@ -37,11 +40,10 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
     }
 
     @Test
-    fun givenAllowedByFeatureFlagButNotFromBE_whenChecking_thenReturnFalse() {
-        val sut = IsAllowedToUseAsyncNotificationsUseCaseImpl(
-            isAllowedByFeatureFlag = true,
-            isAllowedByCurrentBackendVersionProvider = { false }
-        )
+    fun givenAllowedByFeatureFlagButNotFromBE_whenChecking_thenReturnFalse() = runTest {
+        val (_, sut) = Arrangement()
+            .withAsyncNotificationsEnabled(isEnabled = true)
+            .arrange(isAllowedByApiVersion = false)
 
         val result = sut()
 
@@ -49,14 +51,27 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
     }
 
     @Test
-    fun givenNOTAllowedByFeatureFlag_whenChecking_thenReturnFalse() {
-        val sut = IsAllowedToUseAsyncNotificationsUseCaseImpl(
-            isAllowedByFeatureFlag = false,
-            isAllowedByCurrentBackendVersionProvider = { true }
-        )
+    fun givenNOTAllowedByTeamFeatureFlag_whenChecking_thenReturnFalse() = runTest {
+        val (_, sut) = Arrangement()
+            .withAsyncNotificationsEnabled(isEnabled = false)
+            .arrange(isAllowedByApiVersion = true)
 
         val result = sut()
 
         assertFalse(result)
+    }
+
+    private class Arrangement {
+
+        private val userConfigRepository = mock(UserConfigRepository::class)
+
+        suspend fun withAsyncNotificationsEnabled(isEnabled: Boolean = false) = apply {
+            coEvery { userConfigRepository.isAsyncNotificationsEnabled() }.returns(isEnabled)
+        }
+
+        fun arrange(isAllowedByApiVersion: Boolean) = this to IsAllowedToUseAsyncNotificationsUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+            isAllowedByCurrentBackendVersionProvider = { isAllowedByApiVersion }
+        )
     }
 }

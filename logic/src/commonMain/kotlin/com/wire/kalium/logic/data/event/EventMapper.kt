@@ -570,6 +570,7 @@ class EventMapper(
         )
 
         // These features are NOT received through events. As FeatureConfig Events are deprecated
+        is FeatureConfigData.ConsumableNotifications,
         is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,
         is FeatureConfigData.Legalhold,
