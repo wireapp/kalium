@@ -35,6 +35,11 @@ kaliumLibrary {
 }
 
 kotlin {
+    iosX64 {
+        binaries.all {
+            linkerOpts("-framework", "Security")
+        }
+    }
     iosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")

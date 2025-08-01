@@ -77,7 +77,7 @@ class MLSClientTest : BaseMLSClientTest() {
         assertEquals(0UL, arrangement.mlsClient.transaction { it.conversationEpoch(MLS_CONVERSATION_ID) })
     }
 
-    // TODO figure out why this test crashes on iosSimulatorArm64
+    // TODO figure out why this test crashes on iosX64
     @IgnoreIOS
     @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() = runTest {
