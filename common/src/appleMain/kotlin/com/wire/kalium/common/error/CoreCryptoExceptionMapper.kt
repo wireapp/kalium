@@ -17,10 +17,4 @@
  */
 package com.wire.kalium.common.error
 
-import com.wire.crypto.CryptoException
-
-actual fun mapMLSException(exception: Exception): MLSFailure =
-    when (exception) {
-        is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
-        else -> MLSFailure.Generic(exception)
-    }
+actual fun mapMLSException(exception: Exception): MLSFailure = MLSFailure.Generic(exception)
