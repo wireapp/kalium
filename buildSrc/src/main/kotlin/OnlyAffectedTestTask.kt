@@ -72,7 +72,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
         val tasksName = mutableListOf<String>()
         val hasToRunAllTests = hasToRunAllTests()
         project.childProjects.values
-            .filter { computeModulesPredicate(hasToRunAllTests, affectedModules.contains(it.name) && !ignoredModules.contains(it.name)) }
+            .filter { (hasToRunAllTests || affectedModules.contains(it.name)) && !ignoredModules.contains(it.name) }
             .forEach { childProject ->
                 tasksName.addAll(childProject.tasks
                     .filter { it.name.equals(configuration.testTarget, true) }
@@ -94,11 +94,6 @@ open class OnlyAffectedTestTask : DefaultTask() {
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
-
-    /**
-     * Get the predicate to compute if the module should be included or not in the test
-     */
-    private fun computeModulesPredicate(allTests: Boolean, modulesPredicate: Boolean) = allTests || modulesPredicate
 
     /**
      * Check if we have to run all tests, by looking at untracked by dag-command files [globalBuildSettingsFiles].
