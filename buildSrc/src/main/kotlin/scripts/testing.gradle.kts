@@ -20,9 +20,9 @@ package scripts
 
 import OnlyAffectedTestTask
 
-OnlyAffectedTestTask.TestTaskConfiguration.values().forEach {
-    project.tasks.register(it.taskName, OnlyAffectedTestTask::class) {
-        configuration = it
-        ignoredModules = mutableListOf("android", "protobuf", "protobuf-codegen")
+OnlyAffectedTestTask.TestTaskConfiguration.values().forEach { taskConfiguration ->
+    project.tasks.register(taskConfiguration.taskName, OnlyAffectedTestTask::class) {
+        configuration = taskConfiguration
+        ignoredModules = taskConfiguration.ignoredModules
     }
 }
