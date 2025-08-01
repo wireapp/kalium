@@ -41,7 +41,8 @@ data class FeatureConfigModel(
     val mlsModel: MLSModel,
     val e2EIModel: E2EIModel,
     val mlsMigrationModel: MLSMigrationModel?,
-    val channelsModel: ChannelFeatureConfiguration
+    val channelsModel: ChannelFeatureConfiguration,
+    val consumableNotificationsModel: ConfigsStatusModel?
 )
 
 enum class Status {
@@ -106,6 +107,11 @@ data class E2EIConfigModel(
     val verificationExpirationSeconds: Long,
     val shouldUseProxy: Boolean,
     val crlProxy: String?,
+)
+
+data class AllowedGlobalOperationsModel(
+    val mlsConversationsReset: Boolean,
+    val status: Status,
 )
 
 @Serializable

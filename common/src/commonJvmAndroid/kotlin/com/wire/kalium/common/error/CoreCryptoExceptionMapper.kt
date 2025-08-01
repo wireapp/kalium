@@ -40,6 +40,8 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
                     MLSFailure.CommitForMissingProposal
                 } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
                     MLSFailure.ConversationNotFound
+                } else if (otherError.startsWith(INVALID_GROUP_ID)) {
+                    MLSFailure.InvalidGroupId
                 } else {
                     MLSFailure.Other
                 }
@@ -64,6 +66,8 @@ private fun mapMessageRejected(message: String): MLSFailure.MessageRejected {
         "mls-stale-message" -> MLSFailure.MessageRejected.MlsStaleMessage
         "mls-client-mismatch" -> MLSFailure.MessageRejected.MlsClientMismatch
         "mls-commit-missing-references" -> MLSFailure.MessageRejected.MlsCommitMissingReferences
+        "mls-invalid-leaf-node-index" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
+        "mls-invalid-leaf-node-signature" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
         else -> MLSFailure.MessageRejected.Other(reason = reason)
     }
 }
@@ -75,3 +79,4 @@ private fun containsMessageRejected(message: String): Boolean =
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
 private const val CONVERSATION_NOT_FOUND = "Couldn't find conversation"
+private const val INVALID_GROUP_ID = "Message group ID differs from the group's group ID"

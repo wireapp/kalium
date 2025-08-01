@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
@@ -56,7 +57,11 @@ import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegul
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCase
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCase
+import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
@@ -134,6 +139,7 @@ class ConversationScope internal constructor(
     private val deleteConversationUseCase: DeleteConversationUseCase,
     private val persistConversationsUseCase: PersistConversationsUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -208,7 +214,12 @@ class ConversationScope internal constructor(
         get() = CreateChannelUseCase(createGroupConversation)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository, refreshUsersWithoutMetadata)
+        get() = AddMemberToConversationUseCaseImpl(
+            conversationGroupRepository,
+            userRepository,
+            refreshUsersWithoutMetadata,
+            resetMLSConversationUseCase
+        )
 
     val addServiceToConversationUseCase: AddServiceToConversationUseCase
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
@@ -297,6 +308,9 @@ class ConversationScope internal constructor(
             selfConversationIdProvider,
             clearConversationAssetsLocally
         )
+
+    val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
+        get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
 
     val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
         get() = DeleteConversationLocallyUseCaseImpl(

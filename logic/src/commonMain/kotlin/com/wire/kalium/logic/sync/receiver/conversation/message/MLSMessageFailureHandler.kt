@@ -28,13 +28,21 @@ sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()
     data object InformUser : MLSMessageFailureResolution()
     data object OutOfSync : MLSMessageFailureResolution()
+    data object ResetConversation : MLSMessageFailureResolution()
 }
 
 internal object MLSMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
         return when (failure) {
             // Received messages targeting a future epoch (outside epoch bounds), we might have lost messages.
-            is MLSFailure.WrongEpoch -> MLSMessageFailureResolution.OutOfSync
+            is MLSFailure.WrongEpoch,
+            is MLSFailure.InvalidGroupId -> MLSMessageFailureResolution.OutOfSync
+
+            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
+            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
+
+            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
+            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
 
             // Received already sent or received message, can safely be ignored.
             is MLSFailure.DuplicateMessage,
@@ -76,6 +84,7 @@ internal object MLSMessageFailureHandler {
             is ProteusFailure,
             StorageFailure.DataNotFound,
             is StorageFailure.Generic,
+            is MLSFailure.InvalidGroupId,
             is CoreFailure.Unknown -> MLSMessageFailureResolution.InformUser
         }
     }

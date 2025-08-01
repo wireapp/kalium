@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -41,6 +42,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
@@ -456,6 +458,20 @@ sealed class Event(open val id: String) {
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
+
+        data class MLSReset(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val from: UserId,
+            val groupID: GroupID,
+            val newGroupID: GroupID? = null,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.MlsReset",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+            )
+        }
     }
 
     sealed class Team(
@@ -584,6 +600,18 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
                 "timeout" to model.inactivityTimeoutSecs
+            )
+        }
+
+        data class AllowedGlobalOperationsUpdated(
+            override val id: String,
+            val model: AllowedGlobalOperationsModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AllowedGlobalOperationsUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+                "mlsConversationReset" to model.mlsConversationsReset
             )
         }
 

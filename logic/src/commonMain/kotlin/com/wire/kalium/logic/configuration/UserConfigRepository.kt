@@ -48,9 +48,9 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
+import io.mockative.Mockable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -150,6 +150,10 @@ interface UserConfigRepository {
     suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setMlsConversationsResetEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isMlsConversationsResetEnabled(): Boolean
+    suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isAsyncNotificationsEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -226,6 +230,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun isMLSEnabled(): Either<StorageFailure, Boolean> = withContext(Dispatchers.IO) {
         wrapStorageRequest { userConfigStorage.isMLSEnabled() }
     }
+
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
@@ -549,4 +554,17 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun getNextTimeForCallFeedback() = wrapStorageRequest { userConfigDAO.getNextTimeForCallFeedback() }
 
     override suspend fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigDAO.getShouldFetchE2EITrustAnchorHasRun()
+    override suspend fun setMlsConversationsResetEnabled(enabled: Boolean) =
+        wrapStorageRequest {
+            userConfigDAO.setMlsConversationsResetEnabled(enabled)
+        }
+
+    override suspend fun isMlsConversationsResetEnabled(): Boolean = userConfigDAO.getMlsConversationsResetEnabled()
+
+    override suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setAsyncNotificationsEnabled(isAsyncNotificationsEnabled)
+        }
+
+    override suspend fun isAsyncNotificationsEnabled(): Boolean = userConfigDAO.getAsyncNotificationsEnabled()
 }

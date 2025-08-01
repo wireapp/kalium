@@ -21,14 +21,15 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOperationsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
@@ -172,6 +173,11 @@ class FeatureConfigMapperTest {
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.Channels(null, FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AllowedGlobalOperations(
+                AllowedGlobalOperationsConfigDTO(),
+                FeatureFlagStatusDTO.DISABLED
+            ),
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()

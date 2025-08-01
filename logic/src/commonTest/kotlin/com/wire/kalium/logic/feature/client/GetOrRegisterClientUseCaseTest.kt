@@ -58,7 +58,7 @@ class GetOrRegisterClientUseCaseTest {
             .withPersistHasConsumableNotifications(false)
             .arrange()
 
-        val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+        val result = useCase.invoke(RegisterClientParam("", listOf()))
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
@@ -90,7 +90,7 @@ class GetOrRegisterClientUseCaseTest {
             .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
             .arrange()
 
-        val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+        val result = useCase.invoke(RegisterClientParam("", listOf()))
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
@@ -133,7 +133,7 @@ class GetOrRegisterClientUseCaseTest {
             .withPersistClientIdResult(Either.Right(Unit))
             .arrange()
 
-        val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+        val result = useCase.invoke(RegisterClientParam("", listOf()))
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
@@ -163,7 +163,7 @@ class GetOrRegisterClientUseCaseTest {
             .withPersistHasConsumableNotifications(false)
             .arrange()
 
-        val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+        val result = useCase.invoke(RegisterClientParam("", listOf()))
 
         assertIs<RegisterClientResult.E2EICertificateRequired>(result)
         assertEquals(client, result.client)

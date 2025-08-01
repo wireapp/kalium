@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
+import com.wire.kalium.persistence.HistoryClient
 import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.Member
@@ -296,5 +297,10 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         asset_widthAdapter = IntColumnAdapter,
         asset_heightAdapter = IntColumnAdapter,
+    )
+
+    val historyClientAdapter = HistoryClient.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
     )
 }

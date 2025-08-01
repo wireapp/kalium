@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTim
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -66,6 +67,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.doesNothing
+import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -689,10 +691,61 @@ class SyncFeatureConfigsUseCaseTest {
         }
     }
 
+    @Test
+    fun givenAsyncNotificationsAreEnabled_whenSyncing_thenItShouldBeStoredCorrectlyAsEnabled() = runTest {
+        val expectedModel = ConfigsStatusModel(Status.ENABLED)
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(asyncNotificationsModel = expectedModel)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(true))
+        }
+    }
+
+    @Test
+    fun givenAsyncNotificationsAreDisabled_whenSyncing_thenItShouldBeStoredCorrectlyAsDisabled() = runTest {
+        val expectedModel = ConfigsStatusModel(Status.DISABLED)
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(asyncNotificationsModel = expectedModel)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(false))
+        }
+    }
+
+    @Test
+    fun givenAsyncNotificationsNotPresent_whenSyncing_thenItShouldNotBeCalled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(asyncNotificationsModel = null)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(any())
+        }.wasNotInvoked()
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
-    private class Arrangement(dispatcher: TestDispatcher): CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement(dispatcher: TestDispatcher) :
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         private val inMemoryStorage = inMemoryUserConfigStorage()
         private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
@@ -795,7 +848,8 @@ class SyncFeatureConfigsUseCaseTest {
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
-                ChannelsFeatureConfigurationHandler(channelsConfigurationStorage)
+                ChannelsFeatureConfigurationHandler(channelsConfigurationStorage),
+                ConsumableNotificationsConfigHandler(userConfigRepository)
             )
             return this to syncFeatureConfigsUseCase
         }

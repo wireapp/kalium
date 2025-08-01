@@ -227,7 +227,9 @@ interface ConversationRepository {
         message = "Calling this function directly does not support MLS conversations",
         replaceWith = ReplaceWith("com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase")
     )
-    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
+
+    suspend fun markConversationAsDeletedLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
     suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
@@ -349,6 +351,7 @@ interface ConversationRepository {
     suspend fun getConversationDetails(conversationID: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationIdsWithoutMetadata(): Either<CoreFailure, List<QualifiedID>>
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
+    suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
 }
 
 @OptIn(ConversationPersistenceApi::class)
@@ -761,6 +764,10 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
     }
 
+    override suspend fun markConversationAsDeletedLocally(conversationId: ConversationId) = wrapStorageRequest {
+        conversationDAO.markConversationAsDeletedLocally(conversationId.toDao())
+    }
+
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.clearContent(conversationId.toDao())
@@ -850,6 +857,13 @@ internal class ConversationDataSource internal constructor(
         wrapApiRequest {
             conversationApi.fetchConversationsListDetails(conversationIdList.map { it.toApi() })
         }
+
+    override suspend fun resetMlsConversation(
+        groupId: GroupID,
+        epoch: ULong
+    ): Either<NetworkFailure, Unit> = wrapApiRequest {
+        conversationApi.resetMlsConversation(groupId.value, epoch)
+    }
 
     override suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,

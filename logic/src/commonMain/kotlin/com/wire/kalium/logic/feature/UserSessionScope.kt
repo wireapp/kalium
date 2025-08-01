@@ -111,6 +111,8 @@ import com.wire.kalium.logic.data.conversation.PersistConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCaseImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCaseImpl
@@ -228,6 +230,8 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
+import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
@@ -275,6 +279,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerifi
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -437,6 +442,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimer
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
@@ -461,8 +468,11 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
@@ -493,9 +503,9 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.api.cells.AuthenticatedNetworkContainerCells
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.network.utils.ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -503,6 +513,7 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
+import io.ktor.client.HttpClient
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -653,6 +664,15 @@ class UserSessionScope internal constructor(
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
+
+    val cellsClient: HttpClient
+        get() = AuthenticatedNetworkContainerCells(
+            sessionManager = sessionManager,
+            certificatePinning = kaliumConfigs.certPinningConfig,
+            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+            mockWebSocketSession = if (kaliumConfigs.mockedWebSocket) MockWebSocketSession() else null,
+            kaliumLogger = userScopedLogger
+        ).cellsClient
 
     val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
@@ -921,10 +941,11 @@ class UserSessionScope internal constructor(
             persistConversations = persistConversationsUseCase
         )
 
-    private val fetchConversationUseCase: FetchConversationUseCase
+    val fetchConversationUseCase: FetchConversationUseCase
         get() = FetchConversationUseCaseImpl(
             conversationRepository = conversationRepository,
-            persistConversations = persistConversationsUseCase
+            persistConversations = persistConversationsUseCase,
+            transactionProvider = cryptoTransactionProvider,
         )
 
     private val fetchConversationIfUnknownUseCase: FetchConversationIfUnknownUseCase
@@ -1136,6 +1157,7 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             fetchMLSOneToOneConversationUseCase,
             fetchConversationUseCase,
+            resetMlsConversation,
             userId,
         )
 
@@ -1530,6 +1552,10 @@ class UserSessionScope internal constructor(
         InCallReactionsDataSource()
     }
 
+    private val buttonActionHandler: ButtonActionHandler by lazy {
+        ButtonActionHandlerImpl(userId, compositeMessageRepository, userScopedLogger)
+    }
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -1559,6 +1585,7 @@ class UserSessionScope internal constructor(
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            buttonActionHandler,
             userId,
         )
 
@@ -1585,7 +1612,8 @@ class UserSessionScope internal constructor(
                 messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
             userId,
-            staleEpochVerifier
+            staleEpochVerifier,
+            resetMlsConversation,
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -1700,6 +1728,14 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
+    private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
+        get() = MLSResetConversationEventHandlerImpl(
+            selfUserId = userId,
+            userConfig = userConfigRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversation = fetchConversationUseCase,
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1718,6 +1754,7 @@ class UserSessionScope internal constructor(
             protocolUpdateEventHandler,
             channelAddPermissionUpdateEventHandler,
             conversationAccessUpdateEventHandler,
+            mlsResetConversationEventHandler,
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -1857,6 +1894,9 @@ class UserSessionScope internal constructor(
     private val conferenceCallingConfigHandler
         get() = ConferenceCallingConfigHandler(userConfigRepository)
 
+    private val consumableNotificationsConfigHandler
+        get() = ConsumableNotificationsConfigHandler(userConfigRepository)
+
     private val secondFactorPasswordChallengeConfigHandler
         get() = SecondFactorPasswordChallengeConfigHandler(userConfigRepository)
 
@@ -1869,6 +1909,9 @@ class UserSessionScope internal constructor(
     private val appLockConfigHandler
         get() = AppLockConfigHandler(userConfigRepository)
 
+    private val allowedGlobalOperationsHandler
+        get() = AllowedGlobalOperationsHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1879,7 +1922,8 @@ class UserSessionScope internal constructor(
             conferenceCallingConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
-            appLockConfigHandler
+            appLockConfigHandler,
+            allowedGlobalOperationsHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -1973,6 +2017,14 @@ class UserSessionScope internal constructor(
             userRepository
         )
 
+    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase
+        get() = IsAllowedToUseAsyncNotificationsUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+            isAllowedByCurrentBackendVersionProvider = {
+                sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
+            }
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope by lazy {
         ClientScope(
@@ -1999,7 +2051,8 @@ class UserSessionScope internal constructor(
             registerMLSClientUseCase,
             syncFeatureConfigsUseCase,
             userConfigRepository,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            isAllowedToUseAsyncNotifications
         )
     }
     val conversations: ConversationScope by lazy {
@@ -2035,7 +2088,8 @@ class UserSessionScope internal constructor(
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
             persistConversationsUseCase,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            resetMlsConversation,
         )
     }
 
@@ -2113,6 +2167,7 @@ class UserSessionScope internal constructor(
             cells.deleteAttachmentsUseCase,
             fetchConversationUseCase,
             cryptoTransactionProvider,
+            compositeMessageRepository,
             this,
             userScopedLogger,
         )
@@ -2285,7 +2340,8 @@ class UserSessionScope internal constructor(
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
             appLockConfigHandler,
-            channels.channelsFeatureConfigHandler
+            channels.channelsFeatureConfigHandler,
+            consumableNotificationsConfigHandler
         )
 
     val team: TeamScope
@@ -2438,8 +2494,7 @@ class UserSessionScope internal constructor(
 
     val cells: CellsScope by lazy {
         CellsScope(
-            cellsClient = globalScope.unboundNetworkContainer.cellsClient,
-            userId = userId.toString(),
+            cellsClient = cellsClient,
             dao = with(userStorage.database) {
                 CellsScope.CellScopeDao(
                     attachmentDraftDao = messageAttachmentDraftDao,
@@ -2449,18 +2504,27 @@ class UserSessionScope internal constructor(
                     userDao = userDAO,
                 )
             },
-            // Temporary workaround for switching between fulu / imai environments
-            serverConfig = sessionManager.serverConfig(),
+            sessionManager = sessionManager,
+            accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
         )
     }
 
-    val deleteConversationUseCase: DeleteConversationUseCase
+    private val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
         )
 
     val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
+
+    val resetMlsConversation: ResetMLSConversationUseCase
+        get() = ResetMLSConversationUseCaseImpl(
+            userConfig = userConfigRepository,
+            transactionProvider = cryptoTransactionProvider,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            fetchConversationUseCase = fetchConversationUseCase,
+        )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
@@ -2499,9 +2563,7 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            if (ENABLE_ASYNC_NOTIFICATIONS_CLIENT_REGISTRATION
-                && sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
-            ) {
+            if (isAllowedToUseAsyncNotifications()) {
                 updateSelfClientCapabilityToConsumableNotifications()
             }
         }

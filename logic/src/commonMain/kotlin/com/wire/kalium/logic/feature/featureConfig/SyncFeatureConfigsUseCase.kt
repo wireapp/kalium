@@ -20,10 +20,16 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
@@ -31,11 +37,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 import io.mockative.Mockable
@@ -63,6 +64,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val e2EIConfigHandler: E2EIConfigHandler,
     private val appLockConfigHandler: AppLockConfigHandler,
     private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
+    private val consumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
@@ -78,6 +80,11 @@ internal class SyncFeatureConfigsUseCaseImpl(
             it.e2EIModel.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
             appLockConfigHandler.handle(it.appLockModel)
             channelsConfigHandler.handle(it.channelsModel)
+            it.consumableNotificationsModel?.let { consumableNotificationsModel ->
+                consumableNotificationsConfigHandler.handle(
+                    consumableNotificationsModel
+                )
+            }
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
