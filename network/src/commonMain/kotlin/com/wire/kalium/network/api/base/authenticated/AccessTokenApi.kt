@@ -26,7 +26,7 @@ import io.mockative.Mockable
 @Mockable
 interface AccessTokenApi {
     suspend fun getToken(
-        refreshToken: String?,
+        refreshToken: String,
         clientId: String? = null
     ): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>>
 }

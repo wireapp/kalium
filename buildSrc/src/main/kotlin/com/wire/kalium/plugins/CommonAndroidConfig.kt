@@ -19,7 +19,6 @@
 package com.wire.kalium.plugins
 
 import com.android.build.gradle.LibraryExtension
-import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
@@ -64,9 +63,9 @@ fun LibraryExtension.commonAndroidLibConfig(
         jniLibs.pickFirsts.add("**/libsodium.so")
     }
 
-    testOptions.unitTests.all { it.enabled = false }
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))
+    testOptions.unitTests.all { it.enabled = false }
 
     if (includeNativeInterop) {
         externalNativeBuild {
