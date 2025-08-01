@@ -224,6 +224,9 @@ formatting:
     ArgumentListWrapping:
         active: true
         maxLineLength: 140
+    PropertyWrapping:
+      active: true
+      maxLineLength: 140
     ChainWrapping:
         active: false
         autoCorrect: true

@@ -210,6 +210,26 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertEquals(2, decryptedCount)
     }
 
+    @Test
+    fun givenDestroyedProteusClient_whenTransaction_thenThrowsWrappedIllegalStateException() = runTest {
+        val client = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
+        client.close()
+
+        val exception = assertFailsWith<ProteusException> {
+            client.transaction("test") { it.getLocalFingerprint() }
+        }
+
+        assertTrue(
+            exception.message?.contains("destroyed", ignoreCase = true) == true,
+            "Expected message to mention 'destroyed', got: ${exception.message}"
+        )
+
+        assertTrue(
+            exception.cause is IllegalStateException,
+            "Expected cause to be IllegalStateException, but was: ${exception.cause}"
+        )
+    }
+
     companion object {
         val PROTEUS_DB_SECRET = ProteusDBSecret(ByteArray(32) { 0 })
     }

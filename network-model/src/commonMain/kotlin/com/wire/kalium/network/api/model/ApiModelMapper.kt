@@ -21,14 +21,18 @@ package com.wire.kalium.network.api.model
 import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV10
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV6
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV8
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV10
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV3
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequestV8
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequestV3
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
+import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTOV10
 
 /**
  * Mapping between the base API model and the versioned API models.
@@ -37,10 +41,13 @@ interface ApiModelMapper {
 
     fun toApiV3(request: CreateConversationRequest): CreateConversationRequestV3
     fun toApiV8(request: CreateConversationRequest): CreateConversationRequestV8
+    fun toApiV10(request: CreateConversationRequest): CreateConversationRequestV10
     fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3
     fun fromApiV3(response: ConversationResponseV3): ConversationResponse
     fun fromApiV6(response: ConversationResponseV6): ConversationResponse
     fun fromApiV8(response: ConversationResponseV8): ConversationResponse
+    fun fromApiV10(response: DomainRegistrationDTOV10): DomainRegistrationDTO
+    fun fromApiV10(response: ConversationResponseV10): ConversationResponse
 
     /**
      * Forcing new clients using >= v9 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
@@ -85,6 +92,24 @@ class ApiModelMapperImpl : ApiModelMapper {
             protocol = request.protocol,
             creatorClient = request.creatorClient,
             cellEnabled = request.cellEnabled
+        )
+
+    override fun toApiV10(request: CreateConversationRequest): CreateConversationRequestV10 =
+        CreateConversationRequestV10(
+            qualifiedUsers = request.qualifiedUsers,
+            name = request.name,
+            access = request.access,
+            accessRole = request.accessRole,
+            groupConversationType = request.groupConversationType,
+            channelAddPermissionTypeDTO = request.channelAddPermissionTypeDTO,
+            convTeamInfo = request.convTeamInfo,
+            messageTimer = request.messageTimer,
+            receiptMode = request.receiptMode,
+            conversationRole = request.conversationRole,
+            protocol = request.protocol,
+            creatorClient = request.creatorClient,
+            cellEnabled = request.cellEnabled,
+            skipCreator = request.skipCreator,
         )
 
     override fun toApiV3(request: UpdateConversationAccessRequest): UpdateConversationAccessRequestV3 =
@@ -156,6 +181,29 @@ class ApiModelMapperImpl : ApiModelMapper {
             cellsState = response.cellsState
         )
 
+    override fun fromApiV10(response: ConversationResponseV10): ConversationResponse =
+        ConversationResponse(
+            creator = response.creator,
+            members = response.members,
+            name = response.name,
+            id = response.id,
+            groupId = response.groupId,
+            epoch = response.epoch,
+            type = response.type,
+            messageTimer = response.messageTimer,
+            teamId = response.teamId,
+            protocol = response.protocol,
+            lastEventTime = response.lastEventTime,
+            mlsCipherSuiteTag = response.mlsCipherSuiteTag,
+            access = response.access,
+            accessRole = response.accessRole,
+            receiptMode = response.receiptMode,
+            publicKeys = response.publicKeys,
+            conversationGroupType = response.conversationGroupType,
+            channelAddUserPermissionTypeDTO = response.channelAddUserPermissionTypeDTO,
+            cellsState = response.cellsState
+        )
+
     override fun toApiV0ToV8(request: RegisterClientRequest): RegisterClientRequest = RegisterClientRequest(
         password = request.password,
         preKeys = request.preKeys,
@@ -187,4 +235,13 @@ class ApiModelMapperImpl : ApiModelMapper {
             cookieLabel = request.cookieLabel,
             secondFactorVerificationCode = request.secondFactorVerificationCode
         )
+
+    override fun fromApiV10(response: DomainRegistrationDTOV10): DomainRegistrationDTO {
+        return DomainRegistrationDTO(
+            backendUrl = response.backend?.configUrl,
+            domainRedirect = response.domainRedirect,
+            ssoCode = response.ssoCode,
+            dueToExistingAccount = response.dueToExistingAccount
+        )
+    }
 }
