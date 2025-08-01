@@ -46,7 +46,7 @@ kotlin {
     // This way we need to think before putting "public" in things, and we can be reminded by the compiler to use "internal" more often
     explicitApi()
     val xcf = XCFramework("KaliumBackup")
-    val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
+    val appleTargets = listOf(iosX64(), iosArm64(), iosSimulatorArm64(), macosArm64(), macosX64())
     appleTargets.forEach {
         it.binaries.framework {
             baseName = "KaliumBackup"
