@@ -74,7 +74,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
         project.childProjects.values
             .filter { (hasToRunAllTests || affectedModules.contains(it.name)) && !ignoredModules.contains(it.name) }
             .forEach { childProject ->
-                tasksName.addAll(childProject.tasks
+                tasksName.addAll(
+                    childProject.tasks
                     .filter { it.name.equals(configuration.testTarget, true) }
                     .map { task ->
                         println("Adding task: ${childProject.name}:${task.name}")
@@ -125,7 +126,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String, val ignoredModules: List<String> = emptyList()) {
         ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest", IGNORED_MODULES),
         ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest", IGNORED_MODULES),
-        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test", IGNORED_MODULES + "cells");
+        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test", IGNORED_MODULES);
     }
 
     private companion object {
