@@ -69,10 +69,6 @@ kotlin {
 
         val appleMain by getting {
             dependsOn(nonJsMain)
-            dependencies {
-                implementation(project(":logic"))
-                implementation(project(":calling"))
-            }
         }
     }
 }
