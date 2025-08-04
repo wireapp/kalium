@@ -116,7 +116,7 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastCallIsActive_whenObservingLastCallIfActive_thenReturnActiveCall() = runTest {
+    fun givenLastCallIsActive_whenObservingLastActiveCall_thenReturnActiveCall() = runTest {
         // given
         val conversationId = callEntity.conversationId
         val previousCall = callEntity.copy(id = "id1", status = CallEntity.Status.CLOSED)
@@ -124,7 +124,7 @@ class CallDAOTest : BaseDatabaseTest() {
         callDAO.insertCall(previousCall)
         callDAO.insertCall(lastCall)
         // when
-        callDAO.observeLastCallIfActiveByConversationId(conversationId).test {
+        callDAO.observeLastActiveCallByConversationId(conversationId).test {
             // then
             assertNotNull(awaitItem()).also {
                 assertEquals(lastCall, it)
@@ -134,7 +134,7 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastCallIsNotActive_whenObservingLastCallIfActive_thenReturnNull() = runTest {
+    fun givenLastCallIsNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
         // given
         val conversationId = callEntity.conversationId
         val previousCall = callEntity.copy(id = "id1", status = CallEntity.Status.CLOSED)
@@ -142,7 +142,7 @@ class CallDAOTest : BaseDatabaseTest() {
         callDAO.insertCall(previousCall)
         callDAO.insertCall(lastCall)
         // when
-        callDAO.observeLastCallIfActiveByConversationId(conversationId).test {
+        callDAO.observeLastActiveCallByConversationId(conversationId).test {
             // then
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
@@ -150,7 +150,7 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastCallIsUpdated_whenObservingLastCallIfActive_thenReturnUpdatedActiveCall() = runTest {
+    fun givenLastCallIsUpdated_whenObservingLastActiveCall_thenReturnUpdatedActiveCall() = runTest {
         // given
         val conversationId = callEntity.conversationId
         val previousCall = callEntity.copy(id = "id1", status = CallEntity.Status.CLOSED)
@@ -159,7 +159,7 @@ class CallDAOTest : BaseDatabaseTest() {
         callDAO.insertCall(previousCall)
         callDAO.insertCall(lastCall)
         // when
-        callDAO.observeLastCallIfActiveByConversationId(conversationId).test {
+        callDAO.observeLastActiveCallByConversationId(conversationId).test {
             // then
             assertNotNull(awaitItem()).also {
                 assertEquals(lastCall, it)
@@ -174,7 +174,7 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastCallStopsBeingActive_whenObservingLastCallIfActive_thenReturnNull() = runTest {
+    fun givenLastCallStopsBeingActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
         // given
         val conversationId = callEntity.conversationId
         val previousCall = callEntity.copy(id = "id1", status = CallEntity.Status.CLOSED)
@@ -182,7 +182,7 @@ class CallDAOTest : BaseDatabaseTest() {
         callDAO.insertCall(previousCall)
         callDAO.insertCall(lastCall)
         // when
-        callDAO.observeLastCallIfActiveByConversationId(conversationId).test {
+        callDAO.observeLastActiveCallByConversationId(conversationId).test {
             // then
             assertNotNull(awaitItem()).also {
                 assertEquals(lastCall, it)

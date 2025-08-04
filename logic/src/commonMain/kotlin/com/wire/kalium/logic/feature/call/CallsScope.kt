@@ -61,8 +61,8 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.ObserveLastCallIfActiveWithSortedParticipantsUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveLastCallIfActiveWithSortedParticipantsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
@@ -255,6 +255,6 @@ class CallsScope internal constructor(
     val observeInCallReactions: ObserveInCallReactionsUseCase
         get() = ObserveInCallReactionsUseCaseImpl(inCallReactionsRepository)
 
-    val observeLastCallIfActiveWithSortedParticipants: ObserveLastCallIfActiveWithSortedParticipantsUseCase
-        get() = ObserveLastCallIfActiveWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
+    val observeLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
+        get() = ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
 }

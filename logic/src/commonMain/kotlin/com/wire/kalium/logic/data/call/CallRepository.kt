@@ -115,7 +115,7 @@ interface CallRepository {
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
-    fun observeLastCallIfActiveByConversationId(conversationId: ConversationId): Flow<Call?>
+    fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?>
 
     @Suppress("LongParameterList")
     suspend fun createCall(
@@ -721,8 +721,8 @@ internal class CallDataSource(
         }
     }
 
-    override fun observeLastCallIfActiveByConversationId(conversationId: ConversationId): Flow<Call?> =
-        callDAO.observeLastCallIfActiveByConversationId(callMapper.fromConversationIdToQualifiedIDEntity(conversationId))
+    override fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?> =
+        callDAO.observeLastActiveCallByConversationId(callMapper.fromConversationIdToQualifiedIDEntity(conversationId))
             .combineWithCallMetadata()
 
     companion object {

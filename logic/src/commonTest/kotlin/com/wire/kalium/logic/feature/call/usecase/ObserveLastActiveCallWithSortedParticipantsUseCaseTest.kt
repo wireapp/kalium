@@ -39,14 +39,14 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
+class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
 
     @Test
     fun givenNoActiveLastCall_whenUseCaseIsRunning_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
         // given
         val call = null
         val (arrangement, useCase) = Arrangement()
-            .withObserveLastCallIfActiveByConversationIdReturning(flowOf(call))
+            .withObserveLastActiveCallByConversationIdReturning(flowOf(call))
             .arrange()
         // when
         useCase(establishedCall.conversationId).test {
@@ -55,7 +55,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             awaitComplete()
         }
         verify {
-            arrangement.callRepository.observeLastCallIfActiveByConversationId(establishedCall.conversationId)
+            arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
@@ -68,7 +68,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
         val call = establishedCall
         val (arrangement, useCase) = Arrangement()
             .withReorderItemsReturning(call.participants)
-            .withObserveLastCallIfActiveByConversationIdReturning(flowOf(call))
+            .withObserveLastActiveCallByConversationIdReturning(flowOf(call))
             .arrange()
         // when
         useCase(call.conversationId).test {
@@ -77,7 +77,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             awaitComplete()
         }
         verify {
-            arrangement.callRepository.observeLastCallIfActiveByConversationId(call.conversationId)
+            arrangement.callRepository.observeLastActiveCallByConversationId(call.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
             arrangement.callingParticipantsOrder.reorderItems(call.participants)
@@ -91,7 +91,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
         val updatedCall = establishedCall.copy(status = CallStatus.ESTABLISHED)
         val (arrangement, useCase) = Arrangement()
             .withReorderItemsReturning(call.participants)
-            .withObserveLastCallIfActiveByConversationIdReturning(flowOf(call, updatedCall))
+            .withObserveLastActiveCallByConversationIdReturning(flowOf(call, updatedCall))
             .arrange()
         // when
         useCase(call.conversationId).test {
@@ -101,7 +101,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             awaitComplete()
         }
         verify {
-            arrangement.callRepository.observeLastCallIfActiveByConversationId(establishedCall.conversationId)
+            arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
@@ -115,7 +115,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
         val updatedCall = null
         val (arrangement, useCase) = Arrangement()
             .withReorderItemsReturning(call.participants)
-            .withObserveLastCallIfActiveByConversationIdReturning(flowOf(call, updatedCall))
+            .withObserveLastActiveCallByConversationIdReturning(flowOf(call, updatedCall))
             .arrange()
         // when
         useCase(call.conversationId).test {
@@ -125,7 +125,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
             awaitComplete()
         }
         verify {
-            arrangement.callRepository.observeLastCallIfActiveByConversationId(establishedCall.conversationId)
+            arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
         }.wasInvoked(exactly = 1)
         coVerify {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
@@ -136,7 +136,7 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
         val callRepository = mock(CallRepository::class)
         val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
 
-        fun arrange() = this to ObserveLastCallIfActiveWithSortedParticipantsUseCaseImpl(
+        fun arrange() = this to ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(
             callRepository,
             callingParticipantsOrder
         )
@@ -145,9 +145,9 @@ class ObserveLastCallIfActiveWithSortedParticipantsUseCaseTest {
                 callingParticipantsOrder.reorderItems(any())
             }.returns(result)
         }
-        fun withObserveLastCallIfActiveByConversationIdReturning(result: Flow<Call?>) = apply {
+        fun withObserveLastActiveCallByConversationIdReturning(result: Flow<Call?>) = apply {
             every {
-                callRepository.observeLastCallIfActiveByConversationId(any())
+                callRepository.observeLastActiveCallByConversationId(any())
             }.returns(result)
         }
     }

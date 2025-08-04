@@ -1712,15 +1712,15 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenALastCallIsActive_whenObservingLastCallIfActive_thenReturnCall() = runTest {
+    fun givenALastCallIsActive_whenObservingLastActiveCall_thenReturnCall() = runTest {
         // given
         val callEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
         val (_, callRepository) = Arrangement()
-            .withObserveLastCallIfActiveReturning(flowOf(callEntity))
+            .withObserveLastActiveCallReturning(flowOf(callEntity))
             .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
             .arrange()
         // when
-        callRepository.observeLastCallIfActiveByConversationId(Arrangement.conversationId).test {
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
             // then
             assertNotNull(awaitItem()).also { call ->
                 assertEquals(CallStatus.ESTABLISHED, call.status)
@@ -1730,14 +1730,14 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenALastCallIsNotActive_whenObservingLastCallIfActive_thenReturnNull() = runTest {
+    fun givenALastCallIsNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
         // given
         val (_, callRepository) = Arrangement()
-            .withObserveLastCallIfActiveReturning(flowOf(null))
+            .withObserveLastActiveCallReturning(flowOf(null))
             .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
             .arrange()
         // when
-        callRepository.observeLastCallIfActiveByConversationId(Arrangement.conversationId).test {
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
             // then
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
@@ -1745,17 +1745,17 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenALastCallIsUpdated_whenObservingLastCallIfActive_thenReturnUpdatedCall() = runTest {
+    fun givenALastCallIsUpdated_whenObservingLastActiveCall_thenReturnUpdatedCall() = runTest {
         // given
         val callEntity = createCallEntity().copy(status = CallEntity.Status.ANSWERED)
         val updatedCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
         val callEntityFlow = MutableStateFlow<CallEntity?>(callEntity)
         val (_, callRepository) = Arrangement()
-            .withObserveLastCallIfActiveReturning(callEntityFlow)
+            .withObserveLastActiveCallReturning(callEntityFlow)
             .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
             .arrange()
         // when
-        callRepository.observeLastCallIfActiveByConversationId(Arrangement.conversationId).test {
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
             // then
             assertNotNull(awaitItem()).also { call ->
                 assertEquals(CallStatus.ANSWERED, call.status)
@@ -1769,16 +1769,16 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenALastCallBecomesNotActive_whenObservingLastCallIfActive_thenReturnNull() = runTest {
+    fun givenALastCallBecomesNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
         // given
         val callEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
         val callEntityFlow = MutableStateFlow<CallEntity?>(callEntity)
         val (_, callRepository) = Arrangement()
-            .withObserveLastCallIfActiveReturning(callEntityFlow)
+            .withObserveLastActiveCallReturning(callEntityFlow)
             .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
             .arrange()
         // when
-        callRepository.observeLastCallIfActiveByConversationId(Arrangement.conversationId).test {
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
             // then
             assertNotNull(awaitItem()).also { call ->
                 assertEquals(CallStatus.ESTABLISHED, call.status)
@@ -2055,9 +2055,9 @@ class CallRepositoryTest {
             }
         }
 
-        fun withObserveLastCallIfActiveReturning(result: Flow<CallEntity?>) = apply {
+        fun withObserveLastActiveCallReturning(result: Flow<CallEntity?>) = apply {
             every {
-                callDAO.observeLastCallIfActiveByConversationId(any())
+                callDAO.observeLastActiveCallByConversationId(any())
             }.returns(result)
         }
 

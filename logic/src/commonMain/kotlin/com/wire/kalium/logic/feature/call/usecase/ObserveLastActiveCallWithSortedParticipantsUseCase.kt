@@ -26,21 +26,21 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * Use case to observe the last call for the given [ConversationId] if it's state is active - if last active call is already inactive
- * or there's not last active call, then returns null - with sorted participants according to the [CallingParticipantsOrder].
+ * Use case to observe the last active call for the given [ConversationId] or null if there is no such call,
+ * with sorted participants according to the [CallingParticipantsOrder].
  * The call is active when it's one of the following states: STARTED, INCOMING, ANSWERED, ESTABLISHED, STILL_ONGOING.
  */
-interface ObserveLastCallIfActiveWithSortedParticipantsUseCase {
+interface ObserveLastActiveCallWithSortedParticipantsUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Flow<Call?>
 }
 
-class ObserveLastCallIfActiveWithSortedParticipantsUseCaseImpl internal constructor(
+class ObserveLastActiveCallWithSortedParticipantsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val callingParticipantsOrder: CallingParticipantsOrder
-) : ObserveLastCallIfActiveWithSortedParticipantsUseCase {
+) : ObserveLastActiveCallWithSortedParticipantsUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId): Flow<Call?> =
-        callRepository.observeLastCallIfActiveByConversationId(conversationId).map { call ->
+        callRepository.observeLastActiveCallByConversationId(conversationId).map { call ->
             call?.let {
                 val sortedParticipants = callingParticipantsOrder.reorderItems(call.participants)
                 call.copy(participants = sortedParticipants)
