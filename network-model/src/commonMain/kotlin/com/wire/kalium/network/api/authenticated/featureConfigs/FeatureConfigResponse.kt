@@ -156,7 +156,7 @@ data class E2EIConfigDTO(
 
 @Serializable
 data class AllowedGlobalOperationsConfigDTO(
-    @SerialName("mlsConversationReset20250709")
+    @SerialName("mlsConversationReset")
     val mlsConversationsReset: Boolean = false,
 )
 
