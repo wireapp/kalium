@@ -236,6 +236,8 @@ internal class ApplicationMessageHandlerImpl(
                 senderUserId = signaling.senderUserId,
                 emojis = content.emojis.keys,
             )
+
+            is MessageContent.CompositeEdited -> TODO("ym handle this")
         }
     }
 

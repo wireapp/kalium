@@ -144,7 +144,10 @@ class ProtoContentMapperImpl(
             is MessageContent.Receipt -> packReceipt(readableContent)
             is MessageContent.ClientAction -> packClientAction()
             is MessageContent.TextEdited -> packEdited(readableContent)
-            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
+            is MessageContent.CompositeEdited,
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: ${readableContent.getType()}"
                 )
@@ -184,6 +187,7 @@ class ProtoContentMapperImpl(
                             )
                         )
                     )
+
                 is CellAssetContent ->
                     Attachment(
                         content = Attachment.Content.CellAsset(
@@ -330,6 +334,7 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
+            is MessageContent.CompositeEdited,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
             is MessageContent.Multipart -> throw IllegalArgumentException(
@@ -341,7 +346,8 @@ class ProtoContentMapperImpl(
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
         GenericMessage.Content.External(
-            External(ByteArr(protoContent.otrKey),
+            External(
+                ByteArr(protoContent.otrKey),
                 protoContent.sha256?.let { ByteArr(it) },
                 protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) })
         )
@@ -483,6 +489,7 @@ class ProtoContentMapperImpl(
                     // TODO: implement support for regular assets WPB-16590
                     return MessageContent.Ignored
                 }
+
                 is Attachment.Content.CellAsset -> CellAssetContent(
                     id = content.value.uuid,
                     versionId = "",
@@ -492,6 +499,7 @@ class ProtoContentMapperImpl(
                     metadata = content.value.initialMetaData?.toModel(),
                     transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
                 )
+
                 null -> null
             }
         },
@@ -633,9 +641,17 @@ class ProtoContentMapperImpl(
                     editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
                 )
             }
-            // TODO: for now we do not implement it
+
             is MessageEdit.Content.Composite -> {
-                MessageContent.Unknown(typeName = typeName, encodedData = encodedContent.data)
+                val editedText = editContent.value.items.firstNotNullOfOrNull { item ->
+                    item.text
+                }?.let(::unpackText)
+
+                MessageContent.CompositeEdited(
+                    editMessageId = replacingMessageId,
+                    newTextContent = editedText,
+                    newButtonList = unpackButtonList(editContent.value.items),
+                )
             }
 
             null -> {
@@ -718,16 +734,17 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun packButtonList(buttonList: List<MessageContent.Composite.Button>): List<Composite.Item> = buttonList.map {
-        Composite.Item(
-            Composite.Item.Content.Button(
-                button = Button(
-                    text = it.text,
-                    id = it.id
+    private fun packButtonList(buttonList: List<com.wire.kalium.logic.data.message.composite.Button>): List<Composite.Item> =
+        buttonList.map {
+            Composite.Item(
+                Composite.Item.Content.Button(
+                    button = Button(
+                        text = it.text,
+                        id = it.id
+                    )
                 )
             )
-        )
-    }
+        }
 
     private fun unpackText(protoContent: Text) = MessageContent.Text(
         value = protoContent.content,
@@ -741,10 +758,10 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null
     )
 
-    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<MessageContent.Composite.Button> =
+    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<com.wire.kalium.logic.data.message.composite.Button> =
         compositeItemList.mapNotNull {
             it.button?.let { button ->
-                MessageContent.Composite.Button(
+                com.wire.kalium.logic.data.message.composite.Button(
                     text = button.text,
                     id = button.id,
                     isSelected = false
@@ -872,7 +889,7 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.InCallEmoji(
             inCallEmoji = InCallEmoji(
                 emojis = content.emojis.map { entry ->
-                   InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
+                    InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
                 }
             )
         )
