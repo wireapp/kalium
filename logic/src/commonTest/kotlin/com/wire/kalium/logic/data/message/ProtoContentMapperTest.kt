@@ -216,11 +216,11 @@ class ProtoContentMapperTest {
     @Test
     fun givenEditedCompositeGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectEditedMessageId() {
         val replacedMessageId = "replacedMessageId"
-        val textContent = MessageEdit.Content.Composite(Composite())
+        val compositeContent = MessageEdit.Content.Composite(Composite())
         val genericMessage = GenericMessage(
             messageId = TEST_MESSAGE_UUID,
             content = GenericMessage.Content.Edited(
-                MessageEdit(replacedMessageId, textContent)
+                MessageEdit(replacedMessageId, compositeContent)
             )
         )
         val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
@@ -229,7 +229,7 @@ class ProtoContentMapperTest {
 
         assertIs<ProtoContent.Readable>(result)
         val content = result.messageContent
-        assertIs<MessageContent.TextEdited>(content)
+        assertIs<MessageContent.CompositeEdited>(content)
         assertEquals(replacedMessageId, content.editMessageId)
     }
 
