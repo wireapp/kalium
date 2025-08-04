@@ -37,6 +37,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 import io.mockative.Mockable
@@ -64,7 +65,8 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val e2EIConfigHandler: E2EIConfigHandler,
     private val appLockConfigHandler: AppLockConfigHandler,
     private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
-    private val consumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler
+    private val consumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler,
+    private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
@@ -85,6 +87,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                     consumableNotificationsModel
                 )
             }
+            it.allowedGlobalOperationsModel?.let { model -> allowedGlobalOperationsHandler.handle(model) }
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (

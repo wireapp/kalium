@@ -56,7 +56,11 @@ object FeatureConfigTest {
             Status.ENABLED
         ),
         channelFeatureConfiguration: ChannelFeatureConfiguration = ChannelFeatureConfiguration.Disabled,
-        asyncNotificationsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED)
+        asyncNotificationsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
+        allowedGlobalOperationsModel: AllowedGlobalOperationsModel? = AllowedGlobalOperationsModel(
+            status = Status.ENABLED,
+            mlsConversationsReset = false,
+        ),
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -75,6 +79,7 @@ object FeatureConfigTest {
         e2EIModel,
         mlsMigrationModel,
         channelFeatureConfiguration,
-        asyncNotificationsModel
+        asyncNotificationsModel,
+        allowedGlobalOperationsModel,
     )
 }
