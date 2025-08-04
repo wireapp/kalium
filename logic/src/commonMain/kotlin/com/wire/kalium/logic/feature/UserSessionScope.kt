@@ -279,7 +279,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerifi
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.AsyncNotificationsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -941,10 +941,11 @@ class UserSessionScope internal constructor(
             persistConversations = persistConversationsUseCase
         )
 
-    private val fetchConversationUseCase: FetchConversationUseCase
+    val fetchConversationUseCase: FetchConversationUseCase
         get() = FetchConversationUseCaseImpl(
             conversationRepository = conversationRepository,
-            persistConversations = persistConversationsUseCase
+            persistConversations = persistConversationsUseCase,
+            transactionProvider = cryptoTransactionProvider,
         )
 
     private val fetchConversationIfUnknownUseCase: FetchConversationIfUnknownUseCase
@@ -1893,8 +1894,8 @@ class UserSessionScope internal constructor(
     private val conferenceCallingConfigHandler
         get() = ConferenceCallingConfigHandler(userConfigRepository)
 
-    private val asyncNotificationsConfigHandler
-        get() = AsyncNotificationsConfigHandler(userConfigRepository)
+    private val consumableNotificationsConfigHandler
+        get() = ConsumableNotificationsConfigHandler(userConfigRepository)
 
     private val secondFactorPasswordChallengeConfigHandler
         get() = SecondFactorPasswordChallengeConfigHandler(userConfigRepository)
@@ -2340,7 +2341,7 @@ class UserSessionScope internal constructor(
             e2eiConfigHandler,
             appLockConfigHandler,
             channels.channelsFeatureConfigHandler,
-            asyncNotificationsConfigHandler
+            consumableNotificationsConfigHandler
         )
 
     val team: TeamScope

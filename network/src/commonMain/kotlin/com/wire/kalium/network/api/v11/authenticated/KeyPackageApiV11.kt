@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,13 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package scripts
+package com.wire.kalium.network.api.v11.authenticated
 
-import OnlyAffectedTestTask
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v10.authenticated.KeyPackageApiV10
 
-OnlyAffectedTestTask.TestTaskConfiguration.values().forEach { taskConfiguration ->
-    project.tasks.register(taskConfiguration.taskName, OnlyAffectedTestTask::class) {
-        configuration = taskConfiguration
-        ignoredModules = taskConfiguration.ignoredModules
-    }
-}
+internal open class KeyPackageApiV11 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : KeyPackageApiV10(authenticatedNetworkClient)

@@ -32,6 +32,7 @@ import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v10.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV10
+import com.wire.kalium.network.api.v11.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV11
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
@@ -151,6 +152,14 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 10 -> UnauthenticatedNetworkContainerV10(
+                    backendLinks = serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled
+                )
+
+                11 -> UnauthenticatedNetworkContainerV11(
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
