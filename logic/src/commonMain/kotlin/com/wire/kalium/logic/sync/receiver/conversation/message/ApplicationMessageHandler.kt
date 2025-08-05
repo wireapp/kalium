@@ -184,23 +184,7 @@ internal class ApplicationMessageHandlerImpl(
                 userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
             }
 
-            is MessageContent.ClientAction -> {
-                logger.i(message = "ClientAction status update received: ")
-
-                val message = Message.System(
-                    id = signaling.id,
-                    content = MessageContent.CryptoSessionReset,
-                    conversationId = signaling.conversationId,
-                    date = signaling.date,
-                    senderUserId = signaling.senderUserId,
-                    status = signaling.status,
-                    senderUserName = signaling.senderUserName,
-                    expirationData = null
-                )
-
-                logger.i(message = "Persisting crypto session reset system message..")
-                persistMessage(message)
-            }
+            is MessageContent.ClientAction -> handleClientAction(signaling)
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
             is MessageContent.DeleteMessage -> deleteMessageHandler(content, signaling.conversationId, signaling.senderUserId)
@@ -240,7 +224,29 @@ internal class ApplicationMessageHandlerImpl(
             )
 
             is MessageContent.CompositeEdited -> messageCompositeEditHandler.handle(signaling, content)
+
+            is MessageContent.History -> TODO("HISTORY CLIENTS ARE NOT HANDLED YET")
         }
+    }
+
+    private suspend fun handleClientAction(
+        signaling: Message.Signaling,
+    ) {
+        logger.i(message = "ClientAction status update received: ")
+
+        val message = Message.System(
+            id = signaling.id,
+            content = MessageContent.CryptoSessionReset,
+            conversationId = signaling.conversationId,
+            date = signaling.date,
+            senderUserId = signaling.senderUserId,
+            status = signaling.status,
+            senderUserName = signaling.senderUserName,
+            expirationData = null
+        )
+
+        logger.i(message = "Persisting crypto session reset system message..")
+        persistMessage(message)
     }
 
     private suspend fun processMessage(message: Message.Regular) {
