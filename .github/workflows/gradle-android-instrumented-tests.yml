@@ -78,14 +78,13 @@ jobs:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          api-level: "35-ext15"
+          api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
           target: ${{ steps.avd-info.outputs.target }}
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
           disable-animations: true
-          channel: canary
           script: ./gradlew connectedAndroidOnlyAffectedTest
 
       - name: Archive Test Reports
