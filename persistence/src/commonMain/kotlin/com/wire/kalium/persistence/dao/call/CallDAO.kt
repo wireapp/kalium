@@ -52,6 +52,7 @@ data class CallEntity(
 }
 
 @Mockable
+@Suppress("TooManyFunctions")
 interface CallDAO {
     suspend fun insertCall(call: CallEntity)
     suspend fun observeCalls(): Flow<List<CallEntity>>
@@ -66,4 +67,5 @@ interface CallDAO {
     suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type?
     suspend fun updateOpenCallsToClosedStatus()
+    fun observeLastActiveCallByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?>
 }
