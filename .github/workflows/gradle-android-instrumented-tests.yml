@@ -73,12 +73,12 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2.34.0
+        uses: reactivecircus/android-emulator-runner@v2.31.0
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          api-level: ${{ matrix.api-level }}
+          api-level: "35"
           system-image-api-level: 35-ext15
           arch: x86_64
           target: google_apis_ps16k
@@ -86,6 +86,7 @@ jobs:
           ram-size: 4096M
           heap-size: 2048M
           disable-animations: true
+          channel: canary
           script: ./gradlew connectedAndroidOnlyAffectedTest
 
       - name: Archive Test Reports
