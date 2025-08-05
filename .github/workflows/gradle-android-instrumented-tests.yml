@@ -79,8 +79,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           api-level: "35-ext15"
-          arch: x86_64
-          target: google_apis_ps16k
+          arch: ${{ steps.avd-info.outputs.arch }}
+          target: ${{ steps.avd-info.outputs.target }}
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
