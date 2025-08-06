@@ -46,12 +46,7 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val appleMain by getting {
-            dependencies {
-                implementation(libs.coreCrypto)
-            }
-        }
-
+        val appleMain by getting
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {

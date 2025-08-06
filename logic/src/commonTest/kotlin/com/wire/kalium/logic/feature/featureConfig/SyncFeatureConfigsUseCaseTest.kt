@@ -25,6 +25,7 @@ import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.ChannelFeatureConfiguration
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -40,7 +41,7 @@ import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTim
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.AsyncNotificationsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
@@ -54,6 +55,7 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -741,6 +743,64 @@ class SyncFeatureConfigsUseCaseTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenMlsConversationResetIsEnabled_whenSyncing_thenItShouldBeStoredCorrectlyAsEnabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(
+                    allowedGlobalOperationsModel = AllowedGlobalOperationsModel(
+                        mlsConversationsReset = true,
+                        status = Status.ENABLED,
+                    )
+                )
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setMlsConversationsResetEnabled(eq(true))
+        }
+    }
+
+    @Test
+    fun givenMlsConversationResetIsDisabled_whenSyncing_thenItShouldBeStoredCorrectlyAsDisabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(
+                    allowedGlobalOperationsModel = AllowedGlobalOperationsModel(
+                        mlsConversationsReset = true,
+                        status = Status.DISABLED,
+                    )
+                )
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setMlsConversationsResetEnabled(eq(false))
+        }
+    }
+
+    @Test
+    fun givenMlsConversationResetNotPresent_whenSyncing_thenItShouldNotBeCalled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(allowedGlobalOperationsModel = null)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setMlsConversationsResetEnabled(any())
+        }.wasNotInvoked()
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
@@ -849,7 +909,8 @@ class SyncFeatureConfigsUseCaseTest {
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
                 ChannelsFeatureConfigurationHandler(channelsConfigurationStorage),
-                AsyncNotificationsConfigHandler(userConfigRepository)
+                ConsumableNotificationsConfigHandler(userConfigRepository),
+                AllowedGlobalOperationsHandler(userConfigRepository),
             )
             return this to syncFeatureConfigsUseCase
         }

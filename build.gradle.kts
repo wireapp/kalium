@@ -144,6 +144,7 @@ moduleGraphConfig {
     readmePath.set("./README.md")
     heading.set("#### Dependency Graph")
     nestingEnabled.set(true)
+    rootModulesRegex.set(":logic")
 }
 
 tasks.register("runAllUnitTests") {
