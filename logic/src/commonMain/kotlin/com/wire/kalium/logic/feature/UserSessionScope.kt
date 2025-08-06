@@ -1587,7 +1587,7 @@ class UserSessionScope internal constructor(
             dataTransferEventHandler,
             inCallReactionsRepository,
             buttonActionHandler,
-            MessageCompositeEditHandlerImpl(messageRepository, compositeMessageRepository, NotificationEventsManagerImpl),
+            MessageCompositeEditHandlerImpl(messageRepository),
             userId
         )
 

@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -58,6 +59,7 @@ import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageRes
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -266,6 +268,13 @@ internal interface MessageRepository {
         conversationId: ConversationId,
         messageIds: List<String>
     ): Either<CoreFailure, Unit>
+
+    suspend fun updateCompositeMessage(
+        conversationId: ConversationId,
+        messageContent: MessageContent.CompositeEdited,
+        newMessageId: String,
+        editInstant: Instant
+    ): Either<StorageFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -747,5 +756,27 @@ internal class MessageDataSource internal constructor(
         messageIds: List<String>
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.updateMessagesStatusIfNotRead(messageStatus, conversationId.toDao(), messageIds)
+    }
+
+    override suspend fun updateCompositeMessage(
+        conversationId: ConversationId,
+        messageContent: MessageContent.CompositeEdited,
+        newMessageId: MessageId,
+        editInstant: Instant
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateCompositeMessageContent(
+            conversationId = conversationId.toDao(),
+            currentMessageId = messageContent.editMessageId,
+            editInstant = editInstant,
+            newCompositeContent = MessageEntityContent.Composite(
+                messageContent.newTextContent?.value?.let {
+                    MessageEntityContent.Text(
+                        messageBody = it
+                    )
+                },
+                messageContent.newButtonList.map { ButtonEntity(it.text, it.id, it.isSelected) }
+            ),
+            newMessageId = newMessageId
+        )
     }
 }

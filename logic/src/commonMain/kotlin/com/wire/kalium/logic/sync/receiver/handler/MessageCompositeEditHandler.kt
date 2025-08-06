@@ -23,11 +23,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.notification.NotificationEventsManager
 
 internal interface MessageCompositeEditHandler {
     suspend fun handle(
@@ -37,9 +35,7 @@ internal interface MessageCompositeEditHandler {
 }
 
 internal class MessageCompositeEditHandlerImpl internal constructor(
-    private val messageRepository: MessageRepository,
-    private val compositeMessageRepository: CompositeMessageRepository,
-    private val notificationEventsManager: NotificationEventsManager,
+    private val messageRepository: MessageRepository
 ) : MessageCompositeEditHandler {
 
     override suspend fun handle(
@@ -57,19 +53,11 @@ internal class MessageCompositeEditHandlerImpl internal constructor(
                 return@flatMap Either.Left(StorageFailure.DataNotFound)
             }
 
-
-
-            // update text and buttons in composite messages
-            
-//         messageRepository.updateTextMessage(
-//             conversationId = message.conversationId,
-//             messageContent = messageContent.newTextContent, // this is edited type, change or support another function.
-//             newMessageId = message.id,
-//             editInstant = message.date
-//         )
-//         messageContent.newButtonList.firstNotNullOfOrNull { it. }
-
-            // update composite message content, ie. empty list of selected buttons remove text, ?remove message?
-            TODO("ym. implement me")
+            messageRepository.updateCompositeMessage(
+                conversationId = message.conversationId,
+                messageContent = messageContent,
+                newMessageId = message.id,
+                editInstant = message.date
+            )
         }
 }

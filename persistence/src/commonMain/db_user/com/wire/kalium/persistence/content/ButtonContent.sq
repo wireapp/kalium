@@ -30,5 +30,8 @@ markSelected {
       id = :id;
 }
 
-remmoveAllSelection:
+removeAllSelection:
 UPDATE ButtonContent SET is_selected = 0 WHERE conversation_id = :conversation_id AND message_id = :message_id;
+
+deleteAllButtons:
+DELETE FROM ButtonContent WHERE conversation_id = :conversation_id AND message_id = :message_id;
