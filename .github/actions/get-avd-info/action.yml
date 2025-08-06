@@ -17,5 +17,5 @@ runs:
       run: echo "arch=$(if [ ${{ inputs.api-level }} -ge 30 ]; then echo x86_64; else echo x86; fi)" >> $GITHUB_OUTPUT
       shell: bash
     - id: get-avd-target
-      run: echo "target=google_apis" >> $GITHUB_OUTPUT
+      run: echo "target=$(echo default)" >> $GITHUB_OUTPUT
       shell: bash

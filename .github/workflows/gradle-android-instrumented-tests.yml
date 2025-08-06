@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        api-level: [ 34 ]
+        api-level: [ 31 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,14 +81,11 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
           target: ${{ steps.avd-info.outputs.target }}
-          profile: Nexus One
-          force-avd-creation: true
-          no-snapshot-save: true
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
           disable-animations: true
-          script: ./gradlew connectedAndroidOnlyAffectedTest --info
+          script: ./gradlew connectedAndroidOnlyAffectedTest
 
       - name: Archive Test Reports
         if: always()
