@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.common.functional.fold
 import io.ktor.http.URLBuilder
 
 /**
@@ -43,7 +43,7 @@ internal class StoreServerConfigUseCaseImpl(
     override suspend fun invoke(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): StoreServerConfigResult {
         val cleanWsLink = URLBuilder(links.webSocket).apply {
             pathSegments = pathSegments.toMutableList().apply {
-                if (lastOrNull() == "await") removeLast()
+                if (lastOrNull() == "await") removeAt(lastIndex)
             }
         }.buildString()
 
