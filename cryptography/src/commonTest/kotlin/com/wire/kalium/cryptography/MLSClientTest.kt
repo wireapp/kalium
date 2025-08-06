@@ -22,8 +22,6 @@ import com.wire.kalium.cryptography.MLSClientTest.Arrangement.Companion.create
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -483,10 +481,8 @@ class MLSClientTest : BaseMLSClientTest() {
         val sendCommitBundleFlow: MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>,
         val epochChangeFlow: MutableSharedFlow<Pair<MLSGroupId, ULong>>,
         private val sendMessageResponses: MutableList<MlsTransportResponse>,
-        private val sendCommitResponses: MutableList<MlsTransportResponse>,
-        private val mutex: Mutex,
-
-        ) {
+        private val sendCommitResponses: MutableList<MlsTransportResponse>
+    ) {
 
         companion object {
             suspend fun CoroutineScope.create(
@@ -508,21 +504,17 @@ class MLSClientTest : BaseMLSClientTest() {
 
                 val sendMessageResponses = initialSendMessageResponses.toMutableList()
                 val sendCommitResponses = initialSendCommitResponses.toMutableList()
-                val mutex = Mutex()
 
                 val mlsTransporter = object : MLSTransporter {
                     override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
-                        val response = mutex.withLock {
-                            if (sendMessageResponses.isNotEmpty()) sendMessageResponses.removeFirst() else MlsTransportResponse.Success
-                        }
+                        val response = sendCommitResponses.removeFirstOrNull() ?: MlsTransportResponse.Success
                         sendMessageFlow.emit(mlsMessage to response)
                         return response
                     }
 
                     override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
-                        val response = mutex.withLock {
-                            if (sendCommitResponses.isNotEmpty()) sendCommitResponses.removeFirst() else MlsTransportResponse.Success
-                        }
+                        val response = sendCommitResponses.removeFirstOrNull() ?: MlsTransportResponse.Success
+
                         sendCommitBundleFlow.emit(commitBundle to response)
                         return response
                     }
@@ -551,17 +543,16 @@ class MLSClientTest : BaseMLSClientTest() {
                     epochChangeFlow,
                     sendMessageResponses,
                     sendCommitResponses,
-                    mutex
                 )
             }
         }
 
         suspend fun addSendMessageResponse(response: MlsTransportResponse) {
-            mutex.withLock { sendMessageResponses.add(response) }
+            sendMessageResponses.add(response)
         }
 
         suspend fun addSendCommitBundleResponse(response: MlsTransportResponse) {
-            mutex.withLock { sendCommitResponses.add(response) }
+            sendCommitResponses.add(response)
         }
     }
 
