@@ -19,4 +19,4 @@ package com.wire.kalium.logic.util
 
 expect class PlatformRotation
 
-expect fun mockPlatformRotation() : PlatformRotation
+expect fun mockPlatformRotation(): PlatformRotation
