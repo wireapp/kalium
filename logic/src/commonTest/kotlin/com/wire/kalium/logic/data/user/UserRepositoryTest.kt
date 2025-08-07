@@ -65,6 +65,7 @@ import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.any
 import io.mockative.coEvery
@@ -709,6 +710,14 @@ class UserRepositoryTest {
 
         val userDAO = mock(UserDAO::class)
         val clientDAO = mock(ClientDAO::class)
+<<<<<<< HEAD
+=======
+
+        @Mock
+        val memberDAO = mock(MemberDAO::class)
+
+        @Mock
+>>>>>>> 5e393712d9 (fix: send user availability status (WPB-18697) (#3561))
         val selfApi = mock(SelfApi::class)
         val userDetailsApi = mock(UserDetailsApi::class)
         val teamsApi = mock(TeamsApi::class)
@@ -723,6 +732,7 @@ class UserRepositoryTest {
             UserDataSource(
                 userDAO = userDAO,
                 clientDAO = clientDAO,
+                memberDAO = memberDAO,
                 selfApi = selfApi,
                 userDetailsApi = userDetailsApi,
                 teamsApi = teamsApi,
