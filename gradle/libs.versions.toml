@@ -10,8 +10,6 @@ compose-ui = "1.7.6"
 compose-material = "1.6.6"
 compose-material3 = "1.0.0-alpha01"
 compose-jetbrains = "1.8.2"
-cryptobox4j = "1.4.0"
-cryptobox-android = "1.1.5"
 fileKit = "0.10.0-beta04"
 android-security = "1.1.0-alpha06"
 ktor = "2.3.10"
@@ -61,7 +59,7 @@ mockk = "1.13.13"
 faker = "1.16.0"
 robolectric = "4.12.1"
 skie = "0.10.1"
-stately = "2.0.7"
+stately = "2.1.0"
 micrometer = "1.12.5"
 konsist = "0.15.1"
 postgres = "1.0.7.RELEASE"
@@ -150,10 +148,7 @@ coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", ve
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 # cryptobox and crypto dependencies
-cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
-cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
 androidCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "android-security" }
-coreCrypto = { module = "com.wire:core-crypto", version.ref = "core-crypto-multiplatform" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }

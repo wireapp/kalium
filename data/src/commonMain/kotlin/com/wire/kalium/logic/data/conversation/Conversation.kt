@@ -459,7 +459,7 @@ enum class InteractionAvailability {
     LEGAL_HOLD
 }
 
-data class MembersInfo(val self: Conversation.Member, val otherMembers: List<Conversation.Member>)
+data class MembersInfo(val self: Conversation.Member?, val otherMembers: List<Conversation.Member>)
 
 data class MemberDetails(val user: User, val role: Conversation.Member.Role)
 

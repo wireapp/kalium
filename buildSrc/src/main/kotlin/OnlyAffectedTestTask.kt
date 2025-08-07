@@ -72,9 +72,10 @@ open class OnlyAffectedTestTask : DefaultTask() {
         val tasksName = mutableListOf<String>()
         val hasToRunAllTests = hasToRunAllTests()
         project.childProjects.values
-            .filter { computeModulesPredicate(hasToRunAllTests, affectedModules.contains(it.name) && !ignoredModules.contains(it.name)) }
+            .filter { (hasToRunAllTests || affectedModules.contains(it.name)) && !ignoredModules.contains(it.name) }
             .forEach { childProject ->
-                tasksName.addAll(childProject.tasks
+                tasksName.addAll(
+                    childProject.tasks
                     .filter { it.name.equals(configuration.testTarget, true) }
                     .map { task ->
                         println("Adding task: ${childProject.name}:${task.name}")
@@ -94,11 +95,6 @@ open class OnlyAffectedTestTask : DefaultTask() {
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
-
-    /**
-     * Get the predicate to compute if the module should be included or not in the test
-     */
-    private fun computeModulesPredicate(allTests: Boolean, modulesPredicate: Boolean) = allTests || modulesPredicate
 
     /**
      * Check if we have to run all tests, by looking at untracked by dag-command files [globalBuildSettingsFiles].
@@ -127,10 +123,13 @@ open class OnlyAffectedTestTask : DefaultTask() {
      * @param taskName how the task will be named when registered
      * @param testTarget the target test task that would be wrapped in this "smart" execution
      */
-    enum class TestTaskConfiguration(val taskName: String, val testTarget: String) {
-        ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest"),
-        ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest"),
-        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test")
+    enum class TestTaskConfiguration(val taskName: String, val testTarget: String, val ignoredModules: List<String> = emptyList()) {
+        ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest", IGNORED_MODULES),
+        ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest", IGNORED_MODULES),
+        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test", IGNORED_MODULES);
     }
 
+    private companion object {
+        val IGNORED_MODULES = listOf("android", "protobuf", "protobuf-codegen")
+    }
 }

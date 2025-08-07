@@ -80,6 +80,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.joinAll
@@ -1710,7 +1711,83 @@ class CallRepositoryTest {
         assertEquals(updatedParticipants, result.participants)
     }
 
+    @Test
+    fun givenALastCallIsActive_whenObservingLastActiveCall_thenReturnCall() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
+        val (_, callRepository) = Arrangement()
+            .withObserveLastActiveCallReturning(flowOf(callEntity))
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .arrange()
+        // when
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
+            // then
+            assertNotNull(awaitItem()).also { call ->
+                assertEquals(CallStatus.ESTABLISHED, call.status)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
+    @Test
+    fun givenALastCallIsNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
+        // given
+        val (_, callRepository) = Arrangement()
+            .withObserveLastActiveCallReturning(flowOf(null))
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .arrange()
+        // when
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
+            // then
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenALastCallIsUpdated_whenObservingLastActiveCall_thenReturnUpdatedCall() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(status = CallEntity.Status.ANSWERED)
+        val updatedCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
+        val callEntityFlow = MutableStateFlow<CallEntity?>(callEntity)
+        val (_, callRepository) = Arrangement()
+            .withObserveLastActiveCallReturning(callEntityFlow)
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .arrange()
+        // when
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
+            // then
+            assertNotNull(awaitItem()).also { call ->
+                assertEquals(CallStatus.ANSWERED, call.status)
+            }
+            callEntityFlow.emit(updatedCallEntity)
+            assertNotNull(awaitItem()).also { call ->
+                assertEquals(CallStatus.ESTABLISHED, call.status)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenALastCallBecomesNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
+        val callEntityFlow = MutableStateFlow<CallEntity?>(callEntity)
+        val (_, callRepository) = Arrangement()
+            .withObserveLastActiveCallReturning(callEntityFlow)
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .arrange()
+        // when
+        callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
+            // then
+            assertNotNull(awaitItem()).also { call ->
+                assertEquals(CallStatus.ESTABLISHED, call.status)
+            }
+            callEntityFlow.emit(null)
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
@@ -1976,6 +2053,12 @@ class CallRepositoryTest {
             }.invokes {
                 delay(delay)
             }
+        }
+
+        fun withObserveLastActiveCallReturning(result: Flow<CallEntity?>) = apply {
+            every {
+                callDAO.observeLastActiveCallByConversationId(any())
+            }.returns(result)
         }
 
         companion object {

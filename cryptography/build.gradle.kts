@@ -83,14 +83,12 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.cryptobox4j)
                 implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting
         val jsMain by getting {
             dependencies {
-                implementation(npm("@wireapp/cryptobox", "12.7.2"))
                 implementation(npm("@wireapp/store-engine", "4.9.9"))
             }
         }
@@ -98,7 +96,6 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.cryptoboxAndroid)
                 implementation(libs.androidCrypto)
                 implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
                     exclude("androidx.core")
@@ -106,11 +103,7 @@ kotlin {
                 }
             }
         }
-        val appleMain by getting {
-            dependencies {
-                implementation(libs.coreCrypto)
-            }
-        }
+        val appleMain by getting
     }
 }
 

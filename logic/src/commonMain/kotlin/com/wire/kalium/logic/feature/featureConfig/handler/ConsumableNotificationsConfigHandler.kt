@@ -23,11 +23,14 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
-class AsyncNotificationsConfigHandler(
+/**
+ * Consumable Notifications Config Handler aka. Async Notifications.
+ */
+class ConsumableNotificationsConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(asyncNotificationsConfigModel: ConfigsStatusModel): Either<CoreFailure, Unit> {
-        val isAsyncNotificationsEnabled = asyncNotificationsConfigModel.status == Status.ENABLED
+    suspend fun handle(consumableNotificationsConfigModel: ConfigsStatusModel): Either<CoreFailure, Unit> {
+        val isAsyncNotificationsEnabled = consumableNotificationsConfigModel.status == Status.ENABLED
         return userConfigRepository.setAsyncNotificationsEnabled(isAsyncNotificationsEnabled)
     }
 }
