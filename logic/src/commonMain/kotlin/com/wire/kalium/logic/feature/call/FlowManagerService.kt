@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
 import io.mockative.Mockable
 
@@ -27,7 +28,7 @@ interface FlowManagerService {
     suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
     suspend fun flipToFrontCamera(conversationId: ConversationId)
     suspend fun flipToBackCamera(conversationId: ConversationId)
-    suspend fun setUIRotation(rotation: Int)
+    suspend fun setUIRotation(rotation: PlatformRotation)
 
     /**
      * Suspends the execution of the current coroutine and starts the flow manager.
@@ -40,6 +41,6 @@ expect class FlowManagerServiceImpl : FlowManagerService {
     override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
     override suspend fun flipToFrontCamera(conversationId: ConversationId)
     override suspend fun flipToBackCamera(conversationId: ConversationId)
-    override suspend fun setUIRotation(rotation: Int)
+    override suspend fun setUIRotation(rotation: PlatformRotation)
     override suspend fun startFlowManager()
 }

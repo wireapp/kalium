@@ -77,6 +77,7 @@ import com.wire.kalium.logic.feature.call.usecase.RequestVideoStreamsUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestPreviewActiveUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestRemoteVideoStatesUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestVideoTypeUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetUIRotationUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetVideoPreviewUseCase
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
@@ -204,6 +205,7 @@ class CallsScope internal constructor(
     val setVideoSendState: SetVideoSendStateUseCase get() = SetVideoSendStateUseCase(callManager)
 
     val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
+    val setUIRotation: SetUIRotationUseCase get() = SetUIRotationUseCase(flowManagerService)
     val flipToFrontCamera: FlipToFrontCameraUseCase get() = FlipToFrontCameraUseCase(flowManagerService)
     val flipToBackCamera: FlipToBackCameraUseCase get() = FlipToBackCameraUseCase(flowManagerService)
 
