@@ -61,6 +61,8 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
@@ -75,6 +77,7 @@ import com.wire.kalium.logic.feature.call.usecase.RequestVideoStreamsUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestPreviewActiveUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestRemoteVideoStatesUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestVideoTypeUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetUIRotationUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetVideoPreviewUseCase
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
@@ -202,6 +205,7 @@ class CallsScope internal constructor(
     val setVideoSendState: SetVideoSendStateUseCase get() = SetVideoSendStateUseCase(callManager)
 
     val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
+    val setUIRotation: SetUIRotationUseCase get() = SetUIRotationUseCase(flowManagerService)
     val flipToFrontCamera: FlipToFrontCameraUseCase get() = FlipToFrontCameraUseCase(flowManagerService)
     val flipToBackCamera: FlipToBackCameraUseCase get() = FlipToBackCameraUseCase(flowManagerService)
 
@@ -252,4 +256,7 @@ class CallsScope internal constructor(
 
     val observeInCallReactions: ObserveInCallReactionsUseCase
         get() = ObserveInCallReactionsUseCaseImpl(inCallReactionsRepository)
+
+    val observeLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
+        get() = ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
 }

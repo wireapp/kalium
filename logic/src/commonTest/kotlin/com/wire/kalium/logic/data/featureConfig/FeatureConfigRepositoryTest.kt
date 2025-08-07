@@ -90,7 +90,11 @@ class FeatureConfigRepositoryTest {
                 Status.ENABLED
             ),
             channelsModel = ChannelFeatureConfiguration.Disabled,
-            asyncNotificationsModel = ConfigsStatusModel(Status.DISABLED)
+            consumableNotificationsModel = ConfigsStatusModel(Status.DISABLED),
+            allowedGlobalOperationsModel = AllowedGlobalOperationsModel(
+                status = Status.DISABLED,
+                mlsConversationsReset = false,
+            )
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -179,7 +183,7 @@ class FeatureConfigRepositoryTest {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
-            FeatureConfigData.AsyncNotifications(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

@@ -77,6 +77,7 @@ WHERE
     )
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
+    AND ConversationDetails.deletedLocally = 0
 GROUP BY ConversationDetails.qualifiedId;
 
 selectAllConversationDetailsWithEvents:
@@ -152,6 +153,7 @@ WHERE
     )
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
+    AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
@@ -179,6 +181,7 @@ WHERE
     )
     AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
     AND ConversationDetails.isActive
+    AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
