@@ -40,6 +40,9 @@ DELETE FROM Member WHERE conversation = :conversationId AND user IN :userIds;
 deleteMembersFromConversation:
 DELETE FROM Member WHERE conversation = ?;
 
+selectAllMembers:
+SELECT * FROM Member;
+
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = :conversation;
 

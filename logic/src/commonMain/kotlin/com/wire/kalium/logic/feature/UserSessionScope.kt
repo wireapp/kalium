@@ -818,6 +818,7 @@ class UserSessionScope internal constructor(
         get() = UserDataSource(
             userDAO = userStorage.database.userDAO,
             clientDAO = userStorage.database.clientDAO,
+            memberDAO = userStorage.database.memberDAO,
             selfApi = authenticatedNetworkContainer.selfApi,
             userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
             upgradePersonalToTeamApi = authenticatedNetworkContainer.upgradePersonalToTeamApi,
