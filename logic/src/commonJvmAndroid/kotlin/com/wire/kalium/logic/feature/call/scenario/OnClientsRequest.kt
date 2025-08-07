@@ -22,6 +22,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.ClientsRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +36,7 @@ internal class OnClientsRequest(
 
     override fun onClientsRequest(inst: Handle, conversationId: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationId")
+            callingLogger.d("[OnClientsRequest] -> ConversationId: ${conversationId.obfuscateId()}")
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
             conversationClientsInCallUpdater(conversationIdWithDomain)
         }
