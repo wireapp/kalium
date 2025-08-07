@@ -19,12 +19,13 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.notification.LocalNotification
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
@@ -63,6 +64,23 @@ internal interface MessageRepositoryArrangement {
         originalConversation: Matcher<ConversationId> = AnyMatcher(valueOf()),
         targetConversation: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
+
+    suspend fun withEditCompositeMessage(
+        result: Either<StorageFailure, Unit>,
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
+        content: Matcher<MessageContent.CompositeEdited> = AnyMatcher(valueOf()),
+        messageId: Matcher<String> = AnyMatcher(valueOf()),
+        date: Matcher<Long> = AnyMatcher(valueOf())
+    ) {
+        coEvery {
+            messageRepository.updateCompositeMessage(
+                matches { conversationId.matches(it) },
+                matches { content.matches(it) },
+                matches { messageId.matches(it) },
+                matches { date.matches(it) }
+            )
+        }.returns(result)
+    }
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
@@ -124,6 +142,23 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
             messageRepository.moveMessagesToAnotherConversation(
                 matches { originalConversation.matches(it) },
                 matches { targetConversation.matches(it) }
+            )
+        }.returns(result)
+    }
+
+    override suspend fun withEditCompositeMessage(
+        result: Either<StorageFailure, Unit>,
+        conversationId: Matcher<ConversationId>,
+        content: Matcher<MessageContent.CompositeEdited>,
+        messageId: Matcher<String>,
+        date: Matcher<Long>
+    ) {
+        coEvery {
+            messageRepository.updateCompositeMessage(
+                matches { conversationId.matches(it) },
+                matches { content.matches(it) },
+                matches { messageId.matches(it) },
+                matches { date.matches(it) }
             )
         }.returns(result)
     }
