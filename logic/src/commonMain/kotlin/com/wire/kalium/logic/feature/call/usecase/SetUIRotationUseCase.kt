@@ -16,17 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.call.scenario
+package com.wire.kalium.logic.feature.call.usecase
 
-import com.sun.jna.Pointer
-import com.wire.kalium.calling.callbacks.MissedCallHandler
-import com.wire.kalium.calling.types.Uint32_t
-import com.wire.kalium.common.logger.callingLogger
-import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.feature.call.FlowManagerService
+import com.wire.kalium.logic.util.PlatformRotation
 
-object OnMissedCall : MissedCallHandler {
-    override fun onMissedCall(conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer?) {
-        // NOTHING TO DO | This callback is not triggered by AVS
-        callingLogger.i("[onMissedCall] - conversationId: ${conversationId.obfuscateId()} | userId: ${userId.obfuscateId()}")
+/**
+ * This use case is responsible for setting the UI rotation in a call.
+ */
+class SetUIRotationUseCase internal constructor(private val flowManagerService: FlowManagerService) {
+
+    /**
+     * @param rotation the target rotation to set the UI rotation.
+     */
+    suspend operator fun invoke(rotation: PlatformRotation) {
+        flowManagerService.setUIRotation(rotation)
     }
 }

@@ -38,7 +38,7 @@ class OnEstablishedCall(
     override fun onEstablishedCall(remoteConversationId: String, userId: String, clientId: String, arg: Pointer?) {
         callingLogger.i(
             "[OnEstablishedCall] -> ConversationId: ${remoteConversationId.obfuscateId()}" +
-                    " | UserId: $userId | ClientId: $clientId"
+                    " | UserId: ${userId.obfuscateId()} | ClientId: ${clientId.obfuscateId()}"
         )
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId)
 
