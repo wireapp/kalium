@@ -23,6 +23,7 @@ import com.waz.log.LogHandler
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -82,9 +83,9 @@ actual class FlowManagerServiceImpl(
         }
     }
 
-    actual override suspend fun setUIRotation(rotation: Int) {
+    actual override suspend fun setUIRotation(rotation: PlatformRotation) {
         withContext(dispatchers.default) {
-            flowManager.await().setUIRotation(rotation)
+            flowManager.await().setUIRotation(rotation.value)
         }
     }
 
