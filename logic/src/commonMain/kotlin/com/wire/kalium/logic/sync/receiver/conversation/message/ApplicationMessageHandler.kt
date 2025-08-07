@@ -172,7 +172,7 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun processSignaling(transactionContext: CryptoTransactionContext, signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {

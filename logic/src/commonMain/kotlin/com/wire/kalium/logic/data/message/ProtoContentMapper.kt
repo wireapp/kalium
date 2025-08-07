@@ -68,7 +68,6 @@ import com.wire.kalium.protobuf.messages.TrackingIdentifier
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
-import pbandk.Message
 
 @Mockable
 interface ProtoContentMapper {
@@ -349,7 +348,8 @@ class ProtoContentMapperImpl(
             External(
                 ByteArr(protoContent.otrKey),
                 protoContent.sha256?.let { ByteArr(it) },
-                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) })
+                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) }
+            )
         )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
@@ -406,8 +406,6 @@ class ProtoContentMapperImpl(
         genericMessage: GenericMessage,
         encodedContent: PlainMessageBlob
     ): MessageContent.FromProto {
-        val typeName = genericMessage.content?.value?.let { it as? Message }?.descriptor?.name
-
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent.value)
             is GenericMessage.Content.Asset -> unpackAsset(protoContent)
@@ -435,7 +433,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
-            is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
+            is GenericMessage.Content.Edited -> unpackEdited(protoContent, genericMessage)
             is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
@@ -627,12 +625,7 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackEdited(
-        protoContent: GenericMessage.Content.Edited,
-        typeName: String?,
-        encodedContent: PlainMessageBlob,
-        genericMessage: GenericMessage
-    ): MessageContent.FromProto {
+    private fun unpackEdited(protoContent: GenericMessage.Content.Edited, genericMessage: GenericMessage): MessageContent.FromProto {
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
             is MessageEdit.Content.Text -> {
