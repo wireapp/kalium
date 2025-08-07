@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
 import kotlinx.coroutines.CoroutineScope
 
@@ -41,7 +42,7 @@ actual class FlowManagerServiceImpl(
         TODO("Not yet implemented")
     }
 
-    actual override suspend fun setUIRotation(rotation: Int) {
+    actual override suspend fun setUIRotation(rotation: PlatformRotation) {
         kaliumLogger.w("setUIRotation for JVM but not supported yet.")
     }
 

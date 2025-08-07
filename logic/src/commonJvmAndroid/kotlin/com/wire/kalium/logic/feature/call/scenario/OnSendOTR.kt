@@ -22,6 +22,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -55,10 +56,12 @@ internal class OnSendOTR(
         myClientsOnly: Boolean,
         arg: Pointer?
     ): Int {
-        callingLogger.i("[OnSendOTR] -> ConversationId: $remoteConversationId")
+        callingLogger.i("[OnSendOTR] -> ConversationId: ${remoteConversationId.obfuscateId()}")
         return if (selfUserId != remoteSelfUserId && selfClientId != remoteClientIdSelf) {
-            callingLogger.i("[OnSendOTR] -> selfUserId: $selfUserId != userIdSelf: $remoteSelfUserId")
-            callingLogger.i("[OnSendOTR] -> selfClientId: $selfClientId != clientIdSelf: $remoteClientIdSelf")
+            callingLogger
+                .i("[OnSendOTR] -> selfUserId: ${selfUserId.obfuscateId()} != userIdSelf: ${remoteSelfUserId.obfuscateId()}")
+            callingLogger
+                .i("[OnSendOTR] -> selfClientId: ${selfClientId.obfuscateId()} != clientIdSelf: ${remoteClientIdSelf.obfuscateId()}")
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
             try {
