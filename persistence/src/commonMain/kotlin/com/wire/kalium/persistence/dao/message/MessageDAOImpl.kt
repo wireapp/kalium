@@ -610,6 +610,9 @@ internal class MessageDAOImpl internal constructor(
         with(newCompositeContent) {
             // start a transaction for operations in message and button content tables.
             queries.transaction {
+                // delete all buttons for the current message
+                buttonContentQueries.deleteAllButtons(conversationId, currentMessageId)
+
                 // update the message content associated with the composite message
                 text?.let { textContent ->
                     updateTextMessageContentInDB(
@@ -620,9 +623,6 @@ internal class MessageDAOImpl internal constructor(
                         newMessageId = newMessageId
                     )
                 }
-
-                // delete all buttons for the current message
-                buttonContentQueries.deleteAllButtons(conversationId, currentMessageId)
 
                 // insert new buttons if any
                 buttonList.forEach { button ->
