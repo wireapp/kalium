@@ -127,14 +127,6 @@ kotlin {
             }
         }
     }
-    iosX64 {
-        binaries {
-            // Configure the existing 'debugTest' binary instead of creating a new one
-            getTest("debug").apply {
-                freeCompilerArgs += "-Xdisable-phases=CompilerPhase.CacheBuilder"
-            }
-        }
-    }
 }
 
 android {
