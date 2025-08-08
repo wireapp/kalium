@@ -73,6 +73,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderI
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.websocket.WebSocketSession
 
@@ -162,4 +163,6 @@ internal class AuthenticatedNetworkContainerV11 internal constructor(
 
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV11(networkClient)
+
+    override val cellsHttpClient: HttpClient = networkClient.httpClient
 }
