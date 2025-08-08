@@ -47,6 +47,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -99,6 +100,7 @@ internal class ApplicationMessageHandlerImpl(
     private val dataTransferEventHandler: DataTransferEventHandler,
     private val inCallReactionsRepository: InCallReactionsRepository,
     private val buttonActionHandler: ButtonActionHandler,
+    private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -170,7 +172,7 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun processSignaling(transactionContext: CryptoTransactionContext, signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
@@ -236,6 +238,8 @@ internal class ApplicationMessageHandlerImpl(
                 senderUserId = signaling.senderUserId,
                 emojis = content.emojis.keys,
             )
+
+            is MessageContent.CompositeEdited -> messageCompositeEditHandler.handle(signaling, content)
         }
     }
 

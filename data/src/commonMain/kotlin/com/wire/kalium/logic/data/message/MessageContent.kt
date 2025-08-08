@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -201,18 +202,18 @@ sealed interface MessageContent {
         val newMentions: List<MessageMention> = listOf()
     ) : Signaling
 
+    data class CompositeEdited(
+        val editMessageId: String,
+        val newTextContent: Text? = null,
+        val newButtonList: List<Button> = listOf()
+    ) : Signaling
+
     data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Composite(
         val textContent: Text?,
         val buttonList: List<Button>
-    ) : Regular() {
-        data class Button(
-            val text: String,
-            val id: String,
-            val isSelected: Boolean
-        )
-    }
+    ) : Regular()
 
     /**
      * Notifies the author of a [Composite] message that a user has
@@ -476,6 +477,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.DataTransfer -> "DataTransfer"
     is MessageContent.InCallEmoji -> "InCallEmoji"
     is MessageContent.Multipart -> "Multipart"
+    is MessageContent.CompositeEdited -> "CompositeEdited"
     null -> "null"
 }
 

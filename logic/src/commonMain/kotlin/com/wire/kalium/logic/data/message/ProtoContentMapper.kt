@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.composite.CompositeButton
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -68,7 +69,6 @@ import com.wire.kalium.protobuf.messages.TrackingIdentifier
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
-import pbandk.Message
 
 @Mockable
 interface ProtoContentMapper {
@@ -144,7 +144,10 @@ class ProtoContentMapperImpl(
             is MessageContent.Receipt -> packReceipt(readableContent)
             is MessageContent.ClientAction -> packClientAction()
             is MessageContent.TextEdited -> packEdited(readableContent)
-            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
+            is MessageContent.CompositeEdited,
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: ${readableContent.getType()}"
                 )
@@ -184,6 +187,7 @@ class ProtoContentMapperImpl(
                             )
                         )
                     )
+
                 is CellAssetContent ->
                     Attachment(
                         content = Attachment.Content.CellAsset(
@@ -330,6 +334,7 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
+            is MessageContent.CompositeEdited,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
             is MessageContent.Multipart -> throw IllegalArgumentException(
@@ -341,9 +346,11 @@ class ProtoContentMapperImpl(
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
         GenericMessage.Content.External(
-            External(ByteArr(protoContent.otrKey),
+            External(
+                ByteArr(protoContent.otrKey),
                 protoContent.sha256?.let { ByteArr(it) },
-                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) })
+                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) }
+            )
         )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
@@ -400,8 +407,6 @@ class ProtoContentMapperImpl(
         genericMessage: GenericMessage,
         encodedContent: PlainMessageBlob
     ): MessageContent.FromProto {
-        val typeName = genericMessage.content?.value?.let { it as? Message }?.descriptor?.name
-
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent.value)
             is GenericMessage.Content.Asset -> unpackAsset(protoContent)
@@ -429,7 +434,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
-            is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
+            is GenericMessage.Content.Edited -> unpackEdited(protoContent, genericMessage)
             is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
@@ -483,6 +488,7 @@ class ProtoContentMapperImpl(
                     // TODO: implement support for regular assets WPB-16590
                     return MessageContent.Ignored
                 }
+
                 is Attachment.Content.CellAsset -> CellAssetContent(
                     id = content.value.uuid,
                     versionId = "",
@@ -492,6 +498,7 @@ class ProtoContentMapperImpl(
                     metadata = content.value.initialMetaData?.toModel(),
                     transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
                 )
+
                 null -> null
             }
         },
@@ -619,12 +626,7 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackEdited(
-        protoContent: GenericMessage.Content.Edited,
-        typeName: String?,
-        encodedContent: PlainMessageBlob,
-        genericMessage: GenericMessage
-    ): MessageContent.FromProto {
+    private fun unpackEdited(protoContent: GenericMessage.Content.Edited, genericMessage: GenericMessage): MessageContent.FromProto {
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
             is MessageEdit.Content.Text -> {
@@ -633,9 +635,17 @@ class ProtoContentMapperImpl(
                     editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
                 )
             }
-            // TODO: for now we do not implement it
+
             is MessageEdit.Content.Composite -> {
-                MessageContent.Unknown(typeName = typeName, encodedData = encodedContent.data)
+                val editedText = editContent.value.items.firstNotNullOfOrNull { item ->
+                    item.text
+                }?.let(::unpackText)
+
+                MessageContent.CompositeEdited(
+                    editMessageId = replacingMessageId,
+                    newTextContent = editedText,
+                    newButtonList = unpackButtonList(editContent.value.items),
+                )
             }
 
             null -> {
@@ -718,16 +728,17 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun packButtonList(buttonList: List<MessageContent.Composite.Button>): List<Composite.Item> = buttonList.map {
-        Composite.Item(
-            Composite.Item.Content.Button(
-                button = Button(
-                    text = it.text,
-                    id = it.id
+    private fun packButtonList(buttonList: List<CompositeButton>): List<Composite.Item> =
+        buttonList.map {
+            Composite.Item(
+                Composite.Item.Content.Button(
+                    button = Button(
+                        text = it.text,
+                        id = it.id
+                    )
                 )
             )
-        )
-    }
+        }
 
     private fun unpackText(protoContent: Text) = MessageContent.Text(
         value = protoContent.content,
@@ -741,10 +752,10 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null
     )
 
-    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<MessageContent.Composite.Button> =
+    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<CompositeButton> =
         compositeItemList.mapNotNull {
             it.button?.let { button ->
-                MessageContent.Composite.Button(
+                CompositeButton(
                     text = button.text,
                     id = button.id,
                     isSelected = false
@@ -872,7 +883,7 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.InCallEmoji(
             inCallEmoji = InCallEmoji(
                 emojis = content.emojis.map { entry ->
-                   InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
+                    InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
                 }
             )
         )
