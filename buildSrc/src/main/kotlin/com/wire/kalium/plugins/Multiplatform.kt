@@ -94,6 +94,7 @@ fun Project.configureDefaultMultiplatform(
         resolutionStrategy {
             force("org.jetbrains.kotlin:kotlin-test:${libs.findVersion("kotlin").get().requiredVersion}")
             eachDependency {
+                // TODO remove when all libraries will be using higher jna version than 5.16
                 if (requested.group == "net.java.dev.jna" && requested.name == "jna") {
                     useVersion("5.17.0")
                     because("Required for 16KB page support on Android 15+")
