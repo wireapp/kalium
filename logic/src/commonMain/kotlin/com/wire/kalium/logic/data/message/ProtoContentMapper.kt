@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.composite.CompositeButton
@@ -51,7 +52,12 @@ import com.wire.kalium.protobuf.messages.DataTransfer
 import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.GenericMessage.Content.Availability
+import com.wire.kalium.protobuf.messages.GenericMessage.Content.Deleted
 import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
+import com.wire.kalium.protobuf.messages.HistoryClientAvailable
+import com.wire.kalium.protobuf.messages.HistoryClientRequest
+import com.wire.kalium.protobuf.messages.HistoryClientResponse
 import com.wire.kalium.protobuf.messages.InCallEmoji
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
@@ -66,9 +72,11 @@ import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
+import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
 @Mockable
 interface ProtoContentMapper {
@@ -130,9 +138,9 @@ class ProtoContentMapperImpl(
             is MessageContent.Calling -> packCalling(readableContent)
             is MessageContent.Asset -> packAsset(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.Knock -> packKnock(readableContent, legalHoldStatus)
-            is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
+            is MessageContent.DeleteMessage -> Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
-            is MessageContent.Availability -> GenericMessage.Content.Availability(
+            is MessageContent.Availability -> Availability(
                 availabilityMapper.fromModelAvailabilityToProto(
                     readableContent.status
                 )
@@ -161,6 +169,27 @@ class ProtoContentMapperImpl(
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
             is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
             is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
+            is MessageContent.History -> packHistoryMessage(readableContent)
+        }
+    }
+
+    private fun packHistoryMessage(readableContent: MessageContent.History): GenericMessage.Content<out Any> {
+        fun mapHistoryClientToProto(historyClient: HistoryClient): ProtoHistoryClient {
+            return ProtoHistoryClient(
+                clientId = historyClient.id,
+                createdAt = historyClient.creationTime.toIsoDateTimeString(),
+                secret = ByteArr(historyClient.secret.value)
+            )
+        }
+        return when (readableContent) {
+            MessageContent.History.ClientsRequest -> GenericMessage.Content.HistoryClientRequest(HistoryClientRequest())
+            is MessageContent.History.ClientsResponse -> GenericMessage.Content.HistoryClientResponse(
+                HistoryClientResponse(readableContent.clients.map { mapHistoryClientToProto(it) })
+            )
+
+            is MessageContent.History.NewClientAvailable -> GenericMessage.Content.HistoryClientAvailable(
+                HistoryClientAvailable(mapHistoryClientToProto(readableContent.client))
+            )
         }
     }
 
@@ -337,6 +366,7 @@ class ProtoContentMapperImpl(
             is MessageContent.CompositeEdited,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
+            is MessageContent.History,
             is MessageContent.Multipart -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
@@ -349,7 +379,9 @@ class ProtoContentMapperImpl(
             External(
                 ByteArr(protoContent.otrKey),
                 protoContent.sha256?.let { ByteArr(it) },
-                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) }
+                protoContent.encryptionAlgorithm?.let {
+                    encryptionAlgorithmMapper.toProtoBufModel(it)
+                }
             )
         )
 
@@ -449,6 +481,10 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.InCallEmoji -> unpackInCallEmoji(protoContent)
+
+            is GenericMessage.Content.HistoryClientAvailable -> unpackHistoryClientAvailable(protoContent)
+            is GenericMessage.Content.HistoryClientRequest -> unpackHistoryClientRequest()
+            is GenericMessage.Content.HistoryClientResponse -> unpackHistoryClientResponse(protoContent)
 
             null -> {
                 kaliumLogger.w(
@@ -888,6 +924,21 @@ class ProtoContentMapperImpl(
             )
         )
     }
+
+    private fun unpackHistoryClientRequest(): MessageContent.History =
+        MessageContent.History.ClientsRequest
+
+    private fun protoHistoryClientToHistoryClient(protoClient: ProtoHistoryClient) = HistoryClient(
+        id = protoClient.clientId,
+        secret = HistoryClient.Secret(protoClient.secret.array),
+        creationTime = Instant.parse(protoClient.createdAt),
+    )
+
+    private fun unpackHistoryClientResponse(protoContent: GenericMessage.Content.HistoryClientResponse): MessageContent.History =
+        MessageContent.History.ClientsResponse(protoContent.value.clients.map(::protoHistoryClientToHistoryClient))
+
+    private fun unpackHistoryClientAvailable(protoContent: GenericMessage.Content.HistoryClientAvailable): MessageContent.History =
+        MessageContent.History.NewClientAvailable(protoHistoryClientToHistoryClient(protoContent.value.client))
 
     private fun extractConversationId(
         qualifiedConversationID: QualifiedConversationId?,
