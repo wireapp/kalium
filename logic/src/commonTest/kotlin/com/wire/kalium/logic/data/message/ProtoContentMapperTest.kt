@@ -216,7 +216,21 @@ class ProtoContentMapperTest {
     @Test
     fun givenEditedCompositeGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectEditedMessageId() {
         val replacedMessageId = "replacedMessageId"
-        val compositeContent = MessageEdit.Content.Composite(Composite())
+        val compositeContent = MessageEdit.Content.Composite(
+            Composite(
+                listOf(
+                    Composite.Item(Composite.Item.Content.Text(Text("textContent"))),
+                    Composite.Item(
+                        Composite.Item.Content.Button(
+                            com.wire.kalium.protobuf.messages.Button(
+                                text = "button1",
+                                id = "button1",
+                            )
+                        )
+                    )
+                )
+            )
+        )
         val genericMessage = GenericMessage(
             messageId = TEST_MESSAGE_UUID,
             content = GenericMessage.Content.Edited(

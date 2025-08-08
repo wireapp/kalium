@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.composite.CompositeButton
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -727,7 +728,7 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun packButtonList(buttonList: List<com.wire.kalium.logic.data.message.composite.Button>): List<Composite.Item> =
+    private fun packButtonList(buttonList: List<CompositeButton>): List<Composite.Item> =
         buttonList.map {
             Composite.Item(
                 Composite.Item.Content.Button(
@@ -751,10 +752,10 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null
     )
 
-    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<com.wire.kalium.logic.data.message.composite.Button> =
+    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<CompositeButton> =
         compositeItemList.mapNotNull {
             it.button?.let { button ->
-                com.wire.kalium.logic.data.message.composite.Button(
+                CompositeButton(
                     text = button.text,
                     id = button.id,
                     isSelected = false

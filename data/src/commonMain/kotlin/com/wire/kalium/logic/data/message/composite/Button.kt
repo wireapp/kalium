@@ -25,3 +25,5 @@ data class Button(
     val id: String,
     val isSelected: Boolean
 )
+
+typealias CompositeButton = Button
