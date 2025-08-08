@@ -2341,7 +2341,8 @@ class UserSessionScope internal constructor(
             e2eiConfigHandler,
             appLockConfigHandler,
             channels.channelsFeatureConfigHandler,
-            consumableNotificationsConfigHandler
+            consumableNotificationsConfigHandler,
+            allowedGlobalOperationsHandler,
         )
 
     val team: TeamScope

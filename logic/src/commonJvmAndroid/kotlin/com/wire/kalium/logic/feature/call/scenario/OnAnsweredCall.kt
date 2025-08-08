@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.AnsweredCallHandler
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.call.CallStatus
@@ -34,7 +35,7 @@ class OnAnsweredCall(
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : AnsweredCallHandler {
     override fun onAnsweredCall(conversationId: String, arg: Pointer?) {
-        callingLogger.i("[OnAnsweredCall] -> ConversationId: $conversationId")
+        callingLogger.i("[OnAnsweredCall] -> ConversationId: ${conversationId.obfuscateId()}")
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {

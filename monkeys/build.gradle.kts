@@ -63,7 +63,7 @@ tasks.startScripts {
 
 tasks.jar {
     manifest {
-        attributes["CC-Version"] = libs.coreCrypto.get().version
+        attributes["CC-Version"] = libs.coreCryptoJvm.get().version
     }
 }
 

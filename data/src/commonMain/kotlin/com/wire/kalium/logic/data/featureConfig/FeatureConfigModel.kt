@@ -42,7 +42,8 @@ data class FeatureConfigModel(
     val e2EIModel: E2EIModel,
     val mlsMigrationModel: MLSMigrationModel?,
     val channelsModel: ChannelFeatureConfiguration,
-    val consumableNotificationsModel: ConfigsStatusModel?
+    val consumableNotificationsModel: ConfigsStatusModel?,
+    val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
 )
 
 enum class Status {

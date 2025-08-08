@@ -71,6 +71,7 @@ private class CellsAwsClientJvm(
             enableAwsChunked = true
             endpointUrl = Url.parse(this@with?.serverUrl ?: "")
             credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
+            interceptors.add(RemoveExpectInterceptor())
         }
     }
 
@@ -178,9 +179,7 @@ private class CellsAwsClientJvm(
     ): T =
         s3Client.withConfig {
             if (uploadProgressListener != null) {
-                Header.TARGET_PATH
                 interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
-                interceptors.add(RemoveExpectInterceptor())
             }
             if (downloadProgressListener != null) {
                 interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
