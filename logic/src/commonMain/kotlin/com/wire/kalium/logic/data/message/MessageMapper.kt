@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.logic.data.message.attachment.toModel
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.toModel
@@ -646,7 +647,7 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
     is MessageEntityContent.Composite -> MessageContent.Composite(
         this.text?.toMessageContent(hidden, selfUserId) as? MessageContent.Text,
         this.buttonList.map {
-            MessageContent.Composite.Button(
+            Button(
                 text = it.text,
                 id = it.id,
                 isSelected = it.isSelected

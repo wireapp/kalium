@@ -65,7 +65,7 @@ internal class MessageDAOImpl internal constructor(
     private val userQueries: UsersQueries,
     private val coroutineContext: CoroutineContext,
     private val assetStatusQueries: MessageAssetTransferStatusQueries,
-    buttonContentQueries: ButtonContentQueries
+    private val buttonContentQueries: ButtonContentQueries
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
@@ -350,42 +350,62 @@ internal class MessageDAOImpl internal constructor(
         newMessageId: String
     ): Unit = withContext(coroutineContext) {
         queries.transaction {
-            queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
-            reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
-            queries.deleteMessageMentions(currentMessageId, conversationId)
-            queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
-            queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
-            newTextContent.linkPreview.forEach {
-                queries.insertMessageLinkPreview(
-                    message_id = currentMessageId,
-                    conversation_id = conversationId,
-                    url = it.url,
-                    url_offset = it.urlOffset,
-                    permanent_url = it.permanentUrl,
-                    title = it.title,
-                    summary = it.summary
-                )
-            }
-            newTextContent.mentions.forEach {
-                queries.insertMessageMention(
-                    message_id = currentMessageId,
-                    conversation_id = conversationId,
-                    start = it.start,
-                    length = it.length,
-                    user_id = it.userId
-                )
-            }
-
-            val selfMention = newTextContent.mentions.firstOrNull { it.userId == selfUserId }
-            if (selfMention != null) {
-                unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
-            } else {
-                unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MESSAGE, currentMessageId, conversationId)
-            }
-
-            queries.updateMessageId(newMessageId, currentMessageId, conversationId)
-            queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
+            updateTextMessageContentInDB(
+                editInstant = editInstant,
+                conversationId = conversationId,
+                currentMessageId = currentMessageId,
+                newTextContent = newTextContent,
+                newMessageId = newMessageId
+            )
         }
+    }
+
+    /**
+     * Be careful and run this operation in ONE wrapping transaction.
+     */
+    private fun updateTextMessageContentInDB(
+        editInstant: Instant,
+        conversationId: QualifiedIDEntity,
+        currentMessageId: String,
+        newTextContent: MessageEntityContent.Text,
+        newMessageId: String
+    ) {
+        // do not add withContext
+        queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
+        reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
+        queries.deleteMessageMentions(currentMessageId, conversationId)
+        queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
+        queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
+        newTextContent.linkPreview.forEach {
+            queries.insertMessageLinkPreview(
+                message_id = currentMessageId,
+                conversation_id = conversationId,
+                url = it.url,
+                url_offset = it.urlOffset,
+                permanent_url = it.permanentUrl,
+                title = it.title,
+                summary = it.summary
+            )
+        }
+        newTextContent.mentions.forEach {
+            queries.insertMessageMention(
+                message_id = currentMessageId,
+                conversation_id = conversationId,
+                start = it.start,
+                length = it.length,
+                user_id = it.userId
+            )
+        }
+
+        val selfMention = newTextContent.mentions.firstOrNull { it.userId == selfUserId }
+        if (selfMention != null) {
+            unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
+        } else {
+            unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MESSAGE, currentMessageId, conversationId)
+        }
+
+        queries.updateMessageId(newMessageId, currentMessageId, conversationId)
+        queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
     }
 
     override suspend fun updateLegalHoldMessageMembers(
@@ -579,6 +599,43 @@ internal class MessageDAOImpl internal constructor(
         offset = offset,
         mapper::toEntityMessageFromView
     ).executeAsList()
+
+    override suspend fun updateCompositeMessageContent(
+        conversationId: QualifiedIDEntity,
+        currentMessageId: String,
+        editInstant: Instant,
+        newCompositeContent: MessageEntityContent.Composite,
+        newMessageId: String
+    ) = withContext(coroutineContext) {
+        with(newCompositeContent) {
+            // start a transaction for operations in message and button content tables.
+            queries.transaction {
+                // delete all buttons for the current message
+                buttonContentQueries.deleteAllButtons(conversationId, currentMessageId)
+
+                // update the message content associated with the composite message
+                text?.let { textContent ->
+                    updateTextMessageContentInDB(
+                        editInstant = editInstant,
+                        conversationId = conversationId,
+                        currentMessageId = currentMessageId,
+                        newTextContent = textContent,
+                        newMessageId = newMessageId
+                    )
+                }
+
+                // insert new buttons if any
+                buttonList.forEach { button ->
+                    buttonContentQueries.insertButton(
+                        message_id = newMessageId,
+                        conversation_id = conversationId,
+                        id = button.id,
+                        text = button.text
+                    )
+                }
+            }
+        }
+    }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 

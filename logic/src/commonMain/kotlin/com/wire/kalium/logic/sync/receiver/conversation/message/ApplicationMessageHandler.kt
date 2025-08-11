@@ -47,6 +47,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -99,6 +100,7 @@ internal class ApplicationMessageHandlerImpl(
     private val dataTransferEventHandler: DataTransferEventHandler,
     private val inCallReactionsRepository: InCallReactionsRepository,
     private val buttonActionHandler: ButtonActionHandler,
+    private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -170,7 +172,7 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun processSignaling(transactionContext: CryptoTransactionContext, signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
@@ -182,23 +184,7 @@ internal class ApplicationMessageHandlerImpl(
                 userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
             }
 
-            is MessageContent.ClientAction -> {
-                logger.i(message = "ClientAction status update received: ")
-
-                val message = Message.System(
-                    id = signaling.id,
-                    content = MessageContent.CryptoSessionReset,
-                    conversationId = signaling.conversationId,
-                    date = signaling.date,
-                    senderUserId = signaling.senderUserId,
-                    status = signaling.status,
-                    senderUserName = signaling.senderUserName,
-                    expirationData = null
-                )
-
-                logger.i(message = "Persisting crypto session reset system message..")
-                persistMessage(message)
-            }
+            is MessageContent.ClientAction -> handleClientAction(signaling)
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
             is MessageContent.DeleteMessage -> deleteMessageHandler(content, signaling.conversationId, signaling.senderUserId)
@@ -236,7 +222,31 @@ internal class ApplicationMessageHandlerImpl(
                 senderUserId = signaling.senderUserId,
                 emojis = content.emojis.keys,
             )
+
+            is MessageContent.CompositeEdited -> messageCompositeEditHandler.handle(signaling, content)
+
+            is MessageContent.History -> TODO("HISTORY CLIENTS ARE NOT HANDLED YET")
         }
+    }
+
+    private suspend fun handleClientAction(
+        signaling: Message.Signaling,
+    ) {
+        logger.i(message = "ClientAction status update received: ")
+
+        val message = Message.System(
+            id = signaling.id,
+            content = MessageContent.CryptoSessionReset,
+            conversationId = signaling.conversationId,
+            date = signaling.date,
+            senderUserId = signaling.senderUserId,
+            status = signaling.status,
+            senderUserName = signaling.senderUserName,
+            expirationData = null
+        )
+
+        logger.i(message = "Persisting crypto session reset system message..")
+        persistMessage(message)
     }
 
     private suspend fun processMessage(message: Message.Regular) {

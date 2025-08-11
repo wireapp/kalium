@@ -134,15 +134,6 @@ You can run locally in your terminal:
 }%%
 
 graph LR
-  :logic["logic"]
-  :cryptography["cryptography"]
-  :util["util"]
-  :network["network"]
-  :network-util["network-util"]
-  :persistence["persistence"]
-  :logger["logger"]
-  :calling["calling"]
-  :protobuf["protobuf"]
   :persistence["persistence"]
   :logger["logger"]
   :util["util"]
@@ -153,60 +144,33 @@ graph LR
   :network["network"]
   :network-model["network-model"]
   :network-util["network-util"]
-  :logic["logic"]
-  :common["common"]
-  :data["data"]
-  :calling["calling"]
-  :network["network"]
-  :cryptography["cryptography"]
-  :cells["cells"]
-  :backup["backup"]
-  :persistence-test["persistence-test"]
-  :cryptography["cryptography"]
-  :android["android"]
-  :network["network"]
-  :cryptography["cryptography"]
-  :logic["logic"]
   :mocks["mocks"]
-  :network-model["network-model"]
-  :samples["samples"]
   :logic["logic"]
-  :calling["calling"]
-  :backup["backup"]
-  :cryptography["cryptography"]
-  :protobuf["protobuf"]
-  :logger["logger"]
-  :network["network"]
-  :persistence["persistence"]
+  :common["common"]
+  :data["data"]
   :network-util["network-util"]
-  :tango-tests["tango-tests"]
+  :logger["logger"]
+  :calling["calling"]
   :network["network"]
-  :logic["logic"]
-  :persistence["persistence"]
   :cryptography["cryptography"]
-  :monkeys["monkeys"]
+  :persistence["persistence"]
+  :protobuf["protobuf"]
   :util["util"]
   :cells["cells"]
-  :network-model["network-model"]
-  :testservice["testservice"]
-  :data["data"]
-  :benchmarks["benchmarks"]
-  :persistence["persistence"]
-  :logic["logic"]
-  :cli["cli"]
-  :network["network"]
-  :util["util"]
+  :backup["backup"]
+  :persistence-test["persistence-test"]
+  :cryptography["cryptography"]
+  :mocks["mocks"]
+  :network-util["network-util"]
+  :cells["cells"]
   :common["common"]
+  :network["network"]
+  :data["data"]
+  :network-model["network-model"]
+  :data["data"]
+  :common["common"]
+  :cryptography["cryptography"]
 
-  : --> :logic
-  : --> :cryptography
-  : --> :util
-  : --> :network
-  : --> :network-util
-  : --> :persistence
-  : --> :logger
-  : --> :calling
-  : --> :protobuf
   :persistence --> :logger
   :persistence --> :util
   :backup --> :protobuf
@@ -216,6 +180,7 @@ graph LR
   :network --> :protobuf
   :network --> :util
   :network --> :network-util
+  :network --> :mocks
   :logic --> :common
   :logic --> :data
   :logic --> :network-util
@@ -230,27 +195,8 @@ graph LR
   :logic --> :backup
   :logic --> :persistence-test
   :cryptography --> :logger
-  :android --> :network
-  :android --> :cryptography
-  :android --> :logic
   :mocks --> :network-model
-  :samples --> :logic
-  :samples --> :calling
-  :samples --> :backup
-  :samples --> :cryptography
-  :samples --> :protobuf
-  :samples --> :logger
-  :samples --> :network
-  :samples --> :persistence
   :network-util --> :logger
-  :tango-tests --> :network
-  :tango-tests --> :logic
-  :tango-tests --> :persistence
-  :tango-tests --> :cryptography
-  :monkeys --> :network
-  :monkeys --> :cryptography
-  :monkeys --> :logic
-  :monkeys --> :util
   :cells --> :common
   :cells --> :network
   :cells --> :data
@@ -258,17 +204,8 @@ graph LR
   :cells --> :persistence
   :network-model --> :logger
   :network-model --> :util
-  :testservice --> :network
-  :testservice --> :cryptography
-  :testservice --> :logic
   :data --> :network-model
   :data --> :util
-  :benchmarks --> :persistence
-  :benchmarks --> :logic
-  :cli --> :network
-  :cli --> :cryptography
-  :cli --> :logic
-  :cli --> :util
   :common --> :data
   :common --> :logger
   :common --> :util

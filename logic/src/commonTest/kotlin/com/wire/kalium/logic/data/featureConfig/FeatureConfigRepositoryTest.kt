@@ -90,7 +90,11 @@ class FeatureConfigRepositoryTest {
                 Status.ENABLED
             ),
             channelsModel = ChannelFeatureConfiguration.Disabled,
-            consumableNotificationsModel = ConfigsStatusModel(Status.DISABLED)
+            consumableNotificationsModel = ConfigsStatusModel(Status.DISABLED),
+            allowedGlobalOperationsModel = AllowedGlobalOperationsModel(
+                status = Status.DISABLED,
+                mlsConversationsReset = false,
+            )
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)

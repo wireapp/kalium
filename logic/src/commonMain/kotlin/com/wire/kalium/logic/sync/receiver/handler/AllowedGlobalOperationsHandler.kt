@@ -21,10 +21,15 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
+import com.wire.kalium.logic.data.featureConfig.Status
 
 class AllowedGlobalOperationsHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
     suspend fun handle(model: AllowedGlobalOperationsModel): Either<CoreFailure, Unit> =
-        userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
+        if (model.status == Status.ENABLED) {
+            userConfigRepository.setMlsConversationsResetEnabled(model.mlsConversationsReset)
+        } else {
+            userConfigRepository.setMlsConversationsResetEnabled(false)
+        }
 }

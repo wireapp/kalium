@@ -31,7 +31,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration
 
@@ -257,6 +256,23 @@ sealed interface Message {
                     typeKey to "inCallEmoji",
                     "content" to content.emojis
                 )
+
+                is MessageContent.CompositeEdited -> mutableMapOf(
+                    typeKey to "compositeEdited"
+                )
+
+                MessageContent.History.ClientsRequest -> mutableMapOf(
+                    typeKey to "historyClientsRequest",
+                )
+
+                is MessageContent.History.ClientsResponse -> mutableMapOf(
+                    typeKey to "historyClientsResponse",
+                    "count" to content.clients.size
+                )
+
+                is MessageContent.History.NewClientAvailable -> mutableMapOf(
+                    typeKey to "historyNewClientAvailable",
+                )
             }
 
             val standardProperties = mapOf(
@@ -385,15 +401,18 @@ sealed interface Message {
                 MessageContent.LegalHold.ForConversation.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForConversation"
                 )
+
                 MessageContent.LegalHold.ForConversation.Enabled -> mutableMapOf(
                     typeKey to "legalHoldEnabledForConversation"
                 )
+
                 is MessageContent.LegalHold.ForMembers.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForMembers",
                     "members" to content.members.fold("") { acc, member ->
                         "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
                     }
                 )
+
                 is MessageContent.LegalHold.ForMembers.Enabled -> mutableMapOf(
                     typeKey to "legalHoldEnabledForMembers",
                     "members" to content.members.fold("") { acc, member ->

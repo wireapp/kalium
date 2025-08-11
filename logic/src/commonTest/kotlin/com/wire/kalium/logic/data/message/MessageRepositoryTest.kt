@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.message
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -28,6 +30,7 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
@@ -37,8 +40,6 @@ import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
@@ -50,6 +51,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -80,6 +82,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.hours
 
 class MessageRepositoryTest {
 
@@ -672,6 +675,42 @@ class MessageRepositoryTest {
         }
     }
 
+    @Test
+    fun givenCompositeMessage_whenUpdating_thenEmitSuccess() = runTest {
+        val messageEntity = TEST_COMPOSITE_ENTITY
+        val message = TEST_MESSAGE
+        val messageContent = MessageContent.CompositeEdited(
+            editMessageId = "uid",
+            newTextContent = TEST_CONTENT,
+            newButtonList = listOf(
+                Button("edited text1", "id1", false),
+                Button("edited text2", "id2", false)
+            )
+        )
+        val (arrangement, messageRepository) = Arrangement()
+            .withObserveMessageById(flowOf(messageEntity, null))
+            .withMappedMessageModel(message, messageEntity)
+            .arrange()
+
+        val result = messageRepository.updateCompositeMessage(
+            conversationId = message.conversationId,
+            messageContent = messageContent,
+            newMessageId = "newId",
+            editInstant = Instant.UNIX_FIRST_DATE.plus(1.hours)
+        )
+
+        result.shouldSucceed()
+        coVerify {
+            arrangement.messageDAO.updateCompositeMessageContent(
+                eq(message.conversationId.toDao()),
+                any(messageContent.editMessageId),
+                any(Instant.UNIX_FIRST_DATE.plus(1.hours)),
+                any(),
+                any()
+            )
+        }
+    }
+
     private class Arrangement {
         val messageApi = mock(MessageApi::class)
         val mlsMessageApi = mock(MLSMessageApi::class)
@@ -862,6 +901,26 @@ class MessageRepositoryTest {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
         val SELF_USER_ID = UserId("user-id", "domain")
+        val TEST_COMPOSITE_ENTITY =
+            MessageEntity.Regular(
+                id = "uid",
+                content = MessageEntityContent.Composite(
+                    MessageEntityContent.Text("text"),
+                    listOf(
+                        ButtonEntity("text1", "id1", false),
+                        ButtonEntity("tex2", "id2", false),
+                    )
+                ),
+                conversationId = TEST_QUALIFIED_ID_ENTITY,
+                date = Instant.UNIX_FIRST_DATE,
+                senderUserId = TEST_QUALIFIED_ID_ENTITY,
+                senderClientId = "sender",
+                status = SENT,
+                editStatus = MessageEntity.EditStatus.NotEdited,
+                senderName = "senderName",
+                readCount = 0L
+            )
+
         val TEST_MESSAGE_ENTITY =
             MessageEntity.Regular(
                 id = "uid",

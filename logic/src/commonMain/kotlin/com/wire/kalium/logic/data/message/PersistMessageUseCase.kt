@@ -87,6 +87,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Knock -> true
             is MessageContent.DeleteMessage -> false
             is MessageContent.TextEdited -> false
+            is MessageContent.CompositeEdited -> false
             is MessageContent.RestrictedAsset -> true
             is MessageContent.DeleteForMe -> false
             is MessageContent.Unknown -> false
@@ -130,6 +131,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.DataTransfer -> false
             is MessageContent.InCallEmoji -> false
             is MessageContent.Multipart -> true
+            is MessageContent.History -> false
         }
 
     @Suppress("ComplexMethod")
@@ -148,6 +150,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Calling,
             is MessageContent.DeleteMessage,
             is MessageContent.TextEdited,
+            is MessageContent.CompositeEdited,
             is MessageContent.DeleteForMe,
             is MessageContent.Unknown,
             is MessageContent.Availability,
@@ -186,6 +189,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MemberChange.RemovedFromTeam,
             is MessageContent.TeamMemberRemoved,
             is MessageContent.DataTransfer,
-            is MessageContent.InCallEmoji -> false
+            is MessageContent.InCallEmoji,
+            is MessageContent.History -> false
         }
 }

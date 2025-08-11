@@ -20,6 +20,7 @@ package com.wire.kalium.plugins
 
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 fun Project.appleTargets(): List<String> =
     listOf(
@@ -36,4 +37,9 @@ fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
     iosSimulatorArm64()
     macosX64()
     macosArm64()
+
+    targets
+        .filterIsInstance<KotlinNativeTarget>()
+        .flatMap { it.binaries }
+        .forEach { compilationUnit -> compilationUnit.linkerOpts("-lsqlite3") }
 }

@@ -279,9 +279,9 @@ import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerifi
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
@@ -483,6 +483,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
@@ -1586,7 +1587,8 @@ class UserSessionScope internal constructor(
             dataTransferEventHandler,
             inCallReactionsRepository,
             buttonActionHandler,
-            userId,
+            MessageCompositeEditHandlerImpl(messageRepository),
+            userId
         )
 
     private val staleEpochVerifier: StaleEpochVerifier
@@ -2341,7 +2343,8 @@ class UserSessionScope internal constructor(
             e2eiConfigHandler,
             appLockConfigHandler,
             channels.channelsFeatureConfigHandler,
-            consumableNotificationsConfigHandler
+            consumableNotificationsConfigHandler,
+            allowedGlobalOperationsHandler,
         )
 
     val team: TeamScope

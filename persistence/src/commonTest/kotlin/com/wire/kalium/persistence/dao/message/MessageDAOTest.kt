@@ -2608,6 +2608,46 @@ class MessageDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenCompositeMessageIsEdited_whenPerformingEditionIndDb_thenExecuteCleanupAndInsertNewContent() = runTest {
+        // given
+        insertInitialData()
+        val initialButtons = listOf(ButtonEntity(text = "button1", id = "Button 1", isSelected = false))
+        val modifiedButtons = listOf(
+            ButtonEntity(text = "button a", id = "Button 1", isSelected = false),
+            ButtonEntity(text = "button b", id = "Button 2", isSelected = false)
+        )
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val lastMessageTextContent = MessageEntityContent.Text("message")
+        val lastMessageCompositeContent = MessageEntityContent.Composite(lastMessageTextContent, initialButtons)
+        val lastMessage = createMessage(id = "2", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds)
+            .copy(content = lastMessageCompositeContent)
+        val editedLastMessageId = lastMessage.id + "_edit"
+        messageDAO.insertOrIgnoreMessages(listOf(lastMessage))
+
+        // when
+        val resultBefore = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        messageDAO.updateCompositeMessageContent(
+            editInstant = baseInstant + 2.seconds,
+            conversationId = conversationEntity1.id,
+            currentMessageId = lastMessage.id,
+            newCompositeContent = lastMessageCompositeContent.copy(
+                text = lastMessageTextContent.copy(messageBody = "edited"),
+                buttonList = modifiedButtons,
+            ),
+            newMessageId = editedLastMessageId,
+        )
+
+        val resultAfter = messageDAO.getLastMessagesByConversations(listOf(conversationEntity1.id))
+        // then
+        assertEquals(lastMessage.id, resultBefore[conversationEntity1.id]?.id)
+        assertEquals(editedLastMessageId, resultAfter[conversationEntity1.id]?.id)
+        assertEquals(
+            modifiedButtons.size,
+            (resultAfter[conversationEntity1.id]?.content as? MessageEntityContent.Composite)?.buttonList?.size
+        )
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
