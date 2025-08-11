@@ -546,7 +546,6 @@ com.wire.kalium.network.api.base.unauthenticated.verification
 com.wire.kalium.network.api.base.unbound.acme
 com.wire.kalium.network.api.base.unbound.configuration
 com.wire.kalium.network.api.base.unbound.versioning
-com.wire.kalium.network.api.cells
 com.wire.kalium.network.api.v0.authenticated
 com.wire.kalium.network.api.v0.authenticated.networkContainer
 com.wire.kalium.network.api.v0.unauthenticated
