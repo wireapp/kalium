@@ -38,6 +38,16 @@ internal object CellsCredentialsProvider {
                 gatewaySecret = "gatewaysecret",
             )
 
-            else -> CellsCredentials("", "")
+            serverConfig.links.api.endsWith("staging-nginz-https.zinfra.io") -> CellsCredentials(
+                serverUrl = "https://cells.staging.zinfra.io",
+                gatewaySecret = "gatewaysecret",
+            )
+
+            serverConfig.links.api.endsWith("rod-nginz-https.wire.com") -> CellsCredentials(
+                serverUrl = "https://cells-beta.wire.com",
+                gatewaySecret = "gatewaysecret",
+            )
+
+            else -> CellsCredentials(serverConfig.links.api, "gatewaysecret")
         }
 }

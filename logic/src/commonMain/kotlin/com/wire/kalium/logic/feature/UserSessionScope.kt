@@ -504,7 +504,6 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.network.api.cells.AuthenticatedNetworkContainerCells
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
@@ -667,13 +666,7 @@ class UserSessionScope internal constructor(
     )
 
     val cellsClient: HttpClient
-        get() = AuthenticatedNetworkContainerCells(
-            sessionManager = sessionManager,
-            certificatePinning = kaliumConfigs.certPinningConfig,
-            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
-            mockWebSocketSession = if (kaliumConfigs.mockedWebSocket) MockWebSocketSession() else null,
-            kaliumLogger = userScopedLogger
-        ).cellsClient
+        get() = authenticatedNetworkContainer.cellsHttpClient
 
     val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
