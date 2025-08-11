@@ -120,11 +120,6 @@ kotlin {
         val appleTest by getting {
             dependsOn(nonJsTest)
         }
-        val iosX64Main by getting {
-            dependencies {
-                implementation(libs.pbandk.runtime.iosX64)
-            }
-        }
         val iosArm64Main by getting {
             dependencies {
                 implementation(libs.pbandk.runtime.iosArm64)

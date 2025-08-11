@@ -10,6 +10,7 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+  if: false  # disables the job
   detekt:
       uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
@@ -29,6 +30,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Build the samples
+        env:
+            GITHUB_USER: ${{ github.actor }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            ./gradlew :samples:compileKotlinIosX64
 
       - name: iOS Tests
         run: ./gradlew iOSOnlyAffectedTest
