@@ -260,6 +260,19 @@ sealed interface Message {
                 is MessageContent.CompositeEdited -> mutableMapOf(
                     typeKey to "compositeEdited"
                 )
+
+                MessageContent.History.ClientsRequest -> mutableMapOf(
+                    typeKey to "historyClientsRequest",
+                )
+
+                is MessageContent.History.ClientsResponse -> mutableMapOf(
+                    typeKey to "historyClientsResponse",
+                    "count" to content.clients.size
+                )
+
+                is MessageContent.History.NewClientAvailable -> mutableMapOf(
+                    typeKey to "historyNewClientAvailable",
+                )
             }
 
             val standardProperties = mapOf(

@@ -15,10 +15,10 @@ CREATE INDEX history_client_id ON HistoryClient(id);
 CREATE INDEX history_client_conversation_date ON HistoryClient(conversation_id, creation_date);
 
 selectAllForConversation:
-SELECT * FROM HistoryClient WHERE conversation_id = ?;
+SELECT id, secret, creation_date FROM HistoryClient WHERE conversation_id = ?;
 
 selectAllForConversationFromDateOnwards:
-SELECT * FROM HistoryClient WHERE conversation_id = ? AND creation_date >= ?;
+SELECT id, secret, creation_date FROM HistoryClient WHERE conversation_id = ? AND creation_date >= ?;
 
 insertClient:
 INSERT OR IGNORE INTO HistoryClient(conversation_id, id, secret, creation_date) VALUES (?, ?, ?, ?);

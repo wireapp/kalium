@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.conversation.history
+package com.wire.kalium.logic.data.history
 
-import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.datetime.Instant
 import kotlin.time.ExperimentalTime
 
-public data class HistoryClient @OptIn(ExperimentalTime::class) constructor(
-    val conversationId: ConversationId,
+data class HistoryClient @OptIn(ExperimentalTime::class) constructor(
     val id: String,
     val creationTime: Instant,
     val secret: Secret,
@@ -45,6 +43,5 @@ public data class HistoryClient @OptIn(ExperimentalTime::class) constructor(
         override fun hashCode(): Int {
             return value.contentHashCode()
         }
-
     }
 }
