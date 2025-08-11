@@ -20,17 +20,20 @@ package com.wire.kalium.cells.domain.usecase
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 
 /**
  * Use case to retrieve all tags from the cells repository.
  */
 public interface GetAllTagsUseCase {
-    public suspend operator fun invoke(): Either<CoreFailure, List<String>>
+    public suspend operator fun invoke(): Either<CoreFailure, Set<String>>
 }
 
 internal class GetAllTagsUseCaseImpl(
     private val cellsRepository: CellsRepository,
 ) : GetAllTagsUseCase {
-    override suspend fun invoke(): Either<CoreFailure, List<String>> =
-        cellsRepository.getAllTags()
+    override suspend fun invoke(): Either<CoreFailure, Set<String>> =
+        cellsRepository.getAllTags().map {
+            it.map { tag -> tag.trim() }.toSet()
+        }
 }
