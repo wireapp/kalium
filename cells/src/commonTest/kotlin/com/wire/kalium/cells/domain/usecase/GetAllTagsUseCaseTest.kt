@@ -34,9 +34,9 @@ class GetAllTagsUseCaseTest {
 
     @Test
     fun given_repository_returns_tagsWhen_invoke_is_calledThen_return_tags() = runTest {
-        val tags = listOf("tag1", "tag2", "tag3")
+        val tags = setOf("tag1", "tag2", "tag3")
         val (arrangement, useCase) = Arrangement()
-            .withRepositoryReturning(tags.right())
+            .withRepositoryReturning(tags.toList().right())
             .arrange()
 
         val result = useCase.invoke()
