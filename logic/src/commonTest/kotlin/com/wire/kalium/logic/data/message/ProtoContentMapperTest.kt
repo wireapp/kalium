@@ -22,11 +22,13 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.Composite
 import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
@@ -212,6 +214,40 @@ class ProtoContentMapperTest {
     }
 
     @Test
+    fun givenEditedCompositeGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectEditedMessageId() {
+        val replacedMessageId = "replacedMessageId"
+        val compositeContent = MessageEdit.Content.Composite(
+            Composite(
+                listOf(
+                    Composite.Item(Composite.Item.Content.Text(Text("textContent"))),
+                    Composite.Item(
+                        Composite.Item.Content.Button(
+                            com.wire.kalium.protobuf.messages.Button(
+                                text = "button1",
+                                id = "button1",
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        val genericMessage = GenericMessage(
+            messageId = TEST_MESSAGE_UUID,
+            content = GenericMessage.Content.Edited(
+                MessageEdit(replacedMessageId, compositeContent)
+            )
+        )
+        val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
+
+        val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
+
+        assertIs<ProtoContent.Readable>(result)
+        val content = result.messageContent
+        assertIs<MessageContent.CompositeEdited>(content)
+        assertEquals(replacedMessageId, content.editMessageId)
+    }
+
+    @Test
     fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectUpdatedContent() {
         val replacedMessageId = "replacedMessageId"
         val textContent = MessageEdit.Content.Text(Text("textContent"))
@@ -292,8 +328,8 @@ class ProtoContentMapperTest {
         val messageUid = "uid"
         val textContent = MessageContent.Text("Hello")
         val buttons = listOf(
-            MessageContent.Composite.Button("button1", "button1", false),
-            MessageContent.Composite.Button("button2", "button2", false)
+            Button("button1", "button1", false),
+            Button("button2", "button2", false)
         )
         val content = MessageContent.Composite(textContent, buttons)
 

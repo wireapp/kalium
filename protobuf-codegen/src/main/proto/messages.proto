@@ -50,6 +50,9 @@ message GenericMessage {
         // Next field should be 26 ↓
         InCallHandRaise inCallHandRaise = 26;
         Multipart multipart = 27;
+        HistoryClientAvailable historyClientAvailable = 28;
+        HistoryClientRequest historyClientRequest = 29;
+        HistoryClientResponse historyClientResponse = 30;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
 
@@ -363,6 +366,25 @@ message DataTransfer {
 
 message TrackingIdentifier {
     required string identifier = 1;
+}
+
+message HistoryClient {
+    required string client_id = 1;
+    required string created_at = 2;
+    required bytes secret = 3;
+}
+
+// Sent in a conversation after new history client has been added
+message HistoryClientAvailable {
+    required HistoryClient client = 1;
+}
+
+// Sent in a conversation after you've been added to conversation with history sharing enabled
+message HistoryClientRequest {}
+
+// Sent in a subconversation in response to a HistoryClientRequest
+message HistoryClientResponse {
+    repeated HistoryClient clients = 1;
 }
 
 // Enums have to come last because of an unresolved issue with jsdoc

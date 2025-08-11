@@ -21,9 +21,11 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -201,18 +203,18 @@ sealed interface MessageContent {
         val newMentions: List<MessageMention> = listOf()
     ) : Signaling
 
+    data class CompositeEdited(
+        val editMessageId: String,
+        val newTextContent: Text? = null,
+        val newButtonList: List<Button> = listOf()
+    ) : Signaling
+
     data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Composite(
         val textContent: Text?,
         val buttonList: List<Button>
-    ) : Regular() {
-        data class Button(
-            val text: String,
-            val id: String,
-            val isSelected: Boolean
-        )
-    }
+    ) : Regular()
 
     /**
      * Notifies the author of a [Composite] message that a user has
@@ -400,6 +402,12 @@ sealed interface MessageContent {
         val emojis: Map<String, Int>
     ) : Signaling
 
+    sealed interface History : Signaling {
+        data class NewClientAvailable(val client: HistoryClient) : History
+        data class ClientsResponse(val clients: List<HistoryClient>) : History
+        data object ClientsRequest : History
+    }
+
     data class Multipart(
         val value: String?,
         val linkPreviews: List<MessageLinkPreview> = emptyList(),
@@ -420,7 +428,7 @@ sealed interface MessageContent {
  * @return A string representing the type of content.
  * Useful for logging. Plain strings must be used, otherwise it may be affected by code minification.
  */
-@Suppress("ComplexMethod")
+@Suppress("ComplexMethod", "LongMethod")
 fun MessageContent?.getType() = when (this) {
     is MessageContent.Asset -> "Asset"
     is MessageContent.FailedDecryption -> "FailedDecryption"
@@ -476,6 +484,10 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.DataTransfer -> "DataTransfer"
     is MessageContent.InCallEmoji -> "InCallEmoji"
     is MessageContent.Multipart -> "Multipart"
+    is MessageContent.CompositeEdited -> "CompositeEdited"
+    MessageContent.History.ClientsRequest -> "History.ClientsRequest"
+    is MessageContent.History.ClientsResponse -> "History.ClientsResponse"
+    is MessageContent.History.NewClientAvailable -> "History.NewClientAvailable"
     null -> "null"
 }
 
