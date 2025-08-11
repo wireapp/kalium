@@ -25,8 +25,10 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.composite.CompositeButton
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -50,7 +52,12 @@ import com.wire.kalium.protobuf.messages.DataTransfer
 import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.GenericMessage.Content.Availability
+import com.wire.kalium.protobuf.messages.GenericMessage.Content.Deleted
 import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
+import com.wire.kalium.protobuf.messages.HistoryClientAvailable
+import com.wire.kalium.protobuf.messages.HistoryClientRequest
+import com.wire.kalium.protobuf.messages.HistoryClientResponse
 import com.wire.kalium.protobuf.messages.InCallEmoji
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
@@ -65,10 +72,11 @@ import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
-import pbandk.Message
+import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
 @Mockable
 interface ProtoContentMapper {
@@ -130,9 +138,9 @@ class ProtoContentMapperImpl(
             is MessageContent.Calling -> packCalling(readableContent)
             is MessageContent.Asset -> packAsset(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.Knock -> packKnock(readableContent, legalHoldStatus)
-            is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
+            is MessageContent.DeleteMessage -> Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
-            is MessageContent.Availability -> GenericMessage.Content.Availability(
+            is MessageContent.Availability -> Availability(
                 availabilityMapper.fromModelAvailabilityToProto(
                     readableContent.status
                 )
@@ -144,7 +152,10 @@ class ProtoContentMapperImpl(
             is MessageContent.Receipt -> packReceipt(readableContent)
             is MessageContent.ClientAction -> packClientAction()
             is MessageContent.TextEdited -> packEdited(readableContent)
-            is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
+            is MessageContent.CompositeEdited,
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: ${readableContent.getType()}"
                 )
@@ -158,6 +169,27 @@ class ProtoContentMapperImpl(
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
             is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
             is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
+            is MessageContent.History -> packHistoryMessage(readableContent)
+        }
+    }
+
+    private fun packHistoryMessage(readableContent: MessageContent.History): GenericMessage.Content<out Any> {
+        fun mapHistoryClientToProto(historyClient: HistoryClient): ProtoHistoryClient {
+            return ProtoHistoryClient(
+                clientId = historyClient.id,
+                createdAt = historyClient.creationTime.toIsoDateTimeString(),
+                secret = ByteArr(historyClient.secret.value)
+            )
+        }
+        return when (readableContent) {
+            MessageContent.History.ClientsRequest -> GenericMessage.Content.HistoryClientRequest(HistoryClientRequest())
+            is MessageContent.History.ClientsResponse -> GenericMessage.Content.HistoryClientResponse(
+                HistoryClientResponse(readableContent.clients.map { mapHistoryClientToProto(it) })
+            )
+
+            is MessageContent.History.NewClientAvailable -> GenericMessage.Content.HistoryClientAvailable(
+                HistoryClientAvailable(mapHistoryClientToProto(readableContent.client))
+            )
         }
     }
 
@@ -184,6 +216,7 @@ class ProtoContentMapperImpl(
                             )
                         )
                     )
+
                 is CellAssetContent ->
                     Attachment(
                         content = Attachment.Content.CellAsset(
@@ -330,8 +363,10 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
+            is MessageContent.CompositeEdited,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
+            is MessageContent.History,
             is MessageContent.Multipart -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
@@ -341,9 +376,13 @@ class ProtoContentMapperImpl(
 
     private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
         GenericMessage.Content.External(
-            External(ByteArr(protoContent.otrKey),
+            External(
+                ByteArr(protoContent.otrKey),
                 protoContent.sha256?.let { ByteArr(it) },
-                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) })
+                protoContent.encryptionAlgorithm?.let {
+                    encryptionAlgorithmMapper.toProtoBufModel(it)
+                }
+            )
         )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
@@ -400,8 +439,6 @@ class ProtoContentMapperImpl(
         genericMessage: GenericMessage,
         encodedContent: PlainMessageBlob
     ): MessageContent.FromProto {
-        val typeName = genericMessage.content?.value?.let { it as? Message }?.descriptor?.name
-
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> unpackText(protoContent.value)
             is GenericMessage.Content.Asset -> unpackAsset(protoContent)
@@ -429,7 +466,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
-            is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
+            is GenericMessage.Content.Edited -> unpackEdited(protoContent, genericMessage)
             is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
@@ -444,6 +481,10 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.InCallEmoji -> unpackInCallEmoji(protoContent)
+
+            is GenericMessage.Content.HistoryClientAvailable -> unpackHistoryClientAvailable(protoContent)
+            is GenericMessage.Content.HistoryClientRequest -> unpackHistoryClientRequest()
+            is GenericMessage.Content.HistoryClientResponse -> unpackHistoryClientResponse(protoContent)
 
             null -> {
                 kaliumLogger.w(
@@ -483,6 +524,7 @@ class ProtoContentMapperImpl(
                     // TODO: implement support for regular assets WPB-16590
                     return MessageContent.Ignored
                 }
+
                 is Attachment.Content.CellAsset -> CellAssetContent(
                     id = content.value.uuid,
                     versionId = "",
@@ -492,6 +534,7 @@ class ProtoContentMapperImpl(
                     metadata = content.value.initialMetaData?.toModel(),
                     transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
                 )
+
                 null -> null
             }
         },
@@ -619,12 +662,7 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackEdited(
-        protoContent: GenericMessage.Content.Edited,
-        typeName: String?,
-        encodedContent: PlainMessageBlob,
-        genericMessage: GenericMessage
-    ): MessageContent.FromProto {
+    private fun unpackEdited(protoContent: GenericMessage.Content.Edited, genericMessage: GenericMessage): MessageContent.FromProto {
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
             is MessageEdit.Content.Text -> {
@@ -633,9 +671,17 @@ class ProtoContentMapperImpl(
                     editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
                 )
             }
-            // TODO: for now we do not implement it
+
             is MessageEdit.Content.Composite -> {
-                MessageContent.Unknown(typeName = typeName, encodedData = encodedContent.data)
+                val editedText = editContent.value.items.firstNotNullOfOrNull { item ->
+                    item.text
+                }?.let(::unpackText)
+
+                MessageContent.CompositeEdited(
+                    editMessageId = replacingMessageId,
+                    newTextContent = editedText,
+                    newButtonList = unpackButtonList(editContent.value.items),
+                )
             }
 
             null -> {
@@ -718,16 +764,17 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun packButtonList(buttonList: List<MessageContent.Composite.Button>): List<Composite.Item> = buttonList.map {
-        Composite.Item(
-            Composite.Item.Content.Button(
-                button = Button(
-                    text = it.text,
-                    id = it.id
+    private fun packButtonList(buttonList: List<CompositeButton>): List<Composite.Item> =
+        buttonList.map {
+            Composite.Item(
+                Composite.Item.Content.Button(
+                    button = Button(
+                        text = it.text,
+                        id = it.id
+                    )
                 )
             )
-        )
-    }
+        }
 
     private fun unpackText(protoContent: Text) = MessageContent.Text(
         value = protoContent.content,
@@ -741,10 +788,10 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null
     )
 
-    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<MessageContent.Composite.Button> =
+    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<CompositeButton> =
         compositeItemList.mapNotNull {
             it.button?.let { button ->
-                MessageContent.Composite.Button(
+                CompositeButton(
                     text = button.text,
                     id = button.id,
                     isSelected = false
@@ -872,11 +919,26 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.InCallEmoji(
             inCallEmoji = InCallEmoji(
                 emojis = content.emojis.map { entry ->
-                   InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
+                    InCallEmoji.EmojisEntry(key = entry.key, value = entry.value)
                 }
             )
         )
     }
+
+    private fun unpackHistoryClientRequest(): MessageContent.History =
+        MessageContent.History.ClientsRequest
+
+    private fun protoHistoryClientToHistoryClient(protoClient: ProtoHistoryClient) = HistoryClient(
+        id = protoClient.clientId,
+        secret = HistoryClient.Secret(protoClient.secret.array),
+        creationTime = Instant.parse(protoClient.createdAt),
+    )
+
+    private fun unpackHistoryClientResponse(protoContent: GenericMessage.Content.HistoryClientResponse): MessageContent.History =
+        MessageContent.History.ClientsResponse(protoContent.value.clients.map(::protoHistoryClientToHistoryClient))
+
+    private fun unpackHistoryClientAvailable(protoContent: GenericMessage.Content.HistoryClientAvailable): MessageContent.History =
+        MessageContent.History.NewClientAvailable(protoHistoryClientToHistoryClient(protoContent.value.client))
 
     private fun extractConversationId(
         qualifiedConversationID: QualifiedConversationId?,

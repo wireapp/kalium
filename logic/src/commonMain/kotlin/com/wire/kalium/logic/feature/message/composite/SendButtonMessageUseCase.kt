@@ -19,21 +19,22 @@ package com.wire.kalium.logic.feature.message.composite
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -85,7 +86,7 @@ class SendButtonMessageUseCase internal constructor(
                 }
             )
 
-            val transform: (String) -> MessageContent.Composite.Button = { MessageContent.Composite.Button(it, it, false) }
+            val transform: (String) -> Button = { Button(it, it, false) }
             val buttonContent = buttons.map(transform)
             val content = MessageContent.Composite(textContent, buttonContent)
 

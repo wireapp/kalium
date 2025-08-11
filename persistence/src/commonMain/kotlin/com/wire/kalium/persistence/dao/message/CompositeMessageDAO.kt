@@ -44,6 +44,6 @@ internal class CompositeMessageDAOImpl internal constructor(
     }
 
     override suspend fun resetSelection(messageId: String, conversationId: QualifiedIDEntity) = withContext(context) {
-        buttonContentQueries.remmoveAllSelection(conversation_id = conversationId, message_id = messageId)
+        buttonContentQueries.removeAllSelection(conversation_id = conversationId, message_id = messageId)
     }
 }

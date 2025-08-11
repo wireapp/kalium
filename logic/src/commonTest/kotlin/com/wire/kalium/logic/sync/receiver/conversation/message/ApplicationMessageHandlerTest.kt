@@ -43,6 +43,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.Base64
@@ -136,6 +137,44 @@ class ApplicationMessageHandlerTest {
 
         coVerify {
             arrangement.buttonActionHandler.handle(any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMessageCompositeEdited_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        val messageId = "messageId"
+        val validCompositeEditedContent = MessageContent.CompositeEdited(
+            editMessageId = messageId,
+            newTextContent = MessageContent.Text(
+                value = "Edited text",
+                mentions = emptyList()
+            ),
+            newButtonList = emptyList()
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            validCompositeEditedContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withMessageCompositeEditHandler()
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        coVerify {
+            arrangement.messageCompositeEditHandler.handle(any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -267,6 +306,7 @@ class ApplicationMessageHandlerTest {
         val inCallReactionsRepository = mock(InCallReactionsRepository::class)
         val dataTransferEventHandler = mock(DataTransferEventHandler::class)
         val buttonActionHandler = mock(ButtonActionHandler::class)
+        val messageCompositeEditHandler = mock(MessageCompositeEditHandler::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -286,6 +326,7 @@ class ApplicationMessageHandlerTest {
             dataTransferEventHandler,
             inCallReactionsRepository,
             buttonActionHandler,
+            messageCompositeEditHandler,
             TestUser.SELF.id
         )
 
@@ -318,6 +359,12 @@ class ApplicationMessageHandlerTest {
             coEvery {
                 buttonActionConfirmationHandler.handle(any(), any(), any())
             }.returns(result)
+        }
+
+        suspend fun withMessageCompositeEditHandler() = apply {
+            coEvery {
+                messageCompositeEditHandler.handle(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         suspend fun withButtonAction() = apply {

@@ -18,7 +18,6 @@
 package com.wire.kalium.conversation.history.data
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -121,7 +120,6 @@ class SQLiteHistoryClientDAOTest {
         // Then
         assertEquals(1, result.size)
         with(result.first()) {
-            assertEquals(ConversationId(conversationId.value, conversationId.domain), this.conversationId)
             assertEquals(clientId, this.id)
             assertEquals(creationDate, this.creationTime)
             assertTrue(this.secret.value.contentEquals(secret))
@@ -166,12 +164,10 @@ class SQLiteHistoryClientDAOTest {
         assertEquals(1, result2.size)
         
         with(result1.first()) {
-            assertEquals(ConversationId(conversationId1.value, conversationId1.domain), this.conversationId)
             assertEquals(clientId1, this.id)
         }
         
         with(result2.first()) {
-            assertEquals(ConversationId(conversationId2.value, conversationId2.domain), this.conversationId)
             assertEquals(clientId2, this.id)
         }
     }

@@ -19,8 +19,7 @@ package com.wire.kalium.conversation.history.data
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import com.wire.kalium.conversation.history.HistoryClient
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.persistence.HistoryClientQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.Dispatchers
@@ -44,12 +43,10 @@ internal class SQLiteHistoryClientDAO internal constructor(
      * Maps a database entity to a domain model.
      */
     private fun mapToHistoryClient(
-        conversationId: QualifiedIDEntity,
         id: String,
         secret: ByteArray,
         creationDate: Instant
     ): HistoryClient = HistoryClient(
-        conversationId = ConversationId(conversationId.value, conversationId.domain),
         id = id,
         creationTime = creationDate,
         secret = HistoryClient.Secret(secret)

@@ -39,17 +39,17 @@ internal class ChaCha20CoderTest {
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
     fun `given some passphrase, when generating the ChaCha20 secret key, it is a valid one`() = runTest {
-
         val password = "some password"
         val passphrase = Passphrase(password)
         val backupCoder = BackupCoder(CryptoUserID("some user id", "some-domain"), passphrase)
+
         val header = BackupHeader(
             format = "some format",
             version = "some version",
             salt = UByteArray(16) { 0u },
             hashedUserId = "some hashed user id".toByteArray().toUByteArray(),
-            opslimit = 1,
-            memlimit = 1
+            opslimit = 4,
+            memlimit = 33554432
         )
 
         val chaCha20Key = backupCoder.generateChaCha20Key(header)

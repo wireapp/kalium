@@ -175,4 +175,12 @@ interface MessageDAO {
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 
     suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
+
+    suspend fun updateCompositeMessageContent(
+        conversationId: QualifiedIDEntity,
+        currentMessageId: String,
+        editInstant: Instant,
+        newCompositeContent: MessageEntityContent.Composite,
+        newMessageId: String
+    )
 }
