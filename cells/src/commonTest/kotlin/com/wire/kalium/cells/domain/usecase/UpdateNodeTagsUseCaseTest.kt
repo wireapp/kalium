@@ -36,7 +36,7 @@ class UpdateNodeTagsUseCaseTest {
     @Test
     fun given_repository_updates_tags_successfullyWhen_invoke_is_calledThen_return_Right_Unit() = runTest {
         val uuid = "node-123"
-        val tags = listOf("tag1", "tag2")
+        val tags = setOf("tag1", "tag2")
         val (arrangement, useCase) = Arrangement()
             .withRepositoryReturning(Unit.right())
             .arrange()
@@ -45,14 +45,14 @@ class UpdateNodeTagsUseCaseTest {
 
         assertEquals(Unit.right(), result)
         coVerify {
-            arrangement.cellsRepository.updateNodeTags(uuid, tags)
+            arrangement.cellsRepository.updateNodeTags(uuid, tags.toList())
         }.wasInvoked(once)
     }
 
     @Test
     fun given_repository_fails_to_update_tagsWhen_invoke_is_calledThen_return_Left_failure() = runTest {
         val uuid = "node-456"
-        val tags = listOf("tagA", "tagB")
+        val tags = setOf("tagA", "tagB")
         val failure = NetworkFailure.FeatureNotSupported
 
         val (arrangement, useCase) = Arrangement()
@@ -63,7 +63,7 @@ class UpdateNodeTagsUseCaseTest {
 
         assertEquals(failure.left(), result)
         coVerify {
-            arrangement.cellsRepository.updateNodeTags(uuid, tags)
+            arrangement.cellsRepository.updateNodeTags(uuid, tags.toList())
         }.wasInvoked(once)
     }
 
