@@ -2108,6 +2108,7 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             preKeyRepository,
             userRepository,
+            featureConfigRepository,
             userId,
             assetRepository,
             eventRepository,
