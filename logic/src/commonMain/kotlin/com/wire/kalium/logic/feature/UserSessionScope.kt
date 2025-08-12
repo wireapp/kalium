@@ -1727,6 +1727,7 @@ class UserSessionScope internal constructor(
         get() = MLSResetConversationEventHandlerImpl(
             selfUserId = userId,
             userConfig = userConfigRepository,
+            conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversation = fetchConversationUseCase,
         )
