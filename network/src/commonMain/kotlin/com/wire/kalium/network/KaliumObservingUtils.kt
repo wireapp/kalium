@@ -20,15 +20,14 @@ package com.wire.kalium.network
 
 import io.ktor.http.content.OutgoingContent
 import io.ktor.util.copyToBoth
-import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.close
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writer
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.GlobalScope
 
 internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingContent = when (this) {
     is OutgoingContent.ByteArrayContent -> {
