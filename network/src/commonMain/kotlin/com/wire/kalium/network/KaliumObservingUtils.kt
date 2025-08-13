@@ -28,11 +28,12 @@ import io.ktor.utils.io.writer
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import io.ktor.utils.io.writeFully
 
 internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingContent = when (this) {
     is OutgoingContent.ByteArrayContent -> {
         log.writeFully(bytes(), 0, bytes().size)
-        log.close()
+        log.flushAndClose()
         this
     }
     is OutgoingContent.ReadChannelContent -> {
@@ -49,7 +50,7 @@ internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingCon
         KaliumLoggedContent(this, responseChannel)
     }
     else -> {
-        log.close()
+        log.flushAndClose()
         this
     }
 }
