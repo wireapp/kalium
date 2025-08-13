@@ -27,18 +27,26 @@ import com.wire.backup.data.BackupUser
  *
  * @throws IllegalStateException if mandatory validation fails.
  */
-internal fun CommonMPBackupExporter.validate(user: BackupUser) {
-    if (user.id.id.isEmpty()) error("User ID cannot be empty")
-}
+internal fun CommonMPBackupExporter.validate(user: BackupUser): Boolean =
+    if (user.id.id.isEmpty()) {
+        logger?.log("User ID cannot be empty")
+        false
+    } else {
+        true
+    }
 
 /**
  * Validates the given [BackupConversation] and its content.
  *
  * @throws IllegalStateException if mandatory validation fails.
  */
-internal fun CommonMPBackupExporter.validate(conversation: BackupConversation) {
-    if (conversation.id.id.isEmpty()) error("Conversation ID cannot be empty")
-}
+internal fun CommonMPBackupExporter.validate(conversation: BackupConversation): Boolean =
+    if (conversation.id.id.isEmpty()) {
+        logger?.log("Conversation ID cannot be empty")
+        false
+    } else {
+        true
+    }
 
 /**
  * Validates the given [BackupMessage] and its content.
@@ -47,9 +55,18 @@ internal fun CommonMPBackupExporter.validate(conversation: BackupConversation) {
  * @throws IllegalStateException if mandatory validation fails.
  */
 internal fun CommonMPBackupExporter.validate(message: BackupMessage): Boolean = with(message) {
-    if (id.isEmpty()) error("Backup: Message ID cannot be empty")
-    if (conversationId.id.isEmpty()) error("Backup: Conversation ID cannot be empty")
-    if (senderUserId.id.isEmpty()) error("Backup: Sender ID cannot be empty")
+    if (id.isEmpty()) {
+        logger?.log("Backup: Message ID cannot be empty")
+        return@with false
+    }
+    if (conversationId.id.isEmpty()) {
+        logger?.log("Backup: Conversation ID cannot be empty")
+        return@with false
+    }
+    if (senderUserId.id.isEmpty()) {
+        logger?.log("Backup: Sender ID cannot be empty")
+        return@with false
+    }
 
     return@with validate(content)
 }
@@ -63,7 +80,10 @@ internal fun CommonMPBackupExporter.validate(message: BackupMessage): Boolean = 
 private fun CommonMPBackupExporter.validate(content: BackupMessageContent): Boolean = with(content) {
     when (this) {
         is BackupMessageContent.Text -> {
-            if (text.isEmpty()) error("Backup: Text content cannot be empty")
+            if (text.isEmpty()) {
+                logger?.log("Backup: Text content cannot be empty")
+                return@with false
+            }
         }
 
         is BackupMessageContent.Asset -> {
@@ -83,7 +103,8 @@ private fun CommonMPBackupExporter.validate(content: BackupMessageContent): Bool
 
         is BackupMessageContent.Location -> {
             if (latitude == 0f || longitude == 0f) {
-                error("Backup: Location content must have valid latitude and longitude")
+                logger?.log("Backup: Location content must have valid latitude and longitude")
+                return@with false
             }
         }
     }
