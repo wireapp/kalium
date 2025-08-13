@@ -25,12 +25,12 @@ import com.wire.kalium.common.functional.Either
  * Use case to update the tags of a node in the cells repository.
  */
 public interface UpdateNodeTagsUseCase {
-    public suspend operator fun invoke(uuid: String, tags: List<String>): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(uuid: String, tags: Set<String>): Either<CoreFailure, Unit>
 }
 
 internal class UpdateNodeTagsUseCaseImpl(
     private val cellsRepository: CellsRepository,
 ) : UpdateNodeTagsUseCase {
-    override suspend fun invoke(uuid: String, tags: List<String>): Either<CoreFailure, Unit> =
-        cellsRepository.updateNodeTags(uuid, tags)
+    override suspend fun invoke(uuid: String, tags: Set<String>): Either<CoreFailure, Unit> =
+        cellsRepository.updateNodeTags(uuid, tags.map { it.trim() })
 }

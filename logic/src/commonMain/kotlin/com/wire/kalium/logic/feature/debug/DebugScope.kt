@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -81,6 +82,7 @@ class DebugScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
+    private val featureConfigRepository: FeatureConfigRepository,
     private val userId: UserId,
     private val assetRepository: AssetRepository,
     private val eventRepository: EventRepository,
@@ -244,4 +246,7 @@ class DebugScope internal constructor(
 
     val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
         get() = ObserveIsConsumableNotificationsEnabledUseCaseImpl(clientRepository)
+
+    val getFeatureConfig: GetFeatureConfigUseCase
+        get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
 }

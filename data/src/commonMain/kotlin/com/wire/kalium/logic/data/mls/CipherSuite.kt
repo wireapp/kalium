@@ -18,32 +18,44 @@
 package com.wire.kalium.logic.data.mls
 
 import com.wire.kalium.network.api.authenticated.client.MLSPublicKeyTypeDTO
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class SupportedCipherSuite(
+    @SerialName("supported")
     val supported: List<CipherSuite>,
+    @SerialName("default")
     val default: CipherSuite
 )
 
 @Suppress("MagicNumber", "ClassName")
-sealed class CipherSuite(open val tag: Int) {
+@Serializable
+sealed class CipherSuite(
+    @SerialName("tag")
+    open val tag: Int
+) {
     data class UNKNOWN(override val tag: Int) : CipherSuite(tag) {
         override fun toString(): String {
             return "UNKNOWN($tag)".uppercase()
         }
     }
 
+    @Serializable
     data object MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 : CipherSuite(1) {
         override fun toString(): String {
             return "MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519"
         }
     }
 
+    @Serializable
     data object MLS_128_DHKEMP256_AES128GCM_SHA256_P256 : CipherSuite(2) {
         override fun toString(): String {
             return "MLS_128_DHKEMP256_AES128GCM_SHA256_P256"
         }
     }
 
+    @Serializable
     data object MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 :
         CipherSuite(3) {
         override fun toString(): String {
@@ -51,6 +63,7 @@ sealed class CipherSuite(open val tag: Int) {
         }
     }
 
+    @Serializable
     data object MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 : CipherSuite(4) {
         override fun toString(): String {
             return "MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448"
@@ -58,6 +71,7 @@ sealed class CipherSuite(open val tag: Int) {
         }
     }
 
+    @Serializable
     data object MLS_256_DHKEMP521_AES256GCM_SHA512_P521 : CipherSuite(5) {
         override fun toString(): String {
             return "MLS_256_DHKEMP521_AES256GCM_SHA512_P521"
@@ -65,12 +79,14 @@ sealed class CipherSuite(open val tag: Int) {
 
     }
 
+    @Serializable
     data object MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 : CipherSuite(6) {
         override fun toString(): String {
             return "MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448"
         }
     }
 
+    @Serializable
     data object MLS_256_DHKEMP384_AES256GCM_SHA384_P384 : CipherSuite(7) {
         override fun toString(): String {
             return "MLS_256_DHKEMP384_AES256GCM_SHA384_P384"
