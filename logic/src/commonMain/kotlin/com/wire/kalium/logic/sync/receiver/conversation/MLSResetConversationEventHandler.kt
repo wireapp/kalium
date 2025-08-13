@@ -17,12 +17,16 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
@@ -34,6 +38,7 @@ interface MLSResetConversationEventHandler {
 internal class MLSResetConversationEventHandlerImpl(
     private val selfUserId: UserId,
     private val userConfig: UserConfigRepository,
+    private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversation: FetchConversationUseCase,
 ) : MLSResetConversationEventHandler {
@@ -44,7 +49,10 @@ internal class MLSResetConversationEventHandlerImpl(
             return
         }
 
-        if (event.from != selfUserId) {
+        val isFromOtherUser = event.from != selfUserId
+
+        // If the event is from same user do reset only if local group id does not match new group id.
+        if (isFromOtherUser || event.newGroupID != getCurrentGroupId(event.conversationId)) {
             transaction.mls?.let { mlsContext ->
                 mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
 
@@ -52,6 +60,16 @@ internal class MLSResetConversationEventHandlerImpl(
                 // version of mls-reset event.
                 fetchConversation(transaction, event.conversationId)
             }
+        }
+    }
+
+    private suspend fun getCurrentGroupId(conversationId: ConversationId) =
+        conversationRepository.getConversationById(conversationId).getOrNull()?.mlsProtocolInfo()?.groupId
+
+    private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLS? {
+        return when (this.protocol) {
+            is Conversation.ProtocolInfo.MLS -> this.protocol as? Conversation.ProtocolInfo.MLS
+            else -> null
         }
     }
 }

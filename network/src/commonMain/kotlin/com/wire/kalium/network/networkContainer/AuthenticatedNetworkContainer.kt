@@ -120,6 +120,9 @@ interface AuthenticatedNetworkContainer {
 
     val serverTimeApi: ServerTimeApi
 
+    val cellsHttpClient: HttpClient
+        get() = HttpClient()
+
     companion object {
 
         @Suppress("LongParameterList", "LongMethod")
