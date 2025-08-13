@@ -15,25 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
+package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 
 /**
- * Use case to retrieve all tags from the cells repository.
+ * Fetch features configuration from server. Only used in debug menu.
  */
-public interface GetAllTagsUseCase {
-    public suspend operator fun invoke(): Either<CoreFailure, Set<String>>
+interface GetFeatureConfigUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, FeatureConfigModel>
 }
 
-internal class GetAllTagsUseCaseImpl(
-    private val cellsRepository: CellsRepository,
-) : GetAllTagsUseCase {
-    override suspend fun invoke(): Either<CoreFailure, Set<String>> =
-        cellsRepository.getAllTags().map {
-            it.map { tag -> tag.trim() }.toSet()
-        }
+internal class GetFeatureConfigUseCaseImpl(
+    private val featureConfigRepository: FeatureConfigRepository
+) : GetFeatureConfigUseCase {
+
+    override suspend fun invoke(): Either<CoreFailure, FeatureConfigModel> {
+        return featureConfigRepository.getFeatureConfigs()
+    }
 }
