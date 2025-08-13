@@ -50,7 +50,7 @@ internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingCon
         KaliumLoggedContent(this, responseChannel)
     }
     else -> {
-        log.close()
+        log.flushAndClose()
         this
     }
 }

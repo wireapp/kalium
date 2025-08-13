@@ -65,7 +65,6 @@ fun LibraryExtension.commonAndroidLibConfig(
 
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))
-    testOptions.unitTests.all { it.enabled = false }
 
     if (includeNativeInterop) {
         externalNativeBuild {
