@@ -89,7 +89,7 @@ fun obfuscatePath(url: Url): String {
 
     var requestToLog = url.host
 
-    requestToLog += url.pathSegments.joinToString("/") {
+    requestToLog += url.rawSegments.joinToString("/") {
         it.obfuscateUrlPath()
     }
 

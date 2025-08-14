@@ -52,6 +52,7 @@ kotlin {
                 implementation(libs.turbine)
                 // ktor test
                 implementation(libs.ktor.mock)
+                implementation(libs.ktor.contentNegotiation)
                 // mocks
                 implementation(libs.okio.test)
             }
