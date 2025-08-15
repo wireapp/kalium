@@ -524,6 +524,7 @@ com.wire.kalium.network.api.base.authenticated.asset
 com.wire.kalium.network.api.base.authenticated.client
 com.wire.kalium.network.api.base.authenticated.connection
 com.wire.kalium.network.api.base.authenticated.conversation
+com.wire.kalium.network.api.base.authenticated.conversation.history
 com.wire.kalium.network.api.base.authenticated.e2ei
 com.wire.kalium.network.api.base.authenticated.featureConfigs
 com.wire.kalium.network.api.base.authenticated.keypackage
