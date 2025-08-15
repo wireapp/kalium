@@ -44,8 +44,6 @@ import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.websocket.WebSocketSession
-import kotlin.time.Duration.Companion.milliseconds
-import io.ktor.client.plugins.websocket.pingInterval
 
 /**
  * Provides a [HttpClient] that has all the
@@ -148,7 +146,7 @@ internal class AuthenticatedWebSocketClient(
             install(WebSockets) {
                 // Depending on the Engine (OkHttp for example), we might
                 // need to set this value there too, as this here won't work
-                pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS.milliseconds
+                pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS
             }
         }
 

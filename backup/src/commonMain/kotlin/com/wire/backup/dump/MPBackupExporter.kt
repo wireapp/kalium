@@ -77,10 +77,11 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addUser")
     public fun add(user: BackupUser) {
-        validate(user)
-        usersChunk.add(mapper.mapUserToProtobuf(user))
-        if (usersChunk.size > ITEMS_CHUNK_SIZE) {
-            flushUsers()
+        if (validate(user)) {
+            usersChunk.add(mapper.mapUserToProtobuf(user))
+            if (usersChunk.size > ITEMS_CHUNK_SIZE) {
+                flushUsers()
+            }
         }
     }
 
@@ -99,10 +100,11 @@ public abstract class CommonMPBackupExporter(
 
     @JsName("addConversation")
     public fun add(conversation: BackupConversation) {
-        validate(conversation)
-        conversationsChunk.add(mapper.mapConversationToProtobuf(conversation))
-        if (conversationsChunk.size > ITEMS_CHUNK_SIZE) {
-            flushConversations()
+        if (validate(conversation)) {
+            conversationsChunk.add(mapper.mapConversationToProtobuf(conversation))
+            if (conversationsChunk.size > ITEMS_CHUNK_SIZE) {
+                flushConversations()
+            }
         }
     }
 

@@ -121,7 +121,7 @@ internal open class NotificationApiV9 internal constructor(
             .onCompletion {
                 defaultClientWebSocketSession.close()
                 logger.w("Websocket Closed", it)
-                session?.close()
+                session?.close(it)
                 session = null
                 emit(WebSocketEvent.Close(it))
             }
