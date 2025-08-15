@@ -33,11 +33,11 @@ import io.ktor.client.utils.buildHeaders
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpProtocolVersion
 import io.ktor.http.HttpStatusCode
+import io.ktor.util.InternalAPI
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
 import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
-import io.ktor.utils.io.InternalAPI
 
 @Mockable
 interface SessionManager {
@@ -83,9 +83,7 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
                     override val version: HttpProtocolVersion = response.version
                     override val requestTime: GMTDate = response.requestTime
                     override val responseTime: GMTDate = response.responseTime
-
-                    @InternalAPI
-                    override val rawContent: ByteReadChannel get() = response.rawContent
+                    override val content: ByteReadChannel = response.content
                     override val headers get() = headers
                     override val coroutineContext: CoroutineContext = response.coroutineContext
                 }
