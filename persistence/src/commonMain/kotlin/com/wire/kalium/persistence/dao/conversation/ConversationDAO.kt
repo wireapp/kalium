@@ -153,7 +153,6 @@ interface ConversationDAO {
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
     suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
 
-    suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?)
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
 }
 
