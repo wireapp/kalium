@@ -114,7 +114,10 @@ object FeatureConfigJson {
             |  "channels": {
             |    "status": "disabled"
             |  },
-            |  "asyncNotifications": {
+            |  "consumableNotifications": {
+            |    "status": "disabled"
+            |  },
+            |  "apps": {
             |    "status": "disabled"
             |  }
             |}
@@ -151,7 +154,8 @@ object FeatureConfigJson {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
-            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED)
         ),
         featureConfigResponseSerializer
     )

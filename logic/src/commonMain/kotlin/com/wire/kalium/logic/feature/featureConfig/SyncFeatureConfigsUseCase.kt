@@ -27,6 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
@@ -67,6 +68,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
     private val consumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler,
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
+    private val appsFeatureHandler: AppsFeatureHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
@@ -88,6 +90,9 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 )
             }
             it.allowedGlobalOperationsModel?.let { model -> allowedGlobalOperationsHandler.handle(model) }
+            it.appsModel?.let { appsModel ->
+                appsFeatureHandler.handle(appsModel)
+            }
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (

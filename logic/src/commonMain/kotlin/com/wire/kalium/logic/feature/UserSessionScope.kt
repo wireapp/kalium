@@ -276,9 +276,12 @@ import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseC
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.ObserveAppsEnabledConfigUseCase
+import com.wire.kalium.logic.feature.featureConfig.ObserveAppsEnabledConfigUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
@@ -1894,6 +1897,9 @@ class UserSessionScope internal constructor(
     private val consumableNotificationsConfigHandler
         get() = ConsumableNotificationsConfigHandler(userConfigRepository)
 
+    private val appsFeatureHandler
+        get() = AppsFeatureHandler(userConfigRepository)
+
     private val secondFactorPasswordChallengeConfigHandler
         get() = SecondFactorPasswordChallengeConfigHandler(userConfigRepository)
 
@@ -2341,6 +2347,7 @@ class UserSessionScope internal constructor(
             channels.channelsFeatureConfigHandler,
             consumableNotificationsConfigHandler,
             allowedGlobalOperationsHandler,
+            appsFeatureHandler
         )
 
     val team: TeamScope
@@ -2400,6 +2407,9 @@ class UserSessionScope internal constructor(
 
     val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
+
+    val observeAppsEnabledConfig: ObserveAppsEnabledConfigUseCase
+        get() = ObserveAppsEnabledConfigUseCaseImpl(userConfigRepository)
 
     val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
