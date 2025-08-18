@@ -65,6 +65,7 @@ import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.any
 import io.mockative.coEvery
@@ -709,6 +710,7 @@ class UserRepositoryTest {
 
         val userDAO = mock(UserDAO::class)
         val clientDAO = mock(ClientDAO::class)
+        val memberDAO = mock(MemberDAO::class)
         val selfApi = mock(SelfApi::class)
         val userDetailsApi = mock(UserDetailsApi::class)
         val teamsApi = mock(TeamsApi::class)
@@ -723,6 +725,7 @@ class UserRepositoryTest {
             UserDataSource(
                 userDAO = userDAO,
                 clientDAO = clientDAO,
+                memberDAO = memberDAO,
                 selfApi = selfApi,
                 userDetailsApi = userDetailsApi,
                 teamsApi = teamsApi,

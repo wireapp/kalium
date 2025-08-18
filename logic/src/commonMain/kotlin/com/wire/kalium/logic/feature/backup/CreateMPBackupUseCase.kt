@@ -97,7 +97,7 @@ internal class CreateMPBackupUseCaseImpl(
                     },
                     coroutineScope {
                         async {
-                            getMessages { totalPages, page ->
+                            getMessages().collect { (page, totalPages) ->
                                 page.mapNotNull(Message::toBackupMessage)
                                     .forEach { mpBackupExporter.add(it) }
                                 onProgress(pageIndex++.toFloat() / totalPages)

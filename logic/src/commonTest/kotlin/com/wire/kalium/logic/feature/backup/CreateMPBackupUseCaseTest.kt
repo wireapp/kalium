@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.backup.PagedMessages
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -48,6 +49,8 @@ import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -115,9 +118,12 @@ class CreateMPBackupUseCaseTest {
 
             override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
 
-            override fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit) {
-                onPage(1, backupMessages)
-            }
+            override fun getMessages(): Flow<PagedMessages> = flowOf(
+                PagedMessages(
+                    messages = backupMessages,
+                    totalPages = 1,
+                )
+            )
 
             override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
 

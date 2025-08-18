@@ -122,7 +122,11 @@ internal class MessageDAOImpl internal constructor(
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
         queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
 
-    override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>, withUnreadEvents: Boolean) = withContext(coroutineContext) {
+    override suspend fun insertOrIgnoreMessages(
+        messages: List<MessageEntity>,
+        withUnreadEvents: Boolean,
+        checkAssetUpdate: Boolean,
+    ) = withContext(coroutineContext) {
         queries.transaction {
             messages.forEach {
                 insertInDB(
@@ -149,10 +153,10 @@ internal class MessageDAOImpl internal constructor(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    private fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true) {
+    private fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true) {
         // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
-            if (isValidAssetMessageUpdate(message)) {
+            if (checkAssetUpdate && isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
                 return
             } else {

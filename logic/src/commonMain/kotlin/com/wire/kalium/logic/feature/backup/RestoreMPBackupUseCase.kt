@@ -36,6 +36,8 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.withContext
 import okio.IOException
 import okio.Path
@@ -155,14 +157,16 @@ internal class RestoreMPBackupUseCaseImpl(
         }
     }
 
+    @Suppress("MagicNumber")
     private suspend fun ImportResultPager.persistMessages(onPageProcessed: () -> Unit) {
-        messagesPager.pages().forEach { page ->
-            backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
-                .onFailure { error ->
-                    kaliumLogger.e("Restore messages error: $error")
-                }
-            onPageProcessed()
-        }
+        messagesPager.pages().asFlow().buffer(10)
+            .collect { page ->
+                backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
+                    .onFailure { error ->
+                        kaliumLogger.e("Restore messages error: $error")
+                    }
+                onPageProcessed()
+            }
     }
 }
 

@@ -636,7 +636,10 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val option = BroadcastMessageOption.ReportSome(listOf())
+        val option = BroadcastMessageOption.ReportSome(listOf(
+            Arrangement.TEST_RECIPIENT_1.id,
+            Arrangement.TEST_RECIPIENT_2.id
+        ))
 
         arrangement.testScope.runTest {
             // when
@@ -696,7 +699,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_3, Arrangement.TEST_MEMBER_1))
+        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_2, Arrangement.TEST_MEMBER_3))
 
         arrangement.testScope.runTest {
             // when
@@ -748,7 +751,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_MEMBER_1, Arrangement.TEST_MEMBER_3))
+        val option = BroadcastMessageOption.ReportSome(listOf(Arrangement.TEST_RECIPIENT_2.id, senderUserId))
 
         arrangement.testScope.runTest {
             // when

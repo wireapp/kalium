@@ -67,7 +67,6 @@ import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.math.max
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -565,30 +564,22 @@ internal class MessageSenderImpl internal constructor(
         teamRecipients: List<Recipient>,
         otherRecipients: List<Recipient>
     ): Pair<BroadcastMessageOption, List<Recipient>> {
-        val receivers = mutableListOf<Recipient>()
-        val filteredOut = mutableSetOf<UserId>()
-        var selfRecipient: Recipient? = null
 
-        teamRecipients.forEach {
-            when {
-                it.id == selfUserId ->
-                    selfRecipient =
-                        it.copy(clients = it.clients.filter { clientId -> clientId != selfClientId })
-
-                receivers.size < (target.limit - 1) -> receivers.add(it)
-                else -> filteredOut.add(it.id)
+        val broadcastRecipients = when (target) {
+            is BroadcastMessageTarget.AllUsers -> teamRecipients + otherRecipients
+            is BroadcastMessageTarget.OnlyTeam -> teamRecipients
+        }
+            .toSet()
+            .map { recipient ->
+                if (recipient.id == selfUserId) {
+                    recipient.copy(clients = recipient.clients.filter { it != selfClientId })
+                } else {
+                    recipient
+                }
             }
-        }
-        selfRecipient?.let { receivers.add(it) }
+            .take(target.limit)
 
-        val spaceLeftTillMax = when (target) {
-            is BroadcastMessageTarget.AllUsers -> max(target.limit - receivers.size, 0)
-            is BroadcastMessageTarget.OnlyTeam -> 0
-        }
-        receivers.addAll(otherRecipients.take(spaceLeftTillMax))
-        filteredOut.addAll(otherRecipients.takeLast(max(otherRecipients.size - spaceLeftTillMax, 0)).map { it.id })
-
-        return BroadcastMessageOption.ReportSome(filteredOut.toList()) to receivers
+        return BroadcastMessageOption.ReportSome(broadcastRecipients.map { it.id }) to broadcastRecipients
     }
 
     /**
