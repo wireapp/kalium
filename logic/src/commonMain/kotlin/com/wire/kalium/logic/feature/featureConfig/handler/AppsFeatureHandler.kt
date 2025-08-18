@@ -23,7 +23,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
-class AppsFeatureHandler(
+internal class AppsFeatureHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
     suspend fun handle(appsModelConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
