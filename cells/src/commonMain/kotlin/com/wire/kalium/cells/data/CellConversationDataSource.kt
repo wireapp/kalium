@@ -21,7 +21,6 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.KaliumDispatcher
@@ -38,13 +37,6 @@ internal class CellConversationDataSource(
         withContext(dispatchers.io) {
             wrapStorageRequest {
                 conversation.getCellName(conversationId)
-            }
-        }
-
-    override suspend fun setWireCell(conversationId: ConversationId, cellName: String?): Either<StorageFailure, Unit> =
-        withContext(dispatchers.io) {
-            wrapStorageRequest {
-                conversation.setWireCell(QualifiedIDEntity(conversationId.value, conversationId.domain), cellName)
             }
         }
 
