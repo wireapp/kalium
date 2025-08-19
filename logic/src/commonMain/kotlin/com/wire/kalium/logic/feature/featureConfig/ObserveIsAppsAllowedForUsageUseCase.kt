@@ -17,24 +17,34 @@
  */
 package com.wire.kalium.logic.feature.featureConfig
 
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.mapToRightOr
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * This use case is responsible for observing the apps enabled configuration.
+ * Based on the feature config and if the user belongs to a team or not.
+ *
  * It returns a boolean indicating whether the apps feature is enabled or not for this user session.
  * In case the team or session does not have the apps feature enabled, it will return false.
  */
 @Mockable
-interface ObserveAppsEnabledConfigUseCase {
+interface ObserveIsAppsAllowedForUsageUseCase {
     suspend operator fun invoke(): Flow<Boolean>
 }
 
-internal class ObserveAppsEnabledConfigUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository
-) : ObserveAppsEnabledConfigUseCase {
+internal class ObserveIsAppsAllowedForUsageUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider
+) : ObserveIsAppsAllowedForUsageUseCase {
     override suspend fun invoke(): Flow<Boolean> = userConfigRepository.observeAppsEnabled()
         .mapToRightOr(false)
+        .map { appsEnabled ->
+            val belongsToTeam = selfTeamIdProvider().getOrNull() != null
+            appsEnabled && belongsToTeam
+        }
 }

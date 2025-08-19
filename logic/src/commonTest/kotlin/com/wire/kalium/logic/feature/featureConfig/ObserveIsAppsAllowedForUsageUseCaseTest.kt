@@ -21,7 +21,11 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.framework.TestTeam
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -32,12 +36,55 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveAppsEnabledConfigUseCaseTest {
+class ObserveIsAppsAllowedForUsageUseCaseTest {
+
+    @Test
+    fun givenAnErrorWhileGettingUserDoesBelongToTeam_whenObservingAppsEnabledConfig_thenReturnFalse() = runTest {
+        val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
+            .withObserveAppsEnabledResult(flowOf(Either.Right(true)))
+            .withSelfTeamIdProviderResult(StorageFailure.DataNotFound.left())
+            .arrange()
+
+        val result = observeAppsEnabledConfigUseCase()
+
+        result.test {
+            val item = awaitItem()
+            assertEquals(false, item)
+
+            cancelAndIgnoreRemainingEvents()
+
+            coVerify {
+                arrangement.userConfigRepository.observeAppsEnabled()
+            }.wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenUserDoesNotBelongToTeam_whenObservingAppsEnabledConfig_thenReturnFalse() = runTest {
+        val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
+            .withObserveAppsEnabledResult(flowOf(Either.Right(true)))
+            .withSelfTeamIdProviderResult(null.right())
+            .arrange()
+
+        val result = observeAppsEnabledConfigUseCase()
+
+        result.test {
+            val item = awaitItem()
+            assertEquals(false, item)
+
+            cancelAndIgnoreRemainingEvents()
+
+            coVerify {
+                arrangement.userConfigRepository.observeAppsEnabled()
+            }.wasInvoked(exactly = once)
+        }
+    }
 
     @Test
     fun givenUserConfigRepositoryFailureOrNotPresent_whenObservingAppsEnabledConfig_thenReturnFalse() = runTest {
         val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
             .withObserveAppsEnabledResult(flowOf(StorageFailure.DataNotFound.left()))
+            .withSelfTeamIdProviderResult(TestTeam.TEAM_ID.right())
             .arrange()
 
         val result = observeAppsEnabledConfigUseCase()
@@ -58,6 +105,7 @@ class ObserveAppsEnabledConfigUseCaseTest {
     fun givenUserConfigRepositorySuccess_whenObservingAppsEnabledConfig_thenReturnTrue() = runTest {
         val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
             .withObserveAppsEnabledResult(flowOf(Either.Right(true)))
+            .withSelfTeamIdProviderResult(TestTeam.TEAM_ID.right())
             .arrange()
 
         val result = observeAppsEnabledConfigUseCase()
@@ -76,13 +124,18 @@ class ObserveAppsEnabledConfigUseCaseTest {
 
     private class Arrangement {
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         suspend fun withObserveAppsEnabledResult(result: Flow<Either<StorageFailure, Boolean>>) = apply {
             coEvery { userConfigRepository.observeAppsEnabled() } returns result
         }
 
-        fun arrange(): Pair<Arrangement, ObserveAppsEnabledConfigUseCase> {
-            return this to ObserveAppsEnabledConfigUseCaseImpl(userConfigRepository)
+        suspend fun withSelfTeamIdProviderResult(result: Either<StorageFailure, TeamId?>) = apply {
+            coEvery { selfTeamIdProvider() } returns result
+        }
+
+        fun arrange(): Pair<Arrangement, ObserveIsAppsAllowedForUsageUseCase> {
+            return this to ObserveIsAppsAllowedForUsageUseCaseImpl(userConfigRepository, selfTeamIdProvider)
         }
     }
 

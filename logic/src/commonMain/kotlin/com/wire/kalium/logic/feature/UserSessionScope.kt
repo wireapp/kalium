@@ -276,8 +276,8 @@ import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseC
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
-import com.wire.kalium.logic.feature.featureConfig.ObserveAppsEnabledConfigUseCase
-import com.wire.kalium.logic.feature.featureConfig.ObserveAppsEnabledConfigUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCase
+import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -2408,8 +2408,8 @@ class UserSessionScope internal constructor(
     val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
 
-    val observeAppsEnabledConfig: ObserveAppsEnabledConfigUseCase
-        get() = ObserveAppsEnabledConfigUseCaseImpl(userConfigRepository)
+    val observeAppsEnabledConfig: ObserveIsAppsAllowedForUsageUseCase
+        get() = ObserveIsAppsAllowedForUsageUseCaseImpl(userConfigRepository, selfTeamId)
 
     val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
