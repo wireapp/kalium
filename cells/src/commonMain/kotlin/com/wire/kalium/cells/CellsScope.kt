@@ -73,8 +73,6 @@ import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCase
 import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCase
-import com.wire.kalium.cells.domain.usecase.SetWireCellForConversationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
@@ -176,9 +174,6 @@ public class CellsScope(
 
     public val observePagedFiles: GetCellFilesPagedUseCase
         get() = GetCellFilesPagedUseCaseImpl(observeFiles)
-
-    public val enableWireCell: SetWireCellForConversationUseCase
-        get() = SetWireCellForConversationUseCaseImpl(cellsConversationRepository)
 
     public val downloadFile: DownloadCellFileUseCase
         get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
