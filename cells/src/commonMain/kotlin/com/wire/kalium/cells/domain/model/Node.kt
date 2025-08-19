@@ -41,6 +41,7 @@ public sealed class Node {
         override val remotePath: String?,
         override val size: Long?,
         override val tags: List<String> = emptyList(),
+        val publicLinkId: String? = null,
     ) : Node()
 
     /**
@@ -91,4 +92,5 @@ internal fun CellNode.toFolderModel() = Node.Folder(
     remotePath = path,
     size = size,
     tags = tags,
+    publicLinkId = publicLinkId,
 )
