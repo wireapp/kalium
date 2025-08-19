@@ -94,7 +94,10 @@ class FeatureConfigRepositoryTest {
             allowedGlobalOperationsModel = AllowedGlobalOperationsModel(
                 status = Status.DISABLED,
                 mlsConversationsReset = false,
-            )
+            ),
+            cellsModel = CellsConfigModel(
+                status = Status.DISABLED,
+            ),
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -183,7 +186,8 @@ class FeatureConfigRepositoryTest {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
-            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

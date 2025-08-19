@@ -74,6 +74,8 @@ interface UserConfigDAO {
     suspend fun getMlsConversationsResetEnabled(): Boolean
     suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean)
     suspend fun getAsyncNotificationsEnabled(): Boolean
+    suspend fun setCellsEnabled(enabled: Boolean)
+    suspend fun isCellsEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -246,6 +248,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getAsyncNotificationsEnabled(): Boolean =
         metadataDAO.valueByKey(ASYNC_NOTIFICATIONS_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun setCellsEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), CELLS_ENABLED)
+    }
+
+    override suspend fun isCellsEnabled(): Boolean =
+        metadataDAO.valueByKey(CELLS_ENABLED)?.toBoolean() ?: false
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -260,5 +269,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
+        const val CELLS_ENABLED = "wire_cells"
     }
 }

@@ -151,7 +151,8 @@ object FeatureConfigJson {
                 AllowedGlobalOperationsConfigDTO(),
                 FeatureFlagStatusDTO.DISABLED
             ),
-            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
         ),
         featureConfigResponseSerializer
     )

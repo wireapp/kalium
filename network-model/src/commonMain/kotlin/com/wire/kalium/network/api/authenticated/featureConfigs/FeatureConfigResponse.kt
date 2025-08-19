@@ -62,7 +62,9 @@ data class FeatureConfigResponse(
     @SerialName("allowedGlobalOperations")
     val allowedGlobalOperations: FeatureConfigData.AllowedGlobalOperations?,
     @SerialName("consumableNotifications")
-    val consumableNotifications: FeatureConfigData.ConsumableNotifications?
+    val consumableNotifications: FeatureConfigData.ConsumableNotifications?,
+    @SerialName("cells")
+    val cells: FeatureConfigData.Cells?,
 )
 
 @Serializable
@@ -311,6 +313,13 @@ sealed class FeatureConfigData {
     @SerialName("consumableNotifications")
     @Serializable
     data class ConsumableNotifications(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("cells")
+    @Serializable
+    data class Cells(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
