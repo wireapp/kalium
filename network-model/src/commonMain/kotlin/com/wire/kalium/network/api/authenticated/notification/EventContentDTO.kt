@@ -482,8 +482,7 @@ sealed class EventContentDTO {
     value class FieldLabelListValue(val value: LabelListResponseDTO) : FieldKeyValue
 
     @Serializable
-    @SerialName("unknown")
-    data class Unknown(val type: String) : EventContentDTO()
+    data class Unknown(val type: String? = null) : EventContentDTO()
 }
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
