@@ -33,6 +33,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -40,7 +43,7 @@ import kotlinx.coroutines.flow.map
 interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
-    fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit)
+    fun getMessages(): Flow<PagedMessages>
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
@@ -72,7 +75,7 @@ internal class BackupDataSource(
             .map { it.map(conversationMapper::fromDaoModel) }
             .firstOrNull() ?: emptyList()
 
-    override fun getMessages(onPage: (Int, List<Message.Standalone>) -> Unit) {
+    override fun getMessages(): Flow<PagedMessages> {
 
         val contentTypes = listOf(
             MessageEntity.ContentType.TEXT,
@@ -83,20 +86,24 @@ internal class BackupDataSource(
         val totalMessages = messageDAO.countMessagesForBackup(contentTypes).toInt()
         val totalPages = (totalMessages / PAGE_SIZE).coerceAtLeast(1)
 
-        messageDAO.getMessagesPaged(
-            contentTypes = listOf(
-                MessageEntity.ContentType.TEXT,
-                MessageEntity.ContentType.ASSET,
-                MessageEntity.ContentType.LOCATION,
-            ),
-            pageSize = PAGE_SIZE,
-        ) { page ->
-            onPage(
-                totalPages,
-                page.map {
-                    messageMapper.fromEntityToMessage(it)
-                }
-            )
+        return callbackFlow {
+            messageDAO.getMessagesPaged(
+                contentTypes = listOf(
+                    MessageEntity.ContentType.TEXT,
+                    MessageEntity.ContentType.ASSET,
+                    MessageEntity.ContentType.LOCATION,
+                ),
+                pageSize = PAGE_SIZE,
+            ) { page ->
+                trySendBlocking(
+                    PagedMessages(
+                        messages = page.map {
+                            messageMapper.fromEntityToMessage(it)
+                        },
+                        totalPages = totalPages
+                    )
+                )
+            }
         }
     }
 
@@ -111,7 +118,13 @@ internal class BackupDataSource(
     override suspend fun insertMessages(messages: List<Message.Standalone>) = wrapStorageRequest {
         messageDAO.insertOrIgnoreMessages(
             messages = messages.map { messageMapper.fromMessageToEntity(it) },
-            withUnreadEvents = false
+            withUnreadEvents = false,
+            checkAssetUpdate = false,
         )
     }
 }
+
+data class PagedMessages(
+    val messages: List<Message.Standalone>,
+    val totalPages: Int,
+)

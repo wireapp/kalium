@@ -61,6 +61,9 @@ object FeatureConfigTest {
             status = Status.ENABLED,
             mlsConversationsReset = false,
         ),
+        cellsConfigModel: CellsConfigModel? = CellsConfigModel(
+            status = Status.ENABLED,
+        )
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -81,5 +84,6 @@ object FeatureConfigTest {
         channelFeatureConfiguration,
         asyncNotificationsModel,
         allowedGlobalOperationsModel,
+        cellsConfigModel,
     )
 }

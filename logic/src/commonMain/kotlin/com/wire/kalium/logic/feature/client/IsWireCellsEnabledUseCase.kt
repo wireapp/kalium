@@ -15,15 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import io.mockative.Mockable
 
+/**
+ * Use case to check if Wire Cells feature is enabled.
+ */
 @Mockable
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
+interface IsWireCellsEnabledUseCase {
+    suspend operator fun invoke(): Boolean
+}
+
+internal class IsWireCellsEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository,
+) : IsWireCellsEnabledUseCase {
+    override suspend fun invoke(): Boolean {
+        return userConfigRepository.isCellsEnabled()
+    }
 }

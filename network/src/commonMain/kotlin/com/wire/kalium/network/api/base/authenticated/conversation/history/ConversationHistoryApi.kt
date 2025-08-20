@@ -15,15 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.network.api.base.authenticated.conversation.history
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.network.api.base.authenticated.BaseApi
 import io.mockative.Mockable
 
 @Mockable
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
-}
+interface ConversationHistoryApi : BaseApi
