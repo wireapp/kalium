@@ -777,7 +777,7 @@ sealed class Event(open val id: String) {
 
     data class Unknown(
         override val id: String,
-        val unknownType: String,
+        val unknownType: String?,
         val cause: String? = null
     ) : Event(id) {
         override fun toLogMap(): Map<String, Any?> = mapOf(

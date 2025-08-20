@@ -166,6 +166,21 @@ internal class NotificationApiV0Test : ApiTest() {
     }
 
     @Test
+    fun givenSuccessLastNotificationResponseWithEmptyPayload_whenListeningToLiveEvents_thenTheResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            NotificationEventsResponseJson.notificationWithEmptyPayloadEvent,
+            statusCode = HttpStatusCode.OK
+        )
+        val notificationsApi = NotificationApiV0(
+            networkClient, fakeWebsocketClient(),
+            TEST_BACKEND_CONFIG.links
+        )
+        val result = notificationsApi.listenToLiveEvents("")
+
+        assertIs<NetworkResponse.Success<Flow<WebSocketEvent<EventResponse>>>>(result)
+    }
+
+    @Test
     fun givenFailureLastNotificationResponse_whenListeningToLiveEvents_thenTheResponseIsParsedCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid.rawJson,
@@ -204,10 +219,10 @@ internal class NotificationApiV0Test : ApiTest() {
         val result = notificationsApi.oldestNotification("")
 
         assertTrue(result.isSuccessful())
-        
+
         val expectedNotificationResponse = KtxSerializer.json.decodeFromString<NotificationResponse>(jsonProvider.rawJson)
         val expectedOldestNotification = expectedNotificationResponse.notifications.first()
-        
+
         assertEquals(expectedOldestNotification, result.value)
     }
 
