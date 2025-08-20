@@ -95,6 +95,9 @@ class FeatureConfigRepositoryTest {
                 status = Status.DISABLED,
                 mlsConversationsReset = false,
             ),
+            cellsModel = CellsConfigModel(
+                status = Status.DISABLED,
+            ),
             appsModel = ConfigsStatusModel(Status.DISABLED)
         )
 
@@ -185,6 +188,7 @@ class FeatureConfigRepositoryTest {
                 FeatureFlagStatusDTO.DISABLED
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED)
         )
 

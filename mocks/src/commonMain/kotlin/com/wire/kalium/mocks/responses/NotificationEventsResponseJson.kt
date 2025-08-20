@@ -42,7 +42,6 @@ import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
@@ -243,6 +242,16 @@ object NotificationEventsResponseJson {
             "payload": [
                 {
                     "type": "aVeryWeirdEventType"
+                }
+            ],
+            "id": "fcfb33e4-8037-11ec-8001-22000ac39a27"
+    }
+    """.trimIndent()
+
+    val notificationWithEmptyPayloadEvent = """
+        {
+            "payload": [
+                {
                 }
             ],
             "id": "fcfb33e4-8037-11ec-8001-22000ac39a27"

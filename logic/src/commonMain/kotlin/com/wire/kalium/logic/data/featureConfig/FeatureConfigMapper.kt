@@ -45,6 +45,7 @@ interface FeatureConfigMapper {
     fun fromModel(status: Status): FeatureFlagStatusDTO
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
     fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
+    fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
 }
 
 @Suppress("TooManyFunctions")
@@ -73,6 +74,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 channelsModel = fromDTO(channels),
                 consumableNotificationsModel = consumableNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
+                cellsModel = cells?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
             )
         }
@@ -186,6 +188,10 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             mlsConversationsReset = data.config.mlsConversationsReset,
             status = fromDTO(data.status)
         )
+
+    override fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel = CellsConfigModel(
+        status = fromDTO(data.status)
+    )
 
     override fun fromModel(status: Status): FeatureFlagStatusDTO =
         when (status) {

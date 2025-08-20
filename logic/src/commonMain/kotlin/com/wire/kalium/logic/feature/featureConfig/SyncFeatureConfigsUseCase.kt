@@ -39,6 +39,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHan
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 import io.mockative.Mockable
@@ -68,6 +69,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val channelsConfigHandler: ChannelsFeatureConfigurationHandler,
     private val consumableNotificationsConfigHandler: ConsumableNotificationsConfigHandler,
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
+    private val cellsConfigHandler: CellsConfigHandler,
     private val appsFeatureHandler: AppsFeatureHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
@@ -90,6 +92,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 )
             }
             it.allowedGlobalOperationsModel?.let { model -> allowedGlobalOperationsHandler.handle(model) }
+            cellsConfigHandler.handle(it.cellsModel)
             it.appsModel?.let { appsModel ->
                 appsFeatureHandler.handle(appsModel)
             }
