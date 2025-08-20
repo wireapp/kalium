@@ -473,6 +473,7 @@ import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
@@ -878,6 +879,7 @@ class UserSessionScope internal constructor(
         get() = UserDataSource(
             userDAO = userStorage.database.userDAO,
             clientDAO = userStorage.database.clientDAO,
+            memberDAO = userStorage.database.memberDAO,
             selfApi = authenticatedNetworkContainer.selfApi,
             userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
             upgradePersonalToTeamApi = authenticatedNetworkContainer.upgradePersonalToTeamApi,
@@ -1727,6 +1729,7 @@ class UserSessionScope internal constructor(
         get() = MLSResetConversationEventHandlerImpl(
             selfUserId = userId,
             userConfig = userConfigRepository,
+            conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversation = fetchConversationUseCase,
         )
@@ -1907,6 +1910,9 @@ class UserSessionScope internal constructor(
     private val allowedGlobalOperationsHandler
         get() = AllowedGlobalOperationsHandler(userConfigRepository)
 
+    private val cellsConfigHandler
+        get() = CellsConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1919,6 +1925,7 @@ class UserSessionScope internal constructor(
             e2eiConfigHandler,
             appLockConfigHandler,
             allowedGlobalOperationsHandler,
+            cellsConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2339,6 +2346,7 @@ class UserSessionScope internal constructor(
             channels.channelsFeatureConfigHandler,
             consumableNotificationsConfigHandler,
             allowedGlobalOperationsHandler,
+            cellsConfigHandler,
         )
 
     val team: TeamScope

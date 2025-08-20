@@ -35,7 +35,6 @@ import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import com.wire.kalium.cryptography.utils.toExternalSenderKey
 import io.ktor.util.decodeBase64Bytes
-import io.ktor.util.encodeBase64
 import kotlin.time.Duration
 
 typealias ConversationId = ByteArray
@@ -183,7 +182,7 @@ class MLSClientImpl(
 
         override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
             return context.members(groupId.decodeBase64Bytes().toGroupId()).mapNotNull {
-                CryptoQualifiedClientId.fromEncodedString(it.value.encodeBase64())
+                CryptoQualifiedClientId.fromEncodedString(it.value.decodeToString())
             }
         }
 

@@ -42,8 +42,8 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -80,31 +80,25 @@ internal class CreateMPBackupUseCaseImpl(
             var pageIndex = 0
 
             with(backupRepository) {
-                awaitAll(
-                    coroutineScope {
-                        async {
-                            getUsers().forEach { user ->
-                                mpBackupExporter.add(user.toBackupUser())
-                            }
+                coroutineScope {
+                    async {
+                        getUsers().forEach { user ->
+                            mpBackupExporter.add(user.toBackupUser())
                         }
-                    },
-                    coroutineScope {
-                        async {
-                            getConversations().forEach { conversation ->
-                                mpBackupExporter.add(conversation.toBackupConversation())
-                            }
+                    }
+                    async {
+                        getConversations().forEach { conversation ->
+                            mpBackupExporter.add(conversation.toBackupConversation())
                         }
-                    },
-                    coroutineScope {
-                        async {
-                            getMessages { totalPages, page ->
-                                page.mapNotNull(Message::toBackupMessage)
-                                    .forEach { mpBackupExporter.add(it) }
-                                onProgress(pageIndex++.toFloat() / totalPages)
-                            }
+                    }
+                    async {
+                        getMessages().buffer().collect { (page, totalPages) ->
+                            page.mapNotNull(Message::toBackupMessage)
+                                .forEach { mpBackupExporter.add(it) }
+                            onProgress(pageIndex++.toFloat() / totalPages)
                         }
-                    },
-                )
+                    }
+                }
             }
 
             when (val result = mpBackupExporter.finalize(password)) {
@@ -113,6 +107,7 @@ internal class CreateMPBackupUseCaseImpl(
                         backupFilePath = result.pathToOutputFile.toPath(),
                         backupFileName = backupFileName,
                     )
+
                 else -> {
                     deleteBackupFiles(backupWorkDir)
                     Failure(CoreFailure.Unknown(null))

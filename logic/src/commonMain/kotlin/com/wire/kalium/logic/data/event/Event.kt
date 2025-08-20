@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -612,6 +613,17 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
                 "mlsConversationReset" to model.mlsConversationsReset
+            )
+        }
+
+        data class CellsConfigUpdated(
+            override val id: String,
+            val model: CellsConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.CellsConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
             )
         }
 

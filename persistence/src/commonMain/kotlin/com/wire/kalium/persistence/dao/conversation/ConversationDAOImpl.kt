@@ -293,10 +293,6 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(coroutineContext)
     }
 
-    override suspend fun setWireCell(conversationId: QualifiedIDEntity, wireCell: String?) = withContext(coroutineContext) {
-        conversationQueries.updateWireCell(wireCell, conversationId)
-    }
-
     override suspend fun getCellName(conversationId: QualifiedIDEntity): String? = withContext(coroutineContext) {
         conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
     }

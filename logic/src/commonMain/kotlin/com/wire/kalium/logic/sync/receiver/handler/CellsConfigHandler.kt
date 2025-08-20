@@ -15,15 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.mockative.Mockable
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
+import com.wire.kalium.logic.data.featureConfig.Status
 
-@Mockable
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
+class CellsConfigHandler(
+    private val userConfigRepository: UserConfigRepository
+) {
+    suspend fun handle(model: CellsConfigModel?): Either<CoreFailure, Unit> =
+        when {
+            model == null -> userConfigRepository.setCellsEnabled(false)
+            else -> userConfigRepository.setCellsEnabled(model.status == Status.ENABLED)
+        }
 }
