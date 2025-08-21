@@ -18,6 +18,25 @@
 
 package com.wire.kalium.network.api.v0.authenticated
 
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistoryResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistorySettingsDTO
+import com.wire.kalium.network.api.authenticated.conversation.HistoryClientId
 import com.wire.kalium.network.api.base.authenticated.conversation.history.ConversationHistoryApi
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.utils.NetworkResponse
 
-internal open class ConversationHistoryApiV0 internal constructor() : ConversationHistoryApi
+internal open class ConversationHistoryApiV0 internal constructor() : ConversationHistoryApi {
+    @Suppress("MagicNumber")
+    override suspend fun updateHistorySettingsForConversation(
+        conversationId: ConversationId,
+        settings: ConversationHistorySettingsDTO
+    ): NetworkResponse<Unit> = getApiNotSupportedError(::updateHistorySettingsForConversation.name, 11)
+
+    @Suppress("MagicNumber")
+    override suspend fun getPageOfMessagesForHistoryClient(
+        conversationId: ConversationId,
+        historyClientId: HistoryClientId,
+        offset: ULong,
+        size: UInt
+    ): NetworkResponse<ConversationHistoryResponse> = getApiNotSupportedError(::getPageOfMessagesForHistoryClient.name, 11)
+}
