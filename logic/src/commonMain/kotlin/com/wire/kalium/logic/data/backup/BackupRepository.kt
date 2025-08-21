@@ -33,7 +33,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -105,12 +104,7 @@ internal class BackupDataSource(
                     )
                 )
             }
-            awaitClose {
-                // TODO(refactor): support cancellation.
-                //                 We need to stop `getMessagesPaged`, so it doesn't try to send more data,
-                //                 so we can cancel gracefully
-                channel.close()
-            }
+            channel.close()
         }
     }
 
