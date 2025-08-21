@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 class ConversationHistoryDepthSerializerTest {
 
     @Test
-    fun `should serialize and deserialize duration correctly`() {
+    fun should_serialize_and_deserialize_duration_correctly() {
         val original = ConversationHistorySettingsDTO.SharedWithNewMembers(92.days + 42.hours + 24.minutes + 11.seconds)
         val json = Json { }
 
