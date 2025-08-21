@@ -41,6 +41,7 @@ import com.wire.kalium.network.api.v7.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.api.v8.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV8
 import com.wire.kalium.network.api.v9.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV9
 import com.wire.kalium.network.session.CertificatePinning
+import com.wire.kalium.network.session.MdmTrustConfig
 import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("MagicNumber", "LongParameterList")
@@ -63,6 +64,7 @@ interface UnauthenticatedNetworkContainer {
             userAgent: String,
             developmentApiEnabled: Boolean,
             certificatePinning: CertificatePinning,
+            mdmTrustConfig: MdmTrustConfig? = null,
             mockEngine: HttpClientEngine?
         ): UnauthenticatedNetworkContainer {
 
@@ -74,6 +76,7 @@ interface UnauthenticatedNetworkContainer {
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mdmTrustConfig = mdmTrustConfig,
                     mockEngine
                 )
 
@@ -82,6 +85,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mdmTrustConfig = mdmTrustConfig,
                     mockEngine
                 )
 

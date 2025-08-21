@@ -16,20 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network
+package com.wire.kalium.network.session
 
-import com.wire.kalium.network.api.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.session.CertificatePinning
-import com.wire.kalium.network.session.MdmTrustConfig
-import io.ktor.client.engine.HttpClientEngine
-
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?,
-    ignoreSSLCertificates: Boolean = false,
-    certificatePinning: CertificatePinning,
-    mdmTrustConfig: MdmTrustConfig? = null
-): HttpClientEngine
-
-expect fun clearTextTrafficEngine(): HttpClientEngine
+data class MdmTrustConfig(
+    val rootCAPem: String? = null,
+    val allowedHosts: List<String> = emptyList()
+) {
+    fun isValid(): Boolean {
+        return !rootCAPem.isNullOrBlank() && allowedHosts.isNotEmpty()
+    }
+    
+    fun isEmpty(): Boolean {
+        return rootCAPem.isNullOrBlank() && allowedHosts.isEmpty()
+    }
+}

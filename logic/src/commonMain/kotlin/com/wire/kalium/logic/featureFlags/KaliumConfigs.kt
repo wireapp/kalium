@@ -39,6 +39,8 @@ data class KaliumConfigs(
     val wipeOnRootedDevice: Boolean = false,
     val isWebSocketEnabledByDefault: Boolean = false,
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
+    val mdmRootCAPem: String? = null,
+    val mdmAllowedHosts: List<String> = emptyList(),
     val mockedRequests: List<TestRequestHandler>? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
     val mockedWebSocket: Boolean = false,

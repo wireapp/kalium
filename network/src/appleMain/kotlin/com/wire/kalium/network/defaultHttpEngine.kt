@@ -20,6 +20,7 @@ package com.wire.kalium.network
 
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.session.CertificatePinning
+import com.wire.kalium.network.session.MdmTrustConfig
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
@@ -29,7 +30,8 @@ actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    mdmTrustConfig: MdmTrustConfig?
 ): HttpClientEngine {
     if (serverConfigDTOApiProxy != null) {
         throw IllegalArgumentException("Proxy is not supported on iOS")

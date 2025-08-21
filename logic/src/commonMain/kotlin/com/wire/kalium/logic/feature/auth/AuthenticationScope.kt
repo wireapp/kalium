@@ -83,12 +83,22 @@ class AuthenticationScope internal constructor(
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
+        val mdmTrustConfig = if (!kaliumConfigs.mdmRootCAPem.isNullOrBlank() && kaliumConfigs.mdmAllowedHosts.isNotEmpty()) {
+            com.wire.kalium.network.session.MdmTrustConfig(
+                rootCAPem = kaliumConfigs.mdmRootCAPem,
+                allowedHosts = kaliumConfigs.mdmAllowedHosts
+            )
+        } else {
+            null
+        }
+        
         UnauthenticatedNetworkContainer.create(
             serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
             proxyCredentials = proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
             userAgent = userAgent,
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             certificatePinning = kaliumConfigs.certPinningConfig,
+            mdmTrustConfig = mdmTrustConfig,
             mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
         )
     }

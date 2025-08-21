@@ -43,12 +43,18 @@ actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    mdmTrustConfig: com.wire.kalium.network.session.MdmTrustConfig?
 ): HttpClientEngine = OkHttp.create {
     buildOkhttpClient {
         connectionSpecs(supportedConnectionSpecs())
 
-        if (certificatePinning.isNotEmpty() && !ignoreSSLCertificates) {
+        // Apply MDM trust configuration if available and not ignoring SSL
+        if (mdmTrustConfig != null && mdmTrustConfig.isValid() && !ignoreSSLCertificates) {
+            val mdmBuilder = MdmSecureClientBuilder(mdmTrustConfig)
+            mdmBuilder.buildSecureClient(this)
+        } else if (certificatePinning.isNotEmpty() && !ignoreSSLCertificates) {
+            // Fall back to certificate pinning if no MDM trust config
             val certPinner = CertificatePinner.Builder().apply {
                 certificatePinning.forEach { (cert, hosts) ->
                     hosts.forEach { host ->
