@@ -167,11 +167,10 @@ interface MessageDAO {
     suspend fun getAllMessageAssetIdsForConversationId(conversationId: QualifiedIDEntity): List<String>
     suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String?
     suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String?
-    fun getMessagesPaged(
+    suspend fun getMessagesPaged(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
-        onPage: (List<MessageEntity>) -> Unit,
-    )
+    ): Flow<List<MessageEntity>>
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 
     suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
