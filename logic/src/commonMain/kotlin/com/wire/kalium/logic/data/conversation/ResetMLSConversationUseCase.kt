@@ -29,6 +29,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
 
 /**
@@ -52,9 +53,15 @@ internal class ResetMLSConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val kaliumConfigs: KaliumConfigs,
 ) : ResetMLSConversationUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+
+        if (!kaliumConfigs.isMlsResetEnabled) {
+            kaliumLogger.i("MLS conversation reset feature is disabled via compile time flag.")
+            return Unit.right()
+        }
 
         if (!userConfig.isMlsConversationsResetEnabled()) {
             kaliumLogger.i("MLS conversation reset feature is disabled.")

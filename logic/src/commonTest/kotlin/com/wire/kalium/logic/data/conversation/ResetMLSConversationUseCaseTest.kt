@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.feature.backup.UserId
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -35,6 +36,54 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class ResetMLSConversationUseCaseTest {
+
+    @Test
+    fun givenCompileTimeFlagDisabled_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withCompileTimeFlagDisabled()
+            .withRuntimeFlagEnabled()
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenCompileTimeFlagEnabledAndRuntimeFlagDisabled_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withCompileTimeFlagEnabled()
+            .withRuntimeFlagDisabled()
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenBothFlagsEnabled_whenUseCaseCalled_thenResetConversationStarted() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withCompileTimeFlagEnabled()
+            .withRuntimeFlagEnabled()
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasInvoked()
+    }
 
     @Test
     fun givenFeatureDisabled_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
@@ -114,13 +163,32 @@ class ResetMLSConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+        var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
 
-        suspend fun withFeatureDisabled() = apply {
+        fun withCompileTimeFlagDisabled() = apply {
+            kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = false)
+        }
+
+        fun withCompileTimeFlagEnabled() = apply {
+            kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = true)
+        }
+
+        suspend fun withRuntimeFlagDisabled() = apply {
             coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
         }
 
-        suspend fun withFeatureEnabled() = apply {
+        suspend fun withRuntimeFlagEnabled() = apply {
             coEvery { userConfig.isMlsConversationsResetEnabled() } returns true
+        }
+
+        suspend fun withFeatureDisabled() = apply {
+            withCompileTimeFlagEnabled()
+            withRuntimeFlagDisabled()
+        }
+
+        suspend fun withFeatureEnabled() = apply {
+            withCompileTimeFlagEnabled()
+            withRuntimeFlagEnabled()
         }
 
         suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {
@@ -158,6 +226,7 @@ class ResetMLSConversationUseCaseTest {
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
                 fetchConversationUseCase = fetchConversationUseCase,
+                kaliumConfigs = kaliumConfigs,
             )
         }
     }
