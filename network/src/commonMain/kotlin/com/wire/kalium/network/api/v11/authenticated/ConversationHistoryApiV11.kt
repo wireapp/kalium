@@ -18,6 +18,52 @@
 
 package com.wire.kalium.network.api.v11.authenticated
 
-import com.wire.kalium.network.api.v0.authenticated.ConversationHistoryApiV0
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistoryResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistorySettingsDTO
+import com.wire.kalium.network.api.authenticated.conversation.HistoryClientId
+import com.wire.kalium.network.api.base.authenticated.conversation.history.ConversationHistoryApi
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.appendPathSegments
 
-internal open class ConversationHistoryApiV11 internal constructor() : ConversationHistoryApiV0()
+internal open class ConversationHistoryApiV11 internal constructor(private val networkClient: AuthenticatedNetworkClient) :
+    ConversationHistoryApi {
+
+    private val httpClient get() = networkClient.httpClient
+    override suspend fun updateHistorySettingsForConversation(
+        conversationId: ConversationId,
+        settings: ConversationHistorySettingsDTO
+    ): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put {
+            url {
+                appendPathSegments(CONVERSATIONS_PATH, conversationId.domain, conversationId.value, HISTORY_PATH)
+            }
+            setBody(settings)
+        }
+    }
+
+    override suspend fun getPageOfMessagesForHistoryClient(
+        conversationId: ConversationId,
+        historyClientId: HistoryClientId,
+        offset: ULong,
+        size: UInt
+    ): NetworkResponse<ConversationHistoryResponse> = wrapKaliumResponse {
+        httpClient.get {
+            url {
+                appendPathSegments(HISTORY_PATH, conversationId.domain, conversationId.value, historyClientId.value)
+                parameters.append("offset", offset.toString())
+                parameters.append("size", size.toString())
+            }
+        }
+    }
+
+    protected companion object {
+        const val CONVERSATIONS_PATH = "conversations"
+        const val HISTORY_PATH = "history"
+    }
+}

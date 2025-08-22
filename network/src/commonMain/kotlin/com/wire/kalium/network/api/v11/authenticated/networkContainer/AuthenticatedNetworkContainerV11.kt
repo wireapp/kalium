@@ -158,7 +158,7 @@ internal class AuthenticatedNetworkContainerV11 internal constructor(
 
     override val wildCardApi: WildCardApi get() = WildCardApiImpl(networkClient)
 
-    override val conversationHistoryApi: ConversationHistoryApi get() = ConversationHistoryApiV11()
+    override val conversationHistoryApi: ConversationHistoryApi get() = ConversationHistoryApiV11(networkClient)
 
     override val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
         get() = UpgradePersonalToTeamApiV11(
