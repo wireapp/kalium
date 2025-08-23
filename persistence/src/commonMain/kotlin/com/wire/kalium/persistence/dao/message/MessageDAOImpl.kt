@@ -578,28 +578,29 @@ internal class MessageDAOImpl internal constructor(
     override fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
         queries.countBackupMessages(contentTypes).executeAsOne()
 
-    override suspend fun getMessagesPaged(
+    override suspend fun getPagedMessagesFlow(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
     ): Flow<List<MessageEntity>> = flow {
-        var currentOffset = 0L
+        var lastFetchedId = ""
         var page: List<MessageEntity>
 
         do {
-            page = getMessagesPage(contentTypes, currentOffset, pageSize.toLong())
+            page = getMessagesPage(contentTypes, lastFetchedId, pageSize.toLong())
+            if (page.isEmpty()) break
             emit(page)
-            currentOffset += pageSize
+            lastFetchedId = page.last().id
         } while (page.size == pageSize)
     }.buffer()
 
     private fun getMessagesPage(
         contentTypes: Collection<MessageEntity.ContentType>,
-        offset: Long,
+        afterId: String,
         pageSize: Long,
     ) = queries.selectForBackup(
         contentType = contentTypes,
+        afterId = afterId,
         limit = pageSize,
-        offset = offset,
         mapper::toEntityMessageFromView
     ).executeAsList()
 

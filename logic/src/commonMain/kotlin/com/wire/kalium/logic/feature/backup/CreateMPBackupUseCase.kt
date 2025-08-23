@@ -43,7 +43,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.withContext
 import okio.FileSystem
@@ -51,7 +50,6 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.use
-import kotlin.time.Duration.Companion.milliseconds
 
 interface CreateMPBackupUseCase {
     /**

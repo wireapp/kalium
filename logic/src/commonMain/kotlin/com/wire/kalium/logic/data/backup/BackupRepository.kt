@@ -42,10 +42,14 @@ import kotlinx.coroutines.flow.map
 interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
-    suspend fun getMessages(): Flow<PagedMessages>
+    suspend fun getMessages(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedMessages>
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
+
+    private companion object {
+        const val DEFAULT_PAGE_SIZE = 1000
+    }
 }
 
 @Suppress("LongParameterList")
@@ -59,10 +63,6 @@ internal class BackupDataSource(
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
 ) : BackupRepository {
 
-    private companion object {
-        const val PAGE_SIZE = 20
-    }
-
     override suspend fun getUsers(): List<OtherUser> =
         userDAO.getAllUsersDetails()
             .map { list ->
@@ -74,7 +74,7 @@ internal class BackupDataSource(
             .map { it.map(conversationMapper::fromDaoModel) }
             .firstOrNull() ?: emptyList()
 
-    override suspend fun getMessages(): Flow<PagedMessages> {
+    override suspend fun getMessages(pageSize: Int): Flow<PagedMessages> {
         val contentTypes = listOf(
             MessageEntity.ContentType.TEXT,
             MessageEntity.ContentType.ASSET,
@@ -82,15 +82,15 @@ internal class BackupDataSource(
         )
 
         val totalMessages = messageDAO.countMessagesForBackup(contentTypes).toInt()
-        val totalPages = (totalMessages / PAGE_SIZE).coerceAtLeast(1)
+        val totalPages = (totalMessages / pageSize).coerceAtLeast(1)
 
-        return messageDAO.getMessagesPaged(
+        return messageDAO.getPagedMessagesFlow(
             contentTypes = listOf(
                 MessageEntity.ContentType.TEXT,
                 MessageEntity.ContentType.ASSET,
                 MessageEntity.ContentType.LOCATION,
             ),
-            pageSize = PAGE_SIZE,
+            pageSize = pageSize,
         ).map { page ->
             PagedMessages(
                 messages = page.map {
