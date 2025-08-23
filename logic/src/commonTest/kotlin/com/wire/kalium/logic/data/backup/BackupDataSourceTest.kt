@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.backup
 
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -10,12 +10,16 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
 
 
 class BackupDataSourceTest {
@@ -69,6 +73,35 @@ class BackupDataSourceTest {
         // Then
         assertEquals(testMessages.size, result.messages.size)
         assertTrue(result.totalPages > 0)
+    }
+
+    @Test
+    fun givenMessagesInMultiplePages_whenGettingMessages_thenAllMessagesAreExported() = runTest {
+        // Given
+        val numberOfMessages = 1000
+        val pageSize = 100
+        val testConversations = listOf(createTestConversation("1"), createTestConversation("2"))
+        val messageMap = (1..numberOfMessages).associate { index ->
+            val message = createTestMessage(testConversations.first().id, index.toString(), userId)
+            message.id to (message as Message.Standalone)
+        }.toMutableMap()
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(testConversations)
+        subject.insertMessages(messageMap.values.toList())
+
+        // When
+        val allPages = subject.getMessages(pageSize).toList()
+
+        // Then
+        assertTrue(allPages.isNotEmpty())
+        assertTrue(allPages.first().totalPages > 0)
+        allPages.forEach { page ->
+            page.messages.forEach { message ->
+                val originalMessage = messageMap.remove(message.id)
+                assertNotNull(originalMessage, "Message was not found in the original map.")
+            }
+        }
+        assertTrue(messageMap.isEmpty(), "Not all messages were found in the export")
     }
 
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))

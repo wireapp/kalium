@@ -43,7 +43,9 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -576,31 +578,29 @@ internal class MessageDAOImpl internal constructor(
     override fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
         queries.countBackupMessages(contentTypes).executeAsOne()
 
-    override fun getMessagesPaged(
+    override suspend fun getPagedMessagesFlow(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
-        onPage: (List<MessageEntity>) -> Unit,
-    ) {
-        queries.transaction {
-            var currentOffset = 0L
-            var page: List<MessageEntity>
+    ): Flow<List<MessageEntity>> = flow {
+        var lastFetchedId = ""
+        var page: List<MessageEntity>
 
-            do {
-                page = getMessagesPage(contentTypes, currentOffset, pageSize.toLong())
-                onPage(page)
-                currentOffset += pageSize
-            } while (page.size == pageSize)
-        }
-    }
+        do {
+            page = getMessagesPage(contentTypes, lastFetchedId, pageSize.toLong())
+            if (page.isEmpty()) break
+            emit(page)
+            lastFetchedId = page.last().id
+        } while (page.size == pageSize)
+    }.buffer()
 
     private fun getMessagesPage(
         contentTypes: Collection<MessageEntity.ContentType>,
-        offset: Long,
+        afterId: String,
         pageSize: Long,
     ) = queries.selectForBackup(
         contentType = contentTypes,
+        afterId = afterId,
         limit = pageSize,
-        offset = offset,
         mapper::toEntityMessageFromView
     ).executeAsList()
 
