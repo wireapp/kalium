@@ -179,6 +179,7 @@ class FeatureConfigMapperTest {
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED)
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()

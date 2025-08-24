@@ -46,6 +46,7 @@ data class FeatureConfigModel(
     val consumableNotificationsModel: ConfigsStatusModel?,
     val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
     val cellsModel: CellsConfigModel?,
+    val appsModel: ConfigsStatusModel?,
 )
 
 enum class Status {

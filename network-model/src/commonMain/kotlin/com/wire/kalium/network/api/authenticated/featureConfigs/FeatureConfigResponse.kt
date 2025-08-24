@@ -65,6 +65,8 @@ data class FeatureConfigResponse(
     val consumableNotifications: FeatureConfigData.ConsumableNotifications?,
     @SerialName("cells")
     val cells: FeatureConfigData.Cells?,
+    @SerialName("apps")
+    val apps: FeatureConfigData.Apps?
 )
 
 @Serializable
@@ -320,6 +322,13 @@ sealed class FeatureConfigData {
     @SerialName("cells")
     @Serializable
     data class Cells(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("apps")
+    @Serializable
+    data class Apps(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
