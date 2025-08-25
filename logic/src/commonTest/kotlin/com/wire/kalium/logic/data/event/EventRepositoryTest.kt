@@ -29,6 +29,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -513,6 +514,70 @@ class EventRepositoryTest {
             val second = awaitItem()
 
             assertTrue(second.size == 1, "Expected one new event, but got: ${second.map { it.event.id }}")
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenUnknownEventWithoutType_whenObservingEvents_thenEmitsUnknownEnvelope() = runTest {
+        val eventId = "unknown-no-type"
+        val entity = EventEntity(
+            id = 1L,
+            eventId = eventId,
+            isProcessed = false,
+            payload = "[{}]",
+            isLive = true,
+            transient = false
+        )
+
+        val (_, repository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withUnprocessedEvents(flowOf(listOf(entity)))
+            .arrange()
+
+        repository.observeEvents().test {
+            val envelopes = awaitItem()
+            assertEquals(1, envelopes.size)
+
+            val envelope = envelopes.first()
+            assertEquals(eventId, envelope.event.id)
+            assertEquals(EventSource.LIVE, envelope.deliveryInfo.source)
+
+            val unknown = assertIs<Event.Unknown>(envelope.event)
+            assertTrue(unknown.unknownType.isNullOrEmpty(), "Expected empty unknownType for missing 'type'")
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenUnknownEventWithUnrecognizedType_whenObservingEvents_thenEmitsUnknownEnvelopeWithType() = runTest {
+        val eventId = "unknown-with-type"
+        val entity = EventEntity(
+            id = 2L,
+            eventId = eventId,
+            isProcessed = false,
+            payload = """[{"type":"really-unknown","some":"data"}]""",
+            isLive = true,
+            transient = false
+        )
+
+        val (_, repository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withUnprocessedEvents(flowOf(listOf(entity)))
+            .arrange()
+
+        repository.observeEvents().test {
+            val envelopes = awaitItem()
+            assertEquals(1, envelopes.size)
+
+            val envelope = envelopes.first()
+            assertEquals(eventId, envelope.event.id)
+            assertEquals(EventSource.LIVE, envelope.deliveryInfo.source)
+
+            val unknown = assertIs<Event.Unknown>(envelope.event)
+            assertEquals("really-unknown", unknown.unknownType)
 
             cancelAndIgnoreRemainingEvents()
         }
