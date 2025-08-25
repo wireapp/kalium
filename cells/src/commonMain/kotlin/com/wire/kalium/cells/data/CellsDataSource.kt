@@ -174,12 +174,12 @@ internal class CellsDataSource internal constructor(
     override suspend fun getPreviews(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getNode(nodeUuid).mapSuccess { response ->
-                response.previews.map { preview ->
+                response.previews?.map { preview ->
                     NodePreview(
                         preview.url,
                         preview.dimension ?: 0,
                     )
-                }
+                } ?: emptyList()
             }
         }
     }

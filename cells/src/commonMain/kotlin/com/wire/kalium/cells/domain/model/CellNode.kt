@@ -31,7 +31,7 @@ public data class CellNode(
     val contentUrl: String? = null,
     val contentHash: String? = null,
     val mimeType: String? = null,
-    val previews: List<NodePreview> = emptyList(),
+    val previews: List<NodePreview>? = null,
     val ownerUserId: String? = null,
     val conversationId: String? = null,
     val publicLinkId: String? = null,

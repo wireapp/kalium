@@ -90,7 +90,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
     }
 
     private suspend fun getNodePreviews(node: CellNode) =
-        if (node.previews.isNotEmpty()) {
+        if (!node.previews.isNullOrEmpty()) {
             node.previews.right()
         } else {
             retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
@@ -127,7 +127,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         var localPath = attachment.localPath
 
         // Check if asset was updated
-        if (attachment.contentHash != node.contentHash) {
+        if (attachment.contentHash != node.contentHash && attachment.contentHash != null) {
             localPath?.let { fileSystem.delete(it.toPath()) }
             attachmentsRepository.saveLocalPath(attachment.id, null)
             localPath = null
@@ -162,8 +162,8 @@ internal fun NetworkFailure.isAssetNotFound(): Boolean {
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
 }
 
-// TODO: Will be later replaced with a flag from Cell Server
-private fun CellNode.isPreviewSupported(): Boolean = when {
+public fun CellNode.isPreviewSupported(): Boolean = when {
+    previews == null -> false
     mimeType == null -> false
     mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType == "application/pdf" -> true
     else -> false

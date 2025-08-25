@@ -365,6 +365,70 @@ class RefreshNodeAssetStateUseCaseTest {
         }.wasInvoked(1)
     }
 
+    @Test
+    fun given_NodePreviewsAreNull_when_PreviewAvailabilityChecked_then_FalseReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = null,
+        ).let { node ->
+            assertFalse(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_NodeMimeTypeIsNull_when_PreviewAvailabilityChecked_then_FalseReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = emptyList(),
+            mimeType = null,
+        ).let { node ->
+            assertFalse(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_NodeMimeTypeIsImage_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = emptyList(),
+            mimeType = "image/*",
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_NodeMimeTypeIsVideo_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = emptyList(),
+            mimeType = "video/*",
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_NodeMimeTypeIsPdf_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = emptyList(),
+            mimeType = "application/pdf",
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
     private class Arrangement {
 
         val cellsRepository = mock(CellsRepository::class)
