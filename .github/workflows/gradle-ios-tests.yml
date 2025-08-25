@@ -10,7 +10,6 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-  if: false  # disables the job
   detekt:
       uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
