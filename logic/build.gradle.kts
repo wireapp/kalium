@@ -126,18 +126,21 @@ kotlin {
 }
 
 android {
-    testOptions.unitTests.isIncludeAndroidResources = true
-}
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all { test ->
+                test.enabled = true
 
-android {
-    testOptions.unitTests.all { test ->
-        // only run tests that are different for the android platform, the rest is covered by the jvm tests
-        file("src/androidUnitTest/kotlin").let { dir ->
-            if (dir.exists() && dir.isDirectory) {
-                dir.walk().forEach {
-                    if (it.isFile && it.extension == "kt") {
-                        it.relativeToOrNull(dir)?.let {
-                            test.include(it.path.removeSuffix(".kt").suffixIfNot("*"))
+                // only run tests that are different for the android platform, the rest is covered by the jvm tests
+                file("src/androidUnitTest/kotlin").let { dir ->
+                    if (dir.exists() && dir.isDirectory) {
+                        dir.walk().forEach {
+                            if (it.isFile && it.extension == "kt") {
+                                it.relativeToOrNull(dir)?.let {
+                                    test.include(it.path.removeSuffix(".kt").suffixIfNot("*"))
+                                }
+                            }
                         }
                     }
                 }
