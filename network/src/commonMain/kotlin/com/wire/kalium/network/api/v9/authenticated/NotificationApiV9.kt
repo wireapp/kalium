@@ -38,6 +38,8 @@ import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.utils.io.CancellationException
+import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
@@ -118,12 +120,17 @@ internal open class NotificationApiV9 internal constructor(
 
         defaultClientWebSocketSession.incoming
             .consumeAsFlow()
-            .onCompletion {
+            .onCompletion { cause ->
                 defaultClientWebSocketSession.close()
-                logger.w("Websocket Closed", it)
-                session?.close()
+                logger.w("Websocket Closed", cause)
+                val closeReason = if (cause == null || cause is CancellationException) {
+                    CloseReason(CloseReason.Codes.NORMAL, "Normal closure")
+                } else {
+                    CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Error: ${cause.message}")
+                }
+                session?.close(closeReason)
                 session = null
-                emit(WebSocketEvent.Close(it))
+                emit(WebSocketEvent.Close(cause))
             }
             .collect { frame ->
                 logger.v("Websocket Received Frame: $frame")
