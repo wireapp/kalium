@@ -318,7 +318,7 @@ internal class CellsApiImpl(
     }.mapSuccess { }
 
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
-        nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA, operationValues = listOf())
+        nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA)
     }.mapSuccess { it.propertyValues ?: emptyList() }
 
     private fun networkError(message: String) =
