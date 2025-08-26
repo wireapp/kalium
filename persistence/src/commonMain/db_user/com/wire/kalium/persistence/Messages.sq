@@ -508,7 +508,13 @@ countBackupMessages:
 SELECT count(*) FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType;
 
 selectForBackup:
-SELECT * FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType ORDER BY date ASC LIMIT :limit OFFSET :offset;
+SELECT * FROM MessageDetailsView
+WHERE visibility = "VISIBLE"
+    AND selfDeletionEndDate IS NULL
+    AND contentType IN :contentType
+    AND id > :afterId
+ORDER BY id ASC
+LIMIT :limit;
 
 selectLastMessagesByConversationIds:
 SELECT MessageDetailsView.*

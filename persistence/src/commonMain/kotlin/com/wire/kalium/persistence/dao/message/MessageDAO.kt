@@ -64,7 +64,7 @@ interface MessageDAO {
      *
      * @see insertOrIgnoreMessage
      */
-    suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>, withUnreadEvents: Boolean = true)
+    suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true)
     suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
@@ -167,11 +167,10 @@ interface MessageDAO {
     suspend fun getAllMessageAssetIdsForConversationId(conversationId: QualifiedIDEntity): List<String>
     suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String?
     suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String?
-    fun getMessagesPaged(
+    suspend fun getPagedMessagesFlow(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
-        onPage: (List<MessageEntity>) -> Unit,
-    )
+    ): Flow<List<MessageEntity>>
     fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 
     suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)

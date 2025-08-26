@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.history.ConversationHistoryApi
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
@@ -61,6 +62,7 @@ import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
 import com.wire.kalium.network.api.v0.authenticated.PropertiesApiV0
 import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.api.v0.authenticated.ServerTimeApiV0
+import com.wire.kalium.network.api.v0.authenticated.ConversationHistoryApiV0
 import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
 import com.wire.kalium.network.api.v0.authenticated.UpgradePersonalToTeamApiV0
 import com.wire.kalium.network.api.v0.authenticated.UserDetailsApiV0
@@ -140,6 +142,8 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
     override val propertiesApi: PropertiesApi get() = PropertiesApiV0(networkClient)
 
     override val wildCardApi: WildCardApi get() = WildCardApiImpl(networkClient)
+
+    override val conversationHistoryApi: ConversationHistoryApi get() = ConversationHistoryApiV0()
 
     override val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
         get() = UpgradePersonalToTeamApiV0(

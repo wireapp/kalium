@@ -45,6 +45,7 @@ data class FeatureConfigModel(
     val channelsModel: ChannelFeatureConfiguration,
     val consumableNotificationsModel: ConfigsStatusModel?,
     val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
+    val cellsModel: CellsConfigModel?,
 )
 
 enum class Status {
@@ -150,6 +151,12 @@ data class E2EIConfigModel(
 data class AllowedGlobalOperationsModel(
     @SerialName("mlsConversationsReset")
     val mlsConversationsReset: Boolean,
+    @SerialName("status")
+    val status: Status,
+)
+
+@Serializable
+data class CellsConfigModel(
     @SerialName("status")
     val status: Status,
 )
