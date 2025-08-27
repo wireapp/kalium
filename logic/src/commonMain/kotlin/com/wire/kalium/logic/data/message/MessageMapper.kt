@@ -423,8 +423,8 @@ class MessageMapperImpl(
             messageBody = regularMessage.value,
             linkPreview = regularMessage.linkPreviews.map(linkPreviewMapper::fromModelToDao),
             mentions = regularMessage.mentions.map(messageMentionMapper::fromModelToDao),
-            attachments = regularMessage.attachments.mapNotNull {
-                attachmentsMapper.fromModelToDao(it)
+            attachments = regularMessage.attachments.mapIndexedNotNull { index, attachment ->
+                attachmentsMapper.fromModelToDao(attachment)?.copy(assetIndex = index)
             },
             quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
             isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
@@ -686,7 +686,9 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 )
             },
             quotedMessageDetails = quotedMessageDetails,
-            attachments = attachments.mapNotNull { it.toModel() }
+            attachments = attachments
+                .sortedBy { it.assetIndex }
+                .mapNotNull { it.toModel() }
         )
     }
 }
