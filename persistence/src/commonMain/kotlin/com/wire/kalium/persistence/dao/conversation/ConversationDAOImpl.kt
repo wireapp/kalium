@@ -590,4 +590,8 @@ internal class ConversationDAOImpl internal constructor(
     ) = withContext(coroutineContext) {
         conversationQueries.updateChannelAddPermission(channelAddPermission, conversationId)
     }
+
+    override suspend fun hasConversationWithCell() = withContext(coroutineContext) {
+        conversationQueries.hasConversationWithCell().executeAsOne()
+    }
 }

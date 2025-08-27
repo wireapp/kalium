@@ -68,6 +68,7 @@ CREATE INDEX conversation_verification_status ON Conversation(verification_statu
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
 CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
 CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
+CREATE INDEX conversation_idx_wire_cell_notnull ON Conversation(wire_cell) WHERE wire_cell IS NOT NULL;
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
@@ -417,3 +418,8 @@ INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_gr
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
     last_modified_date = MAX(last_modified_date, excluded.last_modified_date);
+
+hasConversationWithCell:
+SELECT EXISTS (
+    SELECT 1 FROM Conversation WHERE wire_cell IS NOT NULL
+);

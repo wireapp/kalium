@@ -154,6 +154,7 @@ interface ConversationDAO {
     suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
 
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
+    suspend fun hasConversationWithCell(): Boolean
 }
 
 data class NameAndHandleEntity(
