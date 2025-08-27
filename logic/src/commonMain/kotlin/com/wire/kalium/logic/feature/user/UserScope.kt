@@ -53,6 +53,8 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
@@ -280,5 +282,10 @@ class UserScope internal constructor(
     val isWireCellsEnabled: IsWireCellsEnabledUseCase
         get() = IsWireCellsEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
+        )
+    val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
+        get() = IsWireCellsEnabledForConversationUseCaseImpl(
+            isWireCellsEnabledUseCase = isWireCellsEnabled,
+            conversationRepository = conversationRepository
         )
 }
