@@ -37,6 +37,7 @@ sealed interface ConversationHistorySettingsDTO {
      * Conversation's history should not be shared with new members.
      */
     @Serializable
+    @SerialName("private")
     data object Private : ConversationHistorySettingsDTO
 
     /**
@@ -44,6 +45,7 @@ sealed interface ConversationHistorySettingsDTO {
      * All messages that are less than [depth] old should be shared with new members when they join.
      */
     @Serializable
+    @SerialName("shared")
     data class SharedWithNewMembers(
         @Serializable(with = ConversationHistoryDepthSerializer::class)
         @SerialName("depth") val depth: Duration
