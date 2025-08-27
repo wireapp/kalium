@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,52 +18,31 @@
 plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
 kaliumLibrary {
-    multiplatform { enableJs.set(false) }
+    multiplatform { }
 }
 
 kotlin {
-    explicitApi()
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":common"))
-                implementation(project(":network"))
                 implementation(project(":data"))
+                implementation(project(":network-model"))
                 implementation(project(":util"))
-                implementation(project(":cryptography"))
-                implementation(project(":persistence"))
+
+                implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)
-                implementation(libs.sqldelight.coroutinesExtension)
                 implementation(libs.ktxDateTime)
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(project(":data-mocks"))
-                // coroutines
-                implementation(libs.coroutines.test)
-                implementation(libs.turbine)
-                implementation(project(":persistence-test"))
-            }
-        }
+                implementation(libs.ktxSerialization)
+                implementation(libs.ktor.serialization)
 
-        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
-            kotlin.srcDir("src/commonJvmAndroid/kotlin")
-        }
-
-        val jvmMain by getting {
-            addCommonKotlinJvmSourceDir()
-        }
-        val androidMain by getting {
-            addCommonKotlinJvmSourceDir()
+                implementation(libs.okio.core)
+            }
         }
     }
-}
-
-android {
-    testOptions.unitTests.all { it.enabled = false }
 }
