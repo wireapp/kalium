@@ -1,6 +1,6 @@
 import kotlin.Int;
 
-ALTER TABLE MessageAttachments ADD COLUMN asset_index INTEGER AS Int DEFAULT 0;
+ALTER TABLE MessageAttachments ADD COLUMN asset_index INTEGER AS Int;
 
 DROP VIEW IF EXISTS MessageDetailsView;
 
