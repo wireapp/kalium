@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCase
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -33,9 +32,8 @@ import kotlin.test.assertTrue
 class IsWireCellsEnabledForConversationUseCaseTest {
 
     @Test
-    fun `given wireCellsEnabled is true and isCellsConversation is true when invoked then returns true`() = runTest {
+    fun `given isCellsConversation is true when invoked then returns true`() = runTest {
         val (_, useCase) = Arrangement()
-            .withCellsFeatureEnabledReturning(true)
             .withCellsEnabledForConversationReturning(Either.Right(true))
             .arrange()
 
@@ -45,21 +43,8 @@ class IsWireCellsEnabledForConversationUseCaseTest {
     }
 
     @Test
-    fun `given wireCellsEnabled is false and isCellsConversation is true when invoked then returns false`() = runTest {
+    fun `given isCellsConversation is false when invoked then returns false`() = runTest {
         val (_, useCase) = Arrangement()
-            .withCellsFeatureEnabledReturning(false)
-            .withCellsEnabledForConversationReturning(Either.Right(true))
-            .arrange()
-
-        val result = useCase.invoke(conversationId)
-
-        assertFalse(result)
-    }
-
-    @Test
-    fun `given wireCellsEnabled is true and isCellsConversation is false when invoked then returns false`() = runTest {
-        val (_, useCase) = Arrangement()
-            .withCellsFeatureEnabledReturning(true)
             .withCellsEnabledForConversationReturning(Either.Right(false))
             .arrange()
 
@@ -69,9 +54,8 @@ class IsWireCellsEnabledForConversationUseCaseTest {
     }
 
     @Test
-    fun `given wireCellsEnabled is true and isCellsConversation throws error when invoked then returns false`() = runTest {
+    fun `given isCellsConversation throws error when invoked then returns false`() = runTest {
         val (_, useCase) = Arrangement()
-            .withCellsFeatureEnabledReturning(true)
             .withCellsEnabledForConversationReturning(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
@@ -82,19 +66,13 @@ class IsWireCellsEnabledForConversationUseCaseTest {
 
     private class Arrangement {
 
-        private val isWireCellsEnabledUseCase = mock(IsWireCellsEnabledUseCase::class)
         private val conversationRepository = mock(ConversationRepository::class)
-
-        suspend fun withCellsFeatureEnabledReturning(result: Boolean) = apply {
-            coEvery { isWireCellsEnabledUseCase.invoke() } returns result
-        }
 
         suspend fun withCellsEnabledForConversationReturning(result: Either<StorageFailure, Boolean>) = apply {
             coEvery { conversationRepository.isCellEnabled(conversationId) } returns result
         }
 
         fun arrange() = this to IsWireCellsEnabledForConversationUseCaseImpl(
-            isWireCellsEnabledUseCase = isWireCellsEnabledUseCase,
             conversationRepository = conversationRepository
         )
     }

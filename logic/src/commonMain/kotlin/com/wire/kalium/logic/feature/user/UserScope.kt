@@ -285,7 +285,6 @@ class UserScope internal constructor(
         )
     val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
         get() = IsWireCellsEnabledForConversationUseCaseImpl(
-            isWireCellsEnabledUseCase = isWireCellsEnabled,
             conversationRepository = conversationRepository
         )
 }

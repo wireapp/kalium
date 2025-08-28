@@ -29,11 +29,8 @@ interface IsWireCellsEnabledForConversationUseCase {
 }
 
 internal class IsWireCellsEnabledForConversationUseCaseImpl(
-    private val isWireCellsEnabledUseCase: IsWireCellsEnabledUseCase,
     private val conversationRepository: ConversationRepository,
 ) : IsWireCellsEnabledForConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Boolean {
-        val isCellsConversation = conversationRepository.isCellEnabled(conversationId).fold({ false }, { it })
-        return isWireCellsEnabledUseCase() && isCellsConversation
-    }
+    override suspend fun invoke(conversationId: ConversationId): Boolean =
+        conversationRepository.isCellEnabled(conversationId).fold({ false }, { it })
 }
