@@ -15,16 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.mockative.Mockable
 
-@Mockable
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
-    suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean>
+/**
+ * Use case to check if there is at least one conversation available with cell feature enabled.
+ * This is required to determine if we can call Cell API methods without getting a Not Authenticated error.
+ */
+public interface IsAtLeastOneCellAvailableUseCase {
+    public suspend operator fun invoke(): Either<StorageFailure, Boolean>
+}
+
+internal class IsAtLeastOneCellAvailableUseCaseImpl(
+    private val conversationRepository: CellConversationRepository
+) : IsAtLeastOneCellAvailableUseCase {
+
+    override suspend fun invoke(): Either<StorageFailure, Boolean> = conversationRepository.hasConversationWithCell()
 }
