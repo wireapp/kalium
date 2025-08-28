@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,10 @@ import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 
+@Deprecated(
+    "Data-mocks module should be used to share test mocks across modules.",
+    ReplaceWith("com.wire.kalium.logic.data.ConversationMock")
+)
 object TestConversation {
     private const val conversationValue = "valueConvo"
     private const val conversationDomain = "domainConvo"
