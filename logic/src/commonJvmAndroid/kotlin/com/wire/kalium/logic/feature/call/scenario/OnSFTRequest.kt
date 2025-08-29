@@ -23,31 +23,50 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.AvsSFTError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import com.wire.kalium.common.functional.nullableFold
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 // TODO(testing): create unit test
-class OnSFTRequest(
+internal class OnSFTRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val callingScope: CoroutineScope
+    private val callingScope: CoroutineScope,
+    private val networkStateObserver: NetworkStateObserver,
+    private val waitUntilConnectedTimeout: Duration = DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT,
 ) : SFTRequestHandler {
     override fun onSFTRequest(ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer?): Int {
         callingLogger.i("[OnSFTRequest] -> Start")
 
         val dataString = data?.getString(0, CallManagerImpl.UTF8_ENCODING)
-        callingLogger.i("[OnSFTRequest] -> Connecting to SFT Server: $url")
-        callingLogger.i("[OnSFTRequest] -> Connecting to SFT Server with data: $dataString")
 
         callingScope.launch {
+            callingLogger.i("[OnSFTRequest] -> Waiting until connected to internet (timeout: $waitUntilConnectedTimeout)")
+            val connected = withTimeoutOrNull(waitUntilConnectedTimeout) {
+                networkStateObserver.observeNetworkState().firstOrNull { it is NetworkState.ConnectedWithInternet }
+            } != null
+            if (!connected) {
+                callingLogger.e("[OnSFTRequest] -> Not connected to the Internet within timeout, cannot proceed with SFT request")
+                onSFTResponse(data = null, context = ctx)
+                return@launch
+            }
+
+            callingLogger.i("[OnSFTRequest] -> Connecting to SFT Server: $url")
+            callingLogger.i("[OnSFTRequest] -> Connecting to SFT Server with data: $dataString")
+
             dataString?.let {
                 val responseData = callRepository.connectToSFT(
                     url = url,
@@ -81,4 +100,7 @@ class OnSFTRequest(
         callingLogger.i("[OnSFTRequest] -> wcall_sft_resp() called")
     }
 
+    companion object {
+        private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds // equal to AVS connect_timeout
+    }
 }
