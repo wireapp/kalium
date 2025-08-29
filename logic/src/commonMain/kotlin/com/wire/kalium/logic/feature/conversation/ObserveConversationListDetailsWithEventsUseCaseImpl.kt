@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
-import com.wire.kalium.logic.data.conversation.ConversationFilter
+import com.wire.kalium.logic.data.conversation.Filter
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.flowOf
  * @see ConversationDetails
  */
 fun interface ObserveConversationListDetailsWithEventsUseCase {
-    suspend operator fun invoke(fromArchive: Boolean, conversationFilter: ConversationFilter): Flow<List<ConversationDetailsWithEvents>>
+    suspend operator fun invoke(fromArchive: Boolean, conversationFilter: Filter.Conversation): Flow<List<ConversationDetailsWithEvents>>
 }
 
 internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
@@ -43,10 +43,10 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
 
     override suspend operator fun invoke(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter
+        conversationFilter: Filter.Conversation
     ): Flow<List<ConversationDetailsWithEvents>> {
         return when (conversationFilter) {
-            ConversationFilter.Favorites -> {
+            Filter.Conversation.Favorites -> {
                 when (val result = getFavoriteFolder()) {
                     GetFavoriteFolderUseCase.Result.Failure -> {
                         flowOf(emptyList())
@@ -57,14 +57,14 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
                 }
             }
 
-            is ConversationFilter.Folder -> {
+            is Filter.Conversation.Folder -> {
                 conversationFolderRepository.observeConversationsFromFolder(conversationFilter.folderId)
             }
 
-            ConversationFilter.All,
-            ConversationFilter.Channels,
-            ConversationFilter.Groups,
-            ConversationFilter.OneOnOne ->
+            Filter.Conversation.All,
+            Filter.Conversation.Channels,
+            Filter.Conversation.Groups,
+            Filter.Conversation.OneOnOne ->
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)
         }
     }

@@ -53,7 +53,7 @@ class ConversationRepositoryExtensionsImpl internal constructor(
                     fromArchive = fromArchive,
                     onlyInteractionEnabled = onlyInteractionEnabled,
                     newActivitiesOnTop = newActivitiesOnTop,
-                    conversationFilter = conversationFilter.toDao()
+                    conversationFilter = filter.toDao()
                 ),
                 pagingConfig = pagingConfig
             )
@@ -75,5 +75,5 @@ data class ConversationQueryConfig(
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,
     val newActivitiesOnTop: Boolean = false,
-    val conversationFilter: ConversationFilter = ConversationFilter.All,
+    val filter: Filter.Conversation = Filter.Conversation.All,
 )

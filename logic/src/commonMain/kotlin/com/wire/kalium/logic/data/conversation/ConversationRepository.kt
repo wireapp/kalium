@@ -122,12 +122,12 @@ interface ConversationRepository {
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter = ConversationFilter.All
+        filter: Filter.Conversation = Filter.Conversation.All
     ): Flow<List<ConversationDetails>>
 
     suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean = false,
-        conversationFilter: ConversationFilter = ConversationFilter.All
+        filter: Filter.Conversation = Filter.Conversation.All
     ): Flow<List<ConversationDetailsWithEvents>>
 
     /**
@@ -478,18 +478,18 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun observeConversationListDetails(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter
+        filter: Filter.Conversation
     ): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()).map { conversationViewEntityList ->
+        conversationDAO.getAllConversationDetails(fromArchive, filter.toDao()).map { conversationViewEntityList ->
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 
     override suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter
+        filter: Filter.Conversation
     ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
+            conversationDAO.getAllConversationDetails(fromArchive, filter.toDao()),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()

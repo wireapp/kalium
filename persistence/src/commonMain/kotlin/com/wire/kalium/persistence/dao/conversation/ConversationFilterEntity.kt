@@ -22,5 +22,6 @@ enum class ConversationFilterEntity {
     FAVORITES,
     GROUPS,
     CHANNELS,
-    ONE_ON_ONE
+    ONE_ON_ONE,
+    CELLS_TAGS
 }

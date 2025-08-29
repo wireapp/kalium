@@ -763,11 +763,11 @@ internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.Verif
     ConversationEntity.VerificationStatus.DEGRADED -> Conversation.VerificationStatus.DEGRADED
 }
 
-internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) {
-    ConversationFilter.All -> ConversationFilterEntity.ALL
-    ConversationFilter.Favorites -> ConversationFilterEntity.FAVORITES
-    ConversationFilter.Groups -> ConversationFilterEntity.GROUPS
-    ConversationFilter.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE
-    ConversationFilter.Channels -> ConversationFilterEntity.CHANNELS
-    is ConversationFilter.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
+internal fun Filter.Conversation.toDao(): ConversationFilterEntity = when (this) {
+    Filter.Conversation.All -> ConversationFilterEntity.ALL
+    Filter.Conversation.Favorites -> ConversationFilterEntity.FAVORITES
+    Filter.Conversation.Groups -> ConversationFilterEntity.GROUPS
+    Filter.Conversation.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE
+    Filter.Conversation.Channels -> ConversationFilterEntity.CHANNELS
+    is Filter.Conversation.Folder -> ConversationFilterEntity.ALL // TODO think how to secure that
 }

@@ -20,22 +20,31 @@ package com.wire.kalium.logic.data.conversation
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class ConversationFilter {
+sealed class Filter {
     @Serializable
-    data object All : ConversationFilter()
+    sealed class Conversation : Filter() {
+        @Serializable
+        data object All : Conversation()
+
+        @Serializable
+        data object Favorites : Conversation()
+
+        @Serializable
+        data object Groups : Conversation()
+
+        @Serializable
+        data object OneOnOne : Conversation()
+
+        @Serializable
+        data object Channels : Conversation()
+
+        @Serializable
+        data class Folder(val folderName: String, val folderId: String) : Conversation()
+    }
 
     @Serializable
-    data object Favorites : ConversationFilter()
-
-    @Serializable
-    data object Groups : ConversationFilter()
-
-    @Serializable
-    data object OneOnOne : ConversationFilter()
-
-    @Serializable
-    data object Channels : ConversationFilter()
-
-    @Serializable
-    data class Folder(val folderName: String, val folderId: String) : ConversationFilter()
+    sealed class Cells : Filter() {
+        @Serializable
+        data object Tags : Cells()
+    }
 }
