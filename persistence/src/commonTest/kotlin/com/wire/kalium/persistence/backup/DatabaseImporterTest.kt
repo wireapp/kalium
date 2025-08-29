@@ -591,6 +591,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
                 channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
                 wireCell = null,
+                historySharingRetentionSeconds = 0
             )
 
             conversationAdded.add(overlappingConversation)

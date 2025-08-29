@@ -2541,6 +2541,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = historySharingRetentionSeconds,
         )
     }
 
@@ -2590,6 +2591,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -2616,6 +2618,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -2645,6 +2648,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -2680,6 +2684,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
@@ -2706,6 +2711,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -2740,6 +2746,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
 
         val user1 = newUserEntity(id = "1").copy(team = teamId, activeOneOnOneConversationId = conversationEntity1.id)

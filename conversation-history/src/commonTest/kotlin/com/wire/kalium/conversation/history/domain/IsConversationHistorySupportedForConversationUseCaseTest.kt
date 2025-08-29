@@ -19,7 +19,7 @@ package com.wire.kalium.conversation.history.domain
 
 import app.cash.turbine.test
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.ConversationMock
+import com.wire.kalium.logic.data.MockConversation
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -31,11 +31,11 @@ class IsConversationHistorySupportedForConversationUseCaseTest {
     @Test
     fun givenConversationIsChannelAndEverythingElseIsEnabled_whenInvoking_thenShouldReturnTrue() = runTest {
         val subject = IsConversationHistorySupportedForConversationUseCase(
-            conversationByIdProvider = { flowOf(Either.Right(ConversationMock.channel())) },
+            conversationByIdProvider = { flowOf(Either.Right(MockConversation.channel())) },
             isBuildTimeAllowed = true
         )
         
-        subject(ConversationMock.id()).test { 
+        subject(MockConversation.id()).test {
             assertTrue(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -44,11 +44,11 @@ class IsConversationHistorySupportedForConversationUseCaseTest {
     @Test
     fun givenConversationIsChannelButDisallowed_whenInvoking_thenShouldReturnFalse() = runTest {
         val subject = IsConversationHistorySupportedForConversationUseCase(
-            conversationByIdProvider = { flowOf(Either.Right(ConversationMock.channel())) },
+            conversationByIdProvider = { flowOf(Either.Right(MockConversation.channel())) },
             isBuildTimeAllowed = false
         )
 
-        subject(ConversationMock.id()).test {
+        subject(MockConversation.id()).test {
             assertFalse(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -57,11 +57,11 @@ class IsConversationHistorySupportedForConversationUseCaseTest {
     @Test
     fun givenConversationIsOneOnOneAndEverythingElseIsEnabled_whenInvoking_thenShouldReturnFalse() = runTest {
         val subject = IsConversationHistorySupportedForConversationUseCase(
-            conversationByIdProvider = { flowOf(Either.Right(ConversationMock.oneOnOne())) },
+            conversationByIdProvider = { flowOf(Either.Right(MockConversation.oneOnOne())) },
             isBuildTimeAllowed = true
         )
 
-        subject(ConversationMock.id()).test {
+        subject(MockConversation.id()).test {
             assertFalse(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -70,11 +70,11 @@ class IsConversationHistorySupportedForConversationUseCaseTest {
     @Test
     fun givenConversationIsGroupAndEverythingElseIsEnabled_whenInvoking_thenShouldReturnFalse() = runTest {
         val subject = IsConversationHistorySupportedForConversationUseCase(
-            conversationByIdProvider = { flowOf(Either.Right(ConversationMock.group())) },
+            conversationByIdProvider = { flowOf(Either.Right(MockConversation.group())) },
             isBuildTimeAllowed = true
         )
 
-        subject(ConversationMock.id()).test {
+        subject(MockConversation.id()).test {
             assertFalse(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
