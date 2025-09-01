@@ -75,6 +75,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 consumableNotificationsModel = consumableNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
+                appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
             )
         }
 
