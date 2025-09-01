@@ -118,7 +118,7 @@ class CreateMPBackupUseCaseTest {
 
             override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
 
-            override fun getMessages(): Flow<PagedMessages> = flowOf(
+            override suspend fun getMessages(pageSize: Int): Flow<PagedMessages> = flowOf(
                 PagedMessages(
                     messages = backupMessages,
                     totalPages = 1,

@@ -70,7 +70,10 @@ internal class CreateMPBackupUseCaseImpl(
 ) : CreateMPBackupUseCase {
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult = withContext(dispatchers.io) {
+    override suspend fun invoke(
+        password: String,
+        onProgress: (Float) -> Unit
+    ): CreateBackupResult = withContext(dispatchers.io) {
         try {
 
             val selfUser = userRepository.getSelfUser().getOrNull() ?: error("Self user not found")

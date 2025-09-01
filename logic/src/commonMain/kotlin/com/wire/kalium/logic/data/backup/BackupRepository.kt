@@ -33,10 +33,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -44,10 +42,14 @@ import kotlinx.coroutines.flow.map
 interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
-    fun getMessages(): Flow<PagedMessages>
+    suspend fun getMessages(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedMessages>
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
+
+    private companion object {
+        const val DEFAULT_PAGE_SIZE = 1000
+    }
 }
 
 @Suppress("LongParameterList")
@@ -61,10 +63,6 @@ internal class BackupDataSource(
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
 ) : BackupRepository {
 
-    private companion object {
-        const val PAGE_SIZE = 1_000
-    }
-
     override suspend fun getUsers(): List<OtherUser> =
         userDAO.getAllUsersDetails()
             .map { list ->
@@ -76,8 +74,7 @@ internal class BackupDataSource(
             .map { it.map(conversationMapper::fromDaoModel) }
             .firstOrNull() ?: emptyList()
 
-    override fun getMessages(): Flow<PagedMessages> {
-
+    override suspend fun getMessages(pageSize: Int): Flow<PagedMessages> {
         val contentTypes = listOf(
             MessageEntity.ContentType.TEXT,
             MessageEntity.ContentType.ASSET,
@@ -85,33 +82,23 @@ internal class BackupDataSource(
         )
 
         val totalMessages = messageDAO.countMessagesForBackup(contentTypes).toInt()
-        val totalPages = (totalMessages / PAGE_SIZE).coerceAtLeast(1)
+        val totalPages = (totalMessages / pageSize).coerceAtLeast(1)
 
-        return callbackFlow {
-            messageDAO.getMessagesPaged(
-                contentTypes = listOf(
-                    MessageEntity.ContentType.TEXT,
-                    MessageEntity.ContentType.ASSET,
-                    MessageEntity.ContentType.LOCATION,
-                ),
-                pageSize = PAGE_SIZE,
-            ) { page ->
-                trySendBlocking(
-                    PagedMessages(
-                        messages = page.map {
-                            messageMapper.fromEntityToMessage(it)
-                        },
-                        totalPages = totalPages
-                    )
-                )
-            }
-            awaitClose {
-                // TODO(refactor): support cancellation.
-                //                 We need to stop `getMessagesPaged`, so it doesn't try to send more data,
-                //                 so we can cancel gracefully
-                channel.close()
-            }
-        }
+        return messageDAO.getPagedMessagesFlow(
+            contentTypes = listOf(
+                MessageEntity.ContentType.TEXT,
+                MessageEntity.ContentType.ASSET,
+                MessageEntity.ContentType.LOCATION,
+            ),
+            pageSize = pageSize,
+        ).map { page ->
+            PagedMessages(
+                messages = page.map {
+                    messageMapper.fromEntityToMessage(it)
+                },
+                totalPages = totalPages
+            )
+        }.buffer()
     }
 
     override suspend fun insertUsers(users: List<OtherUser>) = wrapStorageRequest {

@@ -37,7 +37,8 @@ data object MessageAttachmentMapper {
         assetWidth: Int?,
         assetHeight: Int?,
         assetDurationMs: Long?,
-        assetTransferStatus: String
+        assetTransferStatus: String,
+        assetIndex: Int?,
     ): MessageAttachmentEntity =
         MessageAttachmentEntity(
             assetId = assetId,
@@ -54,5 +55,6 @@ data object MessageAttachmentMapper {
             assetTransferStatus = assetTransferStatus,
             contentUrl = contentUrl,
             contentHash = contentHash,
+            assetIndex = assetIndex,
         )
 }

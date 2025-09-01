@@ -17,8 +17,30 @@
  */
 package com.wire.kalium.network.api.base.authenticated.conversation.history
 
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistoryResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistorySettingsDTO
+import com.wire.kalium.network.api.authenticated.conversation.HistoryClientId
 import com.wire.kalium.network.api.base.authenticated.BaseApi
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
 
 @Mockable
-interface ConversationHistoryApi : BaseApi
+interface ConversationHistoryApi : BaseApi {
+    suspend fun updateHistorySettingsForConversation(
+        conversationId: ConversationId,
+        settings: ConversationHistorySettingsDTO,
+    ): NetworkResponse<Unit>
+
+    /**
+     * Retrieves messages from a conversation for a given history client, in a paginated fashion.
+     * @param offset The number of messages to skip in this request.
+     * @param size The size of a page. Must be between 1 and 1000. Defaults to 100.
+     */
+    suspend fun getPageOfMessagesForHistoryClient(
+        conversationId: ConversationId,
+        historyClientId: HistoryClientId,
+        offset: ULong,
+        size: UInt = 100u,
+    ): NetworkResponse<ConversationHistoryResponse>
+}

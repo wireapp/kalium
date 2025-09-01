@@ -50,4 +50,11 @@ internal class CellConversationDataSource(
                 } ?: emptyList()
             }
         }
+
+    override suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversation.hasConversationWithCell()
+            }
+        }
 }

@@ -38,4 +38,5 @@ data class MessageAttachmentEntity(
     @SerialName("asset_transfer_status") val assetTransferStatus: String,
     @SerialName("content_url") val contentUrl: String? = null,
     @SerialName("content_hash") val contentHash: String? = null,
+    @SerialName("asset_index") val assetIndex: Int? = null,
 )

@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS conversation_idx_wire_cell_notnull;
+CREATE INDEX conversation_idx_wire_cell_notnull ON Conversation(wire_cell) WHERE wire_cell IS NOT NULL;

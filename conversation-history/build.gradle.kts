@@ -43,6 +43,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":data-mocks"))
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)

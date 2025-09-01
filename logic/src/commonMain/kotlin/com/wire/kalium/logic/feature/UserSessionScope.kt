@@ -2535,6 +2535,7 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversationUseCase = fetchConversationUseCase,
+            kaliumConfigs = kaliumConfigs,
         )
 
     /**
