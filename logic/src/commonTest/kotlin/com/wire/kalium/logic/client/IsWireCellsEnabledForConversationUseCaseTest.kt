@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
 class IsWireCellsEnabledForConversationUseCaseTest {
 
     @Test
-    fun `given isCellsConversation is true when invoked then returns true`() = runTest {
+    fun given_isCellsConversation_is_true_when_invoked_then_returns_true() = runTest {
         val (_, useCase) = Arrangement()
             .withCellsEnabledForConversationReturning(Either.Right(true))
             .arrange()
@@ -43,7 +43,7 @@ class IsWireCellsEnabledForConversationUseCaseTest {
     }
 
     @Test
-    fun `given isCellsConversation is false when invoked then returns false`() = runTest {
+    fun given_isCellsConversation_is_false_when_invoked_then_returns_false() = runTest {
         val (_, useCase) = Arrangement()
             .withCellsEnabledForConversationReturning(Either.Right(false))
             .arrange()
@@ -54,7 +54,7 @@ class IsWireCellsEnabledForConversationUseCaseTest {
     }
 
     @Test
-    fun `given isCellsConversation throws error when invoked then returns false`() = runTest {
+    fun given_isCellsConversation_throws_error_when_invoked_then_returns_false() = runTest {
         val (_, useCase) = Arrangement()
             .withCellsEnabledForConversationReturning(Either.Left(StorageFailure.DataNotFound))
             .arrange()
