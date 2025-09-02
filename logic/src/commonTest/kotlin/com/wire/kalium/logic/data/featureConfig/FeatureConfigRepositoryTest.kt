@@ -98,6 +98,7 @@ class FeatureConfigRepositoryTest {
             cellsModel = CellsConfigModel(
                 status = Status.DISABLED,
             ),
+            appsModel = ConfigsStatusModel(Status.DISABLED)
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -188,6 +189,7 @@ class FeatureConfigRepositoryTest {
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED)
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

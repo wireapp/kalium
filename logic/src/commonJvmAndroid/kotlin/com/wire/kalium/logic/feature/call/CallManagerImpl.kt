@@ -218,7 +218,7 @@ class CallManagerImpl internal constructor(
                     callMapper = callMapper,
                     callingMessageSender = callingMessageSender,
                 ).keepingStrongReference(),
-                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope)
+                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope, networkStateObserver)
                     .keepingStrongReference(),
                 incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope, kaliumConfigs)
                     .keepingStrongReference(),
