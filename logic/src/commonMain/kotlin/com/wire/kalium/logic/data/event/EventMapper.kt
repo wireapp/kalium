@@ -457,7 +457,7 @@ class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         from = eventContentDTO.qualifiedFrom.toModel(),
         groupID = GroupID(eventContentDTO.data.groupId),
-        newGroupID = eventContentDTO.data.newGroupId?.let { GroupID(it) },
+        newGroupID = GroupID(eventContentDTO.data.newGroupId),
     )
 
     private fun memberUpdate(

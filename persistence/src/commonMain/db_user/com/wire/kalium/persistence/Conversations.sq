@@ -131,6 +131,12 @@ UPDATE Conversation
 SET mls_group_state = :mls_group_state, mls_cipher_suite = :mls_cipher_suite
 WHERE mls_group_id = :mls_group_id;
 
+updateMLSGroupIdAndState:
+UPDATE Conversation
+SET mls_group_id = :new_group_id, 
+    mls_group_state = :group_state
+WHERE qualified_id = :conversation_id;
+
 updateConversationNotificationsDateWithTheLastMessage:
 UPDATE Conversation
 SET last_notified_date = (

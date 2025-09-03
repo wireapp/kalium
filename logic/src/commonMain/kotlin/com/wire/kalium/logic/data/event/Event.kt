@@ -465,7 +465,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val from: UserId,
             val groupID: GroupID,
-            val newGroupID: GroupID? = null,
+            val newGroupID: GroupID,
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.MlsReset",
