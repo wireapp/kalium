@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.analytics
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -84,7 +84,7 @@ internal fun AnalyticsIdentifierManager(
                 selfConversationIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
                     val date = Clock.System.now()
                     val message = Message.Signaling(
-                        id = uuid4().toString(),
+                        id = Uuid.random().toString(),
                         content = messageContent,
                         conversationId = selfConversationId,
                         date = date,

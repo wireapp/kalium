@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.event.Event
@@ -48,7 +48,7 @@ class GenerateGuestRoomLinkUseCaseImpl internal constructor(
                 val event = Event.Conversation.CodeUpdated(
                     conversationId = it.qualifiedConversation.toModel(),
                     code = it.data.code,
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     isPasswordProtected = it.data.hasPassword,
                     key = it.data.key,
                     uri = it.data.uri

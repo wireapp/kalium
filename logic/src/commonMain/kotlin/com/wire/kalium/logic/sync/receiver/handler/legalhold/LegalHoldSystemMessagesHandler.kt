@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -119,7 +119,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         date: Instant = Clock.System.now(),
     ): Message.System =
         Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = content,
             conversationId = conversationId,
             date = date,

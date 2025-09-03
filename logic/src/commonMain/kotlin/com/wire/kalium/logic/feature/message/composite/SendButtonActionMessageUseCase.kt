@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -60,7 +60,7 @@ class SendButtonActionMessageUseCase internal constructor(
         ).flatMap { _ ->
             currentClientIdProvider().flatMap { currentClientId ->
                 val regularMessage = Message.Signaling(
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     content = MessageContent.ButtonAction(
                         referencedMessageId = messageId,
                         buttonId = buttonId

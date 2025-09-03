@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -100,7 +100,7 @@ interface LoginUseCase {
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
-        cookieLabel: String? = uuid4().toString(),
+        cookieLabel: String? = Uuid.random().toString(),
         secondFactorVerificationCode: String? = null,
     ): AuthenticationResult
 }

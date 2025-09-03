@@ -66,9 +66,6 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
                 implementation(libs.okio.test)
-
-                // UUIDs
-                implementation(libs.benAsherUUID)
             }
         }
         val commonTest by getting {

@@ -18,12 +18,13 @@
 
 package com.wire.kalium.logic.feature.auth.sso
 
-import com.benasher44.uuid.uuidFrom
 import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.Companion.SSO_CODE_WIRE_PREFIX
 import io.mockative.Mockable
+import kotlin.uuid.Uuid
 
 /**
- * Validates a SSO code
+ * Validates a SSO code.
+ * The code is valid if it starts with [SSO_CODE_WIRE_PREFIX] and contains **a valid UUID with hex-and-dash format**.
  */
 @Mockable
 interface ValidateSSOCodeUseCase {
@@ -43,7 +44,8 @@ internal class ValidateSSOCodeUseCaseImpl : ValidateSSOCodeUseCase {
         if (!ssoCode.startsWith(SSO_CODE_WIRE_PREFIX)) ValidateSSOCodeResult.Invalid
         else ssoCode.removePrefix(SSO_CODE_WIRE_PREFIX).let { uuid ->
             try {
-                uuidFrom(uuid).let { ValidateSSOCodeResult.Valid(uuid) }
+                val result = Uuid.parse(uuid).toString()
+                ValidateSSOCodeResult.Valid(result)
             } catch (e: IllegalArgumentException) {
                 ValidateSSOCodeResult.Invalid
             }

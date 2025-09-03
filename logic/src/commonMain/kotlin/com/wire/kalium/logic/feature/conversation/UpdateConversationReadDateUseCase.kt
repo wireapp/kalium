@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -103,7 +103,7 @@ class UpdateConversationReadDateUseCase internal constructor(
         selfConversationId: QualifiedID,
         time: Instant
     ): Either<CoreFailure, Unit> {
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val regularMessage = Message.Signaling(

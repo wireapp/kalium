@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -69,7 +69,7 @@ internal class ClearConversationContentUseCaseImpl(
             selfConversationIdProvider().flatMap { selfConversationIds ->
                 selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
                     val regularMessage = Message.Signaling(
-                        id = uuid4().toString(),
+                        id = Uuid.random().toString(),
                         content = MessageContent.Cleared(
                             conversationId = conversationId,
                             time = DateTimeUtil.currentInstant(),

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.debug
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -57,7 +57,7 @@ class SendConfirmationUseCase internal constructor(
             it is SlowSyncStatus.Complete
         }
 
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(

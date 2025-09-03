@@ -19,7 +19,7 @@
 @file:Suppress("MaximumLineLength")
 package com.wire.kalium.logic.feature.debug
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
@@ -116,7 +116,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
 
         return currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
-            val generatedMessageUuid = uuid4().toString()
+            val generatedMessageUuid = Uuid.random().toString()
 
             message = Message.Regular(
                 id = generatedMessageUuid,
