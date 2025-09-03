@@ -61,7 +61,7 @@ fun Project.configureDefaultMultiplatform(
         }
 
         if (enableJs) {
-            js { commonJsConfig(jsModuleNameOverride, enableJsTests) }
+            commonJsConfig(this@configureDefaultMultiplatform, jsModuleNameOverride, enableJsTests)
         }
 
         if (enableApple) {
@@ -75,7 +75,6 @@ fun Project.configureDefaultMultiplatform(
         }
 
     kotlinExtension.sourceSets.getByName("androidInstrumentedTest") {
-
         dependencies {
             // Add common runner and rules to Android Instrumented Tests
             implementation(library("androidtest.core"))
