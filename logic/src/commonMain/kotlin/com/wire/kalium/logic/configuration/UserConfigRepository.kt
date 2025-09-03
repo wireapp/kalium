@@ -48,8 +48,11 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -95,7 +98,7 @@ interface UserConfigRepository {
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit>
-    fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean>
+    suspend fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
     fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
@@ -310,8 +313,10 @@ internal class UserConfigDataSource internal constructor(
         userConfigStorage.persistUseSftForOneOnOneCalls(shouldUse)
     }
 
-    override fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean> = wrapStorageRequest {
-        userConfigStorage.shouldUseSftForOneOnOneCalls()
+    override suspend fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean> = withContext(Dispatchers.IO) {
+        wrapStorageRequest {
+            userConfigStorage.shouldUseSftForOneOnOneCalls()
+        }
     }
 
     override fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =

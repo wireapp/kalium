@@ -71,6 +71,8 @@ import com.wire.kalium.logic.data.conversation.CommitBundleEventReceiverImpl
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
+import com.wire.kalium.logic.data.conversation.ConversationMetaDataDataSource
+import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
@@ -1328,11 +1330,14 @@ class UserSessionScope internal constructor(
             federatedIdMapper = federatedIdMapper
         )
 
+    private val conversationMetadataRepository: ConversationMetaDataRepository get() = ConversationMetaDataDataSource(
+        userStorage.database.conversationMetaDataDAO
+    )
+
     private val getCallConversationType: GetCallConversationTypeProvider by lazy {
         GetCallConversationTypeProviderImpl(
             userConfigRepository = userConfigRepository,
-            conversationRepository = conversationRepository,
-            callMapper = callMapper
+            conversationMetaDataRepository = conversationMetadataRepository,
         )
     }
 
