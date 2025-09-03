@@ -1822,7 +1822,7 @@ class MLSConversationRepositoryTest {
     fun givenDAOFailure_whenUpdateGroupIdAndState_thenShouldPropagateError() = runTest {
         val conversationId = TestConversation.ID
         val newGroupId = GroupID("new_group_id")
-        val storageFailure = StorageFailure.Generic(Throwable("database error"))
+        val storageFailure = StorageFailure.Generic(Exception("database error"))
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withUpdateMLSGroupIdAndStateFailing(storageFailure)
             .arrange()
@@ -1830,7 +1830,7 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
 
         result.shouldFail {
-            assertTrue(it is StorageFailure)
+            assertIs<StorageFailure.Generic>(it)
         }
     }
 
