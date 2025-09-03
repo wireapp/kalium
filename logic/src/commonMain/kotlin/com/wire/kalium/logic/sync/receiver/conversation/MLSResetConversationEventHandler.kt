@@ -18,9 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
@@ -37,18 +35,11 @@ interface MLSResetConversationEventHandler {
 
 internal class MLSResetConversationEventHandlerImpl(
     private val selfUserId: UserId,
-    private val userConfig: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversation: FetchConversationUseCase,
 ) : MLSResetConversationEventHandler {
     override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
-
-        if (!userConfig.isMlsConversationsResetEnabled()) {
-            kaliumLogger.i("MLS conversation reset feature is disabled.")
-            return
-        }
-
         val isFromOtherUser = event.from != selfUserId
 
         // If the event is from same user do reset only if local group id does not match new group id.

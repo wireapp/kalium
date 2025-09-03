@@ -1729,7 +1729,6 @@ class UserSessionScope internal constructor(
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
         get() = MLSResetConversationEventHandlerImpl(
             selfUserId = userId,
-            userConfig = userConfigRepository,
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversation = fetchConversationUseCase,
