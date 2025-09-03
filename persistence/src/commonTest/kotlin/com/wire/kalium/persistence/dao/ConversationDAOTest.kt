@@ -2389,6 +2389,86 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertTrue(deleteResult)
     }
 
+    @Test
+    fun givenConversationExists_whenUpdateMLSGroupIdAndState_thenBothFieldsAreUpdated() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity2)
+
+        val newGroupId = "updated_group_id"
+        val newState = ConversationEntity.GroupState.ESTABLISHED
+
+        conversationDAO.updateMLSGroupIdAndState(conversationEntity2.id, newGroupId, newState)
+
+        val updatedConversation = conversationDAO.getConversationById(conversationEntity2.id)
+        assertNotNull(updatedConversation)
+        val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+        assertEquals(newGroupId, protocolInfo.groupId)
+        assertEquals(newState, protocolInfo.groupState)
+    }
+
+    @Test
+    fun givenConversationWithExistingGroupId_whenUpdateMLSGroupIdAndState_thenGroupIdIsReplaced() = runTest(dispatcher) {
+        val originalGroupId = "original_group_id"
+        val originalConversation = conversationEntity1.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = originalGroupId,
+                groupState = ConversationEntity.GroupState.PENDING_JOIN,
+                epoch = 0UL,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+        )
+        conversationDAO.insertConversation(originalConversation)
+
+        val newGroupId = "new_group_id"
+        val newState = ConversationEntity.GroupState.PENDING_CREATION
+
+        conversationDAO.updateMLSGroupIdAndState(originalConversation.id, newGroupId, newState)
+
+        val updatedConversation = conversationDAO.getConversationById(originalConversation.id)
+        assertNotNull(updatedConversation)
+        val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+        assertEquals(newGroupId, protocolInfo.groupId)
+        assertEquals(newState, protocolInfo.groupState)
+    }
+
+    @Test
+    fun givenNonExistentConversation_whenUpdateMLSGroupIdAndState_thenNoErrorOccurs() = runTest(dispatcher) {
+        val nonExistentId = QualifiedIDEntity("non_existent", "domain.com")
+        val newGroupId = "new_group_id"
+        val newState = ConversationEntity.GroupState.ESTABLISHED
+
+        conversationDAO.updateMLSGroupIdAndState(nonExistentId, newGroupId, newState)
+
+        val conversation = conversationDAO.getConversationById(nonExistentId)
+        assertNull(conversation)
+    }
+
+    @Test
+    fun givenMultipleStates_whenUpdateMLSGroupIdAndState_thenCorrectStateIsSet() = runTest(dispatcher) {
+        val states = listOf(
+            ConversationEntity.GroupState.PENDING_CREATION,
+            ConversationEntity.GroupState.PENDING_JOIN,
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            ConversationEntity.GroupState.ESTABLISHED
+        )
+
+        states.forEachIndexed { index, state ->
+            val conversationId = QualifiedIDEntity("conversation_$index", "domain.com")
+            val conversation = conversationEntity2.copy(id = conversationId)
+            conversationDAO.insertConversation(conversation)
+
+            val newGroupId = "group_id_$index"
+
+            conversationDAO.updateMLSGroupIdAndState(conversationId, newGroupId, state)
+
+            val updatedConversation = conversationDAO.getConversationById(conversationId)
+            assertNotNull(updatedConversation)
+            val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+            assertEquals(newGroupId, protocolInfo.groupId)
+            assertEquals(state, protocolInfo.groupState)
+        }
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?

@@ -249,6 +249,14 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.updateMlsGroupStateAndCipherSuite(groupState, cipherSuite, groupId)
     }
 
+    override suspend fun updateMLSGroupIdAndState(
+        conversationId: QualifiedIDEntity,
+        newGroupId: String,
+        groupState: ConversationEntity.GroupState
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, conversationId)
+    }
+
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
         conversationQueries.updateConversationModifiedDate(date, qualifiedID)
     }

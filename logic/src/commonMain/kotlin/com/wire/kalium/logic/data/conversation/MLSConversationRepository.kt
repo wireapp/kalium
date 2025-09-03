@@ -219,6 +219,12 @@ interface MLSConversationRepository {
         conversationId: ConversationId,
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
+
+    suspend fun updateGroupIdAndState(
+        conversationId: ConversationId,
+        newGroupId: GroupID,
+        groupState: ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN
+    ): Either<CoreFailure, Unit>
 }
 
 private enum class CommitStrategy {
@@ -827,4 +833,17 @@ internal class MLSConversationDataSource(
             }
         }
     }
+
+    override suspend fun updateGroupIdAndState(
+        conversationId: ConversationId,
+        newGroupId: GroupID,
+        groupState: ConversationEntity.GroupState
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateMLSGroupIdAndState(
+                conversationId.toDao(),
+                idMapper.toCryptoModel(newGroupId),
+                groupState
+            )
+        }
 }
