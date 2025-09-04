@@ -25,6 +25,7 @@ import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
 
 internal class FilePagingSource(
@@ -45,9 +46,9 @@ internal class FilePagingSource(
             onlyDeleted = onlyDeleted,
             tags = tags
         ).fold(
-            {
+            { error ->
                 PagingSourceLoadResultError<Int, Node>(
-                    throwable = Exception("Failed to load files")
+                    throwable = FileListLoadError(error is NetworkFailure.NoNetworkConnection)
                 ) as PagingSourceLoadResult<Int, Node>
             },
             { files ->
@@ -66,3 +67,5 @@ internal class FilePagingSource(
         }
     }
 }
+
+public data class FileListLoadError(val isConnectionError: Boolean) : Throwable()
