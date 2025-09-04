@@ -183,14 +183,16 @@ class EventDataSource(
             }
     }
 
-    override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
-        currentClientId().fold(
+    override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> {
+        kaliumLogger.d("$TAG Handling acknowledgeMissedEvent")
+        return currentClientId().fold(
             { it.left() },
             {
                 notificationApi.acknowledgeEvents(it.value, sentinelMarker.get().getMarker(), EventMapper.FULL_ACKNOWLEDGE_REQUEST)
                 Unit.right()
             }
         )
+    }
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
     private suspend fun fetchEvents(): Either<CoreFailure, Unit> =
@@ -254,6 +256,7 @@ class EventDataSource(
                     val isLive = isWebsocketEventReceivedLive()
                     when (val event: ConsumableNotificationResponse = webSocketEvent.payload) {
                         is ConsumableNotificationResponse.EventNotification -> {
+                            kaliumLogger.d("$TAG Handling ConsumableNotificationResponse.EventNotification")
                             if (clearOnFirstWSMessage.value) {
                                 clearOnFirstWSMessage.emit(false)
                                 kaliumLogger.d("$TAG clear processed events before ${event.data.event.id.obfuscateId()}")
@@ -290,6 +293,7 @@ class EventDataSource(
                         }
 
                         ConsumableNotificationResponse.MissedNotification -> {
+                            kaliumLogger.d("$TAG Handling ConsumableNotificationResponse.MissedNotification")
                             wrapStorageRequest {
                                 val eventId = uuid4().toString()
                                 eventDAO.insertEvents(
@@ -306,6 +310,7 @@ class EventDataSource(
                         }
 
                         is ConsumableNotificationResponse.SynchronizationNotification -> {
+                            kaliumLogger.d("$TAG Handling ConsumableNotificationResponse.SynchronizationNotification")
                             event.data.deliveryTag?.let { ackEvent(it) }
                             val currentMarker = sentinelMarker.get().getMarker()
                             if (event.data.markerId == currentMarker) {
@@ -327,6 +332,7 @@ class EventDataSource(
     private fun isWebsocketEventReceivedLive() = sentinelMarker.get().getMarker().isBlank()
 
     private suspend fun ackEvent(deliveryTag: ULong): Either<CoreFailure, Unit> {
+        kaliumLogger.d("$TAG Handling ackEvent")
         return currentClientId().fold(
             { it.left() },
             { clientId ->

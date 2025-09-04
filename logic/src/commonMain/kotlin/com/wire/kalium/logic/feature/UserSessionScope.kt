@@ -1828,6 +1828,7 @@ class UserSessionScope internal constructor(
             selfServerConfig = users.serverLinks,
             syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
+            logger = userScopedLogger
         )
     }
 
