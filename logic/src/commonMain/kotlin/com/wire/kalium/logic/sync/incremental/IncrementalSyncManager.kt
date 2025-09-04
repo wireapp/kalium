@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -149,7 +149,7 @@ internal fun IncrementalSyncManager(
         incrementalSyncWorker
             .processEventsFlow()
             .cancellable()
-            .runningFold(uuid4().toString() to Clock.System.now()) { syncData, eventSource ->
+            .runningFold(Uuid.random().toString() to Clock.System.now()) { syncData, eventSource ->
                 val syncLogger = kaliumLogger.provideNewSyncManagerLogger(SyncType.INCREMENTAL, syncData.first)
                 val newState = when (eventSource) {
                     EventSource.PENDING -> {
@@ -167,7 +167,7 @@ internal fun IncrementalSyncManager(
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
 
                 // when the source is LIVE, we need to generate a new syncId since it means the previous one is done
-                if (eventSource == EventSource.LIVE) uuid4().toString() to Clock.System.now() else syncData
+                if (eventSource == EventSource.LIVE) Uuid.random().toString() to Clock.System.now() else syncData
             }.collect()
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         logger.i("IncrementalSync stopped.")

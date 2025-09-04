@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation.folder
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
@@ -52,7 +52,7 @@ internal class CreateConversationFolderUseCaseImpl(
 ) : CreateConversationFolderUseCase {
     override suspend fun invoke(folderName: String): CreateConversationFolderUseCase.Result = withContext(dispatchers.io) {
         val folder = ConversationFolder(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             name = folderName,
             type = FolderType.USER
         )

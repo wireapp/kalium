@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
@@ -97,7 +97,7 @@ internal class AddAttachmentDraftUseCaseImpl internal constructor(
                     conversationId = conversationId,
                     assetPath = assetPath,
                     node = CellNode(
-                        uuid = uuid4().toString(),
+                        uuid = Uuid.random().toString(),
                         versionId = "",
                         path = fileName,
                         size = assetSize,

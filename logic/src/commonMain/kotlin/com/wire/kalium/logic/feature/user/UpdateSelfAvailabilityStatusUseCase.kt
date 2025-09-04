@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.user
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -52,7 +52,7 @@ class UpdateSelfAvailabilityStatusUseCase internal constructor(
         withContext(dispatchers.io) {
             accountRepository.updateSelfUserAvailabilityStatus(status)
             provideClientId().flatMap { selfClientId ->
-                val id = uuid4().toString()
+                val id = Uuid.random().toString()
 
                 val message = BroadcastMessage(
                     id = id,

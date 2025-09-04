@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.message.receipt
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
@@ -99,7 +99,7 @@ internal fun SendConfirmationUseCase(
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
-                id = uuid4().toString(),
+                id = Uuid.random().toString(),
                 content = MessageContent.Receipt(ReceiptType.READ, messageIds),
                 conversationId = conversationId,
                 date = Clock.System.now(),
