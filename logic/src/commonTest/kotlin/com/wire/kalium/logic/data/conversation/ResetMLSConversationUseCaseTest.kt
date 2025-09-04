@@ -17,8 +17,12 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
@@ -157,6 +161,77 @@ class ResetMLSConversationUseCaseTest {
         }.wasInvoked()
     }
 
+    @Test
+    fun givenMLSProtocol_whenUseCaseCalled_thenSuccess() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withConversation(TestConversation.MLS_CONVERSATION)
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasInvoked()
+    }
+
+    @Test
+    fun givenMixedProtocol_whenUseCaseCalled_thenSuccess() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withConversation(TestConversation.MIXED_CONVERSATION)
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasInvoked()
+    }
+
+    @Test
+    fun givenLeaveGroupFails_whenUseCaseCalled_thenStillSucceeds() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withLeaveGroupFailing()
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.mlsConversationRepository.leaveGroup(any(), any())
+        }.wasInvoked()
+
+        coVerify {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }.wasInvoked()
+    }
+
+    @Test
+    fun givenLeaveGroupSucceeds_whenUseCaseCalled_thenSuccess() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.mlsConversationRepository.leaveGroup(any(), any())
+        }.wasInvoked()
+
+        coVerify {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }.wasInvoked()
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val userConfig = mock(UserConfigRepository::class)
@@ -189,6 +264,18 @@ class ResetMLSConversationUseCaseTest {
         suspend fun withFeatureEnabled() = apply {
             withCompileTimeFlagEnabled()
             withRuntimeFlagEnabled()
+        }
+
+        suspend fun withConversation(conversation: Conversation) = apply {
+            coEvery {
+                conversationRepository.getConversationById(any())
+            } returns conversation.right()
+        }
+
+        suspend fun withLeaveGroupFailing() = apply {
+            coEvery {
+                mlsConversationRepository.leaveGroup(any(), any())
+            } returns CoreFailure.Unknown(RuntimeException("Leave group failed")).left()
         }
 
         suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {

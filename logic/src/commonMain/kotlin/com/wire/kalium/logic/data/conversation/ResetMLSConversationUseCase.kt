@@ -23,12 +23,14 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
 
@@ -75,24 +77,23 @@ internal class ResetMLSConversationUseCaseImpl(
             fetchConversation(transaction, conversationId)
                 .flatMap { getMlsProtocolInfo(conversationId) }
                 .flatMap { protocolInfo ->
-                    conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
-                        .map { protocolInfo.groupId }
-                }
-                .flatMap { groupId ->
-                    mlsConversationRepository.leaveGroup(mlsContext, groupId)
+                    conversationRepository.resetMlsConversation(protocolInfo.first, protocolInfo.second)
+                        .map { protocolInfo.first }
+                        .onSuccess { groupId ->
+                            // the result of the leave can be ignored
+                            mlsConversationRepository.leaveGroup(mlsContext, groupId)
+                        }
                 }
                 .flatMap { fetchConversation(transaction, conversationId) }
                 .flatMap { getMlsProtocolInfo(conversationId) }
                 .map { updatedProtocolInfo ->
-
                     val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
                         kaliumLogger.e("Failed to get members for conversation: $it")
                         return@transaction it.left()
                     }
-
                     mlsConversationRepository.establishMLSGroup(
                         mlsContext = mlsContext,
-                        groupID = updatedProtocolInfo.groupId,
+                        groupID = updatedProtocolInfo.first,
                         members = members,
                     )
                 }.map {}
@@ -104,7 +105,7 @@ internal class ResetMLSConversationUseCaseImpl(
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId)
 
-    private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo.MLS> {
+    private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Pair<GroupID, ULong>> {
         return conversationRepository.getConversationById(conversationId)
             .map {
                 it.mlsProtocolInfo() ?: return errorNotMlsConversation()
@@ -115,9 +116,12 @@ internal class ResetMLSConversationUseCaseImpl(
         CoreFailure.Unknown(IllegalStateException("Conversation is not an MLS conversation.")).left()
 }
 
-private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLS? {
+private fun Conversation.mlsProtocolInfo(): Pair<GroupID, ULong>? {
     return when (this.protocol) {
-        is Conversation.ProtocolInfo.MLS -> this.protocol as? Conversation.ProtocolInfo.MLS
+        is Conversation.ProtocolInfo.MLSCapable ->
+            (this.protocol as Conversation.ProtocolInfo.MLSCapable).groupId to
+                    (this.protocol as Conversation.ProtocolInfo.MLSCapable).epoch
+
         else -> null
     }
 }
