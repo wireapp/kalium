@@ -30,7 +30,6 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
 
@@ -78,7 +77,7 @@ internal class ResetMLSConversationUseCaseImpl(
                 .flatMap { getMlsProtocolInfo(conversationId) }
                 .flatMap { protocolInfo ->
                     conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
-                        .map { protocolInfo.groupId}
+                        .map { protocolInfo.groupId }
                         .onSuccess { groupId ->
                             // the result of the leave can be ignored
                             mlsConversationRepository.leaveGroup(mlsContext, groupId)
