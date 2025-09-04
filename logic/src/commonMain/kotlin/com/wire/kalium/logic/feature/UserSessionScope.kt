@@ -1358,7 +1358,8 @@ class UserSessionScope internal constructor(
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,
         clientRegistrationStorage = clientRegistrationStorage,
-        selfUserId = userId
+        selfUserId = userId,
+        logger = userScopedLogger
     )
 
     private val mlsMigrator: MLSMigrator

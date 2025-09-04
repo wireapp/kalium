@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
@@ -603,12 +604,13 @@ class EventRepositoryTest {
         val eventDAO: EventDAO = mock(EventDAO::class)
 
         private val eventRepository: EventRepository = EventDataSource(
-            notificationApi,
-            metaDAO,
-            eventDAO,
-            clientIdProvider,
-            TestUser.SELF.id,
-            clientRegistrationStorage
+            notificationApi = notificationApi,
+            metadataDAO = metaDAO,
+            eventDAO = eventDAO,
+            currentClientId = clientIdProvider,
+            selfUserId = TestUser.SELF.id,
+            clientRegistrationStorage = clientRegistrationStorage,
+            logger = kaliumLogger
         )
 
         init {
