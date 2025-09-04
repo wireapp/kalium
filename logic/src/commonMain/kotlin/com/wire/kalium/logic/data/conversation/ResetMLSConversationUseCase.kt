@@ -77,8 +77,8 @@ internal class ResetMLSConversationUseCaseImpl(
             fetchConversation(transaction, conversationId)
                 .flatMap { getMlsProtocolInfo(conversationId) }
                 .flatMap { protocolInfo ->
-                    conversationRepository.resetMlsConversation(protocolInfo.first, protocolInfo.second)
-                        .map { protocolInfo.first }
+                    conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
+                        .map { protocolInfo.groupId}
                         .onSuccess { groupId ->
                             // the result of the leave can be ignored
                             mlsConversationRepository.leaveGroup(mlsContext, groupId)
@@ -93,7 +93,7 @@ internal class ResetMLSConversationUseCaseImpl(
                     }
                     mlsConversationRepository.establishMLSGroup(
                         mlsContext = mlsContext,
-                        groupID = updatedProtocolInfo.first,
+                        groupID = updatedProtocolInfo.groupId,
                         members = members,
                     )
                 }.map {}
@@ -105,7 +105,7 @@ internal class ResetMLSConversationUseCaseImpl(
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId)
 
-    private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Pair<GroupID, ULong>> {
+    private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo.MLSCapable> {
         return conversationRepository.getConversationById(conversationId)
             .map {
                 it.mlsProtocolInfo() ?: return errorNotMlsConversation()
@@ -116,12 +116,9 @@ internal class ResetMLSConversationUseCaseImpl(
         CoreFailure.Unknown(IllegalStateException("Conversation is not an MLS conversation.")).left()
 }
 
-private fun Conversation.mlsProtocolInfo(): Pair<GroupID, ULong>? {
+private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLSCapable? {
     return when (this.protocol) {
-        is Conversation.ProtocolInfo.MLSCapable ->
-            (this.protocol as Conversation.ProtocolInfo.MLSCapable).groupId to
-                    (this.protocol as Conversation.ProtocolInfo.MLSCapable).epoch
-
+        is Conversation.ProtocolInfo.MLSCapable -> this.protocol as Conversation.ProtocolInfo.MLSCapable
         else -> null
     }
 }
