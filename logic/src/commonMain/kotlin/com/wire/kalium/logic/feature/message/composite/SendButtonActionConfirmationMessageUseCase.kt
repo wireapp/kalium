@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -53,7 +53,7 @@ class SendButtonActionConfirmationMessageUseCase internal constructor(
     ): Result = syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider().flatMap { currentClientId ->
                 val regularMessage = Message.Signaling(
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     content = MessageContent.ButtonActionConfirmation(
                         referencedMessageId = messageId,
                         buttonId = buttonId

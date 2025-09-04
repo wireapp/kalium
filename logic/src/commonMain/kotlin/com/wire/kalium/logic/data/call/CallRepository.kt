@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.call
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
@@ -232,7 +232,7 @@ internal class CallDataSource(
 
         val callEntity = callMapper.toCallEntity(
             conversationId = conversationId,
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             type = type,
             status = status,
             conversationType = conversation.conversation.type,
@@ -353,7 +353,7 @@ internal class CallDataSource(
             val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
 
             val message = Message.System(
-                uuid4().toString(),
+                Uuid.random().toString(),
                 MessageContent.MissedCall,
                 conversationId,
                 Clock.System.now(),

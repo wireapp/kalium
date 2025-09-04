@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -94,6 +94,6 @@ internal enum class SyncType {
  */
 internal fun KaliumLogger.provideNewSyncManagerLogger(
     syncType: SyncType,
-    syncId: String = uuid4().toString(),
+    syncId: String = Uuid.random().toString(),
     syncStartedMoment: Instant = Clock.System.now()
 ) = SyncManagerLogger(this, syncId, syncType, syncStartedMoment)

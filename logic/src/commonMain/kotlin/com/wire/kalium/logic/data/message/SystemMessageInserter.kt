@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.data.message
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -27,6 +26,7 @@ import com.wire.kalium.persistence.dao.message.LocalId
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.uuid.Uuid
 
 @Mockable
 internal interface SystemMessageInserter {
@@ -60,7 +60,7 @@ internal class SystemMessageInserterImpl(
         protocol: Conversation.Protocol
     ) {
         val message = Message.System(
-            uuid4().toString(),
+            Uuid.random().toString(),
             MessageContent.ConversationProtocolChanged(
                 protocol = protocol
             ),
@@ -80,7 +80,7 @@ internal class SystemMessageInserterImpl(
         senderUserId: UserId
     ) {
         val message = Message.System(
-            uuid4().toString(),
+            Uuid.random().toString(),
             MessageContent.ConversationProtocolChangedDuringACall,
             conversationId,
             Clock.System.now(),
@@ -95,7 +95,7 @@ internal class SystemMessageInserterImpl(
 
     override suspend fun insertHistoryLostProtocolChangedSystemMessage(conversationId: ConversationId) {
         val message = Message.System(
-            uuid4().toString(),
+            Uuid.random().toString(),
             MessageContent.HistoryLostProtocolChanged,
             conversationId,
             Clock.System.now(),
@@ -110,7 +110,7 @@ internal class SystemMessageInserterImpl(
 
     override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit> {
         val mlsEpochWarningMessage = Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.MLSWrongEpochWarning,
             conversationId = conversationId,
             date = instant,

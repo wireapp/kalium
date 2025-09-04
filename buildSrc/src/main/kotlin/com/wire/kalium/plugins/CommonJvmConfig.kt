@@ -25,7 +25,6 @@ fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean, enableIntegra
     compilations.all {
         compileTaskProvider.configure {
             compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
-            compilerOptions.freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
         }
     }
     testRuns.getByName("test").executionTask.configure {

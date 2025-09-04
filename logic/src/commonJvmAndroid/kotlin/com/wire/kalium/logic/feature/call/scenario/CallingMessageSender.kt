@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.call.scenario
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
@@ -165,7 +165,7 @@ internal fun CallingMessageSender(
         val messageContent = MessageContent.Calling(data, callHostConversationId)
         val date = Clock.System.now()
         val message = Message.Signaling(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = messageContent,
             conversationId = transportConversationId,
             date = date,

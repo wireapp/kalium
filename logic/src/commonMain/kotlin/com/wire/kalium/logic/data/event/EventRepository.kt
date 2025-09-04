@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.event
 
 import co.touchlab.stately.concurrency.AtomicReference
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -212,7 +212,7 @@ class EventDataSource(
         }
 
     private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<IncrementalSyncPhase>> {
-        sentinelMarker.set(SentinelMarker.Marker(uuid4().toString()))
+        sentinelMarker.set(SentinelMarker.Marker(Uuid.random().toString()))
         logger.d("Creating new sentinel marker [${sentinelMarker.get().getMarker()}] for this session.")
         return wrapApiRequest {
             notificationApi.consumeLiveEvents(clientId = clientId.value, markerId = sentinelMarker.get().getMarker())
@@ -298,7 +298,7 @@ class EventDataSource(
                         ConsumableNotificationResponse.MissedNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.MissedNotification")
                             wrapStorageRequest {
-                                val eventId = uuid4().toString()
+                                val eventId = Uuid.random().toString()
                                 eventDAO.insertEvents(
                                     listOf(
                                         NewEventEntity(
