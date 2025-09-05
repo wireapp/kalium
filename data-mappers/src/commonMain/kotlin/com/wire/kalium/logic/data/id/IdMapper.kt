@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
+import kotlin.js.JsName
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.model.QualifiedID
@@ -60,6 +61,7 @@ interface IdMapper {
 
 }
 
+@JsName("DefaultIdMapper")
 fun IdMapper(): IdMapper = IdMapperImpl()
 
 @Suppress("TooManyFunctions")
