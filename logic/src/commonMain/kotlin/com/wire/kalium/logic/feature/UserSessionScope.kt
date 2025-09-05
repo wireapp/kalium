@@ -1358,7 +1358,8 @@ class UserSessionScope internal constructor(
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,
         clientRegistrationStorage = clientRegistrationStorage,
-        selfUserId = userId
+        selfUserId = userId,
+        logger = userScopedLogger
     )
 
     private val mlsMigrator: MLSMigrator
@@ -1828,6 +1829,7 @@ class UserSessionScope internal constructor(
             selfServerConfig = users.serverLinks,
             syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
+            logger = userScopedLogger
         )
     }
 

@@ -33,7 +33,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -141,7 +141,10 @@ class EventDataSource(
     private val selfUserId: UserId,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
+    logger: KaliumLogger
 ) : EventRepository {
+
+    val logger = logger.withTextTag(TAG)
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
     private val sentinelMarker = AtomicReference<SentinelMarker>(SentinelMarker.None)
@@ -149,8 +152,8 @@ class EventDataSource(
     override suspend fun observeEvents(): Flow<List<EventEnvelope>> {
         var lastEmittedEventId: String? = null
         return eventDAO.observeUnprocessedEvents().transform { eventEntities ->
-            kaliumLogger.d("$TAG got ${eventEntities.size} unprocessed events")
-            kaliumLogger.d("$TAG current last emitted event id: ${lastEmittedEventId?.obfuscateId()}")
+            logger.d("got ${eventEntities.size} unprocessed events")
+            logger.d("current last emitted event id: ${lastEmittedEventId?.obfuscateId()}")
 
             val emittedEventIndex = eventEntities.indexOfFirst { entity -> entity.eventId == lastEmittedEventId }
 
@@ -159,10 +162,10 @@ class EventDataSource(
                 return@transform
             }
             if (emittedEventIndex != eventEntities.lastIndex) {
-                kaliumLogger.d("$TAG filtered out ${emittedEventIndex + 1} events already marked as processed")
+                logger.d("filtered out ${emittedEventIndex + 1} events already marked as processed")
                 emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.size))
             } else {
-                kaliumLogger.d("$TAG no unprocessed events found")
+                logger.d("no unprocessed events found")
                 emit(emptyList())
             }
         }
@@ -183,14 +186,16 @@ class EventDataSource(
             }
     }
 
-    override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> =
-        currentClientId().fold(
+    override suspend fun acknowledgeMissedEvent(): Either<CoreFailure, Unit> {
+        logger.d("Handling acknowledgeMissedEvent")
+        return currentClientId().fold(
             { it.left() },
             {
                 notificationApi.acknowledgeEvents(it.value, sentinelMarker.get().getMarker(), EventMapper.FULL_ACKNOWLEDGE_REQUEST)
                 Unit.right()
             }
         )
+    }
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
     private suspend fun fetchEvents(): Either<CoreFailure, Unit> =
@@ -208,7 +213,7 @@ class EventDataSource(
 
     private suspend fun consumeLiveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<IncrementalSyncPhase>> {
         sentinelMarker.set(SentinelMarker.Marker(Uuid.random().toString()))
-        kaliumLogger.d("$TAG Creating new sentinel marker [${sentinelMarker.get().getMarker()}] for this session.")
+        logger.d("Creating new sentinel marker [${sentinelMarker.get().getMarker()}] for this session.")
         return wrapApiRequest {
             notificationApi.consumeLiveEvents(clientId = clientId.value, markerId = sentinelMarker.get().getMarker())
         }.map { webSocketEventFlow ->
@@ -226,11 +231,11 @@ class EventDataSource(
             when (webSocketEvent) {
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
-                    kaliumLogger.d("$TAG set all unprocessed events as pending")
+                    logger.d("set all unprocessed events as pending")
                     setAllUnprocessedEventsAsPending()
                     val isLegacyNotificationsSystem = webSocketEvent.shouldProcessPendingEvents
                     if (isLegacyNotificationsSystem) {
-                        kaliumLogger.d("$TAG fetch pending events from server")
+                        logger.d("fetch pending events from server")
                         val result = fetchEvents()
                         result.onFailure(::throwPendingEventException)
                     }
@@ -254,13 +259,14 @@ class EventDataSource(
                     val isLive = isWebsocketEventReceivedLive()
                     when (val event: ConsumableNotificationResponse = webSocketEvent.payload) {
                         is ConsumableNotificationResponse.EventNotification -> {
+                            logger.d("Handling ConsumableNotificationResponse.EventNotification")
                             if (clearOnFirstWSMessage.value) {
                                 clearOnFirstWSMessage.emit(false)
-                                kaliumLogger.d("$TAG clear processed events before ${event.data.event.id.obfuscateId()}")
+                                logger.d("clear processed events before ${event.data.event.id.obfuscateId()}")
                                 clearProcessedEvents(event.data.event.id)
                             }
                             event.data.event.let { eventResponse ->
-                                kaliumLogger.d("$TAG insert event ${eventResponse.id.obfuscateId()} from WS")
+                                logger.d("insert event ${eventResponse.id.obfuscateId()} from WS")
                                 wrapStorageRequest {
                                     eventDAO.insertEvents(
                                         listOf(
@@ -290,6 +296,7 @@ class EventDataSource(
                         }
 
                         ConsumableNotificationResponse.MissedNotification -> {
+                            logger.d("Handling ConsumableNotificationResponse.MissedNotification")
                             wrapStorageRequest {
                                 val eventId = Uuid.random().toString()
                                 eventDAO.insertEvents(
@@ -306,14 +313,15 @@ class EventDataSource(
                         }
 
                         is ConsumableNotificationResponse.SynchronizationNotification -> {
+                            logger.d("Handling ConsumableNotificationResponse.SynchronizationNotification")
                             event.data.deliveryTag?.let { ackEvent(it) }
                             val currentMarker = sentinelMarker.get().getMarker()
                             if (event.data.markerId == currentMarker) {
-                                kaliumLogger.d("$TAG Handling current sentinel marker [${event.data.markerId}] for this session.")
+                                logger.d("Handling current sentinel marker [${event.data.markerId}] for this session.")
                                 sentinelMarker.set(SentinelMarker.None)
                                 flowCollector.emit(IncrementalSyncPhase.ReadyToProcess)
                             } else {
-                                kaliumLogger.d("$TAG Skipping this sentinel marker [${event.data.markerId}] is not valid for this session.")
+                                logger.d("Skipping this sentinel marker [${event.data.markerId}] is not valid for this session.")
                             }
                         }
                     }
@@ -327,6 +335,7 @@ class EventDataSource(
     private fun isWebsocketEventReceivedLive() = sentinelMarker.get().getMarker().isBlank()
 
     private suspend fun ackEvent(deliveryTag: ULong): Either<CoreFailure, Unit> {
+        logger.d("Handling ackEvent")
         return currentClientId().fold(
             { it.left() },
             { clientId ->
@@ -348,7 +357,7 @@ class EventDataSource(
 
     private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<ConsumableNotificationResponse>) {
         when (val cause = webSocketEvent.cause) {
-            null -> kaliumLogger.i("Websocket closed normally")
+            null -> logger.i("Websocket closed normally")
             is IOException ->
                 throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
 
@@ -426,7 +435,7 @@ class EventDataSource(
                         )
                     }
                 }
-                kaliumLogger.d("$TAG inserting ${entities.size} events from pending notifications, hasMore: $hasMore")
+                logger.d("inserting ${entities.size} events from pending notifications, hasMore: $hasMore")
                 val eventIdsToRemove = entities.map { it.eventId }
                 wrapStorageRequest {
                     eventDAO.deleteUnprocessedLiveEventsByIds(eventIdsToRemove)
@@ -443,7 +452,7 @@ class EventDataSource(
                 return Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException))
             }
         }
-        kaliumLogger.i("Pending events collection finished. Collecting Live events.")
+        logger.i("Pending events collection finished. Collecting Live events.")
         return Either.Right(Unit)
     }
 
@@ -496,7 +505,7 @@ class EventDataSource(
         val isEventNotFound = networkCause is KaliumException.InvalidRequestError
                 && networkCause.errorResponse.code == HttpStatusCode.NotFound.value
         throw KaliumSyncException(
-            message = "$TAG Failure to fetch pending events, aborting Incremental Sync",
+            message = "Failure to fetch pending events, aborting Incremental Sync",
             coreFailureCause = if (isEventNotFound) CoreFailure.SyncEventOrClientNotFound else failure
         )
     }
