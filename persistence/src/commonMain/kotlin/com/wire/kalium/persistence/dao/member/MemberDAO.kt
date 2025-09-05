@@ -67,6 +67,8 @@ interface MemberDAO {
 
     suspend fun getOneOneConversationWithFederatedMembers(domain: String): Map<ConversationIDEntity, UserIDEntity>
     suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity): Map<QualifiedIDEntity, NameAndHandleEntity>
+
+    suspend fun getAllMembers(): List<UserIDEntity>
 }
 
 @Suppress("TooManyFunctions")
@@ -227,5 +229,11 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
             .let { members -> members.associate { it.user to NameAndHandleEntity(it.name, it.handle) } }
+    }
+
+    override suspend fun getAllMembers(): List<UserIDEntity> = withContext(coroutineContext) {
+        memberQueries.selectAllMembers()
+            .executeAsList()
+            .map { it.user }
     }
 }

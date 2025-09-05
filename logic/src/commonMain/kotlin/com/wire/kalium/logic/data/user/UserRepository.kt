@@ -76,6 +76,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -163,6 +164,7 @@ interface UserRepository {
 internal class UserDataSource internal constructor(
     private val userDAO: UserDAO,
     private val clientDAO: ClientDAO,
+    private val memberDAO: MemberDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
     private val upgradePersonalToTeamApi: UpgradePersonalToTeamApi,
@@ -508,15 +510,28 @@ internal class UserDataSource internal constructor(
                 wrapStorageRequest { userDAO.getAllUsersDetailsByTeam(selfTeamId).map { it.id.toModel() } }
             }?.getOrNull() ?: listOf()
 
+            val allUsersWithConversations = memberDAO.getAllMembers().map { it.toModel() }
+
             wrapStorageRequest {
                 memberMapper.fromMapOfClientsEntityToRecipients(clientDAO.selectAllClients())
             }.map { allRecipients ->
                 val teamRecipients = mutableListOf<Recipient>()
                 val otherRecipients = mutableListOf<Recipient>()
+
                 allRecipients.forEach {
                     if (teamMateIds.contains(it.id)) teamRecipients.add(it)
                     else otherRecipients.add(it)
                 }
+
+                val allRecipientsIds = allRecipients.mapTo(mutableSetOf()) { it.id }
+
+                // Ensure we add all users in the list even if they do not have a client id stored locally.
+                otherRecipients.addAll(
+                    allUsersWithConversations
+                        .filterNot { allRecipientsIds.contains(it) }
+                        .map { Recipient(it, emptyList()) }
+                )
+
                 teamRecipients.toList() to otherRecipients.toList()
             }
         }
