@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -107,7 +107,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     ): Either<CoreFailure, Unit> = selfConversationIdProvider().flatMap { selfConversaionIdList ->
         selfConversaionIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
             Message.Signaling(
-                id = uuid4().toString(),
+                id = Uuid.random().toString(),
                 content = MessageContent.DeleteForMe(messageToDelete, conversationId),
                 conversationId = selfConversationId,
                 date = Clock.System.now(),
@@ -128,7 +128,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
         originalMessageSender: UserId,
         currentClientId: ClientId
     ) = Message.Signaling(
-        id = uuid4().toString(),
+        id = Uuid.random().toString(),
         content = MessageContent.DeleteMessage(messageToDelete),
         conversationId = conversationId,
         date = Clock.System.now(),

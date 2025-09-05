@@ -139,7 +139,6 @@ class PreKeyListMapperTest {
         val result = subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
         val clientsA = result.first().clientsInfo.map { it.clientId }
-        print("size = ${clientsA.size} ")
         assertEquals(2, clientsA.size)
         val doesContain1 = clientsA.containsAll(listOf("clientA", "clientB"))
         assertEquals(true, doesContain1)

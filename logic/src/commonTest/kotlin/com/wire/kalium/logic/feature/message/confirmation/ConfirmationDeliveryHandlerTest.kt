@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.message.confirmation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -148,12 +148,12 @@ class ConfirmationDeliveryHandlerTest {
 
         val messagesCount = 500
         launch {
-            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) }
+            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, Uuid.random().toString()) }
             delay(2000)
         }
         advanceTimeBy(1000L)
         launch {
-            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) }
+            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, Uuid.random().toString()) }
             delay(2000)
         }
         advanceTimeBy(2000L)
@@ -177,7 +177,7 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
 
         repeat(100) {
-            sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString())
+            sut.enqueueConfirmationDelivery(TestConversation.ID, Uuid.random().toString())
         }
         advanceUntilIdle()
         job.cancel()

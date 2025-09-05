@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
@@ -63,7 +63,7 @@ internal class TeamEventReceiverImpl(
             .onSuccess {
                 it.forEach { conversationId ->
                     val message = Message.System(
-                        id = uuid4().toString(), // We generate a random uuid for this new system message
+                        id = Uuid.random().toString(), // We generate a random uuid for this new system message
                         content = MessageContent.MemberChange.RemovedFromTeam(listOf(removedUser)),
                         conversationId = conversationId,
                         date = event.dateTime,

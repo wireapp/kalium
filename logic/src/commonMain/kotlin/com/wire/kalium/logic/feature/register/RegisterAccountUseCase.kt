@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.register
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
@@ -52,7 +52,7 @@ sealed class RegisterParam(
         email: String,
         password: String,
         emailActivationCode: String,
-        cookieLabel: String? = uuid4().toString(),
+        cookieLabel: String? = Uuid.random().toString(),
     ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
 
         override val name: String
@@ -69,7 +69,7 @@ sealed class RegisterParam(
         emailActivationCode: String,
         val teamName: String,
         val teamIcon: String,
-        cookieLabel: String? = uuid4().toString()
+        cookieLabel: String? = Uuid.random().toString()
     ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
 
         override val name: String
@@ -81,7 +81,7 @@ sealed class RegisterParam(
         override val email: String,
         override val password: String,
         override val emailActivationCode: String,
-        override val cookieLabel: String? = uuid4().toString(),
+        override val cookieLabel: String? = Uuid.random().toString(),
     ) : RegisterParam(name, email, password, emailActivationCode, cookieLabel)
 }
 

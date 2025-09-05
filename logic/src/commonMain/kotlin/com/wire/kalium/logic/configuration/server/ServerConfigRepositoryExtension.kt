@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.configuration.server
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
@@ -58,7 +58,7 @@ internal abstract class ServerConfigRepositoryExtension(
                 storedConfigId
             } else {
                 // otherwise insert new config
-                val newId = uuid4().toString()
+                val newId = Uuid.random().toString()
                 serverConfigurationDAO.insert(
                     ServerConfigurationDAO.InsertData(
                         id = newId,

@@ -47,6 +47,10 @@ fun Project.configureDefaultMultiplatform(
         "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
     }
     kotlinExtension.apply {
+        compilerOptions {
+            optIn.add("kotlin.RequiresOptIn")
+            optIn.add("kotlin.uuid.ExperimentalUuidApi")
+        }
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
         }

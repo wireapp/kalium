@@ -54,7 +54,6 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
-                implementation(libs.benAsherUUID)
 
                 // ktor mockk engine
                 implementation(libs.ktor.mock)

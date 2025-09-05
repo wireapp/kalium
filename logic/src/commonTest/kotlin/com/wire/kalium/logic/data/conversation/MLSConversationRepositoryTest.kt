@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -104,6 +103,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class MLSConversationRepositoryTest {
 
@@ -1748,7 +1748,7 @@ class MLSConversationRepositoryTest {
                     )
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
-                E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
+                E2EIConversationClientInfoEntity(UserIDEntity(Uuid.random().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
                 message = null,
                 commitDelay = null,
@@ -1844,7 +1844,7 @@ class MLSConversationRepositoryTest {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             ConversationEntity.GroupState.ESTABLISHED
         )
-        
+
         states.forEach { state ->
             val (arrangement, mlsConversationRepository) = Arrangement()
                 .withUpdateMLSGroupIdAndStateSuccessful()
