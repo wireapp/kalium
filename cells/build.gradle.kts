@@ -16,8 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mockative)
