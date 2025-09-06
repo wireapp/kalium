@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -41,6 +40,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

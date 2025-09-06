@@ -23,10 +23,10 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

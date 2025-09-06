@@ -21,7 +21,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -38,8 +38,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class SendInCallReactionUseCaseTest {
-
-    val messageSender = mock(MessageSender::class)
 
     @Test
     fun givenEstablishedConnection_WhenSending_ShouldReturnSuccess() = runTest {

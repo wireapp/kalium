@@ -48,6 +48,7 @@ kotlin {
                 implementation(projects.util)
                 implementation(projects.cells)
                 implementation(projects.backup)
+                implementation(projects.messaging.sending)
 
                 // coroutines
                 implementation(libs.coroutines.core)
