@@ -32,6 +32,8 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -141,8 +143,8 @@ class ResetMLSConversationUseCaseTest {
         useCase(TestConversation.ID)
 
         coVerify {
-            arrangement.fetchConversationUseCase(any(), any())
-        }.wasInvoked()
+            arrangement.fetchConversationUseCase(conversationId = any(), transactionContext =  any(), reason =  eq(ConversationSyncReason.ConversationReset))
+        }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -281,6 +283,11 @@ class ResetMLSConversationUseCaseTest {
             withMLSTransactionReturning(Either.Right(Unit))
             withTransactionReturning(Either.Right(Unit))
 
+
+            coEvery {
+                mlsContext.conversationEpoch(any())
+            } returns 15UL
+
             coEvery {
                 conversationRepository.getConversationById(any())
             } returns TestConversation.MLS_CONVERSATION.right()
@@ -298,7 +305,7 @@ class ResetMLSConversationUseCaseTest {
             } returns MLSAdditionResult(emptySet(), emptySet()).right()
 
             coEvery {
-                fetchConversationUseCase(any(), any())
+                fetchConversationUseCase(any(), any(), reason =  eq(ConversationSyncReason.ConversationReset))
             } returns Unit.right()
 
             coEvery {

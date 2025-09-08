@@ -36,6 +36,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -287,7 +288,7 @@ internal class ConnectionDataSource(
                         val conversation = it.copy(
                             type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
                         )
-                        persistConversations(transactionContext, listOf(conversation), invalidateMembers = true)
+                        persistConversations(transactionContext, listOf(conversation), invalidateMembers = true, reason = ConversationSyncReason.Other)
                     }
             }
 

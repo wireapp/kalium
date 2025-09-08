@@ -51,12 +51,12 @@ import io.mockative.Mockable
  * @param originatedFromEvent Whether the call originates from an event (affects MLS group state resolution).
  */
 @Mockable
-interface PersistConversationsUseCase {
+internal interface PersistConversationsUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversations: List<ConversationResponse>,
         invalidateMembers: Boolean,
-        originatedFromEvent: Boolean = false,
+        reason: ConversationSyncReason = ConversationSyncReason.Other,
     ): Either<CoreFailure, Unit>
 }
 
@@ -73,13 +73,13 @@ internal class PersistConversationsUseCaseImpl(
         transactionContext: CryptoTransactionContext,
         conversations: List<ConversationResponse>,
         invalidateMembers: Boolean,
-        originatedFromEvent: Boolean
+        reason: ConversationSyncReason,
     ): Either<CoreFailure, Unit> {
         val conversationEntities = conversations
             .map { conversationResponse ->
                 val mlsGroupState = transactionContext.mls?.let { mlsContext ->
                     conversationResponse.groupId?.let {
-                        mlsGroupState(mlsContext, idMapper.fromGroupIDEntity(it), originatedFromEvent)
+                        mlsGroupState(mlsContext, idMapper.fromGroupIDEntity(it), reason)
                     }
                 }
                 conversationMapper.fromApiModelToDaoModel(
@@ -101,21 +101,17 @@ internal class PersistConversationsUseCaseImpl(
     private suspend fun mlsGroupState(
         mlsContext: MlsCoreCryptoContext,
         groupId: GroupID,
-        originatedFromEvent: Boolean = false
+        reason: ConversationSyncReason
     ): ConversationEntity.GroupState = hasEstablishedMLSGroup(mlsContext, groupId)
         .fold({ failure ->
             kaliumLogger.withFeatureId(CONVERSATIONS)
-                .w("Error checking MLS group state, setting to ${ConversationEntity.GroupState.PENDING_JOIN}")
+                .w("Error checking MLS group state, setting to PENDING_JOIN")
             ConversationEntity.GroupState.PENDING_JOIN
         }, { exists ->
             if (exists) {
                 ConversationEntity.GroupState.ESTABLISHED
             } else {
-                if (originatedFromEvent) {
-                    ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
-                } else {
-                    ConversationEntity.GroupState.PENDING_JOIN
-                }
+                reason.newGroupState()
             }
         })
 
@@ -127,4 +123,20 @@ internal class PersistConversationsUseCaseImpl(
             mlsContext.conversationExists(groupID.toCrypto())
         }
 
+}
+
+sealed interface ConversationSyncReason {
+    fun newGroupState(): ConversationEntity.GroupState
+
+    data object Event: ConversationSyncReason {
+        override fun newGroupState(): ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+    }
+
+    data object ConversationReset: ConversationSyncReason {
+        override fun newGroupState(): ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_AFTER_RESET
+    }
+
+    data object Other: ConversationSyncReason {
+        override fun newGroupState(): ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN
+    }
 }
