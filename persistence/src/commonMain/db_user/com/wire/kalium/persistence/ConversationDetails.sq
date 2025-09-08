@@ -112,6 +112,7 @@ LabeledConversation.folder_id IS NOT NULL AS isFavorite,
 CurrentFolder.id AS folderId,
 CurrentFolder.name AS folderName,
 Conversation.wire_cell AS wireCell,
+Conversation.history_sharing_retention_seconds AS historySharingRetentionSeconds,
 Conversation.deleted_locally AS deletedLocally
 FROM Conversation
 LEFT JOIN SelfUser

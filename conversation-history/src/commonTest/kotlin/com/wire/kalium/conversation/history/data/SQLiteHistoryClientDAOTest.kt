@@ -49,23 +49,23 @@ class SQLiteHistoryClientDAOTest {
             historyClientQueries = testDatabase.builder.historyClientQueries,
             queriesContext = testDispatcher
         )
-        
+
         // Insert fake conversations to satisfy foreign key constraint
         insertFakeConversations()
     }
-    
+
     private suspend fun insertFakeConversations() {
         // Insert the test conversation used in most tests
         insertFakeConversation(TEST_CONVERSATION_ID)
-        
+
         // Insert the second test conversation used in some tests
         val secondConversationId = QualifiedIDEntity("conversation2", "domain")
         insertFakeConversation(secondConversationId)
     }
-    
+
     private suspend fun insertFakeConversation(conversationId: QualifiedIDEntity) {
         val now = Instant.DISTANT_PAST
-        
+
         val conversationEntity = ConversationEntity(
             id = conversationId,
             name = "Test Conversation",
@@ -88,9 +88,10 @@ class SQLiteHistoryClientDAOTest {
             isChannel = false,
             channelAccess = null,
             channelAddPermission = null,
-            wireCell = null
+            wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
-        
+
         testDatabase.builder.conversationDAO.insertConversation(conversationEntity)
     }
 
@@ -127,80 +128,82 @@ class SQLiteHistoryClientDAOTest {
     }
 
     @Test
-    fun givenMultipleHistoryClientsInserted_whenGettingAllForConversation_thenShouldReturnAllClientsForThatConversation() = runTest(testDispatcher) {
-        // Given
-        val conversationId1 = TEST_CONVERSATION_ID
-        val conversationId2 = QualifiedIDEntity("conversation2", "domain")
-        val clientId1 = "client1"
-        val clientId2 = "client2"
-        val secret1 = byteArrayOf(1, 2, 3, 4)
-        val secret2 = byteArrayOf(5, 6, 7, 8)
-        val baseInstant = Instant.DISTANT_PAST
-        val creationDate1 = baseInstant
-        val creationDate2 = baseInstant + 1.days // One day later
+    fun givenMultipleHistoryClientsInserted_whenGettingAllForConversation_thenShouldReturnAllClientsForThatConversation() =
+        runTest(testDispatcher) {
+            // Given
+            val conversationId1 = TEST_CONVERSATION_ID
+            val conversationId2 = QualifiedIDEntity("conversation2", "domain")
+            val clientId1 = "client1"
+            val clientId2 = "client2"
+            val secret1 = byteArrayOf(1, 2, 3, 4)
+            val secret2 = byteArrayOf(5, 6, 7, 8)
+            val baseInstant = Instant.DISTANT_PAST
+            val creationDate1 = baseInstant
+            val creationDate2 = baseInstant + 1.days // One day later
 
-        // Insert clients for first conversation
-        historyClientDAO.insertClient(
-            conversationId = conversationId1,
-            id = clientId1,
-            secret = secret1,
-            creationDate = creationDate1
-        )
+            // Insert clients for first conversation
+            historyClientDAO.insertClient(
+                conversationId = conversationId1,
+                id = clientId1,
+                secret = secret1,
+                creationDate = creationDate1
+            )
 
-        // Insert client for second conversation
-        historyClientDAO.insertClient(
-            conversationId = conversationId2,
-            id = clientId2,
-            secret = secret2,
-            creationDate = creationDate2
-        )
+            // Insert client for second conversation
+            historyClientDAO.insertClient(
+                conversationId = conversationId2,
+                id = clientId2,
+                secret = secret2,
+                creationDate = creationDate2
+            )
 
-        // When
-        val result1 = historyClientDAO.getAllForConversation(conversationId1)
-        val result2 = historyClientDAO.getAllForConversation(conversationId2)
+            // When
+            val result1 = historyClientDAO.getAllForConversation(conversationId1)
+            val result2 = historyClientDAO.getAllForConversation(conversationId2)
 
-        // Then
-        assertEquals(1, result1.size)
-        assertEquals(1, result2.size)
-        
-        with(result1.first()) {
-            assertEquals(clientId1, this.id)
+            // Then
+            assertEquals(1, result1.size)
+            assertEquals(1, result2.size)
+
+            with(result1.first()) {
+                assertEquals(clientId1, this.id)
+            }
+
+            with(result2.first()) {
+                assertEquals(clientId2, this.id)
+            }
         }
-        
-        with(result2.first()) {
-            assertEquals(clientId2, this.id)
-        }
-    }
 
     @Test
-    fun givenHistoryClientsWithDifferentDates_whenGettingAllFromDateOnwards_thenShouldReturnOnlyClientsFromThatDateOnwards() = runTest(testDispatcher) {
-        // Given
-        val conversationId = TEST_CONVERSATION_ID
-        val clientId1 = "client1"
-        val clientId2 = "client2"
-        val clientId3 = "client3"
-        val secret = byteArrayOf(1, 2, 3, 4)
-        
-        val baseInstant = Instant.DISTANT_PAST
-        val date1 = baseInstant
-        val date2 = baseInstant + 1.days // One day later
-        val date3 = baseInstant + 2.days // Two days later
+    fun givenHistoryClientsWithDifferentDates_whenGettingAllFromDateOnwards_thenShouldReturnOnlyClientsFromThatDateOnwards() =
+        runTest(testDispatcher) {
+            // Given
+            val conversationId = TEST_CONVERSATION_ID
+            val clientId1 = "client1"
+            val clientId2 = "client2"
+            val clientId3 = "client3"
+            val secret = byteArrayOf(1, 2, 3, 4)
 
-        // Insert clients with different dates
-        historyClientDAO.insertClient(conversationId, clientId1, secret, date1)
-        historyClientDAO.insertClient(conversationId, clientId2, secret, date2)
-        historyClientDAO.insertClient(conversationId, clientId3, secret, date3)
+            val baseInstant = Instant.DISTANT_PAST
+            val date1 = baseInstant
+            val date2 = baseInstant + 1.days // One day later
+            val date3 = baseInstant + 2.days // Two days later
 
-        // When - get clients from date2 onwards
-        val result = historyClientDAO.getAllForConversationFromDateOnwards(conversationId, date2)
+            // Insert clients with different dates
+            historyClientDAO.insertClient(conversationId, clientId1, secret, date1)
+            historyClientDAO.insertClient(conversationId, clientId2, secret, date2)
+            historyClientDAO.insertClient(conversationId, clientId3, secret, date3)
 
-        // Then
-        assertEquals(2, result.size)
-        val clientIds = result.map { it.id }.toSet()
-        assertTrue(clientIds.contains(clientId2))
-        assertTrue(clientIds.contains(clientId3))
-        assertTrue(!clientIds.contains(clientId1))
-    }
+            // When - get clients from date2 onwards
+            val result = historyClientDAO.getAllForConversationFromDateOnwards(conversationId, date2)
+
+            // Then
+            assertEquals(2, result.size)
+            val clientIds = result.map { it.id }.toSet()
+            assertTrue(clientIds.contains(clientId2))
+            assertTrue(clientIds.contains(clientId3))
+            assertTrue(!clientIds.contains(clientId1))
+        }
 
     @Test
     fun givenHistoryClientsInserted_whenObservingAllForConversation_thenShouldEmitClientsForThatConversation() = runTest(testDispatcher) {
@@ -210,27 +213,27 @@ class SQLiteHistoryClientDAOTest {
         val clientId2 = "client2"
         val secret = byteArrayOf(1, 2, 3, 4)
         val date = Instant.DISTANT_PAST
-        
+
         // Insert clients
         historyClientDAO.insertClient(conversationId, clientId1, secret, date)
-        
+
         // When - observe clients
         historyClientDAO.observeAllForConversation(conversationId).test {
             // Then - initial emission should contain the first client
             val initialClients = awaitItem()
             assertEquals(1, initialClients.size)
             assertEquals(clientId1, initialClients.first().id)
-            
+
             // When - insert another client
             historyClientDAO.insertClient(conversationId, clientId2, secret, date)
-            
+
             // Then - should emit updated list with both clients
             val updatedClients = awaitItem()
             assertEquals(2, updatedClients.size)
             val clientIds = updatedClients.map { it.id }.toSet()
             assertTrue(clientIds.contains(clientId1))
             assertTrue(clientIds.contains(clientId2))
-            
+
             cancelAndIgnoreRemainingEvents()
         }
     }

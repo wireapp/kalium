@@ -77,6 +77,7 @@ kotlin {
             dependencies {
                 implementation(project(":common"))
                 implementation(project(":persistence-test"))
+                implementation(project(":data-mocks"))
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
