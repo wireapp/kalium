@@ -2519,7 +2519,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         
         conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
-            strickMLSFilter = true
+            strictMLSFilter = true
         ).first().let {
             assertEquals(1, it.size)
             assertEquals(mlsConversation.id, it.first().conversationViewEntity.id)
@@ -2548,7 +2548,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         
         conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
-            strickMLSFilter = true
+            strictMLSFilter = true
         ).first().let {
             assertEquals(0, it.size)
         }
@@ -2573,7 +2573,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         
         conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
-            strickMLSFilter = false
+            strictMLSFilter = false
         ).first().let {
             assertEquals(1, it.size)
             assertEquals(mlsConversation.id, it.first().conversationViewEntity.id)
