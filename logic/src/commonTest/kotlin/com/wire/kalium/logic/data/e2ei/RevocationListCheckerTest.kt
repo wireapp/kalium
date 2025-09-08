@@ -266,7 +266,7 @@ class RevocationListCheckerTest {
             }.returns(CrlRegistration(true, EXPIRATION))
         }
 
-        fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
+        suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
             }.returns(result)

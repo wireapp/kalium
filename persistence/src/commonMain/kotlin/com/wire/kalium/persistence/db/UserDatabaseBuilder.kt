@@ -317,7 +317,7 @@ class UserDatabaseBuilder internal constructor(
     val searchDAO: SearchDAO get() = SearchDAOImpl(database.searchQueries, queriesContext)
     val conversationMetaDataDAO: ConversationMetaDataDAO
         get() = ConversationMetaDataDAOImpl(
-            database.conversationsQueries,
+            database.conversationMetadataQueries,
             queriesContext
         )
 

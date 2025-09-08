@@ -156,8 +156,8 @@ class OnParticipantListChangedTest {
             callingScope = testScope,
         )
 
-        fun withUserConfigRepositoryReturning(result: Either<StorageFailure, Boolean>) = apply {
-            every {
+        suspend fun withUserConfigRepositoryReturning(result: Either<StorageFailure, Boolean>) = apply {
+            coEvery {
                 userConfigRepository.shouldUseSFTForOneOnOneCalls()
             }.returns(result)
         }
