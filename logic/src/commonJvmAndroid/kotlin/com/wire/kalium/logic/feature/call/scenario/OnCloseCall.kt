@@ -76,10 +76,27 @@ class OnCloseCall(
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
-            callRepository.updateCallStatusById(
-                conversationId = conversationIdWithDomain,
-                status = callStatus
-            )
+            val shouldUpdateCallStatus =
+                if (callMetadata?.conversationType == Conversation.Type.ONE_ON_ONE) {
+                    // For 1:1 calls handled as conference calls
+                    // Do not switch to STILL_ONGOING or any other status when call was already closed
+                    when (callMetadata.callStatus) {
+                        CallStatus.MISSED,
+                        CallStatus.REJECTED,
+                        CallStatus.CLOSED -> false
+
+                        else -> true
+                    }
+                } else {
+                    true
+                }
+
+            if (shouldUpdateCallStatus) {
+                callRepository.updateCallStatusById(
+                    conversationId = conversationIdWithDomain,
+                    status = callStatus
+                )
+            }
 
             if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
@@ -99,11 +116,10 @@ class OnCloseCall(
         if (callStatus == CallStatus.MISSED)
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {
-            val isGroupCall = it.conversationType == Conversation.Type.GROUP
             (callStatus == CallStatus.CLOSED &&
-                    isGroupCall &&
                     it.establishedTime.isNullOrEmpty() &&
-                    it.callStatus != CallStatus.CLOSED_INTERNALLY)
+                    it.callStatus != CallStatus.CLOSED_INTERNALLY &&
+                    it.callStatus != CallStatus.REJECTED)
         } ?: false
     }
 
