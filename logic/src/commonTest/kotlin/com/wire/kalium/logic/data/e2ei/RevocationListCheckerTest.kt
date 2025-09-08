@@ -271,7 +271,7 @@ class RevocationListCheckerTest {
                 featureSupport.isMLSSupported
             }.returns(result)
 
-            coEvery {
+            every {
                 userConfigRepository.isMLSEnabled()
             }.returns(result.right())
 

@@ -26,15 +26,15 @@ import io.mockative.mock
 interface IsE2EIEnabledUseCaseArrangement {
     val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 
-    suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean)
+    fun withE2EIEnabledAndMLSEnabled(result: Boolean)
 }
 
 class IsE2EIEnabledUseCaseArrangementImpl : IsE2EIEnabledUseCaseArrangement {
     @Mock
     override val isE2EIEnabledUseCase: IsE2EIEnabledUseCase = mock(IsE2EIEnabledUseCase::class)
 
-    override suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) {
-        coEvery {
+    override fun withE2EIEnabledAndMLSEnabled(result: Boolean) {
+        every {
             isE2EIEnabledUseCase.invoke()
         }.returns(result)
     }

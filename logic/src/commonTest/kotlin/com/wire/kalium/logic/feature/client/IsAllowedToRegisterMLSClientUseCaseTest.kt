@@ -132,13 +132,13 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
         }
 
         suspend fun withUserConfigMlsEnabled(enabled: Boolean) = apply {
-            coEvery {
+            every {
                 userConfigRepository.isMLSEnabled()
             }.returns(Either.Right(enabled))
         }
 
         suspend fun withUserConfigDataNotFound() = apply {
-            coEvery {
+            every {
                 userConfigRepository.isMLSEnabled()
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }

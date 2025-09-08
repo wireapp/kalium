@@ -88,7 +88,7 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
     }
 
     override suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
-        coEvery {
+        every {
             userConfigRepository.isMLSEnabled()
         }.returns(result)
     }
