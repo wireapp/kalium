@@ -70,7 +70,7 @@ internal class FetchConversationUseCaseImpl(
 
     override suspend fun fetchWithTransaction(
         conversationId: ConversationId,
-        resson: ConversationSyncReason
+        reason: ConversationSyncReason
     ): Either<CoreFailure, Unit> =
-        transactionProvider.transaction { invoke(it, conversationId, resson) }
+        transactionProvider.transaction { invoke(it, conversationId, reason) }
 }
