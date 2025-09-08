@@ -18,6 +18,10 @@
 package com.wire.kalium.logic.util.arrangement.mls
 
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+<<<<<<< HEAD
+=======
+import io.mockative.Mock
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock

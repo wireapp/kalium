@@ -1,3 +1,24 @@
+<<<<<<< HEAD
+=======
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.calling.ConversationTypeCalling
@@ -9,6 +30,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
+<<<<<<< HEAD
+=======
+import io.mockative.Mock
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -26,7 +51,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.Group.Regular,
+=======
+                type = Conversation.Type.GROUP,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.MLS(
                     groupId = GroupID("groupId"),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
@@ -51,7 +80,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.OneOnOne,
+=======
+                type = Conversation.Type.ONE_ON_ONE,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
             withShouldNotUseSFTForOneOnOneCalls()
@@ -71,7 +104,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.OneOnOne,
+=======
+                type = Conversation.Type.ONE_ON_ONE,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
             withShouldUseSFTForOneOnOneCalls()
@@ -91,7 +128,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.Self,
+=======
+                type = Conversation.Type.SELF,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
         }
@@ -110,7 +151,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.OneOnOne,
+=======
+                type = Conversation.Type.ONE_ON_ONE,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
             withSFTCheckFailure()
@@ -130,7 +175,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.ConnectionPending,
+=======
+                type = Conversation.Type.CONNECTION_PENDING,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
         }
@@ -149,7 +198,11 @@ class GetCallConversationTypeProviderTest {
         // Given
         val (arrangement, provider) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.Group.Regular,
+=======
+                type = Conversation.Type.GROUP,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Mixed(
                     groupId = GroupID("groupId"),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
@@ -173,7 +226,11 @@ class GetCallConversationTypeProviderTest {
     fun givenGroupConversationWithProteusProtocol_whenGettingCallType_thenReturnConference() = runTest {
         val (arrangement, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.Group.Regular,
+=======
+                type = Conversation.Type.GROUP,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
         }
@@ -187,7 +244,11 @@ class GetCallConversationTypeProviderTest {
     fun givenChannelWithProteusProtocol_whenGettingCallType_thenReturnConference() = runTest {
         val (arrangement, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.Group.Channel,
+=======
+                type = Conversation.Type.GROUP,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.Proteus
             )
         }
@@ -201,7 +262,11 @@ class GetCallConversationTypeProviderTest {
     fun givenOneOnOneMLSConversationWithSFTEnabled_whenGettingCallType_thenReturnConferenceMls() = runTest {
         val (arrangement, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
+<<<<<<< HEAD
                 type = Conversation.Type.OneOnOne,
+=======
+                type = Conversation.Type.ONE_ON_ONE,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = Conversation.ProtocolInfo.MLS(
                     groupId = GroupID("groupId"),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
@@ -229,8 +294,17 @@ class GetCallConversationTypeProviderTest {
         assertEquals(ConversationTypeCalling.Unknown, result)
     }
 
+<<<<<<< HEAD
     private class Arrangement {
         val userConfigRepository = mock(UserConfigRepository::class)
+=======
+
+    private class Arrangement {
+        @Mock
+        val userConfigRepository = mock(UserConfigRepository::class)
+
+        @Mock
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
         val conversationMetaDataRepository = mock(ConversationMetaDataRepository::class)
 
         private val getCallConversationType = GetCallConversationTypeProviderImpl(

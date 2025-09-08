@@ -618,6 +618,7 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
+<<<<<<< HEAD
 fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
     ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
     ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
@@ -644,6 +645,13 @@ fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation
     }
 
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
+=======
+internal fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
+    ConversationEntity.Type.SELF -> Conversation.Type.SELF
+    ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
+    ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
+    ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 }
 
 private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {

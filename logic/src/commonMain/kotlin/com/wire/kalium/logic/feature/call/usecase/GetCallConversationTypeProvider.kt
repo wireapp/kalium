@@ -27,7 +27,10 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
+<<<<<<< HEAD
 import io.mockative.Mockable
+=======
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 
 /**
  * This class is responsible for providing the conversation type for a call.
@@ -45,6 +48,7 @@ internal class GetCallConversationTypeProviderImpl(
         return conversationMetaDataRepository.getConversationTypeAndProtocolInfo(conversationId)
             .flatMap { (type: Conversation.Type, protocolInfo: Conversation.ProtocolInfo) ->
                 when (type) {
+<<<<<<< HEAD
                     is Conversation.Type.Group -> {
                         handleGroupConversation(protocolInfo)
                     }
@@ -55,6 +59,18 @@ internal class GetCallConversationTypeProviderImpl(
 
                     Conversation.Type.ConnectionPending,
                     Conversation.Type.Self -> {
+=======
+                    Conversation.Type.GROUP -> {
+                        handleGroupConversation(protocolInfo)
+                    }
+
+                    Conversation.Type.ONE_ON_ONE -> {
+                        handleOneToOne(protocolInfo)
+                    }
+
+                    Conversation.Type.CONNECTION_PENDING,
+                    Conversation.Type.SELF -> {
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                         ConversationTypeCalling.Unknown.right()
                     }
                 }

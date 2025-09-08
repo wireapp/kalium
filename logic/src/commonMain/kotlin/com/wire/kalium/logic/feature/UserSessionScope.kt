@@ -1481,10 +1481,18 @@ class UserSessionScope internal constructor(
             federatedIdMapper = federatedIdMapper
         )
 
+    private val conversationMetadataRepository: ConversationMetaDataRepository get() = ConversationMetaDataDataSource(
+        userStorage.database.conversationMetaDataDAO
+    )
+
     private val getCallConversationType: GetCallConversationTypeProvider by lazy {
         GetCallConversationTypeProviderImpl(
             userConfigRepository = userConfigRepository,
+<<<<<<< HEAD
             conversationMetaDataRepository = conversationMetaDataRepository,
+=======
+            conversationMetaDataRepository = conversationMetadataRepository,
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
         )
     }
 

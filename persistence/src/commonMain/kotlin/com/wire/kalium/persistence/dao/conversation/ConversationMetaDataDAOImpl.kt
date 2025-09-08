@@ -45,7 +45,10 @@ class ConversationMetaDataDAOImpl internal constructor(
         conversationMetadataQueries.typeAndProtocolInfo(conversationId).executeAsOneOrNull()?.let {
             ConversationTypeAndProtocolInfo(
                 type = it.type,
+<<<<<<< HEAD
                 isChannel = it.is_channel,
+=======
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                 protocolInfo = conversationMapper.mapProtocolInfo(
                     protocol = it.protocol,
                     mlsGroupId = it.mls_group_id,
@@ -61,6 +64,9 @@ class ConversationMetaDataDAOImpl internal constructor(
 
 data class ConversationTypeAndProtocolInfo(
     val type: ConversationEntity.Type,
+<<<<<<< HEAD
     val isChannel: Boolean,
+=======
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
     val protocolInfo: ConversationEntity.ProtocolInfo,
 )

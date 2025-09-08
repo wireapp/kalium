@@ -24,9 +24,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
+<<<<<<< HEAD
 import io.mockative.Mockable
 
 @Mockable
+=======
+
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 interface ConversationMetaDataRepository {
     suspend fun getConversationTypeAndProtocolInfo(
         conversationId: ConversationId
@@ -44,7 +48,11 @@ internal class ConversationMetaDataDataSource internal constructor(
         wrapStorageRequest {
             conversationMetaDataDAO.typeAndProtocolInfo(conversationId.toDao())?.let {
                 Pair(
+<<<<<<< HEAD
                     it.type.fromDaoModelToType(it.isChannel),
+=======
+                    it.type.fromDaoModelToType(),
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
                     protocolInfoMapper.fromEntity(it.protocolInfo)
                 )
             }

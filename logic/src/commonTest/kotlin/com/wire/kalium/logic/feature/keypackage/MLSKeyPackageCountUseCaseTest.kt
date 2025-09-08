@@ -130,7 +130,11 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
+<<<<<<< HEAD
         coVerify {
+=======
+         coVerify {
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
             arrangement.userConfigRepository.isMLSEnabled()
         }.wasInvoked(once)
 

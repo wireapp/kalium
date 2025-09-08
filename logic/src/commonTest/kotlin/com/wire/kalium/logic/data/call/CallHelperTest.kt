@@ -25,8 +25,14 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.common.functional.Either
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.of
+=======
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.coEvery
+>>>>>>> d4d2f37283 (fix: Call Not Connect When SFT OneOnOne [WPB-19252] (#3611))
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
