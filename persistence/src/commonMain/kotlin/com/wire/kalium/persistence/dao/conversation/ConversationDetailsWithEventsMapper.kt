@@ -86,6 +86,7 @@ data object ConversationDetailsWithEventsMapper {
         folderId: String?,
         folderName: String?,
         wireCell: String?,
+        historySharingRetentionSeconds: Long,
         deletedLocally: Boolean,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
@@ -168,6 +169,7 @@ data object ConversationDetailsWithEventsMapper {
             channelAddPermission = channel_add_permission,
             wireCell = wireCell,
             deletedLocally = deletedLocally,
+            historySharingRetentionSeconds = historySharingRetentionSeconds,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,

@@ -51,6 +51,7 @@ data class ConversationEntity(
     val channelAccess: ChannelAccess?,
     val channelAddPermission: ChannelAddPermission?,
     val wireCell: String?,
+    val historySharingRetentionSeconds: Long,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 

@@ -82,6 +82,7 @@ data object ConversationMapper {
         folderId: String?,
         folderName: String?,
         wireCell: String?,
+        historySharingRetentionSeconds: Long,
         deletedLocally: Boolean,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
@@ -139,6 +140,7 @@ data object ConversationMapper {
         channelAccess = channelAccess,
         channelAddPermission = channelAddPermission,
         wireCell = wireCell,
+        historySharingRetentionSeconds = historySharingRetentionSeconds,
     )
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -180,6 +182,7 @@ data object ConversationMapper {
         channelAddPermission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
         deletedLocally: Boolean,
+        historySharingRetentionSeconds: Long,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -213,6 +216,7 @@ data object ConversationMapper {
         channelAccess = channelAccess,
         channelAddPermission = channelAddPermission,
         wireCell = wireCell,
+        historySharingRetentionSeconds = historySharingRetentionSeconds,
     )
 
     @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
@@ -253,7 +257,8 @@ data object ConversationMapper {
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
-        deleted_lcoally: Boolean,
+        deleted_locally: Boolean,
+        history_sharing_retention_seconds: Long,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
@@ -287,6 +292,7 @@ data object ConversationMapper {
         channelAccess = channel_access,
         channelAddPermission = channel_add_permission,
         wireCell = wireCell,
+        historySharingRetentionSeconds = history_sharing_retention_seconds
     )
 
     @Suppress("LongParameterList")

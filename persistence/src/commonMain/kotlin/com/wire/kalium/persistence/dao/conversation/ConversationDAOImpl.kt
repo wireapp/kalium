@@ -223,6 +223,7 @@ internal class ConversationDAOImpl internal constructor(
                 channel_access = channelAccess,
                 channel_add_permission = channelAddPermission,
                 wire_cell = wireCell,
+                history_sharing_retention_seconds = historySharingRetentionSeconds,
             )
         }
     }
