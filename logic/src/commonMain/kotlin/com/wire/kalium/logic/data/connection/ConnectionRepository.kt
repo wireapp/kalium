@@ -288,7 +288,12 @@ internal class ConnectionDataSource(
                         val conversation = it.copy(
                             type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
                         )
-                        persistConversations(transactionContext, listOf(conversation), invalidateMembers = true, reason = ConversationSyncReason.Other)
+                        persistConversations(
+                            transactionContext,
+                            listOf(conversation),
+                            invalidateMembers = true,
+                            reason = ConversationSyncReason.Other
+                        )
                     }
             }
 

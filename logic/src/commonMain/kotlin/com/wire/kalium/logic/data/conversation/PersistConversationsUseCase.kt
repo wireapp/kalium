@@ -128,15 +128,15 @@ internal class PersistConversationsUseCaseImpl(
 sealed interface ConversationSyncReason {
     fun newGroupState(): ConversationEntity.GroupState
 
-    data object Event: ConversationSyncReason {
+    data object Event : ConversationSyncReason {
         override fun newGroupState(): ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
     }
 
-    data object ConversationReset: ConversationSyncReason {
+    data object ConversationReset : ConversationSyncReason {
         override fun newGroupState(): ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_AFTER_RESET
     }
 
-    data object Other: ConversationSyncReason {
+    data object Other : ConversationSyncReason {
         override fun newGroupState(): ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN
     }
 }

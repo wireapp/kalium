@@ -91,7 +91,8 @@ internal class ResetMLSConversationUseCaseImpl(
                         }
                 }
                 .flatMap {
-                    fetchConversation(transaction, conversationId) }
+                    fetchConversation(transaction, conversationId)
+                }
                 .flatMap { getMlsProtocolInfo(conversationId) }
                 .map { updatedProtocolInfo ->
                     val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
