@@ -85,7 +85,7 @@ class MLSResetConversationEventHandlerTest {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
-                eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
+                eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
             )
         }.wasInvoked(exactly = once)
     }
@@ -147,7 +147,7 @@ class MLSResetConversationEventHandlerTest {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     eq(CONVERSATION_ID),
                     eq(NEW_GROUP_ID),
-                    eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
+                    eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
                 )
             }.wasInvoked(exactly = once)
         }
@@ -173,7 +173,7 @@ class MLSResetConversationEventHandlerTest {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     matches { it == event.conversationId },
                     matches { it == event.newGroupID },
-                    matches { it == ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE }
+                    matches { it == ConversationEntity.GroupState.PENDING_AFTER_RESET }
                 )
             }.wasInvoked(exactly = once)
         }
@@ -193,7 +193,7 @@ class MLSResetConversationEventHandlerTest {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
-                eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
+                eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
             )
         }.wasInvoked(exactly = once)
     }
