@@ -229,15 +229,14 @@ WHERE
 
         -- When filter is FAVORITES (future implementation)
         ELSE 1 = 0
-        -- :strict_mls is 0 or 1
-        AND (
-          protocol IN ('PROTEUS','MIXED')
-          OR (
-            protocol = 'MLS'
-            AND ( :strict_mls = 0
-                  OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET') )
-          )
-        )
     END
+    AND (
+      protocol IN ('PROTEUS','MIXED')
+      OR (
+        protocol = 'MLS'
+        AND ( :strict_mls = 0
+              OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET') )
+      )
+    )
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%');
