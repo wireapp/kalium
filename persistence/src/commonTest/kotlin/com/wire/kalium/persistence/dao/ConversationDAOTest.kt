@@ -280,20 +280,42 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest(dispatcher) {
-        conversationDAO.insertConversation(conversationEntity3)
+        conversationDAO.insertConversation(
+            conversationEntity3.copy(
+                protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                    groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                    groupState = ConversationEntity.GroupState.ESTABLISHED,
+                    epoch = 123UL,
+                    cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                    keyingMaterialLastUpdate = Instant.DISTANT_PAST
+                )
+            )
+        )
+
         conversationDAO.updateConversationGroupState(
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         )
         val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
         assertEquals(
-            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
         )
     }
 
     @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest(dispatcher) {
-        conversationDAO.insertConversation(conversationEntity3)
+        conversationDAO.insertConversation(
+            conversationEntity3.copy(
+                protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                    groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                    groupState = ConversationEntity.GroupState.ESTABLISHED,
+                    epoch = 123UL,
+                    cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                    keyingMaterialLastUpdate = Instant.DISTANT_PAST
+                )
+            )
+        )
         conversationDAO.updateMlsGroupStateAndCipherSuite(
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
@@ -301,11 +323,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
         val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
         assertEquals(
-            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
         )
         assertEquals(
-            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).cipherSuite,
-            ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+            ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+            (result.protocolInfo as ConversationEntity.ProtocolInfo.MLS).cipherSuite
         )
     }
 
@@ -2411,7 +2434,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val originalConversation = conversationEntity1.copy(
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = originalGroupId,
-                groupState = ConversationEntity.GroupState.PENDING_JOIN,
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
                 epoch = 0UL,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -2487,11 +2510,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
             status = ConnectionEntity.State.PENDING,
             toId = user1.id.value,
         )
-        
+
         userDAO.upsertUser(user1.copy(name = null))
         conversationDAO.insertConversation(connectionPendingConversation)
         connectionDAO.insertConnection(connectionEntity)
-        
+
         conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
             assertEquals(1, it.size)
             assertEquals(connectionPendingConversation.id, it.first().conversationViewEntity.id)
@@ -2513,10 +2536,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
         )
-        
+
         conversationDAO.insertConversation(mlsConversation)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
-        
+
         conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             strictMLSFilter = true
@@ -2542,10 +2565,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
         )
-        
+
         conversationDAO.insertConversation(mlsConversation)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
-        
+
         conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             strictMLSFilter = true
@@ -2567,10 +2590,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
         )
-        
+
         conversationDAO.insertConversation(mlsConversation)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
-        
+
         conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             strictMLSFilter = false
@@ -2656,6 +2679,156 @@ class ConversationDAOTest : BaseDatabaseTest() {
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
             historySharingRetentionSeconds = historySharingRetentionSeconds,
+        )
+    }
+
+    @Test
+    fun givenConversationInPendingAfterReset_whenUpdatingToEstablished_thenStateIsUpdated() = runTest(dispatcher) {
+        val conversation = conversationEntity3.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                groupState = ConversationEntity.GroupState.PENDING_AFTER_RESET,
+                epoch = 123UL,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.ESTABLISHED,
+            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        val result = conversationDAO.getConversationDetailsById(conversation.id)
+        assertEquals(
+            ConversationEntity.GroupState.ESTABLISHED,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
+    fun givenConversationInPendingAfterReset_whenUpdatingToPendingJoin_thenStateIsNotUpdated() = runTest(dispatcher) {
+        val conversation = conversationEntity3.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                groupState = ConversationEntity.GroupState.PENDING_AFTER_RESET,
+                epoch = 123UL,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.PENDING_JOIN,
+            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        val result = conversationDAO.getConversationDetailsById(conversation.id)
+        assertEquals(
+            ConversationEntity.GroupState.PENDING_AFTER_RESET,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
+    fun givenConversationInPendingCreation_whenUpdatingToPendingAfterReset_thenStateIsUpdated() = runTest(dispatcher) {
+        val conversation = conversationEntity3.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                groupState = ConversationEntity.GroupState.PENDING_CREATION,
+                epoch = 123UL,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.PENDING_AFTER_RESET,
+            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        val result = conversationDAO.getConversationDetailsById(conversation.id)
+        assertEquals(
+            ConversationEntity.GroupState.PENDING_AFTER_RESET,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
+    fun givenConversationInEstablished_whenUpdatingToPendingAfterReset_thenStateIsUpdated() = runTest(dispatcher) {
+        val conversation = conversationEntity3.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                epoch = 123UL,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.PENDING_AFTER_RESET,
+            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        val result = conversationDAO.getConversationDetailsById(conversation.id)
+        assertEquals(
+            ConversationEntity.GroupState.PENDING_AFTER_RESET,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
+    fun givenConversationInEstablished_whenUpdatingToPendingJoin_thenStateIsUpdated() = runTest(dispatcher) {
+        val conversation = conversationEntity3.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                epoch = 123UL,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.PENDING_JOIN,
+            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        val result = conversationDAO.getConversationDetailsById(conversation.id)
+        assertEquals(
+            ConversationEntity.GroupState.PENDING_JOIN,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
+    fun givenConversationInPendingJoin_whenUpdatingToEstablished_thenStateIsUpdated() = runTest(dispatcher) {
+        val conversation = conversationEntity3.copy(
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                groupState = ConversationEntity.GroupState.PENDING_JOIN,
+                epoch = 123UL,
+                cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                keyingMaterialLastUpdate = Instant.DISTANT_PAST
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.ESTABLISHED,
+            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        val result = conversationDAO.getConversationDetailsById(conversation.id)
+        assertEquals(
+            ConversationEntity.GroupState.ESTABLISHED,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
         )
     }
 
