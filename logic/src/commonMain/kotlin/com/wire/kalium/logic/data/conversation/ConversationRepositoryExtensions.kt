@@ -34,6 +34,7 @@ interface ConversationRepositoryExtensions {
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long,
+        strictMlsFilter: Boolean,
     ): Flow<PagingData<ConversationDetailsWithEvents>>
 }
 
@@ -44,7 +45,8 @@ class ConversationRepositoryExtensionsImpl internal constructor(
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        startingOffset: Long,
+        strictMlsFilter: Boolean,
     ): Flow<PagingData<ConversationDetailsWithEvents>> {
         val pager: KaliumPager<ConversationDetailsWithEventsEntity> = with(queryConfig) {
             conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
@@ -53,7 +55,8 @@ class ConversationRepositoryExtensionsImpl internal constructor(
                     fromArchive = fromArchive,
                     onlyInteractionEnabled = onlyInteractionEnabled,
                     newActivitiesOnTop = newActivitiesOnTop,
-                    conversationFilter = conversationFilter.toDao()
+                    conversationFilter = conversationFilter.toDao(),
+                    strictMlsFilter = strictMlsFilter
                 ),
                 pagingConfig = pagingConfig
             )

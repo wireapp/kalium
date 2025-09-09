@@ -2469,6 +2469,120 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenConnectionPendingWithOtherUserId_whenGettingAllConversationsWithEvents_thenShouldReturnIt() = runTest(dispatcher) {
+        val fromArchive = false
+        val conversationId = QualifiedIDEntity("connection-conversation", "domain")
+        val connectionPendingConversation = conversationEntity1.copy(
+            id = conversationId,
+            type = ConversationEntity.Type.CONNECTION_PENDING,
+            name = null
+        )
+        val connectionEntity = ConnectionEntity(
+            conversationId = conversationId.value,
+            from = selfUserId.value,
+            lastUpdateDate = Instant.DISTANT_PAST,
+            qualifiedConversationId = conversationId,
+            qualifiedToId = user1.id,
+            status = ConnectionEntity.State.PENDING,
+            toId = user1.id.value,
+        )
+        
+        userDAO.upsertUser(user1.copy(name = null))
+        conversationDAO.insertConversation(connectionPendingConversation)
+        connectionDAO.insertConnection(connectionEntity)
+        
+        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+            assertEquals(1, it.size)
+            assertEquals(connectionPendingConversation.id, it.first().conversationViewEntity.id)
+            assertEquals(ConversationEntity.Type.CONNECTION_PENDING, it.first().conversationViewEntity.type)
+            assertEquals(user1.id, it.first().conversationViewEntity.otherUserId)
+        }
+    }
+
+    @Test
+    fun givenMLSConversationWithPendingAfterReset_whenGettingWithStrictFilter_thenShouldReturnIt() = runTest(dispatcher) {
+        val fromArchive = false
+        val mlsConversation = conversationEntity1.copy(
+            type = ConversationEntity.Type.GROUP,
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                "mls-group-pending-reset",
+                ConversationEntity.GroupState.PENDING_AFTER_RESET,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+        )
+        
+        conversationDAO.insertConversation(mlsConversation)
+        memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
+        
+        conversationDAO.getAllConversationDetailsWithEvents(
+            fromArchive = fromArchive,
+            strictMLSFilter = true
+        ).first().let {
+            assertEquals(1, it.size)
+            assertEquals(mlsConversation.id, it.first().conversationViewEntity.id)
+            assertEquals(ConversationEntity.Type.GROUP, it.first().conversationViewEntity.type)
+            val protocolInfo = it.first().conversationViewEntity.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+            assertEquals(ConversationEntity.GroupState.PENDING_AFTER_RESET, protocolInfo.groupState)
+        }
+    }
+
+    @Test
+    fun givenMLSConversationWithPendingJoin_whenGettingWithStrictFilter_thenShouldNotReturnIt() = runTest(dispatcher) {
+        val fromArchive = false
+        val mlsConversation = conversationEntity1.copy(
+            type = ConversationEntity.Type.GROUP,
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                "mls-group-pending-join",
+                ConversationEntity.GroupState.PENDING_JOIN,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+        )
+        
+        conversationDAO.insertConversation(mlsConversation)
+        memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
+        
+        conversationDAO.getAllConversationDetailsWithEvents(
+            fromArchive = fromArchive,
+            strictMLSFilter = true
+        ).first().let {
+            assertEquals(0, it.size)
+        }
+    }
+
+    @Test
+    fun givenMLSConversationWithPendingJoin_whenGettingWithNonStrictFilter_thenShouldReturnIt() = runTest(dispatcher) {
+        val fromArchive = false
+        val mlsConversation = conversationEntity1.copy(
+            type = ConversationEntity.Type.GROUP,
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                "mls-group-pending-join-non-strict",
+                ConversationEntity.GroupState.PENDING_JOIN,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+        )
+        
+        conversationDAO.insertConversation(mlsConversation)
+        memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
+        
+        conversationDAO.getAllConversationDetailsWithEvents(
+            fromArchive = fromArchive,
+            strictMLSFilter = false
+        ).first().let {
+            assertEquals(1, it.size)
+            assertEquals(mlsConversation.id, it.first().conversationViewEntity.id)
+            assertEquals(ConversationEntity.Type.GROUP, it.first().conversationViewEntity.type)
+            val protocolInfo = it.first().conversationViewEntity.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+            assertEquals(ConversationEntity.GroupState.PENDING_JOIN, protocolInfo.groupState)
+        }
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?

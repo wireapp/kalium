@@ -49,7 +49,7 @@ internal class MLSResetConversationEventHandlerImpl(
                 ConversationEntity.GroupState.ESTABLISHED
             } else {
                 // update local db with the new group id and set the conversation as not established
-                ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+                ConversationEntity.GroupState.PENDING_AFTER_RESET
             }
             mlsConversationRepository.updateGroupIdAndState(
                 event.conversationId,
