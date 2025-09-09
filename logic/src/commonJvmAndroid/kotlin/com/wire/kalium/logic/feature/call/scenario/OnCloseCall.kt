@@ -106,9 +106,12 @@ class OnCloseCall(
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean =
         when (callStatus) {
             CallStatus.MISSED -> true
-            CallStatus.CLOSED_INTERNALLY -> false
-            CallStatus.REJECTED -> false
-            CallStatus.CLOSED -> callMetadata?.establishedTime.isNullOrEmpty()
+            CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
+                callMetadata.establishedTime.isNullOrEmpty() &&
+                        currentCallStatus != CallStatus.CLOSED_INTERNALLY &&
+                        currentCallStatus != CallStatus.REJECTED
+            } ?: false
+
             else -> false
         }
 
