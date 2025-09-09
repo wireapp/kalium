@@ -26,10 +26,10 @@ import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.network.NetworkState
@@ -65,14 +65,9 @@ class OnCloseCall(
 
         scope.launch {
             val callMetadata = callRepository.getCallMetadataProfile()[conversationIdWithDomain]
+            val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
 
-            val isConnectedToInternet =
-                networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
-            if (shouldPersistMissedCall(
-                    conversationIdWithDomain,
-                    callStatus
-                ) && isConnectedToInternet
-            ) {
+            if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
@@ -84,7 +79,6 @@ class OnCloseCall(
                         CallStatus.MISSED,
                         CallStatus.REJECTED,
                         CallStatus.CLOSED -> false
-
                         else -> true
                     }
                 } else {
@@ -109,19 +103,14 @@ class OnCloseCall(
         }
     }
 
-    private fun shouldPersistMissedCall(
-        conversationId: ConversationId,
-        callStatus: CallStatus
-    ): Boolean {
-        if (callStatus == CallStatus.MISSED)
-            return true
-        return callRepository.getCallMetadataProfile().data[conversationId]?.let {
-            (callStatus == CallStatus.CLOSED &&
-                    it.establishedTime.isNullOrEmpty() &&
-                    it.callStatus != CallStatus.CLOSED_INTERNALLY &&
-                    it.callStatus != CallStatus.REJECTED)
-        } ?: false
-    }
+    private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean =
+        when (callStatus) {
+            CallStatus.MISSED -> true
+            CallStatus.CLOSED_INTERNALLY -> false
+            CallStatus.REJECTED -> false
+            CallStatus.CLOSED -> callMetadata?.establishedTime.isNullOrEmpty()
+            else -> false
+        }
 
     private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
         CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
@@ -132,5 +121,4 @@ class OnCloseCall(
             CallStatus.CLOSED
         }
     }
-
 }
