@@ -556,7 +556,7 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
+internal fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.SELF
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
     ConversationEntity.Type.GROUP -> Conversation.Type.GROUP

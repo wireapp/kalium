@@ -39,7 +39,7 @@ internal interface UserConfigRepositoryArrangement {
     fun withSetDefaultProtocolSuccessful()
     fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
-    fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
+    suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
@@ -87,7 +87,7 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(Either.Right(Unit))
     }
 
-    override fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
+    override suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
         every {
             userConfigRepository.isMLSEnabled()
         }.returns(result)
