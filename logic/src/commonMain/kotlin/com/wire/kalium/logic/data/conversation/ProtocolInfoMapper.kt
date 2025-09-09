@@ -43,6 +43,7 @@ class ProtocolInfoMapperImpl(
                 protocolInfo.keyingMaterialLastUpdate,
                 CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
             )
+
             is ConversationEntity.ProtocolInfo.Mixed -> Conversation.ProtocolInfo.Mixed(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
                 protocolInfo.groupState.toDomain(),
@@ -62,6 +63,7 @@ class ProtocolInfoMapperImpl(
                 protocolInfo.keyingMaterialLastUpdate,
                 ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
             )
+
             is Conversation.ProtocolInfo.Mixed -> ConversationEntity.ProtocolInfo.Mixed(
                 idMapper.toGroupIDEntity(protocolInfo.groupId),
                 protocolInfo.groupState.toEntity(),
@@ -71,7 +73,7 @@ class ProtocolInfoMapperImpl(
             )
         }
 
-    private inline fun Conversation.ProtocolInfo.MLSCapable.GroupState.toEntity() = when(this) {
+    private inline fun Conversation.ProtocolInfo.MLSCapable.GroupState.toEntity() = when (this) {
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> ConversationEntity.GroupState.PENDING_CREATION
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> ConversationEntity.GroupState.PENDING_JOIN
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
@@ -79,7 +81,7 @@ class ProtocolInfoMapperImpl(
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> ConversationEntity.GroupState.PENDING_AFTER_RESET
     }
 
-    private inline fun ConversationEntity.GroupState.toDomain() = when(this) {
+    private inline fun ConversationEntity.GroupState.toDomain() = when (this) {
         ConversationEntity.GroupState.PENDING_CREATION -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
         ConversationEntity.GroupState.PENDING_JOIN -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
         ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE
