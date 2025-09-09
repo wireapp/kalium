@@ -45,7 +45,13 @@ class FetchConversationIfUnknownUseCaseTest {
 
         useCase(arrangement.transactionContext, TestConversation.ID)
 
-        coVerify { arrangement.fetchConversation(any(), eq(TestConversation.ID)) }.wasInvoked(once)
+        coVerify {
+            arrangement.fetchConversation(
+                any(),
+                eq(TestConversation.ID),
+                eq(ConversationSyncReason.Other)
+            )
+        }.wasInvoked(once)
     }
 
     @Test
@@ -56,7 +62,7 @@ class FetchConversationIfUnknownUseCaseTest {
 
         useCase(arrangement.transactionContext, TestConversation.ID)
 
-        coVerify { arrangement.fetchConversation(any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.fetchConversation(any(), any(), any()) }.wasNotInvoked()
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, FetchConversationIfUnknownUseCase> =
@@ -82,7 +88,13 @@ class FetchConversationIfUnknownUseCaseTest {
         }
 
         suspend fun withFetchConversationSuccess() = apply {
-            coEvery { fetchConversation(any(), eq(TestConversation.ID)) } returns Either.Right(Unit)
+            coEvery {
+                fetchConversation(
+                    any(),
+                    eq(TestConversation.ID),
+                    eq(ConversationSyncReason.Other)
+                )
+            } returns Either.Right(Unit)
         }
 
         fun arrange(): Pair<Arrangement, FetchConversationIfUnknownUseCase> {

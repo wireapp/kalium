@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrFail
@@ -30,6 +31,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
 
@@ -57,15 +59,17 @@ internal class ResetMLSConversationUseCaseImpl(
     private val kaliumConfigs: KaliumConfigs,
 ) : ResetMLSConversationUseCase {
 
+    private val logger by lazy { kaliumLogger.withTextTag("ResetMLSConversationUseCase") }
+
     override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
 
         if (!kaliumConfigs.isMlsResetEnabled) {
-            kaliumLogger.i("MLS conversation reset feature is disabled via compile time flag.")
+            logger.i("MLS conversation reset feature is disabled via compile time flag.")
             return Unit.right()
         }
 
         if (!userConfig.isMlsConversationsResetEnabled()) {
-            kaliumLogger.i("MLS conversation reset feature is disabled.")
+            logger.i("MLS conversation reset feature is disabled.")
             return Unit.right()
         }
 
@@ -73,21 +77,26 @@ internal class ResetMLSConversationUseCaseImpl(
 
             val mlsContext = transaction.mls ?: return@transaction errorNotMlsConversation()
 
-            fetchConversation(transaction, conversationId)
-                .flatMap { getMlsProtocolInfo(conversationId) }
-                .flatMap { protocolInfo ->
-                    conversationRepository.resetMlsConversation(protocolInfo.groupId, protocolInfo.epoch)
-                        .map { protocolInfo.groupId }
-                        .onSuccess { groupId ->
+            getMlsProtocolInfo(conversationId)
+                .flatMap {
+                    wrapMLSRequest {
+                        mlsContext.conversationEpoch(it.groupId.toCrypto()) to it.groupId
+                    }
+                }
+                .flatMap { (epoch, groupId) ->
+                    conversationRepository.resetMlsConversation(groupId, epoch)
+                        .onSuccess {
                             // the result of the leave can be ignored
                             mlsConversationRepository.leaveGroup(mlsContext, groupId)
                         }
                 }
-                .flatMap { fetchConversation(transaction, conversationId) }
+                .flatMap {
+                    fetchConversation(transaction, conversationId)
+                }
                 .flatMap { getMlsProtocolInfo(conversationId) }
                 .map { updatedProtocolInfo ->
                     val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
-                        kaliumLogger.e("Failed to get members for conversation: $it")
+                        logger.e("Failed to get members for conversation: $it")
                         return@transaction it.left()
                     }
                     mlsConversationRepository.establishMLSGroup(
@@ -102,7 +111,7 @@ internal class ResetMLSConversationUseCaseImpl(
     private suspend fun fetchConversation(
         transaction: CryptoTransactionContext,
         conversationId: ConversationId
-    ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId)
+    ): Either<CoreFailure, Unit> = fetchConversationUseCase(transaction, conversationId, ConversationSyncReason.ConversationReset)
 
     private suspend fun getMlsProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo.MLSCapable> {
         return conversationRepository.getConversationById(conversationId)

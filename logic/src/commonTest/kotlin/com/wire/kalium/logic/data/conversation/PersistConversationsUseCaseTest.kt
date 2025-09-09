@@ -35,7 +35,12 @@ class PersistConversationsUseCaseTest {
             withMLSGroupEstablished(false)
         }
 
-        useCase(arrangement.transactionContext, listOf(CONVERSATION_RESPONSE), invalidateMembers = true, originatedFromEvent = true)
+        useCase(
+            arrangement.transactionContext,
+            listOf(CONVERSATION_RESPONSE),
+            invalidateMembers = true,
+            reason = ConversationSyncReason.Event,
+        )
 
         coVerify {
             arrangement.conversationRepository.persistConversations(
@@ -58,7 +63,12 @@ class PersistConversationsUseCaseTest {
             withConversationInsertSuccess()
         }
 
-        useCase(arrangement.transactionContext, listOf(mlsConversation), invalidateMembers = true, originatedFromEvent = true)
+        useCase(
+            arrangement.transactionContext,
+            listOf(mlsConversation),
+            invalidateMembers = true,
+            reason = ConversationSyncReason.Event,
+        )
 
         coVerify {
             arrangement.conversationRepository.persistConversations(
@@ -80,7 +90,12 @@ class PersistConversationsUseCaseTest {
             withUpdateMembers()
         }
 
-        useCase(arrangement.transactionContext, listOf(CONVERSATION_RESPONSE), invalidateMembers = true, originatedFromEvent = false)
+        useCase(
+            arrangement.transactionContext,
+            listOf(CONVERSATION_RESPONSE),
+            invalidateMembers = true,
+            reason = ConversationSyncReason.Other
+        )
 
         coVerify { arrangement.conversationRepository.insertConversations(any()) }.wasNotInvoked()
     }
@@ -99,7 +114,12 @@ class PersistConversationsUseCaseTest {
             withUpdateMembers()
         }
 
-        useCase(arrangement.transactionContext, listOf(mlsConversation), invalidateMembers = true, originatedFromEvent = true)
+        useCase(
+            arrangement.transactionContext,
+            listOf(mlsConversation),
+            invalidateMembers = true,
+            reason = ConversationSyncReason.Event
+        )
 
         coVerify { arrangement.mlsContext.conversationExists(eq("groupId")) }.wasInvoked(once)
 

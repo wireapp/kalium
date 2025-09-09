@@ -28,13 +28,13 @@ internal interface FetchConversationIfUnknownUseCaseArrangement {
     val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase
     suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
         coEvery {
-            fetchConversationIfUnknown(any(), any())
+            fetchConversationIfUnknown(any(), any(), any())
         }.returns(Either.Left(coreFailure))
     }
 
     suspend fun withFetchConversationIfUnknownSucceeding() {
         coEvery {
-            fetchConversationIfUnknown(any(), any())
+            fetchConversationIfUnknown(any(), any(), any())
         }.returns(Either.Right(Unit))
     }
 
