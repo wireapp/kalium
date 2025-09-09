@@ -415,6 +415,7 @@ internal class ConversationMapperImpl(
             Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
             Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
             Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> GroupState.PENDING_AFTER_RESET
         }
 
     override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
@@ -683,6 +684,7 @@ internal fun Conversation.ProtocolInfo.MLSCapable.GroupState.toDao(): Conversati
     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> GroupState.PENDING_AFTER_RESET
 }
 
 internal fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {

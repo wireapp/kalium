@@ -257,7 +257,7 @@ data class Conversation(
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: CipherSuite
 
-            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED, PENDING_AFTER_RESET }
         }
 
         fun name(): String

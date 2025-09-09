@@ -38,14 +38,14 @@ class ProtocolInfoMapperImpl(
             is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
-                Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.groupState.toDomain(),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
                 CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
             )
             is ConversationEntity.ProtocolInfo.Mixed -> Conversation.ProtocolInfo.Mixed(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
-                Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.groupState.toDomain(),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
                 CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
@@ -57,17 +57,33 @@ class ProtocolInfoMapperImpl(
             is Conversation.ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus
             is Conversation.ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
                 idMapper.toGroupIDEntity(protocolInfo.groupId),
-                ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.groupState.toEntity(),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
                 ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
             )
             is Conversation.ProtocolInfo.Mixed -> ConversationEntity.ProtocolInfo.Mixed(
                 idMapper.toGroupIDEntity(protocolInfo.groupId),
-                ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.groupState.toEntity(),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
                 ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
             )
         }
+
+    private inline fun Conversation.ProtocolInfo.MLSCapable.GroupState.toEntity() = when(this) {
+        Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> ConversationEntity.GroupState.PENDING_CREATION
+        Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> ConversationEntity.GroupState.PENDING_JOIN
+        Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+        Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED -> ConversationEntity.GroupState.ESTABLISHED
+        Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> ConversationEntity.GroupState.PENDING_AFTER_RESET
+    }
+
+    private inline fun ConversationEntity.GroupState.toDomain() = when(this) {
+        ConversationEntity.GroupState.PENDING_CREATION -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
+        ConversationEntity.GroupState.PENDING_JOIN -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
+        ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE
+        ConversationEntity.GroupState.ESTABLISHED -> Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+        ConversationEntity.GroupState.PENDING_AFTER_RESET -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET
+    }
 }

@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
@@ -78,9 +80,15 @@ internal class ResetMLSConversationUseCaseImpl(
             val mlsContext = transaction.mls ?: return@transaction errorNotMlsConversation()
 
             getMlsProtocolInfo(conversationId)
-                .flatMap {
+                .flatMap { protocolInfo ->
                     wrapMLSRequest {
-                        mlsContext.conversationEpoch(it.groupId.toCrypto()) to it.groupId
+                        mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto()) to protocolInfo.groupId
+                    }.flatMapLeft {
+                        if (it is MLSFailure.ConversationNotFound) {
+                            (protocolInfo.epoch to protocolInfo.groupId).right()
+                        } else {
+                            it.left()
+                        }
                     }
                 }
                 .flatMap { (epoch, groupId) ->
