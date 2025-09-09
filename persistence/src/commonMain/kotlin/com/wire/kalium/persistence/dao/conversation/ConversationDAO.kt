@@ -66,7 +66,7 @@ interface ConversationDAO {
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
         newActivitiesOnTop: Boolean = false,
-        strickMLSFilter: Boolean = true
+        strictMLSFilter: Boolean = true
     ): Flow<List<ConversationDetailsWithEventsEntity>>
 
     suspend fun getConversationIds(

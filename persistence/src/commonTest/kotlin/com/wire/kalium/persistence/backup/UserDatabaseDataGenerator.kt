@@ -282,6 +282,7 @@ class UserDatabaseDataGenerator(
                     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
                     channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
                     wireCell = null,
+                    historySharingRetentionSeconds = 0
                 )
             )
 
@@ -333,6 +334,7 @@ class UserDatabaseDataGenerator(
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -408,6 +410,7 @@ class UserDatabaseDataGenerator(
                 channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
                 channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
                 wireCell = null,
+                historySharingRetentionSeconds = 0,
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -482,6 +485,7 @@ class UserDatabaseDataGenerator(
                     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
                     channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
                     wireCell = null,
+                    historySharingRetentionSeconds = 0,
                 )
             )
 
@@ -534,6 +538,7 @@ class UserDatabaseDataGenerator(
                     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
                     channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
                     wireCell = null,
+                    historySharingRetentionSeconds = 0,
                 )
             )
 

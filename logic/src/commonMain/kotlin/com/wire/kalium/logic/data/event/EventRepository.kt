@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.event
 
 import co.touchlab.stately.concurrency.AtomicReference
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -76,6 +75,7 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
+import kotlin.uuid.Uuid
 
 @Mockable
 interface EventRepository {
@@ -259,7 +259,10 @@ class EventDataSource(
                     val isLive = isWebsocketEventReceivedLive()
                     when (val event: ConsumableNotificationResponse = webSocketEvent.payload) {
                         is ConsumableNotificationResponse.EventNotification -> {
-                            logger.d("Handling ConsumableNotificationResponse.EventNotification")
+                            event.data.deliveryTag?.let {
+                                // only log for async events
+                                logger.d("Handling ConsumableNotificationResponse.EventNotification")
+                            }
                             if (clearOnFirstWSMessage.value) {
                                 clearOnFirstWSMessage.emit(false)
                                 logger.d("clear processed events before ${event.data.event.id.obfuscateId()}")

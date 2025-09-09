@@ -44,7 +44,7 @@ interface ConversationExtensions {
     )
 }
 
-internal class ConversationExtensionsImpl internal constructor(
+    internal class ConversationExtensionsImpl internal constructor(
     private val queries: ConversationDetailsWithEventsQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
     private val coroutineContext: CoroutineContext,

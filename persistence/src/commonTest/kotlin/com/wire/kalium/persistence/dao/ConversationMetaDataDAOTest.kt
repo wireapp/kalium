@@ -92,6 +92,7 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,
+            historySharingRetentionSeconds = 0,
         )
     }
 }

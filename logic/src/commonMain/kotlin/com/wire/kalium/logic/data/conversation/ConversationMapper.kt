@@ -43,6 +43,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.authenticated.conversation.ConversationHistorySettingsDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
@@ -66,6 +67,7 @@ import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -76,6 +78,7 @@ interface ConversationMapper {
         mlsGroupState: GroupState?,
         selfUserTeamId: TeamId?,
     ): ConversationEntity
+
     fun fromApiModel(mlsPublicKeysDTO: MLSPublicKeysDTO?): MLSPublicKeys?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
@@ -156,6 +159,10 @@ internal class ConversationMapperImpl(
             channelAccess = null, // TODO: implement when api is ready
             channelAddPermission = apiModel.channelAddUserPermissionTypeDTO?.toDAO(),
             wireCell = conversationId.toString().takeIf { apiModel.cellEnabled() }, // TODO refactor to boolean in WPB-16946
+            historySharingRetentionSeconds = when (val historySharingSettings = apiModel.historySharingSettings) {
+                ConversationHistorySettingsDTO.Private -> 0
+                is ConversationHistorySettingsDTO.SharedWithNewMembers -> historySharingSettings.depth.inWholeSeconds
+            }
         )
     }
 
@@ -297,7 +304,10 @@ internal class ConversationMapperImpl(
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                             access = channelAccess?.toModelChannelAccess() ?: ChannelAccess.PRIVATE,
                             permission = channelAddPermission?.toModelChannelPermission()
-                                ?: ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
+                                ?: ChannelAddPermission.ADMINS,
+                            historySharing = daoModel.historySharingRetentionSeconds.takeIf { it > 0 }?.let {
+                                ConversationHistorySharing.ShareWithNewMembers(it.seconds)
+                            } ?: ConversationHistorySharing.Private
                         )
                     } else {
                         ConversationDetails.Group.Regular(
@@ -489,6 +499,7 @@ internal class ConversationMapperImpl(
             channelAccess = null,
             channelAddPermission = null,
             wireCell = null,
+            historySharingRetentionSeconds = 0, // There was no history sharing in old Android clients. So we can hard-code 0
         )
     }
 
@@ -524,6 +535,7 @@ internal class ConversationMapperImpl(
         channelAccess = null,
         channelAddPermission = null,
         wireCell = null,
+        historySharingRetentionSeconds = 0, // We can have no history sharing when they're failed.
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {

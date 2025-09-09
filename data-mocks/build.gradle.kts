@@ -32,6 +32,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":data"))
+                implementation(project(":persistence"))
                 implementation(project(":network-model"))
                 implementation(project(":util"))
 
