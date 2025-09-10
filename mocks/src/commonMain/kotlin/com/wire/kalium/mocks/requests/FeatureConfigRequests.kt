@@ -27,7 +27,7 @@ object FeatureConfigRequests {
     /**
      * URL Paths
      */
-    private const val PATH_FEATURE_CONFIGS = "${CommonResponses.BASE_PATH_V1}feature-configs"
+    private const val PATH_FEATURE_CONFIGS = "${CommonResponses.BASE_PATH_V8}feature-configs"
 
     /**
      * Requests / Responses

@@ -25,15 +25,14 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.encodeToString
 
 object LoginRequests {
     /**
      * URL Paths
      */
-    private const val PATH_LOGIN = "${CommonResponses.BASE_PATH_V1}login?persist=true"
-    private const val PATH_SELF = "${CommonResponses.BASE_PATH_V1}self"
-    private const val PATH_LOGOUT = "${CommonResponses.BASE_PATH_V1}access/logout"
+    private const val PATH_LOGIN = "${CommonResponses.BASE_PATH_V8}login?persist=true"
+    private const val PATH_SELF = "${CommonResponses.BASE_PATH_V8}self"
+    private const val PATH_LOGOUT = "${CommonResponses.BASE_PATH_V8}access/logout"
     private const val PATH_API_VERSION = "${CommonResponses.BASE_PATH}api-version"
 
     /**

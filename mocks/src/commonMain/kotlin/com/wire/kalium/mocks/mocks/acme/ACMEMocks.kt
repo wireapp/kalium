@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,25 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.mocks.responses
+package com.wire.kalium.mocks.mocks.acme
 
-object ServerConfigDTOJson {
+import com.wire.kalium.network.api.unbound.acme.FederationCertificateChainResponse
 
-    private val response =
-        """
-        |{
-        |   "domain":"example.com",
-        |   "federation":false,
-        |   "supported":[
-        |      0,
-        |      1,
-        |      5,
-        |      7,
-        |      8
-        |   ]
-        |}
-        """.trimMargin()
+object ACMEMocks {
 
-    val valid = response
-
+    val federationCertificateChainResponse: FederationCertificateChainResponse = FederationCertificateChainResponse(
+        listOf()
+    )
 }

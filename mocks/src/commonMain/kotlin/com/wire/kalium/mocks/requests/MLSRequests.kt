@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,24 +17,25 @@
  */
 package com.wire.kalium.mocks.requests
 
-import com.wire.kalium.mocks.extensions.toJsonString
-import com.wire.kalium.mocks.mocks.connection.ConnectionMocks
 import com.wire.kalium.mocks.responses.CommonResponses
-import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
+import com.wire.kalium.mocks.responses.MLSPublicKeysResponseJson
 import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
-object ConnectionRequests {
-    private const val PATH_CONNECTION_LIST = "${CommonResponses.BASE_PATH_V8}list-connections"
-    fun connectionRequestResponseSuccess(
-        connectionResponse: ConnectionResponse = ConnectionMocks.connectionsResponse
-    ) = listOf(
-        TestRequestHandler(
-            path = PATH_CONNECTION_LIST,
-            httpMethod = HttpMethod.Post,
-            responseBody = connectionResponse.toJsonString(),
-            statusCode = HttpStatusCode.OK,
-        )
+object MLSRequests {
+    const val PATH_PUBLIC_KEYS = "public-keys"
+    const val PATH_MLS = "mls"
+    private const val PATH_MLS_KEYS = "${CommonResponses.BASE_PATH_V8}$PATH_MLS/$PATH_PUBLIC_KEYS"
+
+    private val getMLSPublicKeysRequestSuccess = TestRequestHandler(
+        path = PATH_MLS_KEYS,
+        httpMethod = HttpMethod.Get,
+        responseBody = MLSPublicKeysResponseJson.valid.rawJson,
+        statusCode = HttpStatusCode.OK,
+    )
+
+    val mlsRequestResponseSuccess = listOf(
+        getMLSPublicKeysRequestSuccess
     )
 }
