@@ -108,6 +108,7 @@ class OnCloseCallTest {
         }
 
     @Test
+<<<<<<< HEAD
     fun givenCloseReasonIsEndedNormally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
         testScope.runTest {
             val (arrangement, onCloseCall) = Arrangement(testScope).arrange()
@@ -137,6 +138,8 @@ class OnCloseCallTest {
         }
 
     @Test
+=======
+>>>>>>> 0fc01a81d9 (fix: missed call notification for builds (WPB-19996) (#3620))
     fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
         testScope.runTest {
             val incomingCall = callMetadata.copy(
