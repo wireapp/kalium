@@ -307,7 +307,8 @@ internal class ConversationMapperImpl(
                                 ?: ChannelAddPermission.ADMINS,
                             historySharing = daoModel.historySharingRetentionSeconds.takeIf { it > 0 }?.let {
                                 ConversationHistorySharing.ShareWithNewMembers(it.seconds)
-                            } ?: ConversationHistorySharing.Private
+                            } ?: ConversationHistorySharing.Private,
+                            wireCell = wireCell,
                         )
                     } else {
                         ConversationDetails.Group.Regular(

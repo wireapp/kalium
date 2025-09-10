@@ -56,6 +56,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ConversationMapperTest {
@@ -143,6 +144,96 @@ class ConversationMapperTest {
         verify {
             idMapper.fromApiToDao(originalConversationId)
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationResponseWithCellReadyState_whenMappingFromConversationResponseToDaoModel_thenWireCellIsEnabled() {
+        val response = CONVERSATION_RESPONSE.copy(
+            cellsState = "ready"
+        )
+        val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
+
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            transformedConversationId
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val entity = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(transformedConversationId.toString(), entity.wireCell)
+    }
+
+    @Test
+    fun givenAConversationResponseWithCellPendingState_whenMappingFromConversationResponseToDaoModel_thenWireCellIsEnabled() {
+        val response = CONVERSATION_RESPONSE.copy(
+            cellsState = "pending"
+        )
+        val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
+
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            transformedConversationId
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val entity = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(transformedConversationId.toString(), entity.wireCell)
+    }
+
+    @Test
+    fun givenAConversationResponseWithCellDisabledState_whenMappingFromConversationResponseToDaoModel_thenWireCellIsDisabled() {
+        val response = CONVERSATION_RESPONSE.copy(
+            cellsState = "disabled"
+        )
+        val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
+
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            transformedConversationId
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val entity = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertNull(entity.wireCell)
     }
 
     @Test
