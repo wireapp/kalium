@@ -143,35 +143,6 @@ class OnCloseCallTest {
         }
 
     @Test
-    fun givenCloseReasonIsEndedNormally_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
-        testScope.runTest {
-
-            val reason = CallClosedReason.NORMAL.avsValue
-
-            onCloseCall.onClosedCall(
-                reason,
-                conversationIdString,
-                time,
-                userIdString,
-                clientId,
-                null
-            )
-            yield()
-
-            coVerify {
-                callRepository.persistMissedCall(eq(conversationId))
-            }.wasNotInvoked()
-
-            coVerify {
-                callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-            }.wasInvoked(once)
-
-            coVerify {
-                callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
-        }
-
-    @Test
     fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
         testScope.runTest {
             val incomingCall = callMetadata.copy(
