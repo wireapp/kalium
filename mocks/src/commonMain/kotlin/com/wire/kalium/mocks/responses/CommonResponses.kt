@@ -20,7 +20,6 @@ package com.wire.kalium.mocks.responses
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.tools.KtxSerializer
-import kotlinx.serialization.encodeToString
 
 /*
  * Wire
@@ -45,7 +44,7 @@ object CommonResponses {
      * URL Paths
      */
     const val BASE_PATH = "https://test.api.com/"
-    const val BASE_PATH_V1 = "${BASE_PATH}v1/"
+    const val BASE_PATH_V8 = "${BASE_PATH}v8/"
 
     /**
      * DTO

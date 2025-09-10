@@ -26,10 +26,10 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
 object PreKeyRequests {
-    private const val PATH_CLIENTS_PRE_KEYS = "${CommonResponses.BASE_PATH_V1}clients/defkrr8e7grgsoufhg8/prekeys"
-    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH_V1}clients/defkrr8e7grgsoufhg8"
+    private const val PATH_CLIENTS_PRE_KEYS = "${CommonResponses.BASE_PATH_V8}clients/defkrr8e7grgsoufhg8/prekeys"
+    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH_V8}clients/defkrr8e7grgsoufhg8"
 
-    private const val PATH_USERS_PRE_KEYS = "${CommonResponses.BASE_PATH_V1}users/list-prekeys"
+    private const val PATH_USERS_PRE_KEYS = "${CommonResponses.BASE_PATH_V8}users/list-prekeys"
 
     private const val USER_1 = "someValue"
     private const val USER_1_CLIENT = "defkrr8e7grgsoufhg8"

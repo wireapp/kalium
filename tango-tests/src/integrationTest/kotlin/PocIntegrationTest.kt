@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.tango.test.test
 
 import action.ACMEActions
 import action.ClientActions
@@ -32,6 +33,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.KaliumMockWebsocket
 import com.wire.kalium.logic.util.TimeLogger
 import com.wire.kalium.mocks.mocks.conversation.ConversationMocks
 import com.wire.kalium.mocks.requests.ACMERequests
@@ -40,11 +42,14 @@ import com.wire.kalium.mocks.requests.ConnectionRequests
 import com.wire.kalium.mocks.requests.ConversationRequests
 import com.wire.kalium.mocks.requests.FeatureConfigRequests
 import com.wire.kalium.mocks.requests.LoginRequests
+import com.wire.kalium.mocks.requests.MLSRequests
 import com.wire.kalium.mocks.requests.NotificationRequests
 import com.wire.kalium.mocks.requests.PreKeyRequests
+import com.wire.kalium.mocks.requests.UserRequests
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.network.utils.TestRequestHandler
 import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
 import kotlinx.coroutines.awaitCancellation
@@ -186,6 +191,84 @@ class PocIntegrationTest {
         }
     }
 
+    @Test
+    fun decrypting1000MessagesAcross5Conversations() = runDecryptionBenchmark(
+        label = "1000 messages across 5 conversations",
+        messageCounts = listOf(200, 200, 200, 200, 200)
+    )
+
+    @Test
+    fun decrypting5000MessagesAcross6Conversations() = runDecryptionBenchmark(
+        label = "5000 messages across 6 conversations",
+        messageCounts = listOf(500, 1000, 30, 800, 1500, 1170)
+    )
+
+    @Test
+    fun decrypting2000MessagesFromOneConversation() = runDecryptionBenchmark(
+        label = "2000 messages from 1 conversation",
+        messageCounts = listOf(2000)
+    )
+
+    private fun runDecryptionBenchmark(label: String, messageCounts: List<Int>) = runTest {
+        println("Starting benchmark: $label")
+
+        val mockedRequests = mutableListOf<TestRequestHandler>().apply {
+            addAll(LoginRequests.loginRequestResponseSuccess)
+            addAll(ClientRequests.clientRequestResponseSuccess)
+            addAll(FeatureConfigRequests.responseSuccess)
+            addAll(NotificationRequests.notificationsRequestResponseSuccess)
+            addAll(ConversationRequests.conversationsRequestResponseSuccess)
+            addAll(ConnectionRequests.connectionRequestResponseSuccess())
+            addAll(PreKeyRequests.preKeyRequestResponseSuccess)
+            addAll(UserRequests.usersRequestResponseSuccess)
+            addAll(ACMERequests.acmeRequestResponseSuccess)
+            addAll(MLSRequests.mlsRequestResponseSuccess)
+        }
+
+        TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
+
+        val userSession = initUserSession(createCoreLogic(mockedRequests))
+        val syncJob = launch { userSession.syncExecutor.request { awaitCancellation() } }
+
+        advanceUntilIdle()
+        val selfUserId = userSession.users.observeSelfUser().first().id
+        val selfClientId = userSession.clientIdProvider().getOrFail { error("No self client") }
+        val targetUserId = UserId(value = selfUserId.value, domain = selfUserId.domain)
+
+        userSession.debug.breakSession(selfUserId, selfClientId)
+        userSession.debug.establishSession(userId = targetUserId, clientId = selfClientId)
+
+        val generator = EventGenerator(
+            selfClient = QualifiedClientID(selfClientId, selfUserId),
+            targetClient = QualifiedClientID(selfClientId, targetUserId),
+        )
+
+        val allEvents = buildList {
+            messageCounts.forEachIndexed { index, count ->
+                val conversationId = ConversationId(
+                    value = "conv-${label.hashCode()}-$index",
+                    domain = ConversationMocks.conversationId.domain
+                )
+                addAll(generator.generateEvents(userSession.cryptoTransactionProvider, count, conversationId).toList())
+            }
+        }
+
+        val response = NotificationResponse(
+            time = Clock.System.now().toString(),
+            hasMore = false,
+            notifications = allEvents.toList().map { it.toEventResponseToStore() }
+        )
+
+        val encodedData = json.encodeToString(response)
+
+        val logger = TimeLogger(label)
+        logger.start()
+        userSession.debug.synchronizeExternalData(encodedData)
+        logger.finish()
+
+        syncJob.cancel()
+    }
+
     private suspend fun initUserSession(coreLogic: CoreLogic): UserSessionScope {
         val authScope = getAuthScope(coreLogic, TEST_BACKEND_CONFIG.links)
 
@@ -231,18 +314,22 @@ class PocIntegrationTest {
             prettyPrint = true
         }
 
-        fun createCoreLogic(mockedRequests: List<TestRequestHandler>) = CoreLogic(
-            rootPath = "$HOME_DIRECTORY/.kalium/accounts-test",
-            kaliumConfigs = KaliumConfigs(
-                developmentApiEnabled = true,
-                encryptProteusStorage = true,
-                wipeOnDeviceRemoval = true,
-                mockedRequests = mockedRequests,
-                mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-                enableCalling = false,
-                mockedWebSocket = true
-            ),
-            userAgent = "Wire Integration Tests"
-        )
+        fun createCoreLogic(
+            mockedRequests: List<TestRequestHandler>,
+            mockWebSocketSession: MockWebSocketSession = MockWebSocketSession()
+        ) =
+            CoreLogic(
+                rootPath = "$HOME_DIRECTORY/.kalium/accounts-test",
+                kaliumConfigs = KaliumConfigs(
+                    developmentApiEnabled = true,
+                    encryptProteusStorage = true,
+                    wipeOnDeviceRemoval = true,
+                    mockedRequests = mockedRequests,
+                    mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
+                    enableCalling = false,
+                    mockedWebSocket = KaliumMockWebsocket(mockWebSocketSession)
+                ),
+                userAgent = "Wire Integration Tests"
+            )
     }
 }
