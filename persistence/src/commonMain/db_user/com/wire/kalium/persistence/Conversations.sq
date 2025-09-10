@@ -95,7 +95,11 @@ type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
 mls_epoch = excluded.mls_epoch,
-mls_group_state = excluded.mls_group_state,
+mls_group_state = CASE
+    WHEN Conversation.mls_group_state = 'ESTABLISHED' THEN excluded.mls_group_state
+    WHEN excluded.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN excluded.mls_group_state
+    ELSE Conversation.mls_group_state
+END,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
@@ -126,18 +130,31 @@ WHERE qualified_id = ?;
 
 updateConversationGroupState:
 UPDATE Conversation
-SET mls_group_state = ?
+SET mls_group_state = CASE
+    WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+    WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+    ELSE mls_group_state
+END
 WHERE mls_group_id = ?;
 
 updateMlsGroupStateAndCipherSuite:
 UPDATE Conversation
-SET mls_group_state = :mls_group_state, mls_cipher_suite = :mls_cipher_suite
+SET mls_group_state = CASE
+    WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+    WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+    ELSE mls_group_state
+END,
+mls_cipher_suite = :mls_cipher_suite
 WHERE mls_group_id = :mls_group_id;
 
 updateMLSGroupIdAndState:
 UPDATE Conversation
 SET mls_group_id = :new_group_id, 
-    mls_group_state = :group_state
+    mls_group_state = CASE
+        WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+        WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+        ELSE mls_group_state
+    END
 WHERE qualified_id = :conversation_id;
 
 updateConversationNotificationsDateWithTheLastMessage:
