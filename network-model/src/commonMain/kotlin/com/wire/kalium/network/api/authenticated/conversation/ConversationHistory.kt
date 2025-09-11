@@ -46,7 +46,7 @@ sealed interface ConversationHistorySettingsDTO {
      */
     @Serializable
     @SerialName("shared")
-    data class SharedWithNewMembers(
+    data class ShareWithNewMembers(
         @Serializable(with = ConversationHistoryDepthSerializer::class)
         @SerialName("depth") val depth: Duration
     ) : ConversationHistorySettingsDTO

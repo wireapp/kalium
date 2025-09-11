@@ -40,6 +40,7 @@ kotlin {
                 api(project(":common"))
                 implementation(project(":network"))
                 api(project(":data"))
+                implementation(project(":data-mappers"))
                 api(project(":network-util"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))

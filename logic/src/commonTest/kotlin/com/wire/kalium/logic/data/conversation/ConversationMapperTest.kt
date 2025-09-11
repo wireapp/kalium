@@ -40,7 +40,6 @@ import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -60,7 +59,6 @@ import kotlin.test.assertTrue
 
 class ConversationMapperTest {
 
-    val idMapper = mock(IdMapper::class)
     val protocolInfoMapper = mock(ProtocolInfoMapper::class)
     val conversationStatusMapper = mock(ConversationStatusMapper::class)
     val userAvailabilityStatusMapper = mock(AvailabilityStatusMapper::class)
@@ -75,7 +73,7 @@ class ConversationMapperTest {
     fun setup() {
         conversationMapper = ConversationMapperImpl(
             TestUser.SELF.id,
-            idMapper,
+            IdMapper(),
             conversationStatusMapper,
             protocolInfoMapper,
             userAvailabilityStatusMapper,
@@ -89,13 +87,6 @@ class ConversationMapperTest {
     @Test
     fun givenAConversationResponse_whenMappingFromConversationResponse_thenTheNameShouldBeCorrect() {
         val response = CONVERSATION_RESPONSE
-        val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
-
-        every {
-            idMapper.fromApiToDao(any())
-        }.returns(
-            transformedConversationId
-        )
 
         every {
             conversationStatusMapper.fromMutedStatusDaoModel(any())
@@ -118,13 +109,6 @@ class ConversationMapperTest {
     fun givenAConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldCallIdMapperToMapConversationId() {
         val response = CONVERSATION_RESPONSE
         val originalConversationId = ORIGINAL_CONVERSATION_ID
-        val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
-
-        every {
-            idMapper.fromApiToDao(any())
-        }.returns(
-            transformedConversationId
-        )
 
         every {
             conversationStatusMapper.fromMutedStatusDaoModel(any())
@@ -139,10 +123,6 @@ class ConversationMapperTest {
         )
 
         conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
-
-        verify {
-            idMapper.fromApiToDao(originalConversationId)
-        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -150,12 +130,6 @@ class ConversationMapperTest {
         val response = CONVERSATION_RESPONSE.copy(
             conversationGroupType = ConversationResponse.GroupType.CHANNEL,
             type = ConversationResponse.Type.GROUP
-        )
-
-        every {
-            idMapper.fromApiToDao(any())
-        }.returns(
-            QualifiedIDEntity("transformed", "tDomain")
         )
 
         every {
@@ -181,12 +155,6 @@ class ConversationMapperTest {
         val response = CONVERSATION_RESPONSE.copy(
             conversationGroupType = ConversationResponse.GroupType.REGULAR_GROUP,
             type = ConversationResponse.Type.GROUP
-        )
-
-        every {
-            idMapper.fromApiToDao(any())
-        }.returns(
-            QualifiedIDEntity("transformed", "tDomain")
         )
 
         every {
@@ -221,12 +189,6 @@ class ConversationMapperTest {
         )
 
         every {
-            idMapper.fromApiToDao(any())
-        }.returns(
-            QualifiedIDEntity("transformed", "tDomain")
-        )
-
-        every {
             conversationStatusMapper.fromMutedStatusDaoModel(any())
         }.returns(
             MutedConversationStatus.AllAllowed
@@ -246,12 +208,6 @@ class ConversationMapperTest {
     @Test
     fun givenAGroupConversationResponseWithoutName_whenMappingFromConversationResponseToDaoModel_thenShouldMapToGroupType() {
         val response = CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP, name = null)
-
-        every {
-            idMapper.fromApiToDao(any())
-        }.returns(
-            QualifiedIDEntity("transformed", "tDomain")
-        )
 
         every {
             conversationStatusMapper.fromMutedStatusDaoModel(any())

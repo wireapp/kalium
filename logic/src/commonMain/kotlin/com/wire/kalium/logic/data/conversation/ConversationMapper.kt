@@ -161,7 +161,7 @@ internal class ConversationMapperImpl(
             wireCell = conversationId.toString().takeIf { apiModel.cellEnabled() }, // TODO refactor to boolean in WPB-16946
             historySharingRetentionSeconds = when (val historySharingSettings = apiModel.historySharingSettings) {
                 ConversationHistorySettingsDTO.Private -> 0
-                is ConversationHistorySettingsDTO.SharedWithNewMembers -> historySharingSettings.depth.inWholeSeconds
+                is ConversationHistorySettingsDTO.ShareWithNewMembers -> historySharingSettings.depth.inWholeSeconds
             }
         )
     }

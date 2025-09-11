@@ -57,7 +57,6 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
@@ -107,7 +106,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 @Suppress("TooManyFunctions")
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
-    fun idMapper(): IdMapper = IdMapperImpl()
+    fun idMapper(): IdMapper = IdMapper()
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
     fun sessionMapper(): SessionMapper = SessionMapperImpl()
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()

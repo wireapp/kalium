@@ -19,17 +19,17 @@
 package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
@@ -50,17 +50,15 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {
-        private val registerApi: RegisterApi = mock(RegisterApi::class)
+    private val registerApi: RegisterApi = mock(RegisterApi::class)
 
-        private val idMapper = mock(IdMapper::class)
-
-        private val sessionMapper = mock(SessionMapper::class)
+    private val sessionMapper = mock(SessionMapper::class)
 
     private lateinit var registerAccountRepository: RegisterAccountRepository
 
     @BeforeTest
     fun setup() {
-        registerAccountRepository = RegisterAccountDataSource(registerApi, idMapper, sessionMapper)
+        registerAccountRepository = RegisterAccountDataSource(registerApi, IdMapper(), sessionMapper)
     }
 
     @Test
@@ -168,9 +166,7 @@ class RegisterAccountRepositoryTest {
                 )
             )
         }.returns(NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200))
-        every {
-            idMapper.toSsoId(TEST_USER.ssoID)
-        }.returns(ssoId)
+
         every {
             sessionMapper.fromSessionDTO(SESSION)
         }.returns(accountTokens)
@@ -199,9 +195,6 @@ class RegisterAccountRepositoryTest {
         }.wasInvoked(exactly = once)
         verify {
             sessionMapper.fromSessionDTO(any())
-        }.wasInvoked(exactly = once)
-        verify {
-            idMapper.toSsoId(TEST_USER.ssoID)
         }.wasInvoked(exactly = once)
     }
 
@@ -245,9 +238,7 @@ class RegisterAccountRepositoryTest {
         }.returns(
             NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200)
         )
-        every {
-            idMapper.toSsoId(TEST_USER.ssoID)
-        }.returns(ssoId)
+
         every {
             sessionMapper.fromSessionDTO(SESSION)
         }.returns(accountTokens)
@@ -279,7 +270,6 @@ class RegisterAccountRepositoryTest {
             )
         }.wasInvoked(exactly = once)
         verify { sessionMapper.fromSessionDTO(SESSION) }.wasInvoked(exactly = once)
-        verify { idMapper.toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -327,10 +317,6 @@ class RegisterAccountRepositoryTest {
         verify {
             sessionMapper.fromSessionDTO(any())
         }.wasNotInvoked()
-        verify {
-            idMapper.toSsoId(TEST_USER.ssoID)
-        }.wasNotInvoked()
-
     }
 
     private companion object {

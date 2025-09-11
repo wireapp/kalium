@@ -35,20 +35,20 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class MemberMapperTest {
 
-        val idMapper = mock(IdMapper::class)
+    val idMapper = IdMapper()
 
-        private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
+    private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
 
     private lateinit var memberMapper: MemberMapper
 
     @BeforeTest
     fun setup() {
         every {
-            roleMapper.fromApi("wire_admin") 
+            roleMapper.fromApi("wire_admin")
         }.returns(Conversation.Member.Role.Admin)
 
         every {
-            roleMapper.fromApi("wire_member") 
+            roleMapper.fromApi("wire_member")
         }.returns(Conversation.Member.Role.Member)
 
         memberMapper = MemberMapperImpl(idMapper, roleMapper)

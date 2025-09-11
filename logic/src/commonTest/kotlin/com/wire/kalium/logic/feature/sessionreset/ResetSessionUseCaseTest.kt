@@ -44,7 +44,6 @@ class ResetSessionUseCaseTest {
     @Test
     fun givenProteusProviderReturningFailure_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
         val (arrangement, useCase) = Arrangement()
-            .withIdMapperMapping()
             .arrange {
                 withProteusTransactionResultOnly(Either.Left(failure))
             }
@@ -57,7 +56,6 @@ class ResetSessionUseCaseTest {
     @Test
     fun givenAnErrorWhenSendingSessionReset_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
         val (arrangement, useCase) = Arrangement()
-            .withIdMapperMapping()
             .withDeleteSession()
             .withSessionResetReturning(Either.Left(failure))
             .arrange {
@@ -74,7 +72,6 @@ class ResetSessionUseCaseTest {
     @Test
     fun givenMarkingDecryptionFailureAsResolvedFailed_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
         val (arrangement, useCase) = Arrangement()
-            .withIdMapperMapping()
             .withSessionResetReturning(Either.Right(Unit))
             .withMarkMessagesAsDecryptionResolvedReturning(Either.Left(failure))
             .arrange {
@@ -90,7 +87,6 @@ class ResetSessionUseCaseTest {
     @Test
     fun givenResetSessionCalled_whenRunningSuccessfully_thenReturnSuccessResult() = runTest(TestKaliumDispatcher.io) {
         val (arrangement, useCase) = Arrangement()
-            .withIdMapperMapping()
             .withSessionResetReturning(Either.Right(Unit))
             .withMarkMessagesAsDecryptionResolvedReturning(Either.Right(Unit))
             .arrange {
@@ -110,11 +106,7 @@ class ResetSessionUseCaseTest {
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val sessionResetSender = mock(SessionResetSender::class)
         val messageRepository = mock(MessageRepository::class)
-        val idMapper = mock(IdMapper::class)
-
-        fun withIdMapperMapping() = apply {
-            every { idMapper.toCryptoQualifiedIDId(TestClient.USER_ID) } returns CRYPTO_USER_ID
-        }
+        val idMapper = IdMapper()
 
         suspend fun withSessionResetReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery { sessionResetSender.invoke(any(), any(), any()) } returns result
