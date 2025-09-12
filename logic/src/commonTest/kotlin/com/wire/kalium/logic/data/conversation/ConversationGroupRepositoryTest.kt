@@ -1770,6 +1770,38 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAValidConversation_whenCreating_thenConversationIsCreatedAndCellsFeatureSystemMessagePersisted() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        with(arrangement) {
+            coVerify {
+                conversationDAO.insertConversation(any())
+            }.wasInvoked(once)
+
+            coVerify {
+                newGroupConversationSystemMessagesCreator.conversationCellStatus(any())
+            }.wasInvoked(once)
+        }
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -2140,11 +2172,17 @@ class ConversationGroupRepositoryTest {
             }.returns(Either.Right(Unit))
         }
 
+        suspend fun withCellSystemMessages() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationCellStatus(any())
+            }.returns(Either.Right(Unit))
+        }
 
         suspend fun arrange() = this to conversationGroupRepository
             .also {
                 withMLSTransactionReturning(Either.Right(Unit))
                 withTransactionReturning(Either.Right(Unit))
+                withCellSystemMessages()
             }
     }
 

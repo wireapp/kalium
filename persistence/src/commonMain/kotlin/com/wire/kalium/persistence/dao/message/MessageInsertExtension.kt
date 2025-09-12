@@ -369,9 +369,16 @@ internal class MessageInsertExtensionImpl(
                     )
                 }
             }
+            is MessageEntityContent.NewConversationWithCellMessage -> {
+                /* no-op */
+            }
+            is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage -> {
+                /* no-op */
+            }
         }
     }
 
+    @Suppress("LongMethod")
     private fun insertUnreadEvent(message: MessageEntity) {
         val lastRead = conversationsQueries.getConversationLastReadDate(message.conversationId).executeAsOneOrNull()
             ?: Instant.DISTANT_PAST
@@ -430,6 +437,8 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationStartedUnverifiedWarning,
                 is MessageEntityContent.TeamMemberRemoved,
                 is MessageEntityContent.LegalHold,
+                is MessageEntityContent.NewConversationWithCellMessage,
+                is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
                     -> {
                     /* no-op */
                 }
@@ -531,5 +540,8 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
         is MessageEntityContent.Multipart -> MessageEntity.ContentType.MULTIPART
+        is MessageEntityContent.NewConversationWithCellMessage -> MessageEntity.ContentType.CONVERSATION_WITH_CELL
+        is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED
     }
 }

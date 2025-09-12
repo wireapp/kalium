@@ -64,6 +64,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationId,
         instant: Instant = Clock.System.now()
     ): Either<CoreFailure, Unit>
+
+    suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -214,6 +216,35 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 expirationData = null
             )
         )
+
+    override suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit> = run {
+        conversation.wireCell?.let {
+            persistMessage(
+                Message.System(
+                    LocalId.generate(),
+                    MessageContent.NewConversationWithCellMessage,
+                    conversation.id.toModel(),
+                    Clock.System.now(),
+                    selfUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+            persistMessage(
+                Message.System(
+                    LocalId.generate(),
+                    MessageContent.NewConversationWithCellSelfDeleteDisabledMessage,
+                    conversation.id.toModel(),
+                    Clock.System.now(),
+                    selfUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+        } ?: Either.Right(Unit)
+    }
 
     private suspend fun isSelfATeamMember() = selfTeamIdProvider().fold({ false }, { it != null })
 }
