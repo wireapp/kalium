@@ -25,6 +25,7 @@
 rootDir
     .walk()
     .maxDepth(1)
+    .filter { it != rootDir }
     .filter {
         it.name != "buildSrc" && it.isDirectory &&
                 file("${it.absolutePath}/build.gradle.kts").exists()
@@ -67,3 +68,5 @@ dependencyResolutionManagement {
         }
     }
 }
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

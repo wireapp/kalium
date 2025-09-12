@@ -31,11 +31,11 @@ kotlin {
         val test by getting {
             kotlin.srcDir("src/integrationTest/kotlin")
             dependencies {
-                implementation(project(":network"))
-                implementation(project(":logic"))
-                implementation(project(":persistence"))
-                implementation(project(":mocks"))
-                implementation(project(":cryptography"))
+                implementation(projects.network)
+                implementation(projects.logic)
+                implementation(projects.persistence)
+                implementation(projects.mocks)
+                implementation(projects.cryptography)
                 implementation(libs.kotlin.test)
                 implementation(libs.settings.kmpTest)
 

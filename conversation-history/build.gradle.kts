@@ -28,12 +28,12 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":common"))
-                implementation(project(":network"))
-                implementation(project(":data"))
-                implementation(project(":util"))
-                implementation(project(":cryptography"))
-                implementation(project(":persistence"))
+                implementation(projects.common)
+                implementation(projects.network)
+                implementation(projects.data)
+                implementation(projects.util)
+                implementation(projects.cryptography)
+                implementation(projects.persistence)
                 implementation(libs.coroutines.core)
                 implementation(libs.sqldelight.coroutinesExtension)
                 implementation(libs.ktxDateTime)
@@ -41,11 +41,11 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(project(":data-mocks"))
+                implementation(projects.dataMocks)
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
-                implementation(project(":persistence-test"))
+                implementation(projects.persistenceTest)
             }
         }
 

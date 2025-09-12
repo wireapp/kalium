@@ -29,12 +29,12 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":data"))
-                implementation(project(":protobuf"))
-                implementation(project(":persistence"))
-                implementation(project(":cryptography"))
-                implementation(project(":network-model"))
-                implementation(project(":util"))
+                implementation(projects.data)
+                implementation(projects.protobuf)
+                implementation(projects.persistence)
+                implementation(projects.cryptography)
+                implementation(projects.networkModel)
+                implementation(projects.util)
 
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)

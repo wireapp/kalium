@@ -30,11 +30,11 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":common"))
-                implementation(project(":network"))
-                implementation(project(":data"))
-                implementation(project(":util"))
-                implementation(project(":persistence"))
+                implementation(projects.common)
+                implementation(projects.network)
+                implementation(projects.data)
+                implementation(projects.util)
+                implementation(projects.persistence)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktor.authClient)
                 implementation(libs.okio.core)

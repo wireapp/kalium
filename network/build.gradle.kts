@@ -34,11 +34,11 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":protobuf"))
-                implementation(project(":util"))
-                implementation(project(":network-util"))
-                api(project(":network-model"))
-                api(project(":logger"))
+                implementation(projects.protobuf)
+                implementation(projects.util)
+                implementation(projects.networkUtil)
+                api(projects.networkModel)
+                api(projects.logger)
 
                 // coroutines
                 implementation(libs.coroutines.core)
@@ -73,7 +73,7 @@ kotlin {
                 // ktor test
                 implementation(libs.ktor.mock)
                 // mocks
-                implementation(project(":mocks"))
+                implementation(projects.mocks)
             }
         }
 

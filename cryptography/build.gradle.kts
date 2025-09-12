@@ -52,7 +52,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":logger"))
+                api(projects.logger)
                 // coroutines
                 implementation(libs.coroutines.core)
                 api(libs.ktor.core)

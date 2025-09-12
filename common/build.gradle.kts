@@ -28,13 +28,13 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":data"))
-                implementation(project(":logger"))
-                implementation(project(":util"))
-                implementation(project(":persistence"))
-                implementation(project(":network"))
-                implementation(project(":network-util"))
-                implementation(project(":cryptography"))
+                implementation(projects.data)
+                implementation(projects.logger)
+                implementation(projects.util)
+                implementation(projects.persistence)
+                implementation(projects.network)
+                implementation(projects.networkUtil)
+                implementation(projects.cryptography)
                 implementation(libs.ktxSerialization)
                 implementation(libs.coroutines.core)
             }

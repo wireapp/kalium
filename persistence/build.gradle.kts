@@ -71,8 +71,8 @@ kotlin {
                 implementation(libs.ktxDateTime)
                 implementation(libs.sqldelight.androidxPaging)
 
-                implementation(project(":util"))
-                api(project(":logger"))
+                implementation(projects.util)
+                api(projects.logger)
             }
         }
         val commonTest by getting {

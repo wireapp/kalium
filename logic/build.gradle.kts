@@ -35,19 +35,19 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":common"))
-                implementation(project(":network"))
-                api(project(":data"))
-                implementation(project(":data-mappers"))
-                api(project(":network-util"))
-                implementation(project(":cryptography"))
-                implementation(project(":persistence"))
-                implementation(project(":protobuf"))
-                api(project(":logger"))
-                api(project(":calling"))
-                implementation(project(":util"))
-                implementation(project(":cells"))
-                implementation(project(":backup"))
+                api(projects.common)
+                implementation(projects.network)
+                api(projects.data)
+                implementation(projects.dataMappers)
+                api(projects.networkUtil)
+                implementation(projects.cryptography)
+                implementation(projects.persistence)
+                implementation(projects.protobuf)
+                api(projects.logger)
+                api(projects.calling)
+                implementation(projects.util)
+                implementation(projects.cells)
+                implementation(projects.backup)
 
                 // coroutines
                 implementation(libs.coroutines.core)
@@ -74,9 +74,9 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(project(":common"))
-                implementation(project(":persistence-test"))
-                implementation(project(":data-mocks"))
+                implementation(projects.common)
+                implementation(projects.persistenceTest)
+                implementation(projects.dataMocks)
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
