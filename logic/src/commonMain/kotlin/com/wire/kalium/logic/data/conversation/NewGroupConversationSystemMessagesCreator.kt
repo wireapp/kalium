@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
@@ -100,7 +100,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         instant: Instant = Clock.System.now()
     ) = persistMessage(
         Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.ConversationCreated,
             conversationId = conversationId,
             date = instant,
@@ -143,7 +143,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         instant: Instant = Clock.System.now()
     ) = persistMessage(
         Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.NewConversationReceiptMode(receiptMode = receiptMode),
             conversationId = conversationId,
             date = instant,
@@ -162,7 +162,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         if (validUsers.isNotEmpty()) {
             persistMessage(
                 Message.System(
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     content = MessageContent.MemberChange.CreationAdded(validUsers.toList()),
                     conversationId = conversationId.toModel(),
                     date = instant,
@@ -184,7 +184,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         if (userIdList.isNotEmpty()) {
             persistMessage(
                 Message.System(
-                    uuid4().toString(),
+                    Uuid.random().toString(),
                     MessageContent.MemberChange.FailedToAdd(userIdList, type),
                     conversationId,
                     Clock.System.now(),

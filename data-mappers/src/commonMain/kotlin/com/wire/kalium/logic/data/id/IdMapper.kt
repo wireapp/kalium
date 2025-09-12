@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,15 +26,17 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.model.UserSsoIdDTO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
-import io.mockative.Mockable
+import kotlin.js.JsName
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
+internal typealias QualifiedIdDTO = com.wire.kalium.network.api.model.QualifiedID
+
 @Suppress("TooManyFunctions")
-@Mockable
 interface IdMapper {
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
     fun fromClient(client: Client): ClientId
@@ -45,7 +47,8 @@ interface IdMapper {
     fun fromGroupIDEntity(groupID: String): GroupID
     fun fromCryptoModel(groupID: MLSGroupId): GroupID
     fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId
-    fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
+    fun fromApiToDao(qualifiedID: QualifiedIdDTO): QualifiedIDEntity
+    fun fromDomainToDao(qualifiedID: QualifiedID): QualifiedIDEntity
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
     fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
@@ -57,8 +60,12 @@ interface IdMapper {
 
 }
 
+@JsName("DefaultIdMapper")
+fun IdMapper(): IdMapper = IdMapperImpl()
+
 @Suppress("TooManyFunctions")
-internal class IdMapperImpl : IdMapper {
+@Deprecated("Use IdMapper() instead", ReplaceWith("IdMapper()"))
+class IdMapperImpl : IdMapper {
     override fun fromSimpleClientResponse(clientResponse: SimpleClientResponse) = ClientId(clientResponse.id)
 
     override fun fromClient(client: Client) = ClientId(client.id)
@@ -78,8 +85,11 @@ internal class IdMapperImpl : IdMapper {
 
     override fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId = ClientId(clientId.value)
 
-    override fun fromApiToDao(qualifiedID: NetworkQualifiedId) =
-        PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun fromApiToDao(qualifiedID: QualifiedIdDTO) =
+        QualifiedIDEntity(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun fromDomainToDao(qualifiedID: QualifiedID): QualifiedIDEntity =
+        QualifiedIDEntity(value = qualifiedID.value, domain = qualifiedID.domain)
 
     override fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID =
         CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)

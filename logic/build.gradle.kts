@@ -19,8 +19,6 @@ import org.jetbrains.kotlin.util.suffixIfNot
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
@@ -40,6 +38,7 @@ kotlin {
                 api(project(":common"))
                 implementation(project(":network"))
                 api(project(":data"))
+                implementation(project(":data-mappers"))
                 api(project(":network-util"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))
@@ -54,7 +53,6 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
-                implementation(libs.benAsherUUID)
 
                 // ktor mockk engine
                 implementation(libs.ktor.mock)
@@ -78,6 +76,7 @@ kotlin {
             dependencies {
                 implementation(project(":common"))
                 implementation(project(":persistence-test"))
+                implementation(project(":data-mocks"))
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)

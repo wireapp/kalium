@@ -58,7 +58,7 @@ class PersistConversationUseCaseTest {
                 any(),
                 eq(listOf(TestConversation.CONVERSATION_RESPONSE)),
                 eq(false),
-                eq(false)
+                eq(ConversationSyncReason.Other),
             )
         }.wasInvoked(once)
     }
@@ -76,7 +76,7 @@ class PersistConversationUseCaseTest {
 
         assertTrue(result.getOrNull() ?: false)
         coVerify {
-            arrangement.persistConversations(any(), any(), eq(false), eq(false))
+            arrangement.persistConversations(any(), any(), eq(false), eq(ConversationSyncReason.Other))
         }.wasInvoked(once)
     }
 
@@ -84,7 +84,7 @@ class PersistConversationUseCaseTest {
     fun whenConversationExistsAndGroupStateIsEstablished_shouldNotPersistAndReturnFalse() = runTest {
         val protocol = MLS_PROTOCOL_INFO.copy(
             groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-            )
+        )
         val existing = TestConversation.MLS_CONVERSATION.copy(id = NETWORK_ID.toModel(), protocol = protocol)
 
         val (arrangement, useCase) = arrange {
@@ -117,8 +117,7 @@ class PersistConversationUseCaseTest {
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
-    {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistConversations = mock(PersistConversationsUseCase::class)
 
@@ -130,7 +129,7 @@ class PersistConversationUseCaseTest {
 
         suspend fun withPersistConversationsSuccess() = apply {
             coEvery {
-                persistConversations(any(), eq(listOf(TestConversation.CONVERSATION_RESPONSE)), eq(false), eq(false))
+                persistConversations(any(), eq(listOf(TestConversation.CONVERSATION_RESPONSE)), eq(false), eq(ConversationSyncReason.Other))
             } returns Either.Right(Unit)
         }
 

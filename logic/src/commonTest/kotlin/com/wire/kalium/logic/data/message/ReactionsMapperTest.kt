@@ -140,7 +140,7 @@ class ReactionsMapperTest {
     }
 
     private class Arrangement {
-        val idMapper = mock(IdMapper::class)
+        val idMapper = IdMapper()
         val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
         val connectionStateMapper = mock(ConnectionStateMapper::class)
         val domainUserTypeMapper = mock(DomainUserTypeMapper::class)

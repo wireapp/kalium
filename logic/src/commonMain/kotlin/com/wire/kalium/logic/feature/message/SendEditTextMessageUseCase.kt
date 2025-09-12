@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -71,7 +71,7 @@ class SendEditTextMessageUseCase internal constructor(
         originalMessageId: String,
         text: String,
         mentions: List<MessageMention> = emptyList(),
-        editedMessageId: String = uuid4().toString()
+        editedMessageId: String = Uuid.random().toString()
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete

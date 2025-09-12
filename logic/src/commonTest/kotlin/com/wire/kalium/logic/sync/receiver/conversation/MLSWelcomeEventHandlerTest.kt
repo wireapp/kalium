@@ -101,7 +101,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID))
+            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -242,7 +242,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID))
+            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID), any())
         }.wasInvoked(exactly = once)
 
         coVerify {

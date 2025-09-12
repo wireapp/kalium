@@ -47,6 +47,7 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
     channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
     wireCell = null,
+    historySharingRetentionSeconds = 0,
 )
 
 fun newConversationEntity(
@@ -77,4 +78,5 @@ fun newConversationEntity(
     channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
     channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
     wireCell = null,
+    historySharingRetentionSeconds = 0,
 )

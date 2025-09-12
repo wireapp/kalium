@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.data
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadInfo
 import com.wire.kalium.cells.domain.CellUploadManager
@@ -61,8 +61,8 @@ internal class CellUploadManagerImpl internal constructor(
             }
 
             CellNode(
-                uuid = uuid4().toString(),
-                versionId = uuid4().toString(),
+                uuid = Uuid.random().toString(),
+                versionId = Uuid.random().toString(),
                 path = path,
                 size = assetSize,
                 isDraft = true,

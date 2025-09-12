@@ -66,7 +66,8 @@ internal class FetchConversationsUseCaseImpl(
                     persistConversations(
                         transactionContext,
                         conversations = conversations.conversationsFound,
-                        invalidateMembers = true
+                        invalidateMembers = true,
+                        reason = ConversationSyncReason.Other
                     )
                     hasMore = batch.hasMore
                     lastPagingState = batch.lastPagingState

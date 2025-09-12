@@ -26,7 +26,6 @@ android-test-core = "1.6.1"
 androidx-arch = "2.2.0"
 androidx-test-orchestrator = "1.5.1"
 androidx-sqlite = "2.4.0"
-benasher-uuid = "0.8.4"
 ktx-datetime = { strictly = "0.5.0" }
 ktx-serialization = "1.8.1"
 ktx-atomicfu = "0.29.0"
@@ -225,7 +224,6 @@ pbandk-runtime-iosSimulatorArm64 = { module = "pro.streem.pbandk:pbandk-runtime-
 pbandk-runtime-macX64 = { module = "pro.streem.pbandk:pbandk-runtime-macosx64", version.ref = "pbandk" }
 pbandk-runtime-macArm64 = { module = "pro.streem.pbandk:pbandk-runtime-macosarm64", version.ref = "pbandk" }
 pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
-benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
 apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
 faker = { module = "io.github.serpro69:kotlin-faker", version.ref = "faker" }
 concurrentCollections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "stately" }

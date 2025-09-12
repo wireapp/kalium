@@ -61,6 +61,7 @@ internal object TestStubs {
         channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
         channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
+        historySharingRetentionSeconds = 0,
     )
     val conversationEntity2 = ConversationEntity(
         QualifiedIDEntity("2", "wire.com"),
@@ -93,6 +94,7 @@ internal object TestStubs {
         channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
         channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
+        historySharingRetentionSeconds = 0,
     )
 
     val conversationEntity3 = ConversationEntity(
@@ -128,6 +130,7 @@ internal object TestStubs {
         channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
         channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
+        historySharingRetentionSeconds = 0,
     )
 
     val conversationEntity4 = ConversationEntity(
@@ -163,6 +166,7 @@ internal object TestStubs {
         channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
         channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
+        historySharingRetentionSeconds = 0,
     )
 
     val conversationEntity5 = ConversationEntity(
@@ -198,6 +202,7 @@ internal object TestStubs {
         channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
         channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
         wireCell = null,
+        historySharingRetentionSeconds = 0,
     )
 
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

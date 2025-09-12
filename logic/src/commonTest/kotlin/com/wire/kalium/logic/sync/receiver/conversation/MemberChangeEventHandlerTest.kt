@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
@@ -56,7 +57,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId))
+            arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId), eq(ConversationSyncReason.Other))
         }.wasInvoked(exactly = once)
     }
 
@@ -151,7 +152,7 @@ class MemberChangeEventHandlerTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId))
+            arrangement.fetchConversationIfUnknown(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -168,13 +169,13 @@ class MemberChangeEventHandlerTest {
 
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             coEvery {
-                fetchConversationIfUnknown(any(), any())
+                fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
             coEvery {
-                fetchConversationIfUnknown(any(), any())
+                fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
             }.returns(Either.Left(coreFailure))
         }
 

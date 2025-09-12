@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -39,7 +39,7 @@ class RemoveAttachmentDraftUseCaseTest {
 
     @Test
     fun given_attachment_with_UPLOADING_status_when_removing_then_upload_is_cancelled() = runTest {
-        val uuid = uuid4().toString()
+        val uuid = Uuid.random().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
             .withUploadManager()
@@ -56,7 +56,7 @@ class RemoveAttachmentDraftUseCaseTest {
 
     @Test
     fun given_attachment_with_UPLOADING_status_when_removing_then_attachment_is_removed() = runTest {
-        val uuid = uuid4().toString()
+        val uuid = Uuid.random().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
             .withUploadManager()
@@ -73,7 +73,7 @@ class RemoveAttachmentDraftUseCaseTest {
 
     @Test
     fun given_attachment_with_UPLOADED_status_when_removing_then_attachment_draft_is_cancelled() = runTest {
-        val uuid = uuid4().toString()
+        val uuid = Uuid.random().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
             .withUploadManager()
@@ -90,7 +90,7 @@ class RemoveAttachmentDraftUseCaseTest {
 
     @Test
     fun given_attachment_with_UPLOADED_status_when_removing_then_attachment_is_removed() = runTest {
-        val uuid = uuid4().toString()
+        val uuid = Uuid.random().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
             .withUploadManager()
@@ -107,7 +107,7 @@ class RemoveAttachmentDraftUseCaseTest {
 
     @Test
     fun given_attachment_with_FAILED_status_when_removing_then_attachment_is_removed() = runTest {
-        val uuid = uuid4().toString()
+        val uuid = Uuid.random().toString()
         val (arrangement, removeAttachment) = Arrangement()
             .withRepository()
             .withUploadManager()
@@ -124,7 +124,7 @@ class RemoveAttachmentDraftUseCaseTest {
 
     @Test
     fun given_attachment_not_found_when_removing_then_error_is_returned() = runTest {
-        val uuid = uuid4().toString()
+        val uuid = Uuid.random().toString()
         val (_, removeAttachment) = Arrangement()
             .withRepository()
             .withUploadManager()

@@ -142,7 +142,7 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        coVerify { arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(false)) }.wasInvoked(once)
+        coVerify { arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(ConversationSyncReason.Other)) }.wasInvoked(once)
     }
 
     @Test
@@ -158,8 +158,8 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        coVerify { arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(false)) }.wasInvoked(once)
-        coVerify { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(false)) }
+        coVerify { arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(ConversationSyncReason.Other)) }.wasInvoked(once)
+        coVerify { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other)) }
             .wasInvoked(once)
     }
 
@@ -216,7 +216,7 @@ class FetchConversationsUseCaseTest {
 
         suspend fun withPersistConversationsFails() = apply {
             coEvery {
-                persistConversations(any(), any(), eq(true), eq(false))
+                persistConversations(any(), any(), eq(true), eq(ConversationSyncReason.Other))
             } returns Either.Left(CoreFailure.Unknown(null))
         }
 

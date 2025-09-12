@@ -40,10 +40,11 @@ interface ConversationExtensions {
         val onlyInteractionEnabled: Boolean = false,
         val newActivitiesOnTop: Boolean = false,
         val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
+        val strictMlsFilter: Boolean = true,
     )
 }
 
-internal class ConversationExtensionsImpl internal constructor(
+    internal class ConversationExtensionsImpl internal constructor(
     private val queries: ConversationDetailsWithEventsQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
     private val coroutineContext: CoroutineContext,
@@ -65,20 +66,22 @@ internal class ConversationExtensionsImpl internal constructor(
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
         QueryPagingSource(
             countQuery =
-            if (searchQuery.isBlank()) {
-                queries.countConversationDetailsWithEvents(
-                    fromArchive = fromArchive,
-                    onlyInteractionsEnabled = onlyInteractionEnabled,
-                    conversationFilter = conversationFilter.name,
-                )
-            } else {
-                queries.countConversationDetailsWithEventsFromSearch(
-                    fromArchive = fromArchive,
-                    onlyInteractionsEnabled = onlyInteractionEnabled,
-                    conversationFilter = conversationFilter.name,
-                    searchQuery = searchQuery
-                )
-            },
+                if (searchQuery.isBlank()) {
+                    queries.countConversationDetailsWithEvents(
+                        fromArchive = fromArchive,
+                        onlyInteractionsEnabled = onlyInteractionEnabled,
+                        conversationFilter = conversationFilter.name,
+                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
+                    )
+                } else {
+                    queries.countConversationDetailsWithEventsFromSearch(
+                        fromArchive = fromArchive,
+                        onlyInteractionsEnabled = onlyInteractionEnabled,
+                        conversationFilter = conversationFilter.name,
+                        searchQuery = searchQuery,
+                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
+                    )
+                },
             transacter = queries,
             context = coroutineContext,
             initialOffset = initialOffset,
@@ -91,6 +94,7 @@ internal class ConversationExtensionsImpl internal constructor(
                         newActivitiesOnTop = newActivitiesOnTop,
                         limit = limit,
                         offset = offset,
+                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
                         mapper = mapper::fromViewToModel,
                     )
                 } else {
@@ -102,6 +106,7 @@ internal class ConversationExtensionsImpl internal constructor(
                         newActivitiesOnTop = newActivitiesOnTop,
                         limit = limit,
                         offset = offset,
+                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
                         mapper = mapper::fromViewToModel,
                     )
                 }

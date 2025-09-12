@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -112,7 +112,7 @@ class ToggleReactionUseCase internal constructor(
         return reactionRepository
             .persistReaction(messageId, conversationId, userId, date, newReaction).flatMap {
                 val regularMessage = Message.Signaling(
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions + newReaction),
                     conversationId = conversationId,
                     date = date,
@@ -141,7 +141,7 @@ class ToggleReactionUseCase internal constructor(
         return reactionRepository.deleteReaction(messageId, conversationId, userId, removedReaction)
             .flatMap {
                 val regularMessage = Message.Signaling(
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions - removedReaction),
                     conversationId = conversationId,
                     date = date,

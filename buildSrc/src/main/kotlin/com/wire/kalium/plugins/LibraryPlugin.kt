@@ -18,8 +18,9 @@
 
 package com.wire.kalium.plugins
 
-import org.gradle.api.Plugin
+import KaliumBuild
 import org.gradle.api.Action
+import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Nested
@@ -28,6 +29,12 @@ class LibraryPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
         group = KaliumBuild.GROUP
         version = KaliumBuild.VERSION
+
+        target.pluginManager.apply {
+            apply("org.jetbrains.kotlin.multiplatform")
+            // android library plugin
+            apply("com.android.library")
+        }
 
         extensions.create("kaliumLibrary", Extension::class.java)
     }
@@ -45,9 +52,7 @@ class LibraryPlugin : Plugin<Project> {
         @get:Nested
         abstract val multiplatformConfiguration: MultiplatformConfiguration
 
-        private val defaultConfiguration = object : Action<MultiplatformConfiguration> {
-            override fun execute(t: MultiplatformConfiguration) = Unit
-        }
+        private val defaultConfiguration = Action<MultiplatformConfiguration> { }
 
         fun multiplatform(action: Action<MultiplatformConfiguration> = defaultConfiguration) {
             action.execute(multiplatformConfiguration)

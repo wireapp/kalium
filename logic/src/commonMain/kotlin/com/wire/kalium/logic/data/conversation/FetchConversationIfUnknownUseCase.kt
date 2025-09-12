@@ -32,7 +32,11 @@ import io.mockative.Mockable
  */
 @Mockable
 internal interface FetchConversationIfUnknownUseCase {
-    suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        reason: ConversationSyncReason = ConversationSyncReason.Other,
+    ): Either<CoreFailure, Unit>
 }
 
 internal class FetchConversationIfUnknownUseCaseImpl(
@@ -40,11 +44,15 @@ internal class FetchConversationIfUnknownUseCaseImpl(
     private val fetchConversation: FetchConversationUseCase
 ) : FetchConversationIfUnknownUseCase {
 
-    override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        reason: ConversationSyncReason,
+    ): Either<CoreFailure, Unit> {
         return conversationRepository.getConversationById(conversationId)
             .run {
                 if (isLeft()) {
-                    fetchConversation(transactionContext, conversationId)
+                    fetchConversation(transactionContext, conversationId, reason)
                 } else {
                     Either.Right(Unit)
                 }

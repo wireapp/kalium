@@ -46,7 +46,7 @@ internal interface PersistConversationUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversation: ConversationResponse,
-        originatedFromEvent: Boolean = false,
+        reason: ConversationSyncReason = ConversationSyncReason.Other,
     ): Either<CoreFailure, Boolean>
 }
 
@@ -58,13 +58,13 @@ internal class PersistConversationUseCaseImpl(
     override suspend fun invoke(
         transactionContext: CryptoTransactionContext,
         conversation: ConversationResponse,
-        originatedFromEvent: Boolean
+        reason: ConversationSyncReason,
     ): Either<CoreFailure, Boolean> {
         val existingConversation = conversationRepository.getConversationDetails(conversation.id.toModel()).getOrNull()
         val isNewConversation = existingConversation.shouldPersistConversation()
 
         if (isNewConversation) {
-            persistConversations(transactionContext, listOf(conversation), false, originatedFromEvent)
+            persistConversations(transactionContext, listOf(conversation), false, reason)
                 .onSuccess {
                     kaliumLogger.withFeatureId(CONVERSATIONS)
                         .d("Persisted new conversation: ${conversation.id}")
