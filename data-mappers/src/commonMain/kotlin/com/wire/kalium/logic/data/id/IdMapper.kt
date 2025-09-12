@@ -34,8 +34,7 @@ import com.wire.kalium.protobuf.messages.QualifiedUserId
 import kotlin.js.JsName
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
-internal typealias NetworkQualifiedId = com.wire.kalium.network.api.model.QualifiedID
-internal typealias PersistenceQualifiedId = QualifiedIDEntity
+internal typealias QualifiedIdDTO = com.wire.kalium.network.api.model.QualifiedID
 
 @Suppress("TooManyFunctions")
 interface IdMapper {
@@ -48,8 +47,8 @@ interface IdMapper {
     fun fromGroupIDEntity(groupID: String): GroupID
     fun fromCryptoModel(groupID: MLSGroupId): GroupID
     fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId
-    fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
-    fun fromDomainToDao(qualifiedID: QualifiedID): PersistenceQualifiedId
+    fun fromApiToDao(qualifiedID: QualifiedIdDTO): QualifiedIDEntity
+    fun fromDomainToDao(qualifiedID: QualifiedID): QualifiedIDEntity
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
     fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
@@ -86,11 +85,11 @@ class IdMapperImpl : IdMapper {
 
     override fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId = ClientId(clientId.value)
 
-    override fun fromApiToDao(qualifiedID: NetworkQualifiedId) =
-        PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun fromApiToDao(qualifiedID: QualifiedIdDTO) =
+        QualifiedIDEntity(value = qualifiedID.value, domain = qualifiedID.domain)
 
-    override fun fromDomainToDao(qualifiedID: QualifiedID): PersistenceQualifiedId =
-        PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun fromDomainToDao(qualifiedID: QualifiedID): QualifiedIDEntity =
+        QualifiedIDEntity(value = qualifiedID.value, domain = qualifiedID.domain)
 
     override fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID =
         CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
