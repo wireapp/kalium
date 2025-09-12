@@ -176,6 +176,8 @@ internal class ConversationGroupRepositoryImpl(
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationCellStatus(conversationEntity)
+        }.flatMap {
             when (protocol) {
                 is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
                 is Conversation.ProtocolInfo.MLSCapable ->

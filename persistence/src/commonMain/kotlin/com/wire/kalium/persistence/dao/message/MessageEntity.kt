@@ -148,6 +148,7 @@ sealed interface MessageEntity {
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
+        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED,
     }
 
     enum class MemberChangeType {
@@ -373,6 +374,9 @@ sealed class MessageEntityContent {
          */
         val quotedMessage: QuotedMessage? = null,
     ) : Regular()
+
+    data object NewConversationWithCellMessage : System()
+    data object NewConversationWithCellSelfDeleteDisabledMessage : System()
 }
 
 /**

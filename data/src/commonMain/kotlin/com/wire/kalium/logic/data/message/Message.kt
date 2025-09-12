@@ -419,6 +419,13 @@ sealed interface Message {
                         "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
                     }
                 )
+
+                MessageContent.NewConversationWithCellMessage -> mutableMapOf(
+                    typeKey to "newConversationWithCellMessage"
+                )
+                MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> mutableMapOf(
+                    typeKey to "newConversationWithCellSelfDeleteDisabledMessage"
+                )
             }
 
             val standardProperties = mapOf(
