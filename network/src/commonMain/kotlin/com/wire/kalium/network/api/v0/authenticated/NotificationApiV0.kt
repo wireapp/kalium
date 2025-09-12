@@ -51,6 +51,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
+import io.ktor.utils.io.CancellationException
+import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
@@ -149,10 +151,15 @@ internal open class NotificationApiV0 internal constructor(
 
         defaultClientWebSocketSession.incoming
             .consumeAsFlow()
-            .onCompletion {
-                defaultClientWebSocketSession.close()
-                logger.w("Websocket Closed", it)
-                emit(WebSocketEvent.Close(it))
+            .onCompletion { cause ->
+                val closeReason = if (cause == null || cause is CancellationException) {
+                    CloseReason(CloseReason.Codes.NORMAL, "Normal closure")
+                } else {
+                    CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Error: ${cause.message}")
+                }
+                defaultClientWebSocketSession.close(closeReason)
+                logger.w("Websocket Closed", cause)
+                emit(WebSocketEvent.Close(cause))
             }
             .collect { frame ->
                 logger.v("Websocket Received Frame: $frame")

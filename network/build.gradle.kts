@@ -56,6 +56,7 @@ kotlin {
 
                 // mock engine
                 implementation(libs.ktor.mock)
+                implementation(libs.ktor.contentNegotiation)
 
                 // KTX
                 implementation(libs.ktxDateTime)
