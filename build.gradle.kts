@@ -152,12 +152,10 @@ tasks.register("runAllUnitTests") {
 
     rootProject.subprojects {
         if (tasks.findByName("testDebugUnitTest") != null) {
-            println("Adding $name to runUnitTests")
             dependsOn(":$name:testDebugUnitTest")
         }
         if (name != "cryptography") {
             if (tasks.findByName("jvmTest") != null) {
-                println("Adding $name to jvmTest")
                 dependsOn(":$name:jvmTest")
             }
         }

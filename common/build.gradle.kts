@@ -21,7 +21,7 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform { enableJs.set(false) }
+    multiplatform()
 }
 
 kotlin {

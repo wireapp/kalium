@@ -27,9 +27,9 @@ import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
+import com.wire.kalium.messaging.sending.MessageTarget
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.cancellation.CancellationException
 

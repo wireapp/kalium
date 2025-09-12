@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.message
 
-sealed class BroadcastMessageTarget(open val limit: Int) {
+plugins {
+    id(libs.plugins.kalium.library.get().pluginId)
+}
 
-    /** Broadcast the message to all users in contact list (teammates and others)
-     * @param limit message will be broadcasted only to the first [limit] Users (teammates are prioritized)
-     */
-    data class AllUsers(override val limit: Int) : BroadcastMessageTarget(limit)
-
-    /** Broadcast the message only to the teammates
-     * @param limit message will be broadcasted only to the first [limit] teammates.
-     */
-    data class OnlyTeam(override val limit: Int) : BroadcastMessageTarget(limit)
+kaliumLibrary {
+    multiplatform()
 }

@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventInput
 import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventWorker
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
