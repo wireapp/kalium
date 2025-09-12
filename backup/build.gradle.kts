@@ -71,7 +71,7 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
-                implementation(project(":protobuf"))
+                implementation(projects.protobuf)
                 implementation(libs.pbandk.runtime.common)
 
                 implementation(libs.coroutines.core)

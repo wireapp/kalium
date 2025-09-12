@@ -123,15 +123,15 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
 }
 
 dependencies {
-    kover(project(":logic"))
-    kover(project(":cryptography"))
-    kover(project(":util"))
-    kover(project(":network"))
-    kover(project(":network-util"))
-    kover(project(":persistence"))
-    kover(project(":logger"))
-    kover(project(":calling"))
-    kover(project(":protobuf"))
+    kover(projects.logic)
+    kover(projects.cryptography)
+    kover(projects.util)
+    kover(projects.network)
+    kover(projects.networkUtil)
+    kover(projects.persistence)
+    kover(projects.logger)
+    kover(projects.calling)
+    kover(projects.protobuf)
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {

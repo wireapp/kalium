@@ -31,10 +31,10 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":data"))
-                implementation(project(":persistence"))
-                implementation(project(":network-model"))
-                implementation(project(":util"))
+                implementation(projects.data)
+                implementation(projects.persistence)
+                implementation(projects.networkModel)
+                implementation(projects.util)
 
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)

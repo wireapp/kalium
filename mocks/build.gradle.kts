@@ -35,7 +35,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":network-model"))
+                implementation(projects.networkModel)
 
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)

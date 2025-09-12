@@ -24,8 +24,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":persistence"))
-                implementation(project(":logic"))
+                implementation(projects.persistence)
+                implementation(projects.logic)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.kotlinx.benchmark.runtime)

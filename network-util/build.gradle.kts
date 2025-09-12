@@ -36,7 +36,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":logger"))
+                api(projects.logger)
 
                 implementation(libs.coroutines.core)
             }

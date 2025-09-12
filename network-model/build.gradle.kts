@@ -33,8 +33,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":util"))
-                api(project(":logger"))
+                implementation(projects.util)
+                api(projects.logger)
 
                 // serialization
                 implementation(libs.ktxSerialization)
