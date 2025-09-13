@@ -124,4 +124,4 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     }
 }
 
-internal const val MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS = 9
+internal const val MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS = 11
