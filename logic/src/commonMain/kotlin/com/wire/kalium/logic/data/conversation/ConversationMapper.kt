@@ -306,8 +306,8 @@ internal class ConversationMapperImpl(
                             permission = channelAddPermission?.toModelChannelPermission()
                                 ?: ChannelAddPermission.ADMINS,
                             historySharing = daoModel.historySharingRetentionSeconds.takeIf { it > 0 }?.let {
-                                ConversationHistorySharing.ShareWithNewMembers(it.seconds)
-                            } ?: ConversationHistorySharing.Private
+                                ConversationHistorySettings.ShareWithNewMembers(it.seconds)
+                            } ?: ConversationHistorySettings.Private
                         )
                     } else {
                         ConversationDetails.Group.Regular(

@@ -31,6 +31,7 @@ kotlin {
                 implementation(projects.common)
                 implementation(projects.network)
                 implementation(projects.data)
+                implementation(projects.dataMappers)
                 implementation(projects.util)
                 implementation(projects.cryptography)
                 implementation(projects.persistence)

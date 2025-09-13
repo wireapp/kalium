@@ -97,7 +97,7 @@ class ConversationRepositoryIntegrationTest {
                 awaitItem().shouldSucceed {
                     assertIs<ConversationDetails.Group.Channel>(it)
                     val historySharing = it.historySharing
-                    assertIs<ConversationHistorySharing.Private>(historySharing)
+                    assertIs<ConversationHistorySettings.Private>(historySharing)
                 }
                 cancelAndIgnoreRemainingEvents()
             }
@@ -122,7 +122,7 @@ class ConversationRepositoryIntegrationTest {
                 awaitItem().shouldSucceed {
                     assertIs<ConversationDetails.Group.Channel>(it)
                     val historySharing = it.historySharing
-                    assertIs<ConversationHistorySharing.ShareWithNewMembers>(historySharing)
+                    assertIs<ConversationHistorySettings.ShareWithNewMembers>(historySharing)
                     assertEquals(expectedSeconds, historySharing.retention.inWholeSeconds)
                 }
                 cancelAndIgnoreRemainingEvents()
