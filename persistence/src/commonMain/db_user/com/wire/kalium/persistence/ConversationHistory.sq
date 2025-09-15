@@ -1,0 +1,5 @@
+
+updateConversationHistoryRetention:
+UPDATE Conversation
+SET history_sharing_retention_seconds = :retentionInSeconds
+WHERE Conversation.qualified_id = :conversationId;

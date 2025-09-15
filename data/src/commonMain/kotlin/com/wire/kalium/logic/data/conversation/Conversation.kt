@@ -355,7 +355,7 @@ sealed interface ConversationDetails {
 //         val isTeamAdmin: Boolean, TODO kubaz
             val access: ChannelAccess,
             val permission: ChannelAddPermission,
-            val historySharing: ConversationHistorySharing,
+            val historySharing: ConversationHistorySettings,
         ) : Group {
             /**
              * An enum class that defines the permissions for adding participants to a channel,
@@ -410,12 +410,12 @@ sealed interface ConversationDetails {
     }
 }
 
-sealed interface ConversationHistorySharing {
+sealed interface ConversationHistorySettings {
     /**
      * History Sharing is disabled.
      * New members should *not* be able to retrieve and see messages sent before they have joined the conversation
      */
-    data object Private : ConversationHistorySharing
+    data object Private : ConversationHistorySettings
 
     /**
      * Messages in the conversation that are newer than [retention] should be shared with new members.
@@ -426,7 +426,7 @@ sealed interface ConversationHistorySharing {
      * When [retention] is 5, and a new members joins the conversation, only Message B should be retrievable by the new user.
      * @see HistoryClient
      */
-    data class ShareWithNewMembers(val retention: Duration) : ConversationHistorySharing {
+    data class ShareWithNewMembers(val retention: Duration) : ConversationHistorySettings {
         init {
             require(retention.isPositive()) {
                 "history-sharing retention must be > 0"

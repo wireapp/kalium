@@ -18,6 +18,7 @@
 package com.wire.kalium.conversation.history.data
 
 import app.cash.turbine.test
+import com.wire.kalium.conversation.history.data.dao.SQLiteHistoryClientDAO
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity

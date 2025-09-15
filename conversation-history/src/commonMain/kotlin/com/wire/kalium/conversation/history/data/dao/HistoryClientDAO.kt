@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.conversation.history.data
+package com.wire.kalium.conversation.history.data.dao
 
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
