@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.Companion.MESSAGE_PREVIEW_ENTITY
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessagePreview
@@ -48,13 +49,12 @@ import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ConversationMapperTest {
@@ -108,7 +108,6 @@ class ConversationMapperTest {
     @Test
     fun givenAConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldCallIdMapperToMapConversationId() {
         val response = CONVERSATION_RESPONSE
-        val originalConversationId = ORIGINAL_CONVERSATION_ID
 
         every {
             conversationStatusMapper.fromMutedStatusDaoModel(any())
@@ -123,6 +122,75 @@ class ConversationMapperTest {
         )
 
         conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+    }
+
+    @Test
+    fun givenAConversationResponseWithCellReadyState_whenMappingFromConversationResponseToDaoModel_thenWireCellIsEnabled() {
+        val response = CONVERSATION_RESPONSE.copy(
+            cellsState = "ready"
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val entity = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ORIGINAL_CONVERSATION_ID.toModel().toString(), entity.wireCell)
+    }
+
+    @Test
+    fun givenAConversationResponseWithCellPendingState_whenMappingFromConversationResponseToDaoModel_thenWireCellIsEnabled() {
+        val response = CONVERSATION_RESPONSE.copy(
+            cellsState = "pending"
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val entity = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ORIGINAL_CONVERSATION_ID.toModel().toString(), entity.wireCell)
+    }
+
+    @Test
+    fun givenAConversationResponseWithCellDisabledState_whenMappingFromConversationResponseToDaoModel_thenWireCellIsDisabled() {
+        val response = CONVERSATION_RESPONSE.copy(
+            cellsState = "disabled"
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val entity = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertNull(entity.wireCell)
     }
 
     @Test
