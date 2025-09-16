@@ -25,12 +25,18 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
+    multiplatform()
 }
 
 kotlin {
+    js {
+        browser {
+            testTask {
+                // Network is currently broken for JS. But should be fixed with ktor 3.0
+                isEnabled = false
+            }
+        }
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -97,6 +103,11 @@ kotlin {
         val appleMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(libs.ktor.jsClient)
             }
         }
     }

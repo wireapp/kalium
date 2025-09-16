@@ -16,37 +16,10 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-plugins {
-    alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.kalium.library.get().pluginId)
+package com.wire.kalium.network.api.base.unauthenticated.appVersioning
+
+actual class AppVersionBlackListResponse {
+    actual fun isAppNeedsToBeUpdated(currentAppVersion: Int): Boolean = false // TODO
 }
 
-kaliumLibrary {
-    multiplatform()
-}
-
-kotlin {
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(projects.util)
-                api(projects.logger)
-
-                // serialization
-                implementation(libs.ktxSerialization)
-
-                // ktor
-                api(libs.ktor.core)
-
-                // KTX
-                implementation(libs.ktxDateTime)
-            }
-        }
-    }
-}
-
-android {
-    testOptions.unitTests.all {
-        it.enabled = false
-    }
-}
+actual fun appVersioningUrlPlatformPath(): String = "js"

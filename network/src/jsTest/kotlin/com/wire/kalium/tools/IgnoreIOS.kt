@@ -16,37 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-plugins {
-    alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.kalium.library.get().pluginId)
-}
+package com.wire.kalium.api.tools
 
-kaliumLibrary {
-    multiplatform()
-}
-
-kotlin {
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(projects.util)
-                api(projects.logger)
-
-                // serialization
-                implementation(libs.ktxSerialization)
-
-                // ktor
-                api(libs.ktor.core)
-
-                // KTX
-                implementation(libs.ktxDateTime)
-            }
-        }
-    }
-}
-
-android {
-    testOptions.unitTests.all {
-        it.enabled = false
-    }
-}
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+actual annotation class IgnoreIOS
