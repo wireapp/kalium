@@ -173,6 +173,7 @@ ktor-utils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
 ktor-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
+ktor-jsClient = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
