@@ -148,7 +148,7 @@ fun com.wire.crypto.E2eiConversationState.toCryptography(): E2EIConversationStat
 fun DecryptedMessage.toBundle() = DecryptedMessageBundle(
     message,
     commitDelay,
-    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value.decodeToString()) },
+    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString()) },
     hasEpochChanged,
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() }
@@ -157,7 +157,7 @@ fun DecryptedMessage.toBundle() = DecryptedMessageBundle(
 fun BufferedDecryptedMessage.toBundle() = DecryptedMessageBundle(
     message,
     commitDelay,
-    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.value.decodeToString()) },
+    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString()) },
     hasEpochChanged,
     identity.toCryptography(),
     crlNewDistributionPoints?.value?.map { it.toString() }
