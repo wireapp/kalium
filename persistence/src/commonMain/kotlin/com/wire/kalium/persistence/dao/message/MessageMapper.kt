@@ -522,6 +522,7 @@ object MessageMapper {
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
+        quotedSenderAccentId: Int?,
         quotedMessageDateTime: Instant?,
         quotedMessageEditTimestamp: Instant?,
         quotedMessageVisibility: MessageEntity.Visibility?,
@@ -568,7 +569,8 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
-                        locationName = quotedLocationName
+                        locationName = quotedLocationName,
+                        accentId = quotedSenderAccentId
                     )
                 },
             )
@@ -637,6 +639,7 @@ object MessageMapper {
                                 textBody = quotedTextBody,
                                 assetMimeType = quotedAssetMimeType,
                                 assetName = quotedAssetName,
+                                accentId = quotedSenderAccentId,
                                 locationName = quotedLocationName
                             )
                         },
@@ -714,7 +717,8 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
-                        locationName = quotedLocationName
+                        locationName = quotedLocationName,
+                        accentId = quotedSenderAccentId
                     )
                 },
                 attachments = messageAttachmentsFromJsonString(attachments),

@@ -123,6 +123,7 @@ sealed interface MessageContent {
     data class QuotedMessageDetails(
         val senderId: UserId,
         val senderName: String?,
+        val accentId: Int?,
         val isQuotingSelfUser: Boolean,
         /**
          * Indicates that the hash of the quote

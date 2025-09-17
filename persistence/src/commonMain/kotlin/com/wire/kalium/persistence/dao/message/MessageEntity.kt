@@ -272,6 +272,7 @@ sealed class MessageEntityContent {
             val assetMimeType: String?,
             val assetName: String?,
             val locationName: String?,
+            val accentId: Int?
         )
     }
 
