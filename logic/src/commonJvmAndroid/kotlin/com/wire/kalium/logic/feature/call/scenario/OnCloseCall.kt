@@ -24,8 +24,8 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
@@ -64,19 +64,15 @@ class OnCloseCall(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
-<<<<<<< HEAD
             val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
-=======
-            val callMetadata = callRepository.getCallMetadataProfile()[conversationIdWithDomain]
             val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
->>>>>>> 0fc01a81d9 (fix: missed call notification for builds (WPB-19996) (#3620))
 
             if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
             val shouldUpdateCallStatus =
-                if (callMetadata?.conversationType == Conversation.Type.ONE_ON_ONE) {
+                if (callMetadata?.conversationType == Conversation.Type.OneOnOne) {
                     // For 1:1 calls handled as conference calls
                     // Do not switch to STILL_ONGOING or any other status when call was already closed
                     when (callMetadata.callStatus) {
@@ -107,22 +103,6 @@ class OnCloseCall(
         }
     }
 
-<<<<<<< HEAD
-    private fun shouldPersistMissedCall(
-        conversationId: ConversationId,
-        callStatus: CallStatus
-    ): Boolean {
-        if (callStatus == CallStatus.MISSED)
-            return true
-        return callRepository.getCallMetadata(conversationId)?.let {
-            val isGroupCall = it.conversationType is Conversation.Type.Group
-            (callStatus == CallStatus.CLOSED &&
-                    isGroupCall &&
-                    it.establishedTime.isNullOrEmpty() &&
-                    it.callStatus != CallStatus.CLOSED_INTERNALLY)
-        } ?: false
-    }
-=======
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean =
         when (callStatus) {
             CallStatus.MISSED -> true
@@ -134,7 +114,6 @@ class OnCloseCall(
 
             else -> false
         }
->>>>>>> 0fc01a81d9 (fix: missed call notification for builds (WPB-19996) (#3620))
 
     private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
         CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
