@@ -17,18 +17,39 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.message.CellAssetContent
 
 public interface RestoreNodeFromRecycleBinUseCase {
-    public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(uuid: String): Either<CoreFailure, Unit>
 }
 
 internal class RestoreNodeFromRecycleBinUseCaseImpl(
     private val cellsRepository: CellsRepository,
+    private val attachmentsRepository: CellAttachmentsRepository,
 ) : RestoreNodeFromRecycleBinUseCase {
-    override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.restoreNode(path = path).map { }
+    override suspend fun invoke(uuid: String): Either<CoreFailure, Unit> =
+        cellsRepository.restoreNode(uuid = uuid)
+            .onSuccess {
+                refreshLocalAttachmentStatus(uuid)
+            }
+
+    private suspend fun refreshLocalAttachmentStatus(uuid: String) {
+
+        val attachment = attachmentsRepository.getAttachment(uuid).getOrNull() as? CellAssetContent ?: return
+
+        val status = if (attachment.localPath.isNullOrEmpty()) {
+            AssetTransferStatus.NOT_DOWNLOADED
+        } else {
+            AssetTransferStatus.SAVED_INTERNALLY
+        }
+
+        attachmentsRepository.setAssetTransferStatus(uuid, status)
+    }
 }

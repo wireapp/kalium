@@ -230,10 +230,10 @@ internal class CellsDataSource internal constructor(
             }
         }
 
-    override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> =
+    override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> =
         withContext(dispatchers.io) {
             wrapApiRequest {
-                cellsApi.restoreNode(path = path)
+                cellsApi.restoreNode(uuid = uuid)
             }
         }
 

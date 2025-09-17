@@ -211,7 +211,7 @@ public class CellsScope(
         GetFoldersUseCaseImpl(cellsRepository)
     }
     public val restoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase by lazy {
-        RestoreNodeFromRecycleBinUseCaseImpl(cellsRepository)
+        RestoreNodeFromRecycleBinUseCaseImpl(cellsRepository, cellAttachmentsRepository)
     }
     public val getAllTags: GetAllTagsUseCase by lazy {
         GetAllTagsUseCaseImpl(cellsRepository)
