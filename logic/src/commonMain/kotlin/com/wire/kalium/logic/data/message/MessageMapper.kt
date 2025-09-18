@@ -613,7 +613,8 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 messageId = it.id,
                 timeInstant = Instant.parse(it.dateTime),
                 editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
-                quotedContent = quotedContentFromEntity(it)
+                quotedContent = quotedContentFromEntity(it),
+                accentId = it.accentId
             )
         }
         MessageContent.Text(
@@ -677,7 +678,8 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 messageId = it.id,
                 timeInstant = Instant.parse(it.dateTime),
                 editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
-                quotedContent = quotedContentFromEntity(it)
+                quotedContent = quotedContentFromEntity(it),
+                accentId = it.accentId
             )
         }
         MessageContent.Multipart(

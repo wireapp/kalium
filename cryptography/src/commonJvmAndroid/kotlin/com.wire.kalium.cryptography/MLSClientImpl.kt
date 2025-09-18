@@ -73,18 +73,9 @@ class MLSClientImpl(
 
         override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
             val mlsCredentialType = if (context.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
-            return context.generateKeyPackages(amount.toUInt(), defaultCipherSuite, mlsCredentialType.toCrypto()).map {
-                it.toByteArray()
-            }
+            return context.generateKeyPackages(amount.toUInt(), defaultCipherSuite, mlsCredentialType.toCrypto())
+                .map { it.copyBytes() }
         }
-
-        // // TODO workaround because copyBytes is not available
-        @Suppress("MagicNumber")
-        fun com.wire.crypto.MLSKeyPackage.toByteArray(): ByteArray =
-            toString()
-                .chunked(2)
-                .map { it.toInt(16).toByte() }
-                .toByteArray()
 
         override suspend fun validKeyPackageCount(): ULong {
             val mlsCredentialType = if (context.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
@@ -182,7 +173,7 @@ class MLSClientImpl(
 
         override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
             return context.members(groupId.decodeBase64Bytes().toGroupId()).mapNotNull {
-                CryptoQualifiedClientId.fromEncodedString(it.value.decodeToString())
+                CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString())
             }
         }
 
