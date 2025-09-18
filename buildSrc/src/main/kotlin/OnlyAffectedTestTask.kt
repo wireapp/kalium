@@ -71,15 +71,15 @@ open class OnlyAffectedTestTask : DefaultTask() {
     private fun executeTask(affectedModules: Set<String>) {
         val tasksName = mutableListOf<String>()
         val hasToRunAllTests = hasToRunAllTests()
-        project.childProjects.values
-            .filter { (hasToRunAllTests || affectedModules.contains(it.name)) && !ignoredModules.contains(it.name) }
+        project.subprojects
+            .filter { (hasToRunAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.name) }
             .forEach { childProject ->
                 tasksName.addAll(
                     childProject.tasks
                     .filter { it.name.equals(configuration.testTarget, true) }
                     .map { task ->
-                        println("Adding task: ${childProject.name}:${task.name}")
-                        "${childProject.name}:${task.name}"
+                        println("Adding task: ${childProject.path}:${task.name}")
+                        "${childProject.path}:${task.name}"
                     }.toList()
                 )
             }
@@ -130,6 +130,6 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     private companion object {
-        val IGNORED_MODULES = listOf("android", "protobuf", "protobuf-codegen")
+        val IGNORED_MODULES = listOf(":android", ":protobuf", ":protobuf-codegen")
     }
 }

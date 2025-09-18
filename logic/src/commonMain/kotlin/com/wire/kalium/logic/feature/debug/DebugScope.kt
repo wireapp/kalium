@@ -49,8 +49,8 @@ import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
-import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler

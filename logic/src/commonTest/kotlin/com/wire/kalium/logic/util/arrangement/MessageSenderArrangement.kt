@@ -19,9 +19,9 @@ package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageTarget
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.messaging.sending.MessageTarget
 import io.mockative.coEvery
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher

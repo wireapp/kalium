@@ -22,6 +22,7 @@ import KaliumBuild
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Nested
 
@@ -47,6 +48,7 @@ class LibraryPlugin : Plugin<Project> {
             val enableJsTests: Property<Boolean>
             val includeNativeInterop: Property<Boolean>
             val enableIntegrationTests: Property<Boolean>
+            val frequentDependenciesToAdd: ListProperty<FrequentModules>
         }
 
         @get:Nested
@@ -62,7 +64,8 @@ class LibraryPlugin : Plugin<Project> {
                 jsModuleNameOverride = multiplatformConfiguration.jsModuleName.orNull,
                 enableJsTests = multiplatformConfiguration.enableJsTests.getOrElse(true),
                 includeNativeInterop = multiplatformConfiguration.includeNativeInterop.getOrElse(false),
-                enableIntegrationTests = multiplatformConfiguration.enableIntegrationTests.getOrElse(false)
+                enableIntegrationTests = multiplatformConfiguration.enableIntegrationTests.getOrElse(false),
+                dependenciesToAdd = multiplatformConfiguration.frequentDependenciesToAdd.orNull?.toSet() ?: emptySet(),
             )
         }
     }
