@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.analytics
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.analytics.AnalyticsIdentifierResult
@@ -80,7 +80,7 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
                         AnalyticsIdentifierResult.ExistingIdentifier(
                             identifier = currentIdentifier
                         )
-                    } ?: uuid4().toString().let { trackingIdentifier: String ->
+                    } ?: Uuid.random().toString().let { trackingIdentifier: String ->
                         logger.i("$TAG Generating new Tracking Identifier value.")
                         userConfigRepository.setCurrentTrackingIdentifier(
                             newIdentifier = trackingIdentifier

@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
@@ -64,6 +64,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationId,
         instant: Instant = Clock.System.now()
     ): Either<CoreFailure, Unit>
+
+    suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -100,7 +102,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         instant: Instant = Clock.System.now()
     ) = persistMessage(
         Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.ConversationCreated,
             conversationId = conversationId,
             date = instant,
@@ -143,7 +145,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         instant: Instant = Clock.System.now()
     ) = persistMessage(
         Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.NewConversationReceiptMode(receiptMode = receiptMode),
             conversationId = conversationId,
             date = instant,
@@ -162,7 +164,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         if (validUsers.isNotEmpty()) {
             persistMessage(
                 Message.System(
-                    id = uuid4().toString(),
+                    id = Uuid.random().toString(),
                     content = MessageContent.MemberChange.CreationAdded(validUsers.toList()),
                     conversationId = conversationId.toModel(),
                     date = instant,
@@ -184,7 +186,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         if (userIdList.isNotEmpty()) {
             persistMessage(
                 Message.System(
-                    uuid4().toString(),
+                    Uuid.random().toString(),
                     MessageContent.MemberChange.FailedToAdd(userIdList, type),
                     conversationId,
                     Clock.System.now(),
@@ -214,6 +216,35 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 expirationData = null
             )
         )
+
+    override suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit> = run {
+        conversation.wireCell?.let {
+            persistMessage(
+                Message.System(
+                    LocalId.generate(),
+                    MessageContent.NewConversationWithCellMessage,
+                    conversation.id.toModel(),
+                    Clock.System.now(),
+                    selfUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+            persistMessage(
+                Message.System(
+                    LocalId.generate(),
+                    MessageContent.NewConversationWithCellSelfDeleteDisabledMessage,
+                    conversation.id.toModel(),
+                    Clock.System.now(),
+                    selfUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+        } ?: Either.Right(Unit)
+    }
 
     private suspend fun isSelfATeamMember() = selfTeamIdProvider().fold({ false }, { it != null })
 }

@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestConversation
@@ -59,14 +60,14 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.fetchConversation(any(), eq(event.conversationId))
+            arrangement.fetchConversation(any(), eq(event.conversationId), eq(ConversationSyncReason.Other))
         }.wasInvoked(exactly = once)
     }
 
@@ -76,7 +77,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
@@ -112,7 +113,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(conversation.right())
         }
 
@@ -136,7 +137,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
@@ -161,7 +162,7 @@ class MemberJoinEventHandlerTest {
         val conversation = TEST_GROUP_CONVERSATION
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(conversation.right())
         }
 
@@ -178,7 +179,7 @@ class MemberJoinEventHandlerTest {
         val conversation = TEST_GROUP_CONVERSATION
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(conversation.right())
         }
 
@@ -195,7 +196,7 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
@@ -213,7 +214,7 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
@@ -233,7 +234,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
@@ -254,7 +255,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers).copy(id = "")
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(TestConversation.GROUP().right())
         }
 
@@ -276,7 +277,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
         val (arrangement, eventHandler) = arrange {
             withPersistingMessage(Either.Right(Unit))
-            withFetchConversationSucceeding()
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
             withConversationDetailsByIdReturning(TestConversation.GROUP().right())
             withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             withPersistMembers(Unit.right())

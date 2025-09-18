@@ -54,7 +54,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
     }
 
     packaging {
@@ -64,9 +63,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":network"))
-    implementation(project(":cryptography"))
-    implementation(project(":logic"))
+    implementation(projects.network)
+    implementation(projects.cryptography)
+    implementation(projects.logic)
     implementation(libs.bundles.android)
     coreLibraryDesugaring(libs.desugarJdkLibs)
 }

@@ -1358,7 +1358,8 @@ class UserSessionScope internal constructor(
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,
         clientRegistrationStorage = clientRegistrationStorage,
-        selfUserId = userId
+        selfUserId = userId,
+        logger = userScopedLogger
     )
 
     private val mlsMigrator: MLSMigrator
@@ -1728,11 +1729,7 @@ class UserSessionScope internal constructor(
 
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
         get() = MLSResetConversationEventHandlerImpl(
-            selfUserId = userId,
-            userConfig = userConfigRepository,
-            conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
-            fetchConversation = fetchConversationUseCase,
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -1832,6 +1829,7 @@ class UserSessionScope internal constructor(
             selfServerConfig = users.serverLinks,
             syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
+            logger = userScopedLogger
         )
     }
 

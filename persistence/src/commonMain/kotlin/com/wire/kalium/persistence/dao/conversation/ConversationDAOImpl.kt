@@ -223,6 +223,7 @@ internal class ConversationDAOImpl internal constructor(
                 channel_access = channelAccess,
                 channel_add_permission = channelAddPermission,
                 wire_cell = wireCell,
+                history_sharing_retention_seconds = historySharingRetentionSeconds,
             )
         }
     }
@@ -247,6 +248,14 @@ internal class ConversationDAOImpl internal constructor(
         groupId: String
     ) = withContext(coroutineContext) {
         conversationQueries.updateMlsGroupStateAndCipherSuite(groupState, cipherSuite, groupId)
+    }
+
+    override suspend fun updateMLSGroupIdAndState(
+        conversationId: QualifiedIDEntity,
+        newGroupId: String,
+        groupState: ConversationEntity.GroupState
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, conversationId)
     }
 
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
@@ -282,11 +291,13 @@ internal class ConversationDAOImpl internal constructor(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
         newActivitiesOnTop: Boolean,
+        strictMLSFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             onlyInteractionsEnabled = onlyInteractionEnabled,
             newActivitiesOnTop = newActivitiesOnTop,
+            strict_mls = if (strictMLSFilter) 1 else 0,
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()
             .mapToList()

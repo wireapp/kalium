@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.Type
+import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
@@ -256,7 +257,7 @@ data class Conversation(
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: CipherSuite
 
-            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED, PENDING_AFTER_RESET }
         }
 
         fun name(): String
@@ -353,7 +354,8 @@ sealed interface ConversationDetails {
             // TODO: Add channel-specific fields
 //         val isTeamAdmin: Boolean, TODO kubaz
             val access: ChannelAccess,
-            val permission: ChannelAddPermission
+            val permission: ChannelAddPermission,
+            val historySharing: ConversationHistorySettings,
         ) : Group {
             /**
              * An enum class that defines the permissions for adding participants to a channel,
@@ -405,6 +407,31 @@ sealed interface ConversationDetails {
                 proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
                 legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
             )
+    }
+}
+
+sealed interface ConversationHistorySettings {
+    /**
+     * History Sharing is disabled.
+     * New members should *not* be able to retrieve and see messages sent before they have joined the conversation
+     */
+    data object Private : ConversationHistorySettings
+
+    /**
+     * Messages in the conversation that are newer than [retention] should be shared with new members.
+     * The [retention] must be strictly positive.
+     * For example:
+     * Message A is 10 days old
+     * Message B is 2 days old
+     * When [retention] is 5, and a new members joins the conversation, only Message B should be retrievable by the new user.
+     * @see HistoryClient
+     */
+    data class ShareWithNewMembers(val retention: Duration) : ConversationHistorySettings {
+        init {
+            require(retention.isPositive()) {
+                "history-sharing retention must be > 0"
+            }
+        }
     }
 }
 

@@ -39,6 +39,13 @@ class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase intern
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long,
+        strictMlsFilter: Boolean
     ): Flow<PagingData<ConversationDetailsWithEvents>> = conversationRepository.extensions
-        .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset).flowOn(dispatcher.io)
+        .getPaginatedConversationDetailsWithEventsBySearchQuery(
+            queryConfig = queryConfig,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset,
+            strictMlsFilter = strictMlsFilter
+        )
+        .flowOn(dispatcher.io)
 }

@@ -18,24 +18,20 @@
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
+    multiplatform()
 }
 
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":network-model"))
+                implementation(projects.networkModel)
 
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)

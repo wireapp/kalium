@@ -16,8 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
@@ -31,8 +29,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":network-model"))
-                implementation(project(":util"))
+                implementation(projects.networkModel)
+                implementation(projects.util)
 
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)

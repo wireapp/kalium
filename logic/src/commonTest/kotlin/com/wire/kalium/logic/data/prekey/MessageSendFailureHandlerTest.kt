@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -315,7 +316,7 @@ class MessageSendFailureHandlerTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.fetchConversation(any(), any())
+            arrangement.fetchConversation(any(), any(), eq(ConversationSyncReason.Other))
         }.wasInvoked(exactly = once)
     }
 
@@ -336,7 +337,7 @@ class MessageSendFailureHandlerTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.fetchConversation(any(), any())
+            arrangement.fetchConversation(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -355,7 +356,7 @@ class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
         coVerify {
-            arrangement.fetchConversation(any(), any())
+            arrangement.fetchConversation(any(), any(), any())
         }.wasNotInvoked()
     }
 

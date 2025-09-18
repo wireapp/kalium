@@ -24,12 +24,14 @@
 // Assume that all folders that contain a build.gradle.kts and are not buildSrc should be included
 rootDir
     .walk()
-    .maxDepth(1)
+    .maxDepth(2)
+    .filter { it != rootDir }
     .filter {
         it.name != "buildSrc" && it.isDirectory &&
                 file("${it.absolutePath}/build.gradle.kts").exists()
     }.forEach {
-        include(":${it.name}")
+        val projectPath = it.relativeTo(rootDir).path.replace(File.separator, ":")
+        include(":$projectPath")
     }
 
 pluginManagement {
@@ -67,3 +69,5 @@ dependencyResolutionManagement {
         }
     }
 }
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

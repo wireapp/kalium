@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -70,7 +70,7 @@ internal class UpdateConversationReceiptModeUseCaseImpl(
         receiptMode: Conversation.ReceiptMode
     ) {
         val message = Message.System(
-            uuid4().toString(),
+            Uuid.random().toString(),
             MessageContent.ConversationReceiptModeChanged(
                 receiptMode = receiptMode == Conversation.ReceiptMode.ENABLED
             ),

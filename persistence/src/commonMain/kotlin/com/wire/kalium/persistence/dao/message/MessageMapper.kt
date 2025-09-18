@@ -250,6 +250,8 @@ object MessageMapper {
                     messageBody = text.requireField("text")
                 )
             }
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -520,6 +522,7 @@ object MessageMapper {
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
+        quotedSenderAccentId: Int?,
         quotedMessageDateTime: Instant?,
         quotedMessageEditTimestamp: Instant?,
         quotedMessageVisibility: MessageEntity.Visibility?,
@@ -566,7 +569,8 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
-                        locationName = quotedLocationName
+                        locationName = quotedLocationName,
+                        accentId = quotedSenderAccentId
                     )
                 },
             )
@@ -635,6 +639,7 @@ object MessageMapper {
                                 textBody = quotedTextBody,
                                 assetMimeType = quotedAssetMimeType,
                                 assetName = quotedAssetName,
+                                accentId = quotedSenderAccentId,
                                 locationName = quotedLocationName
                             )
                         },
@@ -712,11 +717,16 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
-                        locationName = quotedLocationName
+                        locationName = quotedLocationName,
+                        accentId = quotedSenderAccentId
                     )
                 },
                 attachments = messageAttachmentsFromJsonString(attachments),
             )
+
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessageEntityContent.NewConversationWithCellMessage
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED ->
+                MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
         }
 
         val sender = UserDetailsEntity(

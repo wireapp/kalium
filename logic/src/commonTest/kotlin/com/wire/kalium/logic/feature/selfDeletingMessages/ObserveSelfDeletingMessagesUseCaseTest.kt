@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -59,6 +60,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(storedConversationStatus)
+            .withCellEnabled(false)
             .arrange()
 
         val result = observeSelfDeletionMessagesFlag(conversationId, true)
@@ -91,6 +93,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(userStoredConversationStatus)
+            .withCellEnabled(false)
             .arrange()
 
         val result = observeSelfDeletionMessagesFlag(conversationId, true)
@@ -121,6 +124,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(storedConversationStatus)
+            .withCellEnabled(false)
             .arrange()
 
         val result = observeSelfDeletionTimer(conversationId, true)
@@ -148,6 +152,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(storedConversationStatus)
+            .withCellEnabled(false)
             .arrange()
 
         val result = observeSelfDeletionTimer(conversationId, true)
@@ -180,6 +185,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsSelfDeletionStatus)
             .withStoredConversation(storedConversationStatus)
+            .withCellEnabled(false)
             .arrange()
 
         val result = observeSelfDeletionTimer(conversationId, true)
@@ -192,6 +198,40 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         }.wasInvoked(exactly = once)
 
         assertEquals(storedConversationStatus.messageTimer, result.first().duration)
+    }
+
+    @Test
+    fun givenCellEnabledForConversation_whenObserving_thenDisabledStatusReturned() = runTest {
+        val conversationId = ConversationId("conversationId", "domain")
+        val storedTeamSettingsSelfDeletionStatus = flowOf(
+            Either.Right(
+                TeamSettingsSelfDeletionStatus(
+                    hasFeatureChanged = null,
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled
+                )
+            )
+        )
+        val storedConversationStatus = TEST_CONVERSION.copy(
+            messageTimer = 1.toDuration(DurationUnit.HOURS),
+            userMessageTimer = null
+        )
+
+        val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
+            .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsSelfDeletionStatus)
+            .withStoredConversation(storedConversationStatus)
+            .withCellEnabled(true)
+            .arrange()
+
+        val result = observeSelfDeletionTimer(conversationId, true)
+
+        coVerify {
+            arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.observeConversationById(any())
+        }.wasNotInvoked()
+
+        assertEquals(SelfDeletionTimer.Disabled, result.first())
     }
 
     private companion object {
@@ -218,6 +258,12 @@ class ObserveSelfDeletingMessagesUseCaseTest {
                     userConfigRepository.observeTeamSettingsSelfDeletingStatus()
                 }.returns(eitherFlow)
             }
+
+        suspend fun withCellEnabled(enabled: Boolean) = apply {
+            coEvery {
+                conversationRepository.isCellEnabled(any())
+            } returns enabled.right()
+        }
 
         fun arrange() = this to observeSelfDeletionStatus
     }

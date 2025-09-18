@@ -19,8 +19,6 @@ import org.jetbrains.kotlin.util.suffixIfNot
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
@@ -37,24 +35,25 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":common"))
-                implementation(project(":network"))
-                api(project(":data"))
-                api(project(":network-util"))
-                implementation(project(":cryptography"))
-                implementation(project(":persistence"))
-                implementation(project(":protobuf"))
-                api(project(":logger"))
-                api(project(":calling"))
-                implementation(project(":util"))
-                implementation(project(":cells"))
-                implementation(project(":backup"))
+                api(projects.common)
+                implementation(projects.network)
+                api(projects.data)
+                implementation(projects.dataMappers)
+                api(projects.networkUtil)
+                implementation(projects.cryptography)
+                implementation(projects.persistence)
+                implementation(projects.protobuf)
+                api(projects.logger)
+                api(projects.calling)
+                implementation(projects.util)
+                implementation(projects.cells)
+                implementation(projects.backup)
+                implementation(projects.messaging.sending)
 
                 // coroutines
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
-                implementation(libs.benAsherUUID)
 
                 // ktor mockk engine
                 implementation(libs.ktor.mock)
@@ -76,8 +75,9 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(project(":common"))
-                implementation(project(":persistence-test"))
+                implementation(projects.common)
+                implementation(projects.persistenceTest)
+                implementation(projects.dataMocks)
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)

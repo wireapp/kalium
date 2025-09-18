@@ -29,11 +29,11 @@ class ConversationHistoryDepthSerializerTest {
 
     @Test
     fun should_serialize_and_deserialize_duration_correctly() {
-        val original = ConversationHistorySettingsDTO.SharedWithNewMembers(92.days + 42.hours + 24.minutes + 11.seconds)
+        val original = ConversationHistorySettingsDTO.ShareWithNewMembers(92.days + 42.hours + 24.minutes + 11.seconds)
         val json = Json { }
 
         val string = json.encodeToString(original)
-        val result = json.decodeFromString<ConversationHistorySettingsDTO.SharedWithNewMembers>(string)
+        val result = json.decodeFromString<ConversationHistorySettingsDTO.ShareWithNewMembers>(string)
 
         assertEquals(original, result)
     }

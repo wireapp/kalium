@@ -51,6 +51,7 @@ data class ConversationEntity(
     val channelAccess: ChannelAccess?,
     val channelAddPermission: ChannelAddPermission?,
     val wireCell: String?,
+    val historySharingRetentionSeconds: Long,
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -58,7 +59,7 @@ data class ConversationEntity(
 
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 
-    enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED, PENDING_AFTER_RESET }
 
     enum class Protocol { PROTEUS, MLS, MIXED }
     enum class ReceiptMode { DISABLED, ENABLED }

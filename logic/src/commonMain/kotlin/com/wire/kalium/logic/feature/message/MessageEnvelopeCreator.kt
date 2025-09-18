@@ -38,7 +38,6 @@ import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.ClientPayload
 import com.wire.kalium.logic.data.message.EncryptedMessageBlob
 import com.wire.kalium.logic.data.message.Message
@@ -50,6 +49,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.messaging.sending.BroadcastMessage
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 

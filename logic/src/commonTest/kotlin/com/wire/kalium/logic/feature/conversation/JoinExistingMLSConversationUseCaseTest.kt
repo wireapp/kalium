@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
@@ -220,7 +221,11 @@ class JoinExistingMLSConversationUseCaseTest {
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversation(any(), eq(Arrangement.MLS_CONVERSATION1.id))
+            arrangement.fetchConversation(
+                any(),
+                eq(Arrangement.MLS_CONVERSATION1.id),
+                eq(ConversationSyncReason.Other)
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -284,7 +289,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withFetchConversationSuccessful() = apply {
             coEvery {
-                fetchConversation.invoke(any(), any())
+                fetchConversation.invoke(any(), any(), eq(ConversationSyncReason.Other))
             }.returns(Either.Right(Unit))
         }
 

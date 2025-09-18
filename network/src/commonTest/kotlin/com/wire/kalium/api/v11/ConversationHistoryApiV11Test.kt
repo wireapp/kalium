@@ -60,7 +60,7 @@ internal class ConversationHistoryApiV11Test : ApiTest() {
 
     @Test
     fun givenSharedParameters_whenUpdatingConversationHistorySettings_thenShouldSerializeBodyProperly() = runTest {
-        val settings = ConversationHistorySettingsDTO.SharedWithNewMembers(42.days + 32.hours + 2.seconds)
+        val settings = ConversationHistorySettingsDTO.ShareWithNewMembers(42.days + 32.hours + 2.seconds)
         val expectedJson = """{"type":"shared","depth":${settings.depth.inWholeSeconds}}"""
         assertHistorySettingsJsonSerialization(settings, expectedJson)
     }

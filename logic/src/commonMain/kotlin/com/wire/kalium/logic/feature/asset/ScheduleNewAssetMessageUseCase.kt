@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.asset
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
@@ -43,7 +43,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.common.functional.Either
@@ -149,7 +149,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             it is SlowSyncStatus.Complete
         }
         // Create a unique message ID
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         val messageTimer = selfDeleteTimer(conversationId, true)
@@ -224,7 +224,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         expectsReadConfirmation: Boolean
     ): Either<CoreFailure, Pair<AssetMessageMetadata, Message.Regular>> = currentClientIdProvider().flatMap { currentClientId ->
         // Create a temporary asset key and domain
-        val (generatedAssetUuid, tempAssetDomain) = uuid4().toString() to ""
+        val (generatedAssetUuid, tempAssetDomain) = Uuid.random().toString() to ""
         withContext(dispatcher.io) {
             assetDataSource.persistAsset(generatedAssetUuid, tempAssetDomain, assetDataPath, assetDataSize, assetName.fileExtension())
                 .flatMap { persistedAssetDataPath ->

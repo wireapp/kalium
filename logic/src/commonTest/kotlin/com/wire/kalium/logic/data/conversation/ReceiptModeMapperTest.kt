@@ -21,14 +21,13 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ReceiptModeMapperTest {
 
-        val idMapper = mock(IdMapper::class)
+    val idMapper = IdMapper()
 
     private lateinit var receiptModeMapper: ReceiptModeMapper
 

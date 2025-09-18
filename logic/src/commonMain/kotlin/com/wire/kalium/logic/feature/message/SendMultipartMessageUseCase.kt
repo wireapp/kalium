@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
@@ -58,6 +58,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -109,7 +110,7 @@ class SendMultipartMessageUseCase internal constructor(
             it is SlowSyncStatus.Complete
         }
 
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
 
         val isCellEnabled = conversationRepository.isCellEnabled(conversationId).getOrFail { error ->
             return@async error.left()

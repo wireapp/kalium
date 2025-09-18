@@ -19,22 +19,42 @@ package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface FetchConversationUseCaseArrangement {
     val fetchConversation: FetchConversationUseCase
-    suspend fun withFetchConversationFailingWith(coreFailure: CoreFailure) {
+    suspend fun withFetchConversationFailingWith(
+        coreFailure: CoreFailure,
+        transactionContext: CryptoTransactionContext = any(),
+        conversationId: ConversationId = any(),
+        reason: ConversationSyncReason = any(),
+    ) {
         coEvery {
-            fetchConversation(any(), any())
+            fetchConversation(
+                transactionContext = transactionContext,
+                conversationId = conversationId,
+                reason = reason
+            )
         }.returns(Either.Left(coreFailure))
     }
 
-    suspend fun withFetchConversationSucceeding() {
+    suspend fun withFetchConversationSucceeding(
+        transactionContext: CryptoTransactionContext = any(),
+        conversationId: ConversationId = any(),
+        reason: ConversationSyncReason = any(),
+    ) {
         coEvery {
-            fetchConversation(any(), any())
+            fetchConversation(
+                transactionContext = transactionContext,
+                conversationId = conversationId,
+                reason = reason
+            )
         }.returns(Either.Right(Unit))
     }
 

@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientCapability
@@ -86,7 +87,7 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
     @Test
     fun givenShouldUpdate_AndClientIsEnabledByAPI_thenTheClientCapabilitiesShouldBeUpdatedAndLocalStateUpdated() =
         runTest {
-            val config = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Valid(9), "domain"))
+            val config = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Valid(11), "domain"))
             val (arrangement, useCase) = Arrangement()
                 .withSyncDone()
                 .withShouldUpdateConsumableNotificationsCapabilityResult(true)
@@ -124,7 +125,7 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
     @Test
     fun givenShouldUpdate_AndClientIsEnabledByAPIAndSyncFails_thenTheClientCapabilitiesShouldBeUpdatedAndLocalStateShouldNotUpdated() =
         runTest {
-            val config = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Valid(9), "domain"))
+            val config = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Valid(11), "domain"))
             val (arrangement, useCase) = Arrangement()
                 .withSyncDone()
                 .withShouldUpdateConsumableNotificationsCapabilityResult(true)
@@ -237,7 +238,8 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
                 incrementalSyncRepository = incrementalSyncRepository,
                 selfServerConfig = selfServerConfigUseCase,
                 slowSyncRepository = slowSyncRepository,
-                syncRequester = withSyncRequester
+                syncRequester = withSyncRequester,
+                logger = kaliumLogger
             )
     }
 }

@@ -65,7 +65,8 @@ class ConversationRepositoryExtensionsTest {
                 newActivitiesOnTop = false,
             ),
             pagingConfig = pagingConfig,
-            startingOffset = 0L
+            startingOffset = 0L,
+            strictMlsFilter = false
         )
         verify {
             arrangement.conversationDaoExtensions

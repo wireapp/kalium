@@ -44,17 +44,17 @@ class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCaseTest {
         val (arrangement, useCase) = Arrangement().withPaginatedConversationResult(emptyFlow()).arrange()
         with(arrangement) {
             // When
-            useCase(queryConfig = queryConfig, pagingConfig = pagingConfig, startingOffset = startingOffset)
+            useCase(queryConfig = queryConfig, pagingConfig = pagingConfig, startingOffset = startingOffset, strictMlsFilter = false)
             // Then
             coVerify {
                 conversationRepository.extensions
-                    .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset)
+                    .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset, false)
             }.wasInvoked(exactly = once)
         }
     }
 
     inner class Arrangement {
-                val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock(ConversationRepository::class)
         val conversationRepositoryExtensions = mock(ConversationRepositoryExtensions::class)
 
         val queryConfig = ConversationQueryConfig("search")
@@ -69,7 +69,7 @@ class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCaseTest {
 
         suspend fun withPaginatedConversationResult(result: Flow<PagingData<ConversationDetailsWithEvents>>) = apply {
             coEvery {
-                conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(any(), any(), any())
+                conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(any(), any(), any(), any())
             }.returns(result)
         }
 

@@ -22,7 +22,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":backup"))
+    implementation(projects.backup)
     implementation(compose.desktop.currentOs)
     implementation(compose.materialIconsExtended)
     implementation(kotlin("reflect"))

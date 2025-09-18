@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageTarget
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.InstantConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase

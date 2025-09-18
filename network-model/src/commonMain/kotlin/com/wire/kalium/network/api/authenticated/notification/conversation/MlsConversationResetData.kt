@@ -25,5 +25,5 @@ data class MlsConversationResetData(
     @SerialName("group_id")
     val groupId: String,
     @SerialName("new_group_id")
-    val newGroupId: String? = null, // Will be added in new event version
+    val newGroupId: String
 )

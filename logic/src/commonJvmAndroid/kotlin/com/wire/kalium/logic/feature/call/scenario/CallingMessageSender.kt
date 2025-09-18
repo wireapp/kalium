@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.call.scenario
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
@@ -29,12 +29,12 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.messaging.sending.MessageTarget
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
@@ -165,7 +165,7 @@ internal fun CallingMessageSender(
         val messageContent = MessageContent.Calling(data, callHostConversationId)
         val date = Clock.System.now()
         val message = Message.Signaling(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = messageContent,
             conversationId = transportConversationId,
             date = date,

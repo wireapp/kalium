@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -179,7 +179,7 @@ class FederationEventReceiverImpl internal constructor(
 
     private suspend fun handleMemberRemovedEvent(conversationID: ConversationId, userIDList: List<UserId>) {
         val message = Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.MemberChange.FederationRemoved(members = userIDList),
             conversationId = conversationID,
             date = Clock.System.now(),
@@ -193,7 +193,7 @@ class FederationEventReceiverImpl internal constructor(
 
     private suspend fun handleFederationDeleteEvent(conversationID: ConversationId, domain: String) {
         val message = Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.FederationStopped.Removed(domain),
             conversationId = conversationID,
             date = Clock.System.now(),
@@ -207,7 +207,7 @@ class FederationEventReceiverImpl internal constructor(
 
     private suspend fun handleFederationConnectionRemovedEvent(conversationID: ConversationId, domainList: List<String>) {
         val message = Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = MessageContent.FederationStopped.ConnectionRemoved(domainList),
             conversationId = conversationID,
             date = Clock.System.now(),

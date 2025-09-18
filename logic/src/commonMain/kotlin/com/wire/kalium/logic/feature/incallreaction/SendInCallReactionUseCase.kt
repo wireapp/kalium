@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.logic.feature.incallreaction
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.util.KaliumDispatcher
@@ -47,7 +47,7 @@ class SendInCallReactionUseCase(
     suspend operator fun invoke(conversationId: ConversationId, reaction: String): Either<CoreFailure, Unit> =
         scope.async(dispatchers.io) {
 
-            val generatedMessageUuid = uuid4().toString()
+            val generatedMessageUuid = Uuid.random().toString()
 
             provideClientId().flatMap { clientId ->
                 val message = Message.Signaling(

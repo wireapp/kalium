@@ -95,7 +95,7 @@ data class ConversationResponse(
 
     /**
      * Only groups are expected to have a non-null value.
-     * Since API V8
+     * @since API V8
      * @see GroupType
      */
     @SerialName("group_conv_type")
@@ -106,10 +106,19 @@ data class ConversationResponse(
 
     /**
      * Status of the wire cell for conversation: disabled, pending, ready
-     * Since API V8
+     * @since API V8
      */
     @SerialName("cells_state")
     val cellsState: String? = null,
+
+    /**
+     * History sharing settings for the conversation.
+     * Although the field was added on API V11, the value [ConversationHistorySettingsDTO.Private]
+     * is backwards-compatible value, and it is used as the default when the field is not present in the response.
+     * @since API V11
+     */
+    @SerialName("history")
+    val historySharingSettings: ConversationHistorySettingsDTO = ConversationHistorySettingsDTO.Private,
 ) {
 
     @Suppress("MagicNumber")
