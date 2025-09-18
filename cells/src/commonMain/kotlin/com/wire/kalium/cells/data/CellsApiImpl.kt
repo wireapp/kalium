@@ -78,7 +78,7 @@ internal class CellsApiImpl(
             val lookupTags = tags.map {
                 LookupFilterMetaFilter(
                     namespace = TAGS_METADATA,
-                    term = it,
+                    term = "\"$it\"",
                 )
             }
             nodeServiceApi.lookup(
@@ -111,7 +111,7 @@ internal class CellsApiImpl(
             val lookupTags = tags.map {
                 LookupFilterMetaFilter(
                     namespace = TAGS_METADATA,
-                    term = it,
+                    term = "\"$it\"",
                 )
             }
             nodeServiceApi.lookup(
