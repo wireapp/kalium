@@ -89,7 +89,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
 
         override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-            return coreContext.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.toCrypto().pkb) // TODO KBX
+            return coreContext.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.toCrypto().pkb)
         }
 
         override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
@@ -113,7 +113,7 @@ class ProteusClientCoreCryptoImpl private constructor(
             preKeyCrypto: PreKeyCrypto,
             sessionId: CryptoSessionId
         ): ByteArray {
-            coreContext.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.toCrypto().pkb) // TODO KBX
+            coreContext.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.toCrypto().pkb)
             return coreContext.proteusEncrypt(sessionId.value, message)
         }
 
