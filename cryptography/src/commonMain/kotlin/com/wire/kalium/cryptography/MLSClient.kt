@@ -52,8 +52,7 @@ open class GroupInfoBundle(
 data class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle,
-    val crlNewDistributionPoints: List<String>?
+    val groupInfoBundle: GroupInfoBundle
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -66,15 +65,13 @@ data class CommitBundle(
             if (other.welcome == null) return false
             if (!welcome.contentEquals(other.welcome)) return false
         } else if (other.welcome != null) return false
-        if (groupInfoBundle != other.groupInfoBundle) return false
-        return crlNewDistributionPoints == other.crlNewDistributionPoints
+        return groupInfoBundle == other.groupInfoBundle
     }
 
     override fun hashCode(): Int {
         var result = commit.contentHashCode()
         result = 31 * result + (welcome?.contentHashCode() ?: 0)
         result = 31 * result + groupInfoBundle.hashCode()
-        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
         return result
     }
 }

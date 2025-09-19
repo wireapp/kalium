@@ -439,8 +439,8 @@ class RegisterClientUseCaseTest {
             ClientCapability.LegalHoldImplicitConsent
         )
 
-        val PRE_KEYS = listOf(PreKeyCrypto(id = 1, encodedData = "1"), PreKeyCrypto(id = 2, encodedData = "2"))
-        val LAST_KEY = PreKeyCrypto(id = 99, encodedData = "99")
+        val PRE_KEYS = listOf(PreKeyCrypto(id = 1, pkb = "1"), PreKeyCrypto(id = 2, pkb = "2"))
+        val LAST_KEY = PreKeyCrypto(id = 99, pkb = "99")
         val REGISTER_PARAMETERS = RegisterClientParameters(
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,

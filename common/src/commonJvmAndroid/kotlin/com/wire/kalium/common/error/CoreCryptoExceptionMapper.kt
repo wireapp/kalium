@@ -23,7 +23,7 @@ import com.wire.crypto.MlsException
 @Suppress("CyclomaticComplexMethod")
 actual fun mapMLSException(exception: Exception): MLSFailure {
     return if (exception is CoreCryptoException.Mls) {
-        when (exception.exception) {
+        when (exception.mlsError) {
             is MlsException.WrongEpoch -> MLSFailure.WrongEpoch
             is MlsException.DuplicateMessage -> MLSFailure.DuplicateMessage
             is MlsException.BufferedFutureMessage -> MLSFailure.BufferedFutureMessage
@@ -35,7 +35,7 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
             is MlsException.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
 
             is MlsException.Other -> {
-                val otherError = (exception.exception as MlsException.Other).message
+                val otherError = (exception.mlsError as MlsException.Other).message
                 if (otherError.startsWith(COMMIT_FOR_MISSING_PROPOSAL)) {
                     MLSFailure.CommitForMissingProposal
                 } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
@@ -49,7 +49,7 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
 
             is MlsException.OrphanWelcome -> MLSFailure.OrphanWelcome
             is MlsException.BufferedCommit -> MLSFailure.BufferedCommit
-            is MlsException.MessageRejected -> mapMessageRejected((exception.exception as MlsException.MessageRejected).message)
+            is MlsException.MessageRejected -> mapMessageRejected((exception.mlsError as MlsException.MessageRejected).message)
         }
         // because there is a lack of multiplatform binding we need to catch generic exception
         // and map it to the appropriate failure to have proper tests

@@ -21,15 +21,15 @@
 package com.wire.kalium.cryptography.utils
 
 import com.wire.crypto.BufferedDecryptedMessage
-import com.wire.crypto.CRLRegistration
 import com.wire.crypto.Ciphersuite
 import com.wire.crypto.CommitBundle
 import com.wire.crypto.DecryptedMessage
+import com.wire.crypto.DeviceStatus
 import com.wire.crypto.E2eiConversationState
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsTransportResponse
-import com.wire.crypto.PreKey
+import com.wire.crypto.ProteusAutoPrekeyBundle
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.cryptography.CryptoCertificateStatus
@@ -40,6 +40,7 @@ import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSCiphersuite
+import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.WelcomeBundle
@@ -48,22 +49,22 @@ import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 
 fun MLSCiphersuite.toCrypto(): Ciphersuite = when (this) {
-    MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
     MLSCiphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
-    MLSCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
-    MLSCiphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> Ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+    MLSCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
+    MLSCiphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> Ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_ED448
     MLSCiphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> Ciphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
-    MLSCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
+    MLSCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448
     MLSCiphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> Ciphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
 }
 
 fun Ciphersuite.toCryptography(): MLSCiphersuite = when (this) {
-    Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519 -> MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     Ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> MLSCiphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
-    Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> MLSCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
-    Ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> MLSCiphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+    Ciphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519 -> MLSCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+    Ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_ED448 -> MLSCiphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
     Ciphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> MLSCiphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
-    Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> MLSCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
+    Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_ED448 -> MLSCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
     Ciphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> MLSCiphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
 }
 
@@ -78,8 +79,7 @@ fun com.wire.kalium.cryptography.MlsTransportResponse.toCrypto(): MlsTransportRe
 fun CommitBundle.toCryptography(): com.wire.kalium.cryptography.CommitBundle = com.wire.kalium.cryptography.CommitBundle(
     commit = commit,
     welcome = welcome?.copyBytes(),
-    groupInfoBundle = groupInfoBundle.toCrypto(),
-    crlNewDistributionPoints = crlNewDistributionPoints?.lower()
+    groupInfoBundle = groupInfo.toCrypto()
 )
 
 fun com.wire.crypto.GroupInfoBundle.toCrypto(): GroupInfoBundle = GroupInfoBundle(
@@ -99,13 +99,13 @@ fun MlsGroupInfoEncryptionType.toCryptography(): GroupInfoEncryptionType = when 
     MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> GroupInfoEncryptionType.JWE_ENCRYPTED
 }
 
-fun PreKeyCrypto.toCrypto(): PreKey = PreKey(id.toUShort(), encodedData.decodeBase64Bytes())
+fun PreKeyCrypto.toCrypto(): ProteusAutoPrekeyBundle = ProteusAutoPrekeyBundle(id.toUShort(), pkb.decodeBase64Bytes())
 
-fun PreKey.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), data.encodeBase64())
+fun ProteusAutoPrekeyBundle.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), pkb.encodeBase64())
 
 fun com.wire.crypto.WelcomeBundle.toCryptography() = WelcomeBundle(
     id.copyBytes().encodeBase64(),
-    crlNewDistributionPoints?.value?.map { it.toString() }
+    crlNewDistributionPoints
 )
 
 fun toExternalSenderKey(value: ByteArray) = ExternalSenderKey(value)
@@ -133,47 +133,49 @@ fun com.wire.crypto.X509Identity.toCryptography() = WireIdentity.X509Identity(
     notAfter = notAfter.epochSecond
 )
 
-private fun com.wire.crypto.DeviceStatus.toCryptography(): CryptoCertificateStatus = when (this) {
-    com.wire.crypto.DeviceStatus.Valid -> CryptoCertificateStatus.VALID
-    com.wire.crypto.DeviceStatus.Expired -> CryptoCertificateStatus.EXPIRED
-    com.wire.crypto.DeviceStatus.Revoked -> CryptoCertificateStatus.REVOKED
+private fun DeviceStatus.toCryptography(): CryptoCertificateStatus = when (this) {
+    DeviceStatus.VALID -> CryptoCertificateStatus.VALID
+    DeviceStatus.EXPIRED -> CryptoCertificateStatus.EXPIRED
+    DeviceStatus.REVOKED -> CryptoCertificateStatus.REVOKED
 }
 
-fun com.wire.crypto.E2eiConversationState.toCryptography(): E2EIConversationState = when (this) {
-    E2eiConversationState.Verified -> E2EIConversationState.VERIFIED
-    E2eiConversationState.NotVerified -> E2EIConversationState.NOT_VERIFIED
-    E2eiConversationState.NotEnabled -> E2EIConversationState.NOT_ENABLED
+fun E2eiConversationState.toCryptography(): E2EIConversationState = when (this) {
+    E2eiConversationState.VERIFIED -> E2EIConversationState.VERIFIED
+    E2eiConversationState.NOT_VERIFIED -> E2EIConversationState.NOT_VERIFIED
+    E2eiConversationState.NOT_ENABLED -> E2EIConversationState.NOT_ENABLED
 }
 
 fun DecryptedMessage.toBundle() = DecryptedMessageBundle(
-    message,
-    commitDelay,
-    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString()) },
-    hasEpochChanged,
-    identity.toCryptography(),
-    crlNewDistributionPoints?.value?.map { it.toString() }
+    message = message,
+    commitDelay = commitDelay?.toLong(),
+    senderClientId = senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString()) },
+    hasEpochChanged = hasEpochChanged,
+    identity = identity.toCryptography(),
+    crlNewDistributionPoints = crlNewDistributionPoints
 )
 
 fun BufferedDecryptedMessage.toBundle() = DecryptedMessageBundle(
-    message,
-    commitDelay,
-    senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString()) },
-    hasEpochChanged,
-    identity.toCryptography(),
-    crlNewDistributionPoints?.value?.map { it.toString() }
+    message = message,
+    commitDelay = commitDelay?.toLong(),
+    senderClientId = senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(it.copyBytes().decodeToString()) },
+    hasEpochChanged = hasEpochChanged,
+    identity = identity.toCryptography(),
+    crlNewDistributionPoints = crlNewDistributionPoints
 )
 
 fun CredentialType.toCrypto() = when (this) {
-    CredentialType.Basic -> com.wire.crypto.CredentialType.Basic
+    CredentialType.Basic -> com.wire.crypto.CredentialType.BASIC
     CredentialType.X509 -> com.wire.crypto.CredentialType.X509
 }
 
 fun com.wire.crypto.CredentialType.toCryptography() = when (this) {
-    com.wire.crypto.CredentialType.Basic -> CredentialType.Basic
+    com.wire.crypto.CredentialType.BASIC -> CredentialType.Basic
     com.wire.crypto.CredentialType.X509 -> CredentialType.X509
 }
 
-fun CRLRegistration.toCryptography() = CrlRegistration(
+fun com.wire.crypto.CrlRegistration.toCryptography() = CrlRegistration(
     dirty,
-    expiration?.toULong()
+    expiration
 )
+
+fun MLSGroupId.toCrypto() = com.wire.crypto.ConversationId(this.decodeBase64Bytes())
