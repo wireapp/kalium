@@ -572,6 +572,10 @@ class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
         )
+        is FeatureConfigData.SimplifiedConnectionRequest -> Event.FeatureConfig.SimplifiedConnectionRequestConfigUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.SimplifiedConnectionRequest)
+        )
 
         // These features are NOT received through events. As FeatureConfig Events are deprecated
         is FeatureConfigData.ConsumableNotifications,

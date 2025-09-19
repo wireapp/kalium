@@ -46,6 +46,7 @@ data class FeatureConfigModel(
     val consumableNotificationsModel: ConfigsStatusModel?,
     val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
     val cellsModel: CellsConfigModel?,
+    val simplifiedConnectionRequestConfigModel: SimplifiedConnectionRequestConfigModel?,
     val appsModel: ConfigsStatusModel?,
 )
 
@@ -158,6 +159,12 @@ data class AllowedGlobalOperationsModel(
 
 @Serializable
 data class CellsConfigModel(
+    @SerialName("status")
+    val status: Status,
+)
+
+@Serializable
+data class SimplifiedConnectionRequestConfigModel(
     @SerialName("status")
     val status: Status,
 )

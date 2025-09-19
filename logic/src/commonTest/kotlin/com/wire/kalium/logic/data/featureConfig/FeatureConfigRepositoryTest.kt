@@ -98,7 +98,8 @@ class FeatureConfigRepositoryTest {
             cellsModel = CellsConfigModel(
                 status = Status.DISABLED,
             ),
-            appsModel = ConfigsStatusModel(Status.DISABLED)
+            appsModel = ConfigsStatusModel(Status.DISABLED),
+            simplifiedConnectionRequestConfigModel = SimplifiedConnectionRequestConfigModel(Status.DISABLED),
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -189,7 +190,8 @@ class FeatureConfigRepositoryTest {
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.SimplifiedConnectionRequest(FeatureFlagStatusDTO.DISABLED),
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

@@ -44,6 +44,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.SimplifiedConnectionRequestConfigHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -352,6 +353,7 @@ class FeatureConfigEventReceiverTest {
                 AppLockConfigHandler(userConfigRepository),
                 AllowedGlobalOperationsHandler(userConfigRepository),
                 CellsConfigHandler(userConfigRepository),
+                SimplifiedConnectionRequestConfigHandler(userConfigRepository),
             )
         }
 

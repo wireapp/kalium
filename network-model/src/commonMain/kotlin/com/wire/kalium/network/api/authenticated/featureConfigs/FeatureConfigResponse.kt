@@ -66,7 +66,9 @@ data class FeatureConfigResponse(
     @SerialName("cells")
     val cells: FeatureConfigData.Cells?,
     @SerialName("apps")
-    val apps: FeatureConfigData.Apps?
+    val apps: FeatureConfigData.Apps?,
+    @SerialName("simplifiedUserConnectionRequestQRCode")
+    val simplifiedConnectionRequest: FeatureConfigData.SimplifiedConnectionRequest?,
 )
 
 @Serializable
@@ -329,6 +331,13 @@ sealed class FeatureConfigData {
     @SerialName("apps")
     @Serializable
     data class Apps(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("simplifiedUserConnectionRequestQRCode")
+    @Serializable
+    data class SimplifiedConnectionRequest(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()

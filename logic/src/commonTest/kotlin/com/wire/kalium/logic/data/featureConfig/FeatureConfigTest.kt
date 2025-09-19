@@ -64,7 +64,10 @@ object FeatureConfigTest {
         cellsConfigModel: CellsConfigModel? = CellsConfigModel(
             status = Status.ENABLED,
         ),
-        appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED)
+        appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
+        simplifiedConnectionRequestConfigModel: SimplifiedConnectionRequestConfigModel? = SimplifiedConnectionRequestConfigModel(
+            status = Status.ENABLED,
+        )
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -86,6 +89,7 @@ object FeatureConfigTest {
         asyncNotificationsModel,
         allowedGlobalOperationsModel,
         cellsConfigModel,
-        appsModel
+        simplifiedConnectionRequestConfigModel,
+        appsModel,
     )
 }

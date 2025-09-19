@@ -488,6 +488,7 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.SimplifiedConnectionRequestConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
@@ -1915,6 +1916,9 @@ class UserSessionScope internal constructor(
     private val cellsConfigHandler
         get() = CellsConfigHandler(userConfigRepository)
 
+    private val simplifiedConnectionRequestConfigHandler
+        get() = SimplifiedConnectionRequestConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1928,6 +1932,7 @@ class UserSessionScope internal constructor(
             appLockConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
+            simplifiedConnectionRequestConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2349,7 +2354,8 @@ class UserSessionScope internal constructor(
             consumableNotificationsConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
-            appsFeatureHandler
+            appsFeatureHandler,
+            simplifiedConnectionRequestConfigHandler,
         )
 
     val team: TeamScope
