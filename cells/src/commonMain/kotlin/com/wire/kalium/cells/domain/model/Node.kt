@@ -73,7 +73,7 @@ internal fun CellNode.toFileModel() = Node.File(
     uuid = uuid,
     versionId = versionId,
     name = path.substringAfterLast("/"),
-    mimeType = mimeType ?: "",
+    mimeType = mimeType?.formatMimetype() ?: "",
     remotePath = path,
     contentHash = contentHash,
     contentUrl = contentUrl,
@@ -83,6 +83,8 @@ internal fun CellNode.toFileModel() = Node.File(
     modifiedTime = modified?.let { it * 1000 },
     tags = tags,
 )
+
+private fun String.formatMimetype() = this.split(";")[0].trim()
 
 @Suppress("MagicNumber")
 internal fun CellNode.toFolderModel() = Node.Folder(
