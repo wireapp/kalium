@@ -37,18 +37,7 @@ interface ObserveLegalHoldRequestUseCase {
     operator fun invoke(): Flow<Result>
 
     sealed class Result {
-        data class LegalHoldRequestAvailable(val fingerprint: ByteArray) : Result() {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other == null || this::class != other::class) return false
-
-                other as LegalHoldRequestAvailable
-
-                return fingerprint.contentEquals(other.fingerprint)
-            }
-
-            override fun hashCode(): Int = fingerprint.contentHashCode()
-        }
+        data class LegalHoldRequestAvailable(val fingerprint: String) : Result()
 
         data object NoLegalHoldRequest : Result()
         data class Failure(val failure: CoreFailure) : Result()

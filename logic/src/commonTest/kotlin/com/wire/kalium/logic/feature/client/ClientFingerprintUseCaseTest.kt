@@ -44,7 +44,7 @@ class ClientFingerprintUseCaseTest {
 
     @Test
     fun givenClientHaveSession_thenReturnFingerprint() = runTest {
-        val fingerprint = byteArrayOf(1, 2, 3, 4, 5)
+        val fingerprint = "fingerprint"
 
         val userId = TestUser.USER_ID
         val clientId = TestClient.CLIENT_ID
@@ -71,7 +71,7 @@ class ClientFingerprintUseCaseTest {
 
     @Test
     fun givenClientHaveNoSession_thenEstablishANewSession() = runTest {
-        val fingerprint = byteArrayOf(1, 2, 3, 4, 5)
+        val fingerprint = "fingerprint"
 
         val userId = TestUser.USER_ID
         val clientId = TestClient.CLIENT_ID
@@ -141,7 +141,7 @@ class ClientFingerprintUseCaseTest {
         }
 
         private var getSessionCalled = 0
-        suspend fun withSessionNotFound(secondTimeResult: ByteArray) = apply {
+        suspend fun withSessionNotFound(secondTimeResult: String) = apply {
             coEvery { proteusContext.remoteFingerPrint(any()) }
                 .invokes { _ ->
                     if (getSessionCalled == 0) {
@@ -152,7 +152,7 @@ class ClientFingerprintUseCaseTest {
                 }
         }
 
-        suspend fun withRemoteFingerprintSuccess(result: ByteArray) = apply {
+        suspend fun withRemoteFingerprintSuccess(result: String) = apply {
             coEvery {
                 proteusContext.remoteFingerPrint(any())
             }.returns(result)

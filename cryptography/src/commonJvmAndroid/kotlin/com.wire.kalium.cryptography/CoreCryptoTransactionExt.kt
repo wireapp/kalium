@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoClient
 import com.wire.crypto.CoreCryptoContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -36,7 +36,7 @@ import kotlin.time.Duration.Companion.seconds
  * every 10 seconds, while the work isn't completed.
  */
 @Suppress("MagicNumber")
-internal suspend fun <T> CoreCrypto.transaction(
+internal suspend fun <T> CoreCryptoClient.transaction(
     workIdentifier: String,
     block: suspend (context: CoreCryptoContext) -> T
 ): T = coroutineScope {

@@ -309,10 +309,9 @@ interface ProteusCoreCryptoContext {
         handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
     ): T
 
-    suspend fun getLocalFingerprint(): ByteArray
-    suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray
-    suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray
-    suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto>
+    suspend fun getLocalFingerprint(): String
+    suspend fun remoteFingerPrint(sessionId: CryptoSessionId): String
+    suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): String
     suspend fun newLastResortPreKey(): PreKeyCrypto
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
     suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId)

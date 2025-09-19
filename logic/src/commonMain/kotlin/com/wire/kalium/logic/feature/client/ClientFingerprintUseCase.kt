@@ -71,7 +71,7 @@ class ClientFingerprintUseCaseImpl internal constructor(
         userId: UserId,
         clientId: ClientId,
         proteusContext: ProteusCoreCryptoContext
-    ): Either<CoreFailure, ByteArray> =
+    ): Either<CoreFailure, String> =
         when (proteusFailure.proteusException.code) {
             ProteusException.Code.SESSION_NOT_FOUND -> onSessionNotFound(userId, clientId, proteusContext)
             else -> Either.Left(proteusFailure)
@@ -81,7 +81,7 @@ class ClientFingerprintUseCaseImpl internal constructor(
         userId: UserId,
         clientId: ClientId,
         proteusContext: ProteusCoreCryptoContext
-    ): Either<CoreFailure, ByteArray> {
+    ): Either<CoreFailure, String> {
         return prekeyRepository.establishSessions(proteusContext, mapOf(userId to listOf(clientId))).fold(
             { error -> Either.Left(error) },
             { _ ->
@@ -94,7 +94,7 @@ class ClientFingerprintUseCaseImpl internal constructor(
 }
 
 sealed interface Result {
-    data class Success(val fingerprint: ByteArray) : Result {
+    data class Success(val fingerprint: String) : Result {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
@@ -105,7 +105,7 @@ sealed interface Result {
         }
 
         override fun hashCode(): Int {
-            return fingerprint.contentHashCode()
+            return fingerprint.hashCode()
         }
     }
 

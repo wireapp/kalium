@@ -137,6 +137,6 @@ class ObserveLegalHoldRequestUseCaseTest {
                 key = "key"
             )
         )
-        val fingerPrint = "fingerPrint".toByteArray()
+        const val fingerPrint = "fingerPrint"
     }
 }
