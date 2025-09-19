@@ -46,6 +46,7 @@ interface FeatureConfigMapper {
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
     fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
     fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
+    fun fromDTO(data: FeatureConfigData.SimplifiedConnectionRequest): SimplifiedConnectionRequestConfigModel
 }
 
 @Suppress("TooManyFunctions")
@@ -76,6 +77,9 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
+                simplifiedConnectionRequestConfigModel = simplifiedConnectionRequest?.let {
+                    fromDTO(it)
+                }
             )
         }
 
@@ -190,6 +194,10 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     override fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel = CellsConfigModel(
+        status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.SimplifiedConnectionRequest) = SimplifiedConnectionRequestConfigModel(
         status = fromDTO(data.status)
     )
 

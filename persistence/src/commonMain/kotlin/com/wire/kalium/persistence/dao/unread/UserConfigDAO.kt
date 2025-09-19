@@ -79,6 +79,8 @@ interface UserConfigDAO {
     suspend fun setAppsEnabled(isAppsEnabled: Boolean)
     suspend fun getAppsEnabled(): Boolean
     suspend fun observeAppsEnabled(): Flow<Boolean>
+    suspend fun setSimplifiedConnectionRequestEnabled(enabled: Boolean)
+    suspend fun isSimplifiedConnectionRequestEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -258,6 +260,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isCellsEnabled(): Boolean =
         metadataDAO.valueByKey(CELLS_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun setSimplifiedConnectionRequestEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), SIMPLIFIED_CONNECTION_REQUEST_ENABLED)
+    }
+
+    override suspend fun isSimplifiedConnectionRequestEnabled(): Boolean =
+        metadataDAO.valueByKey(SIMPLIFIED_CONNECTION_REQUEST_ENABLED)?.toBoolean() ?: false
+
     override suspend fun setAppsEnabled(isAppsEnabled: Boolean) {
         metadataDAO.insertValue(isAppsEnabled.toString(), APPS_ENABLED_KEY)
     }
@@ -283,6 +292,7 @@ internal class UserConfigDAOImpl internal constructor(
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
         const val CELLS_ENABLED = "wire_cells"
+        const val SIMPLIFIED_CONNECTION_REQUEST_ENABLED = "simplified_connection_request"
         private const val APPS_ENABLED_KEY = "apps_enabled"
     }
 }
