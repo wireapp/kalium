@@ -489,6 +489,7 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
@@ -1918,6 +1919,10 @@ class UserSessionScope internal constructor(
 
     private val chatBubblesConfigHandler
         get() = ChatBubblesConfigHandler(userConfigRepository)
+
+    private val disableUserProfileQRCodeConfigHandler
+        get() = DisableUserProfileQRCodeConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1931,7 +1936,8 @@ class UserSessionScope internal constructor(
             appLockConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
-            chatBubblesConfigHandler
+            chatBubblesConfigHandler,
+            disableUserProfileQRCodeConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2354,7 +2360,8 @@ class UserSessionScope internal constructor(
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
             appsFeatureHandler,
-            chatBubblesConfigHandler
+            chatBubblesConfigHandler,
+            disableUserProfileQRCodeConfigHandler,
         )
 
     val team: TeamScope

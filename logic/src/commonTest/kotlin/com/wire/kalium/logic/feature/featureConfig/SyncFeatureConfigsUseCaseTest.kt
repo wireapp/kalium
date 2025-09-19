@@ -59,6 +59,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -964,7 +965,8 @@ class SyncFeatureConfigsUseCaseTest {
                 AllowedGlobalOperationsHandler(userConfigRepository),
                 CellsConfigHandler(userConfigRepository),
                 AppsFeatureHandler(userConfigRepository),
-                ChatBubblesConfigHandler(userConfigRepository)
+                ChatBubblesConfigHandler(userConfigRepository),
+                DisableUserProfileQRCodeConfigHandler(userConfigRepository),
             )
             return this to syncFeatureConfigsUseCase
         }
