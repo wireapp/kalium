@@ -79,6 +79,8 @@ interface UserConfigDAO {
     suspend fun setAppsEnabled(isAppsEnabled: Boolean)
     suspend fun getAppsEnabled(): Boolean
     suspend fun observeAppsEnabled(): Flow<Boolean>
+    suspend fun setChatBubblesEnabled(enabled: Boolean)
+    suspend fun isChatBubblesEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -268,6 +270,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeAppsEnabled(): Flow<Boolean> =
         metadataDAO.valueByKeyFlow(APPS_ENABLED_KEY).map { it?.toBoolean() ?: false }
 
+    override suspend fun setChatBubblesEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), CHAT_BUBBLES_ENABLED)
+    }
+
+    override suspend fun isChatBubblesEnabled(): Boolean =
+        metadataDAO.valueByKey(CHAT_BUBBLES_ENABLED)?.toBoolean() ?: false
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -284,5 +293,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
         const val CELLS_ENABLED = "wire_cells"
         private const val APPS_ENABLED_KEY = "apps_enabled"
+        private const val CHAT_BUBBLES_ENABLED = "chat_bubbles"
     }
 }

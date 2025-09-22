@@ -475,6 +475,7 @@ import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
@@ -1915,6 +1916,8 @@ class UserSessionScope internal constructor(
     private val cellsConfigHandler
         get() = CellsConfigHandler(userConfigRepository)
 
+    private val chatBubblesConfigHandler
+        get() = ChatBubblesConfigHandler(userConfigRepository)
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1928,6 +1931,7 @@ class UserSessionScope internal constructor(
             appLockConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
+            chatBubblesConfigHandler
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2349,7 +2353,8 @@ class UserSessionScope internal constructor(
             consumableNotificationsConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
-            appsFeatureHandler
+            appsFeatureHandler,
+            chatBubblesConfigHandler
         )
 
     val team: TeamScope

@@ -47,6 +47,7 @@ data class FeatureConfigModel(
     val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
     val cellsModel: CellsConfigModel?,
     val appsModel: ConfigsStatusModel?,
+    val chatBubblesModel: ChatBubblesConfigModel?
 )
 
 enum class Status {
@@ -160,6 +161,12 @@ data class AllowedGlobalOperationsModel(
 data class CellsConfigModel(
     @SerialName("status")
     val status: Status,
+)
+
+@Serializable
+data class ChatBubblesConfigModel(
+    @SerialName("status")
+    val status: Status
 )
 
 @Serializable

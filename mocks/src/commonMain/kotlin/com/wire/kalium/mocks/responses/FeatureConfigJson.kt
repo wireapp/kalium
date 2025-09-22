@@ -156,7 +156,8 @@ object FeatureConfigJson {
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED)
+            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED)
         ),
         featureConfigResponseSerializer
     )

@@ -37,6 +37,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHan
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
@@ -58,6 +59,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val appLockConfigHandler: AppLockConfigHandler,
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
     private val cellsConfigHandler: CellsConfigHandler,
+    private val chatBubblesConfigHandler: ChatBubblesConfigHandler
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(
@@ -94,5 +96,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 
             is Event.FeatureConfig.AllowedGlobalOperationsUpdated -> allowedGlobalOperationsHandler.handle(event.model)
             is Event.FeatureConfig.CellsConfigUpdated -> cellsConfigHandler.handle(event.model)
+            is Event.FeatureConfig.ChatBubblesConfigUpdated -> chatBubblesConfigHandler.handle(event.model)
         }
 }
