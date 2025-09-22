@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
@@ -79,7 +80,8 @@ class MissedNotificationsEventReceiverTest {
             this to MissedNotificationsEventReceiverImpl(
                 slowSyncRequester = slowSyncExecutorProvider,
                 slowSyncRepository = slowSyncRepository,
-                eventRepository = eventRepository
+                eventRepository = eventRepository,
+                logger = kaliumLogger
             )
         }
     }
