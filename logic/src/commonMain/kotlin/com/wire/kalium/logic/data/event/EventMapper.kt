@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.featureConfig.toModel
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -571,6 +572,11 @@ class EventMapper(
         is FeatureConfigData.Cells -> Event.FeatureConfig.CellsConfigUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
+        )
+
+        is FeatureConfigData.ChatBubbles -> Event.FeatureConfig.ChatBubblesConfigUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.ChatBubbles).toModel()
         )
 
         // These features are NOT received through events. As FeatureConfig Events are deprecated

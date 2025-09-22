@@ -48,6 +48,14 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
 }
 
+fun FeatureFlagStatusDTO.toModel(): Status =
+    when (this) {
+        FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
+        FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
+    }
+
+fun FeatureConfigData.ChatBubbles.toModel() = ChatBubblesConfigModel(status.toModel())
+
 @Suppress("TooManyFunctions")
 class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
@@ -76,6 +84,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
+                chatBubblesModel = chatBubbles?.toModel()
             )
         }
 
@@ -96,11 +105,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         }
     }
 
-    override fun fromDTO(status: FeatureFlagStatusDTO): Status =
-        when (status) {
-            FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
-            FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
-        }
+    override fun fromDTO(status: FeatureFlagStatusDTO): Status = status.toModel()
 
     override fun fromDTO(data: FeatureConfigData.MLS?): MLSModel =
         data?.let {
