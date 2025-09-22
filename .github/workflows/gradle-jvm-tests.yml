@@ -124,7 +124,7 @@ jobs:
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 18
       - name: Install datadog-ci
