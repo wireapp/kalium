@@ -78,7 +78,7 @@ internal class CellsApiImpl(
             val lookupTags = tags.map {
                 LookupFilterMetaFilter(
                     namespace = TAGS_METADATA,
-                    term = it,
+                    term = "\"$it\"",
                 )
             }
             nodeServiceApi.lookup(
@@ -111,7 +111,7 @@ internal class CellsApiImpl(
             val lookupTags = tags.map {
                 LookupFilterMetaFilter(
                     namespace = TAGS_METADATA,
-                    term = it,
+                    term = "\"$it\"",
                 )
             }
             nodeServiceApi.lookup(
@@ -272,11 +272,11 @@ internal class CellsApiImpl(
         )
     }.mapSuccess {}
 
-    override suspend fun restoreNode(path: String): NetworkResponse<Unit> = wrapCellsResponse {
+    override suspend fun restoreNode(uuid: String): NetworkResponse<Unit> = wrapCellsResponse {
         nodeServiceApi.performAction(
             name = NodeServiceApi.NamePerformAction.restore,
             parameters = RestActionParameters(
-                nodes = listOf(RestNodeLocator(path)),
+                nodes = listOf(RestNodeLocator(uuid = uuid)),
                 awaitStatus = JobsTaskStatus.Finished,
                 awaitTimeout = AWAIT_TIMEOUT
             )

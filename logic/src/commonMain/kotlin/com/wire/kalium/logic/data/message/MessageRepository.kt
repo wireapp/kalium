@@ -52,6 +52,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImp
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.authenticated.message.Parameters
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption

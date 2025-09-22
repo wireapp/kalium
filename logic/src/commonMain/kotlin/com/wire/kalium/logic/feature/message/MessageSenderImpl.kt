@@ -30,15 +30,12 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
-import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
-import com.wire.kalium.logic.data.message.BroadcastMessageTarget
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
@@ -60,78 +57,19 @@ import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.messaging.sending.BroadcastMessage
+import com.wire.kalium.messaging.sending.BroadcastMessageTarget
+import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
-/**
- * Responsible for orchestrating all the pieces necessary
- * for sending a message to the wanted recipients.
- * Will handle reading and updating message status, retries
- * in case of connectivity issues, and encryption based on
- * [ConversationOptions.Protocol].
- *
- * @see MessageSenderImpl
- */
-@Mockable
-interface MessageSender {
-    /**
-     * Given the [ConversationId] and UUID of a message that
-     * was previously persisted locally,
-     * attempts to send the message to suitable recipients.
-     *
-     * Will handle all the needed encryption and possible set-up
-     * steps and retries depending on the [ConversationOptions.Protocol].
-     *
-     * In case of connectivity failure, will handle the error by updating the state of the persisted message
-     * and, if needed, also scheduling a retry in the future using a [MessageSendingScheduler].
-     *
-     * @param conversationId
-     * @param messageUuid
-     */
-    suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
-
-    /**
-     * Attempts to send the given [Message] to suitable recipients.
-     *
-     * Will handle all the needed encryption and possible set-up
-     * steps and retries depending on the [ConversationOptions.Protocol].
-     *
-     * Unlike [sendPendingMessage], will **not** handle connectivity failures
-     * and scheduling re-tries in the future.
-     * Suitable for fire-and-forget messages, like real-time calling signaling,
-     * or messages where retrying later is useless or would lead to unwanted behaviour.
-     *
-     * @param message that will be sent
-     * @see [sendPendingMessage]
-     */
-    suspend fun sendMessage(
-        message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
-    ): Either<CoreFailure, Unit>
-
-    /**
-     * Attempts to send the given [BroadcastMessage] to suitable recipients.
-     *
-     * Will handle all the needed encryption and possible set-up
-     * steps
-     *
-     * Will **not** handle connectivity failures and scheduling re-tries in the future.
-     * Suitable for fire-and-forget messages that are not belong to any specific Conversation,
-     * like changing user availability status.
-     *
-     */
-    suspend fun broadcastMessage(
-        message: BroadcastMessage,
-        target: BroadcastMessageTarget
-    ): Either<CoreFailure, Unit>
-
-}
-
+// TODO(modularisation): Move to :messaging:sending.
+//                       It ain't gonna be easy :)
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,

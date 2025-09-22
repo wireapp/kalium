@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.message.composite
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageTarget
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement

@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.sending.MessageTarget
 
 /**
  * Represents the instructions for sending a calling message.

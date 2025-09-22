@@ -36,6 +36,7 @@ import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsFo
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery

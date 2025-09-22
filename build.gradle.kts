@@ -106,13 +106,18 @@ fun Project.configureKover() {
     }
 }
 
-subprojects {
-    // We only want coverage reports of actual Kalium
-    // Samples and other side-projects can have their own rules
-    if (name in setOf("monkeys", "testservice", "cli", "android")) {
-        return@subprojects
+// We only want coverage reports of actual Kalium
+// Samples and other side-projects can have their own rules
+val modulesWithKover = subprojects.filter {
+    it.name !in setOf("buildSrc", "monkeys", "testservice", "cli", "android")
+}
+modulesWithKover.forEach {
+    it.configureKover()
+}
+dependencies {
+    modulesWithKover.forEach {
+        kover(project(it.path))
     }
-    configureKover()
 }
 
 rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
@@ -120,18 +125,6 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
     // Considering JS support is quite experimental for us, we can live with this for now
     rootProject.the<YarnRootExtension>().yarnLockMismatchReport =
         YarnLockMismatchReport.WARNING
-}
-
-dependencies {
-    kover(projects.logic)
-    kover(projects.cryptography)
-    kover(projects.util)
-    kover(projects.network)
-    kover(projects.networkUtil)
-    kover(projects.persistence)
-    kover(projects.logger)
-    kover(projects.calling)
-    kover(projects.protobuf)
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
@@ -152,12 +145,10 @@ tasks.register("runAllUnitTests") {
 
     rootProject.subprojects {
         if (tasks.findByName("testDebugUnitTest") != null) {
-            println("Adding $name to runUnitTests")
             dependsOn(":$name:testDebugUnitTest")
         }
         if (name != "cryptography") {
             if (tasks.findByName("jvmTest") != null) {
-                println("Adding $name to jvmTest")
                 dependsOn(":$name:jvmTest")
             }
         }

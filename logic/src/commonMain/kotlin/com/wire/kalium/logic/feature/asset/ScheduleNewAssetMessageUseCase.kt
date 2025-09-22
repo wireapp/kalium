@@ -43,7 +43,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.common.functional.Either
