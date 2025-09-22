@@ -1858,6 +1858,7 @@ class UserSessionScope internal constructor(
             slowSyncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
             slowSyncRepository = slowSyncRepository,
             eventRepository = eventRepository,
+            logger = userScopedLogger
         )
     }
 

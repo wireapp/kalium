@@ -51,3 +51,7 @@ LIMIT 500;
 deleteUnprocessedLiveEventsByIds:
 DELETE FROM Events
 WHERE is_processed = 0 AND is_live = 1 AND event_id IN ?;
+
+deleteUnprocessedTransientEvents:
+DELETE FROM Events
+WHERE is_processed = 0 AND transient = 1;

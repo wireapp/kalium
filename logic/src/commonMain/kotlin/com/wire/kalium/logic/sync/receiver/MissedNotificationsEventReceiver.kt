@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventRepository
@@ -36,18 +37,23 @@ internal interface MissedNotificationsEventReceiver : EventReceiver<Event.AsyncM
 internal class MissedNotificationsEventReceiverImpl(
     private val slowSyncRequester: suspend () -> Either<CoreFailure, Unit>,
     private val slowSyncRepository: SlowSyncRepository,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    logger: KaliumLogger
 ) : MissedNotificationsEventReceiver {
+
+    private val logger = logger.withTextTag("MissedNotificationsEventReceiver")
 
     override suspend fun onEvent(
         transactionContext: CryptoTransactionContext,
         event: Event.AsyncMissed,
         deliveryInfo: EventDeliveryInfo
     ): Either<CoreFailure, Unit> {
+        logger.d("Received missed notifications event, starting slow sync")
         slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
         slowSyncRepository.clearLastSlowSyncCompletionInstant()
         return slowSyncRequester.invoke()
             .flatMap {
+                logger.d("Received missed notifications event, acknowledging event")
                 eventRepository.acknowledgeMissedEvent()
             }
     }

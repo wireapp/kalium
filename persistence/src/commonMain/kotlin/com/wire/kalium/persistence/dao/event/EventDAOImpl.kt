@@ -51,6 +51,10 @@ class EventDAOImpl(
         eventsQueries.deleteUnprocessedLiveEventsByIds(ids)
     }
 
+    override suspend fun deleteUnprocessedTransientEvents() = withContext(queriesContext) {
+        eventsQueries.deleteUnprocessedTransientEvents()
+    }
+
     override suspend fun insertEvents(events: List<NewEventEntity>) {
         withContext(queriesContext) {
             eventsQueries.transaction {

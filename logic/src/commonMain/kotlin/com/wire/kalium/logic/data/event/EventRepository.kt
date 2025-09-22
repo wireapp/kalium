@@ -301,17 +301,23 @@ class EventDataSource(
                         ConsumableNotificationResponse.MissedNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.MissedNotification")
                             wrapStorageRequest {
+                                // cleanup any existing missed notifications, so we do it once.
+                                eventDAO.deleteUnprocessedTransientEvents()
+
                                 val eventId = Uuid.random().toString()
                                 eventDAO.insertEvents(
                                     listOf(
                                         NewEventEntity(
                                             eventId = eventId,
-                                            payload = KtxSerializer.json.encodeToString(listOf(EventContentDTO.AsyncMissedNotification)),
+                                            payload = KtxSerializer.json.encodeToString<List<EventContentDTO>>(
+                                                listOf(EventContentDTO.AsyncMissedNotification)
+                                            ),
                                             transient = true,
                                             isLive = true
                                         )
                                     )
                                 )
+                                flowCollector.emit(IncrementalSyncPhase.ReadyToProcess)
                             }
                         }
 
