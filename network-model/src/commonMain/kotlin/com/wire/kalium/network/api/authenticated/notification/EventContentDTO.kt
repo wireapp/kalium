@@ -184,10 +184,6 @@ object JsonCorrectingSerializer :
 sealed class EventContentDTO {
 
     @Serializable
-    @SerialName("async.missed")
-    data object AsyncMissedNotification : EventContentDTO()
-
-    @Serializable
     sealed class Conversation : EventContentDTO() {
 
         @Serializable
