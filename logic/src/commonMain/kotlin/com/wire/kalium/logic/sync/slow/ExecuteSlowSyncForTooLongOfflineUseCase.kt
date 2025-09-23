@@ -17,26 +17,33 @@
  */
 package com.wire.kalium.logic.sync.slow
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlinx.coroutines.flow.first
 
 /**
  * Execute slow sync because the client was offline for too long.
- * It will wait until [slowSyncRequester] finishes or fails.
+ * It will wait until a slow sync is completed and return the instant of completion.
+ *
  */
 @Mockable
 internal interface ExecuteSlowSyncForTooLongOfflineUseCase {
-    suspend operator fun invoke(): Flow<Instant?>
+    suspend operator fun invoke(onComplete: suspend () -> Either<CoreFailure, Unit>)
 }
 
-internal class ExecuteSlowSyncForTooLongOfflineUseCaseImpl(private val slowSyncRepository: SlowSyncRepository) :
+internal class ExecuteSlowSyncForTooLongOfflineUseCaseImpl(
+    private val slowSyncRepository: SlowSyncRepository,
+) :
     ExecuteSlowSyncForTooLongOfflineUseCase {
 
-    override suspend operator fun invoke(): Flow<Instant?> {
+    override suspend operator fun invoke(onComplete: suspend () -> Either<CoreFailure, Unit>) {
+//         println("execute slow sync for too long offline")
         slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
-        slowSyncRepository.clearLastSlowSyncCompletionInstant()
-        return slowSyncRepository.observeLastSlowSyncCompletionInstant()
+//         println("clear and observe until slow sync instant set")
+        slowSyncRepository.clearAndObserveUntilSlowSyncInstantSet().first()
+//         println("slow sync completed, calling onComplete")
+        onComplete()
     }
 }

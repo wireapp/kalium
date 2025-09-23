@@ -68,12 +68,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
@@ -304,13 +302,13 @@ internal class EventDataSource(
 
                         ConsumableNotificationResponse.MissedNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.MissedNotification")
-                            executeSlowSyncForTooLongOffline().takeWhile { it != null }.collectLatest {
+                            executeSlowSyncForTooLongOffline(onComplete = {
                                 acknowledgeMissedEvent().flatMap {
                                     logger.d("Resuming live events after missed event ack")
                                     flowCollector.emit(IncrementalSyncPhase.ReadyToProcess)
                                     Unit.right()
                                 }
-                            }
+                            })
                         }
 
                         is ConsumableNotificationResponse.SynchronizationNotification -> {

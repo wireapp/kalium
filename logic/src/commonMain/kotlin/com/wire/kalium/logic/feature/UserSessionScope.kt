@@ -483,11 +483,11 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
@@ -1354,7 +1354,9 @@ class UserSessionScope internal constructor(
         )
 
     private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase by lazy {
-        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(slowSyncRepository = slowSyncRepository)
+        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(
+            slowSyncRepository = slowSyncRepository
+        )
     }
 
     private val eventRepository: EventRepository = EventDataSource(
