@@ -141,7 +141,6 @@ class EventMapper(
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
-            EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
         }
 
     private fun conversationTyping(
@@ -569,6 +568,7 @@ class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AllowedGlobalOperations)
         )
+
         is FeatureConfigData.Cells -> Event.FeatureConfig.CellsConfigUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)

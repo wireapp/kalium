@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncPhase
+import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -67,10 +68,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
@@ -133,13 +136,14 @@ interface EventRepository {
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
-class EventDataSource(
+internal class EventDataSource(
     private val notificationApi: NotificationApi,
     private val metadataDAO: MetadataDAO,
     private val eventDAO: EventDAO,
     private val currentClientId: CurrentClientIdProvider,
     private val selfUserId: UserId,
     private val clientRegistrationStorage: ClientRegistrationStorage,
+    private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase,
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     logger: KaliumLogger
 ) : EventRepository {
@@ -300,18 +304,12 @@ class EventDataSource(
 
                         ConsumableNotificationResponse.MissedNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.MissedNotification")
-                            wrapStorageRequest {
-                                val eventId = Uuid.random().toString()
-                                eventDAO.insertEvents(
-                                    listOf(
-                                        NewEventEntity(
-                                            eventId = eventId,
-                                            payload = KtxSerializer.json.encodeToString(listOf(EventContentDTO.AsyncMissedNotification)),
-                                            transient = true,
-                                            isLive = true
-                                        )
-                                    )
-                                )
+                            executeSlowSyncForTooLongOffline().takeWhile { it != null }.collectLatest {
+                                acknowledgeMissedEvent().flatMap {
+                                    logger.d("Resuming live events after missed event ack")
+                                    flowCollector.emit(IncrementalSyncPhase.ReadyToProcess)
+                                    Unit.right()
+                                }
                             }
                         }
 

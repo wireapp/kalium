@@ -21,13 +21,11 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
-import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -293,8 +291,7 @@ class EventProcessorTest {
     private class Arrangement(
         val processingScope: CoroutineScope
     ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl(),
-            CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
-    {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val eventRepository = mock(EventRepository::class)
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
@@ -302,7 +299,6 @@ class EventProcessorTest {
         val teamEventReceiver = mock(TeamEventReceiver::class)
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
         val federationEventReceiver = mock(FederationEventReceiver::class)
-        val missedNotificationsEventReceiver = mock(MissedNotificationsEventReceiver::class)
 
         suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
             coEvery {
@@ -360,12 +356,6 @@ class EventProcessorTest {
             Either.Left(failure)
         )
 
-        suspend fun withMissedNotificationsEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                missedNotificationsEventReceiver.onEvent(any(), any(), any())
-            }.returns(result)
-        }
-
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
             withConversationEventReceiverSucceeding()
             withUserEventReceiverSucceeding()
@@ -380,7 +370,6 @@ class EventProcessorTest {
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver,
-                missedNotificationsEventReceiver,
                 processingScope
             )
         }
