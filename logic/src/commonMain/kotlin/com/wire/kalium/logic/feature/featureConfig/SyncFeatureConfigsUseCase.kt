@@ -41,6 +41,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesC
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 import io.mockative.Mockable
@@ -72,8 +73,9 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
     private val cellsConfigHandler: CellsConfigHandler,
     private val appsFeatureHandler: AppsFeatureHandler,
-    private val chatBubblesHandler: ChatBubblesConfigHandler
-    ) : SyncFeatureConfigsUseCase {
+    private val chatBubblesHandler: ChatBubblesConfigHandler,
+    private val disableUserProfileQRCodeConfigHandler: DisableUserProfileQRCodeConfigHandler,
+) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
@@ -99,6 +101,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 appsFeatureHandler.handle(appsModel)
             }
             chatBubblesHandler.handle(it.chatBubblesModel)
+            disableUserProfileQRCodeConfigHandler.handle(it.disableUserProfileQRCodeConfigModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (

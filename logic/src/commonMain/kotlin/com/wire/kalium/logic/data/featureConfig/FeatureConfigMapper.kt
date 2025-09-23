@@ -46,6 +46,7 @@ interface FeatureConfigMapper {
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
     fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
     fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
+    fun fromDTO(data: FeatureConfigData.DisableUserProfileQRCode): DisableUserProfileQRCodeConfigModel
 }
 
 fun FeatureFlagStatusDTO.toModel(): Status =
@@ -84,7 +85,10 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
-                chatBubblesModel = chatBubbles?.toModel()
+                chatBubblesModel = chatBubbles?.toModel(),
+                disableUserProfileQRCodeConfigModel = disableUserProfileQRCode?.let {
+                    fromDTO(it)
+                }
             )
         }
 
@@ -195,6 +199,10 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     override fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel = CellsConfigModel(
+        status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.DisableUserProfileQRCode) = DisableUserProfileQRCodeConfigModel(
         status = fromDTO(data.status)
     )
 

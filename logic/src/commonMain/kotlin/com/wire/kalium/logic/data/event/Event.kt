@@ -43,6 +43,7 @@ import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
+import com.wire.kalium.logic.data.featureConfig.DisableUserProfileQRCodeConfigModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -634,6 +635,17 @@ sealed class Event(open val id: String) {
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.ChatBubblesConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class DisableUserProfileQRCodeConfigUpdated(
+            override val id: String,
+            val model: DisableUserProfileQRCodeConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.ProfileQRCodeConfigUpdated",
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
             )
