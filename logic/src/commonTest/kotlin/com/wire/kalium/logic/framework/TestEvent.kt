@@ -277,8 +277,6 @@ object TestEvent {
         source: EventSource = EventSource.LIVE
     ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo(source))
 
-    fun notificationsMissed(eventId: String = "eventId") = Event.AsyncMissed(eventId)
-
     val liveDeliveryInfo = EventDeliveryInfo(EventSource.LIVE)
     val nonLiveDeliveryInfo = EventDeliveryInfo(EventSource.PENDING)
 

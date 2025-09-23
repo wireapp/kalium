@@ -31,6 +31,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.EventSource
+import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -218,7 +219,7 @@ class EventRepositoryTest {
     fun givenUnprocessedEventsInDAO_whenObservingEvents_thenShouldEmitMappedEvents() = runTest {
         val testEvent = EventResponse(
             id = "test-event-id",
-            payload = listOf(EventContentDTO.AsyncMissedNotification)
+            payload = listOf(MEMBER_JOIN_EVENT)
         )
         val testPayload = KtxSerializer.json.encodeToString(testEvent.payload)
 
@@ -246,9 +247,9 @@ class EventRepositoryTest {
 
     @Test
     fun givenLastProcessedIdExistsInBatch_whenObservingEvents_thenShouldFilterCorrectly() = runTest {
-        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT))
 
         val unprocessedEventsChannel = Channel<List<EventEntity>>(capacity = Channel.UNLIMITED)
 
@@ -282,9 +283,9 @@ class EventRepositoryTest {
 
     @Test
     fun givenLastProcessedIdNotInBatch_whenObservingEvents_thenShouldNotFilterAnything() = runTest {
-        val eventX = EventResponse(id = "x", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventY = EventResponse(id = "y", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventZ = EventResponse(id = "z", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventX = EventResponse(id = "x", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventY = EventResponse(id = "y", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventZ = EventResponse(id = "z", payload = listOf(MEMBER_JOIN_EVENT))
 
         val entities = listOf(eventX, eventY, eventZ).mapIndexed { index, e ->
             EventEntity(
@@ -436,9 +437,9 @@ class EventRepositoryTest {
 
     @Test
     fun givenEventsPreviouslyEmitted_whenEmittingSameEventsAgain_thenTheyAreFilteredCorrectly() = runTest {
-        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT))
 
         val initialEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
             EventEntity(
@@ -483,9 +484,9 @@ class EventRepositoryTest {
 
     @Test
     fun givenLastProcessedEventIsSecond_whenReceivingThreeEvents_thenShouldEmitOnlyLast() = runTest {
-        val eventA = EventResponse(id = "a", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventB = EventResponse(id = "b", payload = listOf(EventContentDTO.AsyncMissedNotification))
-        val eventC = EventResponse(id = "c", payload = listOf(EventContentDTO.AsyncMissedNotification))
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT))
 
         val allEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
             EventEntity(
@@ -602,6 +603,8 @@ class EventRepositoryTest {
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val eventDAO: EventDAO = mock(EventDAO::class)
+        val executeSlowSyncForTooLongOfflineUseCase: ExecuteSlowSyncForTooLongOfflineUseCase =
+            mock(ExecuteSlowSyncForTooLongOfflineUseCase::class)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi = notificationApi,
@@ -610,6 +613,7 @@ class EventRepositoryTest {
             currentClientId = clientIdProvider,
             selfUserId = TestUser.SELF.id,
             clientRegistrationStorage = clientRegistrationStorage,
+            executeSlowSyncForTooLongOffline = executeSlowSyncForTooLongOfflineUseCase,
             logger = kaliumLogger
         )
 

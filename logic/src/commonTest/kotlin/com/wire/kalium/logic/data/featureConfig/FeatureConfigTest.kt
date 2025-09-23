@@ -64,7 +64,11 @@ object FeatureConfigTest {
         cellsConfigModel: CellsConfigModel? = CellsConfigModel(
             status = Status.ENABLED,
         ),
-        appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED)
+        appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
+        chatBubblesConfigModel: ChatBubblesConfigModel? = ChatBubblesConfigModel(Status.ENABLED),
+        disableUserProfileQRCodeConfigModel: DisableUserProfileQRCodeConfigModel? = DisableUserProfileQRCodeConfigModel(
+            status = Status.ENABLED,
+        ),
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -86,6 +90,8 @@ object FeatureConfigTest {
         asyncNotificationsModel,
         allowedGlobalOperationsModel,
         cellsConfigModel,
-        appsModel
+        appsModel,
+        chatBubblesConfigModel,
+        disableUserProfileQRCodeConfigModel,
     )
 }

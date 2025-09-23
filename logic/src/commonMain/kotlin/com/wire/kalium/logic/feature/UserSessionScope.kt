@@ -426,8 +426,6 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
-import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiver
-import com.wire.kalium.logic.sync.receiver.MissedNotificationsEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
@@ -475,6 +473,7 @@ import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
@@ -488,11 +487,14 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
+import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
+import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCaseImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1083,7 +1085,6 @@ class UserSessionScope internal constructor(
             featureConfigEventReceiver = featureConfigEventReceiver,
             userPropertiesEventReceiver = userPropertiesEventReceiver,
             federationEventReceiver = federationEventReceiver,
-            missedNotificationsEventReceiver = missedNotificationsEventReceiver,
             processingScope = this@UserSessionScope,
             logger = userScopedLogger,
         )
@@ -1352,12 +1353,17 @@ class UserSessionScope internal constructor(
             apiMigrations
         )
 
+    private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase by lazy {
+        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(slowSyncRepository = slowSyncRepository)
+    }
+
     private val eventRepository: EventRepository = EventDataSource(
         notificationApi = authenticatedNetworkContainer.notificationApi,
         metadataDAO = userStorage.database.metadataDAO,
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,
         clientRegistrationStorage = clientRegistrationStorage,
+        executeSlowSyncForTooLongOffline = executeSlowSyncForTooLongOffline,
         selfUserId = userId,
         logger = userScopedLogger
     )
@@ -1853,14 +1859,6 @@ class UserSessionScope internal constructor(
             legalHoldHandler
         )
 
-    private val missedNotificationsEventReceiver: MissedNotificationsEventReceiver by lazy {
-        MissedNotificationsEventReceiverImpl(
-            slowSyncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
-            slowSyncRepository = slowSyncRepository,
-            eventRepository = eventRepository,
-        )
-    }
-
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
         get() = UserPropertiesEventReceiverImpl(userConfigRepository, conversationFolderRepository)
 
@@ -1915,6 +1913,12 @@ class UserSessionScope internal constructor(
     private val cellsConfigHandler
         get() = CellsConfigHandler(userConfigRepository)
 
+    private val chatBubblesConfigHandler
+        get() = ChatBubblesConfigHandler(userConfigRepository)
+
+    private val disableUserProfileQRCodeConfigHandler
+        get() = DisableUserProfileQRCodeConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1928,6 +1932,8 @@ class UserSessionScope internal constructor(
             appLockConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
+            chatBubblesConfigHandler,
+            disableUserProfileQRCodeConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2349,7 +2355,9 @@ class UserSessionScope internal constructor(
             consumableNotificationsConfigHandler,
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
-            appsFeatureHandler
+            appsFeatureHandler,
+            chatBubblesConfigHandler,
+            disableUserProfileQRCodeConfigHandler,
         )
 
     val team: TeamScope
