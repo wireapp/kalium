@@ -514,7 +514,7 @@ class EventMapper(
         else -> MutedConversationStatus.AllAllowed
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun featureConfig(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO,
@@ -572,6 +572,10 @@ class EventMapper(
         is FeatureConfigData.Cells -> Event.FeatureConfig.CellsConfigUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
+        )
+        is FeatureConfigData.DisableUserProfileQRCode -> Event.FeatureConfig.DisableUserProfileQRCodeConfigUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.DisableUserProfileQRCode)
         )
 
         is FeatureConfigData.ChatBubbles -> Event.FeatureConfig.ChatBubblesConfigUpdated(
