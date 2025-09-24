@@ -493,8 +493,6 @@ import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
-import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
-import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCaseImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1352,10 +1350,6 @@ class UserSessionScope internal constructor(
             userStorage.database.metadataDAO,
             apiMigrations
         )
-
-    private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase by lazy {
-        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(slowSyncRepository = slowSyncRepository, userScopedLogger)
-    }
 
     private val eventRepository: EventRepository = EventDataSource(
         notificationApi = authenticatedNetworkContainer.notificationApi,
