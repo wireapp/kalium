@@ -17,16 +17,20 @@
  */
 package com.wire.kalium.logic.sync.slow
 
+import co.touchlab.stately.concurrency.AtomicBoolean
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.take
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Execute slow sync because the client was offline for too long.
  * It will wait until a slow sync is completed and return the instant of completion.
- *
  */
 @Mockable
 internal interface ExecuteSlowSyncForTooLongOfflineUseCase {
@@ -35,15 +39,29 @@ internal interface ExecuteSlowSyncForTooLongOfflineUseCase {
 
 internal class ExecuteSlowSyncForTooLongOfflineUseCaseImpl(
     private val slowSyncRepository: SlowSyncRepository,
-) :
-    ExecuteSlowSyncForTooLongOfflineUseCase {
+    logger: KaliumLogger
+) : ExecuteSlowSyncForTooLongOfflineUseCase {
+
+    val logger = logger.withTextTag("ExecuteSlowSyncForTooLongOfflineUseCase")
+    val isRunning = AtomicBoolean(false)
 
     override suspend operator fun invoke(onComplete: suspend () -> Either<CoreFailure, Unit>) {
-//         println("execute slow sync for too long offline")
-        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
-//         println("clear and observe until slow sync instant set")
-        slowSyncRepository.clearAndObserveUntilSlowSyncInstantSet().first()
-//         println("slow sync completed, calling onComplete")
-        onComplete()
+        if (!isRunning.value) {
+            logger.d("Set needs to persist history lost message to true and clear last slow sync instant")
+            slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
+            slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        }
+        logger.d("Starting slow sync for too long offline")
+        isRunning.value = true
+
+        delay(1.seconds) // wait a bit before observing better safe than sorry
+        slowSyncRepository.observeLastSlowSyncCompletionInstant()
+            .filterNotNull()
+            .take(1)
+            .collect { instant ->
+                logger.d("Slow sync completed at $instant, calling onComplete")
+                onComplete()
+                isRunning.value = false
+            }
     }
 }

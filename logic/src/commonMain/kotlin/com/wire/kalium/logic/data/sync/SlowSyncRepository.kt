@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.sync
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mockable
@@ -28,16 +28,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.take
 import kotlinx.datetime.Instant
 
 @Mockable
 internal interface SlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>
     suspend fun setLastSlowSyncCompletionInstant(instant: Instant)
-    suspend fun clearAndObserveUntilSlowSyncInstantSet(): Flow<Instant>
     suspend fun clearLastSlowSyncCompletionInstant()
     suspend fun setNeedsToRecoverMLSGroups(value: Boolean)
     suspend fun needsToRecoverMLSGroups(): Boolean
@@ -57,14 +54,6 @@ internal class SlowSyncRepositoryImpl(
 
     private val _slowSyncStatus = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
     override val slowSyncStatus: StateFlow<SlowSyncStatus> get() = _slowSyncStatus.asStateFlow()
-
-    override suspend fun clearAndObserveUntilSlowSyncInstantSet(): Flow<Instant> {
-        clearLastSlowSyncCompletionInstant()
-        return metadataDao.valueByKeyFlow(key = LAST_SLOW_SYNC_INSTANT_KEY)
-            .map { instantString -> instantString?.let { Instant.parse(it) } }
-            .filterNotNull()
-            .take(1)
-    }
 
     override suspend fun setLastSlowSyncCompletionInstant(instant: Instant) {
         logger.i("Updating last slow sync instant: $instant")
