@@ -93,6 +93,7 @@ internal class CellsApiImpl(
                         ),
                         metadata = lookupTags
                     ),
+                    sortField = "mtime",
                     sortDirDesc = true,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
