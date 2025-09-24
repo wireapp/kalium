@@ -483,18 +483,16 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
-import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
-import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCaseImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1353,17 +1351,13 @@ class UserSessionScope internal constructor(
             apiMigrations
         )
 
-    private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase by lazy {
-        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(slowSyncRepository = slowSyncRepository)
-    }
-
     private val eventRepository: EventRepository = EventDataSource(
         notificationApi = authenticatedNetworkContainer.notificationApi,
         metadataDAO = userStorage.database.metadataDAO,
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,
         clientRegistrationStorage = clientRegistrationStorage,
-        executeSlowSyncForTooLongOffline = executeSlowSyncForTooLongOffline,
+        restartSlowSyncProcessForRecovery = restartSlowSyncProcessForRecoveryUseCase,
         selfUserId = userId,
         logger = userScopedLogger
     )
