@@ -96,6 +96,12 @@ import kotlin.jvm.JvmInline
 @JvmInline
 value class UserDBSecret(val value: ByteArray)
 
+@JvmInline
+value class ReadDispatcher(val value: CoroutineDispatcher)
+
+@JvmInline
+value class WriteDispatcher(val value: CoroutineDispatcher)
+
 /**
  * Creates a [UserDatabaseBuilder] for the given [userId] and [passphrase]
  * @param platformDatabaseData Platform-specific data used to create the database
@@ -181,13 +187,16 @@ class UserDatabaseBuilder internal constructor(
         database.databasePropertiesQueries.enableForeignKeyContraints()
     }
 
+    private val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(3))
+    private val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(1))
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
+
     private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, userCache, queriesContext)
 
     val messageMetaDataDAO: MessageMetadataDAO
-        get() = MessageMetadataDAOImpl(database.messageMetadataQueries, queriesContext)
+        get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)
 
     val userConfigDAO: UserConfigDAO
         get() = UserConfigDAOImpl(metadataDAO)
@@ -196,13 +205,15 @@ class UserDatabaseBuilder internal constructor(
         get() = ConnectionDAOImpl(
             database.connectionsQueries,
             database.conversationsQueries,
-            queriesContext
+            readDispatcher,
+            writeDispatcher,
         )
 
     val eventDAO: EventDAO
         get() = EventDAOImpl(
             database.eventsQueries,
-            queriesContext
+            readDispatcher,
+            writeDispatcher,
         )
 
     private val conversationDetailsCache =
@@ -219,13 +230,15 @@ class UserDatabaseBuilder internal constructor(
             database.conversationDetailsWithEventsQueries,
             database.membersQueries,
             database.unreadEventsQueries,
-            queriesContext,
+            readDispatcher,
+            writeDispatcher,
         )
 
     val conversationFolderDAO: ConversationFolderDAO
         get() = ConversationFolderDAOImpl(
             database.conversationFoldersQueries,
-            queriesContext
+            readDispatcher,
+            writeDispatcher,
         )
 
     private val conversationMembersCache =
@@ -237,7 +250,8 @@ class UserDatabaseBuilder internal constructor(
             database.membersQueries,
             database.usersQueries,
             database.conversationsQueries,
-            queriesContext
+            readDispatcher,
+            writeDispatcher,
         )
 
     private val metadataCache = FlowCache<String, String?>(databaseScope)
@@ -246,14 +260,15 @@ class UserDatabaseBuilder internal constructor(
             database.metadataQueries,
             metadataCache,
             databaseScope,
-            queriesContext
+            readDispatcher,
+            writeDispatcher
         )
 
     val clientDAO: ClientDAO
-        get() = ClientDAOImpl(database.clientsQueries, queriesContext)
+        get() = ClientDAOImpl(database.clientsQueries, readDispatcher, writeDispatcher)
 
     val newClientDAO: NewClientDAO
-        get() = NewClientDAOImpl(database.newClientQueries, queriesContext)
+        get() = NewClientDAOImpl(database.newClientQueries, readDispatcher, writeDispatcher)
 
     val databaseImporter: DatabaseImporter
         get() = DatabaseImporterImpl(
@@ -273,7 +288,7 @@ class UserDatabaseBuilder internal constructor(
         get() = DatabaseOptimizer(this)
 
     val callDAO: CallDAO
-        get() = CallDAOImpl(database.callsQueries, queriesContext)
+        get() = CallDAOImpl(database.callsQueries, readDispatcher, writeDispatcher)
 
     val messageDAO: MessageDAO
         get() = MessageDAOImpl(
@@ -287,7 +302,8 @@ class UserDatabaseBuilder internal constructor(
             userId,
             database.reactionsQueries,
             database.usersQueries,
-            queriesContext,
+            readDispatcher,
+            writeDispatcher,
             database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
         )
@@ -296,30 +312,35 @@ class UserDatabaseBuilder internal constructor(
         database.messageDraftsQueries,
         database.messagesQueries,
         database.conversationsQueries,
-        queriesContext
+        readDispatcher,
+        writeDispatcher,
     )
 
     val assetDAO: AssetDAO
-        get() = AssetDAOImpl(database.assetsQueries, queriesContext)
+        get() = AssetDAOImpl(
+            database.assetsQueries,
+            readDispatcher,
+            writeDispatcher
+        )
 
     val teamDAO: TeamDAO
-        get() = TeamDAOImpl(database.teamsQueries, queriesContext)
+        get() = TeamDAOImpl(database.teamsQueries, readDispatcher, writeDispatcher)
 
     val reactionDAO: ReactionDAO
-        get() = ReactionDAOImpl(database.reactionsQueries, queriesContext)
+        get() = ReactionDAOImpl(database.reactionsQueries, readDispatcher, writeDispatcher)
 
     val receiptDAO: ReceiptDAO
-        get() = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter, queriesContext)
+        get() = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter, readDispatcher, writeDispatcher)
 
     val prekeyDAO: PrekeyDAO
-        get() = PrekeyDAOImpl(database.metadataQueries, queriesContext)
+        get() = PrekeyDAOImpl(database.metadataQueries, readDispatcher, writeDispatcher)
 
     val compositeMessageDAO: CompositeMessageDAO
-        get() = CompositeMessageDAOImpl(database.buttonContentQueries, queriesContext)
+        get() = CompositeMessageDAOImpl(database.buttonContentQueries, writeDispatcher)
 
-    val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, queriesContext)
+    val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, readDispatcher, writeDispatcher)
 
-    val searchDAO: SearchDAO get() = SearchDAOImpl(database.searchQueries, queriesContext)
+    val searchDAO: SearchDAO get() = SearchDAOImpl(database.searchQueries, readDispatcher)
     val conversationMetaDataDAO: ConversationMetaDataDAO
         get() = ConversationMetaDataDAOImpl(
             database.conversationMetadataQueries,
@@ -327,13 +348,13 @@ class UserDatabaseBuilder internal constructor(
         )
 
     val messageAttachmentDraftDao: MessageAttachmentDraftDao
-        get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries)
+        get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries, readDispatcher, writeDispatcher)
 
     val historyClientQueries: HistoryClientQueries
         get() = database.historyClientQueries
 
     val messageAttachments: MessageAttachmentsDao
-        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries)
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

@@ -97,6 +97,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlin.math.max
 import kotlin.time.toDuration
@@ -373,7 +374,7 @@ internal class CallDataSource(
     }
 
     override fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
-        val conversationId = callDAO.getEstablishedCall().conversationId.toModel()
+        val conversationId = runBlocking { callDAO.getEstablishedCall().conversationId.toModel() }
         _callMetadataProfile.update(conversationId) { callMetadata ->
             callMetadata.copy(isCbrEnabled = isCbrEnabled)
         }

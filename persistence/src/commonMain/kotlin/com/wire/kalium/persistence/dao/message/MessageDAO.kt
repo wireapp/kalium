@@ -171,7 +171,7 @@ interface MessageDAO {
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
     ): Flow<List<MessageEntity>>
-    fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
+    suspend fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 
     suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
 

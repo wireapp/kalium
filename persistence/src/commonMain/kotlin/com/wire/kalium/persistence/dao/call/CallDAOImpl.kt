@@ -22,6 +22,8 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
@@ -63,13 +65,13 @@ internal object CallMapper {
 @Suppress("TooManyFunctions")
 internal class CallDAOImpl(
     private val callsQueries: CallsQueries,
-    private val queriesContext: CoroutineContext,
-    private val mapper: CallMapper = CallMapper
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
+    private val mapper: CallMapper = CallMapper,
 ) : CallDAO {
 
-    override suspend fun insertCall(call: CallEntity) = withContext(queriesContext) {
+    override suspend fun insertCall(call: CallEntity) = withContext(writeDispatcher.value) {
         val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
-
         callsQueries.insertCall(
             conversation_id = call.conversationId,
             id = call.id,
@@ -84,73 +86,74 @@ internal class CallDAOImpl(
     override suspend fun observeCalls(): Flow<List<CallEntity>> =
         callsQueries.selectAllCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
     override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
     override suspend fun observeOutgoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOutgoingCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
     override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
-    override fun getEstablishedCall(): CallEntity =
+    override suspend fun getEstablishedCall(): CallEntity = withContext(readDispatcher.value) {
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).executeAsOne()
+    }
 
     override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOngoingCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
     override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) =
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             callsQueries.updateLastCallStatusByConversationId(
                 status,
                 conversationId
             )
         }
 
-    override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String? = withContext(queriesContext) {
+    override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
         callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOneOrNull()
     }
 
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
-        withContext(queriesContext) {
+        withContext(readDispatcher.value) {
             callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
         }
 
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
 
     override suspend fun getLastCallConversationTypeByConversationId(
         conversationId: QualifiedIDEntity
-    ): ConversationEntity.Type? = withContext(queriesContext) {
+    ): ConversationEntity.Type? = withContext(readDispatcher.value) {
         callsQueries.selectLastCallConversionTypeByConversationId(conversationId)
             .executeAsOneOrNull()
     }
 
-    override suspend fun updateOpenCallsToClosedStatus() = withContext(queriesContext) {
+    override suspend fun updateOpenCallsToClosedStatus() = withContext(writeDispatcher.value) {
         callsQueries.updateOpenCallsToClosedStatus()
     }
 
     override fun observeLastActiveCallByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?> =
         callsQueries.selectLastActiveCallByConversationId(conversationId, mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
 }

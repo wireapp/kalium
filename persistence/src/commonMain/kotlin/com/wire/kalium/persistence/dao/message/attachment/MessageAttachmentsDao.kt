@@ -21,8 +21,12 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper.toDao
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 interface MessageAttachmentsDao {
     suspend fun getAssetPath(assetId: String): String?
@@ -38,28 +42,39 @@ interface MessageAttachmentsDao {
 
 internal class MessageAttachmentsDaoImpl(
     private val queries: MessageAttachmentsQueries,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : MessageAttachmentsDao {
 
     override suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity> =
-        queries.getAttachments(messageId, conversationId, ::toDao).executeAsList()
+        withContext(readDispatcher.value) {
+            queries.getAttachments(messageId, conversationId, ::toDao).executeAsList()
+        }
 
-    override suspend fun getAttachments(): List<MessageAttachmentEntity> =
+    override suspend fun getAttachments(): List<MessageAttachmentEntity> = withContext(readDispatcher.value) {
         queries.getAllAttachments(::toDao).executeAsList()
-
-    override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
-        queries.getAllAttachments(::toDao).asFlow().mapToList()
-
-    override suspend fun getAttachment(assetId: String): MessageAttachmentEntity =
-        queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
-
-    override suspend fun updateAttachment(assetId: String, url: String?, hash: String?, remotePath: String) {
-        queries.updateAttachment(url, hash, remotePath, assetId)
     }
 
-    override suspend fun getAssetPath(assetId: String): String? =
-        queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
+    override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
+        queries.getAllAttachments(::toDao).asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
 
-    override suspend fun setLocalPath(assetId: String, path: String?) {
+
+    override suspend fun getAttachment(assetId: String): MessageAttachmentEntity = withContext(readDispatcher.value) {
+        queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
+    }
+
+    override suspend fun updateAttachment(assetId: String, url: String?, hash: String?, remotePath: String) =
+        withContext(writeDispatcher.value) {
+            queries.updateAttachment(url, hash, remotePath, assetId)
+        }
+
+    override suspend fun getAssetPath(assetId: String): String? = withContext(readDispatcher.value) {
+        queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
+    }
+
+    override suspend fun setLocalPath(assetId: String, path: String?) = withContext(writeDispatcher.value) {
         queries.setLocalPath(
             local_path = path,
             asset_id = assetId

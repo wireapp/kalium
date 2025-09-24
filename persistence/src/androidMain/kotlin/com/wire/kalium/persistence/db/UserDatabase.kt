@@ -29,8 +29,11 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 private const val DEFAULT_CACHE_SIZE = 20
 

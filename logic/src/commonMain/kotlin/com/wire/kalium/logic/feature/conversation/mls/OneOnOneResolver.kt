@@ -100,7 +100,6 @@ internal class OneOnOneResolverImpl(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : OneOnOneResolver {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
     // TODO: inherit the scope of UserSessionScope so it's cancelled if user logs out, etc.

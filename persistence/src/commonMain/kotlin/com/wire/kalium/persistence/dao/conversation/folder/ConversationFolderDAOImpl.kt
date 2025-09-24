@@ -25,6 +25,8 @@ import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -34,7 +36,8 @@ import kotlin.coroutines.CoroutineContext
 
 class ConversationFolderDAOImpl internal constructor(
     private val conversationFoldersQueries: ConversationFoldersQueries,
-    private val coroutineContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
@@ -43,18 +46,18 @@ class ConversationFolderDAOImpl internal constructor(
             .asFlow()
             .mapToList()
             .map { it.map(::toEntity) }
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
-    override suspend fun removeFolder(folderId: String) = withContext(coroutineContext) {
+    override suspend fun removeFolder(folderId: String) = withContext(writeDispatcher.value) {
         conversationFoldersQueries.deleteFolder(folderId)
     }
 
-    override suspend fun addFolder(folder: ConversationFolderEntity) = withContext(coroutineContext) {
+    override suspend fun addFolder(folder: ConversationFolderEntity) = withContext(writeDispatcher.value) {
         conversationFoldersQueries.upsertFolder(folder.id, folder.name, folder.type)
     }
 
-    override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(coroutineContext) {
+    override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(readDispatcher.value) {
         val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
 
         val folderMap = labeledConversationList.groupBy { it.folderId }.mapValues { entry ->
@@ -96,7 +99,7 @@ class ConversationFolderDAOImpl internal constructor(
         )
             .asFlow()
             .mapToList()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getFavoriteConversationFolder(): ConversationFolderEntity? {
@@ -107,7 +110,7 @@ class ConversationFolderDAOImpl internal constructor(
     }
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationFoldersQueries.transaction {
                 conversationFoldersQueries.clearLabeledConversations()
                 conversationFoldersQueries.clearFolders()
@@ -127,11 +130,11 @@ class ConversationFolderDAOImpl internal constructor(
             }
         }
 
-    override suspend fun addConversationToFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(coroutineContext) {
+    override suspend fun addConversationToFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(writeDispatcher.value) {
         conversationFoldersQueries.insertLabeledConversation(conversationId, folderId)
     }
 
-    override suspend fun removeConversationFromFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(coroutineContext) {
+    override suspend fun removeConversationFromFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(writeDispatcher.value) {
         conversationFoldersQueries.deleteLabeledConversation(conversationId, folderId)
     }
 }

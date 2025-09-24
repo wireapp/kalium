@@ -18,6 +18,8 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.SearchQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
@@ -70,19 +72,19 @@ interface SearchDAO {
 
 internal class SearchDAOImpl internal constructor(
     private val searchQueries: SearchQueries,
-    private val coroutineContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
 ) : SearchDAO {
 
-    override suspend fun getKnownContacts(): List<UserSearchEntity> = withContext(coroutineContext) {
+    override suspend fun getKnownContacts(): List<UserSearchEntity> = withContext(readDispatcher.value) {
         searchQueries.selectAllConnectedUsers(mapper = UserSearchEntityMapper::map).executeAsList()
     }
 
-    override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(coroutineContext) {
+    override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(readDispatcher.value) {
         searchQueries.searchByName(query, mapper = UserSearchEntityMapper::map).executeAsList()
     }
 
     override suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             searchQueries.selectAllConnectedUsersNotInConversation(
                 conversationId,
                 mapper = UserSearchEntityMapper::map
@@ -92,7 +94,7 @@ internal class SearchDAOImpl internal constructor(
     override suspend fun searchListExcludingAConversation(
         conversationId: ConversationIDEntity,
         query: String
-    ): List<UserSearchEntity> = withContext(coroutineContext) {
+    ): List<UserSearchEntity> = withContext(readDispatcher.value) {
         searchQueries.searchMyNameExcludingAConversation(
             query,
             conversationId,
@@ -100,7 +102,7 @@ internal class SearchDAOImpl internal constructor(
         ).executeAsList()
     }
 
-    override suspend fun handleSearch(searchQuery: String): List<UserSearchEntity> = withContext(coroutineContext) {
+    override suspend fun handleSearch(searchQuery: String): List<UserSearchEntity> = withContext(readDispatcher.value) {
         searchQueries.searchByHandle(
             searchQuery,
             mapper = UserSearchEntityMapper::map
@@ -110,7 +112,7 @@ internal class SearchDAOImpl internal constructor(
     override suspend fun handleSearchExcludingAConversation(
         searchQuery: String,
         conversationId: ConversationIDEntity
-    ): List<UserSearchEntity> = withContext(coroutineContext) {
+    ): List<UserSearchEntity> = withContext(readDispatcher.value) {
         searchQueries.searchByHandleExcludingAConversation(
             searchQuery,
             conversationId,

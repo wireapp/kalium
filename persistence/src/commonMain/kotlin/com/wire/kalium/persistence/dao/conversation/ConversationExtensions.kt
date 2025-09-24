@@ -23,6 +23,7 @@ import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 
@@ -47,7 +48,7 @@ interface ConversationExtensions {
     internal class ConversationExtensionsImpl internal constructor(
     private val queries: ConversationDetailsWithEventsQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
-    private val coroutineContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
 ) : ConversationExtensions {
     override fun getPagerForConversationDetailsWithEventsSearch(
         queryConfig: QueryConfig,
@@ -60,7 +61,7 @@ interface ConversationExtensions {
                 pagingSource(queryConfig, startingOffset)
             },
             pagingSource = pagingSource(queryConfig, startingOffset),
-            coroutineContext = coroutineContext,
+            coroutineContext = readDispatcher,
         )
 
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
@@ -83,7 +84,7 @@ interface ConversationExtensions {
                     )
                 },
             transacter = queries,
-            context = coroutineContext,
+            context = readDispatcher.value,
             initialOffset = initialOffset,
             queryProvider = { limit, offset ->
                 if (searchQuery.isBlank()) {

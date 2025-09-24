@@ -20,6 +20,8 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ServiceQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
@@ -77,24 +79,28 @@ interface ServiceDAO {
 
 internal class ServiceDAOImpl(
     private val serviceQueries: ServiceQueries,
-    private val context: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : ServiceDAO {
-    override suspend fun byId(id: BotIdEntity): ServiceEntity? = withContext(context) {
+    override suspend fun byId(id: BotIdEntity): ServiceEntity? = withContext(readDispatcher.value) {
         serviceQueries.byId(id, mapper = ::mapToServiceEntity).executeAsOneOrNull()
     }
 
     override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
-        serviceQueries.getUserIdFromMember(conversationId, id).asFlow().flowOn(context).mapToOneOrNull(context)
+        serviceQueries.getUserIdFromMember(conversationId, id)
+            .asFlow()
+            .flowOn(readDispatcher.value)
+            .mapToOneOrNull(readDispatcher.value)
 
     override suspend fun getAllServices(): Flow<List<ServiceEntity>> =
-        serviceQueries.allServices(mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
+        serviceQueries.allServices(mapper = ::mapToServiceEntity).asFlow().flowOn(readDispatcher.value).mapToList()
 
     override suspend fun searchServicesByName(
         query: String
     ): Flow<List<ServiceEntity>> =
-        serviceQueries.searchByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
+        serviceQueries.searchByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(readDispatcher.value).mapToList()
 
-    override suspend fun insert(service: ServiceEntity) = withContext(context) {
+    override suspend fun insert(service: ServiceEntity) = withContext(writeDispatcher.value) {
         serviceQueries.insert(
             id = service.id,
             name = service.name,
@@ -107,7 +113,7 @@ internal class ServiceDAOImpl(
         )
     }
 
-    override suspend fun insertMultiple(serviceList: List<ServiceEntity>) = withContext(context) {
+    override suspend fun insertMultiple(serviceList: List<ServiceEntity>) = withContext(writeDispatcher.value) {
         serviceQueries.transaction {
             serviceList.forEach { service ->
                 serviceQueries.insert(

@@ -28,6 +28,8 @@ import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
@@ -41,7 +43,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
-import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 
 internal const val MLS_DEFAULT_EPOCH = 0L
@@ -60,24 +61,25 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
-    private val coroutineContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : ConversationDAO {
     private val conversationMapper = ConversationMapper
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
     override val platformExtensions: ConversationExtensions =
-        ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, coroutineContext)
+        ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, readDispatcher)
 
     // region Get/Observe by ID
 
     override suspend fun observeConversationById(
         qualifiedID: QualifiedIDEntity
-    ): Flow<ConversationEntity?> {
-        return conversationCache.get(qualifiedID) {
+    ): Flow<ConversationEntity?> =
+        conversationCache.get(qualifiedID) {
             conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
                 .asFlow()
+                .flowOn(readDispatcher.value)
                 .mapToOneOrNull()
         }
-    }
 
     override suspend fun getConversationById(
         qualifiedID: QualifiedIDEntity
@@ -88,6 +90,7 @@ internal class ConversationDAOImpl internal constructor(
     ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
         conversationDetailsQueries.selectConversationDetailsByQualifiedId(conversationId, conversationMapper::fromViewToModel)
             .asFlow()
+            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
     }
 
@@ -98,34 +101,34 @@ internal class ConversationDAOImpl internal constructor(
 
     // endregion
 
-    override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) = withContext(coroutineContext) {
+    override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) = withContext(readDispatcher.value) {
         conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
     }
 
     override suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdAndUserIdByClientId(clientId, conversationMapper::toE2EIConversationClient)
                 .executeAsOneOrNull()
         }
 
     override suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdByUserId(userId)
                 .executeAsOneOrNull()
         }
 
     override suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdByConversationId(conversationId)
                 .executeAsOneOrNull()
                 ?.mls_group_id
         }
 
-    override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {
+    override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(writeDispatcher.value) {
         nonSuspendingInsertConversation(conversationEntity)
     }
 
-    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) = withContext(coroutineContext) {
+    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) = withContext(writeDispatcher.value) {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 nonSuspendingInsertConversation(conversationEntity)
@@ -133,7 +136,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>) = withContext(coroutineContext) {
+    override suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>) = withContext(writeDispatcher.value) {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 with(conversationEntity) {
@@ -228,7 +231,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {
+    override suspend fun updateConversation(conversationEntity: ConversationEntity) = withContext(writeDispatcher.value) {
         conversationQueries.updateConversation(
             conversationEntity.name,
             conversationEntity.type,
@@ -238,7 +241,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationQueries.updateConversationGroupState(groupState, groupId)
         }
 
@@ -246,7 +249,7 @@ internal class ConversationDAOImpl internal constructor(
         groupState: ConversationEntity.GroupState,
         cipherSuite: ConversationEntity.CipherSuite,
         groupId: String
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateMlsGroupStateAndCipherSuite(groupState, cipherSuite, groupId)
     }
 
@@ -254,19 +257,20 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         newGroupId: String,
         groupState: ConversationEntity.GroupState
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, conversationId)
     }
 
-    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
-        conversationQueries.updateConversationModifiedDate(date, qualifiedID)
-    }
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) =
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationModifiedDate(date, qualifiedID)
+        }
 
-    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.updateConversationNotificationsDateWithTheLastMessage(qualifiedID)
     }
 
-    override suspend fun updateAllConversationsNotificationDate() = withContext(coroutineContext) {
+    override suspend fun updateAllConversationsNotificationDate() = withContext(writeDispatcher.value) {
         conversationQueries.updateAllNotifiedConversationsNotificationsDate()
     }
 
@@ -274,7 +278,7 @@ internal class ConversationDAOImpl internal constructor(
         return conversationQueries.selectAllConversations(conversationMapper::fromViewToModel)
             .asFlow()
             .mapToList()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getAllConversationDetails(
@@ -284,7 +288,7 @@ internal class ConversationDAOImpl internal constructor(
         return conversationDetailsQueries.selectAllConversationDetails(fromArchive, filter.toString(), conversationMapper::fromViewToModel)
             .asFlow()
             .mapToList()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getAllConversationDetailsWithEvents(
@@ -301,10 +305,10 @@ internal class ConversationDAOImpl internal constructor(
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()
             .mapToList()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
-    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? = withContext(coroutineContext) {
+    override suspend fun getCellName(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
         conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
     }
 
@@ -313,13 +317,13 @@ internal class ConversationDAOImpl internal constructor(
         protocol: ConversationEntity.Protocol,
         teamId: String?
     ): List<QualifiedIDEntity> {
-        return withContext(coroutineContext) {
+        return withContext(readDispatcher.value) {
             conversationQueries.selectConversationIds(protocol, type, teamId).executeAsList()
         }
     }
 
     override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity> {
-        return withContext(coroutineContext) {
+        return withContext(readDispatcher.value) {
             conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
                 .executeAsList()
                 .map { it.qualified_id }
@@ -330,7 +334,7 @@ internal class ConversationDAOImpl internal constructor(
         userId: UserIDEntity,
         protocol: ConversationEntity.Protocol
     ): List<QualifiedIDEntity> =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.selectOneOnOneConversationIdsByProtocol(protocol, userId).executeAsList()
         }
 
@@ -338,44 +342,44 @@ internal class ConversationDAOImpl internal constructor(
         return conversationQueries.selectActiveOneOnOneConversation(userId, conversationMapper::fromViewToModel)
             .asFlow()
             .mapToOneOrNull()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
         return conversationDetailsQueries.selectActiveOneOnOneConversationDetails(userId, conversationMapper::fromViewToModel)
             .asFlow()
             .mapToOneOrNull()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(coroutineContext) {
+    override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(readDispatcher.value) {
         conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .executeAsOneOrNull()
     }
 
-    override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
+    override suspend fun getConversationIdByGroupID(groupID: String) = withContext(readDispatcher.value) {
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOneOrNull()
     }
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity> =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.selectByGroupState(groupState, conversationMapper::fromViewToModel)
                 .executeAsList()
         }
 
-    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.deleteConversation(qualifiedID)
             conversationQueries.selectChanges().executeAsOne() > 0
         }
     }
 
-    override suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.markAsDeletedLocally(qualifiedID)
             conversationQueries.selectChanges().executeAsOne() > 0
@@ -386,15 +390,19 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
-    ) = withContext(coroutineContext) {
-        conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
+    ) = withContext(writeDispatcher.value) {
+        conversationQueries.updateConversationMutingStatus(
+            mutedStatus,
+            mutedStatusTimestamp,
+            conversationId
+        )
     }
 
     override suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
         archivedStatusTimestamp: Long
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateConversationArchivingStatus(
             isArchived,
             archivedStatusTimestamp.toIsoDateTimeString().toInstant(),
@@ -406,54 +414,54 @@ internal class ConversationDAOImpl internal constructor(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) = withContext(writeDispatcher.value) {
         unreadEventsQueries.deleteUnreadEvents(date, conversationID)
         conversationQueries.updateConversationReadDate(date, conversationID)
     }
 
-    override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) = withContext(coroutineContext) {
+    override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) = withContext(writeDispatcher.value) {
         conversationQueries.updateKeyingMaterialDate(timestamp, groupId)
     }
 
-    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(readDispatcher.value) {
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             DateTimeUtil.currentInstant().minus(threshold)
         ).executeAsList()
     }
 
-    override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) = withContext(coroutineContext) {
+    override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) = withContext(writeDispatcher.value) {
         conversationQueries.updateProposalTimer(proposalTimer.firingDate.toString(), proposalTimer.groupID)
     }
 
-    override suspend fun clearProposalTimer(groupID: String) = withContext(coroutineContext) {
+    override suspend fun clearProposalTimer(groupID: String) = withContext(writeDispatcher.value) {
         conversationQueries.clearProposalTimer(groupID)
     }
 
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
         return conversationQueries.selectProposalTimers()
             .asFlow()
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
             .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, it.mls_proposal_timer.toInstant()) } }
     }
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
         }
 
     override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, dateTime: Instant) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationQueries.updateConversationName(conversationName, dateTime, conversationId)
         }
 
     override suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationQueries.updateConversationType(type, conversationID)
         }
 
@@ -463,7 +471,7 @@ internal class ConversationDAOImpl internal constructor(
         protocol: ConversationEntity.Protocol,
         cipherSuite: ConversationEntity.CipherSuite
     ): Boolean {
-        return withContext(coroutineContext) {
+        return withContext(writeDispatcher.value) {
             conversationQueries.updateConversationGroupIdAndProtocolInfo(
                 groupID,
                 protocol,
@@ -473,12 +481,12 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(coroutineContext) {
+    override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(readDispatcher.value) {
         memberQueries.selectConversationsByMember(userId, conversationMapper::fromViewToModel).executeAsList()
     }
 
     override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
         }
 
@@ -486,33 +494,33 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         link: String,
         isPasswordProtected: Boolean
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateGuestRoomLink(link, isPasswordProtected, conversationId)
     }
 
-    override suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.updateGuestRoomLink(null, false, conversationId)
     }
 
     override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =
         conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().mapToOneOrNull().map {
             it?.guest_room_link?.let { link -> ConversationGuestLinkEntity(link, it.is_guest_password_protected) }
-        }.flowOn(coroutineContext)
+        }.flowOn(readDispatcher.value)
 
-    override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
+    override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(writeDispatcher.value) {
         conversationQueries.updateMessageTimer(messageTimer, conversationId)
     }
 
-    override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
+    override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(writeDispatcher.value) {
         conversationQueries.updateUserMessageTimer(messageTimer, conversationId)
     }
 
-    override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
+    override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(readDispatcher.value) {
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
 
     override suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationQueries.updateDegradedConversationNotifiedFlag(updateFlag, conversationId)
         }
 
@@ -520,26 +528,28 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectDegradedConversationNotified(conversationId)
             .asFlow()
             .mapToOneOrDefault(true)
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
 
-    override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+    override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.clearContent(conversationId)
     }
 
     override suspend fun updateMlsVerificationStatus(
         verificationStatus: ConversationEntity.VerificationStatus,
         conversationId: QualifiedIDEntity
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateMlsVerificationStatus(verificationStatus, conversationId)
     }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
-        unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
+        unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow()
+            .flowOn(readDispatcher.value)
+            .mapToOne()
 
     override suspend fun updateLegalHoldStatus(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
             conversationQueries.selectChanges().executeAsOne() > 0
@@ -548,7 +558,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationQueries.transactionWithResult {
                 conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified)
                 conversationQueries.selectChanges().executeAsOne() > 0
@@ -559,50 +569,51 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectLegalHoldStatus(conversationId)
             .asFlow()
             .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
 
     override suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity) =
         conversationQueries.selectLegalHoldStatusChangeNotified(conversationId)
             .asFlow()
             .mapToOneOrDefault(true)
-            .flowOn(coroutineContext)
+            .flowOn(readDispatcher.value)
 
     override suspend fun getEstablishedSelfMLSGroupId(): String? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             conversationQueries
                 .getEstablishedSelfMLSGroupId()
                 .executeAsOneOrNull()
                 ?.mls_group_id
         }
 
-    override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity? = withContext(coroutineContext) {
-        conversationQueries.transactionWithResult {
-            val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
-                ?: return@transactionWithResult null
-            memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
-                .let { members ->
-                    val membersMap = members.associate { it.user to NameAndHandleEntity(it.name, it.handle) }
-                    EpochChangesDataEntity(
-                        conversationId,
-                        mlsVerificationStatus,
-                        membersMap
-                    )
-                }
+    override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity? =
+        withContext(writeDispatcher.value) {
+            conversationQueries.transactionWithResult {
+                val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
+                    ?: return@transactionWithResult null
+                memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+                    .let { members ->
+                        val membersMap = members.associate { it.user to NameAndHandleEntity(it.name, it.handle) }
+                        EpochChangesDataEntity(
+                            conversationId,
+                            mlsVerificationStatus,
+                            membersMap
+                        )
+                    }
+            }
         }
-    }
 
-    override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(coroutineContext) {
+    override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
         conversationQueries.selectIsChannel(conversationId).executeAsOneOrNull() ?: false
     }
 
     override suspend fun updateChannelAddPermission(
         conversationId: QualifiedIDEntity,
         channelAddPermission: ConversationEntity.ChannelAddPermission
-    ) = withContext(coroutineContext) {
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateChannelAddPermission(channelAddPermission, conversationId)
     }
 
-    override suspend fun hasConversationWithCell() = withContext(coroutineContext) {
+    override suspend fun hasConversationWithCell() = withContext(readDispatcher.value) {
         conversationQueries.hasConversationWithCell().executeAsOne()
     }
 }

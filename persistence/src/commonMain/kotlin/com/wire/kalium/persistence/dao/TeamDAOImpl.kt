@@ -20,6 +20,8 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.TeamsQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -39,12 +41,13 @@ class TeamMapper {
 
 class TeamDAOImpl(
     private val queries: TeamsQueries,
-    private val coroutineContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : TeamDAO {
 
     val mapper = TeamMapper()
 
-    override suspend fun insertTeam(team: TeamEntity) = withContext(coroutineContext) {
+    override suspend fun insertTeam(team: TeamEntity) = withContext(writeDispatcher.value) {
         queries.insertTeam(
             id = team.id,
             name = team.name,
@@ -52,7 +55,7 @@ class TeamDAOImpl(
         )
     }
 
-    override suspend fun insertTeams(teams: List<TeamEntity>) = withContext(coroutineContext) {
+    override suspend fun insertTeams(teams: List<TeamEntity>) = withContext(writeDispatcher.value) {
         queries.transaction {
             for (team: TeamEntity in teams) {
                 queries.insertTeam(
@@ -66,11 +69,11 @@ class TeamDAOImpl(
 
     override suspend fun getTeamById(teamId: String) = queries.selectTeamById(id = teamId)
         .asFlow()
-        .flowOn(coroutineContext)
+        .flowOn(readDispatcher.value)
         .mapToOneOrNull()
         .map { it?.let { mapper.toModel(team = it) } }
 
-    override suspend fun updateTeam(team: TeamEntity) = withContext(coroutineContext) {
+    override suspend fun updateTeam(team: TeamEntity) = withContext(writeDispatcher.value) {
         queries.updateTeam(
             id = team.id,
             name = team.name,

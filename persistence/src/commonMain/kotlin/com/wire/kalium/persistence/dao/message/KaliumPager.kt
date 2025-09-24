@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.paging.Pager
 import app.cash.paging.PagingData
 import app.cash.paging.PagingSource
+import com.wire.kalium.persistence.db.ReadDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlin.coroutines.CoroutineContext
@@ -31,8 +32,8 @@ import kotlin.coroutines.CoroutineContext
 class KaliumPager<EntityType : Any>(
     private val pager: Pager<Int, EntityType>,
     internal val pagingSource: PagingSource<Int, EntityType>,
-    private val coroutineContext: CoroutineContext
+    private val coroutineContext: ReadDispatcher
 ) {
     val pagingDataFlow: Flow<PagingData<EntityType>>
-        get() = pager.flow.flowOn(coroutineContext)
+        get() = pager.flow.flowOn(coroutineContext.value)
 }
