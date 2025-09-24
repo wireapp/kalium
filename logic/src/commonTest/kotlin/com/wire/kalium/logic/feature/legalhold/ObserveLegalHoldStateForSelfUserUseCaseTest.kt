@@ -68,7 +68,7 @@ class ObserveLegalHoldStateForSelfUserUseCaseTest {
     fun givenLegalHoldRequestAvailable_whenStartingObservingForSelfUser_thenEmitRequestPending() =
         testLegalHoldStateForSelfUser(
             givenLegalHoldState = LegalHoldState.Disabled,
-            givenLegalHoldRequestState = ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable("fingerprint".toByteArray()),
+            givenLegalHoldRequestState = ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable("fingerprint"),
             expected = LegalHoldStateForSelfUser.PendingRequest
         )
 

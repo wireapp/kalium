@@ -144,22 +144,17 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertNotNull(bobClient.transaction("encrypt") { it.encrypt("Hello World".encodeToByteArray(), aliceSessionId) })
     }
 
-// TODO coreCrypto returns MLS Exception instead of proteus
-//     @IgnoreIOS
-//     @IgnoreJvm
-//     @IgnoreJS
-//     @Test
-//     fun givenNoSessionExists_whenGettingRemoteFingerPrint_thenReturnSessionNotFound() = runTest {
-//         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
-//
-//         assertFailsWith<ProteusException> {
-//             bobClient.transaction("remoteFingerPrint") { it.remoteFingerPrint(aliceSessionId) }
-//         }.also {
-//             assertEquals(ProteusException.Code.SESSION_NOT_FOUND, it.code)
-//         }
-//     }
+    @Test
+    fun givenNoSessionExists_whenGettingRemoteFingerPrint_thenReturnSessionNotFound() = runTest {
+        val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-    //     @IgnoreJvm // cryptobox4j does not expose the session
+        assertFailsWith<ProteusException> {
+            bobClient.transaction("remoteFingerPrint") { it.remoteFingerPrint(aliceSessionId) }
+        }.also {
+            assertEquals(ProteusException.Code.SESSION_NOT_FOUND, it.code)
+        }
+    }
+
     @Test
     fun givenSessionExists_whenGettingRemoteFingerPrint_thenReturnSuccess() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
@@ -168,7 +163,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
         bobClient.transaction("remoteFingerPrint") { it.remoteFingerPrint(aliceSessionId) }.also {
-            assertEquals(aliceClient.transaction("getLocalFingerprint") { it.getLocalFingerprint() }.decodeToString(), it.decodeToString())
+            assertEquals(aliceClient.transaction("getLocalFingerprint") { it.getLocalFingerprint() }, it)
         }
     }
 

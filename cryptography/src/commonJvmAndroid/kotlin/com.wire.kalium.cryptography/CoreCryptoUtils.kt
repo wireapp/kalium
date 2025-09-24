@@ -33,7 +33,7 @@ actual suspend fun migrateDatabaseKey(
 
     migrateDatabaseKeyTypeToBytes(
         oldKey = oldKey,
-        name = path,
+        path = path,
         newKey = databaseKey
     )
 }

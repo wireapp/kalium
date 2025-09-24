@@ -17,9 +17,10 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.Ciphersuites
 import com.wire.crypto.CommitBundle
+import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoClient
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
@@ -27,12 +28,11 @@ import com.wire.crypto.CoreCryptoLogger
 import com.wire.crypto.DatabaseKey
 import com.wire.crypto.EpochObserver
 import com.wire.crypto.HistorySecret
-import com.wire.crypto.MLSGroupId
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
+import com.wire.crypto.invoke
 import com.wire.crypto.setLogger
-import com.wire.crypto.setMaxLogLevel
 import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
@@ -56,8 +56,7 @@ actual suspend fun coreCryptoCentral(
         databaseKey = databaseKey
     )
 
-    setLogger(CoreCryptoLoggerImpl)
-    setMaxLogLevel(CoreCryptoLogLevel.WARN)
+    setLogger(CoreCryptoLoggerImpl, CoreCryptoLogLevel.WARN)
 
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
@@ -81,7 +80,7 @@ private object CoreCryptoLoggerImpl : CoreCryptoLogger {
 }
 
 class CoreCryptoCentralImpl(
-    private val cc: CoreCrypto,
+    private val cc: CoreCryptoClient,
     private val rootDir: String
 ) : CoreCryptoCentral {
 
@@ -116,14 +115,15 @@ class CoreCryptoCentralImpl(
             cc.transaction("initMLS") { context ->
                 context.mlsInit(
                     clientId.toString().toClientId(),
-                    Ciphersuites(allowedCipherSuites.map { it.toCrypto() }.toSet()),
+                    allowedCipherSuites.map { it.toCrypto() },
+                    null
                 )
             }
 
             cc.registerEpochObserver(
                 coroutineScope,
                 epochObserver = object : EpochObserver {
-                    override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
+                    override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
                         epochObserver.onEpochChange(conversationId.copyBytes().encodeBase64(), epoch)
                     }
                 }
@@ -172,7 +172,7 @@ class CoreCryptoCentralImpl(
         cc.registerEpochObserver(
             coroutineScope,
             epochObserver = object : EpochObserver {
-                override suspend fun epochChanged(conversationId: MLSGroupId, epoch: ULong) {
+                override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
                     epochObserver.onEpochChange(conversationId.copyBytes().encodeBase64(), epoch)
                 }
             }
@@ -196,12 +196,12 @@ class CoreCryptoCentralImpl(
         return cc.transaction("newAcmeEnrollment") {
             E2EIClientImpl(
                 it.e2eiNewEnrollment(
-                    clientId.toString(),
-                    displayName,
-                    handle,
-                    expiry.inWholeSeconds.toUInt(),
-                    defaultCipherSuite.toCrypto(),
-                    teamId,
+                    clientId = clientId.toString(),
+                    displayName = displayName,
+                    handle = handle,
+                    team = teamId,
+                    expirySec = expiry.inWholeSeconds.toUInt(),
+                    ciphersuite = defaultCipherSuite.toCrypto(),
                 )
             )
         }
@@ -210,7 +210,7 @@ class CoreCryptoCentralImpl(
     override suspend fun registerTrustAnchors(pem: CertificateChain) {
         try {
             cc.transaction("registerTrustAnchors") {
-                it.e2eiRegisterAcmeCA(pem)
+                it.e2eiRegisterAcmeCa(pem)
             }
         } catch (e: CryptographyException) {
             kaliumLogger.w("Registering TrustAnchors failed")
@@ -220,7 +220,7 @@ class CoreCryptoCentralImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
         cc.transaction("registerCrl") {
-            it.e2eiRegisterCRL(url, crl).toCryptography()
+            it.e2eiRegisterCrl(crlDp = url, crlDer = crl).toCryptography()
         }
     } catch (exception: Exception) {
         kaliumLogger.w("Registering Crl failed, exception: $exception")
@@ -234,7 +234,7 @@ class CoreCryptoCentralImpl(
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
         try {
             cc.transaction("registerIntermediateCa") {
-                it.e2eiRegisterIntermediateCA(pem)
+                it.e2eiRegisterIntermediateCa(pem)
             }
         } catch (exception: Exception) {
             kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")

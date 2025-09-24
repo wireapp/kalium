@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.util.arrangement.provider
 
-import com.wire.kalium.cryptography.*
 import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -26,22 +26,17 @@ import io.mockative.mock
 internal interface ProteusCoreCryptoContextArrangement {
     val proteusContext: ProteusCoreCryptoContext
 
-    suspend fun withNewPreKeysReturning(from: Int, count: Int, result: List<PreKeyCrypto>): ProteusCoreCryptoContextArrangement
     suspend fun withNewLastResortPreKeyReturning(result: PreKeyCrypto): ProteusCoreCryptoContextArrangement
     suspend fun withCreateSessionSuccess(): ProteusCoreCryptoContextArrangement
     suspend fun withCreateSessionThrowing(exception: Throwable): ProteusCoreCryptoContextArrangement
     suspend fun withDoesSessionExistReturning(result: Boolean): ProteusCoreCryptoContextArrangement
-    suspend fun withGetLocalFingerprintReturning(fingerprint: ByteArray): ProteusCoreCryptoContextArrangement
+    suspend fun withGetLocalFingerprintReturning(fingerprint: String): ProteusCoreCryptoContextArrangement
     suspend fun withDeleteSessionSuccess(): ProteusCoreCryptoContextArrangement
 }
 
 internal class ProteusCoreCryptoContextArrangementImpl : ProteusCoreCryptoContextArrangement {
 
     override val proteusContext: ProteusCoreCryptoContext = mock(ProteusCoreCryptoContext::class)
-
-    override suspend fun withNewPreKeysReturning(from: Int, count: Int, result: List<PreKeyCrypto>) = apply {
-        coEvery { proteusContext.newPreKeys(from, count) }.returns(ArrayList(result))
-    }
 
     override suspend fun withNewLastResortPreKeyReturning(result: PreKeyCrypto) = apply {
         coEvery { proteusContext.newLastResortPreKey() }.returns(result)
@@ -59,7 +54,7 @@ internal class ProteusCoreCryptoContextArrangementImpl : ProteusCoreCryptoContex
         coEvery { proteusContext.doesSessionExist(any()) }.returns(result)
     }
 
-    override suspend fun withGetLocalFingerprintReturning(fingerprint: ByteArray) = apply {
+    override suspend fun withGetLocalFingerprintReturning(fingerprint: String) = apply {
         coEvery { proteusContext.getLocalFingerprint() }.returns(fingerprint)
     }
 

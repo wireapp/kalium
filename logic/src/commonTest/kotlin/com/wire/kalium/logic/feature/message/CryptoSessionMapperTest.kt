@@ -60,7 +60,7 @@ class CryptoSessionMapperTest {
                 "user1" to mapOf(
                     "valid_client" to PreKeyCrypto(
                         id = 1,
-                        encodedData = "key1"
+                        pkb = "key1"
                     )
                 ),
                 "user2" to emptyMap<String, PreKeyCrypto>()

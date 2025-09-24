@@ -46,7 +46,7 @@ data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoC
 
 data class PreKeyCrypto(
     val id: Int,
-    val encodedData: String
+    val pkb: String
 )
 
 @Suppress("TooManyFunctions", "OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
