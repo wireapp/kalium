@@ -31,7 +31,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -603,8 +603,8 @@ class EventRepositoryTest {
         val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val eventDAO: EventDAO = mock(EventDAO::class)
-        val executeSlowSyncForTooLongOfflineUseCase: ExecuteSlowSyncForTooLongOfflineUseCase =
-            mock(ExecuteSlowSyncForTooLongOfflineUseCase::class)
+        val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase =
+            mock(RestartSlowSyncProcessForRecoveryUseCase::class)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi = notificationApi,
@@ -613,7 +613,7 @@ class EventRepositoryTest {
             currentClientId = clientIdProvider,
             selfUserId = TestUser.SELF.id,
             clientRegistrationStorage = clientRegistrationStorage,
-            executeSlowSyncForTooLongOffline = executeSlowSyncForTooLongOfflineUseCase,
+            restartSlowSyncProcessForRecovery = restartSlowSyncProcessForRecoveryUseCase,
             logger = kaliumLogger
         )
 

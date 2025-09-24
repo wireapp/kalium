@@ -40,7 +40,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncPhase
-import com.wire.kalium.logic.sync.slow.ExecuteSlowSyncForTooLongOfflineUseCase
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -141,7 +141,7 @@ internal class EventDataSource(
     private val currentClientId: CurrentClientIdProvider,
     private val selfUserId: UserId,
     private val clientRegistrationStorage: ClientRegistrationStorage,
-    private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase,
+    private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     logger: KaliumLogger
 ) : EventRepository {
@@ -302,13 +302,8 @@ internal class EventDataSource(
 
                         ConsumableNotificationResponse.MissedNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.MissedNotification")
-                            executeSlowSyncForTooLongOffline(onComplete = {
-                                acknowledgeMissedEvent().flatMap {
-                                    logger.d("Resuming live events after missed event ack")
-                                    flowCollector.emit(IncrementalSyncPhase.ReadyToProcess)
-                                    Unit.right()
-                                }
-                            })
+                            acknowledgeMissedEvent()
+                            restartSlowSyncProcessForRecovery()
                         }
 
                         is ConsumableNotificationResponse.SynchronizationNotification -> {

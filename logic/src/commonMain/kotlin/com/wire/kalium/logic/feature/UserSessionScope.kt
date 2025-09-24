@@ -1354,9 +1354,7 @@ class UserSessionScope internal constructor(
         )
 
     private val executeSlowSyncForTooLongOffline: ExecuteSlowSyncForTooLongOfflineUseCase by lazy {
-        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(
-            slowSyncRepository = slowSyncRepository
-        )
+        ExecuteSlowSyncForTooLongOfflineUseCaseImpl(slowSyncRepository = slowSyncRepository, userScopedLogger)
     }
 
     private val eventRepository: EventRepository = EventDataSource(
@@ -1365,7 +1363,7 @@ class UserSessionScope internal constructor(
         eventDAO = userStorage.database.eventDAO,
         currentClientId = clientIdProvider,
         clientRegistrationStorage = clientRegistrationStorage,
-        executeSlowSyncForTooLongOffline = executeSlowSyncForTooLongOffline,
+        restartSlowSyncProcessForRecovery = restartSlowSyncProcessForRecoveryUseCase,
         selfUserId = userId,
         logger = userScopedLogger
     )
