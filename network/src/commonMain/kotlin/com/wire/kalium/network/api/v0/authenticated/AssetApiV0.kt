@@ -19,9 +19,9 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
@@ -47,6 +47,8 @@ import io.ktor.utils.io.close
 import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.writePacket
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
