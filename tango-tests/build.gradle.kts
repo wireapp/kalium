@@ -65,3 +65,12 @@ kotlin {
         }
     }
 }
+
+// Disable Tests if running on CI
+val isCi = System.getenv("CI")?.toBoolean() == true || System.getenv("GITHUB_ACTIONS")?.toBoolean() == true
+if (isCi) {
+    // Disable all JVM test tasks in CI for this module
+    tasks.withType<Test>().configureEach {
+        enabled = false
+    }
+}

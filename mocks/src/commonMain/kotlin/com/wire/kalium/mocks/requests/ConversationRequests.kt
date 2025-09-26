@@ -27,9 +27,9 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
 object ConversationRequests {
-    private const val PATH_CONVERSATION_ID_LIST = "${CommonResponses.BASE_PATH_V1}conversations/list-ids"
-    private const val PATH_CONVERSATIONS = "${CommonResponses.BASE_PATH_V1}conversations"
-    private const val PATH_CONVERSATIONS_LIST_V2 = "${CommonResponses.BASE_PATH_V1}/conversations/list/v2"
+    private const val PATH_CONVERSATION_ID_LIST = "${CommonResponses.BASE_PATH_V8}conversations/list-ids"
+    private const val PATH_CONVERSATIONS = "${CommonResponses.BASE_PATH_V8}conversations"
+    private const val PATH_CONVERSATIONS_LIST_V2 = "${CommonResponses.BASE_PATH_V8}conversations/list/v2"
 
     private val conversationIdListApiRequestSuccess = TestRequestHandler(
         path = PATH_CONVERSATION_ID_LIST,

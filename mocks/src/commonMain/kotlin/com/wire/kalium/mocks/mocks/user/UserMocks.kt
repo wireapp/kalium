@@ -18,8 +18,15 @@
 package com.wire.kalium.mocks.mocks.user
 
 import com.wire.kalium.mocks.mocks.domain.DomainMocks
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.model.AssetSizeDTO
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.model.UserAssetDTO
+import com.wire.kalium.network.api.model.UserAssetTypeDTO
+import com.wire.kalium.network.api.model.UserProfileDTO
 
 object UserMocks {
 
@@ -48,5 +55,31 @@ object UserMocks {
         phone = null,
         ssoID = null,
         supportedProtocols = null
+    )
+
+    val otherProfile = UserProfileDTO(
+        id = otherId,
+        name = "username",
+        handle = "handle",
+        email = "email",
+        accentId = 0,
+        legalHoldStatus = LegalHoldStatusDTO.DISABLED,
+        teamId = "teamId",
+        assets = listOf(
+            UserAssetDTO("value1", AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE),
+            UserAssetDTO("value2", AssetSizeDTO.COMPLETE, UserAssetTypeDTO.IMAGE)
+        ),
+        deleted = false,
+        expiresAt = null,
+        nonQualifiedId = "",
+        service = null,
+        supportedProtocols = listOf(SupportedProtocolDTO.MLS)
+    )
+
+    val usersFoundList = listOf(otherProfile)
+
+    val userList = ListUsersDTO(
+        usersFailed = emptyList(),
+        usersFound = usersFoundList
     )
 }
