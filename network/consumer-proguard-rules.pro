@@ -45,3 +45,25 @@
 
 # protobuf
 -keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
+
+# Ktor
+-dontwarn io.ktor.client.network.sockets.SocketTimeoutException
+-dontwarn io.ktor.client.network.sockets.TimeoutExceptionsCommonKt
+-dontwarn io.ktor.client.plugins.HttpTimeout$HttpTimeoutCapabilityConfiguration
+-dontwarn io.ktor.client.plugins.HttpTimeout$Plugin
+-dontwarn io.ktor.client.plugins.HttpTimeout
+-dontwarn io.ktor.util.InternalAPI
+-dontwarn io.ktor.utils.io.ByteReadChannelJVMKt
+-dontwarn io.ktor.utils.io.CoroutinesKt
+-dontwarn io.ktor.utils.io.core.ByteBuffersKt
+-dontwarn io.ktor.utils.io.core.BytePacketBuilder
+-dontwarn io.ktor.utils.io.core.ByteReadPacket$Companion
+-dontwarn io.ktor.utils.io.core.ByteReadPacket
+-dontwarn io.ktor.utils.io.core.CloseableJVMKt
+-dontwarn io.ktor.utils.io.core.Input
+-dontwarn io.ktor.utils.io.core.InputArraysKt
+-dontwarn io.ktor.utils.io.core.InputPrimitivesKt
+-dontwarn io.ktor.utils.io.core.Output
+-dontwarn io.ktor.utils.io.core.OutputPrimitivesKt
+-dontwarn io.ktor.utils.io.core.PreviewKt
+-dontwarn okhttp3.internal.Util
