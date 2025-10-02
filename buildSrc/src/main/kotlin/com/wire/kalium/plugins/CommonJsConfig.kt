@@ -18,21 +18,32 @@
 
 package com.wire.kalium.plugins
 
-import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.invoke
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
-fun KotlinJsTargetDsl.commonJsConfig(jsModuleNameOverride: String?, enableJsTests: Boolean) {
-    if (jsModuleNameOverride != null) {
-        moduleName = jsModuleNameOverride
-    }
-    browser {
+fun KotlinMultiplatformExtension.commonJsConfig(project: Project, jsModuleNameOverride: String?, enableJsTests: Boolean) {
+    js {
+        if (jsModuleNameOverride != null) {
+            moduleName = jsModuleNameOverride
+        }
+        browser {
 //                     // Not needed for now, but if we include UI with CSS in the future, we can enable it
 //                     commonWebpackConfig {
 //                         cssSupport.enabled = true
 //                     }
-        testTask {
-            enabled = enableJsTests
-            useMocha {
-                timeout = "5s"
+            testTask {
+                enabled = enableJsTests
+                useMocha {
+                    timeout = "5s"
+                }
+            }
+        }
+    }
+    sourceSets {
+        getByName("jsMain") {
+            dependencies {
+                implementation(project.library("ktx-atomicfu-runtime"))
             }
         }
     }
