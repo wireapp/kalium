@@ -39,9 +39,8 @@ class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal c
     suspend operator fun invoke(
         searchQuery: String,
         conversationId: ConversationId,
-        startingOffset: Long,
         pagingConfig: PagingConfig
     ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesSearchBySearchQueryAndConversationId(
-        searchQuery, conversationId, pagingConfig, startingOffset
+        searchQuery, conversationId, pagingConfig
     ).flowOn(dispatcher.io)
 }

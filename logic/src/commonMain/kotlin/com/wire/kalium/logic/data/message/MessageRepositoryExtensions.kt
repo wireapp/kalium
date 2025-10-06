@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.message.KaliumKeySetPager
 import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.persistence.dao.message.MessageCursor
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
@@ -37,14 +39,12 @@ internal interface MessageRepositoryExtensions {
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
     ): Flow<PagingData<Message.Standalone>>
 
     suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
         searchQuery: String,
         conversationId: ConversationId,
         pagingConfig: PagingConfig,
-        startingOffset: Long
     ): Flow<PagingData<Message.Standalone>>
 
     suspend fun getPaginatedMessageAssetsWithoutImageByConversationId(
@@ -69,13 +69,11 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
     ): Flow<PagingData<Message.Standalone>> {
-        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
+        val pager: KaliumKeySetPager<MessageCursor, MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
             conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
-            pagingConfig,
-            startingOffset
+            pagingConfig = pagingConfig,
         )
 
         return pager.pagingDataFlow.map {
@@ -87,13 +85,11 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         searchQuery: String,
         conversationId: ConversationId,
         pagingConfig: PagingConfig,
-        startingOffset: Long
     ): Flow<PagingData<Message.Standalone>> {
-        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForMessagesSearch(
+        val pager: KaliumKeySetPager<MessageCursor, MessageEntity> = messageDAO.platformExtensions.getPagerForMessagesSearch(
             searchQuery = searchQuery,
             conversationId = conversationId.toDao(),
             pagingConfig = pagingConfig,
-            startingOffset = startingOffset
         )
 
         return pager.pagingDataFlow.map {

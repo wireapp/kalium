@@ -502,7 +502,28 @@ countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+SELECT * FROM MessageDetailsView
+WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND (:lastSeenDate IS NULL OR date < :lastSeenDate OR (date = :lastSeenDate AND id < :lastSeenId))
+ORDER BY date DESC
+LIMIT :limit;
+
+selectMessageBoundariesByConversationIdAndVisibility:
+SELECT date, id FROM MessageDetailsView
+WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND (:anchorDate IS NULL OR date < :anchorDate OR (date = :anchorDate AND id < :anchorId))
+ORDER BY date DESC
+LIMIT :limit;
+
+selectMessagesBetweenCursors:
+SELECT * FROM MessageDetailsView
+WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND (date < :beginDate OR (date = :beginDate AND id <= :beginId))
+AND (:endDate IS NULL OR date > :endDate OR (date = :endDate AND id > :endId))
+ORDER BY date DESC;
 
 countBackupMessages:
 SELECT count(*) FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType;
@@ -606,9 +627,29 @@ WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
 AND contentType = 'TEXT'
 AND expireAfterMillis IS NULL
+AND (:lastSeenDate IS NULL OR date < :lastSeenDate OR (date = :lastSeenDate AND id < :lastSeenId))
 ORDER BY date DESC
-LIMIT :limit
-OFFSET :offset;
+LIMIT :limit;
+
+selectSearchMessageBoundaries:
+SELECT date, id FROM MessageDetailsView
+WHERE text LIKE ('%' || :searchQuery || '%')
+AND conversationId = :conversationId
+AND contentType = 'TEXT'
+AND expireAfterMillis IS NULL
+AND (:anchorDate IS NULL OR date < :anchorDate OR (date = :anchorDate AND id < :anchorId))
+ORDER BY date DESC
+LIMIT :limit;
+
+selectSearchMessagesBetweenCursors:
+SELECT * FROM MessageDetailsView
+WHERE text LIKE ('%' || :searchQuery || '%')
+AND conversationId = :conversationId
+AND contentType = 'TEXT'
+AND expireAfterMillis IS NULL
+AND (date < :beginDate OR (date = :beginDate AND id <= :beginId))
+AND (:endDate IS NULL OR date > :endDate OR (date = :endDate AND id > :endId))
+ORDER BY date DESC;
 
 countBySearchedMessageAndConversationId:
 SELECT COUNT(*) FROM MessageDetailsView

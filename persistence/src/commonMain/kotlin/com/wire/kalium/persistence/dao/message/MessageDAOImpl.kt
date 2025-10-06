@@ -303,11 +303,12 @@ internal class MessageDAOImpl internal constructor(
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
         queries.selectByConversationIdAndVisibility(
-            conversationId,
-            visibility,
-            limit.toLong(),
-            offset.toLong(),
-            mapper::toEntityMessageFromView
+            conversationId = conversationId,
+            visibility = visibility,
+            lastSeenId = "",
+            lastSeenDate = null,
+            limit = limit.toLong(),
+            mapper = mapper::toEntityMessageFromView
         )
             .asFlow()
             .flowOn(coroutineContext)

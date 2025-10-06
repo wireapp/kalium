@@ -36,3 +36,16 @@ class KaliumPager<EntityType : Any>(
     val pagingDataFlow: Flow<PagingData<EntityType>>
         get() = pager.flow.flowOn(coroutineContext)
 }
+
+/**
+ * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.
+ */
+class KaliumKeySetPager<KeyType: Any, EntityType : Any>(
+    private val pager: Pager<KeyType, EntityType>,
+    internal val pagingSource: PagingSource<KeyType, EntityType>,
+    private val coroutineContext: CoroutineContext
+) {
+    val pagingDataFlow: Flow<PagingData<EntityType>>
+        get() = pager.flow.flowOn(coroutineContext)
+}
+

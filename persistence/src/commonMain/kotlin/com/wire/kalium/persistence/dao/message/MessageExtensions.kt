@@ -22,12 +22,24 @@ import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
 import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessageAssetViewQueries
+import com.wire.kalium.persistence.MessageDetailsView
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.kaliumLogger
 import io.mockative.Mockable
+import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
+
+/**
+ * Cursor for keyset-based pagination of messages.
+ * @param date The creation date of the last message in the current page
+ * @param id The ID of the last message in the current page (for tie-breaking)
+ */
+data class MessageCursor(
+    val date: Instant,
+    val id: String
+)
 
 @Mockable
 interface MessageExtensions {
@@ -35,15 +47,13 @@ interface MessageExtensions {
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
-    ): KaliumPager<MessageEntity>
+    ): KaliumKeySetPager<MessageCursor, MessageEntity>
 
     fun getPagerForMessagesSearch(
         searchQuery: String,
         conversationId: ConversationIDEntity,
         pagingConfig: PagingConfig,
-        startingOffset: Long
-    ): KaliumPager<MessageEntity>
+    ): KaliumKeySetPager<MessageCursor, MessageEntity>
 
     fun getPagerForMessageAssetsWithoutImage(
         conversationId: ConversationIDEntity,
@@ -71,25 +81,24 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
-    ): KaliumPager<MessageEntity> {
+    ): KaliumKeySetPager<MessageCursor, MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
-        return KaliumPager(
-            Pager(pagingConfig) { getPagingSource(conversationId, visibilities, startingOffset) },
-            getPagingSource(conversationId, visibilities, startingOffset),
+        return KaliumKeySetPager(
+            Pager(pagingConfig) { getPagingSource(conversationId, visibilities) },
+            getPagingSource(conversationId, visibilities),
             coroutineContext
         )
     }
+
     override fun getPagerForMessagesSearch(
         searchQuery: String,
         conversationId: ConversationIDEntity,
         pagingConfig: PagingConfig,
-        startingOffset: Long
-    ): KaliumPager<MessageEntity> {
+    ): KaliumKeySetPager<MessageCursor, MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
-        return KaliumPager(
-            Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset) },
-            getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset),
+        return KaliumKeySetPager(
+            Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId) },
+            getMessagesSearchPagingSource(searchQuery, conversationId),
             coroutineContext
         )
     }
@@ -124,43 +133,64 @@ internal class MessageExtensionsImpl internal constructor(
     private fun getPagingSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
-        initialOffset: Long
-    ) = QueryPagingSource(
-            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-            transacter = messagesQueries,
-            context = coroutineContext,
-            initialOffset = initialOffset,
-            queryProvider = { limit, offset ->
-                kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
-                messagesQueries.selectByConversationIdAndVisibility(
-                    conversationId,
-                    visibilities,
-                    limit,
-                    offset,
-                    messageMapper::toEntityMessageFromView
-                )
-            }
-        )
+    ) = QueryPagingSource<MessageCursor, MessageEntity>(
+        transacter = messagesQueries,
+        context = coroutineContext,
+        pageBoundariesProvider = { key, limit ->
+            kaliumLogger.d("[QueryPagingSource] Fetching boundaries: anchor = $key, limit = $limit")
+            messagesQueries.selectMessageBoundariesByConversationIdAndVisibility(
+                conversationId = conversationId,
+                visibility = visibilities,
+                anchorDate = key?.date,
+                anchorId = key?.id?: "",
+                limit = limit,
+                mapper = { date: Instant, id: String -> MessageCursor(date = date, id = id) }
+            )
+        },
+        queryProvider = { beginInclusive, endExclusive ->
+            kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: begin = $beginInclusive, end = $endExclusive")
+            messagesQueries.selectMessagesBetweenCursors(
+                conversationId = conversationId,
+                visibility = visibilities,
+                beginDate = beginInclusive.date,
+                beginId = beginInclusive.id,
+                endDate = endExclusive?.date,
+                endId = endExclusive?.id?: "", // in the query if date is null the endId is not used
+                mapper = messageMapper::toEntityMessageFromView
+            )
+        }
+    )
 
     private fun getMessagesSearchPagingSource(
         searchQuery: String,
         conversationId: ConversationIDEntity,
-        initialOffset: Long
-    ) = QueryPagingSource(
-            countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId),
-            transacter = messagesQueries,
-            context = coroutineContext,
-            initialOffset = initialOffset,
-            queryProvider = { limit, offset ->
-                messagesQueries.selectConversationMessagesFromSearch(
-                    searchQuery,
-                    conversationId,
-                    limit,
-                    offset,
-                    messageMapper::toEntityMessageFromView
-                )
-            }
-        )
+    ) = QueryPagingSource<MessageCursor, MessageEntity>(
+        transacter = messagesQueries,
+        context = coroutineContext,
+        pageBoundariesProvider = { anchor, limit ->
+            kaliumLogger.d("[QueryPagingSource] Fetching search boundaries: anchor = $anchor, limit = $limit")
+            messagesQueries.selectSearchMessageBoundaries(
+                searchQuery = searchQuery,
+                conversationId = conversationId,
+                anchorDate = anchor?.date,
+                anchorId = anchor?.id?: "", // in the query if date is null the anchorId is not used
+                limit = limit,
+                mapper = { date: Instant, id: String -> MessageCursor(date = date, id = id) }
+            )
+        },
+        queryProvider = { beginInclusive, endExclusive ->
+            kaliumLogger.d("[QueryPagingSource] Loading search [MessageEntity] data: begin = $beginInclusive, end = $endExclusive")
+            messagesQueries.selectSearchMessagesBetweenCursors(
+                searchQuery = searchQuery,
+                conversationId = conversationId,
+                beginDate = beginInclusive.date,
+                beginId = beginInclusive.id,
+                endDate = endExclusive?.date,
+                endId = endExclusive?.id?: "", // in the query if date is null the endExclusive is not used
+                mapper = messageMapper::toEntityMessageFromView
+            )
+        }
+    )
 
     private fun getMessageAssetsWithoutImagePagingSource(
         conversationId: ConversationIDEntity,
