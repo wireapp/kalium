@@ -48,7 +48,7 @@ data class FeatureConfigModel(
     val cellsModel: CellsConfigModel?,
     val appsModel: ConfigsStatusModel?,
     val chatBubblesModel: ChatBubblesConfigModel?,
-    val disableUserProfileQRCodeConfigModel: DisableUserProfileQRCodeConfigModel?,
+    val enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel?,
 )
 
 enum class Status {
@@ -165,7 +165,7 @@ data class CellsConfigModel(
 )
 
 @Serializable
-data class DisableUserProfileQRCodeConfigModel(
+data class EnableUserProfileQRCodeConfigModel(
     @SerialName("status")
     val status: Status,
 )

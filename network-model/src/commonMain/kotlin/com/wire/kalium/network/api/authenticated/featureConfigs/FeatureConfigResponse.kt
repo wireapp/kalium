@@ -69,8 +69,8 @@ data class FeatureConfigResponse(
     val apps: FeatureConfigData.Apps?,
     @SerialName("chatBubbles")
     val chatBubbles: FeatureConfigData.ChatBubbles?,
-    @SerialName("disableUserProfileQRCode")
-    val disableUserProfileQRCode: FeatureConfigData.DisableUserProfileQRCode?,
+    @SerialName("simplifiedUserConnectionRequestQRCode")
+    val enableUserProfileQRCode: FeatureConfigData.EnableUserProfileQRCode?,
 )
 
 @Serializable
@@ -344,9 +344,9 @@ sealed class FeatureConfigData {
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
 
-    @SerialName("disableUserProfileQRCode")
+    @SerialName("simplifiedUserConnectionRequestQRCode")
     @Serializable
-    data class DisableUserProfileQRCode(
+    data class EnableUserProfileQRCode(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
