@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.functional.right
 import io.mockative.any
@@ -50,16 +51,43 @@ class RenameNodeUseCaseTest {
         }.wasInvoked(once)
     }
 
+    @Test
+    fun givenRepository_whenRenameIsSuccess_thenRemotePathInDatabaseIsUpdated() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessRename()
+            .arrange()
+
+        useCase.invoke(
+            uuid = "uuid",
+            path = "somePath/someFile.txt",
+            newName = "newName.jpg"
+        )
+
+        coVerify {
+            arrangement.attachmentsRepository.updateAssetPath(
+                assetId = ("uuid"),
+                remotePath = ("somePath/newName.jpg")
+            )
+        }.wasInvoked(once)
+    }
+
     private class Arrangement {
 
         val cellsRepository = mock(CellsRepository::class)
+        val attachmentsRepository = mock(CellAttachmentsRepository::class)
 
         suspend fun withSuccessRename() = apply {
             coEvery { cellsRepository.renameNode(any(), any(), any()) }.returns(Unit.right())
         }
 
-        suspend fun arrange() = this to RenameNodeUseCaseImpl(
-            cellsRepository = cellsRepository
-        )
+        suspend fun arrange(): Pair<Arrangement, RenameNodeUseCaseImpl> {
+
+            coEvery { attachmentsRepository.updateAssetPath(any(), any()) }.returns(Unit.right())
+
+            return this to RenameNodeUseCaseImpl(
+                cellsRepository = cellsRepository,
+                attachmentsRepository = attachmentsRepository,
+            )
+        }
     }
 }

@@ -63,6 +63,9 @@ UPDATE MessageAttachments SET local_path = ? WHERE asset_id = ?;
 getAssetPath:
 SELECT asset_path FROM MessageAttachments WHERE asset_id = ?;
 
+setAssetPath:
+UPDATE MessageAttachments SET asset_path = ? WHERE asset_id = ?;
+
 setTransferStatus:
 UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;
 
