@@ -573,9 +573,9 @@ class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
         )
-        is FeatureConfigData.DisableUserProfileQRCode -> Event.FeatureConfig.DisableUserProfileQRCodeConfigUpdated(
+        is FeatureConfigData.EnableUserProfileQRCode -> Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated(
             id,
-            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.DisableUserProfileQRCode)
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.EnableUserProfileQRCode)
         )
 
         is FeatureConfigData.ChatBubbles -> Event.FeatureConfig.ChatBubblesConfigUpdated(

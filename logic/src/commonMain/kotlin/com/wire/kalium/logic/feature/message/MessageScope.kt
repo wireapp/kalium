@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -143,6 +144,7 @@ class MessageScope internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val compositeMessageRepository: CompositeMessageRepository,
     private val isWireCellsEnabledForConversationUseCase: IsWireCellsEnabledForConversationUseCase,
+    private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -174,6 +176,8 @@ class MessageScope internal constructor(
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
             legalHoldStatusMapper = legalHoldStatusMapper,
+            mlsConversationRepository = mlsConversationRepository,
+            joinExistingConversationUseCase = joinExistingConversationUseCaseProvider(),
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -221,7 +225,6 @@ class MessageScope internal constructor(
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
-            mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
             legalHoldHandler,

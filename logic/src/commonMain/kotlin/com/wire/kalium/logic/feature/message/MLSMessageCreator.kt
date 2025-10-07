@@ -22,10 +22,15 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
@@ -40,23 +45,45 @@ import kotlinx.coroutines.flow.first
 @Mockable
 interface MLSMessageCreator {
 
-    suspend fun createOutgoingMLSMessage(
-        mlsContext: MlsCoreCryptoContext,
+    suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
+        transactionContext: CryptoTransactionContext,
         groupId: GroupID,
         message: Message.Sendable
     ): Either<CoreFailure, MLSMessageApi.Message>
 
 }
 
-class MLSMessageCreatorImpl(
+@Suppress("LongParameterList")
+internal class MLSMessageCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val legalHoldStatusMapper: LegalHoldStatusMapper,
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val joinExistingConversationUseCase: JoinExistingMLSConversationUseCase,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MLSMessageCreator {
 
-    override suspend fun createOutgoingMLSMessage(
+    override suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable
+    ): Either<CoreFailure, MLSMessageApi.Message> = transactionContext.wrapInMLSContext { mlsContext ->
+        val doesConversationExist = mlsContext.conversationExists(idMapper.toCryptoModel(groupId))
+        if (doesConversationExist) {
+            mlsConversationRepository.commitPendingProposals(mlsContext, groupId)
+        } else {
+            joinExistingConversationUseCase(transactionContext, message.conversationId)
+        }.flatMap {
+            createOutgoingMLSMessage(
+                mlsContext = mlsContext,
+                groupId = groupId,
+                message = message
+            )
+        }
+    }
+
+    private suspend fun createOutgoingMLSMessage(
         mlsContext: MlsCoreCryptoContext,
         groupId: GroupID,
         message: Message.Sendable

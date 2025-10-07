@@ -181,7 +181,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.DisableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()

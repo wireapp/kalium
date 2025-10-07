@@ -81,8 +81,8 @@ interface UserConfigDAO {
     suspend fun observeAppsEnabled(): Flow<Boolean>
     suspend fun setChatBubblesEnabled(enabled: Boolean)
     suspend fun isChatBubblesEnabled(): Boolean
-    suspend fun setProfileQRCodeDisabled(enabled: Boolean)
-    suspend fun isProfileQRCodeDisabled(): Boolean
+    suspend fun setProfileQRCodeEnabled(enabled: Boolean)
+    suspend fun isProfileQRCodeEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -262,12 +262,12 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isCellsEnabled(): Boolean =
         metadataDAO.valueByKey(CELLS_ENABLED)?.toBoolean() ?: false
 
-    override suspend fun setProfileQRCodeDisabled(enabled: Boolean) {
-        metadataDAO.insertValue(enabled.toString(), PROFILE_QR_CODE_DISABLED)
+    override suspend fun setProfileQRCodeEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), PROFILE_QR_CODE_ENABLED)
     }
 
-    override suspend fun isProfileQRCodeDisabled(): Boolean =
-        metadataDAO.valueByKey(PROFILE_QR_CODE_DISABLED)?.toBoolean() ?: false
+    override suspend fun isProfileQRCodeEnabled(): Boolean =
+        metadataDAO.valueByKey(PROFILE_QR_CODE_ENABLED)?.toBoolean() ?: true
 
     override suspend fun setAppsEnabled(isAppsEnabled: Boolean) {
         metadataDAO.insertValue(isAppsEnabled.toString(), APPS_ENABLED_KEY)
@@ -301,7 +301,7 @@ internal class UserConfigDAOImpl internal constructor(
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
         const val CELLS_ENABLED = "wire_cells"
-        const val PROFILE_QR_CODE_DISABLED = "profile_qr_code_enabled"
+        const val PROFILE_QR_CODE_ENABLED = "profile_qr_code_enabled"
         private const val APPS_ENABLED_KEY = "apps_enabled"
         private const val CHAT_BUBBLES_ENABLED = "chat_bubbles"
     }
