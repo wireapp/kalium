@@ -38,7 +38,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesC
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import io.mockative.Mockable
@@ -61,7 +61,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
     private val cellsConfigHandler: CellsConfigHandler,
     private val chatBubblesConfigHandler: ChatBubblesConfigHandler,
-    private val disableUserProfileQRCodeConfigHandler: DisableUserProfileQRCodeConfigHandler,
+    private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(
@@ -99,7 +99,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             is Event.FeatureConfig.AllowedGlobalOperationsUpdated -> allowedGlobalOperationsHandler.handle(event.model)
             is Event.FeatureConfig.CellsConfigUpdated -> cellsConfigHandler.handle(event.model)
             is Event.FeatureConfig.ChatBubblesConfigUpdated -> chatBubblesConfigHandler.handle(event.model)
-            is Event.FeatureConfig.DisableUserProfileQRCodeConfigUpdated ->
-                disableUserProfileQRCodeConfigHandler.handle(event.model)
+            is Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated ->
+                enableUserProfileQRCodeConfigHandler.handle(event.model)
         }
 }

@@ -20,15 +20,15 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.DisableUserProfileQRCodeConfigModel
+import com.wire.kalium.logic.data.featureConfig.EnableUserProfileQRCodeConfigModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
-class DisableUserProfileQRCodeConfigHandler(
+class EnableUserProfileQRCodeConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(model: DisableUserProfileQRCodeConfigModel?): Either<CoreFailure, Unit> =
+    suspend fun handle(model: EnableUserProfileQRCodeConfigModel?): Either<CoreFailure, Unit> =
         when {
-            model == null -> userConfigRepository.setProfileQRCodeDisabled(false)
-            else -> userConfigRepository.setProfileQRCodeDisabled(model.status == Status.ENABLED)
+            model == null -> userConfigRepository.setProfileQRCodeEnabled(true)
+            else -> userConfigRepository.setProfileQRCodeEnabled(model.status == Status.ENABLED)
         }
 }
