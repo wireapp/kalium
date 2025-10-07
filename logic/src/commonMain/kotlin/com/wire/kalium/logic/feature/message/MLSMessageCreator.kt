@@ -45,7 +45,7 @@ import kotlinx.coroutines.flow.first
 @Mockable
 interface MLSMessageCreator {
 
-    suspend fun cleanMLSGroupStateAndCreateOutgoingMLSMessage(
+    suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
         groupId: GroupID,
         message: Message.Sendable
@@ -64,7 +64,7 @@ internal class MLSMessageCreatorImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MLSMessageCreator {
 
-    override suspend fun cleanMLSGroupStateAndCreateOutgoingMLSMessage(
+    override suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
         groupId: GroupID,
         message: Message.Sendable

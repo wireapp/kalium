@@ -63,7 +63,7 @@ class MLSMessageCreatorTest {
             .withMLSEncryptMessage(encryptedData)
             .arrange {}
 
-        creator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
+        creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
             .shouldSucceed {}
 
         coVerify {
@@ -97,7 +97,7 @@ class MLSMessageCreatorTest {
             .withMLSEncryptMessage(encryptedData)
             .arrange {}
 
-        creator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
+        creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
             .shouldSucceed {}
 
         coVerify {

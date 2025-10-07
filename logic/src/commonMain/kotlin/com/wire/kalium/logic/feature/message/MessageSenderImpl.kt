@@ -280,7 +280,7 @@ internal class MessageSenderImpl internal constructor(
     ): Either<CoreFailure, Instant> {
         return transactionContext
             .wrapInMLSContext { mlsContext ->
-                mlsMessageCreator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
             }
             .flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(mlsMessage).fold({

@@ -1095,7 +1095,7 @@ class MessageSenderTest {
 
         suspend fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
             coEvery {
-                mlsMessageCreator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(any(), any(), any())
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 
