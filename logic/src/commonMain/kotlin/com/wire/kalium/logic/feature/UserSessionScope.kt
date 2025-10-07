@@ -2110,6 +2110,7 @@ class UserSessionScope internal constructor(
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
+            { joinExistingMLSConversationUseCase },
             clientRepository,
             clientRemoteRepository,
             clientIdProvider,
@@ -2172,6 +2173,7 @@ class UserSessionScope internal constructor(
             fetchConversationUseCase,
             cryptoTransactionProvider,
             compositeMessageRepository,
+            { joinExistingMLSConversationUseCase },
             this,
             userScopedLogger,
         )
