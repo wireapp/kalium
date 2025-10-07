@@ -23,7 +23,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 
 /**
- * Use case to check if Simplified Connection Request feature is enabled.
+ * Use case to check if the Assets audit log feature is enabled.
  */
 interface IsAssetAuditLogEnabledUseCase {
     suspend operator fun invoke(): Boolean
