@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.AssetAuditLogConfigModel
 import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
 import com.wire.kalium.logic.data.featureConfig.ChatBubblesConfigModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -639,6 +640,17 @@ sealed class Event(open val id: String) {
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.ProfileQRCodeConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class AssetAuditLogConfigUpdated(
+            override val id: String,
+            val model: AssetAuditLogConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AssetAudiLogConfigUpdated",
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
             )

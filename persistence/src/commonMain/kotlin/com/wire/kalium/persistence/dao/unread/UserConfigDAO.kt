@@ -83,6 +83,8 @@ interface UserConfigDAO {
     suspend fun isChatBubblesEnabled(): Boolean
     suspend fun setProfileQRCodeEnabled(enabled: Boolean)
     suspend fun isProfileQRCodeEnabled(): Boolean
+    suspend fun setAssetAuditLogEnabled(enabled: Boolean)
+    suspend fun isAssetAuditLogEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -269,6 +271,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isProfileQRCodeEnabled(): Boolean =
         metadataDAO.valueByKey(PROFILE_QR_CODE_ENABLED)?.toBoolean() ?: true
 
+    override suspend fun setAssetAuditLogEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), ASSET_AUDIT_LOG_ENABLED)
+    }
+
+    override suspend fun isAssetAuditLogEnabled(): Boolean =
+        metadataDAO.valueByKey(ASSET_AUDIT_LOG_ENABLED)?.toBoolean() ?: false
+
     override suspend fun setAppsEnabled(isAppsEnabled: Boolean) {
         metadataDAO.insertValue(isAppsEnabled.toString(), APPS_ENABLED_KEY)
     }
@@ -304,5 +313,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val PROFILE_QR_CODE_ENABLED = "profile_qr_code_enabled"
         private const val APPS_ENABLED_KEY = "apps_enabled"
         private const val CHAT_BUBBLES_ENABLED = "chat_bubbles"
+        private const val ASSET_AUDIT_LOG_ENABLED = "asset_audit_log"
     }
 }
