@@ -19,7 +19,9 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.isProductionApi
 import com.wire.kalium.logic.data.user.UserId
 
 /**
@@ -39,7 +41,9 @@ internal class IsAssetAuditLogEnabledUseCaseImpl(
             .fold(
                 { false },
                 { serverConfig ->
-                    userConfigRepository.isAssetAuditLogEnabled() && serverConfig.links.isOnPremises
+                    userConfigRepository.isAssetAuditLogEnabled() && serverConfig.isOnPremises()
                 }
             )
 }
+
+private fun ServerConfig.isOnPremises() = links.isOnPremises && !isProductionApi()

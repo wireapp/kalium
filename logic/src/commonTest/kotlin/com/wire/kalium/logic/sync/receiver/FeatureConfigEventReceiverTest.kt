@@ -43,6 +43,7 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
@@ -356,6 +357,7 @@ class FeatureConfigEventReceiverTest {
                 CellsConfigHandler(userConfigRepository),
                 ChatBubblesConfigHandler(userConfigRepository),
                 EnableUserProfileQRCodeConfigHandler(userConfigRepository),
+                AssetAuditLogConfigHandler(userConfigRepository),
             )
         }
 
