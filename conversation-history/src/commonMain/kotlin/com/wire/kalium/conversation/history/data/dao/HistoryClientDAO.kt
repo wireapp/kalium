@@ -20,13 +20,11 @@ package com.wire.kalium.conversation.history.data.dao
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
-import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * Data Access Object for history clients.
  */
-@OptIn(ExperimentalTime::class)
 public interface HistoryClientDAO {
     /**
      * Selects all history clients for a given conversation ID.

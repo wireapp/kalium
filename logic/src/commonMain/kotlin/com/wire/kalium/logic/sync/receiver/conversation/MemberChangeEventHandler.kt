@@ -59,7 +59,7 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateArchivedStatusLocally(
                     event.conversationId,
                     event.isArchiving,
-                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                    DateTimeUtil.currentInstant()
                 )
                 eventLogger.logSuccess()
             }

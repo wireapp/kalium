@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * This use case will wait until the sync is done and then check the CRLs if needed.

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal interface AnalyticsRepositoryArrangement {

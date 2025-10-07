@@ -33,6 +33,9 @@ kaliumLibrary {
 }
 
 kotlin {
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
     iosX64 {
         binaries.all {
             linkerOpts("-framework", "Security")

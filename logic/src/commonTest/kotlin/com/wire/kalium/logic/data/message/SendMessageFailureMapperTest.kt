@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

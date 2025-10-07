@@ -42,7 +42,7 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

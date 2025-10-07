@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Internal UseCase that updates Group Conversation Receipt Mode value

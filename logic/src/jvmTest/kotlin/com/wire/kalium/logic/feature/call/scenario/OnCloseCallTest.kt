@@ -42,7 +42,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.junit.Test
 
 class OnCloseCallTest {

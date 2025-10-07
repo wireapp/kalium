@@ -31,6 +31,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.toInstant
+import kotlin.time.Instant
 
 /**
  * This use case is responsible for ending a call.
@@ -80,6 +81,6 @@ internal class EndCallUseCaseImpl(
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
-        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback(endedCall?.establishedTime?.toInstant()))
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback(endedCall?.establishedTime?.let { Instant.parse(it) }))
     }
 }

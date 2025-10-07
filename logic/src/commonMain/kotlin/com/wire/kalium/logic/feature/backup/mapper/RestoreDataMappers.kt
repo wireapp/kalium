@@ -34,7 +34,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
     value = id,

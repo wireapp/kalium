@@ -44,7 +44,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConf
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object FeatureConfigJson {
     private val featureConfigResponseSerializer = { _: FeatureConfigResponse ->

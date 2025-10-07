@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
 val Instant.wasInTheLastSecond: Boolean

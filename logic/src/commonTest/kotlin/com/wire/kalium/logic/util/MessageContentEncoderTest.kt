@@ -21,7 +21,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

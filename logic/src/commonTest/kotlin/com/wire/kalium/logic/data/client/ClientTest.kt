@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.framework.TestClient
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

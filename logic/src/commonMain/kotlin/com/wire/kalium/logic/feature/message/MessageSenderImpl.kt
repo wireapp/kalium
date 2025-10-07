@@ -66,7 +66,7 @@ import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 // TODO(modularisation): Move to :messaging:sending.
 //                       It ain't gonna be easy :)

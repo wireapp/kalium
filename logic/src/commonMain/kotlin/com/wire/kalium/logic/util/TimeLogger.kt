@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.util
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * The `TimeLogger` class is designed to measure the duration of a process for benchmarking purposes.

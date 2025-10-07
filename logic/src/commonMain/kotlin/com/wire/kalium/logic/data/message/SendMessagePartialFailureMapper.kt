@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageRes
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Maps the [QualifiedSendMessageResponse] to a [MessageSent] object.

@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.data.id.QualifiedID
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Path
 
 data class AssetMessage(

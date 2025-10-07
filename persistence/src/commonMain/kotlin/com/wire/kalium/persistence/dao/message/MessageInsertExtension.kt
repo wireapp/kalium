@@ -24,7 +24,7 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =

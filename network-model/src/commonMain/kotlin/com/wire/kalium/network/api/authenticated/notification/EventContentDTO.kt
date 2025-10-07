@@ -48,7 +48,7 @@ import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.kaliumUtilLogger
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer

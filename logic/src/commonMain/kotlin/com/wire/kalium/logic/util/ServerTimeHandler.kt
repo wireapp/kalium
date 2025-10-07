@@ -19,7 +19,7 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 @Mockable
 internal interface ServerTimeHandler {

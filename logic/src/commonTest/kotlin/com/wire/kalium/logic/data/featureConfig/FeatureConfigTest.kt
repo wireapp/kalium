@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object FeatureConfigTest {
 

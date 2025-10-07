@@ -37,7 +37,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Updates the supported protocols of the current user.

@@ -80,7 +80,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
@@ -184,13 +184,13 @@ interface ConversationRepository {
     suspend fun updateArchivedStatusLocally(
         conversationId: ConversationId,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ): Either<StorageFailure, Unit>
 
     suspend fun updateArchivedStatusRemotely(
         conversationId: ConversationId,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestampMs: Instant
     ): Either<NetworkFailure, Unit>
 
     suspend fun getConversationsByGroupState(
@@ -717,22 +717,22 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateArchivedStatusLocally(
         conversationId: ConversationId,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestampMs: Instant
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         conversationDAO.updateConversationArchivedStatus(
             conversationId = conversationId.toDao(),
             isArchived = isArchived,
-            archivedStatusTimestamp = archivedStatusTimestamp
+            archivedStatusTimestampMs = archivedStatusTimestampMs
         )
     }
 
     override suspend fun updateArchivedStatusRemotely(
         conversationId: ConversationId,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ): Either<NetworkFailure, Unit> = wrapApiRequest {
         conversationApi.updateConversationMemberState(
-            memberUpdateRequest = conversationStatusMapper.toArchivedStatusApiModel(isArchived, archivedStatusTimestamp),
+            memberUpdateRequest = conversationStatusMapper.toArchivedStatusApiModel(isArchived, archivedStatusTimestamp.toEpochMilliseconds()),
             conversationId = conversationId.toApi()
         )
     }

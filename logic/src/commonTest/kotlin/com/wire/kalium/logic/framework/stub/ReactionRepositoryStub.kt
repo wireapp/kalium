@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 open class ReactionRepositoryStub : ReactionRepository {
 

@@ -18,6 +18,8 @@
 
 package com.wire.kalium.util.time
 
-import kotlinx.datetime.Instant
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
+
 
 val Instant.Companion.UNIX_FIRST_DATE get() = fromEpochMilliseconds(0L)

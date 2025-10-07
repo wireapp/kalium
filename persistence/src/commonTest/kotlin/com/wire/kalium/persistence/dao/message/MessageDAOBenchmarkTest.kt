@@ -29,7 +29,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.test.BeforeTest

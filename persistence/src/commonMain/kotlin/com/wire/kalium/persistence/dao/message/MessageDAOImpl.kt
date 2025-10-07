@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 
@@ -332,7 +332,7 @@ internal class MessageDAOImpl internal constructor(
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
         queries.selectMessagesByConversationIdAndVisibilityAfterDate(
-            conversationId, visibility, date.toInstant(),
+            conversationId, visibility, Instant.parse(date),
             mapper::toEntityMessageFromView
         )
             .asFlow()

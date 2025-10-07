@@ -18,27 +18,28 @@
 
 package com.wire.kalium.util
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.minus
-import kotlinx.datetime.toInstant
 import kotlinx.datetime.until
+import kotlin.time.ExperimentalTime
+
 
 expect open class PlatformDateTimeUtil() {
 
     /**
-     * Parse [kotlinx.datetime.Instant] into date-time string in ISO-8601 format.
+     * Parse [Instant] into date-time string in ISO-8601 format.
      * Regular `.toString()` can return different results on different platforms, for instance jvm uses [java.time.Instant]
      * which can ignore milliseconds when equal to 0 (.000) and change the result from YYYY-MM-DDTHH:mm:ss.SSSZ format
      * to YYYY-MM-DDTHH:mm:ssZ.
-     * @param instant date-time as [kotlinx.datetime.Instant]
+     * @param instant date-time as [Instant]
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun fromInstantToIsoDateTimeString(instant: Instant): String
 
     /**
-     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * Parse [Instant] into date-time string in simplified format with up to seconds precision.
      * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
     fun fromInstantToSimpleDateTimeString(instant: Instant): String
@@ -46,6 +47,7 @@ expect open class PlatformDateTimeUtil() {
 
 // TODO(qol): we need to think if it should return an either or should we catch the exception,
 // so far we assume that string date-times we use are always in valid ISO-8601 format so there shouldn't be any failed formatting
+
 object DateTimeUtil : PlatformDateTimeUtil() {
     const val iso8601Pattern: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
     const val simplePattern: String = "yyyy-MM-dd_HH:mm:ss"
@@ -59,7 +61,7 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      * @return difference between two provided date-times in milliseconds
      */
     fun calculateMillisDifference(isoDateTime1: String, isoDateTime2: String): Long =
-        calculateMillisDifference(isoDateTime1.toInstant(), isoDateTime2.toInstant())
+        calculateMillisDifference(Instant.parse(isoDateTime1), Instant.parse(isoDateTime2))
 
     /**
      * Calculate the difference between two date-times provided to it
@@ -93,9 +95,9 @@ object DateTimeUtil : PlatformDateTimeUtil() {
     fun currentSimpleDateTimeString(): String = fromInstantToSimpleDateTimeString(Clock.System.now())
 
     /**
-     * Return the current date-time as [kotlinx.datetime.Instant].
+     * Return the current date-time as [Instant].
      * It's parsed to string and back to ensure that it has the same proper accuracy (three decimal places - milliseconds)
-     * @return current date-time as [kotlinx.datetime.Instant]
+     * @return current date-time as [Instant]
      */
     fun currentInstant(): Instant =
         Instant.parse(currentIsoDateTimeString())
@@ -132,7 +134,7 @@ object DateTimeUtil : PlatformDateTimeUtil() {
 
     /**
      * Parse instant date-time into string date-time in ISO-8601 format
-     * @receiver instant date-time as [kotlinx.datetime.Instant]
+     * @receiver instant date-time as [Instant]
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun Instant.toIsoDateTimeString(): String = fromInstantToIsoDateTimeString(this)

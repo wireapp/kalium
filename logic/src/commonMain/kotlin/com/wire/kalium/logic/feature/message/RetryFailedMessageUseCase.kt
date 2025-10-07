@@ -53,7 +53,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 @Suppress("LongParameterList")
 class RetryFailedMessageUseCase internal constructor(

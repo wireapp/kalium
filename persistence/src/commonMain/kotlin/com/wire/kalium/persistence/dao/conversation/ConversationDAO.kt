@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration
 
 data class ProposalTimerEntity(
@@ -97,7 +97,7 @@ interface ConversationDAO {
     suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestampMs: Instant
     )
 
     suspend fun updateAccess(

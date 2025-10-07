@@ -35,8 +35,8 @@ import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.newclient.NewClientEntity
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 

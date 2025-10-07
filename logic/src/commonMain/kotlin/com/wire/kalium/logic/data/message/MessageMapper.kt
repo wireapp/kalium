@@ -53,7 +53,7 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration

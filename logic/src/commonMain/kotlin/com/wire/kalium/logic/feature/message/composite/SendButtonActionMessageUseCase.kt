@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,

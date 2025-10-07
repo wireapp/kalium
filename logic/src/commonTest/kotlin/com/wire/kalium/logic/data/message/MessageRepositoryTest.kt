@@ -75,7 +75,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

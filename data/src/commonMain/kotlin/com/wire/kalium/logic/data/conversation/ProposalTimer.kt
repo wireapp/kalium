@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.GroupID
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class ProposalTimer(
     val groupID: GroupID,

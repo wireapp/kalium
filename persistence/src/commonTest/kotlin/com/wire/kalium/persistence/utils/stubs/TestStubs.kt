@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.toInstant
 
 internal object TestStubs {

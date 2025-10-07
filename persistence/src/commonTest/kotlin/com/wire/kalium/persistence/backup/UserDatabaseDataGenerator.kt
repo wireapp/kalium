@@ -37,7 +37,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.random.Random
 
 class UserDatabaseDataGenerator(

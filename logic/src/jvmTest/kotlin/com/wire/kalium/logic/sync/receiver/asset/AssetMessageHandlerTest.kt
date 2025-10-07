@@ -45,7 +45,7 @@ import io.mockative.once
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.junit.Test
 
 class AssetMessageHandlerTest {

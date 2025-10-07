@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.logger.kaliumLogger
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * persist a local system message to all conversations

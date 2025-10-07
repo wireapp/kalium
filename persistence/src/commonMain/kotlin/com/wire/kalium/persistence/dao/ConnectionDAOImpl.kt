@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
@@ -162,7 +162,7 @@ class ConnectionDAOImpl(
     }
 
     override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(queriesContext) {
-        connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
+        connectionsQueries.updateConnectionLastUpdated(Instant.parse(lastUpdate), id)
     }
 
     override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {

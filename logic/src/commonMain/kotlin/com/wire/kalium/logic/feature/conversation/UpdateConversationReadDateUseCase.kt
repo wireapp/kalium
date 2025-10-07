@@ -42,8 +42,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * This use case will update last read date for a conversation.

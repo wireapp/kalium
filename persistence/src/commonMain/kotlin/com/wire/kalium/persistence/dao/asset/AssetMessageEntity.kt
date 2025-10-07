@@ -18,7 +18,7 @@
 package com.wire.kalium.persistence.dao.asset
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class AssetMessageEntity(
     val time: Instant,

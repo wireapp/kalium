@@ -36,7 +36,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.logStructuredJson
 import io.mockative.Mockable
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Use case for sending a delivery confirmation signal for a list of messages in a conversation.

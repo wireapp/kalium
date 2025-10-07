@@ -1,3 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -26,6 +30,9 @@ kaliumLibrary {
 }
 
 kotlin {
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
     explicitApi()
     sourceSets {
         val commonMain by getting {

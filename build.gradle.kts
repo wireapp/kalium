@@ -18,6 +18,8 @@
 
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
 
 buildscript {
     repositories {
@@ -48,7 +50,7 @@ plugins {
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
-    alias(libs.plugins.completeKotlin)
+//     alias(libs.plugins.completeKotlin)
     alias(libs.plugins.dagCommand)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.jetbrains) apply false
@@ -127,8 +129,10 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
         YarnLockMismatchReport.WARNING
 }
 
-rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
+rootProject.plugins.withType<NodeJsPlugin> {
+    rootProject.the<NodeJsEnvSpec>().version = "17.6.0"
+    // If you want to use the downloaded Node instead of system Node:
+    // rootProject.the<NodeJsEnvSpec>().download.set(true)
 }
 
 tasks.dokkaHtmlMultiModule.configure {}

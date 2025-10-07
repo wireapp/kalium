@@ -25,7 +25,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Duration.Companion.seconds
@@ -35,6 +35,7 @@ import kotlin.time.Duration.Companion.seconds
  * However, this will monitor the work and log warnings using the provided [workIdentifier]
  * every 10 seconds, while the work isn't completed.
  */
+
 @Suppress("MagicNumber")
 internal suspend fun <T> CoreCryptoClient.transaction(
     workIdentifier: String,

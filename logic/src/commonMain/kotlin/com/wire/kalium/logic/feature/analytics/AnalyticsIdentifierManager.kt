@@ -31,7 +31,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 interface AnalyticsIdentifierManager {
 

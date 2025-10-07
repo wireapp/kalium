@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.authenticated.connection.UpdateConnectionRequ
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.PaginationRequest
 import com.wire.kalium.network.api.model.QualifiedID
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object ConnectionMocks {
     val connectionList = listOf(

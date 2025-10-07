@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.User as SQLDelightUser
 import com.wire.kalium.persistence.UserDetails as SQLDelightUserDetails

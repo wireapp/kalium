@@ -40,9 +40,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import io.mockative.Mockable
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.time.Duration
 
 /**
@@ -169,4 +168,4 @@ private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
 
 private fun SubconversationResponse.timeElapsedSinceLastEpochChange(): Duration =
-    epochTimestamp?.toInstant()?.timeElapsedUntilNow() ?: Duration.ZERO
+    epochTimestamp?.let { Instant.parse(it).timeElapsedUntilNow() } ?: Duration.ZERO

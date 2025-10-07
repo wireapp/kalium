@@ -37,7 +37,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import io.mockative.Mockable
 
 @Mockable

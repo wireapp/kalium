@@ -48,7 +48,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration

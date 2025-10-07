@@ -34,7 +34,7 @@ import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("LongParameterList", "LargeClass")
 object MessageMapper {

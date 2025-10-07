@@ -27,13 +27,11 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
-import kotlin.time.ExperimentalTime
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Implementation of [HistoryClientDAO] that uses SQLDelight to access the database.
  */
-@OptIn(ExperimentalTime::class)
 internal class SQLiteHistoryClientDAO internal constructor(
     private val historyClientQueries: HistoryClientQueries,
     private val queriesContext: CoroutineContext = Dispatchers.IO

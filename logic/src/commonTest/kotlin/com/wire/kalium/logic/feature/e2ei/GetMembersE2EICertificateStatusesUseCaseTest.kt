@@ -36,7 +36,7 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

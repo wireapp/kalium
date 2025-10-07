@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.persistence.config.E2EISettingsEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class E2EISettings(
     val isRequired: Boolean,

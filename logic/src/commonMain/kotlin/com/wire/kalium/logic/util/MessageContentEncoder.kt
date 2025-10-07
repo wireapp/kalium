@@ -24,7 +24,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.math.roundToLong
 
 class MessageContentEncoder {

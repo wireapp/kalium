@@ -7,7 +7,7 @@ import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Boolean;
 import kotlin.Int;
 import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE VIEW IF NOT EXISTS MessageAssetView
 AS SELECT

@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class BroadcastMessage(
     val id: String,

@@ -26,7 +26,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 interface PreKeyRepositoryArrangement {
     val preKeyRepository: PreKeyRepository

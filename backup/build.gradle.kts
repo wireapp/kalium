@@ -51,6 +51,10 @@ kotlin {
             xcf.add(this)
         }
     }
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
+
     targets.withType<KotlinNativeTarget> {
         compilerOptions {
             freeCompilerArgs.add("-Xexport-kdoc")

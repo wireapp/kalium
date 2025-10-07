@@ -1,5 +1,5 @@
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE NewClient (
     id TEXT NOT NULL PRIMARY KEY,

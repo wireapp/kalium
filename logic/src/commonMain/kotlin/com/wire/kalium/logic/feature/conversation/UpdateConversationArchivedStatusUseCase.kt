@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import kotlin.time.Instant
 
 interface UpdateConversationArchivedStatusUseCase {
     /**
@@ -42,7 +43,7 @@ interface UpdateConversationArchivedStatusUseCase {
         conversationId: ConversationId,
         shouldArchiveConversation: Boolean,
         onlyLocally: Boolean,
-        archivedStatusTimestamp: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
+        archivedStatusTimestamp: Instant = DateTimeUtil.currentInstant()
     ): ArchiveStatusUpdateResult
 }
 
@@ -54,7 +55,7 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
         conversationId: ConversationId,
         shouldArchiveConversation: Boolean,
         onlyLocally: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ): ArchiveStatusUpdateResult =
         if (!onlyLocally) {
             archiveRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
@@ -81,7 +82,7 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
     private suspend fun archiveRemotely(
         conversationId: ConversationId,
         shouldArchiveConversation: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ) = conversationRepository.updateArchivedStatusRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
         .onFailure {
             kaliumLogger.e(

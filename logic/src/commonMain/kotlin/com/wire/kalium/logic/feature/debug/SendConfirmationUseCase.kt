@@ -34,7 +34,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * This use case can be used by QA to send read and delivery receipts. This debug function can be used to test correct

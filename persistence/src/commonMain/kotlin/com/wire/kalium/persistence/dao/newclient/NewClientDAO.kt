@@ -21,7 +21,7 @@ import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class NewClientEntity(
     val id: String,

@@ -11,7 +11,7 @@ import kotlin.Float;
 import kotlin.Int;
 import kotlin.String;
 import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE LastMessage (
       conversation_id TEXT AS QualifiedIDEntity,

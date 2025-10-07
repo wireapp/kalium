@@ -44,7 +44,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration.Companion.seconds
 
 @Mockable

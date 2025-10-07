@@ -7,7 +7,7 @@ import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Int;
 import kotlin.Boolean;
 import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE ButtonContent (
       message_id TEXT NOT NULL,

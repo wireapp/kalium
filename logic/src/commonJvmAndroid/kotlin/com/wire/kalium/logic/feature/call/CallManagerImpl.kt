@@ -99,6 +99,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.toInstant
 import kotlinx.serialization.json.Json
 import java.util.Collections
+import kotlin.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(
@@ -157,7 +158,7 @@ class CallManagerImpl internal constructor(
     private val initializeServerTimeOffsetJob: Deferred<Unit> = scope.async(start = CoroutineStart.LAZY) {
         callRepository.fetchServerTime()?.let { serverTime ->
             callingLogger.d("$TAG - Computing server time offset: $serverTime")
-            serverTimeHandler.computeTimeOffset(serverTime.toInstant().epochSeconds)
+            serverTimeHandler.computeTimeOffset(Instant.parse(serverTime).epochSeconds)
         } ?: run {
             callingLogger.w("$TAG: Failed to fetch server time for offset computation.")
         }

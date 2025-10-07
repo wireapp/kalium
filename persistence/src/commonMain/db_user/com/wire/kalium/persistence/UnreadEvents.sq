@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE UnreadEvent (
       id TEXT NOT NULL,

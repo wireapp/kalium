@@ -39,7 +39,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.encodeBase64
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object TestEvent {
 

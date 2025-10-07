@@ -44,7 +44,7 @@ import kotlinx.benchmark.Warmup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.openjdk.jmh.annotations.Level
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random

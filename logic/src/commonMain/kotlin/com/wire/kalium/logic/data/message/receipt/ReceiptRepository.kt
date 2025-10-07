@@ -26,7 +26,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 interface ReceiptRepository {
     suspend fun persistReceipts(

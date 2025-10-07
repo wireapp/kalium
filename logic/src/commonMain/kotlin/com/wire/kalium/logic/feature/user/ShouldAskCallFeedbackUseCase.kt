@@ -23,7 +23,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Use case to determine if the call feedback should be asked.

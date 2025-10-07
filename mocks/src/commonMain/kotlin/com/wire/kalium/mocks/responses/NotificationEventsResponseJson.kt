@@ -40,7 +40,7 @@ import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.tools.KtxSerializer
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer

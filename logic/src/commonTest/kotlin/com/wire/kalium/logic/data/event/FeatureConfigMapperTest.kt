@@ -33,7 +33,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

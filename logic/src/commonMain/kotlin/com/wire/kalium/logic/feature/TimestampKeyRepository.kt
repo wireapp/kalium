@@ -28,7 +28,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration
 
 @Mockable

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

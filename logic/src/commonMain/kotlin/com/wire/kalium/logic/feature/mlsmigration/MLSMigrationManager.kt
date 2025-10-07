@@ -35,7 +35,7 @@ import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Orchestrates the migration from proteus to MLS.

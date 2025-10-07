@@ -33,13 +33,12 @@ import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
@@ -393,11 +392,11 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestampMs: Instant
     ) = withContext(coroutineContext) {
         conversationQueries.updateConversationArchivingStatus(
             isArchived,
-            archivedStatusTimestamp.toIsoDateTimeString().toInstant(),
+            archivedStatusTimestampMs,
             conversationId
         )
     }
@@ -439,7 +438,7 @@ internal class ConversationDAOImpl internal constructor(
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
-            .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, it.mls_proposal_timer.toInstant()) } }
+            .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, Instant.parse(it.mls_proposal_timer)) } }
     }
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =

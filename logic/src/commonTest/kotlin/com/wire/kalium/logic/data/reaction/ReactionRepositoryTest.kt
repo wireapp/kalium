@@ -28,7 +28,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

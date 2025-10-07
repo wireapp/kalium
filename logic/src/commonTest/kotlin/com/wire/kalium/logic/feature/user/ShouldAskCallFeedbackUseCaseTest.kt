@@ -25,7 +25,7 @@ import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArr
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days

@@ -48,7 +48,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.util
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.days

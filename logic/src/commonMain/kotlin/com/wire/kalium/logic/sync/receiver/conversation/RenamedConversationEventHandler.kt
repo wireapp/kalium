@@ -31,7 +31,7 @@ import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Mockable
 interface RenamedConversationEventHandler {

@@ -28,7 +28,7 @@ import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertContains

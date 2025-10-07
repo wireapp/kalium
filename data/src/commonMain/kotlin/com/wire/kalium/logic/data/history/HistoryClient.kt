@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.data.history
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.ExperimentalTime
 
-data class HistoryClient @OptIn(ExperimentalTime::class) constructor(
+data class HistoryClient  constructor(
     val id: String,
     val creationTime: Instant,
     val secret: Secret,

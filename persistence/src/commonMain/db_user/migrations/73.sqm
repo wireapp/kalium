@@ -1,4 +1,4 @@
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 ALTER TABLE Message ADD COLUMN self_deletion_end_date INTEGER AS Instant DEFAULT(NULL);
 

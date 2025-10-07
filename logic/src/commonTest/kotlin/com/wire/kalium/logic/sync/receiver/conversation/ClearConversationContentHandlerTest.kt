@@ -40,7 +40,7 @@ import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 class ClearConversationContentHandlerTest {

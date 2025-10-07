@@ -56,7 +56,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.JsonNull
 
 /**

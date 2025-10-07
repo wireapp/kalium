@@ -26,16 +26,14 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
-import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
 class SQLiteHistoryClientDAOTest {
 
     private lateinit var testDatabase: TestUserDatabase

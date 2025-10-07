@@ -29,7 +29,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftMapper
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data object ConversationDetailsWithEventsMapper {
     // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields

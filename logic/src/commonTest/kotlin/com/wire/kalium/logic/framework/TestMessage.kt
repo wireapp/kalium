@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"

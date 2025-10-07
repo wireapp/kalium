@@ -15,7 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import com.wire.kalium.plugins.FrequentModules
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
@@ -30,6 +33,9 @@ kaliumLibrary {
 }
 
 kotlin {
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {

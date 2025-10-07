@@ -30,7 +30,7 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Mockable
 interface ReactionRepository {

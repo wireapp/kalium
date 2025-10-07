@@ -40,7 +40,7 @@ import io.mockative.any
 import io.mockative.coVerify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

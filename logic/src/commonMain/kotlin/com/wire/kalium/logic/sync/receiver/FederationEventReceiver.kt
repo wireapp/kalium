@@ -46,7 +46,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 @Mockable
 internal interface FederationEventReceiver : EventReceiver<Event.Federation>

@@ -1,5 +1,5 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE HistoryClient (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,

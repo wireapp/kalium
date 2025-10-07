@@ -31,7 +31,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Sends in-call reaction to the call with the conversationId

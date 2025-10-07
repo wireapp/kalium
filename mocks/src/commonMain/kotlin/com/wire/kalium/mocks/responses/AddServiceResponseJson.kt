@@ -25,7 +25,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.AddServiceResponse
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object AddServiceResponseJson {
 

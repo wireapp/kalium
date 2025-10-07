@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.coroutines.CoroutineContext
 
 interface ReceiptDAO {

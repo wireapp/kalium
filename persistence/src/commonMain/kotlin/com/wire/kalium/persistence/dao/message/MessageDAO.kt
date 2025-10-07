@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 enum class InsertMessageResult {
     INSERTED_INTO_MUTED_CONVERSATION, INSERTED_NEED_TO_NOTIFY_USER

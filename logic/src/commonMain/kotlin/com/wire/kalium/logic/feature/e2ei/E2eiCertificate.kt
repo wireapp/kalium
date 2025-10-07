@@ -22,7 +22,7 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toModel
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

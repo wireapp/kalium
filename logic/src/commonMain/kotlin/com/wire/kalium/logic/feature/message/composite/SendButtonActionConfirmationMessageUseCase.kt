@@ -29,7 +29,7 @@ import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Use case for sending a button action message.

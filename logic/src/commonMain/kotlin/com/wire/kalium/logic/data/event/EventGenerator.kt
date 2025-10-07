@@ -41,7 +41,7 @@ import com.wire.kalium.network.api.authenticated.notification.conversation.Messa
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class EventGenerator(
     private val selfClient: QualifiedClientID,

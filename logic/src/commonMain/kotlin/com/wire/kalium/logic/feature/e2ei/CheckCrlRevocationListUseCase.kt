@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Use case to check the certificate revocation list (CRL) for expired entries.

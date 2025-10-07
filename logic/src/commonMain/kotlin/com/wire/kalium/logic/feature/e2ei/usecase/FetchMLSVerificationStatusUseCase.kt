@@ -45,7 +45,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import io.mockative.Mockable
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 

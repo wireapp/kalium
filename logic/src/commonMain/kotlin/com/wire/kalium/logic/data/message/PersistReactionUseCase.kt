@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Mockable
 interface PersistReactionUseCase {

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import io.mockative.Mockable
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Mockable
 interface AnalyticsRepository {

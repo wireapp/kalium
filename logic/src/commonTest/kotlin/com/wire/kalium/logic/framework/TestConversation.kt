@@ -52,7 +52,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.toInstant
 
 @Deprecated(

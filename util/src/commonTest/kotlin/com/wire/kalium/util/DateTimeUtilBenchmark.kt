@@ -20,17 +20,15 @@ package com.wire.kalium.util
 
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.random.Random
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 @Ignore
 class DateTimeUtilBenchmark {
 
-    @OptIn(ExperimentalTime::class)
     @Test
     fun instantToIso() = runTest {
         val numberOfInstants = 1_000_000

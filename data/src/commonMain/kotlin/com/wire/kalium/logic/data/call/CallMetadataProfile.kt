@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 class CallMetadataProfile(
     data: Map<ConversationId, CallMetadata> = emptyMap()
