@@ -20,7 +20,7 @@ package com.wire.kalium.util
 
 import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
 import kotlin.time.Instant
-import kotlinx.datetime.toJavaInstant
+import kotlin.time.toJavaInstant
 import java.time.format.DateTimeFormatterBuilder
 
 actual open class PlatformDateTimeUtil actual constructor() {

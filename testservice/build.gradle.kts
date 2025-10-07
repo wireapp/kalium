@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     kotlin("jvm")
     java
-    application
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -47,11 +46,22 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     }
 }
 
-application {
-    mainClass.set(mainFunctionClassName)
+// Configure mainClass using the new Kotlin JVM DSL
+kotlin {
+    jvmToolchain(17)
 }
 
-tasks.named("run", JavaExec::class) {
+// Configure the jar task with main class
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = mainFunctionClassName
+    }
+}
+
+// Create a custom run task since we're not using the application plugin
+tasks.register<JavaExec>("run") {
+    mainClass.set(mainFunctionClassName)
+    classpath = sourceSets["main"].runtimeClasspath
     jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:../native/libs")
     args = listOf("server", "config.yml")
     isIgnoreExitValue = true

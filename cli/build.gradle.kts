@@ -22,34 +22,21 @@ import com.wire.kalium.plugins.commonJvmConfig
 @Suppress("DSL_SCOPE_VIOLATION")
 
 plugins {
-    application
     kotlin("multiplatform")
 }
 val mainFunctionClassName = "com.wire.kalium.cli.MainKt"
 
-application {
-    mainClass.set(mainFunctionClassName)
-}
-
-tasks.jar {
-    manifest.attributes["Main-Class"] = mainFunctionClassName
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+// Configure jar task with main class
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = mainFunctionClassName
+    }
 }
 
 kotlin {
     applyDefaultHierarchyTemplate()
     val jvmTarget = jvm {
         commonJvmConfig(includeNativeInterop = false)
-        tasks.named("run", JavaExec::class) {
-            isIgnoreExitValue = true
-            standardInput = System.`in`
-            standardOutput = System.out
-        }
     }
     macosX64 {
         binaries {

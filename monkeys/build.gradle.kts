@@ -21,7 +21,6 @@ import com.wire.kalium.plugins.commonDokkaConfig
 @Suppress("DSL_SCOPE_VIOLATION")
 
 plugins {
-    application
     kotlin("jvm")
     id(libs.plugins.sqldelight.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
@@ -32,8 +31,8 @@ val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
 val replayerMainFunctionClassName = "com.wire.kalium.monkeys.ReplayerKt"
 val monkeyMainFunctionClassName = "com.wire.kalium.monkeys.MonkeyKt"
 
-application {
-    mainClass.set(mainFunctionClassName)
+kotlin {
+    jvmToolchain(17)
 }
 
 java {
@@ -42,27 +41,53 @@ java {
     }
 }
 
+// Create custom run task for the main entry point
+tasks.register<JavaExec>("run") {
+    mainClass.set(mainFunctionClassName)
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+// Create custom run tasks for other entry points
+tasks.register<JavaExec>("runReplayer") {
+    mainClass.set(replayerMainFunctionClassName)
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+tasks.register<JavaExec>("runServer") {
+    mainClass.set(monkeyMainFunctionClassName)
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+// Create main startScripts task
+val startScripts by tasks.register("startScripts", CreateStartScripts::class) {
+    mainClass.set(mainFunctionClassName)
+    outputDir = file("${buildDir}/scripts")
+    classpath = files(tasks.jar)
+    applicationName = "monkeys"
+}
+
 val replayerScripts by tasks.register("replayerScripts", CreateStartScripts::class) {
     mainClass.set(replayerMainFunctionClassName)
-    outputDir = tasks.startScripts.get().outputDir
-    classpath = tasks.startScripts.get().classpath
+    outputDir = startScripts.outputDir
+    classpath = startScripts.classpath
     applicationName = "replayer"
 }
 
 val serverScripts by tasks.register("serverScripts", CreateStartScripts::class) {
     mainClass.set(monkeyMainFunctionClassName)
-    outputDir = tasks.startScripts.get().outputDir
-    classpath = tasks.startScripts.get().classpath
+    outputDir = startScripts.outputDir
+    classpath = startScripts.classpath
     applicationName = "monkey-server"
 }
 
-tasks.startScripts {
+tasks.named<CreateStartScripts>("startScripts") {
     dependsOn(replayerScripts)
     dependsOn(serverScripts)
 }
 
 tasks.jar {
     manifest {
+        attributes["Main-Class"] = mainFunctionClassName
         attributes["CC-Version"] = libs.coreCryptoJvm.get().version
     }
 }
