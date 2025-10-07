@@ -18,11 +18,14 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -47,7 +50,7 @@ import kotlin.test.Test
 class MLSMessageCreatorTest {
 
     @Test
-    fun givenMessage_whenCreatingMLSMessage_thenMLSClientShouldBeUsedToEncryptProtobufContent() = runTest {
+    fun givenMessageAndMLSConversationExists_whenCreatingMLSMessage_thenMLSClientShouldBeUsedToEncryptProtobufContent() = runTest {
         val encryptedData = byteArrayOf()
         val plainData = byteArrayOf(0x42, 0x73)
 
@@ -55,10 +58,51 @@ class MLSMessageCreatorTest {
             .withObserveLegalHoldStatus(Either.Right(Conversation.LegalHoldStatus.DISABLED))
             .withMapLegalHoldConversationStatus(Conversation.LegalHoldStatus.DISABLED)
             .withEncodeToProtobufReturning(plainData)
+            .withMLSGroupConversationExisting(true)
+            .withCommitPendingProposals(Either.Right(Unit))
             .withMLSEncryptMessage(encryptedData)
             .arrange {}
 
-        creator.createOutgoingMLSMessage(arrangement.mlsContext, GROUP_ID, TestMessage.TEXT_MESSAGE).shouldSucceed {}
+        creator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
+            .shouldSucceed {}
+
+        coVerify {
+            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(GROUP_ID))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.conversationRepository.observeLegalHoldStatus(any())
+        }.wasInvoked(once)
+
+        verify {
+            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenMessageAndConversationDoesNotExist_whenCreatingMLSMessage_thenShouldAttemptToJoinExistingBeforeEncryptContent() = runTest {
+        val encryptedData = byteArrayOf()
+        val plainData = byteArrayOf(0x42, 0x73)
+
+        val (arrangement, creator) = Arrangement()
+            .withObserveLegalHoldStatus(Either.Right(Conversation.LegalHoldStatus.DISABLED))
+            .withMapLegalHoldConversationStatus(Conversation.LegalHoldStatus.DISABLED)
+            .withEncodeToProtobufReturning(plainData)
+            .withMLSGroupConversationExisting(false)
+            .withJoinExistingConversation(Either.Right(Unit))
+            .withMLSEncryptMessage(encryptedData)
+            .arrange {}
+
+        creator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
+            .shouldSucceed {}
+
+        coVerify {
+            arrangement.joinExistingConversationUseCase(any(), eq(TestMessage.TEXT_MESSAGE.conversationId), any())
+        }.wasInvoked(once)
 
         coVerify {
             arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
@@ -76,6 +120,8 @@ class MLSMessageCreatorTest {
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val protoContentMapper = mock(ProtoContentMapper::class)
         val conversationRepository = mock(ConversationRepository::class)
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
+        val joinExistingConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
         val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = apply {
@@ -84,6 +130,8 @@ class MLSMessageCreatorTest {
             this to MLSMessageCreatorImpl(
                 conversationRepository,
                 legalHoldStatusMapper,
+                mlsConversationRepository,
+                joinExistingConversationUseCase,
                 SELF_USER_ID,
                 protoContentMapper
             )
@@ -110,6 +158,24 @@ class MLSMessageCreatorTest {
         suspend fun withMLSEncryptMessage(data: ByteArray) = apply {
             coEvery { mlsContext.encryptMessage(any(), any()) }
                 .returns(data)
+        }
+
+        suspend fun withCommitPendingProposals(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                mlsConversationRepository.commitPendingProposals(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withMLSGroupConversationExisting(doesConversationExist: Boolean = true) = apply {
+            coEvery {
+                mlsContext.conversationExists(any())
+            }.returns(doesConversationExist)
+        }
+
+        suspend fun withJoinExistingConversation(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                joinExistingConversationUseCase(any(), any(), any())
+            }.returns(result)
         }
 
     }

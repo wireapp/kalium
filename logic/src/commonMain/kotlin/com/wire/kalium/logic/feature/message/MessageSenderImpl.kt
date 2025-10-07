@@ -26,7 +26,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
@@ -74,7 +73,6 @@ import kotlinx.datetime.Instant
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository,
     private val syncManager: SyncManager,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val legalHoldHandler: LegalHoldHandler,
@@ -282,8 +280,7 @@ internal class MessageSenderImpl internal constructor(
     ): Either<CoreFailure, Instant> {
         return transactionContext
             .wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.commitPendingProposals(mlsContext, protocolInfo.groupId)
-                    .flatMap { mlsMessageCreator.createOutgoingMLSMessage(mlsContext, protocolInfo.groupId, message) }
+                mlsMessageCreator.cleanMLSGroupStateAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
             }
             .flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(mlsMessage).fold({
