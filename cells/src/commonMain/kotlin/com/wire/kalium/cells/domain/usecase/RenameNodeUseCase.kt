@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
@@ -28,11 +29,21 @@ public interface RenameNodeUseCase {
 
 internal class RenameNodeUseCaseImpl(
     private val cellsRepository: CellsRepository,
+    private val attachmentsRepository: CellAttachmentsRepository,
 ) : RenameNodeUseCase {
-    override suspend fun invoke(uuid: String, path: String, newName: String): Either<CoreFailure, Unit> =
-        cellsRepository.renameNode(
+    override suspend fun invoke(uuid: String, path: String, newName: String): Either<CoreFailure, Unit> {
+
+        val targetPath = "${path.substringBeforeLast("/")}/$newName"
+
+        return cellsRepository.renameNode(
             uuid = uuid,
             path = path,
-            targetPath = "${path.substringBeforeLast("/")}/$newName"
-        ).map { }
+            targetPath = targetPath
+        ).map {
+            attachmentsRepository.updateAssetPath(
+                assetId = uuid,
+                remotePath = targetPath
+            )
+        }
+    }
 }

@@ -36,6 +36,7 @@ interface MessageAttachmentsDao {
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
     suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
+    suspend fun setAssetPath(assetId: String, path: String)
 }
 
 internal class MessageAttachmentsDaoImpl(
@@ -66,6 +67,10 @@ internal class MessageAttachmentsDaoImpl(
 
     override suspend fun getAssetPath(assetId: String): String? = withContext(queriesContext) {
         queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
+    }
+
+    override suspend fun setAssetPath(assetId: String, path: String) {
+        queries.setAssetPath(asset_id = assetId, asset_path = path)
     }
 
     override suspend fun setLocalPath(assetId: String, path: String?) = withContext(queriesContext) {

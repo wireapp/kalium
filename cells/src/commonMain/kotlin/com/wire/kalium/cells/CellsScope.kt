@@ -225,7 +225,7 @@ public class CellsScope(
         RemoveNodeTagsUseCaseImpl(cellsRepository)
     }
     public val renameNodeUseCase: RenameNodeUseCase by lazy {
-        RenameNodeUseCaseImpl(cellsRepository)
+        RenameNodeUseCaseImpl(cellsRepository, cellAttachmentsRepository)
     }
 
     public val isCellAvailable: IsAtLeastOneCellAvailableUseCase by lazy {
