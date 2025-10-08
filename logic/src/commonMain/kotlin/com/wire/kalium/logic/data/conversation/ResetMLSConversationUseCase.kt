@@ -48,7 +48,17 @@ import io.mockative.Mockable
  */
 @Mockable
 interface ResetMLSConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    // TODO(refactor): transactionProvider should be always required to avoid deadlocks.
+    //                 Callers of this function should get one if needed.
+    @Deprecated("Transaction provider should be provided")
+    suspend operator fun invoke(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit>
+
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        transactionContext: CryptoTransactionContext
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("ReturnCount")
@@ -63,8 +73,16 @@ internal class ResetMLSConversationUseCaseImpl(
 
     private val logger by lazy { kaliumLogger.withTextTag("ResetMLSConversationUseCase") }
 
-    override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+        return transactionProvider.transaction("ResetMLSConversation") {
+            invoke(conversationId, it)
+        }
+    }
 
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        transactionContext: CryptoTransactionContext
+    ): Either<CoreFailure, Unit> {
         if (!kaliumConfigs.isMlsResetEnabled) {
             logger.i("MLS conversation reset feature is disabled via compile time flag.")
             return Unit.right()
@@ -75,45 +93,49 @@ internal class ResetMLSConversationUseCaseImpl(
             return Unit.right()
         }
 
-        return transactionProvider.transaction("ResetMLSConversation") { transaction ->
+        return transactionContext.resetConversation(conversationId)
+    }
 
-            val mlsContext = transaction.mls ?: return@transaction errorNotMlsConversation()
+    private suspend fun CryptoTransactionContext.resetConversation(
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> {
+        val mlsContext = mls ?: return errorNotMlsConversation()
 
-            getMlsProtocolInfo(conversationId)
-                .flatMap { protocolInfo ->
-                    wrapMLSRequest {
-                        mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto()) to protocolInfo.groupId
-                    }.flatMapLeft {
-                        if (it is MLSFailure.ConversationNotFound) {
-                            (protocolInfo.epoch to protocolInfo.groupId).right()
-                        } else {
-                            it.left()
-                        }
+        return getMlsProtocolInfo(conversationId)
+            .flatMap { protocolInfo ->
+                wrapMLSRequest {
+                    mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto()) to protocolInfo.groupId
+                }.flatMapLeft {
+                    logger.e("Failed to reset conversation: $it.")
+                    if (it is MLSFailure.ConversationNotFound) {
+                        (protocolInfo.epoch to protocolInfo.groupId).right()
+                    } else {
+                        it.left()
                     }
                 }
-                .flatMap { (epoch, groupId) ->
-                    conversationRepository.resetMlsConversation(groupId, epoch)
-                        .onSuccess {
-                            // the result of the leave can be ignored
-                            mlsConversationRepository.leaveGroup(mlsContext, groupId)
-                        }
-                }
-                .flatMap {
-                    fetchConversation(transaction, conversationId)
-                }
-                .flatMap { getMlsProtocolInfo(conversationId) }
-                .map { updatedProtocolInfo ->
-                    val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
-                        logger.e("Failed to get members for conversation: $it")
-                        return@transaction it.left()
+            }
+            .flatMap { (epoch, groupId) ->
+                conversationRepository.resetMlsConversation(groupId, epoch)
+                    .onSuccess {
+                        // the result of the leave can be ignored
+                        mlsConversationRepository.leaveGroup(mlsContext, groupId)
                     }
-                    mlsConversationRepository.establishMLSGroup(
-                        mlsContext = mlsContext,
-                        groupID = updatedProtocolInfo.groupId,
-                        members = members,
-                    )
-                }.map {}
-        }
+            }
+            .flatMap {
+                fetchConversation(this, conversationId)
+            }
+            .flatMap { getMlsProtocolInfo(conversationId) }
+            .map { updatedProtocolInfo ->
+                val members = conversationRepository.getConversationMembers(conversationId).getOrFail {
+                    logger.e("Failed to get members for conversation: $it")
+                    return it.left()
+                }
+                mlsConversationRepository.establishMLSGroup(
+                    mlsContext = mlsContext,
+                    groupID = updatedProtocolInfo.groupId,
+                    members = members,
+                )
+            }.map {}
     }
 
     private suspend fun fetchConversation(
