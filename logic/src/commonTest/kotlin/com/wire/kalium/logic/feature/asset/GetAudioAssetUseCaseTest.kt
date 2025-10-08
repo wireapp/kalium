@@ -38,7 +38,7 @@ import kotlin.test.assertTrue
 class GetAudioAssetUseCaseTest {
 
     @Test
-    fun `given Wire Cells enabled and assetId present, when CellAssetContent returned, then returns Success`() = runTest {
+    fun givenWireCellsEnabledAndAssetIdPresent_whenCellAssetContentReturned_thenReturnsSuccess() = runTest {
         // Given
         val (_, useCase) = Arrangement()
             .withCellsEnabled()
@@ -53,7 +53,7 @@ class GetAudioAssetUseCaseTest {
     }
 
     @Test
-    fun `given Wire Cells enabled and assetId present, when error returned, then returns Failure`() = runTest {
+    fun givenWireCellsEnabledAndAssetIdPresent_whenErrorReturned_thenReturnsFailure() = runTest {
         // Given
         val (_, useCase) = Arrangement()
             .withCellsEnabled()
@@ -68,7 +68,7 @@ class GetAudioAssetUseCaseTest {
     }
 
     @Test
-    fun `given Wire Cells disabled, when invoked, then invoke getMessageAsset use case once`() = runTest {
+    fun givenWireCellsDisabled_whenInvoked_thenInvokeGetMessageAssetUseCaseOnce() = runTest {
         // Given
         // Given
         val (arrangement, useCase) = Arrangement()

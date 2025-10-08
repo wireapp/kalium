@@ -34,7 +34,7 @@ import kotlin.test.assertTrue
 class GetMessageAttachmentUseCaseTest {
 
     @Test
-    fun `given valid assetId when repository returns attachment then returns Right`() = runTest {
+    fun givenValidAssetId_whenRepositoryReturnsAttachment_thenReturnsRight() = runTest {
         // Given
         val assetId = "assetId"
         val messageAttachment = AssetContent(
@@ -67,7 +67,7 @@ class GetMessageAttachmentUseCaseTest {
     }
 
     @Test
-    fun `given valid assetId when repository returns failure then returns Left`() = runTest {
+    fun givenValidAssetId_whenRepositoryReturnsFailure_thenReturnsLeft() = runTest {
         // Given
         val assetId = "assetId"
         val (_, useCase) = Arrangement()
