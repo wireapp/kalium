@@ -69,7 +69,7 @@ internal class MessageAttachmentsDaoImpl(
         queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
     }
 
-    override suspend fun setAssetPath(assetId: String, path: String) {
+    override suspend fun setAssetPath(assetId: String, path: String) = withContext(queriesContext) {
         queries.setAssetPath(asset_id = assetId, asset_path = path)
     }
 

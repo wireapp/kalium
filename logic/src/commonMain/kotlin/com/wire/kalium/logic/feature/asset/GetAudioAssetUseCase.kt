@@ -58,7 +58,8 @@ internal class GetAudioAssetUseCaseImpl(
                 {
                     kaliumLogger.i("There was an error getting attachment for assetId: ${assetId.obfuscateId()}. Error: $it")
                     CompletableDeferred(MessageAssetResult.Failure(it, false))
-                }, { message ->
+                },
+                { message ->
                     when (message) {
                         is CellAssetContent -> {
                             CompletableDeferred(
