@@ -61,14 +61,13 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
 }
 
 private fun mapMessageRejected(message: String): MLSFailure.MessageRejected {
-    val reason = message.replace("reason=", "")
-    return when (reason) {
-        "mls-stale-message" -> MLSFailure.MessageRejected.MlsStaleMessage
-        "mls-client-mismatch" -> MLSFailure.MessageRejected.MlsClientMismatch
-        "mls-commit-missing-references" -> MLSFailure.MessageRejected.MlsCommitMissingReferences
-        "mls-invalid-leaf-node-index" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        "mls-invalid-leaf-node-signature" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        else -> MLSFailure.MessageRejected.Other(reason = reason)
+    return when {
+        message.contains("mls-stale-message") -> MLSFailure.MessageRejected.MlsStaleMessage
+        message.contains("mls-client-mismatch") -> MLSFailure.MessageRejected.MlsClientMismatch
+        message.contains("mls-commit-missing-references") -> MLSFailure.MessageRejected.MlsCommitMissingReferences
+        message.contains("mls-invalid-leaf-node-index") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
+        message.contains("mls-invalid-leaf-node-signature") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
+        else -> MLSFailure.MessageRejected.Other(reason = message)
     }
 }
 
