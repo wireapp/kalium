@@ -30,12 +30,10 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
@@ -1679,13 +1677,13 @@ class MLSConversationRepositoryTest {
 
         suspend fun withUpdateMLSGroupIdAndStateSuccessful() = apply {
             coEvery {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
             }.returns(Unit)
         }
 
         suspend fun withUpdateMLSGroupIdAndStateFailing(failure: StorageFailure.Generic) = apply {
             coEvery {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
             }.throws(failure.rootCause)
         }
 
@@ -1785,13 +1783,14 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
 
         result.shouldSucceed()
         coVerify {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
+                0L,
                 ConversationEntity.GroupState.PENDING_JOIN
             )
         }.wasInvoked(exactly = once)
@@ -1806,13 +1805,14 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, customState)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L, customState)
 
         result.shouldSucceed()
         coVerify {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
+                0L,
                 customState
             )
         }.wasInvoked(exactly = once)
@@ -1827,7 +1827,7 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateFailing(storageFailure)
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
 
         result.shouldFail {
             assertIs<StorageFailure.Generic>(it)
@@ -1850,13 +1850,14 @@ class MLSConversationRepositoryTest {
                 .withUpdateMLSGroupIdAndStateSuccessful()
                 .arrange()
 
-            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, state)
+            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L,state)
 
             result.shouldSucceed()
             coVerify {
                 arrangement.conversationDAO.updateMLSGroupIdAndState(
                     conversationId.toDao(),
                     newGroupId.toCrypto(),
+                    0L,
                     state
                 )
             }.wasInvoked(exactly = once)
