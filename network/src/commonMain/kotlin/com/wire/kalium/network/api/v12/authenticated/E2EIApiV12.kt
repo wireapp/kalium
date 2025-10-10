@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v12.authenticated
 
-package com.wire.kalium.network.api.authenticated.asset
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v11.authenticated.E2EIApiV11
 
-import com.wire.kalium.network.api.model.AssetRetentionType
-import com.wire.kalium.network.api.model.ConversationId
-
-@Suppress("LongParameterList")
-class AssetMetadataRequest(
-    val mimeType: String,
-    val public: Boolean,
-    val retentionType: AssetRetentionType,
-    val md5: String,
-    val conversationId: ConversationId? = null,
-    val filename: String? = null,
-    val filetype: String? = null,
-)
+internal open class E2EIApiV12 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : E2EIApiV11(authenticatedNetworkClient)
