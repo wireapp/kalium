@@ -57,6 +57,7 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
@@ -967,6 +968,7 @@ class SyncFeatureConfigsUseCaseTest {
                 AppsFeatureHandler(userConfigRepository),
                 ChatBubblesConfigHandler(userConfigRepository),
                 EnableUserProfileQRCodeConfigHandler(userConfigRepository),
+                AssetAuditLogConfigHandler(userConfigRepository),
             )
             return this to syncFeatureConfigsUseCase
         }

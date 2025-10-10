@@ -156,6 +156,11 @@ data class ServerConfig(
     }
 }
 
+fun ServerConfig.isProductionApi() =
+    Url(links.api).host.let { host ->
+        ServerConfig.PRODUCTION.api.contains(host)
+    }
+
 @Mockable
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO

@@ -53,6 +53,8 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
+import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
+import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCase
@@ -300,5 +302,12 @@ class UserScope internal constructor(
     val isProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
         get() = IsProfileQRCodeEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
+        )
+
+    val isAssetAuditLogEnabled: IsAssetAuditLogEnabledUseCase
+        get() = IsAssetAuditLogEnabledUseCaseImpl(
+            userId = selfUserId,
+            userConfigRepository = userConfigRepository,
+            serverConfigRepository = serverConfigRepository,
         )
 }
