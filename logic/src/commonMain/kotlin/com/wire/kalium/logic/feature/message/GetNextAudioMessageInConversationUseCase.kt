@@ -38,12 +38,12 @@ class GetNextAudioMessageInConversationUseCase internal constructor(
         messageId: String
     ): Result = withContext(dispatchers.io) {
         messageRepository.getNextAudioMessageInConversation(conversationId, messageId)
-            .fold({ Result.Failure(it) }, { Result.Success(it) })
+            .fold({ Result.Failure(it) }, { Result.Success(it, "") })
     }
 
     sealed interface Result {
 
-        data class Success(val messageId: String) : Result
+        data class Success(val messageId: String, val assetId: String) : Result
 
         /**
          * [StorageFailure.DataNotFound] in case there is no AudioMessage or some other generic error.

@@ -333,7 +333,7 @@ class UserDatabaseBuilder internal constructor(
         get() = database.historyClientQueries
 
     val messageAttachments: MessageAttachmentsDao
-        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries)
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, queriesContext)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(
