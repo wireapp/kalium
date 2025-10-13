@@ -161,7 +161,6 @@ object TestConversation {
         accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.GUEST),
         protocol = ConversationEntity.Protocol.MLS,
         mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
-        mlsEpoch = 0L,
         mlsGroupId = null,
         mlsLastKeyingMaterialUpdateDate = Instant.UNIX_FIRST_DATE,
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
@@ -346,7 +345,6 @@ object TestConversation {
         accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         protocol = ConversationEntity.Protocol.MLS,
         mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
-        mlsEpoch = 0L,
         mlsGroupId = null,
         mlsLastKeyingMaterialUpdateDate = Instant.UNIX_FIRST_DATE,
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
@@ -383,7 +381,6 @@ object TestConversation {
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
         GROUP_ID,
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-        0UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
         cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
@@ -393,7 +390,6 @@ object TestConversation {
     val MIXED_PROTOCOL_INFO = ProtocolInfo.Mixed(
         GROUP_ID,
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-        0UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
         cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )

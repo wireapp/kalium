@@ -108,7 +108,7 @@ internal class ResetMLSConversationUseCaseImpl(
                 }.flatMapLeft {
                     logger.e("Failed to reset conversation: $it.")
                     if (it is MLSFailure.ConversationNotFound) {
-                        (protocolInfo.epoch to protocolInfo.groupId).right()
+                        (this.mls?.conversationEpoch(protocolInfo.groupId.toCrypto())!! to protocolInfo.groupId).right()
                     } else {
                         it.left()
                     }

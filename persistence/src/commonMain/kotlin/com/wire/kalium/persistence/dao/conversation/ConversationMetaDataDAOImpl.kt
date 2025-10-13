@@ -50,7 +50,6 @@ class ConversationMetaDataDAOImpl internal constructor(
                     protocol = it.protocol,
                     mlsGroupId = it.mls_group_id,
                     mlsGroupState = it.mls_group_state,
-                    mlsEpoch = it.mls_epoch,
                     mlsLastKeyingMaterialUpdate = it.mls_last_keying_material_update_date,
                     mlsCipherSuite = it.mls_cipher_suite
                 )

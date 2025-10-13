@@ -545,7 +545,7 @@ internal class ConversationMapperImpl(
             ConvProtocol.MLS -> ProtocolInfo.MLS(
                 groupId = groupId ?: "",
                 groupState = mlsGroupState ?: GroupState.PENDING_JOIN,
-                epoch = epoch ?: 0UL,
+//                 epoch = epoch ?: 0UL,
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                 cipherSuite = ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
@@ -553,7 +553,7 @@ internal class ConversationMapperImpl(
             ConvProtocol.MIXED -> ProtocolInfo.Mixed(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
-                epoch ?: 0UL,
+//                 epoch ?: 0UL,
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )

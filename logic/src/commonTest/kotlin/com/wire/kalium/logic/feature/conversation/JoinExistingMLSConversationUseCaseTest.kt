@@ -377,7 +377,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -387,7 +386,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -397,7 +395,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID3,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -407,7 +404,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID_SELF,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -417,7 +413,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID_ONE_ON_ONE,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )

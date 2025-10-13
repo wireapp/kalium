@@ -220,7 +220,6 @@ class OnCloseCallTest {
                 protocol = Conversation.ProtocolInfo.MLS(
                     groupId = GroupID(""),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                    epoch = ULong.MAX_VALUE,
                     keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
                     cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
                 )

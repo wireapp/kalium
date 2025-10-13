@@ -146,8 +146,8 @@ internal class ConversationDAOImpl internal constructor(
                         else null,
                         mls_group_state = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
                         else ConversationEntity.GroupState.ESTABLISHED,
-                        mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
-                        else MLS_DEFAULT_EPOCH,
+//                         mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
+//                         else MLS_DEFAULT_EPOCH,
                         protocol = when (protocolInfo) {
                             is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
                             is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
@@ -193,8 +193,8 @@ internal class ConversationDAOImpl internal constructor(
                 else null,
                 mls_group_state = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
                 else ConversationEntity.GroupState.ESTABLISHED,
-                mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
-                else MLS_DEFAULT_EPOCH,
+//                 mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
+//                 else MLS_DEFAULT_EPOCH,
                 protocol = when (protocolInfo) {
                     is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
                     is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
@@ -253,10 +253,9 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateMLSGroupIdAndState(
         conversationId: QualifiedIDEntity,
         newGroupId: String,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState
     ) = withContext(coroutineContext) {
-        conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, newEpoch, conversationId)
+        conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, conversationId)
     }
 
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {

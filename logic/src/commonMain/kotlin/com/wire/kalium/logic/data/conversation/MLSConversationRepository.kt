@@ -223,7 +223,6 @@ interface MLSConversationRepository {
     suspend fun updateGroupIdAndState(
         conversationId: ConversationId,
         newGroupId: GroupID,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN
     ): Either<CoreFailure, Unit>
 }
@@ -838,14 +837,12 @@ internal class MLSConversationDataSource(
     override suspend fun updateGroupIdAndState(
         conversationId: ConversationId,
         newGroupId: GroupID,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 idMapper.toCryptoModel(newGroupId),
-                newEpoch,
                 groupState
             )
         }

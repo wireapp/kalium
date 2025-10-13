@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
@@ -85,7 +86,7 @@ internal class StaleEpochVerifierImpl(
             }
         }.flatMap { protocolInfo ->
             transactionContext.wrapInMLSContext {
-                mlsConversationRepository.isGroupOutOfSync(it, protocolInfo.groupId, protocolInfo.epoch)
+                mlsConversationRepository.isGroupOutOfSync(it, protocolInfo.groupId, it.conversationEpoch(protocolInfo.groupId.toCrypto()))
             }
                 .map { epochIsStale ->
                     epochIsStale

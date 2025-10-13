@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -29,6 +30,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
@@ -37,6 +39,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -146,11 +149,16 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         publicKeys: MLSPublicKeys?
     ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
+
+        if (protocol !is Conversation.ProtocolInfo.MLSCapable) {
+            kaliumLogger.d("calling join or establish MLS on proteus conversation")
+            Either.Right(Unit)
+        }
+
         val type = conversation.type
         return when {
-            protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
 
-            protocol.epoch != 0UL -> {
+            1UL != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
                 logger.d("Joining group by external commit ${conversation.id.toLogString()}")
@@ -160,7 +168,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     transactionContext.wrapInMLSContext { mlsContext ->
                         mlsConversationRepository.joinGroupByExternalCommit(
                             mlsContext,
-                            protocol.groupId,
+                            (protocol as Conversation.ProtocolInfo.MLSCapable).groupId,
                             groupInfo
                         )
                     }.flatMapLeft { failure ->
@@ -253,5 +261,47 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         "protocol" to CreateConversationParam.Protocol.MLS.name
         "protocolInfo" to protocol.toLogMap()
         failure?.run { "errorInfo" to "$failure" }
+    }
+}
+
+fun extractEpochFromGroupInfo(groupInfo: ByteArray): Int? {
+    return try {
+        // GroupInfo starts with a GroupContext
+        // We need to navigate through the structure to find the epoch
+
+        val buffer = ByteBuffer.wrap(groupInfo).order(ByteOrder.BIG_ENDIAN)
+
+        // Skip ProtocolVersion (2 bytes)
+        if (buffer.remaining() < 2) return null
+        buffer.position(buffer.position() + 2)
+
+        // Skip CipherSuite (2 bytes)
+        if (buffer.remaining() < 2) return null
+        buffer.position(buffer.position() + 2)
+
+        // Read and skip group_id<V> (variable length field)
+        // TLS variable length encoding uses 1, 2, or 4 bytes for length prefix
+        // For <V> fields in MLS, typically 2 bytes are used for length
+        if (buffer.remaining() < 2) return null
+        val groupIdLength = buffer.short.toInt() and 0xFFFF // Convert to unsigned
+
+        // Skip the group_id data
+        if (buffer.remaining() < groupIdLength) return null
+        buffer.position(buffer.position() + groupIdLength)
+
+        // Now read the epoch (8 bytes, uint64)
+        if (buffer.remaining() < 8) return null
+        val epochLong = buffer.long
+
+        // Convert to Int, checking for overflow
+        // MLS epochs typically don't exceed Int.MAX_VALUE in practice
+        if (epochLong > Int.MAX_VALUE || epochLong < 0) {
+            null // Epoch value too large or invalid
+        } else {
+            epochLong.toInt()
+        }
+    } catch (e: Exception) {
+        // Return null if parsing fails for any reason
+        null
     }
 }

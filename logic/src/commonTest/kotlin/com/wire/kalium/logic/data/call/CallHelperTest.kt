@@ -126,7 +126,6 @@ class CallHelperTest {
         val CONVERSATION_MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
             GroupID("GROUP_ID"),
             Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-            5UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )

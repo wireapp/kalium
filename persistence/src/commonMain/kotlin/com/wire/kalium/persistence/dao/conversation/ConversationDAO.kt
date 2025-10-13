@@ -155,7 +155,6 @@ interface ConversationDAO {
     suspend fun updateMLSGroupIdAndState(
         conversationId: QualifiedIDEntity,
         newGroupId: String,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState
     )
 

@@ -93,7 +93,7 @@ data class ConversationEntity(
         data class MLS(
             override val groupId: String,
             override val groupState: ConversationEntity.GroupState,
-            override val epoch: ULong,
+//             override val epoch: ULong,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: ConversationEntity.CipherSuite
         ) : MLSCapable
@@ -101,7 +101,7 @@ data class ConversationEntity(
         data class Mixed(
             override val groupId: String,
             override val groupState: ConversationEntity.GroupState,
-            override val epoch: ULong,
+//             override val epoch: ULong,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: ConversationEntity.CipherSuite
         ) : MLSCapable
@@ -109,7 +109,7 @@ data class ConversationEntity(
         sealed interface MLSCapable : ProtocolInfo {
             val groupId: String
             val groupState: ConversationEntity.GroupState
-            val epoch: ULong
+//             val epoch: ULong
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: ConversationEntity.CipherSuite
         }
