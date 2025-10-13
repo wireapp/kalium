@@ -583,6 +583,11 @@ class EventMapper(
             (featureConfigUpdatedDTO.data as FeatureConfigData.ChatBubbles).toModel()
         )
 
+        is FeatureConfigData.AssetAuditLog -> Event.FeatureConfig.AssetAuditLogConfigUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.AssetAuditLog).toModel()
+        )
+
         // These features are NOT received through events. As FeatureConfig Events are deprecated
         is FeatureConfigData.ConsumableNotifications,
         is FeatureConfigData.Apps,
