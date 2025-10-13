@@ -22,15 +22,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
@@ -39,7 +38,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -53,6 +51,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.withContext
+import kotlin.jvm.JvmInline
 
 /**
  * Send an external commit to join an MLS conversation for which the user is a member,
@@ -155,10 +154,34 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             Either.Right(Unit)
         }
 
+        val remoteEpoch: Either<NetworkFailure, Long?> = wrapApiRequest {
+            conversationApi.fetchGroupInfo(conversation.id.toApi())
+        }.map {
+            GroupInfo(it).extractEpoch().also {
+                kaliumLogger.d("cccc: fetched group info epoch=$it for conversation ${conversation.id.toLogString()}")
+            }
+        }
+        if (remoteEpoch.isLeft()) {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.WARN,
+                leadingMessage = "Join-Establish MLS Group Missing GroupInfo",
+                jsonStringKeyValues = conversation.logData(remoteEpoch.value)
+            )
+            return remoteEpoch
+        }
+
         val type = conversation.type
         return when {
+            remoteEpoch.value == null -> {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.WARN,
+                    leadingMessage = "Join-Establish MLS Group Null GroupInfo",
+                    jsonStringKeyValues = conversation.logData()
+                )
+                return Either.Right(Unit)
+            }
 
-            1UL != 0UL -> {
+            remoteEpoch.value!!.toULong() != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
                 logger.d("Joining group by external commit ${conversation.id.toLogString()}")
@@ -181,6 +204,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 )
                                 Either.Right(Unit)
                             }
+
                             is MLSMessageFailureResolution.ResetConversation -> {
                                 logger.logStructuredJson(
                                     level = KaliumLogLevel.WARN,
@@ -189,6 +213,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 )
                                 resetMLSConversation(conversation.id, transactionContext)
                             }
+
                             else -> {
                                 logger.logStructuredJson(
                                     level = KaliumLogLevel.ERROR,
@@ -213,7 +238,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 transactionContext.wrapInMLSContext { mlsContext ->
                     mlsConversationRepository.establishMLSGroup(
                         mlsContext,
-                        protocol.groupId,
+                        (protocol as Conversation.ProtocolInfo.MLSCapable).groupId,
                         listOf(selfUserId)
                     )
                 }
@@ -232,7 +257,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     transactionContext.wrapInMLSContext { mlsContext ->
                         mlsConversationRepository.establishMLSGroup(
                             mlsContext,
-                            protocol.groupId,
+                            (protocol as Conversation.ProtocolInfo.MLSCapable).groupId,
                             members,
                             publicKeys
                         )
@@ -264,44 +289,106 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     }
 }
 
-fun extractEpochFromGroupInfo(groupInfo: ByteArray): Int? {
-    return try {
-        // GroupInfo starts with a GroupContext
-        // We need to navigate through the structure to find the epoch
+@JvmInline
+value class GroupInfo(val value: ByteArray) {
 
-        val buffer = ByteBuffer.wrap(groupInfo).order(ByteOrder.BIG_ENDIAN)
+    /**
+     * Extracts the epoch value from the GroupInfo TLS-encoded structure.
+     *
+     * According to RFC 9420, an epoch represents a state of a group in which a specific set
+     * of authenticated clients hold shared cryptographic state. Each epoch has a distinct
+     * ratchet tree and secret tree, and epochs progress linearly in sequence.
+     *
+     * The GroupInfo structure begins with a GroupContext containing:
+     * - version (2 bytes)
+     * - cipher_suite (2 bytes)
+     * - group_id (variable length, prefixed with MLS varint)
+     * - epoch (8 bytes, uint64 in big-endian format)
+     *
+     * @return The epoch value as a Long, or null if parsing fails due to malformed data
+     * @see <a href="https://datatracker.ietf.org/doc/html/rfc9420#name-group-context">RFC 9420 - Group Context</a>
+     */
+    fun extractEpoch(): Long? {
+        var p = 0
 
-        // Skip ProtocolVersion (2 bytes)
-        if (buffer.remaining() < 2) return null
-        buffer.position(buffer.position() + 2)
+        fun need(n: Int): Boolean = value.size - p >= n
 
-        // Skip CipherSuite (2 bytes)
-        if (buffer.remaining() < 2) return null
-        buffer.position(buffer.position() + 2)
-
-        // Read and skip group_id<V> (variable length field)
-        // TLS variable length encoding uses 1, 2, or 4 bytes for length prefix
-        // For <V> fields in MLS, typically 2 bytes are used for length
-        if (buffer.remaining() < 2) return null
-        val groupIdLength = buffer.short.toInt() and 0xFFFF // Convert to unsigned
-
-        // Skip the group_id data
-        if (buffer.remaining() < groupIdLength) return null
-        buffer.position(buffer.position() + groupIdLength)
-
-        // Now read the epoch (8 bytes, uint64)
-        if (buffer.remaining() < 8) return null
-        val epochLong = buffer.long
-
-        // Convert to Int, checking for overflow
-        // MLS epochs typically don't exceed Int.MAX_VALUE in practice
-        if (epochLong > Int.MAX_VALUE || epochLong < 0) {
-            null // Epoch value too large or invalid
-        } else {
-            epochLong.toInt()
+        /** Reads an unsigned 8-bit integer and advances position by 1 byte */
+        fun u8(): Int {
+            if (!need(1)) throw IndexOutOfBoundsException()
+            return value[p++].toInt() and 0xFF
         }
-    } catch (e: Exception) {
-        // Return null if parsing fails for any reason
-        null
+
+        /** Reads an unsigned 16-bit integer in big-endian format and advances position by 2 bytes */
+        fun u16(): Int {
+            if (!need(2)) throw IndexOutOfBoundsException()
+            val v = ((value[p].toInt() and 0xFF) shl 8) or (value[p + 1].toInt() and 0xFF)
+            p += 2
+            return v
+        }
+
+        /** Reads an unsigned 64-bit integer in big-endian format and advances position by 8 bytes */
+        fun u64(): Long {
+            if (!need(8)) throw IndexOutOfBoundsException()
+            var v = 0L
+            repeat(8) { v = (v shl 8) or (value[p + it].toLong() and 0xFF) }
+            p += 8
+            return v
+        }
+
+        /**
+         * Reads an MLS variable-length integer (similar to QUIC varint encoding).
+         * - Prefix 00 (bits 7-6): 1 byte total, value in bits 5-0
+         * - Prefix 01 (bits 7-6): 2 bytes total, value in bits 5-0 of first byte + 8 bits of second byte
+         * - Prefix 10 (bits 7-6): 4 bytes total, value in bits 5-0 of first byte + 24 bits from remaining bytes
+         * - Prefix 11 (bits 7-6): Invalid
+         * Minimal encoding is required (throws IllegalArgumentException if not minimal)
+         */
+        fun mlsVarInt(): Int {
+            val b0 = u8()
+            val prefix = b0 ushr 6
+            return when (prefix) {
+                0 -> b0 and 0x3F
+                1 -> {
+                    if (!need(1)) throw IndexOutOfBoundsException()
+                    val b1 = u8()
+                    val v = ((b0 and 0x3F) shl 8) or b1
+                    if (v < 64) throw IllegalArgumentException("Non-minimal varint")
+                    v
+                }
+
+                2 -> {
+                    if (!need(3)) throw IndexOutOfBoundsException()
+                    val b1 = u8();
+                    val b2 = u8();
+                    val b3 = u8()
+                    val v = ((b0 and 0x3F) shl 24) or (b1 shl 16) or (b2 shl 8) or b3
+                    if (v < 16384) throw IllegalArgumentException("Non-minimal varint")
+                    v
+                }
+
+                else -> throw IllegalArgumentException("Invalid MLS varint (prefix 11)")
+            }
+        }
+
+        return try {
+            // GroupInfo starts with GroupContext:
+            // version(2) | cipher_suite(2) | group_id<V> | epoch(8) | ...
+            if (!need(2)) return null
+            u16() // version
+            if (!need(2)) return null
+            u16() // cipher suite
+
+            // group_id<V>
+            val groupIdLen = mlsVarInt()
+            if (!need(groupIdLen)) return null
+            p += groupIdLen
+
+            // epoch (uint64, big-endian)
+            if (!need(8)) return null
+            u64()
+        } catch (_: Exception) {
+            null
+        }
     }
 }
