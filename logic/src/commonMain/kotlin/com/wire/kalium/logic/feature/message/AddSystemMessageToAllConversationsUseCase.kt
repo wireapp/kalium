@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -41,7 +41,7 @@ class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
 ) : AddSystemMessageToAllConversationsUseCase {
     override suspend operator fun invoke() {
         kaliumLogger.w("persist HistoryLost system message after recovery for all conversations")
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
         val message = Message.System(
             id = generatedMessageUuid,
             content = MessageContent.HistoryLost,

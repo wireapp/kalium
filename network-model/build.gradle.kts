@@ -17,24 +17,20 @@
  */
 
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(true)
-    }
+    multiplatform()
 }
 
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":util"))
-                api(project(":logger"))
+                implementation(projects.util)
+                api(projects.logger)
 
                 // serialization
                 implementation(libs.ktxSerialization)

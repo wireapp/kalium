@@ -108,6 +108,7 @@ IFNULL(
 IFNULL(
     (SELECT '[' || GROUP_CONCAT('{
         "id":"' || asset_id || '",
+        "asset_index":"' || asset_index || '",
         "mime_type":"' || asset_mime_type || '",
         "cell_asset":"' || cell_asset || '",
         "asset_path":"' || IFNULL(asset_path,'') || '",
@@ -121,8 +122,8 @@ IFNULL(
         "content_url":"' || IFNULL(content_url,'') || '",
         "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
     FROM MessageAttachments
-    WHERE MessageAttachments.message_id = Message.id
-        AND MessageAttachments.conversation_id = Message.conversation_id
+    WHERE (MessageAttachments.message_id = Message.id
+        AND MessageAttachments.conversation_id = Message.conversation_id)
     ),
     '[]'
 ) AS attachments,
@@ -130,6 +131,7 @@ TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,
 QuotedSender.name AS quotedSenderName,
+QuotedSender.accent_id AS quotedSenderAccentId,
 QuotedMessage.creation_date AS quotedMessageDateTime,
 QuotedMessage.last_edit_date AS quotedMessageEditTimestamp,
 QuotedMessage.visibility AS quotedMessageVisibility,

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventInput
 import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventWorker
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
@@ -103,7 +103,7 @@ class UpdateConversationReadDateUseCase internal constructor(
         selfConversationId: QualifiedID,
         time: Instant
     ): Either<CoreFailure, Unit> {
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val regularMessage = Message.Signaling(

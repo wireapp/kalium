@@ -34,7 +34,7 @@ internal data class CellNodeDTO(
     val contentUrl: String?,
     val contentHash: String?,
     val mimeType: String?,
-    val previews: List<PreviewDto> = emptyList(),
+    val previews: List<PreviewDto>? = null,
     val ownerUserId: String?,
     val conversationId: String?,
     val publicLinkId: String?,
@@ -54,7 +54,7 @@ internal fun CellNodeDTO.toModel() = CellNode(
     contentUrl = contentUrl,
     contentHash = contentHash,
     mimeType = mimeType,
-    previews = previews.map { it.toModel() },
+    previews = previews?.map { it.toModel() },
     ownerUserId = ownerUserId,
     conversationId = conversationId,
     publicLinkId = publicLinkId,
@@ -100,7 +100,7 @@ internal fun RestNode.toDto() = CellNodeDTO(
                 it.dimension ?: 0,
             )
         }
-    } ?: emptyList(),
+    },
     ownerUserId = userMetadata
         ?.firstOrNull { it.namespace == "usermeta-owner-uuid" }
         ?.jsonValue?.removeSurrounding("\""),

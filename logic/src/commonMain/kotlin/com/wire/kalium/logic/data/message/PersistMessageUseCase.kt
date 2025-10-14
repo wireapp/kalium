@@ -132,6 +132,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.InCallEmoji -> false
             is MessageContent.Multipart -> true
             is MessageContent.History -> false
+            is MessageContent.NewConversationWithCellMessage -> false
+            is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
         }
 
     @Suppress("ComplexMethod")
@@ -190,6 +192,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.TeamMemberRemoved,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
-            is MessageContent.History -> false
+            is MessageContent.History,
+            is MessageContent.NewConversationWithCellMessage,
+            is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
         }
 }

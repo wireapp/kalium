@@ -16,8 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -30,12 +28,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":common"))
-                implementation(project(":network"))
-                implementation(project(":data"))
-                implementation(project(":util"))
-                implementation(project(":cryptography"))
-                implementation(project(":persistence"))
+                implementation(projects.common)
+                implementation(projects.network)
+                implementation(projects.data)
+                implementation(projects.dataMappers)
+                implementation(projects.util)
+                implementation(projects.cryptography)
+                implementation(projects.persistence)
                 implementation(libs.coroutines.core)
                 implementation(libs.sqldelight.coroutinesExtension)
                 implementation(libs.ktxDateTime)
@@ -43,10 +42,11 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(projects.dataMocks)
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
-                implementation(project(":persistence-test"))
+                implementation(projects.persistenceTest)
             }
         }
 

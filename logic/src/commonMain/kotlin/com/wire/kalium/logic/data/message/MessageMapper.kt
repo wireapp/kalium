@@ -331,6 +331,8 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
             MessageEntity.ContentType.LEGAL_HOLD -> null
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL -> null
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> null
 
             MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
                 messageId = message.id,
@@ -423,8 +425,8 @@ class MessageMapperImpl(
             messageBody = regularMessage.value,
             linkPreview = regularMessage.linkPreviews.map(linkPreviewMapper::fromModelToDao),
             mentions = regularMessage.mentions.map(messageMentionMapper::fromModelToDao),
-            attachments = regularMessage.attachments.mapNotNull {
-                attachmentsMapper.fromModelToDao(it)
+            attachments = regularMessage.attachments.mapIndexedNotNull { index, attachment ->
+                attachmentsMapper.fromModelToDao(attachment)?.copy(assetIndex = index)
             },
             quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
             isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
@@ -496,6 +498,9 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
                 MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
         }
     }
+    is MessageEntityContent.NewConversationWithCellMessage -> MessageContent.NewConversationWithCellMessage
+    is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
+        MessageContent.NewConversationWithCellSelfDeleteDisabledMessage
 }
 
 fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
@@ -608,7 +613,8 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 messageId = it.id,
                 timeInstant = Instant.parse(it.dateTime),
                 editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
-                quotedContent = quotedContentFromEntity(it)
+                quotedContent = quotedContentFromEntity(it),
+                accentId = it.accentId
             )
         }
         MessageContent.Text(
@@ -672,7 +678,8 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 messageId = it.id,
                 timeInstant = Instant.parse(it.dateTime),
                 editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
-                quotedContent = quotedContentFromEntity(it)
+                quotedContent = quotedContentFromEntity(it),
+                accentId = it.accentId
             )
         }
         MessageContent.Multipart(
@@ -686,7 +693,9 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 )
             },
             quotedMessageDetails = quotedMessageDetails,
-            attachments = attachments.mapNotNull { it.toModel() }
+            attachments = attachments
+                .sortedBy { it.assetIndex }
+                .mapNotNull { it.toModel() }
         )
     }
 }
@@ -792,6 +801,9 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
         is MessageContent.LegalHold.ForMembers.Enabled ->
             MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
     }
+
+    MessageContent.NewConversationWithCellMessage -> MessageEntityContent.NewConversationWithCellMessage
+    MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
 }
 
 fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {

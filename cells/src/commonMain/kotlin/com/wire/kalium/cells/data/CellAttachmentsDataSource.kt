@@ -53,6 +53,15 @@ internal class CellAttachmentsDataSource(
         }
     }
 
+    override suspend fun updateAssetPath(
+        assetId: String,
+        remotePath: String
+    ): Either<StorageFailure, Unit> = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            messageAttachments.setAssetPath(assetId, remotePath)
+        }
+    }
+
     override suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus) = withContext(dispatchers.io) {
         wrapStorageRequest {
             messageAttachments.setTransferStatus(assetId, status.name)

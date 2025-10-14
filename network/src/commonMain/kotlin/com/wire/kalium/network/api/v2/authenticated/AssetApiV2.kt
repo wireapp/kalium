@@ -55,7 +55,14 @@ internal open class AssetApiV2 internal constructor(
         wrapKaliumResponse {
             httpClient.post(PATH_ASSETS) {
                 contentType(ContentType.MultiPart.Mixed)
-                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
+                setBody(
+                    StreamAssetContent(
+                        metadata = buildUploadMetaData(metadata),
+                        md5 = metadata.md5,
+                        encryptedDataSize = encryptedDataSize,
+                        fileContentStream = encryptedDataSource
+                    )
+                )
             }
         }
 

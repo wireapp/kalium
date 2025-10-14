@@ -53,6 +53,14 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
+import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
+import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCase
+import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCase
+import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
@@ -72,7 +80,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
@@ -280,5 +288,26 @@ class UserScope internal constructor(
     val isWireCellsEnabled: IsWireCellsEnabledUseCase
         get() = IsWireCellsEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
+        )
+    val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
+        get() = IsWireCellsEnabledForConversationUseCaseImpl(
+            conversationRepository = conversationRepository
+        )
+
+    val isChatBubblesEnabled: IsChatBubblesEnabledUseCase
+        get() = IsChatBubblesEnabledUseCaseImpl(
+            userConfigRepository = userConfigRepository
+        )
+
+    val isProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
+        get() = IsProfileQRCodeEnabledUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+        )
+
+    val isAssetAuditLogEnabled: IsAssetAuditLogEnabledUseCase
+        get() = IsAssetAuditLogEnabledUseCaseImpl(
+            userId = selfUserId,
+            userConfigRepository = userConfigRepository,
+            serverConfigRepository = serverConfigRepository,
         )
 }

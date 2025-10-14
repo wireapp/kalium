@@ -50,6 +50,7 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v10.authenticated.networkContainer.AuthenticatedNetworkContainerV10
 import com.wire.kalium.network.api.v11.authenticated.networkContainer.AuthenticatedNetworkContainerV11
+import com.wire.kalium.network.api.v12.authenticated.networkContainer.AuthenticatedNetworkContainerV12
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
@@ -128,7 +129,7 @@ interface AuthenticatedNetworkContainer {
 
     companion object {
 
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
         fun create(
             sessionManager: SessionManager,
             selfUserId: UserId,
@@ -242,6 +243,15 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 11 -> AuthenticatedNetworkContainerV11(
+                    sessionManager,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                12 -> AuthenticatedNetworkContainerV12(
                     sessionManager,
                     selfUserId,
                     certificatePinning,

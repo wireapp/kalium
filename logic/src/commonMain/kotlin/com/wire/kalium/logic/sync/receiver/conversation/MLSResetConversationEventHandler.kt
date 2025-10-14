@@ -17,17 +17,11 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mockable
 
 @Mockable
@@ -36,40 +30,40 @@ interface MLSResetConversationEventHandler {
 }
 
 internal class MLSResetConversationEventHandlerImpl(
-    private val selfUserId: UserId,
-    private val userConfig: UserConfigRepository,
-    private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val fetchConversation: FetchConversationUseCase,
 ) : MLSResetConversationEventHandler {
     override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
 
-        if (!userConfig.isMlsConversationsResetEnabled()) {
-            kaliumLogger.i("MLS conversation reset feature is disabled.")
-            return
-        }
-
-        val isFromOtherUser = event.from != selfUserId
-
         // If the event is from same user do reset only if local group id does not match new group id.
-        if (isFromOtherUser || event.newGroupID != getCurrentGroupId(event.conversationId)) {
-            transaction.mls?.let { mlsContext ->
-                mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
+        transaction.mls?.let { mlsContext ->
+            mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
 
-                // Will be replaced by updating Group ID when it is added in a new
-                // version of mls-reset event.
-                fetchConversation(transaction, event.conversationId)
+            val hasEstablishedMLSGroup = mlsConversationRepository.hasEstablishedMLSGroup(
+                mlsContext,
+                event.newGroupID
+            ).getOrElse { false }
+
+            val newEpoch = if (hasEstablishedMLSGroup) {
+                mlsContext.conversationEpoch(event.newGroupID.value).toLong()
+            } else {
+                0L
             }
-        }
-    }
 
-    private suspend fun getCurrentGroupId(conversationId: ConversationId) =
-        conversationRepository.getConversationById(conversationId).getOrNull()?.mlsProtocolInfo()?.groupId
+            val newState = if (hasEstablishedMLSGroup) {
+                // already have the group, no need to join
+                // can mean that the welcome event arrived before the reset
+                ConversationEntity.GroupState.ESTABLISHED
+            } else {
+                // update local db with the new group id and set the conversation as not established
+                ConversationEntity.GroupState.PENDING_AFTER_RESET
+            }
 
-    private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLS? {
-        return when (this.protocol) {
-            is Conversation.ProtocolInfo.MLS -> this.protocol as? Conversation.ProtocolInfo.MLS
-            else -> null
+            mlsConversationRepository.updateGroupIdAndState(
+                event.conversationId,
+                event.newGroupID,
+                groupState = newState,
+                newEpoch = newEpoch,
+            )
         }
     }
 }

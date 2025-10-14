@@ -26,7 +26,10 @@ object ServerConfigDTOJson {
         |   "federation":false,
         |   "supported":[
         |      0,
-        |      1
+        |      1,
+        |      5,
+        |      7,
+        |      8
         |   ]
         |}
         """.trimMargin()

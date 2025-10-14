@@ -79,5 +79,6 @@ object DBTestSetup {
         channelAccess = null,
         channelAddPermission = null,
         wireCell = null,
+        historySharingRetentionSeconds = 0
     )
 }

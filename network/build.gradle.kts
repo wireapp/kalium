@@ -18,8 +18,6 @@
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
@@ -27,20 +25,26 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
+    multiplatform()
 }
 
 kotlin {
+    js {
+        browser {
+            testTask {
+                // Network is currently broken for JS. But should be fixed with ktor 3.0
+                isEnabled = false
+            }
+        }
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":protobuf"))
-                implementation(project(":util"))
-                implementation(project(":network-util"))
-                api(project(":network-model"))
-                api(project(":logger"))
+                implementation(projects.protobuf)
+                implementation(projects.util)
+                implementation(projects.networkUtil)
+                api(projects.networkModel)
+                api(projects.logger)
 
                 // coroutines
                 implementation(libs.coroutines.core)
@@ -67,9 +71,6 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
                 implementation(libs.okio.test)
-
-                // UUIDs
-                implementation(libs.benAsherUUID)
             }
         }
         val commonTest by getting {
@@ -79,7 +80,7 @@ kotlin {
                 // ktor test
                 implementation(libs.ktor.mock)
                 // mocks
-                implementation(project(":mocks"))
+                implementation(projects.mocks)
             }
         }
 
@@ -103,6 +104,11 @@ kotlin {
         val appleMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(libs.ktor.jsClient)
             }
         }
     }

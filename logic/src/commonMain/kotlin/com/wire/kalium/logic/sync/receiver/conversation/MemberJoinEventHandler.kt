@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
@@ -126,7 +126,7 @@ internal class MemberJoinEventHandlerImpl(
 
     private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {
         val message = Message.System(
-            id = event.id.ifEmpty { uuid4().toString() },
+            id = event.id.ifEmpty { Uuid.random().toString() },
             content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
             conversationId = event.conversationId,
             date = event.dateTime,

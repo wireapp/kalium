@@ -18,8 +18,6 @@
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -33,10 +31,10 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":backup"))
-                implementation(project(":cryptography"))
-                implementation(project(":protobuf"))
-                implementation(project(":logger"))
+                implementation(projects.backup)
+                implementation(projects.cryptography)
+                implementation(projects.protobuf)
+                implementation(projects.logger)
 
                 implementation(libs.coroutines.core)
                 implementation(libs.okio.core)
@@ -46,24 +44,24 @@ kotlin {
         val nonJsMain by creating {
             dependsOn(commonMain)
             dependencies {
-                implementation(project(":network"))
-                implementation(project(":persistence"))
+                implementation(projects.network)
+                implementation(projects.persistence)
             }
         }
 
         val jvmMain by getting {
             dependsOn(nonJsMain)
             dependencies {
-                implementation(project(":logic"))
-                implementation(project(":calling"))
+                implementation(projects.logic)
+                implementation(projects.calling)
             }
         }
 
         val androidMain by getting {
             dependsOn(nonJsMain)
             dependencies {
-                implementation(project(":logic"))
-                implementation(project(":calling"))
+                implementation(projects.logic)
+                implementation(projects.calling)
             }
         }
 

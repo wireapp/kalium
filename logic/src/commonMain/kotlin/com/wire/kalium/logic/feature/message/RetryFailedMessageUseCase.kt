@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
@@ -48,6 +48,7 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -139,7 +140,7 @@ class RetryFailedMessageUseCase internal constructor(
                     newMentions = content.mentions
                 )
                 // Create new unique message ID
-                val generatedMessageUuid = uuid4().toString()
+                val generatedMessageUuid = Uuid.random().toString()
                 val editMessage = Message.Signaling(
                     id = generatedMessageUuid,
                     content = editContent,

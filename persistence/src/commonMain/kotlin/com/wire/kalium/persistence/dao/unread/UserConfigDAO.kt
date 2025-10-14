@@ -76,6 +76,15 @@ interface UserConfigDAO {
     suspend fun getAsyncNotificationsEnabled(): Boolean
     suspend fun setCellsEnabled(enabled: Boolean)
     suspend fun isCellsEnabled(): Boolean
+    suspend fun setAppsEnabled(isAppsEnabled: Boolean)
+    suspend fun getAppsEnabled(): Boolean
+    suspend fun observeAppsEnabled(): Flow<Boolean>
+    suspend fun setChatBubblesEnabled(enabled: Boolean)
+    suspend fun isChatBubblesEnabled(): Boolean
+    suspend fun setProfileQRCodeEnabled(enabled: Boolean)
+    suspend fun isProfileQRCodeEnabled(): Boolean
+    suspend fun setAssetAuditLogEnabled(enabled: Boolean)
+    suspend fun isAssetAuditLogEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -255,6 +264,37 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isCellsEnabled(): Boolean =
         metadataDAO.valueByKey(CELLS_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun setProfileQRCodeEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), PROFILE_QR_CODE_ENABLED)
+    }
+
+    override suspend fun isProfileQRCodeEnabled(): Boolean =
+        metadataDAO.valueByKey(PROFILE_QR_CODE_ENABLED)?.toBoolean() ?: true
+
+    override suspend fun setAssetAuditLogEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), ASSET_AUDIT_LOG_ENABLED)
+    }
+
+    override suspend fun isAssetAuditLogEnabled(): Boolean =
+        metadataDAO.valueByKey(ASSET_AUDIT_LOG_ENABLED)?.toBoolean() ?: false
+
+    override suspend fun setAppsEnabled(isAppsEnabled: Boolean) {
+        metadataDAO.insertValue(isAppsEnabled.toString(), APPS_ENABLED_KEY)
+    }
+
+    override suspend fun getAppsEnabled(): Boolean =
+        metadataDAO.valueByKey(APPS_ENABLED_KEY)?.toBoolean() ?: false
+
+    override suspend fun observeAppsEnabled(): Flow<Boolean> =
+        metadataDAO.valueByKeyFlow(APPS_ENABLED_KEY).map { it?.toBoolean() ?: false }
+
+    override suspend fun setChatBubblesEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), CHAT_BUBBLES_ENABLED)
+    }
+
+    override suspend fun isChatBubblesEnabled(): Boolean =
+        metadataDAO.valueByKey(CHAT_BUBBLES_ENABLED)?.toBoolean() ?: false
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -270,5 +310,9 @@ internal class UserConfigDAOImpl internal constructor(
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
         const val CELLS_ENABLED = "wire_cells"
+        const val PROFILE_QR_CODE_ENABLED = "profile_qr_code_enabled"
+        private const val APPS_ENABLED_KEY = "apps_enabled"
+        private const val CHAT_BUBBLES_ENABLED = "chat_bubbles"
+        private const val ASSET_AUDIT_LOG_ENABLED = "asset_audit_log"
     }
 }

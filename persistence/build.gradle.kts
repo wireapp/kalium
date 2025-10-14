@@ -18,8 +18,6 @@
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.sqldelight.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
@@ -73,8 +71,8 @@ kotlin {
                 implementation(libs.ktxDateTime)
                 implementation(libs.sqldelight.androidxPaging)
 
-                implementation(project(":util"))
-                api(project(":logger"))
+                implementation(projects.util)
+                api(projects.logger)
             }
         }
         val commonTest by getting {

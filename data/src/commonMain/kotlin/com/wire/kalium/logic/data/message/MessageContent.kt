@@ -123,6 +123,7 @@ sealed interface MessageContent {
     data class QuotedMessageDetails(
         val senderId: UserId,
         val senderName: String?,
+        val accentId: Int?,
         val isQuotingSelfUser: Boolean,
         /**
          * Indicates that the hash of the quote
@@ -398,6 +399,9 @@ sealed interface MessageContent {
         }
     }
 
+    data object NewConversationWithCellMessage : System
+    data object NewConversationWithCellSelfDeleteDisabledMessage : System
+
     data class InCallEmoji(
         val emojis: Map<String, Int>
     ) : Signaling
@@ -489,6 +493,8 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.History.ClientsResponse -> "History.ClientsResponse"
     is MessageContent.History.NewClientAvailable -> "History.NewClientAvailable"
     null -> "null"
+    MessageContent.NewConversationWithCellMessage -> "NewConversationWithCell"
+    MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> "NewConversationWithCellSelfDeleteDisabled"
 }
 
 sealed interface MessagePreviewContent {

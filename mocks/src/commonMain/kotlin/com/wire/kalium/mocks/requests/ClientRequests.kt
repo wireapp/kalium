@@ -30,8 +30,8 @@ object ClientRequests {
     /**
      * URL Paths
      */
-    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH_V1}clients"
-    private const val PATH_ACCESS = "${CommonResponses.BASE_PATH_V1}access"
+    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH_V8}clients"
+    private const val PATH_ACCESS = "${CommonResponses.BASE_PATH_V8}access"
     private const val PATH_ANDROID = "${CommonResponses.BASE_PATH}android"
 
     /**

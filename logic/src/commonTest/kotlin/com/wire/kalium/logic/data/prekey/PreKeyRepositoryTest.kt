@@ -318,7 +318,7 @@ class PreKeyRepositoryTest {
             .shouldSucceed()
 
         coVerify {
-            arrangement.preKeyApi.uploadNewPrekeys(eq(TEST_CLIENT_ID_1.value), eq(preKeys.map { PreKeyDTO(it.id, it.encodedData) }))
+            arrangement.preKeyApi.uploadNewPrekeys(eq(TEST_CLIENT_ID_1.value), eq(preKeys.map { PreKeyDTO(it.id, it.pkb) }))
         }.wasInvoked(exactly = once)
     }
 

@@ -46,6 +46,10 @@ data class FeatureConfigModel(
     val consumableNotificationsModel: ConfigsStatusModel?,
     val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
     val cellsModel: CellsConfigModel?,
+    val appsModel: ConfigsStatusModel?,
+    val chatBubblesModel: ChatBubblesConfigModel?,
+    val enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel?,
+    val assetAuditLogConfigModel: AssetAuditLogConfigModel?,
 )
 
 enum class Status {
@@ -159,6 +163,24 @@ data class AllowedGlobalOperationsModel(
 data class CellsConfigModel(
     @SerialName("status")
     val status: Status,
+)
+
+@Serializable
+data class EnableUserProfileQRCodeConfigModel(
+    @SerialName("status")
+    val status: Status,
+)
+
+@Serializable
+data class ChatBubblesConfigModel(
+    @SerialName("status")
+    val status: Status
+)
+
+@Serializable
+data class AssetAuditLogConfigModel(
+    @SerialName("status")
+    val status: Status
 )
 
 @Serializable

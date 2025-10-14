@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
@@ -207,7 +207,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
         else MessageContent.ConversationDegradedMLS
 
         val conversationDegradedMessage = Message.System(
-            id = uuid4().toString(),
+            id = Uuid.random().toString(),
             content = content,
             conversationId = conversationId,
             date = Clock.System.now(),

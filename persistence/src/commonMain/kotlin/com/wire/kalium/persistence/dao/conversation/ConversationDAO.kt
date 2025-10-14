@@ -34,14 +34,14 @@ data class ProposalTimerEntity(
 @Mockable
 interface ConversationDAO {
     val platformExtensions: ConversationExtensions
-    //region Get/Observe by ID
+    // region Get/Observe by ID
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
-    //endregion
+    // endregion
 
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
@@ -55,6 +55,7 @@ interface ConversationDAO {
         cipherSuite: ConversationEntity.CipherSuite,
         groupId: String
     )
+
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
@@ -65,7 +66,9 @@ interface ConversationDAO {
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
         newActivitiesOnTop: Boolean = false,
+        strictMLSFilter: Boolean = true
     ): Flow<List<ConversationDetailsWithEventsEntity>>
+
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,
@@ -125,6 +128,7 @@ interface ConversationDAO {
         link: String,
         isPasswordProtected: Boolean
     )
+
     suspend fun updateChannelAddPermission(
         conversationId: QualifiedIDEntity,
         channelAddPermission: ConversationEntity.ChannelAddPermission
@@ -148,12 +152,20 @@ interface ConversationDAO {
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String?
     suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String?
+    suspend fun updateMLSGroupIdAndState(
+        conversationId: QualifiedIDEntity,
+        newGroupId: String,
+        newEpoch: Long,
+        groupState: ConversationEntity.GroupState
+    )
+
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
     suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
 
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
+    suspend fun hasConversationWithCell(): Boolean
 }
 
 data class NameAndHandleEntity(

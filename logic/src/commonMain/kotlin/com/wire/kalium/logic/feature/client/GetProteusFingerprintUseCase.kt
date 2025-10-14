@@ -42,7 +42,7 @@ class GetProteusFingerprintUseCaseImpl internal constructor(
             .fold({
                 GetProteusFingerprintResult.Failure(it)
             }, {
-                GetProteusFingerprintResult.Success(it.decodeToString())
+                GetProteusFingerprintResult.Success(it)
             })
     }
 }

@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.event
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoClientId
@@ -88,7 +88,7 @@ class EventGenerator(
     ): PlainMessageBlob {
         return protoContentMapper.encodeToProtobuf(
             ProtoContent.Readable(
-                messageUid = uuid4().toString(),
+                messageUid = Uuid.random().toString(),
                 messageContent = messageContent,
                 expectsReadConfirmation = true,
                 legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
@@ -129,7 +129,7 @@ class EventGenerator(
 
     private fun generateEventResponse(event: EventContentDTO): EventResponse {
         return EventResponse(
-            id = uuid4().toString(), // TODO jacob (should actually be UUIDv1)
+            id = Uuid.random().toString(), // TODO jacob (should actually be UUIDv1)
             payload = listOf(event),
             transient = true // All events are transient to avoid persisting an incorrect last event id
         )

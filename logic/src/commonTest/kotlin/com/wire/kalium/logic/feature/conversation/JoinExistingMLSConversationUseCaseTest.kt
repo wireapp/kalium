@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
@@ -126,12 +127,15 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
-    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishMlsGroup() =
+    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
         runTest {
+            val members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
+                .withGetConversationMembersSuccessful(members)
+                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(
@@ -141,13 +145,13 @@ class JoinExistingMLSConversationUseCaseTest {
 
             coVerify {
                 arrangement.mlsConversationRepository.establishMLSGroup(
-                    groupID = Arrangement.GROUP_ID3,
-                    members = emptyList(),
-                    publicKeys = null,
-                    allowSkippingUsersWithoutKeyPackages = false,
-                    mlsContext = arrangement.mlsContext
+                    mlsContext = any(),
+                    groupID = eq(Arrangement.GROUP_ID3),
+                    members = eq(members),
+                    publicKeys = any(),
+                    allowSkippingUsersWithoutKeyPackages = eq(false)
                 )
-            }.wasNotInvoked()
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -196,11 +200,11 @@ class JoinExistingMLSConversationUseCaseTest {
 
             coVerify {
                 arrangement.mlsConversationRepository.establishMLSGroup(
-                    any(),
-                    eq(Arrangement.GROUP_ID_ONE_ON_ONE),
-                    eq(members),
-                    any(),
-                    eq(false)
+                    mlsContext = any(),
+                    groupID = eq(Arrangement.GROUP_ID_ONE_ON_ONE),
+                    members = eq(members),
+                    publicKeys = any(),
+                    allowSkippingUsersWithoutKeyPackages = eq(false)
                 )
             }.wasInvoked(once)
         }
@@ -220,7 +224,11 @@ class JoinExistingMLSConversationUseCaseTest {
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversation(any(), eq(Arrangement.MLS_CONVERSATION1.id))
+            arrangement.fetchConversation(
+                any(),
+                eq(Arrangement.MLS_CONVERSATION1.id),
+                eq(ConversationSyncReason.Other)
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -284,7 +292,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withFetchConversationSuccessful() = apply {
             coEvery {
-                fetchConversation.invoke(any(), any())
+                fetchConversation.invoke(any(), any(), eq(ConversationSyncReason.Other))
             }.returns(Either.Right(Unit))
         }
 

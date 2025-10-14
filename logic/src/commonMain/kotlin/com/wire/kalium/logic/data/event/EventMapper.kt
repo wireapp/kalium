@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.featureConfig.toModel
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -140,7 +141,6 @@ class EventMapper(
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
-            EventContentDTO.AsyncMissedNotification -> Event.AsyncMissed(id)
         }
 
     private fun conversationTyping(
@@ -457,7 +457,7 @@ class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         from = eventContentDTO.qualifiedFrom.toModel(),
         groupID = GroupID(eventContentDTO.data.groupId),
-        newGroupID = eventContentDTO.data.newGroupId?.let { GroupID(it) },
+        newGroupID = GroupID(eventContentDTO.data.newGroupId),
     )
 
     private fun memberUpdate(
@@ -514,7 +514,7 @@ class EventMapper(
         else -> MutedConversationStatus.AllAllowed
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun featureConfig(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO,
@@ -568,13 +568,29 @@ class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AllowedGlobalOperations)
         )
+
         is FeatureConfigData.Cells -> Event.FeatureConfig.CellsConfigUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
         )
+        is FeatureConfigData.EnableUserProfileQRCode -> Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.EnableUserProfileQRCode)
+        )
+
+        is FeatureConfigData.ChatBubbles -> Event.FeatureConfig.ChatBubblesConfigUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.ChatBubbles).toModel()
+        )
+
+        is FeatureConfigData.AssetAuditLog -> Event.FeatureConfig.AssetAuditLogConfigUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.AssetAuditLog).toModel()
+        )
 
         // These features are NOT received through events. As FeatureConfig Events are deprecated
         is FeatureConfigData.ConsumableNotifications,
+        is FeatureConfigData.Apps,
         is FeatureConfigData.Channels,
         is FeatureConfigData.DigitalSignatures,
         is FeatureConfigData.Legalhold,

@@ -79,8 +79,8 @@ class UpdateConversationProtocolUseCaseTest {
     }
 
     class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-        val persistConversations: PersistConversationsUseCase = mock(PersistConversationsUseCase::class)
+        private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        private val persistConversations: PersistConversationsUseCase = mock(PersistConversationsUseCase::class)
 
         suspend fun withUpdateProtocolLocallySuccess() = apply {
             coEvery {

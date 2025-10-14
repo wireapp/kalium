@@ -49,7 +49,8 @@ CREATE TABLE Conversation (
     channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
     wire_cell TEXT,
-    deleted_locally INTEGER AS Boolean NOT NULL DEFAULT 0
+    deleted_locally INTEGER AS Boolean NOT NULL DEFAULT 0,
+    history_sharing_retention_seconds INTEGER NOT NULL DEFAULT 0 CHECK (history_sharing_retention_seconds >= 0)
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
@@ -68,6 +69,8 @@ CREATE INDEX conversation_verification_status ON Conversation(verification_statu
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
 CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
 CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
+CREATE INDEX conversation_idx_wire_cell_notnull ON Conversation(wire_cell) WHERE wire_cell IS NOT NULL;
+CREATE INDEX conversation_history_sharing_retention ON Conversation(history_sharing_retention_seconds);
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
@@ -84,15 +87,19 @@ SET deleted_locally = 1
 WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_permission, wire_cell)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_permission, wire_cell, history_sharing_retention_seconds)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
 mls_epoch = excluded.mls_epoch,
-mls_group_state = excluded.mls_group_state,
+mls_group_state = CASE
+    WHEN Conversation.mls_group_state = 'ESTABLISHED' THEN excluded.mls_group_state
+    WHEN excluded.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN excluded.mls_group_state
+    ELSE Conversation.mls_group_state
+END,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
@@ -113,7 +120,8 @@ archived_date_time = excluded.archived_date_time,
 is_channel = excluded.is_channel,
 channel_access = excluded.channel_access,
 channel_add_permission = excluded.channel_add_permission,
-wire_cell = excluded.wire_cell;
+wire_cell = excluded.wire_cell,
+history_sharing_retention_seconds = excluded.history_sharing_retention_seconds;
 
 updateConversation:
 UPDATE Conversation
@@ -122,13 +130,33 @@ WHERE qualified_id = ?;
 
 updateConversationGroupState:
 UPDATE Conversation
-SET mls_group_state = ?
+SET mls_group_state = CASE
+    WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+    WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+    ELSE mls_group_state
+END
 WHERE mls_group_id = ?;
 
 updateMlsGroupStateAndCipherSuite:
 UPDATE Conversation
-SET mls_group_state = :mls_group_state, mls_cipher_suite = :mls_cipher_suite
+SET mls_group_state = CASE
+    WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+    WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+    ELSE mls_group_state
+END,
+mls_cipher_suite = :mls_cipher_suite
 WHERE mls_group_id = :mls_group_id;
+
+updateMLSGroupIdAndState:
+UPDATE Conversation
+SET mls_group_id = :new_group_id, 
+    mls_group_state = CASE
+        WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+        WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+        ELSE mls_group_state
+    END,
+    mls_epoch = :new_epoch
+WHERE qualified_id = :conversation_id;
 
 updateConversationNotificationsDateWithTheLastMessage:
 UPDATE Conversation
@@ -417,3 +445,8 @@ INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_gr
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
     last_modified_date = MAX(last_modified_date, excluded.last_modified_date);
+
+hasConversationWithCell:
+SELECT EXISTS (
+    SELECT 1 FROM Conversation WHERE wire_cell IS NOT NULL
+);

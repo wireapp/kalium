@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation.folders
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
@@ -118,7 +118,7 @@ internal class ConversationFolderDataSource internal constructor(
                 kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("Favorite label not found, creating a new one")
                 folders.add(
                     FolderWithConversations(
-                        id = uuid4().toString(),
+                        id = Uuid.random().toString(),
                         name = "", // name will be handled by localization
                         type = FolderType.FAVORITE,
                         conversationIdList = emptyList()

@@ -27,6 +27,7 @@ CREATE TABLE MessageAttachments (
       asset_duration_ms INTEGER,
 
       asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
+      asset_index INTEGER AS Int,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (conversation_id, message_id, asset_id)
@@ -46,8 +47,9 @@ INSERT INTO MessageAttachments (
     asset_width,
     asset_height,
     asset_duration_ms,
-    asset_transfer_status
-) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);
+    asset_transfer_status,
+    asset_index
+) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?, ?);
 
 getAttachment:
 SELECT * FROM MessageAttachments WHERE asset_id = ?;
@@ -60,6 +62,9 @@ UPDATE MessageAttachments SET local_path = ? WHERE asset_id = ?;
 
 getAssetPath:
 SELECT asset_path FROM MessageAttachments WHERE asset_id = ?;
+
+setAssetPath:
+UPDATE MessageAttachments SET asset_path = ? WHERE asset_id = ?;
 
 setTransferStatus:
 UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;

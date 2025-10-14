@@ -33,12 +33,13 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  * @see commonDokkaConfig
  */
 @Suppress("LongParameterList")
-fun Project.configureDefaultMultiplatform(
+internal fun Project.configureDefaultMultiplatform(
     enableApple: Boolean,
     enableJs: Boolean,
     enableJsTests: Boolean,
     includeNativeInterop: Boolean,
     enableIntegrationTests: Boolean,
+    dependenciesToAdd: Set<FrequentModules>,
     androidNamespaceSuffix: String = this.name,
     jsModuleNameOverride: String? = null,
 ) {
@@ -47,6 +48,10 @@ fun Project.configureDefaultMultiplatform(
         "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
     }
     kotlinExtension.apply {
+        compilerOptions {
+            optIn.add("kotlin.RequiresOptIn")
+            optIn.add("kotlin.uuid.ExperimentalUuidApi")
+        }
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
         }
@@ -87,6 +92,14 @@ fun Project.configureDefaultMultiplatform(
     kotlinExtension.sourceSets.getByName("commonTest") {
         dependencies {
             implementation(library("kotlin.test"))
+        }
+    }
+
+    kotlinExtension.sourceSets.getByName("commonMain") {
+        dependencies {
+            dependenciesToAdd.forEach {
+                implementation(project(":${it.projectName}"))
+            }
         }
     }
 

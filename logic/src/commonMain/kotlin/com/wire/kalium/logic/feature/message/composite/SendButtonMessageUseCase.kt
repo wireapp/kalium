@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -34,7 +34,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -70,7 +70,7 @@ class SendButtonMessageUseCase internal constructor(
             it is SlowSyncStatus.Complete
         }
 
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         provideClientId().flatMap { clientId ->

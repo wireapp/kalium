@@ -32,8 +32,16 @@ import io.mockative.Mockable
  */
 @Mockable
 interface FetchConversationUseCase {
-    suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun fetchWithTransaction(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        reason: ConversationSyncReason = ConversationSyncReason.Other,
+    ): Either<CoreFailure, Unit>
+
+    suspend fun fetchWithTransaction(
+        conversationId: ConversationId,
+        reason: ConversationSyncReason = ConversationSyncReason.Other,
+    ): Either<CoreFailure, Unit>
 
 }
 
@@ -44,17 +52,25 @@ internal class FetchConversationUseCaseImpl(
     private val transactionProvider: CryptoTransactionProvider,
 ) : FetchConversationUseCase {
 
-    override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        reason: ConversationSyncReason,
+    ): Either<CoreFailure, Unit> {
         return conversationRepository.fetchConversation(conversationId)
             .flatMap {
                 persistConversations(
                     transactionContext,
                     listOf(it),
-                    invalidateMembers = true
+                    invalidateMembers = true,
+                    reason = reason
                 )
             }
     }
 
-    override suspend fun fetchWithTransaction(conversationId: ConversationId): Either<CoreFailure, Unit> =
-        transactionProvider.transaction { invoke(it, conversationId) }
+    override suspend fun fetchWithTransaction(
+        conversationId: ConversationId,
+        reason: ConversationSyncReason
+    ): Either<CoreFailure, Unit> =
+        transactionProvider.transaction { invoke(it, conversationId, reason) }
 }

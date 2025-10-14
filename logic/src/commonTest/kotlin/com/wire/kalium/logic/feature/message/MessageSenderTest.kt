@@ -24,19 +24,15 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
-import com.wire.kalium.logic.data.message.BroadcastMessageTarget
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.mls.CipherSuite
@@ -63,6 +59,9 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
+import com.wire.kalium.messaging.sending.BroadcastMessage
+import com.wire.kalium.messaging.sending.BroadcastMessageTarget
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -231,7 +230,6 @@ class MessageSenderTest {
         // given
         val failure = CoreFailure.Unknown(Throwable("some exception"))
         val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
             withSendMlsMessage(sendMlsMessageWithResult = Either.Left(failure))
         }
 
@@ -308,7 +306,6 @@ class MessageSenderTest {
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenVerifyStaleEpoch() {
         // given
         val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
             withSendMlsMessage()
             withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
             withWaitUntilLiveOrFailure()
@@ -332,7 +329,6 @@ class MessageSenderTest {
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenRetryAfterSyncIsLive() {
         // given
         val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
             withSendMlsMessage()
             withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
             withWaitUntilLiveOrFailure()
@@ -353,32 +349,9 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenPendingProposals_whenSendingMlsMessage_thenProposalsAreCommitted() {
-        // given
-        val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
-            withSendMlsMessage()
-            withSendOutgoingMlsMessage()
-            withPromoteMessageToSentUpdatingServerTime()
-        }
-
-        arrangement.testScope.runTest {
-            // when
-            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
-
-            // then
-            result.shouldSucceed()
-            coVerify {
-                arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(Arrangement.GROUP_ID))
-            }.wasInvoked(once)
-        }
-    }
-
-    @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenGiveUpIfSyncIsPending() {
         // given
         val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
             withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
             withWaitUntilLiveOrFailure(failing = true)
             withVerifyEpoch(Either.Right(Unit))
@@ -530,7 +503,6 @@ class MessageSenderTest {
         // given
         val failure = FEDERATION_MESSAGE_FAILURE
         val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
             withWaitUntilLiveOrFailure()
             withSendMlsMessage(sendMlsMessageWithResult = Either.Left(failure))
         }
@@ -893,7 +865,6 @@ class MessageSenderTest {
     fun givenARemoteMlsConversationPartiallyFails_whenSendingAMessage_ThenReturnSuccessAndPersistFailedToSendUsers() {
         // given
         val (arrangement, messageSender) = arrange {
-            withCommitPendingProposals()
             withSendMlsMessage(
                 sendMlsMessageWithResult = Either.Right(MessageSent(MESSAGE_SENT_TIME, listOf(TEST_MEMBER_2))),
             )
@@ -1021,7 +992,6 @@ class MessageSenderTest {
         val messageRepository: MessageRepository = mock(MessageRepository::class)
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
         val sessionEstablisher = mock(SessionEstablisher::class)
         val messageEnvelopeCreator: MessageEnvelopeCreator = mock(MessageEnvelopeCreator::class)
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
@@ -1046,7 +1016,6 @@ class MessageSenderTest {
             this@Arrangement to MessageSenderImpl(
                 messageRepository = messageRepository,
                 conversationRepository = conversationRepository,
-                mlsConversationRepository = mlsConversationRepository,
                 syncManager = syncManager,
                 messageSendFailureHandler = messageSendFailureHandler,
                 legalHoldHandler = legalHoldHandler,
@@ -1100,12 +1069,6 @@ class MessageSenderTest {
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(usersFailing))
         }
 
-        suspend fun withCommitPendingProposals(failing: Boolean = false) = apply {
-            coEvery {
-                mlsConversationRepository.commitPendingProposals(any(), any())
-            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
-        }
-
         suspend fun withCreateOutgoingEnvelope(failing: Boolean = false) = apply {
             coEvery {
                 messageEnvelopeCreator.createOutgoingEnvelope(any(), any(), any())
@@ -1132,7 +1095,7 @@ class MessageSenderTest {
 
         suspend fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
             coEvery {
-                mlsMessageCreator.createOutgoingMLSMessage(any(), any(), any())
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 

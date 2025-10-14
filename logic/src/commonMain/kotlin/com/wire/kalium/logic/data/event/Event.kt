@@ -34,7 +34,9 @@ import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.AssetAuditLogConfigModel
 import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
+import com.wire.kalium.logic.data.featureConfig.ChatBubblesConfigModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -42,6 +44,7 @@ import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
+import com.wire.kalium.logic.data.featureConfig.EnableUserProfileQRCodeConfigModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -118,13 +121,6 @@ sealed class Event(open val id: String) {
     }
 
     abstract fun toLogMap(): Map<String, Any?>
-
-    data class AsyncMissed(override val id: String) : Event(id) {
-        override fun toLogMap(): Map<String, Any?> = mapOf(
-            typeKey to "notifications.missed",
-            idKey to id
-        )
-    }
 
     sealed class Conversation(
         id: String,
@@ -465,7 +461,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val from: UserId,
             val groupID: GroupID,
-            val newGroupID: GroupID? = null,
+            val newGroupID: GroupID,
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.MlsReset",
@@ -622,6 +618,39 @@ sealed class Event(open val id: String) {
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.CellsConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class ChatBubblesConfigUpdated(
+            override val id: String,
+            val model: ChatBubblesConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.ChatBubblesConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class EnableUserProfileQRCodeConfigUpdated(
+            override val id: String,
+            val model: EnableUserProfileQRCodeConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.ProfileQRCodeConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class AssetAuditLogConfigUpdated(
+            override val id: String,
+            val model: AssetAuditLogConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AssetAudiLogConfigUpdated",
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
             )

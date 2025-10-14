@@ -156,6 +156,15 @@ interface UserConfigRepository {
     suspend fun isAsyncNotificationsEnabled(): Boolean
     suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isCellsEnabled(): Boolean
+    suspend fun setAppsEnabled(isAppsEnabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isAppsEnabled(): Boolean
+    suspend fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setChatBubblesEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isChatBubblesEnabled(): Boolean
+    suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isProfileQRCodeEnabled(): Boolean
+    suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isAssetAuditLogEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -575,4 +584,34 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isCellsEnabled(): Boolean = userConfigDAO.isCellsEnabled()
+
+    override suspend fun setAppsEnabled(isAppsEnabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setAppsEnabled(isAppsEnabled)
+        }
+
+    override suspend fun isAppsEnabled(): Boolean = userConfigDAO.getAppsEnabled()
+    override suspend fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigDAO.observeAppsEnabled().wrapStorageRequest()
+
+    override suspend fun setChatBubblesEnabled(enabled: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.setChatBubblesEnabled(enabled)
+    }
+
+    override suspend fun isChatBubblesEnabled(): Boolean = userConfigDAO.isChatBubblesEnabled()
+
+    override suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setProfileQRCodeEnabled(enabled)
+        }
+
+    override suspend fun isProfileQRCodeEnabled(): Boolean = userConfigDAO.isProfileQRCodeEnabled()
+
+    override suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setAssetAuditLogEnabled(enabled)
+        }
+
+    override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
+
 }

@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -97,6 +98,7 @@ import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -136,6 +138,7 @@ class MessageScope internal constructor(
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val compositeMessageRepository: CompositeMessageRepository,
+    private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -167,6 +170,8 @@ class MessageScope internal constructor(
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
             legalHoldStatusMapper = legalHoldStatusMapper,
+            mlsConversationRepository = mlsConversationRepository,
+            joinExistingConversationUseCase = joinExistingConversationUseCaseProvider(),
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -214,7 +219,6 @@ class MessageScope internal constructor(
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
-            mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
             legalHoldHandler,

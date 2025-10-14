@@ -22,7 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
@@ -52,9 +52,8 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     private val selfServerConfig: SelfServerConfigUseCase,
     private val syncRequester: suspend () -> Either<CoreFailure, Unit>,
     private val slowSyncRepository: SlowSyncRepository,
+    private val logger: KaliumLogger
 ) : UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
-
-    private val logger = kaliumLogger.withTextTag("UpdateSelfClientCapabilityToConsumableNotificationsUseCase")
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
@@ -125,4 +124,4 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     }
 }
 
-internal const val MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS = 9
+internal const val MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS = 11

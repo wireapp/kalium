@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
@@ -52,7 +52,7 @@ internal class ReceiptModeUpdateEventHandlerImpl(
         updateReceiptMode(event)
             .onSuccess {
                 val message = Message.System(
-                    uuid4().toString(),
+                    Uuid.random().toString(),
                     MessageContent.ConversationReceiptModeChanged(
                         receiptMode = event.receiptMode == Conversation.ReceiptMode.ENABLED
                     ),

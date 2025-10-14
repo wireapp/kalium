@@ -297,6 +297,7 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         asset_widthAdapter = IntColumnAdapter,
         asset_heightAdapter = IntColumnAdapter,
+        asset_indexAdapter = IntColumnAdapter,
     )
 
     val historyClientAdapter = HistoryClient.Adapter(

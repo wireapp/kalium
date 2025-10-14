@@ -114,7 +114,10 @@ object FeatureConfigJson {
             |  "channels": {
             |    "status": "disabled"
             |  },
-            |  "asyncNotifications": {
+            |  "consumableNotifications": {
+            |    "status": "disabled"
+            |  },
+            |  "apps": {
             |    "status": "disabled"
             |  }
             |}
@@ -153,6 +156,10 @@ object FeatureConfigJson {
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
         ),
         featureConfigResponseSerializer
     )

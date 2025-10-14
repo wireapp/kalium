@@ -36,6 +36,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -59,7 +60,7 @@ internal class NewConversationEventHandlerImpl(
     override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
-        persistConversation(transactionContext, event.conversation, originatedFromEvent = true)
+        persistConversation(transactionContext, event.conversation, reason = ConversationSyncReason.Event)
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(transactionContext, selfUserTeamId, event)
                     .flatMap {

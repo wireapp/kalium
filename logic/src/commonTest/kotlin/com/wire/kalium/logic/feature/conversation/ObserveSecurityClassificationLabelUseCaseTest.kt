@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -193,7 +193,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
             domains.map { domain ->
                 MemberDetails(
                     user = TestUser.OTHER.copy(
-                        UserId(uuid4().toString(), domain),
+                        UserId(Uuid.random().toString(), domain),
                         expiresAt = expiresAt
                     ),
                     role = Conversation.Member.Role.Member

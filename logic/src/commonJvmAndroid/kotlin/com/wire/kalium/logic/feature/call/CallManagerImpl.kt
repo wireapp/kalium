@@ -76,7 +76,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
@@ -218,7 +218,7 @@ class CallManagerImpl internal constructor(
                     callMapper = callMapper,
                     callingMessageSender = callingMessageSender,
                 ).keepingStrongReference(),
-                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope)
+                sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope, networkStateObserver)
                     .keepingStrongReference(),
                 incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope, kaliumConfigs)
                     .keepingStrongReference(),

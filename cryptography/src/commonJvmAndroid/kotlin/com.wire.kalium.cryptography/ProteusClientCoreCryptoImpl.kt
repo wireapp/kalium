@@ -18,15 +18,15 @@
 
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoClient
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.ProteusAutoPrekeyBundle
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import io.ktor.util.decodeBase64Bytes
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -35,7 +35,7 @@ import com.wire.crypto.ProteusException as ProteusExceptionNative
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(
-    private val coreCrypto: CoreCrypto,
+    private val coreCrypto: CoreCryptoClient,
 ) : ProteusClient {
 
     private val mutex = Mutex()
@@ -57,26 +57,22 @@ class ProteusClientCoreCryptoImpl private constructor(
     }
 
     private fun proteusCoreCryptoContext(coreContext: CoreCryptoContext) = object : ProteusCoreCryptoContext {
-        override suspend fun getLocalFingerprint(): ByteArray {
-            return coreContext.proteusGetLocalFingerprint()
+        override suspend fun getLocalFingerprint(): String {
+            return coreContext.proteusFingerprint()
         }
 
-        override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
-            return coreContext.proteusGetRemoteFingerprint(sessionId.value)
+        override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): String {
+            return coreContext.proteusFingerprintRemote(sessionId.value)
         }
 
-        override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
-            return coreContext.proteusGetPrekeyFingerprint(preKey.encodedData.decodeBase64Bytes())
-        }
-
-        override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
-            return coreContext.proteusNewPreKeys(from, count).map {
-                PreKeyCrypto(it.id.toInt(), it.data.encodeBase64())
-            } as ArrayList<PreKeyCrypto>
+        override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): String {
+            return coreContext.proteusFingerprintPrekeybundle(preKey.pkb.decodeBase64Bytes())
         }
 
         override suspend fun newLastResortPreKey(): PreKeyCrypto {
-            return coreContext.proteusNewLastPreKey().toCryptography()
+            val id = coreContext.proteusLastResortPrekeyId()
+            val pkb = coreContext.proteusLastResortPrekey()
+            return ProteusAutoPrekeyBundle(id, pkb).toCryptography()
         }
 
         override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = mutex.withLock {
@@ -84,7 +80,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                 return@withLock true
             }
 
-            coreContext.proteusDoesSessionExist(sessionId.value)
+            coreContext.proteusSessionExists(sessionId.value)
                 .also { exists ->
                     if (exists) {
                         existingSessionsCache.add(sessionId)
@@ -93,11 +89,11 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
 
         override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-            return coreContext.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
+            return coreContext.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.toCrypto().pkb)
         }
 
         override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-            return coreContext.proteusEncrypt(message, sessionId.value)
+            return coreContext.proteusEncrypt(sessionId.value, message)
         }
 
         override suspend fun encryptBatched(
@@ -117,13 +113,13 @@ class ProteusClientCoreCryptoImpl private constructor(
             preKeyCrypto: PreKeyCrypto,
             sessionId: CryptoSessionId
         ): ByteArray {
-            coreContext.proteusCreateSession(preKeyCrypto.toCrypto(), sessionId.value)
-            return coreContext.proteusEncrypt(message, sessionId.value)
+            coreContext.proteusSessionFromPrekey(sessionId.value, preKeyCrypto.toCrypto().pkb)
+            return coreContext.proteusEncrypt(sessionId.value, message)
         }
 
         override suspend fun deleteSession(sessionId: CryptoSessionId) {
             existingSessionsCache.remove(sessionId)
-            coreContext.proteusDeleteSession(sessionId.value)
+            coreContext.proteusSessionDelete(sessionId.value)
         }
 
         override suspend fun <T : Any> decryptMessage(
@@ -131,17 +127,18 @@ class ProteusClientCoreCryptoImpl private constructor(
             message: ByteArray,
             handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
         ): T {
-            val decrypted = coreContext.proteusDecrypt(message, sessionId.value)
+            val decrypted = coreContext.proteusDecryptSafe(sessionId.value, message)
             return handleDecryptedMessage(decrypted)
         }
     }
 
-    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
+    override suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto> {
         return wrapException {
             coreCrypto.transaction("newPreKeys") { crypto ->
-                crypto.proteusNewPreKeys(from, count).map {
-                    PreKeyCrypto(it.id.toInt(), it.data.encodeBase64())
-                } as ArrayList<PreKeyCrypto>
+                from.until(from + count).map {
+                    val pkb = crypto.proteusNewPrekey(it.toUShort())
+                    ProteusAutoPrekeyBundle(it.toUShort(), pkb).toCryptography()
+                }
             }
         }
     }
@@ -149,7 +146,9 @@ class ProteusClientCoreCryptoImpl private constructor(
     override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException {
             coreCrypto.transaction("newLastResortPreKey") { context ->
-                context.proteusNewLastPreKey().toCryptography()
+                val id = context.proteusLastResortPrekeyId()
+                val pkb = context.proteusLastResortPrekey()
+                ProteusAutoPrekeyBundle(id, pkb).toCryptography()
             }
         }
     }
@@ -187,9 +186,9 @@ class ProteusClientCoreCryptoImpl private constructor(
             }
 
         @Suppress("TooGenericExceptionCaught", "ThrowsCount")
-        suspend operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
+        suspend operator fun invoke(coreCrypto: CoreCryptoClient, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
-                migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
+                deleteCryptoBoxIfNecessary(rootDir)
                 coreCrypto.transaction("invoke/proteusInit") {
                     it.proteusInit()
                 }
@@ -209,15 +208,9 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
 
         @Suppress("TooGenericExceptionCaught")
-        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
+        private fun deleteCryptoBoxIfNecessary(rootDir: String) {
             try {
                 if (cryptoBoxFilesExists(File(rootDir))) {
-                    kaliumLogger.i("migrating from crypto box at: $rootDir")
-                    coreCrypto.transaction("migrateFromCryptoBoxIfNecessary") {
-                        it.proteusCryptoboxMigrate(rootDir)
-                    }
-                    kaliumLogger.i("migration successful")
-
                     if (deleteCryptoBoxFiles(rootDir)) {
                         kaliumLogger.i("successfully deleted old crypto box files")
                     } else {
@@ -225,8 +218,7 @@ class ProteusClientCoreCryptoImpl private constructor(
                     }
                 }
             } catch (exception: Exception) {
-                kaliumLogger.e("Failed to migrate from crypto box to core crypto, exception: $exception")
-                throw ProteusStorageMigrationException("Failed to migrate from crypto box at $rootDir", exception)
+                kaliumLogger.e("Failed to delete crypto box, exception: $exception")
             }
         }
 

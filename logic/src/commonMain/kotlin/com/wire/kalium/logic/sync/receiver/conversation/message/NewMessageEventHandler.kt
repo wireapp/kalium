@@ -163,7 +163,7 @@ internal class NewMessageEventHandlerImpl(
 
                     MLSMessageFailureResolution.ResetConversation -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        resetMLSConversation(event.conversationId)
+                        resetMLSConversation(event.conversationId, transactionContext)
                     }
                 }
             }.onSuccess { batchResult ->

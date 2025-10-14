@@ -41,9 +41,10 @@ import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTim
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConsumableNotificationsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
@@ -56,7 +57,10 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -802,6 +806,54 @@ class SyncFeatureConfigsUseCaseTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenAppsFeatureIsEnabled_whenSyncing_thenHandlerIsCalledWithEnabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(appsModel = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAppsEnabled(eq(true))
+        }
+    }
+
+    @Test
+    fun givenAppsFeatureIsDisabled_whenSyncing_thenHandlerIsCalledWithDisabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(appsModel = ConfigsStatusModel(Status.DISABLED))
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAppsEnabled(eq(false))
+        }
+    }
+
+    @Test
+    fun givenAppsFeatureNotPresent_whenSyncing_thenHandlerIsNotCalled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(appsModel = null)
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        coVerify {
+            arrangement.userConfigDAO.setAppsEnabled(any())
+        }.wasNotInvoked()
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
@@ -913,6 +965,10 @@ class SyncFeatureConfigsUseCaseTest {
                 ConsumableNotificationsConfigHandler(userConfigRepository),
                 AllowedGlobalOperationsHandler(userConfigRepository),
                 CellsConfigHandler(userConfigRepository),
+                AppsFeatureHandler(userConfigRepository),
+                ChatBubblesConfigHandler(userConfigRepository),
+                EnableUserProfileQRCodeConfigHandler(userConfigRepository),
+                AssetAuditLogConfigHandler(userConfigRepository),
             )
             return this to syncFeatureConfigsUseCase
         }

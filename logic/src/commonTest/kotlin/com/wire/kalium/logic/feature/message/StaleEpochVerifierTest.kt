@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.SubConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -75,7 +76,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.fetchConversation(any(), eq(CONVERSATION_ID))
+            arrangement.fetchConversation(any(), eq(CONVERSATION_ID), eq(ConversationSyncReason.Other))
         }.wasInvoked(once)
     }
 
@@ -266,7 +267,7 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.fetchConversation(any(), any())
+            arrangement.fetchConversation(any(), any(), any())
         }.wasNotInvoked()
     }
 

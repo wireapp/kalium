@@ -350,27 +350,35 @@ internal class MessageInsertExtensionImpl(
                         user_id = it.userId
                     )
                 }
-                content.attachments.forEach {
+                content.attachments.forEachIndexed { index, attachment ->
                     attachmentQueries.insertCellAttachment(
                         message_id = message.id,
                         conversation_id = message.conversationId,
-                        asset_id = it.assetId,
-                        asset_version_id = it.assetVersionId,
+                        asset_id = attachment.assetId,
+                        asset_version_id = attachment.assetVersionId,
                         cell_asset = true,
-                        asset_mime_type = it.mimeType,
-                        asset_path = it.assetPath,
-                        asset_size = it.assetSize,
-                        local_path = it.localPath ?: "",
-                        asset_width = it.assetWidth,
-                        asset_height = it.assetHeight,
-                        asset_duration_ms = it.assetDuration,
-                        asset_transfer_status = it.assetTransferStatus,
+                        asset_mime_type = attachment.mimeType,
+                        asset_path = attachment.assetPath,
+                        asset_size = attachment.assetSize,
+                        local_path = attachment.localPath ?: "",
+                        asset_width = attachment.assetWidth,
+                        asset_height = attachment.assetHeight,
+                        asset_duration_ms = attachment.assetDuration,
+                        asset_transfer_status = attachment.assetTransferStatus,
+                        asset_index = index,
                     )
                 }
+            }
+            is MessageEntityContent.NewConversationWithCellMessage -> {
+                /* no-op */
+            }
+            is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage -> {
+                /* no-op */
             }
         }
     }
 
+    @Suppress("LongMethod")
     private fun insertUnreadEvent(message: MessageEntity) {
         val lastRead = conversationsQueries.getConversationLastReadDate(message.conversationId).executeAsOneOrNull()
             ?: Instant.DISTANT_PAST
@@ -429,6 +437,8 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationStartedUnverifiedWarning,
                 is MessageEntityContent.TeamMemberRemoved,
                 is MessageEntityContent.LegalHold,
+                is MessageEntityContent.NewConversationWithCellMessage,
+                is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
                     -> {
                     /* no-op */
                 }
@@ -530,5 +540,8 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
         is MessageEntityContent.Multipart -> MessageEntity.ContentType.MULTIPART
+        is MessageEntityContent.NewConversationWithCellMessage -> MessageEntity.ContentType.CONVERSATION_WITH_CELL
+        is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
+            MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED
     }
 }

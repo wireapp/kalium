@@ -26,7 +26,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
 object ConnectionRequests {
-    private const val PATH_CONNECTION_LIST = "${CommonResponses.BASE_PATH_V1}list-connections"
+    private const val PATH_CONNECTION_LIST = "${CommonResponses.BASE_PATH_V8}list-connections"
     fun connectionRequestResponseSuccess(
         connectionResponse: ConnectionResponse = ConnectionMocks.connectionsResponse
     ) = listOf(

@@ -46,7 +46,19 @@ interface FeatureConfigMapper {
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
     fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
     fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
+    fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode): EnableUserProfileQRCodeConfigModel
+    fun fromDTO(data: FeatureConfigData.AssetAuditLog): AssetAuditLogConfigModel
 }
+
+fun FeatureFlagStatusDTO.toModel(): Status =
+    when (this) {
+        FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
+        FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
+    }
+
+fun FeatureConfigData.ChatBubbles.toModel() = ChatBubblesConfigModel(status.toModel())
+
+fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
 
 @Suppress("TooManyFunctions")
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -75,6 +87,14 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 consumableNotificationsModel = consumableNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
+                appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
+                chatBubblesModel = chatBubbles?.toModel(),
+                enableUserProfileQRCodeConfigModel = enableUserProfileQRCode?.let {
+                    fromDTO(it)
+                },
+                assetAuditLogConfigModel = assetAuditLog?.let {
+                    fromDTO(it)
+                }
             )
         }
 
@@ -95,11 +115,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         }
     }
 
-    override fun fromDTO(status: FeatureFlagStatusDTO): Status =
-        when (status) {
-            FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
-            FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
-        }
+    override fun fromDTO(status: FeatureFlagStatusDTO): Status = status.toModel()
 
     override fun fromDTO(data: FeatureConfigData.MLS?): MLSModel =
         data?.let {
@@ -189,6 +205,14 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     override fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel = CellsConfigModel(
+        status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode) = EnableUserProfileQRCodeConfigModel(
+        status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.AssetAuditLog) = AssetAuditLogConfigModel(
         status = fromDTO(data.status)
     )
 

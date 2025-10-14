@@ -16,27 +16,25 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
 kaliumLibrary {
-    multiplatform { enableJs.set(false) }
+    multiplatform()
 }
 
 kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":data"))
-                implementation(project(":logger"))
-                implementation(project(":util"))
-                implementation(project(":persistence"))
-                implementation(project(":network"))
-                implementation(project(":network-util"))
-                implementation(project(":cryptography"))
+                implementation(projects.data)
+                implementation(projects.logger)
+                implementation(projects.util)
+                implementation(projects.persistence)
+                implementation(projects.network)
+                implementation(projects.networkUtil)
+                implementation(projects.cryptography)
                 implementation(libs.ktxSerialization)
                 implementation(libs.coroutines.core)
             }

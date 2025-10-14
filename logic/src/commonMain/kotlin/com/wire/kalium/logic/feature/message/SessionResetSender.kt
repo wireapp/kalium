@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.benasher44.uuid.uuid4
+import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -30,9 +30,10 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.message.MessageTarget
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -60,7 +61,7 @@ class SessionResetSenderImpl internal constructor(
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
-        val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = Uuid.random().toString()
 
         provideClientId().flatMap { selfClientId ->
             val message = Message.Signaling(
