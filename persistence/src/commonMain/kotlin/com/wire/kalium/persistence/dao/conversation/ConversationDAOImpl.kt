@@ -146,8 +146,6 @@ internal class ConversationDAOImpl internal constructor(
                         else null,
                         mls_group_state = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
                         else ConversationEntity.GroupState.ESTABLISHED,
-//                         mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
-//                         else MLS_DEFAULT_EPOCH,
                         protocol = when (protocolInfo) {
                             is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
                             is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
@@ -193,8 +191,6 @@ internal class ConversationDAOImpl internal constructor(
                 else null,
                 mls_group_state = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
                 else ConversationEntity.GroupState.ESTABLISHED,
-//                 mls_epoch = if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
-//                 else MLS_DEFAULT_EPOCH,
                 protocol = when (protocolInfo) {
                     is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
                     is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED

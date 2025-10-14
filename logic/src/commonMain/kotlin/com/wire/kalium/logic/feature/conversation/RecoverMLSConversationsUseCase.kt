@@ -87,7 +87,7 @@ internal class RecoverMLSConversationsUseCaseImpl(
                 mlsConversationRepository.isGroupOutOfSync(
                     mlsContext,
                     protocol.groupId,
-                    transactionContext.mls!!.conversationEpoch(protocol.groupId.toCrypto())
+                    mlsContext.conversationEpoch(protocol.groupId.toCrypto())
                 )
             }
                 .fold({ checkEpochFailure ->
