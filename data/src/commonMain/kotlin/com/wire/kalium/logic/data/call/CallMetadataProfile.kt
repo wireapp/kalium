@@ -73,7 +73,7 @@ data class CallMetadata(
             isSharingScreen = participant.isSharingScreen,
             hasEstablishedAudio = participant.hasEstablishedAudio,
             avatarAssetId = user?.completePicture,
-            userType = user?.userType ?: UserType.NONE,
+            userType = user?.userType?.type ?: UserType.NONE, // todo ym. wrapper or enum.?
             accentId = user?.accentId ?: 0
         )
     }

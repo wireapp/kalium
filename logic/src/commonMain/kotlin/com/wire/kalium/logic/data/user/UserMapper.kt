@@ -49,6 +49,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions")
@@ -120,7 +121,7 @@ internal class UserMapperImpl(
             connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewPicture = previewAssetId?.toModel(),
             completePicture = completeAssetId?.toModel(),
-            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType.type), // todo ym. maybe from wrapper to wrapper is better
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel()
@@ -139,7 +140,7 @@ internal class UserMapperImpl(
             connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewPicture = previewAssetId?.toModel(),
             completePicture = completeAssetId?.toModel(),
-            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType.type),// todo ym. maybe from wrapper to wrapper is better
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel(),
@@ -159,7 +160,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType.type),// todo ym. maybe from wrapper to wrapper is better
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
@@ -181,7 +182,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType.type),// todo ym. maybe from wrapper to wrapper is better
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
@@ -207,7 +208,7 @@ internal class UserMapperImpl(
             userHandle = handle,
             userName = name,
             userPreviewAssetId = previewAssetId?.toModel(),
-            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userType.type),// todo ym. maybe from wrapper to wrapper is better
             isUserDeleted = deleted,
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
@@ -228,7 +229,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
-            userType = UserTypeEntity.STANDARD,
+            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
             botService = null,
             deleted = false,
             expiresAt = expiresAt,
@@ -251,7 +252,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
-            userType = userEntityTypeMapper.fromUserType(userType),
+            userType = userEntityTypeMapper.fromUserType(userType.type),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
             expiresAt = expiresAt,
@@ -279,7 +280,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userTypeEntity,
+            userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
             botService = null,
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
@@ -333,7 +334,7 @@ internal class UserMapperImpl(
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userTypeEntity,
+        userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
@@ -361,13 +362,13 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = domainUserTypeMapper.fromTeamAndDomain(
+            userType = domainUserTypeMapper.fromUserType(domainUserTypeMapper.fromTeamAndDomain(
                 otherUserDomain = userProfile.id.domain,
                 selfUserTeamId = selfTeamId?.value,
                 selfUserDomain = selfUserId.domain,
                 otherUserTeamId = userProfile.teamId,
                 isService = userProfile.service != null
-            ),
+            )),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,
             expiresAt = userProfile.expiresAt?.toInstant(),
@@ -405,7 +406,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
+            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
             botService = null,
             deleted = false,
             hasIncompleteMetadata = true,

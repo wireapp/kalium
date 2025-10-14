@@ -54,6 +54,7 @@ data class UserProfileDTO(
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO,
+    @SerialName("type") val type: UserType?
 ) : UserDTO()
 
 fun UserProfileDTO.isTeamMember(selfUserTeamId: String?, selfUserDomain: String?) =
@@ -123,6 +124,22 @@ enum class SupportedProtocolDTO {
 
     @SerialName("mls")
     MLS;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
+}
+
+@Serializable
+enum class UserType {
+    @SerialName("regular")
+    REGULAR,
+
+    @SerialName("app")
+    APP,
+
+    @SerialName("bot")
+    BOT;
 
     override fun toString(): String {
         return this.name.lowercase()

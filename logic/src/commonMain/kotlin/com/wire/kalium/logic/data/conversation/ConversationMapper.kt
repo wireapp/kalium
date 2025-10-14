@@ -287,7 +287,7 @@ internal class ConversationMapperImpl(
                             supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet(),
                             activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
-                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                        userType = domainUserTypeMapper.fromUserTypeEntity(userType).type,
                         isFavorite = isFavorite,
                         folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                     )
@@ -345,7 +345,7 @@ internal class ConversationMapperImpl(
                     ConversationDetails.Connection(
                         conversationId = id.toModel(),
                         otherUser = otherUser,
-                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                        userType = domainUserTypeMapper.fromUserTypeEntity(userType).type,
                         lastModifiedDate = lastModifiedDate ?: Instant.UNIX_FIRST_DATE,
                         connection = Connection(
                             conversationId = id.value,

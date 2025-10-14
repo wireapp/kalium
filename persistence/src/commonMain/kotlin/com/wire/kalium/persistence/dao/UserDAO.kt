@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
@@ -51,8 +52,11 @@ typealias ConversationIDEntity = QualifiedIDEntity
 
 @Serializable
 enum class SupportedProtocolEntity {
-    @SerialName("PROTEUS") PROTEUS,
-    @SerialName("MLS") MLS
+    @SerialName("PROTEUS")
+    PROTEUS,
+
+    @SerialName("MLS")
+    MLS
 }
 
 enum class UserAvailabilityStatusEntity {
@@ -73,7 +77,7 @@ data class UserEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeEntity,
+    val userType: UserTypeInfoEntity,
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
@@ -97,7 +101,7 @@ data class UserDetailsEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeEntity,
+    val userType: UserTypeInfoEntity,
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
@@ -155,6 +159,12 @@ data class PartialUserEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
+sealed class UserTypeInfoEntity(open val type: UserTypeEntity) {
+    data class Regular(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
+    data class App(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
+    data class Bot(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
+}
+
 enum class UserTypeEntity {
 
     /**Team member with owner permissions */
@@ -186,6 +196,9 @@ enum class UserTypeEntity {
 
     /** Service bot */
     SERVICE,
+
+    /** Apps, Bots 2.0 **/
+    APP,
 
     /**
      * A user on the same backend,

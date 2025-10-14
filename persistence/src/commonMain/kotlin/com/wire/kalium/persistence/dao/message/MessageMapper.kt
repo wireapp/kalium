@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -250,6 +251,7 @@ object MessageMapper {
                     messageBody = text.requireField("text")
                 )
             }
+
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
         }
@@ -740,7 +742,7 @@ object MessageMapper {
             previewAssetId = senderPreviewAssetId,
             completeAssetId = senderCompleteAssetId,
             availabilityStatus = senderAvailabilityStatus,
-            userType = senderUserType,
+            userType = toUserType(senderUserType),
             botService = senderBotService,
             deleted = senderIsDeleted,
             expiresAt = senderExpiresAt,
@@ -774,6 +776,20 @@ object MessageMapper {
             recipientsFailedDeliveryList,
             sender
         )
+    }
+
+    private fun toUserType(userType: UserTypeEntity?): UserTypeInfoEntity {
+        return when (val type = userType!!) {
+            UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.EXTERNAL -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot(type)
+            UserTypeEntity.APP -> UserTypeInfoEntity.App(type)
+        }
     }
 
     fun fromAssetStatus(

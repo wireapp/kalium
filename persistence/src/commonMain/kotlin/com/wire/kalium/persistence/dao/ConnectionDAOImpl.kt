@@ -94,7 +94,7 @@ private class ConnectionMapper {
             previewAssetId = preview_asset_id,
             completeAssetId = complete_asset_id,
             availabilityStatus = user_availability_status.requireField("user_availability_status"),
-            userType = user_type.requireField("user_type"),
+            userType = toUserType(user_type),
             botService = bot_service,
             deleted = deleted.requireField("deleted"),
             hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
@@ -105,6 +105,19 @@ private class ConnectionMapper {
         ) else null
     )
 
+    private fun toUserType(userType: UserTypeEntity?): UserTypeInfoEntity {
+        return when (val type = userType!!) {
+            UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.EXTERNAL -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(type)
+            UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot(type)
+            UserTypeEntity.APP -> UserTypeInfoEntity.App(type)
+        }
+    }
 }
 
 class ConnectionDAOImpl(

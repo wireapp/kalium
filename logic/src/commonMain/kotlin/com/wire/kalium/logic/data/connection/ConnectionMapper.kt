@@ -74,7 +74,8 @@ internal class ConnectionMapperImpl(
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
             otherUser = otherUser?.let { userMapper.fromUserEntityToOtherUser(it) },
-            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
+            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType.type).type }
+                ?: UserType.GUEST,// todo ym. maybe from wrapper to wrapper is better
             lastModifiedDate = lastUpdateDate,
             connection = fromDaoToModel(this),
             protocolInfo = ProtocolInfo.Proteus,

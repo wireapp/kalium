@@ -51,7 +51,7 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
                 null, ChannelFeatureConfiguration.Disabled -> ChannelCreationPermission.Forbidden
                 is ChannelFeatureConfiguration.Enabled -> {
                     val canUserCreateChannels = isUserAllowed(
-                        selfUser.userType,
+                        selfUser.userType.type,
                         channelFeatureConfig.createChannelsRequirement
                     )
                     if (!canUserCreateChannels) {
@@ -59,7 +59,7 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
                     } else {
                         ChannelCreationPermission.Allowed(
                             isUserAllowed(
-                                selfUser.userType,
+                                selfUser.userType.type,
                                 channelFeatureConfig.createPublicChannelsRequirement
                             )
                         )

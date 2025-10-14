@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
@@ -46,7 +47,7 @@ sealed class User {
     abstract val availabilityStatus: UserAvailabilityStatus
     abstract val expiresAt: Instant?
     abstract val supportedProtocols: Set<SupportedProtocol>?
-    abstract val userType: UserType
+    abstract val userType: UserTypeInfo
     abstract val isUnderLegalHold: Boolean
 }
 
@@ -133,7 +134,7 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    override val userType: UserType,
+    override val userType: UserTypeInfo,
     override val availabilityStatus: UserAvailabilityStatus,
     override val expiresAt: Instant? = null,
     override val supportedProtocols: Set<SupportedProtocol>?,
@@ -144,7 +145,7 @@ data class OtherUserMinimized(
     val id: UserId,
     val name: String?,
     val completePicture: UserAssetId?,
-    val userType: UserType,
+    val userType: UserTypeInfo,
     val accentId: Int
 )
 
@@ -159,7 +160,7 @@ data class OtherUser(
     val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    override val userType: UserType,
+    override val userType: UserTypeInfo,
     override val availabilityStatus: UserAvailabilityStatus,
     override val supportedProtocols: Set<SupportedProtocol>?,
     val botService: BotService?,

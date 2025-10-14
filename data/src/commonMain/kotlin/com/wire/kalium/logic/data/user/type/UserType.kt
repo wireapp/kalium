@@ -51,6 +51,9 @@ enum class UserType {
      */
     SERVICE,
 
+    /** Apps, Bots 2.0 **/
+    APP,
+
     /**
      * A user on the same backend,
      * when current user doesn't belongs to any team
@@ -63,3 +66,9 @@ fun UserType.isTeammate(): Boolean =
 
 fun UserType.isFederated(): Boolean =
     this == UserType.FEDERATED
+
+sealed class UserTypeInfo(open val type: UserType) {
+    data class Regular(override val type: UserType) : UserTypeInfo(type)
+    data class App(override val type: UserType) : UserTypeInfo(type)
+    data class Bot(override val type: UserType) : UserTypeInfo(type)
+}

@@ -57,9 +57,9 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private suspend fun CallMetadata.createMetadata(conversationId: ConversationId, callEndedReason: Int): RecentlyEndedCallMetadata {
         val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType == UserType.OWNER }
         val conversationMembers = observeConversationMembers(conversationId).first()
-        val conversationServicesCount = conversationMembers.count { member -> member.user.userType == UserType.SERVICE }
-        val guestsCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST }
-        val guestsProCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST && member.user.teamId != null }
+        val conversationServicesCount = conversationMembers.count { member -> member.user.userType.type == UserType.SERVICE }
+        val guestsCount = conversationMembers.count { member -> member.user.userType.type == UserType.GUEST }
+        val guestsProCount = conversationMembers.count { member -> member.user.userType.type == UserType.GUEST && member.user.teamId != null }
         val isOutgoingCall = callStatus == CallStatus.STARTED
         val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
