@@ -154,7 +154,10 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             currentAssetMessageContent.mimeType,
             currentAssetMessageContent.assetDataPath,
             currentAssetMessageContent.otrKey,
-            currentAssetMessageContent.assetName.fileExtension()
+            currentAssetMessageContent.assetName.fileExtension(),
+            message.conversationId,
+            currentAssetMessageContent.assetName,
+            currentAssetMessageContent.mimeType,
         ).flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)

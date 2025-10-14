@@ -29,6 +29,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -712,10 +713,17 @@ class AssetRepositoryTest {
 
         val assetApi = mock(AssetApi::class)
         val assetDAO = mock(AssetDAO::class)
+        val isAssetAuditLog = mock(IsAssetAuditLogEnabledUseCase::class)
 
         private val assetMapper by lazy { AssetMapperImpl() }
 
-        private val assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper, fakeKaliumFileSystem)
+        private val assetRepository = AssetDataSource(
+            assetApi = assetApi,
+            assetDao = assetDAO,
+            assetMapper = assetMapper,
+            isAssetAuditLogEnabled = lazy { isAssetAuditLog },
+            kaliumFileSystem = fakeKaliumFileSystem
+        )
 
         fun withRawStoredData(data: ByteArray, dataPath: Path): Arrangement = apply {
             fakeKaliumFileSystem.sink(dataPath).buffer().use { it.write(data) }
