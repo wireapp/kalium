@@ -78,7 +78,7 @@ internal class OneOnOneMigratorImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }
         }.fold({ failure ->
-            if (failure is StorageFailure.DataNotFound && user.userType.type.isTeammate()) {
+            if (failure is StorageFailure.DataNotFound && user.userType.isTeammate()) {
                 conversationGroupRepository.createGroupConversation(usersList = listOf(user.id)).map { it.id }
             } else {
                 Either.Left(failure)

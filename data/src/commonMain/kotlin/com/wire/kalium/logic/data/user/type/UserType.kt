@@ -61,12 +61,6 @@ enum class UserType {
     NONE;
 }
 
-fun UserType.isTeammate(): Boolean =
-    this in listOf(UserType.INTERNAL, UserType.ADMIN, UserType.OWNER, UserType.EXTERNAL, UserType.SERVICE)
-
-fun UserType.isFederated(): Boolean =
-    this == UserType.FEDERATED
-
 sealed class UserTypeInfo(open val type: UserType) {
     data class Regular(override val type: UserType) : UserTypeInfo(type)
     data class App(override val type: UserType) : UserTypeInfo(type)
@@ -85,7 +79,13 @@ fun UserTypeInfo.isGuest(): Boolean =
     this is UserTypeInfo.Regular && this.type == UserType.GUEST
 
 fun UserTypeInfo.isTeammate(): Boolean =
-    this is UserTypeInfo.Regular && this.type.isTeammate()
+    this is UserTypeInfo.Regular && this.type in listOf(
+        UserType.INTERNAL,
+        UserType.ADMIN,
+        UserType.OWNER,
+        UserType.EXTERNAL,
+        UserType.SERVICE
+    )
 
 fun UserTypeInfo.isFederated(): Boolean =
-    this is UserTypeInfo.Regular && this.type.isFederated()
+    this is UserTypeInfo.Regular && this.type == UserType.FEDERATED
