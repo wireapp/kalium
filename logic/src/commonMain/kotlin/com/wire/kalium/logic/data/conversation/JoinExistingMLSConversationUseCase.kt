@@ -37,6 +37,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.UserId
@@ -109,39 +110,60 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     ): Either<CoreFailure, Unit> =
         joinOrEstablishMLSGroup(transactionContext, conversation, mlsPublicKeys)
             .flatMapLeft { failure ->
-                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
-                        logger.logStructuredJson(
-                            level = KaliumLogLevel.WARN,
-                            leadingMessage = "Join-Establish MLS Group Stale",
-                            jsonStringKeyValues = conversation.logData(failure)
-                        )
-                        // Re-fetch current epoch and try again
-                        if (conversation.type == Conversation.Type.OneOnOne) {
-                            conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                fetchMLSOneToOneConversation(transactionContext, it.first()).map {
-                                    it.mlsPublicKeys
-                                }
-                            }
-                        } else {
-                            fetchConversation(transactionContext, conversation.id)
-                        }.flatMap {
-                            conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(transactionContext, conversation, null)
-                            }
-                        }
-                    } else if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsMissingGroupInfo()) {
-                        logger.w("Conversation has no group info, ignoring...")
-                        Either.Right(Unit)
-                    } else {
-                        Either.Left(failure)
-                    }
-                } else {
-                    Either.Left(failure)
-                }
+                handleJoinEstablishFailure(transactionContext, conversation, failure)
             }
 
-    @Suppress("LongMethod")
+    private suspend fun handleJoinEstablishFailure(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        failure: CoreFailure
+    ): Either<CoreFailure, Unit> {
+        if (failure !is NetworkFailure.ServerMiscommunication) return Either.Left(failure)
+        val requestError = failure.kaliumException as? KaliumException.InvalidRequestError
+            ?: return Either.Left(failure)
+
+        return when {
+            requestError.isMlsStaleMessage() -> handleStaleMessage(transactionContext, conversation, failure)
+            requestError.isMlsMissingGroupInfo() -> {
+                logger.w("Conversation has no group info, ignoring...")
+                Either.Right(Unit)
+            }
+            else -> Either.Left(failure)
+        }
+    }
+
+    private suspend fun handleStaleMessage(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        failure: CoreFailure
+    ): Either<CoreFailure, Unit> {
+        logger.logStructuredJson(
+            level = KaliumLogLevel.WARN,
+            leadingMessage = "Join-Establish MLS Group Stale",
+            jsonStringKeyValues = conversation.logData(failure)
+        )
+        // Re-fetch current epoch and try again
+        return refetchConversationData(transactionContext, conversation).flatMap {
+            conversationRepository.getConversationById(conversation.id).flatMap { refreshedConversation ->
+                joinOrEstablishMLSGroup(transactionContext, refreshedConversation, null)
+            }
+        }
+    }
+
+    private suspend fun refetchConversationData(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation
+    ): Either<CoreFailure, Unit> =
+        if (conversation.type == Conversation.Type.OneOnOne) {
+            conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                fetchMLSOneToOneConversation(transactionContext, members.first()).map { mlsOneToOne ->
+                    mlsOneToOne.mlsPublicKeys
+                }
+            }.map { Unit }
+        } else {
+            fetchConversation(transactionContext, conversation.id)
+        }
+
     private suspend fun joinOrEstablishMLSGroup(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
@@ -150,132 +172,166 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         val protocol = conversation.protocol
 
         if (protocol !is Conversation.ProtocolInfo.MLSCapable) {
-            kaliumLogger.d("calling join or establish MLS on proteus conversation")
-            Either.Right(Unit)
+            logger.d("Skipping MLS operation on Proteus conversation")
+            return Either.Right(Unit)
         }
 
-        val remoteEpoch: Either<NetworkFailure, Long?> = wrapApiRequest {
-            conversationApi.fetchGroupInfo(conversation.id.toApi())
-        }.map {
-            GroupInfo(it).extractEpoch().also {
-                kaliumLogger.d("cccc: fetched group info epoch=$it for conversation ${conversation.id.toLogString()}")
+        return fetchGroupInfoAndEpoch(conversation).fold(
+            { failure -> Either.Left(failure) },
+            { (groupInfoBytes, epoch) ->
+                when {
+                    epoch == null -> handleNullEpoch(conversation)
+                    epoch != 0L -> joinGroupByExternalCommit(
+                        transactionContext,
+                        conversation,
+                        protocol.groupId,
+                        groupInfoBytes
+                    )
+                    else -> establishMLSGroupForType(transactionContext, conversation, protocol.groupId, publicKeys)
+                }
             }
-        }
-        if (remoteEpoch.isLeft()) {
-            logger.logStructuredJson(
-                level = KaliumLogLevel.WARN,
-                leadingMessage = "Join-Establish MLS Group Missing GroupInfo",
-                jsonStringKeyValues = conversation.logData(remoteEpoch.value)
-            )
-            return remoteEpoch
-        }
+        )
+    }
 
-        val type = conversation.type
-        return when {
-            remoteEpoch.value == null -> {
+    private suspend fun fetchGroupInfoAndEpoch(
+        conversation: Conversation
+    ): Either<CoreFailure, Pair<ByteArray, Long?>> =
+        wrapApiRequest {
+            conversationApi.fetchGroupInfo(conversation.id.toApi())
+        }.fold(
+            { failure ->
                 logger.logStructuredJson(
                     level = KaliumLogLevel.WARN,
-                    leadingMessage = "Join-Establish MLS Group Null GroupInfo",
-                    jsonStringKeyValues = conversation.logData()
+                    leadingMessage = "Failed to fetch GroupInfo",
+                    jsonStringKeyValues = conversation.logData(failure)
                 )
-                return Either.Right(Unit)
+                Either.Left(failure)
+            },
+            { groupInfoBytes ->
+                val epoch = GroupInfo(groupInfoBytes).extractEpoch()
+                logger.d("Fetched group info epoch=$epoch for conversation ${conversation.id.toLogString()}")
+                Either.Right(groupInfoBytes to epoch)
+            }
+        )
+
+    private fun handleNullEpoch(conversation: Conversation): Either<CoreFailure, Unit> {
+        logger.logStructuredJson(
+            level = KaliumLogLevel.WARN,
+            leadingMessage = "GroupInfo has null epoch",
+            jsonStringKeyValues = conversation.logData()
+        )
+        return Either.Right(Unit)
+    }
+
+    private suspend fun joinGroupByExternalCommit(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        groupId: GroupID,
+        groupInfoBytes: ByteArray
+    ): Either<CoreFailure, Unit> {
+        logger.d("Joining group by external commit ${conversation.id.toLogString()}")
+        return transactionContext.wrapInMLSContext { mlsContext ->
+            mlsConversationRepository.joinGroupByExternalCommit(mlsContext, groupId, groupInfoBytes)
+        }.flatMapLeft { failure ->
+            handleExternalCommitFailure(transactionContext, conversation, failure)
+        }.onSuccess {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.INFO,
+                leadingMessage = "Join Group external commit Success",
+                jsonStringKeyValues = conversation.logData()
+            )
+        }
+    }
+
+    private suspend fun handleExternalCommitFailure(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        failure: CoreFailure
+    ): Either<CoreFailure, Unit> =
+        when (MLSMessageFailureHandler.handleFailure(failure)) {
+            is MLSMessageFailureResolution.Ignore -> {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.WARN,
+                    leadingMessage = "Join Group external commit Ignored",
+                    jsonStringKeyValues = conversation.logData(failure)
+                )
+                Either.Right(Unit)
             }
 
-            remoteEpoch.value!!.toULong() != 0UL -> {
-                // TODO(refactor): don't use conversationAPI directly
-                //                 we could use mlsConversationRepository to solve this
-                logger.d("Joining group by external commit ${conversation.id.toLogString()}")
-                wrapApiRequest {
-                    conversationApi.fetchGroupInfo(conversation.id.toApi())
-                }.flatMap { groupInfo ->
-                    transactionContext.wrapInMLSContext { mlsContext ->
-                        mlsConversationRepository.joinGroupByExternalCommit(
-                            mlsContext,
-                            (protocol as Conversation.ProtocolInfo.MLSCapable).groupId,
-                            groupInfo
-                        )
-                    }.flatMapLeft { failure ->
-                        when (MLSMessageFailureHandler.handleFailure(failure)) {
-                            is MLSMessageFailureResolution.Ignore -> {
-                                logger.logStructuredJson(
-                                    level = KaliumLogLevel.WARN,
-                                    leadingMessage = "Join Group external commit Ignored",
-                                    jsonStringKeyValues = conversation.logData(failure)
-                                )
-                                Either.Right(Unit)
-                            }
-
-                            is MLSMessageFailureResolution.ResetConversation -> {
-                                logger.logStructuredJson(
-                                    level = KaliumLogLevel.WARN,
-                                    leadingMessage = "Reset Conversation after join group failure",
-                                    jsonStringKeyValues = conversation.logData(failure)
-                                )
-                                resetMLSConversation(conversation.id, transactionContext)
-                            }
-
-                            else -> {
-                                logger.logStructuredJson(
-                                    level = KaliumLogLevel.ERROR,
-                                    leadingMessage = "Join Group external commit Failure",
-                                    jsonStringKeyValues = conversation.logData(failure)
-                                )
-                                Either.Left(failure)
-                            }
-                        }
-                    }
-                }.onSuccess {
-                    logger.logStructuredJson(
-                        level = KaliumLogLevel.INFO,
-                        leadingMessage = "Join Group external commit Success",
-                        jsonStringKeyValues = conversation.logData()
-                    )
-                }
-            }
-
-            type == Conversation.Type.Self -> {
-                logger.d("Establish Self MLS Conversation ${conversation.id.toLogString()}")
-                transactionContext.wrapInMLSContext { mlsContext ->
-                    mlsConversationRepository.establishMLSGroup(
-                        mlsContext,
-                        (protocol as Conversation.ProtocolInfo.MLSCapable).groupId,
-                        listOf(selfUserId)
-                    )
-                }
-                    .onSuccess {
-                        logger.logStructuredJson(
-                            level = KaliumLogLevel.INFO,
-                            leadingMessage = "Establish Group",
-                            jsonStringKeyValues = conversation.logData()
-                        )
-                    }.map { Unit }
-            }
-
-            type == Conversation.Type.OneOnOne || type is Conversation.Type.Group -> {
-                logger.d("Establish Group/1:1 MLS Conversation ${conversation.id.toLogString()}")
-                conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
-                    transactionContext.wrapInMLSContext { mlsContext ->
-                        mlsConversationRepository.establishMLSGroup(
-                            mlsContext,
-                            (protocol as Conversation.ProtocolInfo.MLSCapable).groupId,
-                            members,
-                            publicKeys
-                        )
-                    }
-                }.onSuccess {
-                    logger.logStructuredJson(
-                        level = KaliumLogLevel.INFO,
-                        leadingMessage = "Establish Group",
-                        jsonStringKeyValues = conversation.logData()
-                    )
-                }.map { Unit }
+            is MLSMessageFailureResolution.ResetConversation -> {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.WARN,
+                    leadingMessage = "Reset Conversation after join group failure",
+                    jsonStringKeyValues = conversation.logData(failure)
+                )
+                resetMLSConversation(conversation.id, transactionContext)
             }
 
             else -> {
-                logger.w("SKIPPING due to unknown conversation type $type")
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "Join Group external commit Failure",
+                    jsonStringKeyValues = conversation.logData(failure)
+                )
+                Either.Left(failure)
+            }
+        }
+
+    private suspend fun establishMLSGroupForType(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        groupId: GroupID,
+        publicKeys: MLSPublicKeys?
+    ): Either<CoreFailure, Unit> =
+        when (conversation.type) {
+            Conversation.Type.Self -> establishSelfMLSGroup(transactionContext, conversation, groupId)
+            Conversation.Type.OneOnOne, is Conversation.Type.Group -> establishGroupMLSConversation(
+                transactionContext,
+                conversation,
+                groupId,
+                publicKeys
+            )
+            else -> {
+                logger.w("Skipping MLS establishment for unknown conversation type ${conversation.type}")
                 Either.Right(Unit)
             }
         }
+
+    private suspend fun establishSelfMLSGroup(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        groupId: GroupID
+    ): Either<CoreFailure, Unit> {
+        logger.d("Establish Self MLS Conversation ${conversation.id.toLogString()}")
+        return transactionContext.wrapInMLSContext { mlsContext ->
+            mlsConversationRepository.establishMLSGroup(mlsContext, groupId, listOf(selfUserId))
+        }.onSuccess {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.INFO,
+                leadingMessage = "Establish Self Group Success",
+                jsonStringKeyValues = conversation.logData()
+            )
+        }.map { Unit }
+    }
+
+    private suspend fun establishGroupMLSConversation(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        groupId: GroupID,
+        publicKeys: MLSPublicKeys?
+    ): Either<CoreFailure, Unit> {
+        logger.d("Establish Group/1:1 MLS Conversation ${conversation.id.toLogString()}")
+        return conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+            transactionContext.wrapInMLSContext { mlsContext ->
+                mlsConversationRepository.establishMLSGroup(mlsContext, groupId, members, publicKeys)
+            }
+        }.onSuccess {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.INFO,
+                leadingMessage = "Establish Group Success",
+                jsonStringKeyValues = conversation.logData()
+            )
+        }.map { Unit }
     }
 
     private fun Conversation.logData(
@@ -359,8 +415,8 @@ value class GroupInfo(val value: ByteArray) {
 
                 2 -> {
                     if (!need(3)) throw IndexOutOfBoundsException()
-                    val b1 = u8();
-                    val b2 = u8();
+                    val b1 = u8()
+                    val b2 = u8()
                     val b3 = u8()
                     val v = ((b0 and 0x3F) shl 24) or (b1 shl 16) or (b2 shl 8) or b3
                     if (v < 16384) throw IllegalArgumentException("Non-minimal varint")

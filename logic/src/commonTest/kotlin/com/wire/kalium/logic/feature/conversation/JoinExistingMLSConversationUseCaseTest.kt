@@ -127,7 +127,7 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
-    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
+    fun     givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
         runTest {
             val members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
@@ -136,6 +136,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
                 .withGetConversationMembersSuccessful(members)
                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+                .withFetchingGroupInfoSuccessful(epoch = 0L)
                 .arrange()
 
             joinExistingMLSConversationsUseCase(
@@ -162,6 +163,7 @@ class JoinExistingMLSConversationUseCaseTest {
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
             .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+            .withFetchingGroupInfoSuccessful(epoch = 0L)
             .arrange()
 
         // WHEN
@@ -191,6 +193,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION)
                 .withGetConversationMembersSuccessful(members)
                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+                .withFetchingGroupInfoSuccessful(epoch = 0L)
                 .arrange()
 
             joinExistingMLSConversationsUseCase(
@@ -326,10 +329,11 @@ class JoinExistingMLSConversationUseCaseTest {
             }.returns(Either.Left(failure))
         }
 
-        suspend fun withFetchingGroupInfoSuccessful() = apply {
+        suspend fun withFetchingGroupInfoSuccessful(epoch: Long = 1L) = apply {
+            val groupInfoBytes = buildGroupInfoBytes(epoch = epoch)
             coEvery {
                 conversationApi.fetchGroupInfo(any())
-            }.returns(NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200))
+            }.returns(NetworkResponse.Success(groupInfoBytes, mapOf(), 200))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
@@ -345,7 +349,88 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
         companion object {
-            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+            val PUBLIC_GROUP_STATE = buildGroupInfoBytes(epoch = 1L)
+
+            /**
+             * Builds a GroupInfo byte array according to RFC 9420 specification.
+             *
+             * The GroupInfo structure begins with a GroupContext containing:
+             * - version (2 bytes, uint16 big-endian)
+             * - cipher_suite (2 bytes, uint16 big-endian)
+             * - group_id (variable length, prefixed with MLS varint)
+             * - epoch (8 bytes, uint64 big-endian)
+             *
+             * @param version The protocol version (default: 1)
+             * @param cipherSuite The cipher suite identifier (default: 1)
+             * @param groupId The group identifier bytes (default: "test-group-id")
+             * @param epoch The epoch number (default: 0)
+             * @return ByteArray representing a valid GroupInfo structure
+             * @see <a href="https://datatracker.ietf.org/doc/html/rfc9420#name-group-context">RFC 9420 - Group Context</a>
+             */
+            fun buildGroupInfoBytes(
+                version: Int = 1,
+                cipherSuite: Int = 1,
+                groupId: ByteArray = "test-group-id".encodeToByteArray(),
+                epoch: Long = 0L
+            ): ByteArray {
+                val buffer = mutableListOf<Byte>()
+
+                // Write version (2 bytes, uint16 big-endian)
+                buffer.add((version shr 8).toByte())
+                buffer.add(version.toByte())
+
+                // Write cipher_suite (2 bytes, uint16 big-endian)
+                buffer.add((cipherSuite shr 8).toByte())
+                buffer.add(cipherSuite.toByte())
+
+                // Write group_id with MLS varint length prefix
+                val groupIdLen = groupId.size
+                buffer.addAll(encodeMLSVarInt(groupIdLen))
+                buffer.addAll(groupId.toList())
+
+                // Write epoch (8 bytes, uint64 big-endian)
+                buffer.add((epoch shr 56).toByte())
+                buffer.add((epoch shr 48).toByte())
+                buffer.add((epoch shr 40).toByte())
+                buffer.add((epoch shr 32).toByte())
+                buffer.add((epoch shr 24).toByte())
+                buffer.add((epoch shr 16).toByte())
+                buffer.add((epoch shr 8).toByte())
+                buffer.add(epoch.toByte())
+
+                return buffer.toByteArray()
+            }
+
+            /**
+             * Encodes a length as an MLS variable-length integer.
+             *
+             * MLS varint encoding (similar to QUIC):
+             * - Prefix 00 (bits 7-6): 1 byte total, value in bits 5-0 (max 63)
+             * - Prefix 01 (bits 7-6): 2 bytes total, value in bits 5-0 + 8 bits (max 16383)
+             * - Prefix 10 (bits 7-6): 4 bytes total, value in bits 5-0 + 24 bits (max 1073741823)
+             */
+            private fun encodeMLSVarInt(value: Int): List<Byte> {
+                return when {
+                    value < 64 -> {
+                        // 1 byte encoding: prefix 00
+                        listOf(value.toByte())
+                    }
+                    value < 16384 -> {
+                        // 2 byte encoding: prefix 01
+                        val byte0 = (0x40 or (value shr 8)).toByte()
+                        val byte1 = value.toByte()
+                        listOf(byte0, byte1)
+                    }
+                    else -> {
+                        // 4 byte encoding: prefix 10
+                        val byte0 = (0x80 or (value shr 24)).toByte()
+                        val byte1 = (value shr 16).toByte()
+                        val byte2 = (value shr 8).toByte()
+                        val byte3 = value.toByte()
+                        listOf(byte0, byte1, byte2, byte3)
+                    }
+                }
+            }
 
             val MLS_UNSUPPORTED_PROPOSAL_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
