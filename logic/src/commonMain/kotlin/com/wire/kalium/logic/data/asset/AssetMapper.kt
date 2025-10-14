@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcFileMd5
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -74,7 +75,10 @@ class AssetMapperImpl(
                 uploadAssetMetadata.isPublic,
                 AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
                 // TODO: pass the md5 to the mapper so we can return Either left in case of any error
-                md5 ?: TODO("handle failure")
+                md5 ?: TODO("handle failure"),
+                conversationId = uploadAssetMetadata.conversationId?.toApi(),
+                filename = uploadAssetMetadata.filename,
+                filetype = uploadAssetMetadata.filetype
             )
         }
 

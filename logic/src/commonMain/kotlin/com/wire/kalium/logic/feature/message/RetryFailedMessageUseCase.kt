@@ -167,7 +167,7 @@ class RetryFailedMessageUseCase internal constructor(
         return when (assetTransferStatus) {
             AssetTransferStatus.FAILED_UPLOAD, AssetTransferStatus.NOT_DOWNLOADED -> {
                 updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
-                retryUploadingAsset(content)
+                retryUploadingAsset(message.conversationId, content)
                     .flatMap { uploadedAssetContent ->
                         message.copy(content = MessageContent.Asset(value = uploadedAssetContent)).let { updatedMessage ->
                             persistMessage(updatedMessage)
@@ -197,7 +197,7 @@ class RetryFailedMessageUseCase internal constructor(
             .map { /* returns Unit */ }
     }
 
-    private suspend fun retryUploadingAsset(assetContent: AssetContent): Either<CoreFailure, AssetContent> =
+    private suspend fun retryUploadingAsset(conversationId: ConversationId, assetContent: AssetContent): Either<CoreFailure, AssetContent> =
         with(assetContent) {
             assetRepository.fetchPrivateDecodedAsset(
                 assetId = remoteData.assetId,
@@ -214,7 +214,10 @@ class RetryFailedMessageUseCase internal constructor(
                         mimeType = mimeType,
                         assetDataPath = assetDataPath,
                         otrKey = AES256Key(remoteData.otrKey),
-                        extension = name?.fileExtension() ?: ""
+                        extension = name?.fileExtension() ?: "",
+                        conversationId = conversationId,
+                        filename = name,
+                        filetype = mimeType,
                     )
                 }
                 .map { (uploadedAssetId, sha256key) ->

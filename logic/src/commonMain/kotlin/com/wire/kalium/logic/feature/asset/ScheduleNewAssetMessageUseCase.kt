@@ -281,10 +281,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     ): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
-            currentAssetMessageContent.mimeType,
-            currentAssetMessageContent.assetDataPath,
-            currentAssetMessageContent.otrKey,
-            currentAssetMessageContent.assetName.fileExtension()
+            mimeType = currentAssetMessageContent.mimeType,
+            assetDataPath = currentAssetMessageContent.assetDataPath,
+            otrKey = currentAssetMessageContent.otrKey,
+            extension = currentAssetMessageContent.assetName.fileExtension(),
+            conversationId = conversationId,
+            filename = currentAssetMessageContent.assetName,
+            filetype = currentAssetMessageContent.mimeType,
         ).onFailure {
             updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, message.id)
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, message.id, TYPE)
