@@ -19,6 +19,7 @@ package com.wire.kalium.cells.data.model
 
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.sdk.kmp.model.RestFilePreview
 import com.wire.kalium.cells.sdk.kmp.model.RestNode
 
 internal data class CellNodeDTO(
@@ -93,14 +94,7 @@ internal fun RestNode.toDto() = CellNodeDTO(
     contentUrl = preSignedGET?.url,
     contentHash = contentHash,
     mimeType = contentType,
-    previews = previews?.mapNotNull {
-        it.preSignedGET?.url?.let { url ->
-            PreviewDto(
-                url,
-                it.dimension ?: 0,
-            )
-        }
-    },
+    previews = previews.toDto(),
     ownerUserId = userMetadata
         ?.firstOrNull { it.namespace == "usermeta-owner-uuid" }
         ?.jsonValue?.removeSurrounding("\""),
@@ -113,6 +107,16 @@ internal fun RestNode.toDto() = CellNodeDTO(
     conversationId = contextWorkspace?.uuid,
     publicLinkId = shares?.firstOrNull()?.uuid,
 )
+
+private fun List<RestFilePreview>?.toDto() = when {
+    isNullOrEmpty() -> null
+    all { it.error == true } -> null
+    else -> mapNotNull {
+        it.preSignedGET?.url?.let { url ->
+            PreviewDto(url, it.dimension ?: 0)
+        }
+    }
+}
 
 internal data class PreviewDto(
     val url: String,
