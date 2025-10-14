@@ -49,6 +49,7 @@ data class FeatureConfigModel(
     val appsModel: ConfigsStatusModel?,
     val chatBubblesModel: ChatBubblesConfigModel?,
     val enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel?,
+    val assetAuditLogConfigModel: AssetAuditLogConfigModel?,
 )
 
 enum class Status {
@@ -172,6 +173,12 @@ data class EnableUserProfileQRCodeConfigModel(
 
 @Serializable
 data class ChatBubblesConfigModel(
+    @SerialName("status")
+    val status: Status
+)
+
+@Serializable
+data class AssetAuditLogConfigModel(
     @SerialName("status")
     val status: Status
 )

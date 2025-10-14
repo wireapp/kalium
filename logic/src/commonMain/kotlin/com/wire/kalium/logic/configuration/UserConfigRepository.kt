@@ -163,6 +163,8 @@ interface UserConfigRepository {
     suspend fun isChatBubblesEnabled(): Boolean
     suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isProfileQRCodeEnabled(): Boolean
+    suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isAssetAuditLogEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -604,5 +606,12 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isProfileQRCodeEnabled(): Boolean = userConfigDAO.isProfileQRCodeEnabled()
+
+    override suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setAssetAuditLogEnabled(enabled)
+        }
+
+    override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
 
 }
