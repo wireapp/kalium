@@ -143,7 +143,7 @@ data object ConversationMapper {
         historySharingRetentionSeconds = historySharingRetentionSeconds,
     )
 
-    @Suppress("LongParameterList", "UnusedParameter")
+    @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
     fun fromViewToModel(
         qualified_id: QualifiedIDEntity,
         name: String?,

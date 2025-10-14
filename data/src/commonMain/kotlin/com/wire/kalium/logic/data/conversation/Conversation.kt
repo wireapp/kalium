@@ -253,7 +253,6 @@ data class Conversation(
         sealed interface MLSCapable : ProtocolInfo {
             val groupId: GroupID
             val groupState: GroupState
-//             val epoch: ULong
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: CipherSuite
 

@@ -27,7 +27,6 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -67,7 +66,7 @@ internal interface JoinExistingMLSConversationUseCase {
     ): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class JoinExistingMLSConversationUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val conversationApi: ConversationApi,
@@ -120,14 +119,19 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     ): Either<CoreFailure, Unit> {
         if (failure !is NetworkFailure.ServerMiscommunication) return Either.Left(failure)
         val requestError = failure.kaliumException as? KaliumException.InvalidRequestError
-            ?: return Either.Left(failure)
 
         return when {
+            requestError == null -> {
+                logger.w("Request timed out, ignoring...")
+                Either.Right(Unit)
+            }
+
             requestError.isMlsStaleMessage() -> handleStaleMessage(transactionContext, conversation, failure)
             requestError.isMlsMissingGroupInfo() -> {
                 logger.w("Conversation has no group info, ignoring...")
                 Either.Right(Unit)
             }
+
             else -> Either.Left(failure)
         }
     }
@@ -187,6 +191,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         protocol.groupId,
                         groupInfoBytes
                     )
+
                     else -> establishMLSGroupForType(transactionContext, conversation, protocol.groupId, publicKeys)
                 }
             }
@@ -291,6 +296,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 groupId,
                 publicKeys
             )
+
             else -> {
                 logger.w("Skipping MLS establishment for unknown conversation type ${conversation.type}")
                 Either.Right(Unit)
@@ -364,6 +370,7 @@ value class GroupInfo(val value: ByteArray) {
      * @return The epoch value as a Long, or null if parsing fails due to malformed data
      * @see <a href="https://datatracker.ietf.org/doc/html/rfc9420#name-group-context">RFC 9420 - Group Context</a>
      */
+    @Suppress("MagicNumber", "ReturnCount", "ThrowsCount", "CyclomaticComplexMethod")
     fun extractEpoch(): Long? {
         var p = 0
 

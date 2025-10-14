@@ -109,7 +109,6 @@ data class ConversationEntity(
         sealed interface MLSCapable : ProtocolInfo {
             val groupId: String
             val groupState: ConversationEntity.GroupState
-//             val epoch: ULong
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: ConversationEntity.CipherSuite
         }

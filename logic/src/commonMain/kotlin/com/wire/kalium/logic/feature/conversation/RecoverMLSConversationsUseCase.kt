@@ -19,13 +19,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -34,8 +27,15 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import io.mockative.Mockable
 
 sealed class RecoverMLSConversationsResult {
@@ -84,7 +84,11 @@ internal class RecoverMLSConversationsUseCaseImpl(
         val protocol = conversation.protocol
         return if (protocol is Conversation.ProtocolInfo.MLS) {
             transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.isGroupOutOfSync(mlsContext, protocol.groupId, transactionContext.mls!!.conversationEpoch(protocol.groupId.toCrypto()))
+                mlsConversationRepository.isGroupOutOfSync(
+                    mlsContext,
+                    protocol.groupId,
+                    transactionContext.mls!!.conversationEpoch(protocol.groupId.toCrypto())
+                )
             }
                 .fold({ checkEpochFailure ->
                     Either.Left(checkEpochFailure)
