@@ -55,7 +55,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     }
 
     private suspend fun CallMetadata.createMetadata(conversationId: ConversationId, callEndedReason: Int): RecentlyEndedCallMetadata {
-        val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType == UserType.OWNER }
+        val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType.type == UserType.OWNER }
         val conversationMembers = observeConversationMembers(conversationId).first()
         val conversationServicesCount = conversationMembers.count { member -> member.user.userType.type == UserType.SERVICE }
         val guestsCount = conversationMembers.count { member -> member.user.userType.type == UserType.GUEST }

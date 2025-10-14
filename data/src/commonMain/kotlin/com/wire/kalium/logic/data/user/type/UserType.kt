@@ -72,3 +72,20 @@ sealed class UserTypeInfo(open val type: UserType) {
     data class App(override val type: UserType) : UserTypeInfo(type)
     data class Bot(override val type: UserType) : UserTypeInfo(type)
 }
+
+fun UserTypeInfo.isAppOrBot(): Boolean = this is UserTypeInfo.App || this is UserTypeInfo.Bot
+
+fun UserTypeInfo.isTeamAdmin(): Boolean =
+    this is UserTypeInfo.Regular && (this.type == UserType.ADMIN || this.type == UserType.OWNER)
+
+fun UserTypeInfo.isExternal(): Boolean =
+    this is UserTypeInfo.Regular && this.type == UserType.EXTERNAL
+
+fun UserTypeInfo.isGuest(): Boolean =
+    this is UserTypeInfo.Regular && this.type == UserType.GUEST
+
+fun UserTypeInfo.isTeammate(): Boolean =
+    this is UserTypeInfo.Regular && this.type.isTeammate()
+
+fun UserTypeInfo.isFederated(): Boolean =
+    this is UserTypeInfo.Regular && this.type.isFederated()

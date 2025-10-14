@@ -56,7 +56,7 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         UserType.APP -> UserTypeInfoEntity.App(app)
     }
 
-    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity) = when (userTypeEntity) {
+    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserTypeInfoEntity = when (userTypeEntity) {
         UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(standard)
         UserTypeEntity.EXTERNAL -> UserTypeInfoEntity.Regular(external)
         UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(federated)
@@ -67,6 +67,9 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot(service)
         UserTypeEntity.APP -> UserTypeInfoEntity.App(app)
     }
+
+    override fun fromUserTypeInfo(userType: UserTypeInfo): UserTypeInfoEntity = fromUserType(userType.type)
+
 }
 
 class DomainUserTypeMapperImpl : DomainUserTypeMapper {
@@ -106,7 +109,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
         }
     }
 
-    override fun fromUserType(userType: UserType) = when (userType) {
+    override fun fromUserType(userType: UserType): UserTypeInfo = when (userType) {
         UserType.INTERNAL -> UserTypeInfo.Regular(standard)
         UserType.ADMIN -> UserTypeInfo.Regular(admin)
         UserType.OWNER -> UserTypeInfo.Regular(owner)
@@ -117,18 +120,21 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
         UserType.SERVICE -> UserTypeInfo.Bot(service)
         UserType.APP -> UserTypeInfo.App(app)
     }
+
+    override fun fromUserTypeInfoEntity(userTypeInfoEntity: UserTypeInfoEntity) = fromUserTypeEntity(userTypeInfoEntity.type)
 }
 
 interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
     fun fromUserType(userType: UserType): UserTypeInfoEntity
     fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserTypeInfoEntity
+    fun fromUserTypeInfo(userType: UserTypeInfo): UserTypeInfoEntity
 }
 
 @Mockable
 interface DomainUserTypeMapper : UserTypeMapper<UserType> {
     fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo
     fun fromUserType(userType: UserType): UserTypeInfo
-
+    fun fromUserTypeInfoEntity(userTypeInfoEntity: UserTypeInfoEntity): UserTypeInfo
 }
 
 interface UserTypeMapper<T> {

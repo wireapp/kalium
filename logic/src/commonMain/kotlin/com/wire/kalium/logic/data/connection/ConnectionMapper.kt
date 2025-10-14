@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
@@ -74,8 +75,8 @@ internal class ConnectionMapperImpl(
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
             otherUser = otherUser?.let { userMapper.fromUserEntityToOtherUser(it) },
-            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType.type).type }
-                ?: UserType.GUEST,// todo ym. maybe from wrapper to wrapper is better
+            userType = otherUser?.let { userTypeMapper.fromUserTypeInfoEntity(it.userType) }
+                ?: UserTypeInfo.Regular(UserType.GUEST),
             lastModifiedDate = lastUpdateDate,
             connection = fromDaoToModel(this),
             protocolInfo = ProtocolInfo.Proteus,
