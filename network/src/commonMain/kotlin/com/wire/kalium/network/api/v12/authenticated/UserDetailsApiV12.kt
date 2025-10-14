@@ -23,4 +23,7 @@ import com.wire.kalium.network.api.v11.authenticated.UserDetailsApiV11
 
 internal open class UserDetailsApiV12 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
-) : UserDetailsApiV11(authenticatedNetworkClient)
+) : UserDetailsApiV11(authenticatedNetworkClient) {
+
+    // todo override here functions to get the new field type from v12 when available, next pr.
+}
