@@ -60,6 +60,8 @@ interface AssetRepository {
      * @param filetype optional file type for audit logging
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
      */
+
+    @Suppress("LongParameterList")
     suspend fun uploadAndPersistPublicAsset(
         mimeType: String,
         assetDataPath: Path,
