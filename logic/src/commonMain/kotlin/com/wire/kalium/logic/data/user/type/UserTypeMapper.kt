@@ -52,8 +52,8 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         UserType.FEDERATED -> UserTypeInfoEntity.Regular(federated)
         UserType.GUEST -> UserTypeInfoEntity.Regular(guest)
         UserType.NONE -> UserTypeInfoEntity.Regular(none)
-        UserType.SERVICE -> UserTypeInfoEntity.Bot(service)
-        UserType.APP -> UserTypeInfoEntity.App(app)
+        UserType.SERVICE -> UserTypeInfoEntity.Bot
+        UserType.APP -> UserTypeInfoEntity.App
     }
 
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserTypeInfoEntity = when (userTypeEntity) {
@@ -64,8 +64,8 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(none)
         UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(owner)
         UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(admin)
-        UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot(service)
-        UserTypeEntity.APP -> UserTypeInfoEntity.App(app)
+        UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
+        UserTypeEntity.APP -> UserTypeInfoEntity.App
     }
 
     override fun fromUserTypeInfo(userType: UserTypeInfo): UserTypeInfoEntity = fromUserType(userType.type)
@@ -103,8 +103,8 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
             UserTypeEntity.NONE -> UserTypeInfo.Regular(none)
             UserTypeEntity.OWNER -> UserTypeInfo.Regular(owner)
             UserTypeEntity.ADMIN -> UserTypeInfo.Regular(admin)
-            UserTypeEntity.SERVICE -> UserTypeInfo.Bot(service)
-            UserTypeEntity.APP -> UserTypeInfo.App(app)
+            UserTypeEntity.SERVICE -> UserTypeInfo.Bot
+            UserTypeEntity.APP -> UserTypeInfo.App
             null -> UserTypeInfo.Regular(none)
         }
     }
@@ -117,8 +117,8 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
         UserType.FEDERATED -> UserTypeInfo.Regular(federated)
         UserType.GUEST -> UserTypeInfo.Regular(guest)
         UserType.NONE -> UserTypeInfo.Regular(none)
-        UserType.SERVICE -> UserTypeInfo.Bot(service)
-        UserType.APP -> UserTypeInfo.App(app)
+        UserType.SERVICE -> UserTypeInfo.Bot
+        UserType.APP -> UserTypeInfo.App
     }
 
     override fun fromUserTypeInfoEntity(userTypeInfoEntity: UserTypeInfoEntity) = fromUserTypeEntity(userTypeInfoEntity.type)

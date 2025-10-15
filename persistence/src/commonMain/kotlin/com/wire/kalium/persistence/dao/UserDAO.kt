@@ -161,8 +161,8 @@ data class PartialUserEntity(
 
 sealed class UserTypeInfoEntity(open val type: UserTypeEntity) {
     data class Regular(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
-    data class App(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
-    data class Bot(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
+    data object App : UserTypeInfoEntity(UserTypeEntity.APP)
+    data object Bot : UserTypeInfoEntity(UserTypeEntity.SERVICE)
 }
 
 enum class UserTypeEntity {

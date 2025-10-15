@@ -114,8 +114,8 @@ private class ConnectionMapper {
             UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(type)
             UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(type)
             UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot(type)
-            UserTypeEntity.APP -> UserTypeInfoEntity.App(type)
+            UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
+            UserTypeEntity.APP -> UserTypeInfoEntity.App
         }
     }
 }

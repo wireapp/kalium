@@ -63,8 +63,8 @@ enum class UserType {
 
 sealed class UserTypeInfo(open val type: UserType) {
     data class Regular(override val type: UserType) : UserTypeInfo(type)
-    data class App(override val type: UserType) : UserTypeInfo(type)
-    data class Bot(override val type: UserType) : UserTypeInfo(type)
+    data object App : UserTypeInfo(UserType.APP)
+    data object Bot : UserTypeInfo(UserType.SERVICE)
 }
 
 fun UserTypeInfo.isAppOrBot(): Boolean = this is UserTypeInfo.App || this is UserTypeInfo.Bot

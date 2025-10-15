@@ -92,8 +92,8 @@ class UserMapper {
         UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(userType)
         UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(userType)
         UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot(userType)
-        UserTypeEntity.APP -> UserTypeInfoEntity.App(userType)
+        UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
+        UserTypeEntity.APP -> UserTypeInfoEntity.App
     }
 
     @Suppress("LongParameterList")
