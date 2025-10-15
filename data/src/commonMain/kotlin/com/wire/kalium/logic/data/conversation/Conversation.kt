@@ -216,7 +216,6 @@ data class Conversation(
         data class MLS(
             override val groupId: GroupID,
             override val groupState: MLSCapable.GroupState,
-//             override val epoch: ULong,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: CipherSuite
         ) : MLSCapable {
@@ -226,7 +225,6 @@ data class Conversation(
                 "name" to name(),
                 "groupId" to groupId.toLogString(),
                 "groupState" to groupState.name,
-//                 "epoch" to "$epoch",
                 "keyingMaterialLastUpdate" to keyingMaterialLastUpdate.toString(),
                 "cipherSuite" to cipherSuite.toString()
             )
@@ -235,7 +233,6 @@ data class Conversation(
         data class Mixed(
             override val groupId: GroupID,
             override val groupState: MLSCapable.GroupState,
-//             override val epoch: ULong,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: CipherSuite
         ) : MLSCapable {
@@ -244,7 +241,6 @@ data class Conversation(
                 "name" to name(),
                 "groupId" to groupId.toLogString(),
                 "groupState" to groupState.name,
-//                 "epoch" to "$epoch",
                 "keyingMaterialLastUpdate" to keyingMaterialLastUpdate.toString(),
                 "cipherSuite" to cipherSuite.toString()
             )
