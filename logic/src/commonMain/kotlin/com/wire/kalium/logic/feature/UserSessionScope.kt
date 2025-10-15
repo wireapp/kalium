@@ -245,6 +245,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.GetConversationEpochUseCase
+import com.wire.kalium.logic.feature.conversation.GetConversationEpochUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
@@ -2436,6 +2438,11 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    val getConversationEpochUseCase: GetConversationEpochUseCase
+        get() = GetConversationEpochUseCaseImpl(
+            cryptoTransactionProvider = cryptoTransactionProvider
+        )
 
     val checkCrlRevocationList: CheckCrlRevocationListUseCase
         get() = CheckCrlRevocationListUseCase(
