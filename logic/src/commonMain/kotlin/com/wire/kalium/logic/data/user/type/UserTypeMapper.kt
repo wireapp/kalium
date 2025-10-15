@@ -172,6 +172,7 @@ interface UserTypeMapper<T> {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
+    // todo ym. verify how this fits with new user types
     fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): T =
         if (isService) service
         else when (permissionCode) {

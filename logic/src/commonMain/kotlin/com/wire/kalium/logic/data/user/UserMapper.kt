@@ -280,7 +280,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
+            userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),// todo ym. map type
             botService = null,
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
@@ -334,7 +334,7 @@ internal class UserMapperImpl(
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
+        userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),// todo ym. map type
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
@@ -368,7 +368,7 @@ internal class UserMapperImpl(
                 selfUserDomain = selfUserId.domain,
                 otherUserTeamId = userProfile.teamId,
                 isService = userProfile.service != null
-            )),
+            )), // todo ym. map type
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,
             expiresAt = userProfile.expiresAt?.toInstant(),
