@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.client
+package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -25,27 +25,23 @@ import com.wire.kalium.logic.configuration.server.isProductionApi
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
-/**
- * Use case to check if the Assets audit log feature is enabled.
- */
 @Mockable
-interface IsAssetAuditLogEnabledUseCase {
-    suspend operator fun invoke(): Boolean
+interface AssetAuditFeatureHandler {
+    suspend fun isAssetAuditLogEnabled(): Boolean
 }
 
-internal class IsAssetAuditLogEnabledUseCaseImpl(
+internal class AssetAuditFeatureHandlerImpl(
     private val userId: UserId,
     private val userConfigRepository: UserConfigRepository,
     private val serverConfigRepository: ServerConfigRepository,
-) : IsAssetAuditLogEnabledUseCase {
-    override suspend fun invoke() =
-        serverConfigRepository.configForUser(userId)
-            .fold(
-                { false },
-                { serverConfig ->
-                    userConfigRepository.isAssetAuditLogEnabled() && serverConfig.isOnPremises()
-                }
-            )
+) : AssetAuditFeatureHandler {
+    override suspend fun isAssetAuditLogEnabled() = serverConfigRepository.configForUser(userId)
+        .fold(
+            { false },
+            { serverConfig ->
+                userConfigRepository.isAssetAuditLogEnabled() && serverConfig.isOnPremises()
+            }
+        )
 }
 
 private fun ServerConfig.isOnPremises() = links.isOnPremises && !isProductionApi()

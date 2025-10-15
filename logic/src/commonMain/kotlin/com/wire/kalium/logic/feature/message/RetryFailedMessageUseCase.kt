@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -215,7 +216,7 @@ class RetryFailedMessageUseCase internal constructor(
                         assetDataPath = assetDataPath,
                         otrKey = AES256Key(remoteData.otrKey),
                         extension = name?.fileExtension() ?: "",
-                        conversationId = conversationId,
+                        conversationId = conversationId.toApi(),
                         filename = name,
                         filetype = mimeType,
                     )

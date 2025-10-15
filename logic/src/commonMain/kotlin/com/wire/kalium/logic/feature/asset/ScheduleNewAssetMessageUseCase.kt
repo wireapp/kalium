@@ -53,6 +53,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -285,7 +286,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             assetDataPath = currentAssetMessageContent.assetDataPath,
             otrKey = currentAssetMessageContent.otrKey,
             extension = currentAssetMessageContent.assetName.fileExtension(),
-            conversationId = conversationId,
+            conversationId = conversationId.toApi(),
             filename = currentAssetMessageContent.assetName,
             filetype = currentAssetMessageContent.mimeType,
         ).onFailure {

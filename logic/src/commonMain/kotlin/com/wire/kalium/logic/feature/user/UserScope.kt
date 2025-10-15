@@ -22,6 +22,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.asset.AssetAuditFeatureHandler
+import com.wire.kalium.logic.data.asset.AssetAuditFeatureHandlerImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -53,8 +55,6 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
-import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
-import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCase
@@ -304,8 +304,8 @@ class UserScope internal constructor(
             userConfigRepository = userConfigRepository,
         )
 
-    val isAssetAuditLogEnabled: IsAssetAuditLogEnabledUseCase
-        get() = IsAssetAuditLogEnabledUseCaseImpl(
+    val assetAuditLog: AssetAuditFeatureHandler
+        get() = AssetAuditFeatureHandlerImpl(
             userId = selfUserId,
             userConfigRepository = userConfigRepository,
             serverConfigRepository = serverConfigRepository,
