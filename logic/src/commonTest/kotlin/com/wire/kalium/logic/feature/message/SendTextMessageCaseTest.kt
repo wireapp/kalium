@@ -44,6 +44,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
@@ -155,7 +156,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.persistMessage.invoke(matches { message ->
@@ -194,7 +195,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.persistMessage.invoke(
@@ -236,7 +237,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.persistMessage.invoke(matches { message ->
@@ -275,13 +276,55 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.persistMessage.invoke(matches { message ->
                 assertIs<MessageContent.Text>(message.content)
                 (message.content as MessageContent.Text).linkPreviews.get(0).image == null
             })
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAMessageWithLinkPreview_whenUploadingLinkPreviewImage_thenShouldPassCorrectMetadata() = runTest {
+        // Given
+        val testUrl = "https://example.com"
+        val testConversationId = TestConversation.ID
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withUploadAndPersistPrivateAssetSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = testUrl,
+                urlOffset = 0,
+                permanentUrl = testUrl,
+                summary = "",
+                title = "",
+                image = VALID_LINK_PREVIEW_ASSET
+            )
+        )
+
+        // When
+        sendTextMessage(testConversationId, "some-text", linkPreviews)
+
+        // Then
+        coVerify {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(
+                mimeType = eq(VALID_LINK_PREVIEW_ASSET.mimeType),
+                assetDataPath = any(),
+                otrKey = any(),
+                extension = eq(null),
+                conversationId = eq(testConversationId),
+                filename = eq("link-preview-$testUrl"),
+                filetype = eq(VALID_LINK_PREVIEW_ASSET.mimeType)
+            )
         }.wasInvoked(once)
     }
 
@@ -321,13 +364,13 @@ class SendTextMessageCaseTest {
 
         suspend fun withUploadAndPersistPrivateAssetSuccess() = apply {
             coEvery {
-                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
             }.returns(Either.Right(Pair<UploadedAssetId, SHA256Key>(UploadedAssetId(any(), any(), any()), SHA256Key(ByteArray(any())))))
         }
 
         suspend fun withUploadAndPersistPrivateAssetFailure() = apply {
             coEvery {
-                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
             }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 

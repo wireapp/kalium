@@ -26,6 +26,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.common.functional.Either
@@ -709,6 +710,174 @@ class AssetRepositoryTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenAuditLogEnabled_whenUploadingPublicAsset_thenMetadataShouldBeIncluded() = runTest {
+        // Given
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
+        val testConversationId = ConversationId("conv-id", "conv-domain")
+        val testFilename = "test-filename"
+        val testFiletype = "image/jpg"
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withRawStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
+            .withAuditLogEnabled(true)
+            .arrange()
+
+        // When
+        assetRepository.uploadAndPersistPublicAsset(
+            assetDataPath = fullDataPath,
+            mimeType = testFiletype,
+            assetDataSize = dummyData.size.toLong(),
+            conversationId = testConversationId,
+            filename = testFilename,
+            filetype = testFiletype
+        )
+
+        // Then
+        coVerify {
+            arrangement.assetApi.uploadAsset(
+                matches {
+                    it.conversationId?.toModel() == testConversationId &&
+                    it.filename == testFilename &&
+                    it.filetype == testFiletype
+                },
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAuditLogDisabled_whenUploadingPublicAsset_thenMetadataShouldNotBeIncluded() = runTest {
+        // Given
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
+        val testConversationId = ConversationId("conv-id", "conv-domain")
+        val testFilename = "test-filename"
+        val testFiletype = "image/jpg"
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withRawStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
+            .withAuditLogEnabled(false)
+            .arrange()
+
+        // When
+        assetRepository.uploadAndPersistPublicAsset(
+            assetDataPath = fullDataPath,
+            mimeType = testFiletype,
+            assetDataSize = dummyData.size.toLong(),
+            conversationId = testConversationId,
+            filename = testFilename,
+            filetype = testFiletype
+        )
+
+        // Then
+        coVerify {
+            arrangement.assetApi.uploadAsset(
+                matches {
+                    it.conversationId == null &&
+                    it.filename == null &&
+                    it.filetype == null
+                },
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAuditLogEnabled_whenUploadingPrivateAsset_thenMetadataShouldBeIncluded() = runTest {
+        // Given
+        val dataNamePath = "dummy-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val randomAES256Key = generateRandomAES256Key()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
+        val testConversationId = ConversationId("conv-id", "conv-domain")
+        val testFilename = "test-filename"
+        val testFiletype = "image/jpg"
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withRawStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
+            .withAuditLogEnabled(true)
+            .arrange()
+
+        // When
+        assetRepository.uploadAndPersistPrivateAsset(
+            assetDataPath = fullDataPath,
+            mimeType = testFiletype,
+            otrKey = randomAES256Key,
+            extension = null,
+            conversationId = testConversationId,
+            filename = testFilename,
+            filetype = testFiletype
+        )
+
+        // Then
+        coVerify {
+            arrangement.assetApi.uploadAsset(
+                matches {
+                    it.conversationId?.toModel() == testConversationId &&
+                    it.filename == testFilename &&
+                    it.filetype == testFiletype
+                },
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAuditLogDisabled_whenUploadingPrivateAsset_thenMetadataShouldNotBeIncluded() = runTest {
+        // Given
+        val dataNamePath = "dummy-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val randomAES256Key = generateRandomAES256Key()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
+        val testConversationId = ConversationId("conv-id", "conv-domain")
+        val testFilename = "test-filename"
+        val testFiletype = "image/jpg"
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withRawStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
+            .withAuditLogEnabled(false)
+            .arrange()
+
+        // When
+        assetRepository.uploadAndPersistPrivateAsset(
+            assetDataPath = fullDataPath,
+            mimeType = testFiletype,
+            otrKey = randomAES256Key,
+            extension = null,
+            conversationId = testConversationId,
+            filename = testFilename,
+            filetype = testFiletype
+        )
+
+        // Then
+        coVerify {
+            arrangement.assetApi.uploadAsset(
+                matches {
+                    it.conversationId == null &&
+                    it.filename == null &&
+                    it.filetype == null
+                },
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+    }
+
     class Arrangement {
 
         val assetApi = mock(AssetApi::class)
@@ -844,6 +1013,12 @@ class AssetRepositoryTest {
             coEvery {
                 assetDAO.deleteAsset(any())
             }.returns(Unit)
+        }
+
+        suspend fun withAuditLogEnabled(enabled: Boolean): Arrangement = apply {
+            coEvery {
+                isAssetAuditLog.invoke()
+            }.returns(enabled)
         }
 
         fun arrange(): Pair<Arrangement, AssetRepository> = this to assetRepository

@@ -55,12 +55,18 @@ interface AssetRepository {
      * @param mimeType type of the asset to be uploaded
      * @param assetDataPath the path of the unencrypted data to be uploaded
      * @param assetDataSize the size of the unencrypted data to be uploaded
+     * @param conversationId optional conversation ID for audit logging
+     * @param filename optional filename for audit logging
+     * @param filetype optional file type for audit logging
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
      */
     suspend fun uploadAndPersistPublicAsset(
         mimeType: String,
         assetDataPath: Path,
-        assetDataSize: Long
+        assetDataSize: Long,
+        conversationId: ConversationId? = null,
+        filename: String? = null,
+        filetype: String? = null,
     ): Either<CoreFailure, UploadedAssetId>
 
     /**
@@ -153,9 +159,18 @@ internal class AssetDataSource(
     override suspend fun uploadAndPersistPublicAsset(
         mimeType: String,
         assetDataPath: Path,
-        assetDataSize: Long
+        assetDataSize: Long,
+        conversationId: ConversationId?,
+        filename: String?,
+        filetype: String?,
     ): Either<CoreFailure, UploadedAssetId> {
-        val uploadAssetData = UploadAssetData(assetDataPath, assetDataSize, mimeType, true, RetentionType.ETERNAL)
+        val uploadAssetData = buildPublicAssetData(
+            path = assetDataPath,
+            size = assetDataSize,
+            mimeType = mimeType,
+            filename = filename,
+            filetype = filetype
+        )
         return uploadAndPersistAsset(uploadAssetData, assetDataPath, null)
     }
 
@@ -217,7 +232,30 @@ internal class AssetDataSource(
             } else {
                 this
             }
-    }
+        }
+
+    @Suppress("LongParameterList")
+    private suspend fun buildPublicAssetData(
+        path: Path,
+        size: Long,
+        mimeType: String,
+        // for public assets we set conversationId to "00000000-0000-0000-0000-000000000000" for more info check confluence
+        conversationId: ConversationId? = ConversationId("00000000-0000-0000-0000-000000000000", "no-domain"),
+        filename: String?,
+        filetype: String?
+    ): UploadAssetData = UploadAssetData(path, size, mimeType, true, RetentionType.ETERNAL)
+        .run {
+            if (isAssetAuditLogEnabled.value.invoke()) {
+                // Initialize asset audit log fields if the feature is enabled
+                copy(
+                    conversationId = conversationId,
+                    filename = filename,
+                    filetype = filetype,
+                )
+            } else {
+                this
+            }
+        }
 
     private suspend fun uploadAndPersistAsset(
         uploadAssetData: UploadAssetData,
