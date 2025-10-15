@@ -164,6 +164,42 @@ interface UserTypeMapper<T> {
         else -> none
     }
 
+    /**
+     * Maps API user type combined with inference logic to determine the specific user type.
+     *
+     * The API provides a high-level type hint (REGULAR, APP, BOT), and we combine it with
+     * team and domain information to determine the specific domain user type.
+     *
+     * @param apiUserType The user type from the API (nullable for backward compatibility)
+     * @param otherUserDomain The domain of the other user
+     * @param selfUserTeamId The team ID of the self user
+     * @param otherUserTeamId The team ID of the other user
+     * @param selfUserDomain The domain of the self user
+     * @return The specific domain user type
+     */
+    @Suppress("ReturnCount")
+    fun fromApiTypeAndTeamAndDomain(
+        apiUserType: com.wire.kalium.network.api.model.UserType?,
+        otherUserDomain: String,
+        selfUserTeamId: String?,
+        otherUserTeamId: String?,
+        selfUserDomain: String,
+    ): T = when (apiUserType) {
+        com.wire.kalium.network.api.model.UserType.APP -> app
+        com.wire.kalium.network.api.model.UserType.BOT -> service
+        com.wire.kalium.network.api.model.UserType.REGULAR, null -> {
+            // For REGULAR users or when type is not provided (backward compatibility),
+            // use the existing inference logic
+            fromTeamAndDomain(
+                otherUserDomain = otherUserDomain,
+                selfUserTeamId = selfUserTeamId,
+                otherUserTeamId = otherUserTeamId,
+                selfUserDomain = selfUserDomain,
+                isService = false
+            )
+        }
+    }
+
     private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String): Boolean =
         otherUserDomain.lowercase() != selfDomain.lowercase()
 

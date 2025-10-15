@@ -320,6 +320,7 @@ internal class UserDataSource internal constructor(
     ): Either<CoreFailure, Unit> {
         val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
+        val selfTeamId = selfTeamIdProvider().getOrNull()
         val teamMembers = listUserProfileDTO
             .filter { userProfileDTO -> mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
             .map { userProfileDTO ->
@@ -328,7 +329,9 @@ internal class UserDataSource internal constructor(
                     connectionState = ConnectionEntity.State.ACCEPTED,
                     userTypeEntity =
                     if (userProfileDTO.service != null) UserTypeEntity.SERVICE
-                    else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
+                    else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own),
+                    selfUserId = selfUserId,
+                    selfTeamId = selfTeamId
                 )
             }
         val otherUsers = listUserProfileDTO
@@ -343,7 +346,9 @@ internal class UserDataSource internal constructor(
                         otherUserTeamId = userProfileDTO.teamId,
                         selfUserDomain = selfUserId.domain,
                         isService = userProfileDTO.service != null
-                    )
+                    ),
+                    selfUserId = selfUserId,
+                    selfTeamId = selfTeamId
                 )
             }
         return listUserProfileDTO

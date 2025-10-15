@@ -91,7 +91,9 @@ interface UserMapper {
     fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        selfUserId: UserId,
+        selfTeamId: TeamId?
     ): UserEntity
 
     fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser
@@ -268,6 +270,10 @@ internal class UserMapperImpl(
         connectionState: ConnectionEntity.State,
         userTypeEntity: UserTypeEntity
     ): UserEntity = with(userDTO) {
+        // Note: SelfUserDTO does not include a 'type' field from the API,
+        // so we continue to use the inferred userTypeEntity parameter.
+        // If the API adds a type field to SelfUserDTO in the future,
+        // this should be updated to use fromApiTypeAndTeamAndDomain like UserProfileDTO.
         UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
@@ -280,7 +286,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),// todo ym. map type
+            userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
             botService = null,
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
@@ -319,7 +325,9 @@ internal class UserMapperImpl(
     override fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        selfUserId: UserId,
+        selfTeamId: TeamId?
     ) = UserEntity(
         id = idMapper.fromApiToDao(userProfile.id),
         name = userProfile.name,
@@ -334,7 +342,15 @@ internal class UserMapperImpl(
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),// todo ym. map type
+        userType = userEntityTypeMapper.fromUserTypeEntity(
+            userEntityTypeMapper.fromApiTypeAndTeamAndDomain(
+                apiUserType = userProfile.type,
+                otherUserDomain = userProfile.id.domain,
+                selfUserTeamId = selfTeamId?.value,
+                otherUserTeamId = userProfile.teamId,
+                selfUserDomain = selfUserId.domain
+            )
+        ),
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
@@ -362,13 +378,15 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = domainUserTypeMapper.fromUserType(domainUserTypeMapper.fromTeamAndDomain(
-                otherUserDomain = userProfile.id.domain,
-                selfUserTeamId = selfTeamId?.value,
-                selfUserDomain = selfUserId.domain,
-                otherUserTeamId = userProfile.teamId,
-                isService = userProfile.service != null
-            )), // todo ym. map type
+            userType = domainUserTypeMapper.fromUserType(
+                domainUserTypeMapper.fromApiTypeAndTeamAndDomain(
+                    apiUserType = userProfile.type,
+                    otherUserDomain = userProfile.id.domain,
+                    selfUserTeamId = selfTeamId?.value,
+                    otherUserTeamId = userProfile.teamId,
+                    selfUserDomain = selfUserId.domain
+                )
+            ),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,
             expiresAt = userProfile.expiresAt?.toInstant(),
