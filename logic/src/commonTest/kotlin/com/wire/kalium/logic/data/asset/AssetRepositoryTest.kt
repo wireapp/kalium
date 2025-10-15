@@ -18,24 +18,24 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.common.error.EncryptionFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.common.error.EncryptionFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -104,6 +104,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
+            .withAssetAuditLogEnabled(false)
             .arrange()
 
         // When
@@ -167,6 +168,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
+            .withAssetAuditLogEnabled(false)
             .arrange()
 
         // When
@@ -883,6 +885,8 @@ class AssetRepositoryTest {
         val assetApi = mock(AssetApi::class)
         val assetDAO = mock(AssetDAO::class)
         val isAssetAuditLog = mock(IsAssetAuditLogEnabledUseCase::class)
+
+        private val isAssetAuditLogEnabled = mock(IsAssetAuditLogEnabledUseCase::class)
 
         private val assetMapper by lazy { AssetMapperImpl() }
 

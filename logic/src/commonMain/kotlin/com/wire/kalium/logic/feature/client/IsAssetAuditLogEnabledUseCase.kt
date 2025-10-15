@@ -23,10 +23,12 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.configuration.server.isProductionApi
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mockable
 
 /**
  * Use case to check if the Assets audit log feature is enabled.
  */
+@Mockable
 interface IsAssetAuditLogEnabledUseCase {
     suspend operator fun invoke(): Boolean
 }
