@@ -37,6 +37,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -321,7 +322,7 @@ class SendTextMessageCaseTest {
                 assetDataPath = any(),
                 otrKey = any(),
                 extension = eq(null),
-                conversationId = eq(testConversationId),
+                conversationId = eq(testConversationId.toApi()),
                 filename = eq("link-preview-$testUrl"),
                 filetype = eq(VALID_LINK_PREVIEW_ASSET.mimeType)
             )

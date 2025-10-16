@@ -27,6 +27,8 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.util.fileExtension
@@ -35,6 +37,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -71,6 +74,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
+            .withAssetAuditLogEnabled(false)
             .arrange()
 
         // When
@@ -137,6 +141,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
+            .withAssetAuditLogEnabled(false)
             .arrange()
 
         // When
@@ -717,14 +722,15 @@ class AssetRepositoryTest {
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
-        val testConversationId = ConversationId("conv-id", "conv-domain")
+        // this conv id is hardcoded for public assets
+        val testConversationId = ConversationId("00000000-0000-0000-0000-000000000000", "no-domain")
         val testFilename = "test-filename"
         val testFiletype = "image/jpg"
 
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
-            .withAuditLogEnabled(true)
+            .withAssetAuditLogEnabled(true)
             .arrange()
 
         // When
@@ -732,7 +738,6 @@ class AssetRepositoryTest {
             assetDataPath = fullDataPath,
             mimeType = testFiletype,
             assetDataSize = dummyData.size.toLong(),
-            conversationId = testConversationId,
             filename = testFilename,
             filetype = testFiletype
         )
@@ -741,7 +746,7 @@ class AssetRepositoryTest {
         coVerify {
             arrangement.assetApi.uploadAsset(
                 matches {
-                    it.conversationId?.toModel() == testConversationId &&
+                    it.conversationId == testConversationId &&
                     it.filename == testFilename &&
                     it.filetype == testFiletype
                 },
@@ -765,7 +770,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
-            .withAuditLogEnabled(false)
+            .withAssetAuditLogEnabled(false)
             .arrange()
 
         // When
@@ -807,7 +812,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
-            .withAuditLogEnabled(true)
+            .withAssetAuditLogEnabled(true)
             .arrange()
 
         // When
@@ -825,7 +830,7 @@ class AssetRepositoryTest {
         coVerify {
             arrangement.assetApi.uploadAsset(
                 matches {
-                    it.conversationId?.toModel() == testConversationId &&
+                    it.conversationId == testConversationId &&
                     it.filename == testFilename &&
                     it.filetype == testFiletype
                 },
@@ -850,7 +855,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
-            .withAuditLogEnabled(false)
+            .withAssetAuditLogEnabled(false)
             .arrange()
 
         // When
