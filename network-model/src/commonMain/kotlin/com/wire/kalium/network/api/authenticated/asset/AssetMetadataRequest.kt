@@ -19,10 +19,15 @@
 package com.wire.kalium.network.api.authenticated.asset
 
 import com.wire.kalium.network.api.model.AssetRetentionType
+import com.wire.kalium.network.api.model.ConversationId
 
+@Suppress("LongParameterList")
 class AssetMetadataRequest(
     val mimeType: String,
     val public: Boolean,
     val retentionType: AssetRetentionType,
-    val md5: String
+    val md5: String,
+    val conversationId: ConversationId? = null,
+    val filename: String? = null,
+    val filetype: String? = null,
 )

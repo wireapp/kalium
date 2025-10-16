@@ -154,7 +154,8 @@ SET mls_group_id = :new_group_id,
         WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
         WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
         ELSE mls_group_state
-    END
+    END,
+    mls_epoch = :new_epoch
 WHERE qualified_id = :conversation_id;
 
 updateConversationNotificationsDateWithTheLastMessage:

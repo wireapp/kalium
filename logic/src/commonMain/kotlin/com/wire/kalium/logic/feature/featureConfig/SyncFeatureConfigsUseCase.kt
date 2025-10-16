@@ -39,6 +39,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHan
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
@@ -75,6 +76,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val appsFeatureHandler: AppsFeatureHandler,
     private val chatBubblesHandler: ChatBubblesConfigHandler,
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
+    private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
@@ -102,6 +104,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
             chatBubblesHandler.handle(it.chatBubblesModel)
             enableUserProfileQRCodeConfigHandler.handle(it.enableUserProfileQRCodeConfigModel)
+            assetAuditLogConfigHandler.handle(it.assetAuditLogConfigModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
