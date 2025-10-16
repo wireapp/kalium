@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcFileMd5
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio

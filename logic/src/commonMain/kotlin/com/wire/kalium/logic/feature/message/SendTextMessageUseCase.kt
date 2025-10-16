@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -144,7 +145,7 @@ class SendTextMessageUseCase internal constructor(
                         assetDataPath = assetDataPath,
                         otrKey = AES256Key(it.otrKey),
                         extension = null,
-                        conversationId = conversationId,
+                        conversationId = conversationId.toApi(),
                         filename = "link-preview-${linkPreview.url}",
                         filetype = it.mimeType
                     ).onFailure { failure ->
