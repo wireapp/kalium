@@ -18,25 +18,26 @@
 
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
-import com.wire.kalium.cryptography.utils.calcFileSHA256
-import com.wire.kalium.cryptography.utils.decryptFileWithAES256
-import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.cryptography.utils.calcFileSHA256
+import com.wire.kalium.cryptography.utils.decryptFileWithAES256
+import com.wire.kalium.cryptography.utils.encryptFileWithAES256
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.util.getExtensionFromMimeType
 import io.mockative.Mockable
@@ -70,11 +71,15 @@ interface AssetRepository {
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the newly created asset and the [SHA256Key] of
      * the encrypted asset if successful
      */
+    @Suppress("LongParameterList")
     suspend fun uploadAndPersistPrivateAsset(
         mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key,
-        extension: String?
+        extension: String?,
+        conversationId: ConversationId? = null,
+        filename: String? = null,
+        filetype: String? = null,
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>
 
     /**
@@ -140,6 +145,7 @@ internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val assetAuditLog: Lazy<AssetAuditFeatureHandler>,
     private val kaliumFileSystem: KaliumFileSystem
 ) : AssetRepository {
 
@@ -156,8 +162,11 @@ internal class AssetDataSource(
         mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key,
-        extension: String?
-    ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
+        extension: String?,
+        conversationId: ConversationId?,
+        filename: String?,
+        filetype: String?,
+    ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> =
         try {
             val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
             val assetDataSource = kaliumFileSystem.source(assetDataPath)
@@ -175,17 +184,38 @@ internal class AssetDataSource(
 
             val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
-            return if (encryptionSucceeded) {
-                val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
-                uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
+            if (encryptionSucceeded) {
+                val uploadAssetData = buildAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, conversationId, filename, filetype)
+                uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256) }
             } else {
                 kaliumLogger.e("Something went wrong when encrypting the Asset Message")
                 Either.Left(EncryptionFailure.GenericEncryptionError)
             }
         } catch (e: IOException) {
             kaliumLogger.e("Something went wrong when uploading the Asset Message. $e")
-            return Either.Left(CoreFailure.Unknown(e))
+            Either.Left(CoreFailure.Unknown(e))
         }
+
+    @Suppress("LongParameterList")
+    private suspend fun buildAssetData(
+        path: Path,
+        size: Long,
+        mimeType: String,
+        conversationId: ConversationId?,
+        filename: String?,
+        filetype: String?
+    ): UploadAssetData = UploadAssetData(path, size, mimeType, false, RetentionType.PERSISTENT)
+        .run {
+            if (assetAuditLog.value.isAssetAuditLogEnabled()) {
+                // Initialize asset audit log fields if the feature is enabled
+                copy(
+                    conversationId = conversationId,
+                    filename = filename,
+                    filetype = filetype,
+                )
+            } else {
+                this
+            }
     }
 
     private suspend fun uploadAndPersistAsset(

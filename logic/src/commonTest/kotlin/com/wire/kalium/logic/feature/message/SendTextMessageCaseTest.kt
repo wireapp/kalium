@@ -155,7 +155,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.persistMessage.invoke(matches { message ->
@@ -194,7 +194,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.persistMessage.invoke(
@@ -236,7 +236,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.persistMessage.invoke(matches { message ->
@@ -275,7 +275,7 @@ class SendTextMessageCaseTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(once)
         coVerify {
             arrangement.persistMessage.invoke(matches { message ->
@@ -321,13 +321,13 @@ class SendTextMessageCaseTest {
 
         suspend fun withUploadAndPersistPrivateAssetSuccess() = apply {
             coEvery {
-                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
             }.returns(Either.Right(Pair<UploadedAssetId, SHA256Key>(UploadedAssetId(any(), any(), any()), SHA256Key(ByteArray(any())))))
         }
 
         suspend fun withUploadAndPersistPrivateAssetFailure() = apply {
             coEvery {
-                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
             }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
