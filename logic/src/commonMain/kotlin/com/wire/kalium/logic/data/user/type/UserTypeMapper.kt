@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.user.type
 
 import com.wire.kalium.logic.data.team.TeamRole
+import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import io.mockative.Mockable
@@ -170,7 +171,7 @@ interface UserTypeMapper<T> {
      * The API provides a high-level type hint (REGULAR, APP, BOT), and we combine it with
      * team and domain information to determine the specific domain user type.
      *
-     * @param apiUserType The user type from the API (nullable for backward compatibility)
+     * @param apiUserTypeDTO The user type from the API (nullable for backward compatibility)
      * @param otherUserDomain The domain of the other user
      * @param selfUserTeamId The team ID of the self user
      * @param otherUserTeamId The team ID of the other user
@@ -179,26 +180,28 @@ interface UserTypeMapper<T> {
      */
     @Suppress("ReturnCount")
     fun fromApiTypeAndTeamAndDomain(
-        apiUserType: com.wire.kalium.network.api.model.UserType?,
+        apiUserTypeDTO: UserTypeDTO?,
         otherUserDomain: String,
         selfUserTeamId: String?,
         otherUserTeamId: String?,
         selfUserDomain: String,
-    ): T = when (apiUserType) {
-        com.wire.kalium.network.api.model.UserType.APP -> app
-        com.wire.kalium.network.api.model.UserType.BOT -> service
-        com.wire.kalium.network.api.model.UserType.REGULAR, null -> {
-            // For REGULAR users or when type is not provided (backward compatibility),
-            // use the existing inference logic
-            fromTeamAndDomain(
-                otherUserDomain = otherUserDomain,
-                selfUserTeamId = selfUserTeamId,
-                otherUserTeamId = otherUserTeamId,
-                selfUserDomain = selfUserDomain,
-                isService = false
-            )
+        isLegacyBot: Boolean = false
+    ): T =
+        when (apiUserTypeDTO) {
+            UserTypeDTO.APP -> app
+            UserTypeDTO.BOT -> service
+            UserTypeDTO.REGULAR, null -> {
+                // For REGULAR users or when type is not provided (backward compatibility),
+                // use the existing inference logic
+                fromTeamAndDomain(
+                    otherUserDomain = otherUserDomain,
+                    selfUserTeamId = selfUserTeamId,
+                    otherUserTeamId = otherUserTeamId,
+                    selfUserDomain = selfUserDomain,
+                    isService = isLegacyBot
+                )
+            }
         }
-    }
 
     private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String): Boolean =
         otherUserDomain.lowercase() != selfDomain.lowercase()
@@ -208,7 +211,6 @@ interface UserTypeMapper<T> {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
-    // todo ym. verify how this fits with new user types
     fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): T =
         if (isService) service
         else when (permissionCode) {

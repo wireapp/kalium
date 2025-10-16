@@ -78,6 +78,7 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeInfoEntity,
+    @Deprecated(message = "New Apps will not have this field anymore, kept for backward bots compatibility")
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,

@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
+import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.PartialUserEntity
@@ -342,15 +343,7 @@ internal class UserMapperImpl(
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userEntityTypeMapper.fromUserTypeEntity(
-            userEntityTypeMapper.fromApiTypeAndTeamAndDomain(
-                apiUserType = userProfile.type,
-                otherUserDomain = userProfile.id.domain,
-                selfUserTeamId = selfTeamId?.value,
-                otherUserTeamId = userProfile.teamId,
-                selfUserDomain = selfUserId.domain
-            )
-        ),
+        userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
@@ -380,11 +373,12 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatus.NONE,
             userType = domainUserTypeMapper.fromUserType(
                 domainUserTypeMapper.fromApiTypeAndTeamAndDomain(
-                    apiUserType = userProfile.type,
+                    apiUserTypeDTO = userProfile.type,
                     otherUserDomain = userProfile.id.domain,
                     selfUserTeamId = selfTeamId?.value,
                     otherUserTeamId = userProfile.teamId,
-                    selfUserDomain = selfUserId.domain
+                    selfUserDomain = selfUserId.domain,
+                    isLegacyBot = userProfile.isLegacyBot()
                 )
             ),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },

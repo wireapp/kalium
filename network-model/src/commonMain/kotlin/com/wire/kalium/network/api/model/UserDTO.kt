@@ -54,8 +54,10 @@ data class UserProfileDTO(
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO,
-    @SerialName("type") val type: UserType?
+    @SerialName("type") val type: UserTypeDTO?
 ) : UserDTO()
+
+fun UserProfileDTO.isLegacyBot() = this.service != null
 
 fun UserProfileDTO.isTeamMember(selfUserTeamId: String?, selfUserDomain: String?) =
     (selfUserTeamId != null && this.teamId == selfUserTeamId && this.id.domain == selfUserDomain)
@@ -131,7 +133,7 @@ enum class SupportedProtocolDTO {
 }
 
 @Serializable
-enum class UserType {
+enum class UserTypeDTO {
     @SerialName("regular")
     REGULAR,
 

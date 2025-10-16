@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class DomainUserTypeMapperTest {
+class DomainUserTypeDTOMapperTest {
 
     private val userTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
 
