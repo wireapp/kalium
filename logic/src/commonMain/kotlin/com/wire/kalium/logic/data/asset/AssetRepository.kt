@@ -34,11 +34,10 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.util.getExtensionFromMimeType
 import io.mockative.Mockable
@@ -154,7 +153,7 @@ internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
-    private val isAssetAuditLogEnabled: Lazy<IsAssetAuditLogEnabledUseCase>,
+    private val assetAuditLog: Lazy<AssetAuditFeatureHandler>,
     private val kaliumFileSystem: KaliumFileSystem
 ) : AssetRepository {
 
@@ -224,7 +223,7 @@ internal class AssetDataSource(
         filetype: String?
     ): UploadAssetData = UploadAssetData(path, size, mimeType, false, RetentionType.PERSISTENT)
         .run {
-            if (isAssetAuditLogEnabled.value.invoke()) {
+            if (assetAuditLog.value.isAssetAuditLogEnabled()) {
                 // Initialize asset audit log fields if the feature is enabled
                 copy(
                     conversationId = conversationId,
@@ -234,7 +233,7 @@ internal class AssetDataSource(
             } else {
                 this
             }
-        }
+    }
 
     @Suppress("LongParameterList")
     private suspend fun buildPublicAssetData(
@@ -247,7 +246,7 @@ internal class AssetDataSource(
         filetype: String?
     ): UploadAssetData = UploadAssetData(path, size, mimeType, true, RetentionType.ETERNAL)
         .run {
-            if (isAssetAuditLogEnabled.value.invoke()) {
+            if (assetAuditLog.value.isAssetAuditLogEnabled()) {
                 // Initialize asset audit log fields if the feature is enabled
                 copy(
                     conversationId = conversationId,

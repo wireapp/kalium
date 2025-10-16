@@ -76,7 +76,7 @@ class AssetMapperImpl(
                 AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
                 // TODO: pass the md5 to the mapper so we can return Either left in case of any error
                 md5 ?: TODO("handle failure"),
-                conversationId = uploadAssetMetadata.conversationId?.toApi(),
+                conversationId = uploadAssetMetadata.conversationId,
                 filename = uploadAssetMetadata.filename,
                 filetype = uploadAssetMetadata.filetype
             )

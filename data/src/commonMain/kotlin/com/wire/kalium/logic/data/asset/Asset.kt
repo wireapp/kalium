@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.network.api.model.ConversationId
 import okio.Path
 
 data class UploadedAssetId(

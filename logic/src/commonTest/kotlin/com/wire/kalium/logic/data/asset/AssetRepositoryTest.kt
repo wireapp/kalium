@@ -27,10 +27,8 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.logic.feature.client.IsAssetAuditLogEnabledUseCase
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -884,9 +882,8 @@ class AssetRepositoryTest {
 
         val assetApi = mock(AssetApi::class)
         val assetDAO = mock(AssetDAO::class)
-        val isAssetAuditLog = mock(IsAssetAuditLogEnabledUseCase::class)
 
-        private val isAssetAuditLogEnabled = mock(IsAssetAuditLogEnabledUseCase::class)
+        private val assetAuditLog = mock(AssetAuditFeatureHandler::class)
 
         private val assetMapper by lazy { AssetMapperImpl() }
 
@@ -894,7 +891,7 @@ class AssetRepositoryTest {
             assetApi = assetApi,
             assetDao = assetDAO,
             assetMapper = assetMapper,
-            isAssetAuditLogEnabled = lazy { isAssetAuditLog },
+            assetAuditLog = lazy { assetAuditLog },
             kaliumFileSystem = fakeKaliumFileSystem
         )
 
@@ -1019,10 +1016,8 @@ class AssetRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withAuditLogEnabled(enabled: Boolean): Arrangement = apply {
-            coEvery {
-                isAssetAuditLog.invoke()
-            }.returns(enabled)
+        suspend fun withAssetAuditLogEnabled(enabled: Boolean): Arrangement = apply {
+            coEvery { assetAuditLog.isAssetAuditLogEnabled() } returns enabled
         }
 
         fun arrange(): Pair<Arrangement, AssetRepository> = this to assetRepository
