@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -51,6 +52,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 @Mockable
 internal interface SlowSyncWorker {
@@ -82,6 +86,7 @@ internal class SlowSyncWorkerImpl(
 
     private val logger = logger.withFeatureId(SYNC)
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep> = flow {
 
         suspend fun Either<CoreFailure, Unit>.continueWithStep(
@@ -95,6 +100,7 @@ internal class SlowSyncWorkerImpl(
             true -> null
         }
 
+        val startTime = Clock.System.now()
         performStep(SlowSyncStep.MIGRATION) {
             migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->
                 step()
@@ -119,6 +125,10 @@ internal class SlowSyncWorkerImpl(
             }
             .onFailure {
                 throw KaliumSyncException("Failure during SlowSync", it)
+            }
+            .onSuccess {
+                val endTime = Clock.System.now()
+                logger.i("### BENCHMARK --- SlowSync took ${endTime - startTime}")
             }
     }
 
@@ -148,11 +158,14 @@ internal class SlowSyncWorkerImpl(
     private suspend fun FlowCollector<SlowSyncStep>.performStep(
         slowSyncStep: SlowSyncStep,
         step: suspend () -> Either<CoreFailure, Unit>
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> = measureTimedValue {
         // Check for cancellation
         currentCoroutineContext().ensureActive()
 
         emit(slowSyncStep)
-        return step()
+        step()
+    }.run {
+        logger.i("SlowSync step '$slowSyncStep' took $duration")
+        value
     }
 }
