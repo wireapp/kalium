@@ -65,6 +65,8 @@ import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCase
+import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
@@ -525,4 +527,7 @@ class MessageScope internal constructor(
 
     val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
         get() = GetNextAudioMessageInConversationUseCase(messageRepository)
+
+    val observeAssetUploadState: ObserveAssetUploadStateUseCase
+        get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository)
 }

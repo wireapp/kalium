@@ -58,8 +58,10 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -183,6 +185,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                                 assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
                                 updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, conversationId, generatedMessageUuid)
                             }
+                    }.invokeOnCompletion { reason ->
+                        if (reason is CancellationException) {
+                            scope.launch(NonCancellable) {
+                                updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, message.id)
+                            }
+                        }
                     }
                 }
             }
