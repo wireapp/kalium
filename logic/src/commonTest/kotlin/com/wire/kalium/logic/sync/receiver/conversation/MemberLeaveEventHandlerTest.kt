@@ -414,7 +414,6 @@ class MemberLeaveEventHandlerTest {
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
             "group2",
             ConversationEntity.GroupState.ESTABLISHED,
-            0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )

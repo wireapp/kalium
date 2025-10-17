@@ -1571,7 +1571,6 @@ class ConversationRepositoryTest {
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
             RAW_GROUP_ID,
             ConversationEntity.GroupState.ESTABLISHED,
-            0UL,
             Clock.System.now(),
             ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
