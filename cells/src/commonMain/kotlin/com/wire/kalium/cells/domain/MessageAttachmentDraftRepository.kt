@@ -21,6 +21,7 @@ import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -45,4 +46,5 @@ public interface MessageAttachmentDraftRepository {
     public suspend fun updateStatus(uuid: String, status: AttachmentUploadStatus): Either<CoreFailure, Unit>
     public suspend fun remove(uuid: String): Either<CoreFailure, Unit>
     public suspend fun removeAttachmentDrafts(conversationId: ConversationId)
+    public suspend fun observeAllDrafts(): Flow<Either<StorageFailure, List<AttachmentDraft>>>
 }

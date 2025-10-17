@@ -276,6 +276,8 @@ internal interface MessageRepository {
         newMessageId: String,
         editInstant: Instant
     ): Either<StorageFailure, Unit>
+
+    suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -726,6 +728,10 @@ internal class MessageDataSource internal constructor(
     ) = messageDAO.observeAssetStatuses(conversationId.toDao())
         .wrapStorageRequest()
         .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
+
+    override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
+        .wrapStorageRequest()
+        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.transfer_status.toModel() } }
 
     override suspend fun getMessageAssetTransferStatus(
         messageId: String,

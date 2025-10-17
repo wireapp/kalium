@@ -18,6 +18,9 @@ VALUES( ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 transfer_status = excluded.transfer_status;
 
+selectAllAssetTransferStatuses:
+SELECT * FROM MessageAssetTransferStatus;
+
 selectConversationAssetStatus:
 SELECT * FROM MessageAssetTransferStatus
 WHERE conversation_id = :conversationId;
