@@ -356,26 +356,21 @@ internal class MLSConversationDataSource(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
         groupInfo: ByteArray
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> = wrapMLSRequest {
         logger.d("Joining group ${groupID.toLogString()} by external commit")
-        return mutex.withLock {
-            kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} via external commit")
-            wrapMLSRequest {
-                mlsContext.joinByExternalCommit(groupInfo)
-            }.onSuccess { welcomeBundle ->
-                welcomeBundle.crlNewDistributionPoints?.let {
-                    checkRevocationList(mlsContext, it)
-                }
-            }.onSuccess {
-                wrapStorageRequest {
-                    conversationDAO.updateConversationGroupState(
-                        ConversationEntity.GroupState.ESTABLISHED,
-                        idMapper.toCryptoModel(groupID)
-                    )
-                }
-            }.map { }
+        mlsContext.joinByExternalCommit(groupInfo)
+    }.onSuccess { welcomeBundle ->
+        welcomeBundle.crlNewDistributionPoints?.let {
+            checkRevocationList(mlsContext, it)
         }
-    }
+    }.onSuccess {
+        wrapStorageRequest {
+            conversationDAO.updateConversationGroupState(
+                ConversationEntity.GroupState.ESTABLISHED,
+                idMapper.toCryptoModel(groupID)
+            )
+        }
+    }.map { }
 
     override suspend fun isGroupOutOfSync(
         mlsContext: MlsCoreCryptoContext,
