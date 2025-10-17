@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlinx.datetime.Clock
 
 private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
@@ -49,7 +50,7 @@ internal fun BackupUser.toUser() = OtherUser(
     teamId = null,
     previewPicture = null,
     completePicture = null,
-    userType = UserType.NONE,
+    userType = UserTypeInfo.Regular(UserType.NONE),
     availabilityStatus = UserAvailabilityStatus.NONE,
     supportedProtocols = null,
     botService = null,

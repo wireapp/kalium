@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -26,10 +27,10 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.USER_PROFILE_DTO
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangementImpl
@@ -50,9 +51,9 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.Flow
@@ -297,7 +298,7 @@ class SearchUserRepositoryTest {
                 name = it.name,
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
-                type = UserType.INTERNAL,
+                type = UserTypeInfo.Regular(UserType.INTERNAL),
                 connectionStatus = ConnectionState.ACCEPTED,
                 handle = "handle"
             )
@@ -341,7 +342,7 @@ class SearchUserRepositoryTest {
                 name = it.name,
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
-                type = UserType.INTERNAL,
+                type = UserTypeInfo.Regular(UserType.INTERNAL),
                 connectionStatus = ConnectionState.ACCEPTED,
                 handle = "handle"
             )
@@ -386,7 +387,7 @@ class SearchUserRepositoryTest {
                 name = it.name,
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
-                type = UserType.INTERNAL,
+                type = UserTypeInfo.Regular(UserType.INTERNAL),
                 connectionStatus = ConnectionState.ACCEPTED,
                 handle = "handle"
             )
@@ -430,7 +431,7 @@ class SearchUserRepositoryTest {
                 name = it.name,
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
-                type = UserType.INTERNAL,
+                type = UserTypeInfo.Regular(UserType.INTERNAL),
                 connectionStatus = ConnectionState.ACCEPTED,
                 handle = "handle"
             )

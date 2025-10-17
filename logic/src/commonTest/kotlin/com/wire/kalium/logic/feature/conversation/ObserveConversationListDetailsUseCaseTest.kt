@@ -29,6 +29,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -177,12 +178,12 @@ class ObserveConversationListDetailsUseCaseTest {
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
-            UserType.INTERNAL,
+            UserTypeInfo.Regular(UserType.INTERNAL),
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
-            UserType.INTERNAL,
+            UserTypeInfo.Regular(UserType.INTERNAL),
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)

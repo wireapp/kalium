@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
@@ -197,7 +198,7 @@ class CreateMPBackupUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
             expiresAt = null,
             supportedProtocols = null,
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
         )
         
         private val testUser = OtherUser(
@@ -214,7 +215,7 @@ class CreateMPBackupUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
             expiresAt = null,
             supportedProtocols = null,
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
             botService = null,
             deleted = false,
             defederated = false,

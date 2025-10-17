@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -97,7 +98,7 @@ object TestCall {
                 id = QualifiedID("participantId", "participantDomain"),
                 name = "User Name",
                 completePicture = null,
-                userType = UserType.ADMIN,
+                userType = UserTypeInfo.Regular(UserType.ADMIN),
                 accentId = 0
             )
         )
@@ -125,7 +126,7 @@ object TestCall {
                 hasEstablishedAudio = true,
                 name = "User Name",
                 avatarAssetId = null,
-                userType = UserType.ADMIN,
+                userType = UserTypeInfo.Regular(UserType.ADMIN),
                 isSpeaking = false,
                 accentId = 0
             )

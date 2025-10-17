@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -117,7 +118,7 @@ class MembersToMentionUseCaseTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = UserAssetId("value1", DOMAIN),
             completePicture = UserAssetId("value2", DOMAIN),
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = null,
         )
@@ -133,7 +134,7 @@ class MembersToMentionUseCaseTest {
             previewPicture = UserAssetId("value", "domain"),
             completePicture = UserAssetId("value", "domain"),
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
             botService = null,
             deleted = false,
             defederated = false,

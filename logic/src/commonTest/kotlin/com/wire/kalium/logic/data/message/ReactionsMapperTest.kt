@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.persistence.MessageDetailsReactions
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -112,7 +113,7 @@ class ReactionsMapperTest {
                 userName = "Self User Name",
                 userHandle = "selfuserhandle",
                 userPreviewAssetId = null,
-                userType = UserType.INTERNAL,
+                userType = UserTypeInfo.Regular(UserType.INTERNAL),
                 isUserDeleted = false,
                 connectionStatus = ConnectionState.ACCEPTED,
                 availabilityStatus = UserAvailabilityStatus.NONE,
@@ -148,7 +149,7 @@ class ReactionsMapperTest {
         fun withDomainUserTypeStandard() = apply {
             every {
                 domainUserTypeMapper.fromUserTypeEntity(eq(UserTypeEntity.STANDARD))
-            }.returns(UserType.INTERNAL)
+            }.returns(UserTypeInfo.Regular(UserType.INTERNAL))
         }
 
         fun withConnectionStateAccepted() = apply {

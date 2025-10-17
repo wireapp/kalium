@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
+import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.PartialUserEntity
@@ -49,6 +50,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions")
@@ -90,7 +92,9 @@ interface UserMapper {
     fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        selfUserId: UserId,
+        selfTeamId: TeamId?
     ): UserEntity
 
     fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser
@@ -120,7 +124,7 @@ internal class UserMapperImpl(
             connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewPicture = previewAssetId?.toModel(),
             completePicture = completeAssetId?.toModel(),
-            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            userType = domainUserTypeMapper.fromUserTypeInfoEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel()
@@ -139,7 +143,7 @@ internal class UserMapperImpl(
             connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewPicture = previewAssetId?.toModel(),
             completePicture = completeAssetId?.toModel(),
-            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            userType = domainUserTypeMapper.fromUserTypeInfoEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel(),
@@ -159,7 +163,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        userType = domainUserTypeMapper.fromUserTypeInfoEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
@@ -181,7 +185,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        userType = domainUserTypeMapper.fromUserTypeInfoEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
@@ -207,7 +211,7 @@ internal class UserMapperImpl(
             userHandle = handle,
             userName = name,
             userPreviewAssetId = previewAssetId?.toModel(),
-            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+            userType = domainUserTypeMapper.fromUserTypeInfoEntity(userType),
             isUserDeleted = deleted,
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus),
@@ -228,7 +232,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
-            userType = UserTypeEntity.STANDARD,
+            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
             botService = null,
             deleted = false,
             expiresAt = expiresAt,
@@ -251,7 +255,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
-            userType = userEntityTypeMapper.fromUserType(userType),
+            userType = userEntityTypeMapper.fromUserTypeInfo(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
             expiresAt = expiresAt,
@@ -267,6 +271,10 @@ internal class UserMapperImpl(
         connectionState: ConnectionEntity.State,
         userTypeEntity: UserTypeEntity
     ): UserEntity = with(userDTO) {
+        // Note: SelfUserDTO does not include a 'type' field from the API,
+        // so we continue to use the inferred userTypeEntity parameter.
+        // If the API adds a type field to SelfUserDTO in the future,
+        // this should be updated to use fromApiTypeAndTeamAndDomain like UserProfileDTO.
         UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
@@ -279,7 +287,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userTypeEntity,
+            userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
             botService = null,
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
@@ -318,7 +326,9 @@ internal class UserMapperImpl(
     override fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        selfUserId: UserId,
+        selfTeamId: TeamId?
     ) = UserEntity(
         id = idMapper.fromApiToDao(userProfile.id),
         name = userProfile.name,
@@ -333,7 +343,7 @@ internal class UserMapperImpl(
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userTypeEntity,
+        userType = userEntityTypeMapper.fromUserTypeEntity(userTypeEntity),
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
@@ -361,12 +371,15 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = domainUserTypeMapper.fromTeamAndDomain(
-                otherUserDomain = userProfile.id.domain,
-                selfUserTeamId = selfTeamId?.value,
-                selfUserDomain = selfUserId.domain,
-                otherUserTeamId = userProfile.teamId,
-                isService = userProfile.service != null
+            userType = domainUserTypeMapper.fromUserType(
+                domainUserTypeMapper.fromApiTypeAndTeamAndDomain(
+                    apiUserTypeDTO = userProfile.type,
+                    otherUserDomain = userProfile.id.domain,
+                    selfUserTeamId = selfTeamId?.value,
+                    otherUserTeamId = userProfile.teamId,
+                    selfUserDomain = selfUserId.domain,
+                    isLegacyBot = userProfile.isLegacyBot()
+                )
             ),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,
@@ -405,7 +418,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
+            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
             botService = null,
             deleted = false,
             hasIncompleteMetadata = true,

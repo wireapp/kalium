@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.toInstant
 
@@ -45,7 +46,7 @@ object DBTestSetup {
             null,
             null,
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.STANDARD,
+            UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,

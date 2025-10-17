@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
@@ -245,7 +246,7 @@ class RestoreMPBackupUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.NONE,
             expiresAt = null,
             supportedProtocols = null,
-            userType = UserType.NONE,
+            userType = UserTypeInfo.Regular(UserType.NONE),
             botService = null,
             deleted = false,
             defederated = false,

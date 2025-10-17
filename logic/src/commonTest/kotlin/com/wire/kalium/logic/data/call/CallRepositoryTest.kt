@@ -50,6 +50,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -2078,7 +2079,7 @@ class CallRepositoryTest {
             val oneOnOneConversationDetails = ConversationDetails.OneOne(
                 conversation = oneOnOneConversation,
                 otherUser = TestUser.OTHER,
-                userType = UserType.INTERNAL,
+                userType = UserTypeInfo.Regular(UserType.INTERNAL),
             )
 
             val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -32,14 +33,14 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -233,7 +234,7 @@ class EndCallOnConversationChangeUseCaseTest {
             previewPicture = UserAssetId("value", "domain"),
             completePicture = UserAssetId("value", "domain"),
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
             botService = null,
             deleted = true,
             defederated = false,
@@ -251,7 +252,7 @@ class EndCallOnConversationChangeUseCaseTest {
         private val oneOnOneConversationDetail = ConversationDetails.OneOne(
             conversation = conversation,
             otherUser = otherUser,
-            userType = UserType.ADMIN
+            userType = UserTypeInfo.Regular(UserType.ADMIN)
         )
     }
 }

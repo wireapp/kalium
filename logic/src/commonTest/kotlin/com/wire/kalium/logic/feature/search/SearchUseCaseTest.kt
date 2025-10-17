@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangementImpl
 import io.mockative.any
@@ -222,7 +223,7 @@ class SearchUseCaseTest {
             previewPicture = UserAssetId("value", "domain"),
             completePicture = UserAssetId("value", "domain"),
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
             botService = null,
             deleted = false,
             defederated = false,
@@ -235,7 +236,7 @@ class SearchUseCaseTest {
             name = "otherUsername",
             previewAssetId = UserAssetId("value", "domain"),
             completeAssetId = UserAssetId("value", "domain"),
-            type = UserType.INTERNAL,
+            type = UserTypeInfo.Regular(UserType.INTERNAL),
             connectionStatus = ConnectionState.ACCEPTED,
             handle = "handle"
         )
