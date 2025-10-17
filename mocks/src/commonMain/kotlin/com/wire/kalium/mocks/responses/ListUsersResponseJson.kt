@@ -46,7 +46,8 @@ object ListUsersResponseJson {
             expiresAt = null,
             nonQualifiedId = USER_1.value,
             service = null,
-            supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS)
+            supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
+            type = null
         ),
         UserProfileDTO(
             id = USER_2,
@@ -61,7 +62,8 @@ object ListUsersResponseJson {
             expiresAt = null,
             nonQualifiedId = USER_2.value,
             service = null,
-            supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS)
+            supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS),
+            type = null
         ),
     )
 
