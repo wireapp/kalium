@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.SelfUserObservationProvider
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.data.user.type.isRegularTeamMember
 import com.wire.kalium.logic.data.user.type.isTeamAdmin
-import com.wire.kalium.logic.data.user.type.isTeamMember
+import com.wire.kalium.logic.data.user.type.isTeammate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -82,7 +82,7 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
         return when (requirement) {
             ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY -> userType.isTeamAdmin()
             ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS -> userType.isRegularTeamMember()
-            ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM -> userType.isTeamMember()
+            ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM -> userType.isTeammate()
         }
     }
 }

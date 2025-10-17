@@ -91,4 +91,4 @@ fun UserTypeInfo.isRegularTeamMember(): Boolean = this.isTeamAdmin() || this.typ
  * Checks that the user is part of the entire team, including external members and service accounts.
  * [isRegularTeamMember] + [isAppOrBot] + [UserType.EXTERNAL]
  */
-fun UserTypeInfo.isTeamMember(): Boolean = isRegularTeamMember() || isAppOrBot() || type == UserType.EXTERNAL
+fun UserTypeInfo.isTeammate(): Boolean = isRegularTeamMember() || isAppOrBot() || type == UserType.EXTERNAL
