@@ -94,7 +94,6 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
     override val app: UserType
         get() = UserType.APP
 
-
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo {
         return when (userTypeEntity) {
             UserTypeEntity.STANDARD -> UserTypeInfo.Regular(standard)
@@ -178,7 +177,7 @@ interface UserTypeMapper<T> {
      * @param selfUserDomain The domain of the self user
      * @return The specific domain user type
      */
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongParameterList")
     fun fromApiTypeAndTeamAndDomain(
         apiUserTypeDTO: UserTypeDTO?,
         otherUserDomain: String,

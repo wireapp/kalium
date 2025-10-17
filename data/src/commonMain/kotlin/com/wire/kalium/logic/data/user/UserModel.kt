@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement

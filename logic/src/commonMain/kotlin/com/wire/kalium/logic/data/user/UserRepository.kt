@@ -316,6 +316,7 @@ internal class UserDataSource internal constructor(
         userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
+    @Suppress("LongMethod")
     private suspend fun persistUsers(
         listUserProfileDTO: List<UserProfileDTO>,
         listTeamMemberDTO: List<TeamMemberDTO>,
