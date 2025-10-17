@@ -42,4 +42,5 @@ interface MessageAttachmentDraftDao {
         status: String,
     )
     suspend fun updateUploadStatus(uuid: String, status: String)
+    suspend fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>>
 }
