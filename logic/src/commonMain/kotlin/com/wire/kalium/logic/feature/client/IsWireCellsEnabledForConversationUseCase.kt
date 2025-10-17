@@ -20,10 +20,12 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import io.mockative.Mockable
 
 /**
  * Use case to check if Wire Cells feature is enabled for a specific conversation.
  */
+@Mockable
 interface IsWireCellsEnabledForConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Boolean
 }
