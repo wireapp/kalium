@@ -22,6 +22,7 @@ import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -36,6 +37,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlin.collections.map
 
 internal class MessageAttachmentDraftDataSource internal constructor(
     private val messageAttachmentDao: MessageAttachmentDraftDao,
@@ -86,6 +88,12 @@ internal class MessageAttachmentDraftDataSource internal constructor(
 
     override suspend fun removeAttachmentDrafts(conversationId: ConversationId) = withContext(dispatchers.io) {
         messageAttachmentDao.deleteAttachments(QualifiedIDEntity(conversationId.value, conversationId.domain))
+    }
+
+    override suspend fun observeAllDrafts() = withContext(dispatchers.io) {
+        messageAttachmentDao.observeAttachments()
+            .wrapStorageRequest()
+            .mapRight { list -> list.map { it.toModel() } }
     }
 
     override suspend fun get(uuid: String) = withContext(dispatchers.io) {
