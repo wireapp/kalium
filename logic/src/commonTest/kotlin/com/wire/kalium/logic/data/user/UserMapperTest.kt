@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.BotIdEntity
@@ -30,6 +31,7 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -76,7 +78,7 @@ class UserMapperTest {
             completeAssetId = QualifiedIDEntity("value2", "domain"),
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS),
-            userType = UserTypeEntity.EXTERNAL,
+            userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
             botService = null,
             deleted = false,
             expiresAt = Instant.UNIX_FIRST_DATE,
@@ -98,7 +100,7 @@ class UserMapperTest {
             completePicture = UserAssetId("value2", "domain"),
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
-            userType = UserType.EXTERNAL,
+            userType = UserTypeInfo.Regular(UserType.EXTERNAL),
             expiresAt = Instant.UNIX_FIRST_DATE,
             isUnderLegalHold = false,
         )
@@ -125,7 +127,7 @@ class UserMapperTest {
             completeAssetId = QualifiedIDEntity("value2", "domain"),
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS),
-            userType = UserTypeEntity.EXTERNAL,
+            userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
             botService = BotIdEntity("botid", "provider"),
             deleted = false,
             expiresAt = Instant.UNIX_FIRST_DATE,
@@ -145,7 +147,7 @@ class UserMapperTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = UserAssetId("value1", "domain"),
             completePicture = UserAssetId("value2", "domain"),
-            userType = UserType.EXTERNAL,
+            userType = UserTypeInfo.Regular(UserType.EXTERNAL),
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
             botService = BotService("botid", "provider"),

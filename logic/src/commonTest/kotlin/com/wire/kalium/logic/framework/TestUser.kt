@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
@@ -36,6 +37,7 @@ import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
@@ -43,6 +45,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 
 object TestUser {
     private const val value = "41d2b365-f4a9-4ba1-bddf-5afb8aca6786"
@@ -73,7 +76,7 @@ object TestUser {
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
         supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
-        userType = UserType.INTERNAL,
+        userType = UserTypeInfo.Regular(UserType.INTERNAL),
     )
 
     val OTHER = OtherUser(
@@ -88,7 +91,7 @@ object TestUser {
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
-        userType = UserType.EXTERNAL,
+        userType = UserTypeInfo.Regular(UserType.EXTERNAL),
         botService = null,
         deleted = false,
         defederated = false,
@@ -108,7 +111,7 @@ object TestUser {
         previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
         completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = UserTypeEntity.EXTERNAL,
+        userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
         botService = null,
         deleted = false,
         hasIncompleteMetadata = false,
@@ -130,7 +133,7 @@ object TestUser {
         previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
         completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = UserTypeEntity.EXTERNAL,
+        userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
         botService = null,
         deleted = false,
         expiresAt = null,
@@ -157,7 +160,8 @@ object TestUser {
         expiresAt = null,
         nonQualifiedId = NETWORK_ID.value,
         service = null,
-        supportedProtocols = listOf(SupportedProtocolDTO.MLS)
+        supportedProtocols = listOf(SupportedProtocolDTO.MLS),
+        type = UserTypeDTO.REGULAR
     )
 
     val SELF_USER_DTO = SelfUserDTO(
@@ -188,7 +192,7 @@ object TestUser {
         OTHER_USER_ID,
         name = "otherUsername",
         completePicture = UserAssetId("value2", "domain"),
-        userType = UserType.EXTERNAL,
+        userType = UserTypeInfo.Regular(UserType.EXTERNAL),
         accentId = 0
     )
 }

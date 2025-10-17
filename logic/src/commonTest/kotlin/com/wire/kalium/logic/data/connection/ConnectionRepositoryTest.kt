@@ -50,6 +50,7 @@ import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -557,7 +558,8 @@ class ConnectionRepositoryTest {
             expiresAt = null,
             nonQualifiedId = "value",
             service = null,
-            supportedProtocols = null
+            supportedProtocols = null,
+            type = UserTypeDTO.REGULAR
         )
         val stubConnectionEntity = ConnectionEntity(
             conversationId = "conversationId1",
