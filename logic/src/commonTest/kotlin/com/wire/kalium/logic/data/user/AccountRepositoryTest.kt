@@ -127,6 +127,30 @@ class AccountRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenANewAccent_whenUpdatingFails_thenShouldNotPersistLocallyTheAccent() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUpdateAccentApiRequestResponse(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        userRepository.updateSelfAccentColor(5).shouldFail()
+
+        coVerify { arrangement.selfApi.updateSelf(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userDAO.updateUserAccentColor(any(), any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenANewAccent_whenUpdatingOk_thenShouldSucceedAndPersistTheAccentLocally() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUpdateAccentApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), 200))
+            .arrange()
+
+        userRepository.updateSelfAccentColor(7).shouldSucceed()
+
+        coVerify { arrangement.selfApi.updateSelf(any()) }.wasInvoked(exactly = once)
+        coVerify { arrangement.userDAO.updateUserAccentColor(any(), eq(7)) }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         val userDAO = mock(UserDAO::class)
@@ -158,6 +182,10 @@ class AccountRepositoryTest {
             coEvery {
                 selfApi.deleteAccount(any())
             }.returns(result)
+        }
+
+        suspend fun withUpdateAccentApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            coEvery { selfApi.updateSelf(any()) }.returns(response)
         }
 
         fun arrange() = this to accountRepo

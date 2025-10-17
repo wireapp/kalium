@@ -56,7 +56,7 @@ class UploadUserAvatarUseCaseTest {
 
         with(arrangement) {
             coVerify {
-                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -82,12 +82,38 @@ class UploadUserAvatarUseCaseTest {
 
         with(arrangement) {
             coVerify {
-                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
             }.wasInvoked(exactly = once)
 
             coVerify {
                 userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), any())
             }.wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenValidParams_whenUploadingUserAvatar_thenShouldPassCorrectMetadata() = runTest {
+        val expected = UploadedAssetId("some_key", "some_domain")
+        val avatarImage = "An Avatar Image (:".encodeToByteArray()
+        val avatarPath = "some-image-asset".toPath()
+        val (arrangement, uploadUserAvatar) = Arrangement()
+            .withStoredData(avatarImage, avatarPath)
+            .withSuccessfulUploadResponse(expected)
+            .arrange()
+
+        uploadUserAvatar(avatarPath, avatarImage.size.toLong())
+
+        with(arrangement) {
+            coVerify {
+                assetRepository.uploadAndPersistPublicAsset(
+                    mimeType = eq("image/jpg"),
+                    assetDataPath = any(),
+                    assetDataSize = eq(avatarImage.size.toLong()),
+                    conversationId = eq(null),
+                    filename = eq("profile-picture"),
+                    filetype = eq("image/jpg")
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -114,7 +140,7 @@ class UploadUserAvatarUseCaseTest {
 
         suspend fun withSuccessfulUploadResponse(expectedResponse: UploadedAssetId): Arrangement {
             coEvery {
-                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
             }.returns(Either.Right(expectedResponse))
 
             coEvery {
@@ -125,7 +151,7 @@ class UploadUserAvatarUseCaseTest {
 
         suspend fun withErrorResponse(expectedError: CoreFailure): Arrangement {
             coEvery {
-                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
             }.returns(Either.Left(expectedError))
             return this
         }
