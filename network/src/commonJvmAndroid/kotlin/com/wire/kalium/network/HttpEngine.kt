@@ -27,7 +27,9 @@ import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
+import okhttp3.ConnectionPool
 import okhttp3.ConnectionSpec
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import java.net.Authenticator
 import java.net.InetSocketAddress
@@ -35,9 +37,14 @@ import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+
+private const val MAX_REQUESTS_PER_HOST = 15
+private const val MAX_IDLE_CONNECTIONS = 15
+private const val IDLE_CONNECTION_KEEP_ALIVE_TIME_MINUTES = 1L
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
@@ -47,6 +54,8 @@ actual fun defaultHttpEngine(
 ): HttpClientEngine = OkHttp.create {
     buildOkhttpClient {
         connectionSpecs(supportedConnectionSpecs())
+        connectionPool(ConnectionPool(MAX_IDLE_CONNECTIONS, IDLE_CONNECTION_KEEP_ALIVE_TIME_MINUTES, TimeUnit.MINUTES))
+        dispatcher(Dispatcher().apply { maxRequestsPerHost = MAX_REQUESTS_PER_HOST })
 
         if (certificatePinning.isNotEmpty() && !ignoreSSLCertificates) {
             val certPinner = CertificatePinner.Builder().apply {

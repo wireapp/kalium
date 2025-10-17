@@ -20,18 +20,21 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mockable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
@@ -55,55 +58,62 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
+            kaliumLogger.i("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)
         } else {
             transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
                 conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
                     kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
-                    pendingConversations.map { conversation ->
-                        joinExistingMLSConversationUseCase(transactionContext, conversation.id)
-                            .flatMapLeft {
-                                when (it) {
-                                    is NetworkFailure -> {
-                                        if (it is NetworkFailure.ServerMiscommunication
-                                            && it.kaliumException is KaliumException.InvalidRequestError
-                                        ) {
-                                            kaliumLogger.w(
-                                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                        "due to invalid request error, skipping."
-                                            )
-                                            Either.Right(Unit)
-                                        } else {
-                                            kaliumLogger.w(
-                                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                        "due to network failure"
-                                            )
-                                            Either.Left(it)
-                                        }
-                                    }
-
-                                    is CoreFailure.MissingKeyPackages -> {
-                                        kaliumLogger.w(
-                                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                    "since some participants are out of key packages, skipping."
-                                        )
-                                        Either.Right(Unit)
-                                    }
-
-                                    else -> {
-                                        kaliumLogger.w(
-                                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                                    "due to $it, skipping.."
-                                        )
-                                        Either.Right(Unit)
-                                    }
-                                }
+                    coroutineScope {
+                        pendingConversations.map { conversation ->
+                            async {
+                                joinRetrying(transactionContext, conversation)
                             }
+                        }
                     }.foldToEitherWhileRight(Unit) { value, _ ->
-                        value
+                        value.await() // Fail if one fails
                     }
                 }
             }
         }
+
+    private suspend fun joinRetrying(transactionContext: CryptoTransactionContext, conversation: Conversation) =
+        joinExistingMLSConversationUseCase(transactionContext, conversation.id)
+            .flatMapLeft {
+                when (it) {
+                    is NetworkFailure -> {
+                        if (it is NetworkFailure.ServerMiscommunication
+                            && it.kaliumException is KaliumException.InvalidRequestError
+                        ) {
+                            kaliumLogger.w(
+                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                        "due to invalid request error, skipping."
+                            )
+                            Either.Right(Unit)
+                        } else {
+                            kaliumLogger.w(
+                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                        "due to network failure"
+                            )
+                            Either.Left(it)
+                        }
+                    }
+
+                    is CoreFailure.MissingKeyPackages -> {
+                        kaliumLogger.w(
+                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                    "since some participants are out of key packages, skipping."
+                        )
+                        Either.Right(Unit)
+                    }
+
+                    else -> {
+                        kaliumLogger.w(
+                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                    "due to $it, skipping.."
+                        )
+                        Either.Right(Unit)
+                    }
+                }
+            }
 }
