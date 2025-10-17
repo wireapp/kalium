@@ -20,18 +20,19 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapRightWithEither
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.mapToRightOr
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMapRightWithEither
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.common.functional.mapToRightOr
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.type.isRegularTeamMember
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
@@ -106,7 +107,7 @@ internal class ObserveUserInfoUseCaseImpl(
      */
     private suspend fun observeOtherUserTeam(otherUser: OtherUser): Flow<Either<CoreFailure, Team?>> {
         val teamId = otherUser.teamId
-        return if (teamId != null && otherUser.userType.type in listOf(UserType.INTERNAL, UserType.OWNER)) {
+        return if (teamId != null && otherUser.userType.isRegularTeamMember()) {
             teamRepository.getTeam(teamId).map { localTeam ->
                 if (localTeam == null) {
                     teamRepository.fetchTeamById(teamId)

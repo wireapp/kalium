@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.type.isTeammate
+import com.wire.kalium.logic.data.user.type.isTeamMember
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -78,7 +78,7 @@ internal class OneOnOneMigratorImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }
         }.fold({ failure ->
-            if (failure is StorageFailure.DataNotFound && user.userType.isTeammate()) {
+            if (failure is StorageFailure.DataNotFound && user.userType.isTeamMember()) {
                 conversationGroupRepository.createGroupConversation(usersList = listOf(user.id)).map { it.id }
             } else {
                 Either.Left(failure)

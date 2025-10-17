@@ -22,7 +22,10 @@ import com.wire.kalium.common.functional.combine
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
 import com.wire.kalium.logic.data.featureConfig.ChannelFeatureConfiguration
 import com.wire.kalium.logic.data.user.SelfUserObservationProvider
-import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
+import com.wire.kalium.logic.data.user.type.isRegularTeamMember
+import com.wire.kalium.logic.data.user.type.isTeamAdmin
+import com.wire.kalium.logic.data.user.type.isTeamMember
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -51,7 +54,7 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
                 null, ChannelFeatureConfiguration.Disabled -> ChannelCreationPermission.Forbidden
                 is ChannelFeatureConfiguration.Enabled -> {
                     val canUserCreateChannels = isUserAllowed(
-                        selfUser.userType.type,
+                        selfUser.userType,
                         channelFeatureConfig.createChannelsRequirement
                     )
                     if (!canUserCreateChannels) {
@@ -59,7 +62,7 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
                     } else {
                         ChannelCreationPermission.Allowed(
                             isUserAllowed(
-                                selfUser.userType.type,
+                                selfUser.userType,
                                 channelFeatureConfig.createPublicChannelsRequirement
                             )
                         )
@@ -75,14 +78,11 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
      * @param requirement The required team user type for the operation
      * @return true if the user is allowed, false otherwise
      */
-    private fun isUserAllowed(userType: UserType, requirement: ChannelFeatureConfiguration.TeamUserType): Boolean {
-        val admins = setOf(UserType.ADMIN, UserType.OWNER)
-        val regularTeamMembers = admins + UserType.INTERNAL
-        val wholeTeam = regularTeamMembers + UserType.EXTERNAL
+    private fun isUserAllowed(userType: UserTypeInfo, requirement: ChannelFeatureConfiguration.TeamUserType): Boolean {
         return when (requirement) {
-            ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY -> userType in admins
-            ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS -> userType in regularTeamMembers
-            ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM -> userType in wholeTeam
+            ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY -> userType.isTeamAdmin()
+            ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS -> userType.isRegularTeamMember()
+            ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM -> userType.isTeamMember()
         }
     }
 }
