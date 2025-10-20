@@ -150,7 +150,7 @@ interface UserTypeMapper<T> {
     val none: T
 
     @Suppress("ReturnCount")
-    fun fromTeamAndDomain(
+    private fun fromTeamAndDomain(
         otherUserDomain: String,
         selfUserTeamId: String?,
         otherUserTeamId: String?,

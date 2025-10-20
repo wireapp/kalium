@@ -94,8 +94,151 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         assertEquals(null, result)
     }
 
+    @Test
+    fun givenConnectionWithRegularUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.STANDARD)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithAdminUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.ADMIN)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithOwnerUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.OWNER)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.OWNER), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithExternalUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.EXTERNAL)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithFederatedUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.FEDERATED)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.FEDERATED), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithGuestUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.GUEST)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.GUEST), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithNoneUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToRegular() = runTest {
+        val userId = QualifiedIDEntity("user1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.NONE)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.NONE), result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithServiceUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToBot() = runTest {
+        val userId = QualifiedIDEntity("bot1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.SERVICE)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.Bot, result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenConnectionWithAppUserType_WhenRetrievingConnection_ThenUserTypeIsMappedToApp() = runTest {
+        val userId = QualifiedIDEntity("app1", "wire.com")
+        val user = createUserEntity(userId, UserTypeEntity.APP)
+        val connection = connectionEntityWithUser("1", user)
+
+        db.userDAO.upsertUser(user)
+        db.connectionDAO.insertConnection(connection)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(UserTypeInfoEntity.App, result[0].otherUser?.userType)
+    }
+
+    @Test
+    fun givenMultipleConnectionsWithDifferentUserTypes_WhenRetrievingConnections_ThenAllUserTypesAreMappedCorrectly() = runTest {
+        val regularUser = createUserEntity(QualifiedIDEntity("regular", "wire.com"), UserTypeEntity.STANDARD)
+        val botUser = createUserEntity(QualifiedIDEntity("bot", "wire.com"), UserTypeEntity.SERVICE)
+        val appUser = createUserEntity(QualifiedIDEntity("app", "wire.com"), UserTypeEntity.APP)
+
+        val connection1 = connectionEntityWithUser("1", regularUser)
+        val connection2 = connectionEntityWithUser("2", botUser)
+        val connection3 = connectionEntityWithUser("3", appUser)
+
+        db.userDAO.upsertUser(regularUser)
+        db.userDAO.upsertUser(botUser)
+        db.userDAO.upsertUser(appUser)
+
+        db.connectionDAO.insertConnection(connection1)
+        db.connectionDAO.insertConnection(connection2)
+        db.connectionDAO.insertConnection(connection3)
+
+        val result = db.connectionDAO.getConnectionRequests().first()
+
+        assertEquals(3, result.size)
+        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), result[0].otherUser?.userType)
+        assertEquals(UserTypeInfoEntity.Bot, result[1].otherUser?.userType)
+        assertEquals(UserTypeInfoEntity.App, result[2].otherUser?.userType)
+    }
+
     companion object {
-        val OTHER_USER_ID = QualifiedIDEntity("me", "wire.com")
+        private val OTHER_USER_ID = QualifiedIDEntity("me", "wire.com")
 
         private fun connectionEntity(id: String = "0") = ConnectionEntity(
             conversationId = id,
@@ -107,5 +250,47 @@ class ConnectionDaoTest : BaseDatabaseTest() {
             toId = OTHER_USER_ID.value,
             shouldNotify = true
         )
+
+        private fun connectionEntityWithUser(id: String, user: UserEntity) = ConnectionEntity(
+            conversationId = id,
+            from = "from_string",
+            lastUpdateDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
+            qualifiedToId = user.id,
+            status = ConnectionEntity.State.PENDING,
+            toId = user.id.value,
+            shouldNotify = true,
+            otherUser = user
+        )
+
+        private fun createUserEntity(
+            id: QualifiedIDEntity,
+            userType: UserTypeEntity
+        ) = UserEntity(
+            id = id,
+            name = "Test User",
+            handle = "testhandle",
+            email = "test@example.com",
+            phone = null,
+            accentId = 1,
+            team = null,
+            connectionStatus = ConnectionEntity.State.PENDING,
+            previewAssetId = null,
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = when (userType) {
+                UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
+                UserTypeEntity.APP -> UserTypeInfoEntity.App
+                else -> UserTypeInfoEntity.Regular(userType)
+            },
+            botService = null,
+            deleted = false,
+            hasIncompleteMetadata = false,
+            expiresAt = null,
+            defederated = false,
+            supportedProtocols = null,
+            activeOneOnOneConversationId = null
+        )
     }
 }
+

@@ -742,7 +742,7 @@ object MessageMapper {
             previewAssetId = senderPreviewAssetId,
             completeAssetId = senderCompleteAssetId,
             availabilityStatus = senderAvailabilityStatus,
-            userType = toUserType(senderUserType),
+            userType = toUserTypeInfoEntity(senderUserType),
             botService = senderBotService,
             deleted = senderIsDeleted,
             expiresAt = senderExpiresAt,
@@ -778,7 +778,7 @@ object MessageMapper {
         )
     }
 
-    private fun toUserType(userType: UserTypeEntity?): UserTypeInfoEntity {
+    private fun toUserTypeInfoEntity(userType: UserTypeEntity?): UserTypeInfoEntity {
         return when (val type = userType!!) {
             UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(type)
             UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(type)

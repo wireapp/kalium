@@ -47,7 +47,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
-            userType = fromUserType(user.user_type),
+            userType = toUserTypeInfoEntity(user.user_type),
             botService = user.bot_service,
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
@@ -73,7 +73,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
-            userType = fromUserType(user.user_type),
+            userType = toUserTypeInfoEntity(user.user_type),
             botService = user.bot_service,
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
@@ -84,7 +84,7 @@ class UserMapper {
         )
     }
 
-    private fun fromUserType(userType: UserTypeEntity): UserTypeInfoEntity = when (userType) {
+    private fun toUserTypeInfoEntity(userType: UserTypeEntity): UserTypeInfoEntity = when (userType) {
         UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(userType)
         UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(userType)
         UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(userType)
@@ -135,7 +135,7 @@ class UserMapper {
             previewAssetId = previewAssetId,
             completeAssetId = completeAssetId,
             availabilityStatus = userAvailabilityStatus,
-            userType = fromUserType(userType),
+            userType = toUserTypeInfoEntity(userType),
             botService = botService,
             deleted = deleted,
             hasIncompleteMetadata = hasIncompleteMetadata,
