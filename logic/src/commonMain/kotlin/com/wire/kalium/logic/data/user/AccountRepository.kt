@@ -37,6 +37,7 @@ internal interface AccountRepository {
     suspend fun deleteAccount(password: String?): Either<NetworkFailure, Unit>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit>
+    suspend fun updateSelfAccentColor(accentId: Int): Either<CoreFailure, Unit>
 
     /**
      * Updates the self user's email address.
@@ -68,6 +69,14 @@ internal class AccountRepositoryImpl(
     }.flatMap {
         wrapStorageRequest {
             userDAO.updateUserDisplayName(selfUserId.toDao(), displayName)
+        }
+    }
+
+    override suspend fun updateSelfAccentColor(accentId: Int): Either<CoreFailure, Unit> = wrapApiRequest {
+        selfApi.updateSelf(UserUpdateRequest(null, null, accentId))
+    }.flatMap {
+        wrapStorageRequest {
+            userDAO.updateUserAccentColor(selfUserId.toDao(), accentId)
         }
     }
 

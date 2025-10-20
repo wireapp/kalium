@@ -1058,6 +1058,7 @@ class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
 
