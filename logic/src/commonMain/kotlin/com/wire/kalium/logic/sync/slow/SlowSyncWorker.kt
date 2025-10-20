@@ -51,6 +51,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
 
 @Mockable
 internal interface SlowSyncWorker {
@@ -82,6 +85,7 @@ internal class SlowSyncWorkerImpl(
 
     private val logger = logger.withFeatureId(SYNC)
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep> = flow {
 
         suspend fun Either<CoreFailure, Unit>.continueWithStep(
@@ -95,31 +99,34 @@ internal class SlowSyncWorkerImpl(
             true -> null
         }
 
-        performStep(SlowSyncStep.MIGRATION) {
-            migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->
-                step()
-            }
-        }
-            .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
-            .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
-            .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
-            .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
-            .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
-            .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
-            .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
-            .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
-            .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
-            .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
-                transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
-                    oneOnOneResolver.resolveAllOneOnOneConversations(it)
+        val timeTaken = measureTime {
+            performStep(SlowSyncStep.MIGRATION) {
+                migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->
+                    step()
                 }
             }
-            .flatMap {
-                saveLastSavedEventIdIfNeeded(lastSavedEventIdToSaveOnSuccess)
-            }
-            .onFailure {
-                throw KaliumSyncException("Failure during SlowSync", it)
-            }
+                .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
+                .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
+                .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
+                .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
+                .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
+                .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
+                .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
+                .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+                .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+                .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
+                    transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
+                        oneOnOneResolver.resolveAllOneOnOneConversations(it)
+                    }
+                }
+                .flatMap {
+                    saveLastSavedEventIdIfNeeded(lastSavedEventIdToSaveOnSuccess)
+                }
+                .onFailure {
+                    throw KaliumSyncException("Failure during SlowSync", it)
+                }
+        }
+        logger.i("SlowSync took $timeTaken")
     }
 
     private suspend fun saveLastSavedEventIdIfNeeded(lastSavedEventIdToSaveOnSuccess: String?) =
@@ -148,11 +155,14 @@ internal class SlowSyncWorkerImpl(
     private suspend fun FlowCollector<SlowSyncStep>.performStep(
         slowSyncStep: SlowSyncStep,
         step: suspend () -> Either<CoreFailure, Unit>
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Unit> = measureTimedValue {
         // Check for cancellation
         currentCoroutineContext().ensureActive()
 
         emit(slowSyncStep)
-        return step()
+        step()
+    }.run {
+        logger.i("SlowSync step '$slowSyncStep' took $duration")
+        value
     }
 }
