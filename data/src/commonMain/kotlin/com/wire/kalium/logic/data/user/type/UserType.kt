@@ -86,4 +86,4 @@ fun UserTypeInfo.isRegularTeamMember(): Boolean = this.isTeamAdmin() || this.isI
  * [isRegularTeamMember] + [isAppOrBot] + [UserType.EXTERNAL]
  */
 fun UserTypeInfo.isTeammate(): Boolean =
-    isRegularTeamMember() || isAppOrBot() || (this is UserTypeInfo.Regular && type == UserType.EXTERNAL)
+    isRegularTeamMember() || isAppOrBot() || isExternal()
