@@ -194,7 +194,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
 
 interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
     fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserTypeInfoEntity
-    fun fromUserTypeInfo(userType: UserTypeInfo): UserTypeInfoEntity
+    fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeInfoEntity
     fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): UserTypeEntity
 
     @Suppress("LongParameterList")
