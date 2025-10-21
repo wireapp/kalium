@@ -371,8 +371,8 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = domainUserTypeMapper.fromUserType(
-                domainUserTypeMapper.fromApiTypeAndTeamAndDomain(
+            userType = domainUserTypeMapper.fromUserTypeEntity(
+                userEntityTypeMapper.fromApiTypeAndTeamAndDomain(
                     apiUserTypeDTO = userProfile.type,
                     otherUserDomain = userProfile.id.domain,
                     selfUserTeamId = selfTeamId?.value,

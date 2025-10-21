@@ -47,48 +47,43 @@ enum class UserType {
     GUEST,
 
     /**
-     * Service bot,
-     */
-    SERVICE,
-
-    /** Apps, Bots 2.0 **/
-    APP,
-
-    /**
      * A user on the same backend,
      * when current user doesn't belongs to any team
      */
     NONE;
 }
 
-sealed class UserTypeInfo(open val type: UserType) {
-    data class Regular(override val type: UserType) : UserTypeInfo(type)
-    data object App : UserTypeInfo(UserType.APP)
-    data object Bot : UserTypeInfo(UserType.SERVICE)
+sealed class UserTypeInfo {
+    data class Regular(val type: UserType) : UserTypeInfo()
+    data object App : UserTypeInfo()
+    data object Bot : UserTypeInfo()
 }
 
-fun UserTypeInfo.isOwner(): Boolean = this.type == UserType.OWNER
+fun UserTypeInfo.isOwner(): Boolean = this is UserTypeInfo.Regular && this.type == UserType.OWNER
 
 /**
  * Checks if the user is an App or Bot, including legacy bots.
  */
-fun UserTypeInfo.isAppOrBot(): Boolean = this.type == UserType.APP || this.type == UserType.SERVICE
+fun UserTypeInfo.isAppOrBot(): Boolean = this is UserTypeInfo.App || this is UserTypeInfo.Bot
 
-fun UserTypeInfo.isTeamAdmin(): Boolean = this.type == UserType.ADMIN || this.type == UserType.OWNER
+fun UserTypeInfo.isTeamAdmin(): Boolean = this is UserTypeInfo.Regular && (this.type == UserType.ADMIN || this.type == UserType.OWNER)
 
-fun UserTypeInfo.isExternal(): Boolean = this.type == UserType.EXTERNAL
+fun UserTypeInfo.isExternal(): Boolean = this is UserTypeInfo.Regular && this.type == UserType.EXTERNAL
 
-fun UserTypeInfo.isGuest(): Boolean = this.type == UserType.GUEST
+fun UserTypeInfo.isGuest(): Boolean = this is UserTypeInfo.Regular && this.type == UserType.GUEST
 
-fun UserTypeInfo.isFederated(): Boolean = this.type == UserType.FEDERATED
+fun UserTypeInfo.isFederated(): Boolean = this is UserTypeInfo.Regular && this.type == UserType.FEDERATED
+
+fun UserTypeInfo.isInternal(): Boolean = this is UserTypeInfo.Regular && this.type == UserType.INTERNAL
 
 /**
  * Checks that the user is a regular team member, excluding external members and service accounts.
  */
-fun UserTypeInfo.isRegularTeamMember(): Boolean = this.isTeamAdmin() || this.type == UserType.INTERNAL
+fun UserTypeInfo.isRegularTeamMember(): Boolean = this.isTeamAdmin() || this.isInternal()
 
 /**
  * Checks that the user is part of the entire team, including external members and service accounts.
  * [isRegularTeamMember] + [isAppOrBot] + [UserType.EXTERNAL]
  */
-fun UserTypeInfo.isTeammate(): Boolean = isRegularTeamMember() || isAppOrBot() || type == UserType.EXTERNAL
+fun UserTypeInfo.isTeammate(): Boolean =
+    isRegularTeamMember() || isAppOrBot() || (this is UserTypeInfo.Regular && type == UserType.EXTERNAL)

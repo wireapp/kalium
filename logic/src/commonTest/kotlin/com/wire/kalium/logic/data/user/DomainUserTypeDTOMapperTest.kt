@@ -18,208 +18,151 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DomainUserTypeDTOMapperTest {
 
-    private val userTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
+    private val domainUserTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
 
     @Test
-    fun givenTeamMemberWithAdminPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsAdmin() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Admin.value)
-        // then
-        assertEquals(UserType.ADMIN, result)
+    fun givenStandardUserTypeEntity_whenMapping_thenReturnsRegularInternal() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.STANDARD)
+        assertEquals(UserTypeInfo.Regular(UserType.INTERNAL), result)
     }
 
     @Test
-    fun givenTeamMemberWithOwnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsOwner() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Owner.value)
-        // then
-        assertEquals(UserType.OWNER, result)
+    fun givenExternalUserTypeEntity_whenMapping_thenReturnsRegularExternal() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.EXTERNAL)
+        assertEquals(UserTypeInfo.Regular(UserType.EXTERNAL), result)
     }
 
     @Test
-    fun givenTeamMemberWithExternalPartnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsExternal() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.ExternalPartner.value)
-        // then
-        assertEquals(UserType.EXTERNAL, result)
+    fun givenFederatedUserTypeEntity_whenMapping_thenReturnsRegularFederated() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.FEDERATED)
+        assertEquals(UserTypeInfo.Regular(UserType.FEDERATED), result)
     }
 
     @Test
-    fun givenTeamMemberWithMemberPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value)
-        // then
-        assertEquals(UserType.INTERNAL, result)
+    fun givenGuestUserTypeEntity_whenMapping_thenReturnsRegularGuest() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.GUEST)
+        assertEquals(UserTypeInfo.Regular(UserType.GUEST), result)
     }
 
     @Test
-    fun givenServiceTeamMember_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value, true)
-        // then
-        assertEquals(UserType.SERVICE, result)
+    fun givenNoneUserTypeEntity_whenMapping_thenReturnsRegularNone() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.NONE)
+        assertEquals(UserTypeInfo.Regular(UserType.NONE), result)
     }
 
     @Test
-    fun givenApiTypeIsApp_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsApp() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.APP,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = false
+    fun givenOwnerUserTypeEntity_whenMapping_thenReturnsRegularOwner() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.OWNER)
+        assertEquals(UserTypeInfo.Regular(UserType.OWNER), result)
+    }
+
+    @Test
+    fun givenAdminUserTypeEntity_whenMapping_thenReturnsRegularAdmin() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.ADMIN)
+        assertEquals(UserTypeInfo.Regular(UserType.ADMIN), result)
+    }
+
+    @Test
+    fun givenServiceUserTypeEntity_whenMapping_thenReturnsBot() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.SERVICE)
+        assertEquals(UserTypeInfo.Bot, result)
+    }
+
+    @Test
+    fun givenAppUserTypeEntity_whenMapping_thenReturnsApp() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.APP)
+        assertEquals(UserTypeInfo.App, result)
+    }
+
+    @Test
+    fun givenNullUserTypeEntity_whenMapping_thenReturnsRegularNone() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(null)
+        assertEquals(UserTypeInfo.Regular(UserType.NONE), result)
+    }
+
+    @Test
+    fun givenInternalUserType_whenMapping_thenReturnsRegularInternal() {
+        val result = domainUserTypeMapper.fromUserType(UserType.INTERNAL)
+        assertEquals(UserTypeInfo.Regular(UserType.INTERNAL), result)
+    }
+
+    @Test
+    fun givenAdminUserType_whenMapping_thenReturnsRegularAdmin() {
+        val result = domainUserTypeMapper.fromUserType(UserType.ADMIN)
+        assertEquals(UserTypeInfo.Regular(UserType.ADMIN), result)
+    }
+
+    @Test
+    fun givenOwnerUserType_whenMapping_thenReturnsRegularOwner() {
+        val result = domainUserTypeMapper.fromUserType(UserType.OWNER)
+        assertEquals(UserTypeInfo.Regular(UserType.OWNER), result)
+    }
+
+    @Test
+    fun givenExternalUserType_whenMapping_thenReturnsRegularExternal() {
+        val result = domainUserTypeMapper.fromUserType(UserType.EXTERNAL)
+        assertEquals(UserTypeInfo.Regular(UserType.EXTERNAL), result)
+    }
+
+    @Test
+    fun givenFederatedUserType_whenMapping_thenReturnsRegularFederated() {
+        val result = domainUserTypeMapper.fromUserType(UserType.FEDERATED)
+        assertEquals(UserTypeInfo.Regular(UserType.FEDERATED), result)
+    }
+
+    @Test
+    fun givenGuestUserType_whenMapping_thenReturnsRegularGuest() {
+        val result = domainUserTypeMapper.fromUserType(UserType.GUEST)
+        assertEquals(UserTypeInfo.Regular(UserType.GUEST), result)
+    }
+
+    @Test
+    fun givenNoneUserType_whenMapping_thenReturnsRegularNone() {
+        val result = domainUserTypeMapper.fromUserType(UserType.NONE)
+        assertEquals(UserTypeInfo.Regular(UserType.NONE), result)
+    }
+
+    @Test
+    fun givenRegularStandardUserTypeInfoEntity_whenMapping_thenReturnsRegularInternal() {
+        val userTypeInfoEntity = com.wire.kalium.persistence.dao.UserTypeInfoEntity.Regular(
+            com.wire.kalium.persistence.dao.UserTypeEntity.STANDARD
         )
-        // then
-        assertEquals(UserType.APP, result)
+        val result = domainUserTypeMapper.fromUserTypeInfoEntity(userTypeInfoEntity)
+        assertEquals(UserTypeInfo.Regular(UserType.INTERNAL), result)
     }
 
     @Test
-    fun givenApiTypeIsBot_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsService() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.BOT,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = false
+    fun givenRegularExternalUserTypeInfoEntity_whenMapping_thenReturnsRegularExternal() {
+        val userTypeInfoEntity = com.wire.kalium.persistence.dao.UserTypeInfoEntity.Regular(
+            com.wire.kalium.persistence.dao.UserTypeEntity.EXTERNAL
         )
-        // then
-        assertEquals(UserType.SERVICE, result)
+        val result = domainUserTypeMapper.fromUserTypeInfoEntity(userTypeInfoEntity)
+        assertEquals(UserTypeInfo.Regular(UserType.EXTERNAL), result)
     }
 
     @Test
-    fun givenApiTypeIsRegularAndSameTeamAndDomain_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsInternal() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.REGULAR,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamA",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = false
+    fun givenBotUserTypeInfoEntity_whenMapping_thenReturnsBot() {
+        val result = domainUserTypeMapper.fromUserTypeInfoEntity(
+            com.wire.kalium.persistence.dao.UserTypeInfoEntity.Bot
         )
-        // then
-        assertEquals(UserType.INTERNAL, result)
+        assertEquals(UserTypeInfo.Bot, result)
     }
 
     @Test
-    fun givenApiTypeIsRegularAndDifferentDomains_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsFederated() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.REGULAR,
-            otherUserDomain = "domainB.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domainA.wire.com",
-            isLegacyBot = false
+    fun givenAppUserTypeInfoEntity_whenMapping_thenReturnsApp() {
+        val result = domainUserTypeMapper.fromUserTypeInfoEntity(
+            com.wire.kalium.persistence.dao.UserTypeInfoEntity.App
         )
-        // then
-        assertEquals(UserType.FEDERATED, result)
-    }
-
-    @Test
-    fun givenApiTypeIsRegularAndSameDomainButDifferentTeam_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsGuest() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.REGULAR,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = false
-        )
-        // then
-        assertEquals(UserType.GUEST, result)
-    }
-
-    @Test
-    fun givenApiTypeIsNullAndSameTeamAndDomain_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsInternal() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = null,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamA",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = false
-        )
-        // then
-        assertEquals(UserType.INTERNAL, result)
-    }
-
-    @Test
-    fun givenApiTypeIsNullAndDifferentDomains_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsFederated() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = null,
-            otherUserDomain = "domainB.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domainA.wire.com",
-            isLegacyBot = false
-        )
-        // then
-        assertEquals(UserType.FEDERATED, result)
-    }
-
-    @Test
-    fun givenApiTypeIsRegularWithLegacyBot_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsService() {
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.REGULAR,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = true
-        )
-        // then
-        assertEquals(UserType.SERVICE, result)
-    }
-
-    @Test
-    fun givenApiTypeIsAppWithLegacyBotFlag_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsApp() {
-        // The API type takes precedence over legacy bot flag
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = UserTypeDTO.APP,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = true
-        )
-        // then
-        assertEquals(UserType.APP, result)
-    }
-
-    @Test
-    fun givenApiTypeIsNullAndSameDomainDifferentTeam_whenMappingFromApiTypeAndTeamAndDomain_ThenUserTypeIsGuest() {
-        // Test null API type with guest scenario for backward compatibility
-        // when
-        val result = userTypeMapper.fromApiTypeAndTeamAndDomain(
-            apiUserTypeDTO = null,
-            otherUserDomain = "domain.wire.com",
-            selfUserTeamId = "teamA",
-            otherUserTeamId = "teamB",
-            selfUserDomain = "domain.wire.com",
-            isLegacyBot = false
-        )
-        // then
-        assertEquals(UserType.GUEST, result)
+        assertEquals(UserTypeInfo.App, result)
     }
 }
 
