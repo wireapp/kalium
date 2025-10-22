@@ -222,7 +222,15 @@ class RetryFailedMessageUseCaseTest {
 
             // then
             coVerify {
-                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), eq(path), any(), eq(name.fileExtension()))
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = eq(path),
+                    otrKey = any(),
+                    extension = eq(name.fileExtension()),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.wasInvoked(exactly = once)
             coVerify {
                 arrangement.messageSender.sendMessage(matches {
@@ -259,7 +267,15 @@ class RetryFailedMessageUseCaseTest {
 
             // then
             coVerify {
-                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    otrKey = any(),
+                    extension = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.wasNotInvoked()
             coVerify {
                 arrangement.messageSender.sendMessage(eq(message), any())
@@ -409,7 +425,15 @@ class RetryFailedMessageUseCaseTest {
 
         suspend fun withUploadAndPersistPrivateAsset(result: Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>): Arrangement = apply {
             coEvery {
-                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetRepository.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    otrKey = any(),
+                    extension = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.returns(result)
         }
 

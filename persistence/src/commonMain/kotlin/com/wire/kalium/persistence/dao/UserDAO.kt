@@ -290,6 +290,7 @@ interface UserDAO {
     suspend fun getUsersDetailsNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserDetailsEntity>>
     suspend fun getAllUsersDetailsByTeam(teamId: String): List<UserDetailsEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
+    suspend fun updateUserAccentColor(selfUserId: QualifiedIDEntity, accentId: Int)
 
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 

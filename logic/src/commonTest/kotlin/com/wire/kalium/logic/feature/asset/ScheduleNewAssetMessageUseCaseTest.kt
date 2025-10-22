@@ -223,7 +223,15 @@ class ScheduleNewAssetMessageUseCaseTest {
             arrangement.persistMessage.invoke(any())
         }.wasInvoked(exactly = twice)
         coVerify {
-            arrangement.assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            arrangement.assetDataSource.uploadAndPersistPrivateAsset(
+                mimeType = any(),
+                assetDataPath = any(),
+                otrKey = any(),
+                extension = any(),
+                conversationId = any(),
+                filename = any(),
+                filetype = any()
+            )
         }.wasInvoked(exactly = once)
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
@@ -271,7 +279,15 @@ class ScheduleNewAssetMessageUseCaseTest {
                 arrangement.persistMessage.invoke(any())
             }.wasInvoked(exactly = twice)
             coVerify {
-                arrangement.assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                arrangement.assetDataSource.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    otrKey = any(),
+                    extension = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.wasInvoked(exactly = once)
             coVerify {
                 arrangement.messageSender.sendMessage(any(), any())
@@ -734,7 +750,15 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetDataSource.persistAsset(any(), any(), any(), any(), any())
             }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
             coEvery {
-                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    otrKey = any(),
+                    extension = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.returns(Either.Right(expectedAssetId to assetSHA256Key))
             coEvery {
                 currentClientIdProvider.invoke()
@@ -761,7 +785,15 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetDataSource.persistAsset(any(), any(), any(), any(), any())
             }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
             coEvery {
-                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    otrKey = any(),
+                    extension = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.returns(Either.Right(expectedAssetId to assetSHA256Key))
             coEvery {
                 currentClientIdProvider.invoke()
@@ -792,7 +824,15 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetDataSource.persistAsset(any(), any(), any(), any(), any())
             }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
             coEvery {
-                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+                assetDataSource.uploadAndPersistPrivateAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    otrKey = any(),
+                    extension = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
             }.returns(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
             coEvery {
                 updateTransferStatus.invoke(any(), any(), any())
