@@ -160,6 +160,12 @@ data class PartialUserEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
+sealed interface UserTypeInfo{
+    interface Regular : UserTypeInfo
+    interface Bot : UserTypeInfo
+    interface App : UserTypeInfo
+}
+
 enum class UserTypeEntity {
 
     /**Team member with owner permissions */
