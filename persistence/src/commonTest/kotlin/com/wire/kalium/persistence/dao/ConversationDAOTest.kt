@@ -2645,7 +2645,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDate,
             userAvailabilityStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.availabilityStatus else null,
-            userType = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.userType?.type else null,
+            userType = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.userType else null,
             botService = null,
             userDeleted = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.deleted else null,
             connectionStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.connectionStatus else null,

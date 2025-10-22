@@ -75,7 +75,7 @@ internal class ConnectionMapperImpl(
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
             otherUser = otherUser?.let { userMapper.fromUserEntityToOtherUser(it) },
-            userType = otherUser?.let { userTypeMapper.fromUserTypeInfoEntity(it.userType) }
+            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) }
                 ?: UserTypeInfo.Regular(UserType.GUEST),
             lastModifiedDate = lastUpdateDate,
             connection = fromDaoToModel(this),

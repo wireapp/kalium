@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 
 fun newUserEntity(id: String = "test") = newUserEntity(QualifiedIDEntity(id, "wire.com"), id)
 
@@ -42,7 +41,7 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         null,
         null,
         UserAvailabilityStatusEntity.NONE,
-        UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
+        UserTypeEntity.STANDARD,
         botService = null,
         deleted = false,
         hasIncompleteMetadata = false,
@@ -65,7 +64,7 @@ fun newUserDetailsEntity(id: String = "test") =
         null,
         null,
         UserAvailabilityStatusEntity.NONE,
-        UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
+        UserTypeEntity.STANDARD,
         botService = null,
         deleted = false,
         hasIncompleteMetadata = false,

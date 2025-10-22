@@ -18,110 +18,75 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DomainUserTypeDTOMapperTest {
 
-    private val userTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
+    private val domainUserTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
 
     @Test
-    fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        // when
-        val result = userTypeMapper.fromTeamAndDomain(
-            "someDomain",
-            "someTeamId",
-            "someTeamId",
-            "someDomain",
-            false
-        )
-        // then
-        assertEquals(UserType.INTERNAL, result)
+    fun givenStandardUserTypeEntity_whenMapping_thenReturnsRegularInternal() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.STANDARD)
+        assertEquals(UserTypeInfo.Regular(UserType.INTERNAL), result)
     }
 
     @Test
-    fun givenTeamMemberWithAdminPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsAdmin() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Admin.value)
-        // then
-        assertEquals(UserType.ADMIN, result)
+    fun givenExternalUserTypeEntity_whenMapping_thenReturnsRegularExternal() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.EXTERNAL)
+        assertEquals(UserTypeInfo.Regular(UserType.EXTERNAL), result)
     }
 
     @Test
-    fun givenTeamMemberWithOwnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsOwner() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Owner.value)
-        // then
-        assertEquals(UserType.OWNER, result)
+    fun givenFederatedUserTypeEntity_whenMapping_thenReturnsRegularFederated() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.FEDERATED)
+        assertEquals(UserTypeInfo.Regular(UserType.FEDERATED), result)
     }
 
     @Test
-    fun givenTeamMemberWithExternalPartnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsExternal() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.ExternalPartner.value)
-        // then
-        assertEquals(UserType.EXTERNAL, result)
+    fun givenGuestUserTypeEntity_whenMapping_thenReturnsRegularGuest() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.GUEST)
+        assertEquals(UserTypeInfo.Regular(UserType.GUEST), result)
     }
 
     @Test
-    fun givenTeamMemberWithMemberPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value)
-        // then
-        assertEquals(UserType.INTERNAL, result)
+    fun givenNoneUserTypeEntity_whenMapping_thenReturnsRegularNone() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.NONE)
+        assertEquals(UserTypeInfo.Regular(UserType.NONE), result)
     }
 
     @Test
-    fun givenServiceTeamMember_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
-        // when
-        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value, true)
-        // then
-        assertEquals(UserType.SERVICE, result)
+    fun givenOwnerUserTypeEntity_whenMapping_thenReturnsRegularOwner() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.OWNER)
+        assertEquals(UserTypeInfo.Regular(UserType.OWNER), result)
     }
 
     @Test
-    fun givenCommonNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
-        // given
-        val result = userTypeMapper.fromTeamAndDomain(
-            "domainB",
-            "teamA",
-            "teamB",
-            "domainA",
-            false
-        )
-        // then
-        assertEquals(UserType.FEDERATED, result)
+    fun givenAdminUserTypeEntity_whenMapping_thenReturnsRegularAdmin() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.ADMIN)
+        assertEquals(UserTypeInfo.Regular(UserType.ADMIN), result)
     }
 
     @Test
-    fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
-        // when
-        val result = userTypeMapper.fromTeamAndDomain(
-            "domain.wire.com",
-            "teamA",
-            "teamB",
-            "domain.wire.com",
-            false
-        )
-        // then
-        assertEquals(UserType.GUEST, result)
+    fun givenServiceUserTypeEntity_whenMapping_thenReturnsBot() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.SERVICE)
+        assertEquals(UserTypeInfo.Bot, result)
     }
 
     @Test
-    fun givenServiceBot_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
-        // when
-        val result = userTypeMapper.fromTeamAndDomain(
-            "domain.wire.com",
-            "teamA",
-            "teamB",
-            "domain.wire.com",
-            true
-        )
-        // then
-        assertEquals(UserType.SERVICE, result)
+    fun givenAppUserTypeEntity_whenMapping_thenReturnsApp() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(com.wire.kalium.persistence.dao.UserTypeEntity.APP)
+        assertEquals(UserTypeInfo.App, result)
+    }
+
+    @Test
+    fun givenNullUserTypeEntity_whenMapping_thenReturnsRegularNone() {
+        val result = domainUserTypeMapper.fromUserTypeEntity(null)
+        assertEquals(UserTypeInfo.Regular(UserType.NONE), result)
     }
 }
+

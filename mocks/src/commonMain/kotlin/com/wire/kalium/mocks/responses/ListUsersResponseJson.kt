@@ -23,7 +23,7 @@ import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.model.UserProfileDTO
-import kotlinx.serialization.encodeToString
+import com.wire.kalium.network.api.model.UserTypeDTO
 import kotlinx.serialization.json.Json
 
 object ListUsersResponseJson {
@@ -104,6 +104,26 @@ object ListUsersResponseJson {
         """.trimMargin()
     }
 
+    private val validUserInfoProviderV12 = { userInfo: UserProfileDTO ->
+        val typeField = userInfo.type?.let { """, "type": "${it.name.lowercase()}" """ } ?: ""
+        """
+        |{
+        | "accent_id": ${userInfo.accentId},
+        | "handle": "${userInfo.handle}",
+        | "legalhold_status": "enabled",
+        | "name": "${userInfo.name}",
+        | "assets": ${userInfo.assets},
+        | "id": "${userInfo.id.value}",
+        | "deleted": "false",
+        | "supported_protocols": ${Json.encodeToString(userInfo.supportedProtocols)},
+        | "qualified_id": {
+        |   "domain": "${userInfo.id.domain}",
+        |   "id": "${userInfo.id.value}"
+        | }$typeField
+        |}
+        """.trimMargin()
+    }
+
     private val listProvider = { list: List<String> ->
         """
         |[
@@ -133,7 +153,7 @@ object ListUsersResponseJson {
         |        "id": "${it.usersFailed[0].value}"
         |      }
         |    ],
-        |    "found": ${ listProvider(it.usersFound.map(validUserInfoProviderV4)) }
+        |    "found": ${listProvider(it.usersFound.map(validUserInfoProviderV4))}
         |}
         """.trimMargin()
     }
@@ -143,8 +163,31 @@ object ListUsersResponseJson {
     ) {
         """
         |{
-        |    "found": ${ listProvider(it.usersFound.map(validUserInfoProviderV4)) }
+        |    "found": ${listProvider(it.usersFound.map(validUserInfoProviderV4))}
         |}
         """.trimMargin()
+    }
+
+    val v12: (UserTypeDTO?) -> ValidJsonProvider<UserProfileDTO> = { type ->
+        ValidJsonProvider(
+            UserProfileDTO(
+                id = USER_1,
+                name = "user a",
+                handle = "user_a",
+                accentId = 2147483647,
+                legalHoldStatus = LegalHoldStatusDTO.ENABLED,
+                teamId = null,
+                assets = emptyList(),
+                deleted = false,
+                email = null,
+                expiresAt = null,
+                service = null,
+                nonQualifiedId = USER_1.value,
+                supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
+                type = type
+            )
+        ) {
+            validUserInfoProviderV12(it)
+        }
     }
 }

@@ -77,7 +77,7 @@ data class UserEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeInfoEntity,
+    val userType: UserTypeEntity,
     @Deprecated(message = "New Apps will not have this field anymore, kept for backward bots compatibility")
     val botService: BotIdEntity?,
     val deleted: Boolean,
@@ -102,7 +102,7 @@ data class UserDetailsEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeInfoEntity,
+    val userType: UserTypeEntity,
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
@@ -160,13 +160,17 @@ data class PartialUserEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
-sealed class UserTypeInfoEntity(open val type: UserTypeEntity) {
-    data class Regular(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
-    data object App : UserTypeInfoEntity(UserTypeEntity.APP)
-    data object Bot : UserTypeInfoEntity(UserTypeEntity.SERVICE)
+/**
+ * Indicates the type of user: regular user, app, or bot.
+ * This is not persisted directly in the database, but rather to have a mapping between api and local storage.
+ */
+enum class UserTypeInfo {
+    REGULAR,
+    APP,
+    BOT,
 }
 
-enum class UserTypeEntity {
+enum class UserTypeEntity(private val userTypeInfo: UserTypeInfo = UserTypeInfo.REGULAR) {
 
     /**Team member with owner permissions */
     OWNER,
@@ -195,17 +199,22 @@ enum class UserTypeEntity {
      */
     GUEST,
 
-    /** Service bot */
-    SERVICE,
+    /** Service "Bots" (legacy) */
+    SERVICE(UserTypeInfo.BOT),
 
     /** Apps, Bots 2.0 **/
-    APP,
+    APP(UserTypeInfo.APP),
 
     /**
      * A user on the same backend,
      * when current user doesn't belongs to any team
      */
     NONE;
+
+    /**
+     * @return [UserTypeInfo] corresponding to this [UserTypeEntity]
+     */
+    fun getUserTypeInfo(): UserTypeInfo = userTypeInfo
 }
 
 /**

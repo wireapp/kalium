@@ -47,7 +47,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
-            userType = fromUserType(user.user_type),
+            userType = user.user_type,
             botService = user.bot_service,
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
@@ -73,7 +73,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
-            userType = fromUserType(user.user_type),
+            userType = user.user_type,
             botService = user.bot_service,
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
@@ -82,18 +82,6 @@ class UserMapper {
             supportedProtocols = user.supported_protocols,
             activeOneOnOneConversationId = user.active_one_on_one_conversation_id
         )
-    }
-
-    private fun fromUserType(userType: UserTypeEntity): UserTypeInfoEntity = when (userType) {
-        UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.EXTERNAL -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(userType)
-        UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
-        UserTypeEntity.APP -> UserTypeInfoEntity.App
     }
 
     @Suppress("LongParameterList")
@@ -135,7 +123,7 @@ class UserMapper {
             previewAssetId = previewAssetId,
             completeAssetId = completeAssetId,
             availabilityStatus = userAvailabilityStatus,
-            userType = fromUserType(userType),
+            userType = userType,
             botService = botService,
             deleted = deleted,
             hasIncompleteMetadata = hasIncompleteMetadata,
@@ -194,7 +182,7 @@ class UserDAOImpl internal constructor(
                     team = user.team,
                     preview_asset_id = user.previewAssetId,
                     complete_asset_id = user.completeAssetId,
-                    user_type = user.userType.type,
+                    user_type = user.userType,
                     bot_service = user.botService,
                     incomplete_metadata = false,
                     expires_at = user.expiresAt,
@@ -247,7 +235,7 @@ class UserDAOImpl internal constructor(
             team = user.team,
             preview_asset_id = user.previewAssetId,
             complete_asset_id = user.completeAssetId,
-            user_type = user.userType.type,
+            user_type = user.userType,
             bot_service = user.botService,
             incomplete_metadata = user.hasIncompleteMetadata,
             expires_at = user.expiresAt,
