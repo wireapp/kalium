@@ -160,13 +160,17 @@ data class PartialUserEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
-sealed interface UserTypeInfo{
-    interface Regular : UserTypeInfo
-    interface Bot : UserTypeInfo
-    interface App : UserTypeInfo
+/**
+ * Indicates the type of user: regular user, app, or bot.
+ * This is not persisted directly in the database, but rather to have a mapping between api and local storage.
+ */
+enum class UserTypeInfo {
+    REGULAR,
+    APP,
+    BOT,
 }
 
-enum class UserTypeEntity {
+enum class UserTypeEntity(private val userTypeInfo: UserTypeInfo = UserTypeInfo.REGULAR) {
 
     /**Team member with owner permissions */
     OWNER,
@@ -196,16 +200,21 @@ enum class UserTypeEntity {
     GUEST,
 
     /** Service "Bots" (legacy) */
-    SERVICE,
+    SERVICE(UserTypeInfo.BOT),
 
     /** Apps, Bots 2.0 **/
-    APP,
+    APP(UserTypeInfo.APP),
 
     /**
      * A user on the same backend,
      * when current user doesn't belongs to any team
      */
     NONE;
+
+    /**
+     * @return [UserTypeInfo] corresponding to this [UserTypeEntity]
+     */
+    fun getUserTypeInfo(): UserTypeInfo = userTypeInfo
 }
 
 /**

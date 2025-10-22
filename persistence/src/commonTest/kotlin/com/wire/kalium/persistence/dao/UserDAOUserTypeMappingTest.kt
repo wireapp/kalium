@@ -201,10 +201,10 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
 
         // then
         val regularResult = db.userDAO.observeUserDetailsByQualifiedID(regularUser.id).first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), regularResult?.userType)
+        assertEquals(UserTypeEntity.STANDARD, regularResult?.userType)
 
         val adminResult = db.userDAO.observeUserDetailsByQualifiedID(adminUser.id).first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), adminResult?.userType)
+        assertEquals(UserTypeEntity.ADMIN, adminResult?.userType)
 
         val botResult = db.userDAO.observeUserDetailsByQualifiedID(botUser.id).first()
         assertEquals(UserTypeEntity.SERVICE, botResult?.userType)
@@ -294,8 +294,8 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
     fun givenUsersWithDifferentTypes_WhenGettingAllUsers_ThenAllTypesAreMappedCorrectly() = runTest(dispatcher) {
         // given
         val users = listOf(
-            newUserEntity("user1").copy(userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD)),
-            newUserEntity("user2").copy(userType = UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN)),
+            newUserEntity("user1").copy(userType = UserTypeEntity.STANDARD),
+            newUserEntity("user2").copy(userType = UserTypeEntity.ADMIN),
             newUserEntity("user3").copy(userType = UserTypeEntity.SERVICE),
             newUserEntity("user4").copy(userType = UserTypeEntity.APP),
             newUserEntity("user5").copy(userType = UserTypeEntity.GUEST)
@@ -309,8 +309,8 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         assertEquals(5, allUsers.size)
         val userTypesMap = allUsers.associate { it.id.value to it.userType }
 
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), userTypesMap["user1"])
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), userTypesMap["user2"])
+        assertEquals(UserTypeEntity.STANDARD, userTypesMap["user1"])
+        assertEquals(UserTypeEntity.ADMIN, userTypesMap["user2"])
         assertEquals(UserTypeEntity.SERVICE, userTypesMap["user3"])
         assertEquals(UserTypeEntity.APP, userTypesMap["user4"])
         assertEquals(UserTypeEntity.GUEST, userTypesMap["user5"])
