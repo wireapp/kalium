@@ -22,6 +22,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.asset.AssetAuditFeatureHandler
+import com.wire.kalium.logic.data.asset.AssetAuditFeatureHandlerImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -238,6 +240,8 @@ class UserScope internal constructor(
 
     val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(accountRepository)
 
+    val updateAccentColor: UpdateAccentColorUseCase get() = UpdateAccentColorUseCaseImpl(accountRepository)
+
     val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(accountRepository)
 
     val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
@@ -300,5 +304,12 @@ class UserScope internal constructor(
     val isProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
         get() = IsProfileQRCodeEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
+        )
+
+    val assetAuditLog: AssetAuditFeatureHandler
+        get() = AssetAuditFeatureHandlerImpl(
+            userId = selfUserId,
+            userConfigRepository = userConfigRepository,
+            serverConfigRepository = serverConfigRepository,
         )
 }

@@ -470,6 +470,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
@@ -1059,6 +1060,7 @@ class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
 
@@ -1914,6 +1916,9 @@ class UserSessionScope internal constructor(
     private val enableUserProfileQRCodeConfigHandler
         get() = EnableUserProfileQRCodeConfigHandler(userConfigRepository)
 
+    private val assetAuditLogConfigHandler
+        get() = AssetAuditLogConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -1929,6 +1934,7 @@ class UserSessionScope internal constructor(
             cellsConfigHandler,
             chatBubblesConfigHandler,
             enableUserProfileQRCodeConfigHandler,
+            assetAuditLogConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2363,6 +2369,7 @@ class UserSessionScope internal constructor(
             appsFeatureHandler,
             chatBubblesConfigHandler,
             enableUserProfileQRCodeConfigHandler,
+            assetAuditLogConfigHandler,
         )
 
     val team: TeamScope

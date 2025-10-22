@@ -36,6 +36,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
@@ -62,6 +63,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val cellsConfigHandler: CellsConfigHandler,
     private val chatBubblesConfigHandler: ChatBubblesConfigHandler,
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
+    private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(
@@ -101,5 +103,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             is Event.FeatureConfig.ChatBubblesConfigUpdated -> chatBubblesConfigHandler.handle(event.model)
             is Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated ->
                 enableUserProfileQRCodeConfigHandler.handle(event.model)
+            is Event.FeatureConfig.AssetAuditLogConfigUpdated -> assetAuditLogConfigHandler.handle(event.model)
         }
 }

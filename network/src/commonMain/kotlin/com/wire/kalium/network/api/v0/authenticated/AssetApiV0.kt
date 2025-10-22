@@ -19,9 +19,9 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
@@ -127,6 +127,11 @@ internal open class AssetApiV0 internal constructor(
         "$PATH_PUBLIC_ASSETS_V4/$assetDomain/$assetId"
     }
 
+    protected open fun buildUploadMetaData(metadata: AssetMetadataRequest) = "{" +
+            "\"public\": ${metadata.public}, " +
+            "\"retention\": \"${metadata.retentionType.name.lowercase()}\"" +
+    "}"
+
     override suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
         encryptedDataSource: () -> Source,
@@ -135,7 +140,14 @@ internal open class AssetApiV0 internal constructor(
         wrapKaliumResponse {
             httpClient.post(PATH_PUBLIC_ASSETS_V3) {
                 contentType(ContentType.MultiPart.Mixed)
-                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
+                setBody(
+                    StreamAssetContent(
+                        metadata = buildUploadMetaData(metadata),
+                        md5 = metadata.md5,
+                        encryptedDataSize = encryptedDataSize,
+                        fileContentStream = encryptedDataSource
+                    )
+                )
             }
         }
 
@@ -154,22 +166,20 @@ internal open class AssetApiV0 internal constructor(
 }
 
 internal class StreamAssetContent internal constructor(
-    private val metadata: AssetMetadataRequest,
+    private val metadata: String,
+    private val md5: String,
     private val encryptedDataSize: Long,
     private val fileContentStream: () -> Source,
 ) : OutgoingContent.WriteChannelContent() {
     private val openingData: String by lazy {
         val body = StringBuilder()
 
-        // Part 1
-        val strMetadata = "{\"public\": ${metadata.public}, \"retention\": \"${metadata.retentionType.name.lowercase()}\"}"
-
         body.append("--frontier\r\n")
         body.append("Content-Type: application/json;charset=utf-8\r\n")
         body.append("Content-Length: ")
-            .append(strMetadata.length)
+            .append(metadata.length)
             .append("\r\n\r\n")
-        body.append(strMetadata)
+        body.append(metadata)
             .append("\r\n")
 
         // Part 2
@@ -180,7 +190,7 @@ internal class StreamAssetContent internal constructor(
             .append(encryptedDataSize)
             .append("\r\n")
         body.append("Content-MD5: ")
-            .append(metadata.md5)
+            .append(md5)
             .append("\r\n\r\n")
 
         body.toString()

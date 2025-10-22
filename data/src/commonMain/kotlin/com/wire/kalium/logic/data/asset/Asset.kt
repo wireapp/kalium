@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.network.api.model.ConversationId
 import okio.Path
 
 data class UploadedAssetId(
@@ -35,7 +36,10 @@ data class UploadAssetData(
     val dataSize: Long,
     val assetType: String,
     val isPublic: Boolean,
-    val retentionType: RetentionType
+    val retentionType: RetentionType,
+    val conversationId: ConversationId? = null,
+    val filename: String? = null,
+    val filetype: String? = null,
 )
 
 enum class RetentionType {

@@ -69,6 +69,9 @@ object FeatureConfigTest {
         enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel? = EnableUserProfileQRCodeConfigModel(
             status = Status.ENABLED,
         ),
+        assetAuditLogConfigModel: AssetAuditLogConfigModel? = AssetAuditLogConfigModel(
+            status = Status.ENABLED,
+        ),
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -93,5 +96,6 @@ object FeatureConfigTest {
         appsModel,
         chatBubblesConfigModel,
         enableUserProfileQRCodeConfigModel,
+        assetAuditLogConfigModel,
     )
 }
