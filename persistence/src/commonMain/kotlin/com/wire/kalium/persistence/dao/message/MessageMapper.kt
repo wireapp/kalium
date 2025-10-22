@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -742,7 +741,7 @@ object MessageMapper {
             previewAssetId = senderPreviewAssetId,
             completeAssetId = senderCompleteAssetId,
             availabilityStatus = senderAvailabilityStatus,
-            userType = toUserTypeInfoEntity(senderUserType),
+            userType = senderUserType,
             botService = senderBotService,
             deleted = senderIsDeleted,
             expiresAt = senderExpiresAt,
@@ -776,20 +775,6 @@ object MessageMapper {
             recipientsFailedDeliveryList,
             sender
         )
-    }
-
-    private fun toUserTypeInfoEntity(userType: UserTypeEntity?): UserTypeInfoEntity {
-        return when (val type = userType!!) {
-            UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.EXTERNAL -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(type)
-            UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
-            UserTypeEntity.APP -> UserTypeInfoEntity.App
-        }
     }
 
     fun fromAssetStatus(

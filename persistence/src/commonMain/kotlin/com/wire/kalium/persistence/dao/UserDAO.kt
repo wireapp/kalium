@@ -77,7 +77,7 @@ data class UserEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeInfoEntity,
+    val userType: UserTypeEntity,
     @Deprecated(message = "New Apps will not have this field anymore, kept for backward bots compatibility")
     val botService: BotIdEntity?,
     val deleted: Boolean,
@@ -102,7 +102,7 @@ data class UserDetailsEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-    val userType: UserTypeInfoEntity,
+    val userType: UserTypeEntity,
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
@@ -160,12 +160,6 @@ data class PartialUserEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
-sealed class UserTypeInfoEntity(open val type: UserTypeEntity) {
-    data class Regular(override val type: UserTypeEntity) : UserTypeInfoEntity(type)
-    data object App : UserTypeInfoEntity(UserTypeEntity.APP)
-    data object Bot : UserTypeInfoEntity(UserTypeEntity.SERVICE)
-}
-
 enum class UserTypeEntity {
 
     /**Team member with owner permissions */
@@ -195,7 +189,7 @@ enum class UserTypeEntity {
      */
     GUEST,
 
-    /** Service bot */
+    /** Service "Bots" (legacy) */
     SERVICE,
 
     /** Apps, Bots 2.0 **/

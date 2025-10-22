@@ -28,9 +28,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Tests for UserDAO focusing specifically on the toUserTypeInfoEntity mapping.
- * Verifies that UserTypeEntity values are correctly mapped to UserTypeInfoEntity
- * when users are inserted and retrieved from the database.
+ * Tests for UserDAO focusing specifically on user type mapping.
+ * Verifies that UserTypeEntity values are correctly stored and retrieved from the database.
  */
 class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
 
@@ -47,7 +46,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
     fun givenUserWithStandardType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("standard-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD)
+            userType = UserTypeEntity.STANDARD
         )
 
         // when
@@ -55,14 +54,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), result?.userType)
+        assertEquals(UserTypeEntity.STANDARD, result?.userType)
     }
 
     @Test
     fun givenUserWithAdminType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("admin-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN)
+            userType = UserTypeEntity.ADMIN
         )
 
         // when
@@ -70,14 +69,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), result?.userType)
+        assertEquals(UserTypeEntity.ADMIN, result?.userType)
     }
 
     @Test
     fun givenUserWithOwnerType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("owner-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.OWNER)
+            userType = UserTypeEntity.OWNER
         )
 
         // when
@@ -85,14 +84,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.OWNER), result?.userType)
+        assertEquals(UserTypeEntity.OWNER, result?.userType)
     }
 
     @Test
     fun givenUserWithExternalType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("external-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL)
+            userType = UserTypeEntity.EXTERNAL
         )
 
         // when
@@ -100,14 +99,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL), result?.userType)
+        assertEquals(UserTypeEntity.EXTERNAL, result?.userType)
     }
 
     @Test
     fun givenUserWithFederatedType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("federated-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.FEDERATED)
+            userType = UserTypeEntity.FEDERATED
         )
 
         // when
@@ -115,14 +114,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.FEDERATED), result?.userType)
+        assertEquals(UserTypeEntity.FEDERATED, result?.userType)
     }
 
     @Test
     fun givenUserWithGuestType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("guest-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.GUEST)
+            userType = UserTypeEntity.GUEST
         )
 
         // when
@@ -130,14 +129,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.GUEST), result?.userType)
+        assertEquals(UserTypeEntity.GUEST, result?.userType)
     }
 
     @Test
     fun givenUserWithNoneType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToRegular() = runTest(dispatcher) {
         // given
         val user = newUserEntity("none-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.NONE)
+            userType = UserTypeEntity.NONE
         )
 
         // when
@@ -145,14 +144,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.NONE), result?.userType)
+        assertEquals(UserTypeEntity.NONE, result?.userType)
     }
 
     @Test
     fun givenUserWithServiceType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToBot() = runTest(dispatcher) {
         // given
         val user = newUserEntity("bot-user").copy(
-            userType = UserTypeInfoEntity.Bot
+            userType = UserTypeEntity.SERVICE
         )
 
         // when
@@ -160,14 +159,14 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.Bot, result?.userType)
+        assertEquals(UserTypeEntity.SERVICE, result?.userType)
     }
 
     @Test
     fun givenUserWithAppType_WhenInsertingAndRetrieving_ThenUserTypeIsMappedToApp() = runTest(dispatcher) {
         // given
         val user = newUserEntity("app-user").copy(
-            userType = UserTypeInfoEntity.App
+            userType = UserTypeEntity.APP
         )
 
         // when
@@ -175,26 +174,26 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
 
         // then
-        assertEquals(UserTypeInfoEntity.App, result?.userType)
+        assertEquals(UserTypeEntity.APP, result?.userType)
     }
 
     @Test
     fun givenMultipleUsersWithDifferentTypes_WhenRetrieving_ThenAllUserTypesAreMappedCorrectly() = runTest(dispatcher) {
         // given
         val regularUser = newUserEntity("regular").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD)
+            userType = UserTypeEntity.STANDARD
         )
         val adminUser = newUserEntity("admin").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN)
+            userType = UserTypeEntity.ADMIN
         )
         val botUser = newUserEntity("bot").copy(
-            userType = UserTypeInfoEntity.Bot
+            userType = UserTypeEntity.SERVICE
         )
         val appUser = newUserEntity("app").copy(
-            userType = UserTypeInfoEntity.App
+            userType = UserTypeEntity.APP
         )
         val externalUser = newUserEntity("external").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL)
+            userType = UserTypeEntity.EXTERNAL
         )
 
         // when
@@ -208,13 +207,13 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), adminResult?.userType)
 
         val botResult = db.userDAO.observeUserDetailsByQualifiedID(botUser.id).first()
-        assertEquals(UserTypeInfoEntity.Bot, botResult?.userType)
+        assertEquals(UserTypeEntity.SERVICE, botResult?.userType)
 
         val appResult = db.userDAO.observeUserDetailsByQualifiedID(appUser.id).first()
-        assertEquals(UserTypeInfoEntity.App, appResult?.userType)
+        assertEquals(UserTypeEntity.APP, appResult?.userType)
 
         val externalResult = db.userDAO.observeUserDetailsByQualifiedID(externalUser.id).first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL), externalResult?.userType)
+        assertEquals(UserTypeEntity.EXTERNAL, externalResult?.userType)
     }
 
     @Test
@@ -223,7 +222,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val botUser = newUserEntity("searchable-bot").copy(
             name = "SearchBot",
             handle = "searchbot",
-            userType = UserTypeInfoEntity.Bot
+            userType = UserTypeEntity.SERVICE
         )
 
         // when
@@ -236,7 +235,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         ).test {
             val result = awaitItem()
             assertEquals(1, result.size)
-            assertEquals(UserTypeInfoEntity.Bot, result.first().userType)
+            assertEquals(UserTypeEntity.SERVICE, result.first().userType)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -246,7 +245,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         // given
         val appUser = newUserEntity("searchable-app").copy(
             handle = "myapp",
-            userType = UserTypeInfoEntity.App
+            userType = UserTypeEntity.APP
         )
 
         // when
@@ -259,7 +258,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         ).test {
             val result = awaitItem()
             assertEquals(1, result.size)
-            assertEquals(UserTypeInfoEntity.App, result.first().userType)
+            assertEquals(UserTypeEntity.APP, result.first().userType)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -268,7 +267,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
     fun givenUserWithRegularType_WhenUpdatingUser_ThenUserTypeIsPreserved() = runTest(dispatcher) {
         // given
         val user = newUserEntity("updatable-user").copy(
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL)
+            userType = UserTypeEntity.EXTERNAL
         )
         db.userDAO.upsertUser(user)
 
@@ -287,7 +286,7 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
 
         // then
         val result = db.userDAO.observeUserDetailsByQualifiedID(user.id).first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL), result?.userType)
+        assertEquals(UserTypeEntity.EXTERNAL, result?.userType)
         assertEquals("Updated Name", result?.name)
     }
 
@@ -297,9 +296,9 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
         val users = listOf(
             newUserEntity("user1").copy(userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD)),
             newUserEntity("user2").copy(userType = UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN)),
-            newUserEntity("user3").copy(userType = UserTypeInfoEntity.Bot),
-            newUserEntity("user4").copy(userType = UserTypeInfoEntity.App),
-            newUserEntity("user5").copy(userType = UserTypeInfoEntity.Regular(UserTypeEntity.GUEST))
+            newUserEntity("user3").copy(userType = UserTypeEntity.SERVICE),
+            newUserEntity("user4").copy(userType = UserTypeEntity.APP),
+            newUserEntity("user5").copy(userType = UserTypeEntity.GUEST)
         )
 
         // when
@@ -312,9 +311,9 @@ class UserDAOUserTypeMappingTest : BaseDatabaseTest() {
 
         assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), userTypesMap["user1"])
         assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), userTypesMap["user2"])
-        assertEquals(UserTypeInfoEntity.Bot, userTypesMap["user3"])
-        assertEquals(UserTypeInfoEntity.App, userTypesMap["user4"])
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.GUEST), userTypesMap["user5"])
+        assertEquals(UserTypeEntity.SERVICE, userTypesMap["user3"])
+        assertEquals(UserTypeEntity.APP, userTypesMap["user4"])
+        assertEquals(UserTypeEntity.GUEST, userTypesMap["user5"])
     }
 }
 

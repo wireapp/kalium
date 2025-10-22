@@ -29,7 +29,6 @@ import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -173,7 +172,7 @@ class UserDatabaseDataGenerator(
         return UserEntity(
             id = UserIDEntity("${userPrefix}Value", "${userPrefix}Domain"),
             availabilityStatus = UserAvailabilityStatusEntity.values()[generatedUsersCount % UserAvailabilityStatusEntity.values().size],
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.values()[generatedUsersCount % UserTypeEntity.values().size]),
+            userType = UserTypeEntity.values()[generatedUsersCount % UserTypeEntity.values().size],
             deleted = generatedUsersCount % 2 == 0,
             name = "${userPrefix}Name",
             handle = "${userPrefix}Handle",

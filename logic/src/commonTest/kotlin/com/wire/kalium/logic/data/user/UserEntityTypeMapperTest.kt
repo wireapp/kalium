@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -78,8 +77,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.INTERNAL))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.STANDARD, result.type)
+        assertEquals(UserTypeEntity.STANDARD, result)
     }
 
     @Test
@@ -87,8 +85,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.ADMIN))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.ADMIN, result.type)
+        assertEquals(UserTypeEntity.ADMIN, result)
     }
 
     @Test
@@ -96,8 +93,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.OWNER))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.OWNER, result.type)
+        assertEquals(UserTypeEntity.OWNER, result)
     }
 
     @Test
@@ -105,8 +101,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.EXTERNAL))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.EXTERNAL, result.type)
+        assertEquals(UserTypeEntity.EXTERNAL, result)
     }
 
     @Test
@@ -114,8 +109,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.FEDERATED))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.FEDERATED, result.type)
+        assertEquals(UserTypeEntity.FEDERATED, result)
     }
 
     @Test
@@ -123,8 +117,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.GUEST))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.GUEST, result.type)
+        assertEquals(UserTypeEntity.GUEST, result)
     }
 
     @Test
@@ -132,8 +125,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.NONE))
         // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.NONE, result.type)
+        assertEquals(UserTypeEntity.NONE, result)
     }
 
     @Test
@@ -141,7 +133,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Bot)
         // then
-        assertIs<UserTypeInfoEntity.Bot>(result)
+        assertEquals(UserTypeEntity.SERVICE, result)
     }
 
     @Test
@@ -149,86 +141,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.App)
         // then
-        assertIs<UserTypeInfoEntity.App>(result)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsStandard_whenMappingToUserTypeInfoEntity_thenInternalIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.STANDARD)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.STANDARD, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsAdmin_whenMappingToUserTypeInfoEntity_thenAdminIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.ADMIN)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.ADMIN, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsOwner_whenMappingToUserTypeInfoEntity_thenOwnerIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.OWNER)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.OWNER, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsExternal_whenMappingToUserTypeInfoEntity_thenExternalIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.EXTERNAL)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.EXTERNAL, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsFederated_whenMappingToUserTypeInfoEntity_thenFederatedIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.FEDERATED)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.FEDERATED, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsGuest_whenMappingToUserTypeInfoEntity_thenGuestIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.GUEST)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.GUEST, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsNone_whenMappingToUserTypeInfoEntity_thenNoneIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.NONE)
-        // then
-        assertIs<UserTypeInfoEntity.Regular>(result)
-        assertEquals(UserTypeEntity.NONE, result.type)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsService_whenMappingToUserTypeInfoEntity_thenBotIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.SERVICE)
-        // then
-        assertIs<UserTypeInfoEntity.Bot>(result)
-    }
-
-    @Test
-    fun givenUserTypeEntityIsApp_whenMappingToUserTypeInfoEntity_thenAppIsReturned() {
-        // when
-        val result = userTypeMapper.fromUserTypeEntity(UserTypeEntity.APP)
-        // then
-        assertIs<UserTypeInfoEntity.App>(result)
+        assertEquals(UserTypeEntity.APP, result)
     }
 
 }

@@ -86,7 +86,7 @@ class ReceiptDAOTest : BaseDatabaseTest() {
             assertEquals(OTHER_USER.name, userName)
             assertEquals(OTHER_USER.handle, userHandle)
             assertEquals(OTHER_USER.previewAssetId, userPreviewAssetId)
-            assertEquals(OTHER_USER.userType.type, userType)
+            assertEquals(OTHER_USER.userType, userType)
             assertEquals(OTHER_USER.deleted, isUserDeleted)
             assertEquals(OTHER_USER.connectionStatus, connectionStatus)
             assertEquals(OTHER_USER.availabilityStatus, availabilityStatus)

@@ -516,7 +516,7 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
             // then
-            assertEquals(mockUser.copy(deleted = true, userType = UserTypeInfoEntity.Regular(UserTypeEntity.NONE)), searchResult?.toSimpleEntity())
+            assertEquals(mockUser.copy(deleted = true, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
         }
     }
 
@@ -629,16 +629,16 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertTeamMemberUserTypes(mapOf(user1.id to newUserType))
         // then
         val updated = db.userDAO.observeUserDetailsByQualifiedID(user1.id)
-        assertEquals(newUserType, updated.first()?.userType?.type)
+        assertEquals(newUserType, updated.first()?.userType)
         assertEquals(ConnectionEntity.State.ACCEPTED, updated.first()?.connectionStatus)
     }
 
     @Test
     fun givenNotExistingUsers_whenUpsertingTeamMembersUserTypes_ThenUserIsInsertedWithCorrectUserType() = runTest(dispatcher) {
         // given
-        val newUserType = UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN)
+        val newUserType = UserTypeEntity.ADMIN
         // when
-        db.userDAO.upsertTeamMemberUserTypes(mapOf(user1.id to newUserType.type))
+        db.userDAO.upsertTeamMemberUserTypes(mapOf(user1.id to newUserType))
         // then
         val inserted = db.userDAO.observeUserDetailsByQualifiedID(user1.id)
         assertEquals(newUserType, inserted.first()?.userType)
@@ -706,7 +706,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
         val user = user1
         db.userDAO.upsertUser(user)
-        val deletedUser = user1.copy(deleted = true, userType = UserTypeInfoEntity.Regular(UserTypeEntity.NONE))
+        val deletedUser = user1.copy(deleted = true, userType = UserTypeEntity.NONE)
         db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user1.id)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result?.toSimpleEntity(), deletedUser)
@@ -895,7 +895,7 @@ class UserDAOTest : BaseDatabaseTest() {
             previewAssetId = UserAssetIdEntity("PreviewAssetId", "PreviewAssetDomain"),
             completeAssetId = UserAssetIdEntity("CompleteAssetId", "CompleteAssetDomain"),
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD),
+            userType = UserTypeEntity.STANDARD,
             botService = BotIdEntity("BotService", "BotServiceDomain"),
             deleted = false,
             hasIncompleteMetadata = false,
@@ -916,7 +916,7 @@ class UserDAOTest : BaseDatabaseTest() {
             previewAssetId = UserAssetIdEntity("newPreviewAssetId", "newPreviewAssetDomain"),
             completeAssetId = UserAssetIdEntity("newCompleteAssetId", "newCompleteAssetDomain"),
             availabilityStatus = UserAvailabilityStatusEntity.BUSY,
-            userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
+            userType = UserTypeEntity.EXTERNAL,
             botService = BotIdEntity("newBotService", "newBotServiceDomain"),
             deleted = false,
             hasIncompleteMetadata = true,

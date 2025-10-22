@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,8 +46,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.STANDARD, senderUserType.type)
+        assertEquals(UserTypeEntity.STANDARD, senderUserType)
     }
 
     @Test
@@ -61,8 +59,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.ADMIN, senderUserType.type)
+        assertEquals(UserTypeEntity.ADMIN, senderUserType)
     }
 
     @Test
@@ -75,8 +72,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.OWNER, senderUserType.type)
+        assertEquals(UserTypeEntity.OWNER, senderUserType)
     }
 
     @Test
@@ -89,8 +85,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.EXTERNAL, senderUserType.type)
+        assertEquals(UserTypeEntity.EXTERNAL, senderUserType)
     }
 
     @Test
@@ -103,8 +98,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.FEDERATED, senderUserType.type)
+        assertEquals(UserTypeEntity.FEDERATED, senderUserType)
     }
 
     @Test
@@ -117,8 +111,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.GUEST, senderUserType.type)
+        assertEquals(UserTypeEntity.GUEST, senderUserType)
     }
 
     @Test
@@ -131,8 +124,7 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Regular>(senderUserType)
-        assertEquals(UserTypeEntity.NONE, senderUserType.type)
+        assertEquals(UserTypeEntity.NONE, senderUserType)
     }
 
     @Test
@@ -145,8 +137,8 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.Bot>(senderUserType)
-        assertEquals(UserTypeEntity.SERVICE, senderUserType.type)
+        assertEquals(UserTypeEntity.SERVICE, senderUserType)
+        assertEquals(UserTypeEntity.SERVICE, senderUserType)
     }
 
     @Test
@@ -159,8 +151,8 @@ class MessageMapperUserTypeMappingTest {
         // then
         assertNotNull(messageEntity.sender)
         val senderUserType = messageEntity.sender!!.userType
-        assertIs<UserTypeInfoEntity.App>(senderUserType)
-        assertEquals(UserTypeEntity.APP, senderUserType.type)
+        assertEquals(UserTypeEntity.APP, senderUserType)
+        assertEquals(UserTypeEntity.APP, senderUserType)
     }
 
     @Test
@@ -176,31 +168,30 @@ class MessageMapperUserTypeMappingTest {
 
         // then
         assertNotNull(standardMessage.sender)
-        assertIs<UserTypeInfoEntity.Regular>(standardMessage.sender!!.userType)
-        assertEquals(UserTypeEntity.STANDARD, standardMessage.sender!!.userType.type)
+        assertEquals(UserTypeEntity.STANDARD, standardMessage.sender!!.userType)
 
         assertNotNull(adminMessage.sender)
-        assertIs<UserTypeInfoEntity.Regular>(adminMessage.sender!!.userType)
+        adminMessage.sender!!.userType)
         assertEquals(UserTypeEntity.ADMIN, adminMessage.sender!!.userType.type)
 
         assertNotNull(botMessage.sender)
-        assertIs<UserTypeInfoEntity.Bot>(botMessage.sender!!.userType)
+        botMessage.sender!!.userType)
         assertEquals(UserTypeEntity.SERVICE, botMessage.sender!!.userType.type)
 
         assertNotNull(appMessage.sender)
-        assertIs<UserTypeInfoEntity.App>(appMessage.sender!!.userType)
+        appMessage.sender!!.userType)
         assertEquals(UserTypeEntity.APP, appMessage.sender!!.userType.type)
 
         assertNotNull(externalMessage.sender)
-        assertIs<UserTypeInfoEntity.Regular>(externalMessage.sender!!.userType)
+        externalMessage.sender!!.userType)
         assertEquals(UserTypeEntity.EXTERNAL, externalMessage.sender!!.userType.type)
 
         assertNotNull(guestMessage.sender)
-        assertIs<UserTypeInfoEntity.Regular>(guestMessage.sender!!.userType)
+        guestMessage.sender!!.userType)
         assertEquals(UserTypeEntity.GUEST, guestMessage.sender!!.userType.type)
 
         assertNotNull(federatedMessage.sender)
-        assertIs<UserTypeInfoEntity.Regular>(federatedMessage.sender!!.userType)
+        federatedMessage.sender!!.userType)
         assertEquals(UserTypeEntity.FEDERATED, federatedMessage.sender!!.userType.type)
     }
 
@@ -216,7 +207,7 @@ class MessageMapperUserTypeMappingTest {
 
         // then
         assertNotNull(messageEntity.sender)
-        assertIs<UserTypeInfoEntity.Bot>(messageEntity.sender!!.userType)
+        messageEntity.sender!!.userType)
         val content = messageEntity.content
         assertIs<MessageEntityContent.Text>(content)
         assertEquals("Hello from bot", content.messageBody)
@@ -234,7 +225,7 @@ class MessageMapperUserTypeMappingTest {
 
         // then
         assertNotNull(messageEntity.sender)
-        assertIs<UserTypeInfoEntity.App>(messageEntity.sender!!.userType)
+        messageEntity.sender!!.userType)
         val content = messageEntity.content
         assertIs<MessageEntityContent.Text>(content)
         assertEquals("Message from app", content.messageBody)
@@ -254,7 +245,7 @@ class MessageMapperUserTypeMappingTest {
         assertEquals(MessageEntity.Status.READ, messageEntity.status)
         assertEquals(5, messageEntity.readCount)
         assertNotNull(messageEntity.sender)
-        assertIs<UserTypeInfoEntity.Regular>(messageEntity.sender!!.userType)
+        messageEntity.sender!!.userType)
         assertEquals(UserTypeEntity.EXTERNAL, messageEntity.sender!!.userType.type)
     }
 

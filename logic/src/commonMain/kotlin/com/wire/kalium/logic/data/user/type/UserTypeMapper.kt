@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.user.type
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 import io.mockative.Mockable
 
 class UserEntityTypeMapperImpl : UserEntityTypeMapper {
@@ -116,33 +115,21 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
-    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserTypeInfoEntity = when (userTypeEntity) {
-        UserTypeEntity.STANDARD -> UserTypeInfoEntity.Regular(standard)
-        UserTypeEntity.EXTERNAL -> UserTypeInfoEntity.Regular(external)
-        UserTypeEntity.FEDERATED -> UserTypeInfoEntity.Regular(federated)
-        UserTypeEntity.GUEST -> UserTypeInfoEntity.Regular(guest)
-        UserTypeEntity.NONE -> UserTypeInfoEntity.Regular(none)
-        UserTypeEntity.OWNER -> UserTypeInfoEntity.Regular(owner)
-        UserTypeEntity.ADMIN -> UserTypeInfoEntity.Regular(admin)
-        UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
-        UserTypeEntity.APP -> UserTypeInfoEntity.App
-    }
-
-    override fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeInfoEntity = when (userTypeInfo) {
+    override fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeEntity = when (userTypeInfo) {
         is UserTypeInfo.Regular -> {
             when (userTypeInfo.type) {
-                UserType.INTERNAL -> UserTypeInfoEntity.Regular(standard)
-                UserType.ADMIN -> UserTypeInfoEntity.Regular(admin)
-                UserType.OWNER -> UserTypeInfoEntity.Regular(owner)
-                UserType.EXTERNAL -> UserTypeInfoEntity.Regular(external)
-                UserType.FEDERATED -> UserTypeInfoEntity.Regular(federated)
-                UserType.GUEST -> UserTypeInfoEntity.Regular(guest)
-                UserType.NONE -> UserTypeInfoEntity.Regular(none)
+                UserType.INTERNAL -> standard
+                UserType.ADMIN -> admin
+                UserType.OWNER -> owner
+                UserType.EXTERNAL -> external
+                UserType.FEDERATED -> federated
+                UserType.GUEST -> guest
+                UserType.NONE -> none
             }
         }
 
-        is UserTypeInfo.Bot -> UserTypeInfoEntity.Bot
-        is UserTypeInfo.App -> UserTypeInfoEntity.App
+        is UserTypeInfo.Bot -> service
+        is UserTypeInfo.App -> app
     }
 
 }
@@ -178,23 +165,10 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
             null -> UserTypeInfo.Regular(none)
         }
     }
-
-    override fun fromUserType(userType: UserType): UserTypeInfo = when (userType) {
-        UserType.INTERNAL -> UserTypeInfo.Regular(standard)
-        UserType.ADMIN -> UserTypeInfo.Regular(admin)
-        UserType.OWNER -> UserTypeInfo.Regular(owner)
-        UserType.EXTERNAL -> UserTypeInfo.Regular(external)
-        UserType.FEDERATED -> UserTypeInfo.Regular(federated)
-        UserType.GUEST -> UserTypeInfo.Regular(guest)
-        UserType.NONE -> UserTypeInfo.Regular(none)
-    }
-
-    override fun fromUserTypeInfoEntity(userTypeInfoEntity: UserTypeInfoEntity) = fromUserTypeEntity(userTypeInfoEntity.type)
 }
 
 interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
-    fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserTypeInfoEntity
-    fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeInfoEntity
+    fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeEntity
     fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): UserTypeEntity
 
     @Suppress("LongParameterList")
@@ -211,8 +185,6 @@ interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
 @Mockable
 interface DomainUserTypeMapper : UserTypeMapper<UserType> {
     fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo
-    fun fromUserType(userType: UserType): UserTypeInfo
-    fun fromUserTypeInfoEntity(userTypeInfoEntity: UserTypeInfoEntity): UserTypeInfo
 }
 
 interface UserTypeMapper<T> {

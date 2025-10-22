@@ -45,7 +45,6 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserTypeInfoEntity
 
 object TestUser {
     private const val value = "41d2b365-f4a9-4ba1-bddf-5afb8aca6786"
@@ -111,7 +110,7 @@ object TestUser {
         previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
         completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
+        userType = UserTypeEntity.EXTERNAL,
         botService = null,
         deleted = false,
         hasIncompleteMetadata = false,
@@ -133,7 +132,7 @@ object TestUser {
         previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
         completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL),
+        userType = UserTypeEntity.EXTERNAL,
         botService = null,
         deleted = false,
         expiresAt = null,

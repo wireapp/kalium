@@ -104,7 +104,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.STANDARD, result[0].otherUser?.userType)
     }
 
     @Test
@@ -117,7 +117,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.ADMIN), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.ADMIN, result[0].otherUser?.userType)
     }
 
     @Test
@@ -130,7 +130,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.OWNER), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.OWNER, result[0].otherUser?.userType)
     }
 
     @Test
@@ -143,7 +143,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.EXTERNAL), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.EXTERNAL, result[0].otherUser?.userType)
     }
 
     @Test
@@ -156,7 +156,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.FEDERATED), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.FEDERATED, result[0].otherUser?.userType)
     }
 
     @Test
@@ -169,7 +169,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.GUEST), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.GUEST, result[0].otherUser?.userType)
     }
 
     @Test
@@ -182,7 +182,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.NONE), result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.NONE, result[0].otherUser?.userType)
     }
 
     @Test
@@ -195,7 +195,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.Bot, result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.SERVICE, result[0].otherUser?.userType)
     }
 
     @Test
@@ -208,7 +208,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         db.connectionDAO.insertConnection(connection)
 
         val result = db.connectionDAO.getConnectionRequests().first()
-        assertEquals(UserTypeInfoEntity.App, result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.APP, result[0].otherUser?.userType)
     }
 
     @Test
@@ -232,9 +232,9 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         val result = db.connectionDAO.getConnectionRequests().first()
 
         assertEquals(3, result.size)
-        assertEquals(UserTypeInfoEntity.Regular(UserTypeEntity.STANDARD), result[0].otherUser?.userType)
-        assertEquals(UserTypeInfoEntity.Bot, result[1].otherUser?.userType)
-        assertEquals(UserTypeInfoEntity.App, result[2].otherUser?.userType)
+        assertEquals(UserTypeEntity.STANDARD, result[0].otherUser?.userType)
+        assertEquals(UserTypeEntity.SERVICE, result[1].otherUser?.userType)
+        assertEquals(UserTypeEntity.APP, result[2].otherUser?.userType)
     }
 
     companion object {
@@ -278,11 +278,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = when (userType) {
-                UserTypeEntity.SERVICE -> UserTypeInfoEntity.Bot
-                UserTypeEntity.APP -> UserTypeInfoEntity.App
-                else -> UserTypeInfoEntity.Regular(userType)
-            },
+            userType = userType,
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
