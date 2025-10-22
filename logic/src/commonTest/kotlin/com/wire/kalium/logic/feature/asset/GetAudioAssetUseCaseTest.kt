@@ -46,7 +46,7 @@ class GetAudioAssetUseCaseTest {
             .arrange()
 
         // When
-        val result = useCase.invoke(any(), any(), any()).await()
+        val result = useCase.invoke(conversationId, "messageId", "assetId").await()
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
