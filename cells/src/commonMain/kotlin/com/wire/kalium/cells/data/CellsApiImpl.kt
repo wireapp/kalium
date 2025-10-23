@@ -87,6 +87,7 @@ internal class CellsApiImpl(
                     offset = offset.toString(),
                     scope = RestLookupScope(recursive = true),
                     filters = RestLookupFilter(
+                        type = TreeNodeType.LEAF,
                         text = LookupFilterTextSearch(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
