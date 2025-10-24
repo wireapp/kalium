@@ -19,9 +19,10 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.MetadataQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import io.mockative.Mockable
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 @Mockable
 interface PrekeyDAO {
@@ -32,9 +33,10 @@ interface PrekeyDAO {
 
 internal class PrekeyDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
-    private val queriesContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : PrekeyDAO {
-    override suspend fun updateMostRecentPreKeyId(newKeyId: Int) = withContext(queriesContext) {
+    override suspend fun updateMostRecentPreKeyId(newKeyId: Int) = withContext(writeDispatcher.value) {
         metadataQueries.transaction {
             val currentId = metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).executeAsOneOrNull()?.toInt()
             if (currentId == null || newKeyId > currentId) {
@@ -43,11 +45,11 @@ internal class PrekeyDAOImpl internal constructor(
         }
     }
 
-    override suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int) = withContext(queriesContext) {
+    override suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int) = withContext(writeDispatcher.value) {
         metadataQueries.insertValue(MOST_RECENT_PREKEY_ID, newKeyId.toString())
     }
 
-    override suspend fun mostRecentPreKeyId(): Int? = withContext(queriesContext) {
+    override suspend fun mostRecentPreKeyId(): Int? = withContext(readDispatcher.value) {
         metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).executeAsOneOrNull()?.toInt()
     }
 

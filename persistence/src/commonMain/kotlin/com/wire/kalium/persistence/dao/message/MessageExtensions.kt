@@ -25,9 +25,9 @@ import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.kaliumLogger
 import io.mockative.Mockable
-import kotlin.coroutines.CoroutineContext
 
 @Mockable
 interface MessageExtensions {
@@ -64,7 +64,7 @@ internal class MessageExtensionsImpl internal constructor(
     private val messagesQueries: MessagesQueries,
     private val messageAssetViewQueries: MessageAssetViewQueries,
     private val messageMapper: MessageMapper,
-    private val coroutineContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
 ) : MessageExtensions {
 
     override fun getPagerForConversation(
@@ -77,9 +77,10 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getPagingSource(conversationId, visibilities, startingOffset) },
             getPagingSource(conversationId, visibilities, startingOffset),
-            coroutineContext
+            readDispatcher,
         )
     }
+
     override fun getPagerForMessagesSearch(
         searchQuery: String,
         conversationId: ConversationIDEntity,
@@ -90,7 +91,7 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset) },
             getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset),
-            coroutineContext
+            readDispatcher,
         )
     }
 
@@ -104,7 +105,7 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getMessageAssetsWithoutImagePagingSource(conversationId, mimeTypes, startingOffset) },
             getMessageAssetsWithoutImagePagingSource(conversationId, mimeTypes, startingOffset),
-            coroutineContext
+            readDispatcher,
         )
     }
 
@@ -117,7 +118,7 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getMessageImageAssetsPagingSource(conversationId, mimeTypes, startingOffset) },
             getMessageImageAssetsPagingSource(conversationId, mimeTypes, startingOffset),
-            coroutineContext
+            readDispatcher,
         )
     }
 
@@ -126,41 +127,41 @@ internal class MessageExtensionsImpl internal constructor(
         visibilities: Collection<MessageEntity.Visibility>,
         initialOffset: Long
     ) = QueryPagingSource(
-            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-            transacter = messagesQueries,
-            context = coroutineContext,
-            initialOffset = initialOffset,
-            queryProvider = { limit, offset ->
-                kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
-                messagesQueries.selectByConversationIdAndVisibility(
-                    conversationId,
-                    visibilities,
-                    limit,
-                    offset,
-                    messageMapper::toEntityMessageFromView
-                )
-            }
-        )
+        countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+        transacter = messagesQueries,
+        context = readDispatcher.value,
+        initialOffset = initialOffset,
+        queryProvider = { limit, offset ->
+            kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
+            messagesQueries.selectByConversationIdAndVisibility(
+                conversationId,
+                visibilities,
+                limit,
+                offset,
+                messageMapper::toEntityMessageFromView
+            )
+        }
+    )
 
     private fun getMessagesSearchPagingSource(
         searchQuery: String,
         conversationId: ConversationIDEntity,
         initialOffset: Long
     ) = QueryPagingSource(
-            countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId),
-            transacter = messagesQueries,
-            context = coroutineContext,
-            initialOffset = initialOffset,
-            queryProvider = { limit, offset ->
-                messagesQueries.selectConversationMessagesFromSearch(
-                    searchQuery,
-                    conversationId,
-                    limit,
-                    offset,
-                    messageMapper::toEntityMessageFromView
-                )
-            }
-        )
+        countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId),
+        transacter = messagesQueries,
+        context = readDispatcher.value,
+        initialOffset = initialOffset,
+        queryProvider = { limit, offset ->
+            messagesQueries.selectConversationMessagesFromSearch(
+                searchQuery,
+                conversationId,
+                limit,
+                offset,
+                messageMapper::toEntityMessageFromView
+            )
+        }
+    )
 
     private fun getMessageAssetsWithoutImagePagingSource(
         conversationId: ConversationIDEntity,
@@ -174,7 +175,7 @@ internal class MessageExtensionsImpl internal constructor(
             mimeTypes
         ),
         transacter = messageAssetViewQueries,
-        context = coroutineContext,
+        context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
             messageAssetViewQueries.getAssetMessagesByConversationIdAndMimeTypes(
@@ -201,7 +202,7 @@ internal class MessageExtensionsImpl internal constructor(
             mimeTypes
         ),
         transacter = messageAssetViewQueries,
-        context = coroutineContext,
+        context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
             messageAssetViewQueries.getImageAssetMessagesByConversationIdAndMimeTypes(

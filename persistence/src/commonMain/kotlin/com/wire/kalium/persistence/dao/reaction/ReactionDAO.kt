@@ -23,6 +23,8 @@ import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +32,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.coroutines.CoroutineContext
 
 interface ReactionDAO {
 
@@ -71,7 +72,8 @@ interface ReactionDAO {
 
 class ReactionDAOImpl(
     private val reactionsQueries: ReactionsQueries,
-    private val queriesContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : ReactionDAO {
 
     override suspend fun updateReactions(
@@ -80,7 +82,7 @@ class ReactionDAOImpl(
         senderUserId: UserIDEntity,
         instant: Instant,
         reactions: UserReactionsEntity
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         reactionsQueries.transaction {
             reactionsQueries.doesMessageExist(originalMessageId, conversationId).executeAsOneOrNull()?.let {
                 reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
@@ -97,7 +99,7 @@ class ReactionDAOImpl(
         senderUserId: UserIDEntity,
         instant: Instant,
         emoji: String
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         reactionsQueries.insertReaction(
             message_id = originalMessageId,
             conversation_id = conversationId,
@@ -112,7 +114,7 @@ class ReactionDAOImpl(
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
         emoji: String
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         reactionsQueries.deleteReaction(originalMessageId, conversationId, senderUserId, emoji)
     }
 
@@ -120,17 +122,19 @@ class ReactionDAOImpl(
         originalMessageId: String,
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity
-    ): UserReactionsEntity = reactionsQueries
-        .selectByMessageIdAndConversationIdAndSenderId(originalMessageId, conversationId, senderUserId) { _, _, _, emoji, _ ->
-            emoji
-        }
-        .executeAsList()
-        .toSet()
+    ): UserReactionsEntity = withContext(readDispatcher.value) {
+        reactionsQueries
+            .selectByMessageIdAndConversationIdAndSenderId(originalMessageId, conversationId, senderUserId) { _, _, _, emoji, _ ->
+                emoji
+            }
+            .executeAsList()
+            .toSet()
+    }
 
     override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
         reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
 }

@@ -23,12 +23,13 @@ import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.ReceiptsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.coroutines.CoroutineContext
 
 interface ReceiptDAO {
     suspend fun insertReceipts(
@@ -49,7 +50,8 @@ interface ReceiptDAO {
 class ReceiptDAOImpl(
     private val receiptsQueries: ReceiptsQueries,
     private val receiptAdapter: Receipt.Adapter,
-    private val queriesContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : ReceiptDAO {
 
     override suspend fun insertReceipts(
@@ -58,7 +60,7 @@ class ReceiptDAOImpl(
         date: Instant,
         type: ReceiptTypeEntity,
         messageIds: List<String>
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         receiptsQueries.transaction {
             messageIds.forEach { messageId ->
                 receiptsQueries.insertReceipt(
@@ -83,7 +85,7 @@ class ReceiptDAOImpl(
             type = type,
             mapper = ReceiptMapper::fromDetailedReceiptView
         ).asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
 }

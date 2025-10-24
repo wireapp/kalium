@@ -35,6 +35,8 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.dao.message.MessageExtensionsImpl
 import com.wire.kalium.persistence.dao.message.MessageMapper
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -75,7 +77,8 @@ class MessageExtensionsTest : BaseDatabaseTest() {
             messagesQueries = messagesQueries,
             messageAssetViewQueries = messageAssetViewQueries,
             messageMapper = MessageMapper,
-            coroutineContext = dispatcher
+            readDispatcher = ReadDispatcher(dispatcher),
+            writeDispatcher = WriteDispatcher(dispatcher),
         )
     }
 

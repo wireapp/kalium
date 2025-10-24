@@ -19,8 +19,8 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 interface CompositeMessageDAO {
     suspend fun markAsSelected(
@@ -37,13 +37,17 @@ interface CompositeMessageDAO {
 
 internal class CompositeMessageDAOImpl internal constructor(
     private val buttonContentQueries: ButtonContentQueries,
-    private val context: CoroutineContext
+    private val writeDispatcher: WriteDispatcher,
 ) : CompositeMessageDAO {
-    override suspend fun markAsSelected(messageId: String, conversationId: QualifiedIDEntity, buttonId: String) = withContext(context) {
+    override suspend fun markAsSelected(
+        messageId: String,
+        conversationId: QualifiedIDEntity,
+        buttonId: String
+    ) = withContext(writeDispatcher.value) {
         buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId)
     }
 
-    override suspend fun resetSelection(messageId: String, conversationId: QualifiedIDEntity) = withContext(context) {
+    override suspend fun resetSelection(messageId: String, conversationId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         buttonContentQueries.removeAllSelection(conversation_id = conversationId, message_id = messageId)
     }
 }
