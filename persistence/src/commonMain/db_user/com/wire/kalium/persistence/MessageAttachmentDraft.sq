@@ -30,6 +30,9 @@ SELECT * FROM MessageAttachmentDraft WHERE attachment_id = ?;
 getDrafts:
 SELECT * FROM MessageAttachmentDraft WHERE conversation_id = ?;
 
+getAllDrafts:
+SELECT * FROM MessageAttachmentDraft;
+
 upsertDraft:
 INSERT INTO MessageAttachmentDraft(
     attachment_id,
