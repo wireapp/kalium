@@ -180,7 +180,9 @@ class InstanceService(
 
         val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig, null)
             .login(
-                instanceRequest.email, instanceRequest.password, true,
+                instanceRequest.email,
+                instanceRequest.password,
+                true,
                 secondFactorVerificationCode = instanceRequest.verificationCode
             )
         when (loginResult) {
@@ -216,7 +218,11 @@ class InstanceService(
         log.info("Instance $instanceId: Save Session")
         val userId = coreLogic.globalScope {
             val addAccountResult = addAuthenticatedAccount(
-                loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, null, true
+                loginResult.serverConfigId,
+                loginResult.ssoID,
+                loginResult.authData,
+                null,
+                true
             )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                 throw WebApplicationException("Instance $instanceId: Failed to save session")
@@ -228,14 +234,16 @@ class InstanceService(
         val response = runBlocking {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
-                    when (val result = client.getOrRegister(
+                    when (
+                        val result = client.getOrRegister(
                         RegisterClientParam(
                             password = instanceRequest.password,
                             capabilities = emptyList(),
                             clientType = ClientType.Permanent,
                             model = instanceRequest.deviceName
                         )
-                    )) {
+                    )
+                    ) {
                         is RegisterClientResult.Success -> {
                             val clientId = result.client.id.value
                             log.info("Instance $instanceId: Device $clientId successfully registered")

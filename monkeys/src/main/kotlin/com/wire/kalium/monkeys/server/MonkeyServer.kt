@@ -60,7 +60,8 @@ class MonkeyServer : CliktCommand() {
             help = "Json config from the backend",
         ).convert { Json.decodeFromString<BackendConfig>(it) },
         option(
-            "-f", envvar = "FILE_BACKEND_CONFIG"
+            "-f",
+            envvar = "FILE_BACKEND_CONFIG"
         ).file(mustExist = true, mustBeReadable = true).convert {
             Json.decodeFromStream(it.inputStream())
         },

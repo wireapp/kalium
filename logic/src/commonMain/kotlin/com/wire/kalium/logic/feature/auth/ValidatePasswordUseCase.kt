@@ -45,7 +45,8 @@ internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
         private const val PASSWORD_MIN_LENGTH = 8
 
         @Suppress("NoMultipleSpaces")
-        private val PASSWORD_REGEX = ("^" +
+        private val PASSWORD_REGEX = (
+            "^" +
                 "(?=.*[a-z])" + // at least one lowercase ASCII letter
                 "(?=.*[A-Z])" + // at least one uppercase ASCII letter
                 "(?=.*[0-9])" + // at least a digit

@@ -114,7 +114,8 @@ internal class MLSMessageUnpackerImpl(
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
         logger.logStructuredJson(
-            KaliumLogLevel.DEBUG, "Received MLS proposal, scheduling delayed commit",
+            KaliumLogLevel.DEBUG,
+            "Received MLS proposal, scheduling delayed commit",
             mapOf(
                 "groupId" to groupId.toLogString(),
                 "commitDelay" to "$commitDelay"
@@ -133,7 +134,8 @@ internal class MLSMessageUnpackerImpl(
         messageEvent.subconversationId?.let { subConversationId ->
             subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation", mapOf(
+                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation",
+                        mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "subConversationId" to subConversationId.toLogString(),
                         "groupID" to groupID.toLogString()
@@ -144,7 +146,8 @@ internal class MLSMessageUnpackerImpl(
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation", mapOf(
+                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation",
+                        mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "groupID" to protocolInfo.groupId.toLogString(),
                         "protocolInfo" to protocolInfo.toLogMap()

@@ -91,5 +91,5 @@ internal object NetworkErrorLabel {
 
 enum class AuthenticationCodeFailure(val responseLabel: String) {
     MISSING_AUTHENTICATION_CODE("code-authentication-required"),
-    INVALID_OR_EXPIRED_AUTHENTICATION_CODE("code-authentication-failed");
+    INVALID_OR_EXPIRED_AUTHENTICATION_CODE("code-authentication-failed")
 }

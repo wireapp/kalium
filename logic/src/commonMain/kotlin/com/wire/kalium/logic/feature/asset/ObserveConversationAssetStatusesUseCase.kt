@@ -45,7 +45,8 @@ internal class ObserveAssetStatusesUseCaseImpl(
             .map {
                 it.fold(
                     { mapOf() },
-                    { assetList -> assetList.associateBy { assetStatus -> assetStatus.id } })
+                    { assetList -> assetList.associateBy { assetStatus -> assetStatus.id } }
+                )
             }
             .flowOn(dispatcher.io)
     }

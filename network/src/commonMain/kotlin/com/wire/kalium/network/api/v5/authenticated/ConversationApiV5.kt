@@ -107,7 +107,8 @@ internal open class ConversationApiV5 internal constructor(
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(
-                    UpdateConversationProtocolResponse.ProtocolUnchanged, httpResponse
+                    UpdateConversationProtocolResponse.ProtocolUnchanged,
+                    httpResponse
                 )
                 else -> {
                     wrapKaliumResponse<EventContentDTO.Conversation.ProtocolUpdate> { httpResponse }

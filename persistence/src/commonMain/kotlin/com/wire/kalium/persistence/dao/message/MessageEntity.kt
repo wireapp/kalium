@@ -194,7 +194,7 @@ sealed interface MessageEntity {
         /**
          * A member(s) was removed from the team.
          */
-        REMOVED_FROM_TEAM;
+        REMOVED_FROM_TEAM
     }
 
     enum class FederationType {

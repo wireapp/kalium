@@ -51,8 +51,10 @@ class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
 ) {
 
-    private val authenticationScopeStorage: ConcurrentMutableMap<Pair<ServerConfig, ProxyCredentials?>,
-            AuthenticationScope> by lazy {
+    private val authenticationScopeStorage: ConcurrentMutableMap<
+            Pair<ServerConfig, ProxyCredentials?>,
+            AuthenticationScope
+            > by lazy {
         ConcurrentMutableMap()
     }
 

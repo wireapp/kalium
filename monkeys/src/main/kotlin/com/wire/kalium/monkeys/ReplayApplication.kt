@@ -62,7 +62,9 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private val eventLogType by option("-s", help = "read from file or postgres").enum<EventLogType>().default(EventLogType.FILE).validate {
         when (it) {
-            EventLogType.FILE -> require(eventsLocation != null && teamsLocation != null) { "-e and -t must be provided for the file type" }
+            EventLogType.FILE -> require(eventsLocation != null && teamsLocation != null) {
+                "-e and -t must be provided for the file type"
+            }
             EventLogType.POSTGRES -> require(
                 host.isNotBlank() && dbName.isNotBlank() && username.isNotBlank() && password.isNotBlank() && executionId != -1
             ) { "-h, -d, -u, -p and -i must be informed for database type" }
@@ -74,14 +76,20 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val password by option("-p", help = "password for database").default("")
     private val executionId by option("-i", help = "execution id to be read").int()
     private val teamsLocation by option("-t", help = "file to read the backends' config").file(
-        mustExist = true, mustBeReadable = true, canBeDir = false
+        mustExist = true,
+        mustBeReadable = true,
+        canBeDir = false
     )
     private val eventsLocation by option("-e", help = "file to read the events from").file(
-        mustExist = true, mustBeReadable = true, canBeDir = false
+        mustExist = true,
+        mustBeReadable = true,
+        canBeDir = false
     )
     private val failFast by option(
-        "-f", help = "Stop the application if an action fails, otherwise ignore and continue processing next events"
+        "-f",
+        help = "Stop the application if an action fails, otherwise ignore and continue processing next events"
     ).flag()
+
     @Suppress("MagicNumber")
     private val delayPool by option(
         "-d",

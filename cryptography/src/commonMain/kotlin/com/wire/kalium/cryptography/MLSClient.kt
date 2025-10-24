@@ -40,7 +40,7 @@ enum class RatchetTreeType {
 }
 
 enum class E2EIConversationState {
-    VERIFIED, NOT_VERIFIED, NOT_ENABLED;
+    VERIFIED, NOT_VERIFIED, NOT_ENABLED
 }
 
 open class GroupInfoBundle(

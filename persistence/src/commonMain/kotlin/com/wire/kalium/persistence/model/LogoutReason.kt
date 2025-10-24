@@ -25,6 +25,7 @@ enum class LogoutReason {
     SELF_HARD_LOGOUT,
 
     SELF_SOFT_LOGOUT,
+
     /**
      * User deleted this client from another client.
      */

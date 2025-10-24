@@ -550,7 +550,9 @@ class UserSessionScope internal constructor(
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
     private val userStorage = userStorageProvider.getOrCreate(
-        userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
+        userId,
+        platformUserStorageProperties,
+        kaliumConfigs.shouldEncryptData
     )
 
     private var _clientId: ClientId? = null
@@ -579,7 +581,9 @@ class UserSessionScope internal constructor(
 
     val federatedIdMapper: FederatedIdMapper
         get() = MapperProvider.federatedIdMapper(
-            userId, qualifiedIdMapper, globalScope.sessionRepository
+            userId,
+            qualifiedIdMapper,
+            globalScope.sessionRepository
         )
 
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
@@ -1407,7 +1411,11 @@ class UserSessionScope internal constructor(
             lazy { clientRepository },
             lazy {
                 RegisterMLSClientUseCaseImpl(
-                    mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
+                    mlsClientProvider,
+                    clientRepository,
+                    keyPackageRepository,
+                    keyPackageLimitsProvider,
+                    userConfigRepository
                 )
             },
             this,
@@ -1683,7 +1691,8 @@ class UserSessionScope internal constructor(
 
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
-            userStorage.database.conversationDAO, persistMessage
+            userStorage.database.conversationDAO,
+            persistMessage
         )
 
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
@@ -1861,8 +1870,12 @@ class UserSessionScope internal constructor(
 
     private val federationEventReceiver: FederationEventReceiver
         get() = FederationEventReceiverImpl(
-            conversationRepository, connectionRepository, userRepository,
-            userStorage.database.memberDAO, persistMessage, userId
+            conversationRepository,
+            connectionRepository,
+            userRepository,
+            userStorage.database.memberDAO,
+            persistMessage,
+            userId
         )
 
     private val teamEventReceiver: TeamEventReceiver
@@ -2419,7 +2432,9 @@ class UserSessionScope internal constructor(
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(
-            conversations.observeConversationMembers, conversationRepository, userConfigRepository
+            conversations.observeConversationMembers,
+            conversationRepository,
+            userConfigRepository
         )
 
     val getOtherUserSecurityClassificationLabel: ObserveOtherUserSecurityClassificationLabelUseCase
@@ -2470,7 +2485,9 @@ class UserSessionScope internal constructor(
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
 
     private fun createPushTokenUpdater() = PushTokenUpdater(
-        clientRepository, notificationTokenRepository, pushTokenRepository
+        clientRepository,
+        notificationTokenRepository,
+        pushTokenRepository
     )
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {

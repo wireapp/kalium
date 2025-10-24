@@ -127,7 +127,8 @@ internal class KaliumHttpLogger(
                             |{"endpoint":"${obfuscatePath(request.url)}\",
                             | "method":"${request.method.value}",
                             |  "cause":"$cause"}
-                            |  """.trimMargin()
+                            |  
+""".trimMargin()
             )
         }
     }

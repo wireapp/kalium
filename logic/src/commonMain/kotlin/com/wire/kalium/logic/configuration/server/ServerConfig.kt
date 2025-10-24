@@ -235,7 +235,9 @@ class ServerConfigMapperImpl(
                 apiProxy = links.apiProxy?.let { toDTO(it) }
             ),
             metaData = ServerConfigDTO.MetaData(
-                federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
+                federation = metaData.federation,
+                commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion),
+                domain = metaData.domain
             )
         )
     }
@@ -277,7 +279,9 @@ class ServerConfigMapperImpl(
             id = id,
             links = toEntity(links),
             metaData = ServerConfigEntity.MetaData(
-                federation = metaData.federation, apiVersion = metaData.commonApiVersion.version, domain = metaData.domain
+                federation = metaData.federation,
+                apiVersion = metaData.commonApiVersion.version,
+                domain = metaData.domain
             )
         )
     }

@@ -81,7 +81,9 @@ class E2EIClientImpl(
 
     companion object {
         fun toAcmeDirectory(value: com.wire.crypto.AcmeDirectory) = AcmeDirectory(
-            value.newNonce, value.newAccount, value.newOrder
+            value.newNonce,
+            value.newAccount,
+            value.newOrder
         )
 
         fun toNewAcmeOrder(value: com.wire.crypto.NewAcmeOrder) = NewAcmeOrder(

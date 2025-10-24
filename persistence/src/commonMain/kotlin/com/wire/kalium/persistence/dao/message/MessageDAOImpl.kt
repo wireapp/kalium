@@ -332,7 +332,9 @@ internal class MessageDAOImpl internal constructor(
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
         queries.selectMessagesByConversationIdAndVisibilityAfterDate(
-            conversationId, visibility, date.toInstant(),
+            conversationId,
+            visibility,
+            date.toInstant(),
             mapper::toEntityMessageFromView
         )
             .asFlow()
@@ -342,7 +344,8 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
         withContext(coroutineContext) {
             queries.selectMessagesFromUserByStatus(
-                userId, MessageEntity.Status.PENDING,
+                userId,
+                MessageEntity.Status.PENDING,
                 mapper::toEntityMessageFromView
             )
                 .executeAsList()

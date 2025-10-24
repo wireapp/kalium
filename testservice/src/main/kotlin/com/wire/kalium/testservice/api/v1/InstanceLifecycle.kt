@@ -82,12 +82,14 @@ class InstanceLifecycle(
             }
         }
         // handles client disconnect
-        ar.register(ConnectionCallback { disconnected: AsyncResponse? ->
+        ar.register(
+            ConnectionCallback { disconnected: AsyncResponse? ->
             log.error("Instance $instanceId: Client disconnected from async create instance request")
             if (instanceService.getInstance(instanceId) != null) {
                 instanceService.deleteInstance(instanceId)
             }
-        })
+        }
+        )
 
         val createdInstance = try {
             runBlocking {

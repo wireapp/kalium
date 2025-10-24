@@ -75,14 +75,18 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
         }
         this.poolLoggedOut.forEach { (domain, usersById) ->
             MetricsCollector.gaugeMap(
-                "g_loggedOutUsers", listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)), usersById
+                "g_loggedOutUsers",
+                listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)),
+                usersById
             )
             // init so we can have metrics for it
             this.poolLoggedIn[domain] = ConcurrentHashMap()
         }
         this.poolLoggedIn.forEach { (domain, usersById) ->
             MetricsCollector.gaugeMap(
-                "g_loggedInUsers", listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)), usersById
+                "g_loggedInUsers",
+                listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)),
+                usersById
             )
         }
     }
@@ -171,14 +175,18 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
     }
 
     fun loggedIn(monkey: Monkey) {
-        this.poolLoggedIn.getOrPut(monkey.monkeyType.userData().team.name) { ConcurrentHashMap() }[monkey.monkeyType.userData().userId] =
+        this.poolLoggedIn.getOrPut(monkey.monkeyType.userData().team.name) {
+            ConcurrentHashMap()
+        }[monkey.monkeyType.userData().userId] =
             monkey
         this.poolLoggedOut[monkey.monkeyType.userData().team.name]?.remove(monkey.monkeyType.userData().userId)
     }
 
     fun loggedOut(monkey: Monkey) {
         this.poolLoggedIn[monkey.monkeyType.userData().team.name]?.remove(monkey.monkeyType.userData().userId)
-        this.poolLoggedOut.getOrPut(monkey.monkeyType.userData().team.name) { ConcurrentHashMap() }[monkey.monkeyType.userData().userId] =
+        this.poolLoggedOut.getOrPut(monkey.monkeyType.userData().team.name) {
+            ConcurrentHashMap()
+        }[monkey.monkeyType.userData().userId] =
             monkey
     }
 

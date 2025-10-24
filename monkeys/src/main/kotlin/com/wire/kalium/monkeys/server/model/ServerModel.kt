@@ -29,6 +29,7 @@ data class AddMonkeysRequest(
     @SerialName("monkeys")
     val monkeys: List<UserId>
 )
+
 @Serializable
 data class RemoveMonkeyRequest(
     @SerialName("conversationId")
@@ -36,6 +37,7 @@ data class RemoveMonkeyRequest(
     @SerialName("monkey")
     val monkey: UserId
 )
+
 @Serializable
 data class SendDMRequest(
     @SerialName("monkey")
@@ -43,6 +45,7 @@ data class SendDMRequest(
     @SerialName("message")
     val message: String
 )
+
 @Serializable
 data class SendMessageRequest(
     @SerialName("conversationId")
@@ -50,6 +53,7 @@ data class SendMessageRequest(
     @SerialName("message")
     val message: String
 )
+
 @Serializable
 data class CreateConversationRequest(
     @SerialName("name")
@@ -61,6 +65,7 @@ data class CreateConversationRequest(
     @SerialName("isDestroyable")
     val isDestroyable: Boolean
 )
+
 @Serializable
 data class ConversationIdRequest(
     @SerialName("conversationId")

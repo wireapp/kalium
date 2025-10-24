@@ -355,7 +355,8 @@ internal class AssetDataSource(
                     val decodedAssetPath =
                         kaliumFileSystem.providePersistentAssetPath(
                             buildFileName(
-                                assetId, assetName.fileExtension()
+                                assetId,
+                                    assetName.fileExtension()
                                     ?: getExtensionFromMimeType(mimeType)
                             )
                         )

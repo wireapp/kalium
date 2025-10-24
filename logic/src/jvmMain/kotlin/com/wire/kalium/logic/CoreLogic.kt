@@ -48,7 +48,9 @@ actual class CoreLogic(
     userAgent: String,
     useInMemoryStorage: Boolean = false,
 ) : CoreLogicCommon(
-    rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
+    rootPath = rootPath,
+    kaliumConfigs = kaliumConfigs,
+    userAgent = userAgent
 ) {
 
     override val globalPreferences: GlobalPrefProvider =

@@ -55,7 +55,8 @@ object ListUsersRequestJson {
                 QualifiedID("id11", "domain1"),
                 QualifiedID("id2", "domain2")
             )
-        ), qualifiedIdsProvider
+        ),
+            qualifiedIdsProvider
     )
 
     val validHandlesJsonProvider = ValidJsonProvider(
@@ -65,6 +66,7 @@ object ListUsersRequestJson {
                 QualifiedID("id11", "domain1"),
                 QualifiedID("id2", "domain2")
             )
-        ), qualifiedIdsProvider
+        ),
+            qualifiedIdsProvider
     )
 }

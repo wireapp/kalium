@@ -142,7 +142,8 @@ fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser, avatarAsse
         Text("$selfUser")
 
         Divider(
-            modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp
+            modifier = Modifier.fillMaxWidth(),
+            thickness = 0.5.dp
         )
 
         Text(text = "Avatar picture:")

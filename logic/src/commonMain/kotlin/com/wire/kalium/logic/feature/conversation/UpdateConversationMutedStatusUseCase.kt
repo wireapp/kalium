@@ -55,8 +55,10 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
             .flatMap {
                 conversationRepository.updateMutedStatusLocally(conversationId, mutedConversationStatus, mutedStatusTimestamp)
             }.fold({
-                kaliumLogger.e("Something went wrong when updating the convId: " +
-                        "(${conversationId.toLogString()}) to (${mutedConversationStatus.status}")
+                kaliumLogger.e(
+                    "Something went wrong when updating the convId: " +
+                        "(${conversationId.toLogString()}) to (${mutedConversationStatus.status}"
+                )
                 ConversationUpdateStatusResult.Failure
             }, {
                 ConversationUpdateStatusResult.Success

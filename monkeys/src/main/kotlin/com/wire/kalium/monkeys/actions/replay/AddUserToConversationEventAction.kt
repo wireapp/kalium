@@ -27,7 +27,8 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 class AddUserToConversationEventAction(private val eventConfig: EventType.AddUsersToConversation) :
-    AddUserToConversationAction(ActionType.AddUsersToConversation(1u, UserCount.fixed(eventConfig.newMembers.count().toUInt())), {}) {
+    AddUserToConversationAction(ActionType.AddUsersToConversation(1u, UserCount.fixed(eventConfig.newMembers.count().toUInt())), {
+        }) {
 
     override suspend fun pickConversations(
         monkeyPool: MonkeyPool,

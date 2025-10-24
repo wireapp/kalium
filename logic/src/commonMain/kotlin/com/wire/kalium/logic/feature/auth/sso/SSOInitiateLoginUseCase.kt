@@ -81,7 +81,9 @@ internal class SSOInitiateLoginUseCaseImpl(
             is SSOInitiateLoginUseCase.Param.WithRedirect -> {
                 val redirects = SSORedirects(serverConfig.id)
                 ssoLoginRepository.initiate(
-                    validUuid, redirects.success, redirects.error
+                    validUuid,
+                    redirects.success,
+                    redirects.error
                 )
             }
         }.fold({

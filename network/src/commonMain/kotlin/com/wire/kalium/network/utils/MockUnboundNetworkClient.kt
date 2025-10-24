@@ -55,11 +55,13 @@ object MockUnboundNetworkClient {
         val currentPath = currentRequest.url.encodedPath
         expectedRequests.forEach { request ->
             val expectedPath = URLBuilder(request.path).build().encodedPath
-            val head: Map<String, List<String>> = (request.headers?.let { headers ->
+            val head: Map<String, List<String>> = (
+                request.headers?.let { headers ->
                 mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
             } ?: run {
                 mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
-            })
+            }
+            )
             if (expectedPath == currentPath && request.httpMethod == currentRequest.method) {
                 return@MockEngine respond(
                     content = ByteReadChannel(request.responseBody),
@@ -79,11 +81,13 @@ object MockUnboundNetworkClient {
         headers: Map<String, String>? = null
     ): MockEngine {
 
-        val newHeaders: Map<String, List<String>> = (headers?.let {
+        val newHeaders: Map<String, List<String>> = (
+            headers?.let {
             headers.mapValues { listOf(it.value) }
         } ?: run {
             mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
-        })
+        }
+        )
 
         return MockEngine { request ->
             request.assertion()

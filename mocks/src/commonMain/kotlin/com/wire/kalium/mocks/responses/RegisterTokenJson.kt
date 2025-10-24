@@ -48,6 +48,7 @@ object RegisterTokenJson {
                 "123456",
                 "oaisjdoiasjd",
                 "GCM"
-            ), jsonProvider
+            ),
+                jsonProvider
         )
 }

@@ -172,7 +172,9 @@ class EnrollE2EIUseCaseImpl internal constructor(
         }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
-            wireAccessToken.token, prevNonce, dPopAuthorizations.challenge
+            wireAccessToken.token,
+            prevNonce,
+            dPopAuthorizations.challenge
         ).getOrFail {
             return it.left()
         }
@@ -180,7 +182,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = Nonce(dpopChallengeResponse.nonce)
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, oAuthState, prevNonce, oidcAuthorizations.challenge
+            idToken,
+            oAuthState,
+            prevNonce,
+            oidcAuthorizations.challenge
         ).getOrFail {
             return it.left()
         }

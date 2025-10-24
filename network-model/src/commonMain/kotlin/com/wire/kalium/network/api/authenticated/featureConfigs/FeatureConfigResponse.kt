@@ -81,7 +81,7 @@ enum class FeatureFlagStatusDTO {
     ENABLED,
 
     @SerialName("disabled")
-    DISABLED;
+    DISABLED
 }
 
 @Serializable

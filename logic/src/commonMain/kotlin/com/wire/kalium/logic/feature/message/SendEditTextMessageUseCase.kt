@@ -41,13 +41,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
-@Suppress("LongParameterList")
-
 /**
  * Edits a text message
  *
  * @sample samples.logic.MessageUseCases.sendingEditBasicTextMessage
  */
+@Suppress("LongParameterList")
 class SendEditTextMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val selfUserId: QualifiedID,
@@ -112,7 +111,9 @@ class SendEditTextMessageUseCase internal constructor(
                 .flatMap {
                     messageSender.sendMessage(message)
                 }
-        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
+        }.onFailure {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE)
+        }
     }
 
     companion object {

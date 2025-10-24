@@ -150,7 +150,7 @@ open class ProteusException(message: String?, val code: Code, val intCode: Int?,
         /**
          * Local files were not found.
          */
-        LOCAL_FILES_NOT_FOUND;
+        LOCAL_FILES_NOT_FOUND
     }
 
     companion object {

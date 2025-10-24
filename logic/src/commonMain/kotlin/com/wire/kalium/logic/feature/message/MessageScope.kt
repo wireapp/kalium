@@ -287,7 +287,8 @@ class MessageScope internal constructor(
 
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
         get() = GetAssetMessageTransferStatusUseCaseImpl(
-            messageRepository, dispatcher
+            messageRepository,
+            dispatcher
         )
 
     val retryFailedMessage: RetryFailedMessageUseCase

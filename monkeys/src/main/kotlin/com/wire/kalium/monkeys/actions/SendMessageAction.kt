@@ -144,8 +144,10 @@ open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend
             }
         }.ifEmpty {
             listOf(
-                Either.Right(conversationPool.randomConversations(this.config.countGroups)
-                    .map { it to it.randomMonkeys(this.config.userCount) })
+                Either.Right(
+                    conversationPool.randomConversations(this.config.countGroups)
+                    .map { it to it.randomMonkeys(this.config.userCount) }
+                )
             )
         }
     }

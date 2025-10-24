@@ -32,14 +32,16 @@ private val DIRECT_MESSAGES = arrayOf(
 
         Thanks a bunch,
         A friendly monkey 🍌🐵
-    """.trimIndent(), """
+    """.trimIndent(),
+    """
         Yo,
 
         I'm in need of some bananas, my friend. Can you hook me up? I'd appreciate it big time.
 
         Respect,
         A neutral monkey 🍌
-    """.trimIndent(), """
+    """.trimIndent(),
+    """
         Listen up,
 
         I ain't messin' around. I want them bananas, and I want 'em now. You better deliver or there'll be consequences.
