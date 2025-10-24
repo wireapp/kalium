@@ -48,11 +48,13 @@ internal class ObserveClientDetailsUseCaseImpl(
         clientRepository.observeClientsByUserIdAndClientId(userId, clientId)
             .map {
                 it.fold(
-                    { GetClientDetailsResult.Failure.Generic(it) }, { client ->
+                    { GetClientDetailsResult.Failure.Generic(it) },
+                    { client ->
                     provideClientId.invoke().getOrNull()?.let { currentClientId ->
                         GetClientDetailsResult.Success(client, currentClientId.value == clientId.value)
                     } ?: GetClientDetailsResult.Success(client, false)
-                })
+                }
+                )
             }
 }
     sealed class GetClientDetailsResult {

@@ -54,7 +54,8 @@ internal class GetUserInfoUseCaseImpl(
             { otherUser ->
                 getOtherUserTeam(otherUser).fold(
                     { GetUserInfoResult.Failure },
-                    { team -> GetUserInfoResult.Success(otherUser, team) })
+                    { team -> GetUserInfoResult.Success(otherUser, team) }
+                )
             }
         )
     }

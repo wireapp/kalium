@@ -52,6 +52,7 @@ typealias ConversationIDEntity = QualifiedIDEntity
 @Serializable
 enum class SupportedProtocolEntity {
     @SerialName("PROTEUS") PROTEUS,
+
     @SerialName("MLS") MLS
 }
 
@@ -191,7 +192,7 @@ enum class UserTypeEntity {
      * A user on the same backend,
      * when current user doesn't belongs to any team
      */
-    NONE;
+    NONE
 }
 
 /**

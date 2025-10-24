@@ -181,7 +181,7 @@ data class Conversation(
         NON_TEAM_MEMBER,
         GUEST,
         SERVICE,
-        EXTERNAL;
+        EXTERNAL
     }
 
     enum class Access {
@@ -189,7 +189,7 @@ data class Conversation(
         INVITE,
         SELF_INVITE,
         LINK,
-        CODE;
+        CODE
     }
 
     enum class Protocol {

@@ -563,7 +563,8 @@ internal class ConversationDataSource internal constructor(
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         memberDAO.insertMembersWithQualifiedId(
-            members.map(memberMapper::toDaoModel), conversationID.toDao()
+            members.map(memberMapper::toDaoModel),
+            conversationID.toDao()
         )
     }
 
@@ -947,9 +948,11 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             if (conversationsFailed.isNotEmpty()) {
-                conversationDAO.insertConversations(conversationsFailed.map { conversationId ->
+                conversationDAO.insertConversations(
+                    conversationsFailed.map { conversationId ->
                     conversationMapper.fromFailedGroupConversationToEntity(conversationId)
-                })
+                }
+                )
             }
         }
     }

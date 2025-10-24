@@ -25,12 +25,16 @@ import kotlinx.serialization.Serializable
 enum class ConversationAccessDTO {
     @SerialName("private")
     PRIVATE,
+
     @SerialName("code")
     CODE,
+
     @SerialName("invite")
     INVITE,
+
     @SerialName("self_invite")
     SELF_INVITE,
+
     @SerialName("link")
     LINK;
 

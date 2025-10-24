@@ -295,7 +295,9 @@ internal class UserMapperImpl(
         newAssetId: String?
     ): UserUpdateRequest {
         return UserUpdateRequest(
-            name = newName, accentId = newAccent, assets = if (newAssetId != null) {
+            name = newName,
+            accentId = newAccent,
+                assets = if (newAssetId != null) {
                 listOf(
                     UserAssetDTO(newAssetId, AssetSizeDTO.COMPLETE, UserAssetTypeDTO.IMAGE),
                     UserAssetDTO(newAssetId, AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE)
