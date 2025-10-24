@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
 
 object UserMocks {
 
@@ -73,7 +74,8 @@ object UserMocks {
         expiresAt = null,
         nonQualifiedId = "",
         service = null,
-        supportedProtocols = listOf(SupportedProtocolDTO.MLS)
+        supportedProtocols = listOf(SupportedProtocolDTO.MLS),
+        type = UserTypeDTO.REGULAR
     )
 
     val usersFoundList = listOf(otherProfile)

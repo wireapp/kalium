@@ -19,12 +19,13 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -32,24 +33,24 @@ import kotlinx.coroutines.flow.flowOf
 
 internal class GetUserInfoUseCaseTestArrangement {
 
-        val userRepository: UserRepository = mock(UserRepository::class)
+    val userRepository: UserRepository = mock(UserRepository::class)
 
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
+    val teamRepository: TeamRepository = mock(TeamRepository::class)
 
     suspend fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,
         hasTeam: Boolean = true,
-        userType: UserType = UserType.EXTERNAL
+        userType: UserTypeInfo = UserTypeInfo.Regular(UserType.EXTERNAL)
     ): GetUserInfoUseCaseTestArrangement {
         coEvery {
             userRepository.getKnownUser(any())
         }.returns(
-                flowOf(
-                    if (!localUserPresent) null
-                    else if (hasTeam) TestUser.OTHER.copy(userType = userType)
-                    else TestUser.OTHER.copy(teamId = null, userType = userType)
-                )
+            flowOf(
+                if (!localUserPresent) null
+                else if (hasTeam) TestUser.OTHER.copy(userType = userType)
+                else TestUser.OTHER.copy(teamId = null, userType = userType)
             )
+        )
 
         if (!localUserPresent) {
             coEvery {
@@ -78,11 +79,11 @@ internal class GetUserInfoUseCaseTestArrangement {
         coEvery {
             teamRepository.getTeam(any())
         }.returns(
-                flowOf(
-                    if (!localTeamPresent) null
-                    else TestTeam.TEAM
-                )
+            flowOf(
+                if (!localTeamPresent) null
+                else TestTeam.TEAM
             )
+        )
 
         if (!localTeamPresent) {
             coEvery {

@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.network.api.authenticated.search.ContactDTO
@@ -401,7 +402,7 @@ class UserSearchApiWrapperTest {
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
                     expiresAt = null,
                     supportedProtocols = null,
-                    userType = UserType.INTERNAL,
+                    userType = UserTypeInfo.Regular(UserType.INTERNAL),
                 )
             }
 
@@ -419,7 +420,7 @@ class UserSearchApiWrapperTest {
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
                 expiresAt = null,
                 supportedProtocols = null,
-                userType = UserType.INTERNAL,
+                userType = UserTypeInfo.Regular(UserType.INTERNAL),
             )
         }
     }

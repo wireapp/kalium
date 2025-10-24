@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser.OTHER
 import io.mockative.any
 import io.mockative.coVerify
@@ -137,7 +138,7 @@ class GetUserInfoUseCaseTest {
     fun givenAInternalUserWithTeamNotExistingLocally_WhenGettingDetails_thenShouldReturnSuccessResultAndGetRemoteUserTeam() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withSuccessfulUserRetrieve(userType = UserType.INTERNAL)
+            .withSuccessfulUserRetrieve(userType = UserTypeInfo.Regular(UserType.INTERNAL))
             .withSuccessfulTeamRetrieve(localTeamPresent = false)
             .arrange()
 
@@ -145,7 +146,7 @@ class GetUserInfoUseCaseTest {
         val result = useCase(userId)
 
         // then
-        assertEquals(OTHER.copy(userType = UserType.INTERNAL), (result as GetUserInfoResult.Success).otherUser)
+        assertEquals(OTHER.copy(userType = UserTypeInfo.Regular(UserType.INTERNAL)), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
             coVerify {
@@ -200,7 +201,7 @@ class GetUserInfoUseCaseTest {
         // given
 
         val (arrangement, useCase) = arrangement
-            .withSuccessfulUserRetrieve(localUserPresent = true, userType = UserType.INTERNAL)
+            .withSuccessfulUserRetrieve(localUserPresent = true, userType = UserTypeInfo.Regular(UserType.INTERNAL))
             .withFailingTeamRetrieve()
             .arrange()
 

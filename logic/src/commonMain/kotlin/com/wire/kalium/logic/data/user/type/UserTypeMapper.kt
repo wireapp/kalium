@@ -19,103 +19,87 @@
 package com.wire.kalium.logic.data.user.type
 
 import com.wire.kalium.logic.data.team.TeamRole
+import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mockable
 
 class UserEntityTypeMapperImpl : UserEntityTypeMapper {
 
-    override val guest: UserTypeEntity
+    val guest: UserTypeEntity
         get() = UserTypeEntity.GUEST
-    override val federated: UserTypeEntity
+    val federated: UserTypeEntity
         get() = UserTypeEntity.FEDERATED
-    override val external: UserTypeEntity
+    val external: UserTypeEntity
         get() = UserTypeEntity.EXTERNAL
-    override val standard: UserTypeEntity
+    val standard: UserTypeEntity
         get() = UserTypeEntity.STANDARD
-    override val admin: UserTypeEntity
+    val admin: UserTypeEntity
         get() = UserTypeEntity.ADMIN
-    override val owner: UserTypeEntity
+    val owner: UserTypeEntity
         get() = UserTypeEntity.OWNER
-    override val service: UserTypeEntity
+    val service: UserTypeEntity
         get() = UserTypeEntity.SERVICE
-    override val none: UserTypeEntity
+    val none: UserTypeEntity
         get() = UserTypeEntity.NONE
+    val app: UserTypeEntity
+        get() = UserTypeEntity.APP
 
-    override fun fromUserType(userType: UserType): UserTypeEntity = when (userType) {
-        UserType.INTERNAL -> standard
-        UserType.ADMIN -> admin
-        UserType.OWNER -> owner
-        UserType.EXTERNAL -> external
-        UserType.FEDERATED -> federated
-        UserType.GUEST -> guest
-        UserType.SERVICE -> service
-        UserType.NONE -> none
-    }
-}
-
-class DomainUserTypeMapperImpl : DomainUserTypeMapper {
-
-    override val guest: UserType
-        get() = UserType.GUEST
-    override val federated: UserType
-        get() = UserType.FEDERATED
-    override val external: UserType
-        get() = UserType.EXTERNAL
-    override val standard: UserType
-        get() = UserType.INTERNAL
-    override val admin: UserType
-        get() = UserType.ADMIN
-    override val owner: UserType
-        get() = UserType.OWNER
-    override val service: UserType
-        get() = UserType.SERVICE
-    override val none: UserType
-        get() = UserType.NONE
-
-    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserType {
-        return when (userTypeEntity) {
-            UserTypeEntity.STANDARD -> standard
-            UserTypeEntity.EXTERNAL -> external
-            UserTypeEntity.FEDERATED -> federated
-            UserTypeEntity.GUEST -> guest
-            UserTypeEntity.NONE -> none
-            UserTypeEntity.OWNER -> owner
-            UserTypeEntity.ADMIN -> admin
-            UserTypeEntity.SERVICE -> service
-            null -> none
+    /**
+     * Maps API user type combined with inference logic to determine the specific user type.
+     *
+     * The API provides a high-level type hint (REGULAR, APP, BOT), and we combine it with
+     * team and domain information to determine the specific domain user type.
+     *
+     * @param apiUserTypeDTO The user type from the API (nullable for backward compatibility)
+     * @param otherUserDomain The domain of the other user
+     * @param selfUserTeamId The team ID of the self user
+     * @param otherUserTeamId The team ID of the other user
+     * @param selfUserDomain The domain of the self user
+     * @return The specific domain user type
+     */
+    @Suppress("ReturnCount", "LongParameterList")
+    override fun fromApiTypeAndTeamAndDomain(
+        apiUserTypeDTO: UserTypeDTO?,
+        otherUserDomain: String,
+        selfUserTeamId: String?,
+        otherUserTeamId: String?,
+        selfUserDomain: String,
+        isLegacyBot: Boolean
+    ): UserTypeEntity =
+        when (apiUserTypeDTO) {
+            UserTypeDTO.APP -> app
+            UserTypeDTO.BOT -> service
+            UserTypeDTO.REGULAR, null -> {
+                // For REGULAR users or when type is not provided (backward compatibility),
+                // use the existing inference logic
+                fromTeamAndDomain(
+                    otherUserDomain = otherUserDomain,
+                    selfUserTeamId = selfUserTeamId,
+                    otherUserTeamId = otherUserTeamId,
+                    selfUserDomain = selfUserDomain,
+                    isService = isLegacyBot
+                )
+            }
         }
-    }
 
-}
+    override fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean): UserTypeEntity =
+        if (isService) service
+        else when (permissionCode) {
+            TeamRole.ExternalPartner.value -> external
+            TeamRole.Member.value -> standard
+            TeamRole.Admin.value -> admin
+            TeamRole.Owner.value -> owner
+            null -> standard
+            else -> guest
+        }
 
-interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
-    fun fromUserType(userType: UserType): UserTypeEntity
-}
-
-@Mockable
-interface DomainUserTypeMapper : UserTypeMapper<UserType> {
-    fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserType
-}
-
-interface UserTypeMapper<T> {
-
-    val guest: T
-    val federated: T
-    val external: T
-    val standard: T
-    val admin: T
-    val owner: T
-    val service: T
-    val none: T
-
-    @Suppress("ReturnCount")
-    fun fromTeamAndDomain(
+    private fun fromTeamAndDomain(
         otherUserDomain: String,
         selfUserTeamId: String?,
         otherUserTeamId: String?,
         selfUserDomain: String,
         isService: Boolean,
-    ): T = when {
+    ): UserTypeEntity = when {
         isService -> service
         isFromDifferentBackEnd(otherUserDomain, selfUserDomain) -> federated
         isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> standard
@@ -131,14 +115,85 @@ interface UserTypeMapper<T> {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
-    fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): T =
-        if (isService) service
-        else when (permissionCode) {
-            TeamRole.ExternalPartner.value -> external
-            TeamRole.Member.value -> standard
-            TeamRole.Admin.value -> admin
-            TeamRole.Owner.value -> owner
-            null -> standard
-            else -> guest
+    override fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeEntity = when (userTypeInfo) {
+        is UserTypeInfo.Regular -> {
+            when (userTypeInfo.type) {
+                UserType.INTERNAL -> standard
+                UserType.ADMIN -> admin
+                UserType.OWNER -> owner
+                UserType.EXTERNAL -> external
+                UserType.FEDERATED -> federated
+                UserType.GUEST -> guest
+                UserType.NONE -> none
+            }
         }
+
+        is UserTypeInfo.Bot -> service
+        is UserTypeInfo.App -> app
+    }
+
+}
+
+class DomainUserTypeMapperImpl : DomainUserTypeMapper {
+
+    val guest: UserType
+        get() = UserType.GUEST
+    val federated: UserType
+        get() = UserType.FEDERATED
+    val external: UserType
+        get() = UserType.EXTERNAL
+    val standard: UserType
+        get() = UserType.INTERNAL
+    val admin: UserType
+        get() = UserType.ADMIN
+    val owner: UserType
+        get() = UserType.OWNER
+    val none: UserType
+        get() = UserType.NONE
+
+    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo {
+        return when (userTypeEntity) {
+            UserTypeEntity.STANDARD -> UserTypeInfo.Regular(standard)
+            UserTypeEntity.EXTERNAL -> UserTypeInfo.Regular(external)
+            UserTypeEntity.FEDERATED -> UserTypeInfo.Regular(federated)
+            UserTypeEntity.GUEST -> UserTypeInfo.Regular(guest)
+            UserTypeEntity.NONE -> UserTypeInfo.Regular(none)
+            UserTypeEntity.OWNER -> UserTypeInfo.Regular(owner)
+            UserTypeEntity.ADMIN -> UserTypeInfo.Regular(admin)
+            UserTypeEntity.SERVICE -> UserTypeInfo.Bot
+            UserTypeEntity.APP -> UserTypeInfo.App
+            null -> UserTypeInfo.Regular(none)
+        }
+    }
+}
+
+interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
+    fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeEntity
+    fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): UserTypeEntity
+
+    @Suppress("LongParameterList")
+    fun fromApiTypeAndTeamAndDomain(
+        apiUserTypeDTO: UserTypeDTO?,
+        otherUserDomain: String,
+        selfUserTeamId: String?,
+        otherUserTeamId: String?,
+        selfUserDomain: String,
+        isLegacyBot: Boolean = false
+    ): UserTypeEntity
+}
+
+@Mockable
+interface DomainUserTypeMapper : UserTypeMapper<UserType> {
+    fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo
+}
+
+interface UserTypeMapper<T> {
+
+    private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String): Boolean =
+        otherUserDomain.lowercase() != selfDomain.lowercase()
+
+    private fun isFromTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
+        otherUserTeamId?.let { it == selfUserTeamId } ?: false
+
+    private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 }

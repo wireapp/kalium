@@ -36,7 +36,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -318,7 +318,7 @@ sealed interface ConversationDetails {
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
-        val userType: UserType,
+        val userType: UserTypeInfo,
         val isFavorite: Boolean = false,
         val folder: ConversationFolder? = null
     ) : ConversationDetails
@@ -376,7 +376,7 @@ sealed interface ConversationDetails {
     data class Connection(
         val conversationId: ConversationId,
         val otherUser: OtherUser?,
-        val userType: UserType,
+        val userType: UserTypeInfo,
         val lastModifiedDate: Instant,
         val connection: com.wire.kalium.logic.data.user.Connection,
         val protocolInfo: ProtocolInfo,

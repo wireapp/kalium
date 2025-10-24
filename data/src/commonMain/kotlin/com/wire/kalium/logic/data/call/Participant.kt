@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 
 data class Participant(
     val id: QualifiedID,
@@ -32,7 +33,7 @@ data class Participant(
     val isSharingScreen: Boolean = false,
     val hasEstablishedAudio: Boolean,
     val avatarAssetId: UserAssetId? = null,
-    val userType: UserType = UserType.NONE,
+    val userType: UserTypeInfo = UserTypeInfo.Regular(UserType.NONE),
     val accentId: Int
 )
 
