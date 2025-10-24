@@ -43,6 +43,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.fileExtension
 import kotlinx.coroutines.flow.first
 import kotlin.time.Clock
@@ -154,7 +155,10 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             currentAssetMessageContent.mimeType,
             currentAssetMessageContent.assetDataPath,
             currentAssetMessageContent.otrKey,
-            currentAssetMessageContent.assetName.fileExtension()
+            currentAssetMessageContent.assetName.fileExtension(),
+            message.conversationId.toApi(),
+            currentAssetMessageContent.assetName,
+            currentAssetMessageContent.mimeType,
         ).flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)

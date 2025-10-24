@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -167,7 +168,7 @@ class RetryFailedMessageUseCase internal constructor(
         return when (assetTransferStatus) {
             AssetTransferStatus.FAILED_UPLOAD, AssetTransferStatus.NOT_DOWNLOADED -> {
                 updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
-                retryUploadingAsset(content)
+                retryUploadingAsset(message.conversationId, content)
                     .flatMap { uploadedAssetContent ->
                         message.copy(content = MessageContent.Asset(value = uploadedAssetContent)).let { updatedMessage ->
                             persistMessage(updatedMessage)
@@ -197,7 +198,7 @@ class RetryFailedMessageUseCase internal constructor(
             .map { /* returns Unit */ }
     }
 
-    private suspend fun retryUploadingAsset(assetContent: AssetContent): Either<CoreFailure, AssetContent> =
+    private suspend fun retryUploadingAsset(conversationId: ConversationId, assetContent: AssetContent): Either<CoreFailure, AssetContent> =
         with(assetContent) {
             assetRepository.fetchPrivateDecodedAsset(
                 assetId = remoteData.assetId,
@@ -214,7 +215,10 @@ class RetryFailedMessageUseCase internal constructor(
                         mimeType = mimeType,
                         assetDataPath = assetDataPath,
                         otrKey = AES256Key(remoteData.otrKey),
-                        extension = name?.fileExtension() ?: ""
+                        extension = name?.fileExtension() ?: "",
+                        conversationId = conversationId.toApi(),
+                        filename = name,
+                        filetype = mimeType,
                     )
                 }
                 .map { (uploadedAssetId, sha256key) ->

@@ -335,6 +335,10 @@ class CallManagerImpl internal constructor(
                             conversationTypeCalling.avsValue,
                             isAudioCbr.toInt()
                         )
+                        callingLogger.d(
+                            "$TAG - wcall_start() called -> Call for conversation = " +
+                                    "${conversationId.toLogString()} started"
+                        )
                     },
                     onEpochChange = { conversationId, epochInfo ->
                         updateEpochInfo(conversationId, epochInfo)
@@ -655,7 +659,7 @@ class CallManagerImpl internal constructor(
                     activeSpeakersHandler = activeSpeakersHandler
                 )
 
-                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+                callingLogger.d("$TAG - wcall_set_active_speaker_handler() called")
             }
         }
     }

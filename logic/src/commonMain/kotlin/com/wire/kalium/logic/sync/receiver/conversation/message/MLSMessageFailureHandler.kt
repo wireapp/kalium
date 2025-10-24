@@ -41,9 +41,6 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
             is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
 
-            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
-            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
-
             // Received already sent or received message, can safely be ignored.
             is MLSFailure.DuplicateMessage,
                 // Received message was targeting a future epoch and been buffered, can safely be ignored.

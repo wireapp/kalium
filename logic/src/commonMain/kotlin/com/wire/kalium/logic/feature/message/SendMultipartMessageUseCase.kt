@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -175,7 +176,7 @@ class SendMultipartMessageUseCase internal constructor(
         isCellEnabled: Boolean,
     ): Message.Regular {
 
-        val previews = uploadLinkPreviewImages(linkPreviews)
+        val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().duration
 
@@ -243,24 +244,34 @@ class SendMultipartMessageUseCase internal constructor(
         messageSender.sendMessage(message)
     }
 
-    private suspend fun uploadLinkPreviewImages(linkPreviews: List<MessageLinkPreview>): List<MessageLinkPreview> {
+    private suspend fun uploadLinkPreviewImages(
+        linkPreviews: List<MessageLinkPreview>,
+        conversationId: ConversationId
+    ): List<MessageLinkPreview> {
         return linkPreviews.map { linkPreview ->
             val imageCopy = linkPreview.image?.let {
                 // Generate the otr asymmetric key that will be used to encrypt the data
                 it.otrKey = generateRandomAES256Key().data
                 // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
                 it.assetDataPath?.let { assetDataPath ->
-                    assetDataSource.uploadAndPersistPrivateAsset(it.mimeType, assetDataPath, AES256Key(it.otrKey), null)
-                        .onFailure { failure ->
-                            // on upload failure we still want link previews being included without image
-                            kaliumLogger.e("Upload of link preview asset failed: $failure")
-                        }.getOrNull()?.let { (assetId, sha256Key) ->
-                            it.assetToken = assetId.assetToken ?: ""
-                            it.assetKey = assetId.key
-                            it.assetDomain = assetId.domain
-                            it.sha256Key = sha256Key.data
-                            it
-                        }
+                    assetDataSource.uploadAndPersistPrivateAsset(
+                        mimeType = it.mimeType,
+                        assetDataPath = assetDataPath,
+                        otrKey = AES256Key(it.otrKey),
+                        extension = null,
+                        conversationId = conversationId.toApi(),
+                        filename = "link-preview-${linkPreview.url}",
+                        filetype = it.mimeType
+                    ).onFailure { failure ->
+                        // on upload failure we still want link previews being included without image
+                        kaliumLogger.e("Upload of link preview asset failed: $failure")
+                    }.getOrNull()?.let { (assetId, sha256Key) ->
+                        it.assetToken = assetId.assetToken ?: ""
+                        it.assetKey = assetId.key
+                        it.assetDomain = assetId.domain
+                        it.sha256Key = sha256Key.data
+                        it
+                    }
                 }
             }
             linkPreview.copy(image = imageCopy)

@@ -113,13 +113,20 @@ inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
         Either.Right(mlsRequest())
     } catch (e: CancellationException) {
         throw e
+    } catch (e: CommonizedMLSException) {
+        kaliumLogger.e(
+            """{ "MLSException": "${e.message},"
+                |"cause": ${e.cause} }",
+                |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
+        )
+        Either.Left(e.failure)
     } catch (e: Exception) {
         kaliumLogger.e(
             """{ "MLSException": "${e.message},"
                 |"cause": ${e.cause} }",
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )
-        Either.Left(mapMLSException(e))
+        Either.Left(commonizeMLSException(e).failure)
     }
 }
 
@@ -228,6 +235,11 @@ inline fun <T : Any> wrapNullableFlowStorageRequest(storageRequest: () -> Flow<T
     }
 }
 
-// TODO: Handle all cases explicitly.
-//       Blocked by https://github.com/wireapp/core-crypto/pull/214
-expect fun mapMLSException(exception: Exception): MLSFailure
+/**
+ * Converts a given platform-specific exception to a `CommonizedMLSException`
+ * that consistently represents errors in MLS operations across all platforms.
+ *
+ * @param exception The platform-specific exception that occurred during an MLS operation.
+ * @return A `CommonizedMLSException` representing the provided exception.
+ */
+expect fun commonizeMLSException(exception: Exception): CommonizedMLSException

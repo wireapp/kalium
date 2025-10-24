@@ -66,7 +66,10 @@ object FeatureConfigTest {
         ),
         appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
         chatBubblesConfigModel: ChatBubblesConfigModel? = ChatBubblesConfigModel(Status.ENABLED),
-        disableUserProfileQRCodeConfigModel: DisableUserProfileQRCodeConfigModel? = DisableUserProfileQRCodeConfigModel(
+        enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel? = EnableUserProfileQRCodeConfigModel(
+            status = Status.ENABLED,
+        ),
+        assetAuditLogConfigModel: AssetAuditLogConfigModel? = AssetAuditLogConfigModel(
             status = Status.ENABLED,
         ),
     ): FeatureConfigModel = FeatureConfigModel(
@@ -92,6 +95,7 @@ object FeatureConfigTest {
         cellsConfigModel,
         appsModel,
         chatBubblesConfigModel,
-        disableUserProfileQRCodeConfigModel,
+        enableUserProfileQRCodeConfigModel,
+        assetAuditLogConfigModel,
     )
 }

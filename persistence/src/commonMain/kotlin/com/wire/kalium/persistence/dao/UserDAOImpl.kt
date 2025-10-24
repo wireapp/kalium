@@ -454,6 +454,10 @@ class UserDAOImpl internal constructor(
         userQueries.updateUserDisplayName(displayName, selfUserId)
     }
 
+    override suspend fun updateUserAccentColor(selfUserId: QualifiedIDEntity, accentId: Int) {
+        userQueries.updateUserAccentColor(accentId, selfUserId)
+    }
+
     override suspend fun removeUserAsset(assetId: QualifiedIDEntity) {
         userQueries.updateUserAsset(null, null, assetId)
     }

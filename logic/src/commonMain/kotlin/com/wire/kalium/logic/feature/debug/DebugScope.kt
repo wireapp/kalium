@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventRepository
@@ -77,6 +78,7 @@ class DebugScope internal constructor(
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val joinExistingMLSConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -169,6 +171,8 @@ class DebugScope internal constructor(
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
             legalHoldStatusMapper = LegalHoldStatusMapperImpl,
+            mlsConversationRepository = mlsConversationRepository,
+            joinExistingConversationUseCase = joinExistingMLSConversationUseCaseProvider(),
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )
@@ -181,7 +185,6 @@ class DebugScope internal constructor(
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
-            mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
             legalHoldHandler,

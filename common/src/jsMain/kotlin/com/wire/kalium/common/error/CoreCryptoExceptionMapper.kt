@@ -17,4 +17,9 @@
  */
 package com.wire.kalium.common.error
 
-actual fun mapMLSException(exception: Exception): MLSFailure = MLSFailure.Generic(exception)
+actual fun commonizeMLSException(
+    exception: Exception
+): CommonizedMLSException = CommonizedMLSException(
+    failure = MLSFailure.Generic(exception),
+    cause = NotImplementedError("CoreCrypto(JS) exception mapping was not implemented")
+)

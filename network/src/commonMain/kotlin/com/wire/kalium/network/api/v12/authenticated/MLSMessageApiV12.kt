@@ -15,19 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+package com.wire.kalium.network.api.v12.authenticated
 
-/**
- * Use case to check if Simplified Connection Request feature is enabled.
- */
-interface IsProfileQRCodeDisabledUseCase {
-    suspend operator fun invoke(): Boolean
-}
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v11.authenticated.MLSMessageApiV11
 
-internal class IsProfileQRCodeDisabledUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository,
-) : IsProfileQRCodeDisabledUseCase {
-    override suspend fun invoke() = userConfigRepository.isProfileQRCodeDisabled()
-}
+internal open class MLSMessageApiV12 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : MLSMessageApiV11(authenticatedNetworkClient)

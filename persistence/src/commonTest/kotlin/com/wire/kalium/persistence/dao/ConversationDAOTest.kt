@@ -2413,19 +2413,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationExists_whenUpdateMLSGroupIdAndState_thenBothFieldsAreUpdated() = runTest(dispatcher) {
+    fun givenConversationExists_whenUpdateMLSGroupIdAndState_thenAllFieldsAreUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
 
         val newGroupId = "updated_group_id"
         val newState = ConversationEntity.GroupState.ESTABLISHED
+        val newEpoch = 42L
 
-        conversationDAO.updateMLSGroupIdAndState(conversationEntity2.id, newGroupId, newState)
+        conversationDAO.updateMLSGroupIdAndState(conversationEntity2.id, newGroupId, newEpoch, newState)
 
         val updatedConversation = conversationDAO.getConversationById(conversationEntity2.id)
         assertNotNull(updatedConversation)
         val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
         assertEquals(newGroupId, protocolInfo.groupId)
         assertEquals(newState, protocolInfo.groupState)
+        assertEquals(newEpoch, protocolInfo.epoch.toLong())
     }
 
     @Test
@@ -2444,14 +2446,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val newGroupId = "new_group_id"
         val newState = ConversationEntity.GroupState.PENDING_CREATION
+        val newEpoch = 44L
 
-        conversationDAO.updateMLSGroupIdAndState(originalConversation.id, newGroupId, newState)
+        conversationDAO.updateMLSGroupIdAndState(originalConversation.id, newGroupId, newEpoch, newState)
 
         val updatedConversation = conversationDAO.getConversationById(originalConversation.id)
         assertNotNull(updatedConversation)
         val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
         assertEquals(newGroupId, protocolInfo.groupId)
         assertEquals(newState, protocolInfo.groupState)
+        assertEquals(newEpoch, protocolInfo.epoch.toLong())
     }
 
     @Test
@@ -2459,8 +2463,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val nonExistentId = QualifiedIDEntity("non_existent", "domain.com")
         val newGroupId = "new_group_id"
         val newState = ConversationEntity.GroupState.ESTABLISHED
+        val newEpoch = 44L
 
-        conversationDAO.updateMLSGroupIdAndState(nonExistentId, newGroupId, newState)
+        conversationDAO.updateMLSGroupIdAndState(nonExistentId, newGroupId, newEpoch, newState)
 
         val conversation = conversationDAO.getConversationById(nonExistentId)
         assertNull(conversation)
@@ -2481,8 +2486,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(conversation)
 
             val newGroupId = "group_id_$index"
+            val newEpoch = index.toLong()
 
-            conversationDAO.updateMLSGroupIdAndState(conversationId, newGroupId, state)
+            conversationDAO.updateMLSGroupIdAndState(conversationId, newGroupId, newEpoch, state)
 
             val updatedConversation = conversationDAO.getConversationById(conversationId)
             assertNotNull(updatedConversation)

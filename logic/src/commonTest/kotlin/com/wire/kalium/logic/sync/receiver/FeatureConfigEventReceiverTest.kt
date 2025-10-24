@@ -43,9 +43,10 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -355,7 +356,8 @@ class FeatureConfigEventReceiverTest {
                 AllowedGlobalOperationsHandler(userConfigRepository),
                 CellsConfigHandler(userConfigRepository),
                 ChatBubblesConfigHandler(userConfigRepository),
-                DisableUserProfileQRCodeConfigHandler(userConfigRepository),
+                EnableUserProfileQRCodeConfigHandler(userConfigRepository),
+                AssetAuditLogConfigHandler(userConfigRepository),
             )
         }
 
