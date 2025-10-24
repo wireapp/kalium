@@ -8,6 +8,9 @@ jobs:
   publish-web:
     if: github.repository == 'wireapp/kalium'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v5
       - name: Force fetch the tag to work around actions/checkout#290
@@ -21,9 +24,18 @@ jobs:
       - name: Build JS/TS
         run: ./gradlew :backup:jsBrowserProductionLibraryDistribution
 
-      - name: Publish package to npm
-        uses: JS-DevTools/npm-publish@v3
+      - name: Setup Node for npm publish (Trusted Publisher)
+        uses: actions/setup-node@v4
         with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: "backup/build/dist/js/productionLibrary/package.json"
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+          scope: "@wireapp"
+
+      - name: Publish package to npm (OIDC Trusted Publisher)
+        working-directory: backup/build/dist/js/productionLibrary
+        env:
+          # No NPM_TOKEN needed. The npm CLI will exchange the GitHub OIDC token for a one-time publish token.
+          NPM_CONFIG_PROVENANCE: "true"
+        run: |
+          # Publish with provenance; --access public is harmless if already published
+          npm publish --provenance --access public
