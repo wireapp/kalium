@@ -67,10 +67,14 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCaseImpl
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCase
+import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
+import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
@@ -315,23 +319,38 @@ class MessageScope internal constructor(
     val observeMessageById: ObserveMessageByIdUseCase
         get() = ObserveMessageByIdUseCase(messageRepository)
 
-    val sendAssetMessage: ScheduleNewAssetMessageUseCase
-        get() = ScheduleNewAssetMessageUseCaseImpl(
+    private val persistNewAssetMessageUseCase: PersistNewAssetMessageUseCase
+        get() = PersistNewAssetMessageUseCaseImpl(
             persistMessage,
-            updateAssetMessageTransferStatus,
             currentClientIdProvider,
-            assetRepository,
-            selfUserId,
-            slowSyncRepository,
-            messageSender,
-            messageSendFailureHandler,
-            messageRepository,
             userPropertyRepository,
             observeSelfDeletingMessages,
-            scope,
+            assetRepository,
+            dispatcher
+        )
+
+    private val uploadAssetUseCase: UploadAssetUseCase
+        get() = UploadAssetUseCaseImpl(
+            assetRepository,
+            messageSender,
+            messageSendFailureHandler,
+            updateAssetMessageTransferStatus,
+            persistMessage,
+        )
+
+    val sendAssetMessage: ScheduleNewAssetMessageUseCase
+        get() = ScheduleNewAssetMessageUseCaseImpl(
+            persistNewAssetMessageUseCase,
+            uploadAssetUseCase,
+            updateAssetMessageTransferStatus,
+            selfUserId,
+            slowSyncRepository,
+            messageRepository,
             observeFileSharingStatusUseCase,
             validateAssetMimeTypeUseCase,
-            dispatcher
+            messageSendFailureHandler,
+            scope,
+            dispatcher,
         )
 
     val getAssetMessage: GetMessageAssetUseCase
