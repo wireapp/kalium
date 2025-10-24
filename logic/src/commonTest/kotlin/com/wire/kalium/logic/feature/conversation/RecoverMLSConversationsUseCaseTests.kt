@@ -56,6 +56,7 @@ class RecoverMLSConversationsUseCaseTests {
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withConversationIsOutOfSyncReturnsTrueFor(listOf(Arrangement.GROUP_ID1, Arrangement.GROUP_ID2))
+            .withConversationEpoch(23UL)
             .arrange()
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
@@ -80,6 +81,7 @@ class RecoverMLSConversationsUseCaseTests {
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withConversationIsOutOfSyncReturnsTrueFor(listOf(Arrangement.GROUP_ID1, Arrangement.GROUP_ID2))
+            .withConversationEpoch(23UL)
             .arrange()
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
@@ -128,6 +130,7 @@ class RecoverMLSConversationsUseCaseTests {
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withConversationIsOutOfSyncReturnsFalseFor(Arrangement.GROUP_ID2)
+            .withConversationEpoch(23UL)
             .arrange()
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
@@ -225,6 +228,12 @@ class RecoverMLSConversationsUseCaseTests {
             }.returns(Either.Right(Unit))
         }
 
+        suspend fun withConversationEpoch(epoch: ULong) = apply {
+            coEvery {
+                mlsContext.conversationEpoch(any())
+            }.returns(epoch)
+        }
+
         fun arrange() = this to recoverMLSConversationsUseCase
 
         companion object {
@@ -234,7 +243,6 @@ class RecoverMLSConversationsUseCaseTests {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -244,7 +252,6 @@ class RecoverMLSConversationsUseCaseTests {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
