@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
@@ -63,28 +64,46 @@ internal class GetAudioAssetUseCaseImpl(
                     when (message) {
                         is CellAssetContent -> {
                             CompletableDeferred(
-                                MessageAssetResult.Success(
-                                    message.localPath!!.toPath(),
-                                    message.assetSize ?: 0L,
-                                    message.localPath!!.substringAfterLast('/')
+                                message.localPath?.let { localPath ->
+                                    MessageAssetResult.Success(
+                                        decodedAssetPath = localPath.toPath(),
+                                        assetSize = message.assetSize ?: 0L,
+                                        assetName = localPath.substringAfterLast('/')
+                                    )
+                                } ?: MessageAssetResult.Failure(
+                                    CoreFailure.Unknown(IllegalStateException("Local path is null")), false
                                 )
                             )
                         }
 
                         is AssetContent -> {
                             CompletableDeferred(
-                                MessageAssetResult.Success(
-                                    message.localData?.assetDataPath!!.toPath(),
-                                    message.sizeInBytes,
-                                    message.localData?.assetDataPath!!.substringAfterLast('/')
+                                message.localData?.assetDataPath?.let { assetDataPath ->
+                                    MessageAssetResult.Success(
+                                        decodedAssetPath = assetDataPath.toPath(),
+                                        assetSize = message.sizeInBytes,
+                                        assetName = assetDataPath.substringAfterLast('/')
+                                    )
+                                } ?: MessageAssetResult.Failure(
+                                    CoreFailure.Unknown(IllegalStateException("Asset data path is null")), false
                                 )
                             )
                         }
                     }
                 }
             )
+        } else if (messageId != null) {
+            // TODO: Refactor the use case to work only with assetId
+            getMessageAsset(conversationId, messageId)
         } else {
-            getMessageAsset(conversationId, messageId!!)
+            CompletableDeferred(
+                MessageAssetResult.Failure(
+                    CoreFailure.Unknown(
+                        IllegalStateException("Both assetId and messageId are null")
+                    ),
+                    false
+                )
+            )
         }
     }
 }
