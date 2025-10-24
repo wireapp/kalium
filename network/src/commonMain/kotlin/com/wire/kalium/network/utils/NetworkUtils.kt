@@ -41,7 +41,7 @@ import kotlin.coroutines.cancellation.CancellationException
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
         host = baseUrl.host
-        pathSegments = baseUrl.pathSegments + path
+        pathSegments = baseUrl.rawSegments + path
         protocol = URLProtocol.WSS
         port = URLProtocol.WSS.defaultPort
     }
@@ -59,7 +59,7 @@ internal fun HttpRequestBuilder.setUrl(baseUrl: String, vararg path: String) {
 private fun HttpRequestBuilder.setHttpsUrl(baseUrl: Url, path: List<String>) {
     url {
         host = baseUrl.host
-        pathSegments = baseUrl.pathSegments + path
+        pathSegments = baseUrl.rawSegments + path
         protocol = URLProtocol.HTTPS
     }
 }
