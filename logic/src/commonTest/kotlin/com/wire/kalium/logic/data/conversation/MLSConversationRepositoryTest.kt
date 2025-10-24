@@ -18,8 +18,10 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CommonizedMLSException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
@@ -30,12 +32,10 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
@@ -71,7 +71,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedDTO
-import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
@@ -102,7 +101,6 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 class MLSConversationRepositoryTest {
@@ -1679,13 +1677,13 @@ class MLSConversationRepositoryTest {
 
         suspend fun withUpdateMLSGroupIdAndStateSuccessful() = apply {
             coEvery {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
             }.returns(Unit)
         }
 
         suspend fun withUpdateMLSGroupIdAndStateFailing(failure: StorageFailure.Generic) = apply {
             coEvery {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
             }.throws(failure.rootCause)
         }
 
@@ -1697,10 +1695,11 @@ class MLSConversationRepositoryTest {
             val GROUP_ID = GroupID(RAW_GROUP_ID)
             const val MLS_GROUP_ID = RAW_GROUP_ID
             val TIME = Instant.DISTANT_PAST
-            val INVALID_REQUEST_ERROR = Exception("invalid-request")
-            val MLS_STALE_MESSAGE_ERROR = Exception("mls-stale-message")
-            val MLS_CLIENT_MISMATCH_ERROR = Exception("mls-client-mismatch")
-            val MLS_COMMIT_MISSING_REFERENCES_ERROR = Exception("mls-commit-missing-references")
+            val TEST_CAUSE = Throwable("TEST! This is just a stub for a Cause")
+            val INVALID_REQUEST_ERROR = CommonizedMLSException(MLSFailure.Generic(TEST_CAUSE), TEST_CAUSE)
+            val MLS_STALE_MESSAGE_ERROR = CommonizedMLSException(MLSFailure.MessageRejected.MlsStaleMessage, TEST_CAUSE)
+            val MLS_CLIENT_MISMATCH_ERROR = CommonizedMLSException(MLSFailure.MessageRejected.MlsClientMismatch, TEST_CAUSE)
+            val MLS_COMMIT_MISSING_REFERENCES_ERROR = CommonizedMLSException(MLSFailure.MessageRejected.MlsCommitMissingReferences, TEST_CAUSE)
             val MLS_PUBLIC_KEY = MLSPublicKeys(
                 removal = mapOf(
                     "ed25519" to "gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="
@@ -1785,13 +1784,14 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
 
         result.shouldSucceed()
         coVerify {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
+                0L,
                 ConversationEntity.GroupState.PENDING_JOIN
             )
         }.wasInvoked(exactly = once)
@@ -1806,13 +1806,14 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, customState)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L, customState)
 
         result.shouldSucceed()
         coVerify {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
+                0L,
                 customState
             )
         }.wasInvoked(exactly = once)
@@ -1827,7 +1828,7 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateFailing(storageFailure)
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
 
         result.shouldFail {
             assertIs<StorageFailure.Generic>(it)
@@ -1850,13 +1851,14 @@ class MLSConversationRepositoryTest {
                 .withUpdateMLSGroupIdAndStateSuccessful()
                 .arrange()
 
-            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, state)
+            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L,state)
 
             result.shouldSucceed()
             coVerify {
                 arrangement.conversationDAO.updateMLSGroupIdAndState(
                     conversationId.toDao(),
                     newGroupId.toCrypto(),
+                    0L,
                     state
                 )
             }.wasInvoked(exactly = once)

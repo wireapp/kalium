@@ -15,20 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.sync.receiver.handler
+package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.DisableUserProfileQRCodeConfigModel
-import com.wire.kalium.logic.data.featureConfig.Status
 
-class DisableUserProfileQRCodeConfigHandler(
-    private val userConfigRepository: UserConfigRepository
-) {
-    suspend fun handle(model: DisableUserProfileQRCodeConfigModel?): Either<CoreFailure, Unit> =
-        when {
-            model == null -> userConfigRepository.setProfileQRCodeDisabled(false)
-            else -> userConfigRepository.setProfileQRCodeDisabled(model.status == Status.ENABLED)
-        }
+/**
+ * Use case to check if Simplified Connection Request feature is enabled.
+ */
+interface IsProfileQRCodeEnabledUseCase {
+    suspend operator fun invoke(): Boolean
+}
+
+internal class IsProfileQRCodeEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository,
+) : IsProfileQRCodeEnabledUseCase {
+    override suspend fun invoke() = userConfigRepository.isProfileQRCodeEnabled()
 }

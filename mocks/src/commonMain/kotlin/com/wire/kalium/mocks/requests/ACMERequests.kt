@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.mocks.requests
 
+import com.wire.kalium.mocks.extensions.toJsonString
+import com.wire.kalium.mocks.mocks.acme.ACMEMocks.federationCertificateChainResponse
 import com.wire.kalium.mocks.responses.ACMEApiResponseJsonSample
 import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
@@ -29,6 +31,7 @@ object ACMERequests {
      */
     const val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"
     private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
+    private const val PATH_ACME_FEDERATION = "federation"
 
     /**
      * JSON Response
@@ -45,5 +48,17 @@ object ACMERequests {
         httpMethod = HttpMethod.Get,
         responseBody = ACME_DIRECTORIES_RESPONSE.rawJson,
         statusCode = HttpStatusCode.OK
+    )
+
+    val acmeFederationSuccess = TestRequestHandler(
+        path = PATH_ACME_FEDERATION,
+        httpMethod = HttpMethod.Get,
+        responseBody = federationCertificateChainResponse.toJsonString(),
+        statusCode = HttpStatusCode.OK
+    )
+
+    val acmeRequestResponseSuccess = listOf(
+        acmeFederationSuccess,
+        acmeFederationSuccess
     )
 }

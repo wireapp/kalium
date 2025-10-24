@@ -256,9 +256,10 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateMLSGroupIdAndState(
         conversationId: QualifiedIDEntity,
         newGroupId: String,
+        newEpoch: Long,
         groupState: ConversationEntity.GroupState
     ) = withContext(writeDispatcher.value) {
-        conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, conversationId)
+        conversationQueries.updateMLSGroupIdAndState(newGroupId, groupState, newEpoch, conversationId)
     }
 
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) =

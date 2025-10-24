@@ -44,6 +44,8 @@ import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -108,21 +110,26 @@ internal class OneOnOneResolverImpl(
     override suspend fun resolveAllOneOnOneConversations(
         transactionContext: CryptoTransactionContext,
         synchronizeUsers: Boolean
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Unit> = coroutineScope {
         fetchAllOtherUsersIfNeeded(synchronizeUsers).flatMap {
             val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
             kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
-            usersWithOneOnOne.foldToEitherWhileRight(Unit) { item, _ ->
-                resolveOneOnOneConversationWithUser(
-                    transactionContext = transactionContext,
-                    user = item,
-                    // Either it fetched all users on the previous step, or it's not needed
-                    invalidateCurrentKnownProtocols = false
-                ).flatMapLeft {
-                    handleBatchEntryFailure(it)
-                }.map { }
+            usersWithOneOnOne.map { item ->
+                async {
+                    resolveOneOnOneConversationWithUser(
+                        transactionContext = transactionContext,
+                        user = item,
+                        // Either it fetched all users on the previous step, or it's not needed
+                        invalidateCurrentKnownProtocols = false
+                    ).map { }.flatMapLeft {
+                        handleBatchEntryFailure(it)
+                    }
+                }
+            }.foldToEitherWhileRight(Unit) { item, _ ->
+                item.await()
             }
         }
+    }
 
     private fun handleBatchEntryFailure(it: CoreFailure) = when (it) {
         is CoreFailure.MissingKeyPackages,

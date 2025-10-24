@@ -1164,6 +1164,38 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(false, result.hasIncompleteMetadata)
     }
 
+    @Test
+    fun givenExistingUser_WhenUpdateUserAccentColor_ThenAccentIsUpdated() = runTest(dispatcher) {
+        // given
+        db.userDAO.upsertUser(user1)
+        val newAccentId = 7
+
+        // when
+        db.userDAO.updateUserAccentColor(user1.id, newAccentId)
+
+        // then
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(newAccentId, result?.accentId)
+    }
+
+    @Test
+    fun givenUser_whenUpdatingAccentColor_thenChangesAreEmittedThroughFlow() = runTest(dispatcher) {
+        // given
+        db.userDAO.upsertUser(user1)
+        val newAccentId = 5
+
+        db.userDAO.observeUserDetailsByQualifiedID(user1.id).take(2).collect { item ->
+            if (item == null) return@collect
+            val simple = item.toSimpleEntity()
+            if (simple.accentId == user1.accentId) {
+                // when
+                db.userDAO.updateUserAccentColor(user1.id, newAccentId)
+            } else {
+                // then
+                assertEquals(newAccentId, simple.accentId)
+            }
+        }
+    }
 
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))

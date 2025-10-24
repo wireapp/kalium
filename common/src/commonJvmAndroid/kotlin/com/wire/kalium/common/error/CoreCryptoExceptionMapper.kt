@@ -21,9 +21,9 @@ import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.MlsException
 
 @Suppress("CyclomaticComplexMethod")
-actual fun mapMLSException(exception: Exception): MLSFailure {
+actual fun commonizeMLSException(exception: Exception): CommonizedMLSException {
     return if (exception is CoreCryptoException.Mls) {
-        when (exception.mlsError) {
+        when (val mlsError = exception.mlsError) {
             is MlsException.WrongEpoch -> MLSFailure.WrongEpoch
             is MlsException.DuplicateMessage -> MLSFailure.DuplicateMessage
             is MlsException.BufferedFutureMessage -> MLSFailure.BufferedFutureMessage
@@ -35,7 +35,7 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
             is MlsException.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
 
             is MlsException.Other -> {
-                val otherError = (exception.mlsError as MlsException.Other).message
+                val otherError = mlsError.msg
                 if (otherError.startsWith(COMMIT_FOR_MISSING_PROPOSAL)) {
                     MLSFailure.CommitForMissingProposal
                 } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
@@ -49,33 +49,23 @@ actual fun mapMLSException(exception: Exception): MLSFailure {
 
             is MlsException.OrphanWelcome -> MLSFailure.OrphanWelcome
             is MlsException.BufferedCommit -> MLSFailure.BufferedCommit
-            is MlsException.MessageRejected -> mapMessageRejected((exception.mlsError as MlsException.MessageRejected).message)
+            is MlsException.MessageRejected -> mapMessageRejected(mlsError.reason, exception)
         }
-        // because there is a lack of multiplatform binding we need to catch generic exception
-        // and map it to the appropriate failure to have proper tests
-    } else if (exception.message != null && containsMessageRejected(exception.message as String)) {
-        mapMessageRejected(exception.message as String)
     } else {
         MLSFailure.Generic(exception)
-    }
+    }.run { CommonizedMLSException(this, exception) }
 }
 
-private fun mapMessageRejected(message: String): MLSFailure.MessageRejected {
-    val reason = message.replace("reason=", "")
-    return when (reason) {
-        "mls-stale-message" -> MLSFailure.MessageRejected.MlsStaleMessage
-        "mls-client-mismatch" -> MLSFailure.MessageRejected.MlsClientMismatch
-        "mls-commit-missing-references" -> MLSFailure.MessageRejected.MlsCommitMissingReferences
-        "mls-invalid-leaf-node-index" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        "mls-invalid-leaf-node-signature" -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        else -> MLSFailure.MessageRejected.Other(reason = reason)
+private fun mapMessageRejected(message: String, cause: Throwable): MLSFailure {
+    return when {
+        message.contains("mls-stale-message") -> MLSFailure.MessageRejected.MlsStaleMessage
+        message.contains("mls-client-mismatch") -> MLSFailure.MessageRejected.MlsClientMismatch
+        message.contains("mls-commit-missing-references") -> MLSFailure.MessageRejected.MlsCommitMissingReferences
+        message.contains("mls-invalid-leaf-node-index") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
+        message.contains("mls-invalid-leaf-node-signature") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
+        else -> MLSFailure.Generic(cause)
     }
 }
-
-private fun containsMessageRejected(message: String): Boolean =
-    message.contains("mls-stale-message")
-            || message.contains("mls-client-mismatch")
-            || message.contains("mls-commit-missing-references")
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
 private const val CONVERSATION_NOT_FOUND = "Couldn't find conversation"

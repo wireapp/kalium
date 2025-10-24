@@ -49,6 +49,7 @@ internal object NetworkErrorLabel {
 
     // MLS
     const val MLS_STALE_MESSAGE = "mls-stale-message"
+    const val MLS_GROUP_OUT_OF_SYNC = "mls-group-out-of-sync"
     const val MLS_SELF_REMOVAL_NOT_ALLOWED = "mls-self-removal-not-allowed"
     const val MLS_COMMIT_MISSING_REFERENCES = "mls-commit-missing-references"
     const val MLS_CLIENT_MISMATCH = "mls-client-mismatch"

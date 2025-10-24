@@ -158,7 +158,8 @@ object FeatureConfigJson {
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.DisableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
         ),
         featureConfigResponseSerializer
     )

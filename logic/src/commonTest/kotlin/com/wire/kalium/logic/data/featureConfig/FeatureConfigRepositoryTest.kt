@@ -100,7 +100,8 @@ class FeatureConfigRepositoryTest {
             ),
             appsModel = ConfigsStatusModel(Status.DISABLED),
             chatBubblesModel = ChatBubblesConfigModel(Status.DISABLED),
-            disableUserProfileQRCodeConfigModel = DisableUserProfileQRCodeConfigModel(Status.DISABLED),
+            enableUserProfileQRCodeConfigModel = EnableUserProfileQRCodeConfigModel(Status.DISABLED),
+            assetAuditLogConfigModel = AssetAuditLogConfigModel(Status.DISABLED),
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -193,7 +194,8 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.DisableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
         )
 
         val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)

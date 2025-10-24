@@ -249,6 +249,9 @@ SELECT * FROM UserDetails AS user
 updateUserDisplayName:
 UPDATE User SET name = ? WHERE qualified_id = ?;
 
+updateUserAccentColor:
+UPDATE User SET accent_id = ? WHERE qualified_id = ?;
+
 selectUsersWithoutMetadata:
 SELECT * FROM UserDetails AS user
 WHERE deleted = 0 AND incomplete_metadata = 1;

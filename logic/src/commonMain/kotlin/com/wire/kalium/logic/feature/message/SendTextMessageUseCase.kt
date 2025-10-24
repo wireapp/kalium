@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -85,7 +86,7 @@ class SendTextMessageUseCase internal constructor(
             .first()
             .duration
 
-        val previews = uploadLinkPreviewImages(linkPreviews)
+        val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
@@ -129,7 +130,10 @@ class SendTextMessageUseCase internal constructor(
         const val TYPE = "Text"
     }
 
-    private suspend fun uploadLinkPreviewImages(linkPreviews: List<MessageLinkPreview>): List<MessageLinkPreview> {
+    private suspend fun uploadLinkPreviewImages(
+        linkPreviews: List<MessageLinkPreview>,
+        conversationId: ConversationId
+    ): List<MessageLinkPreview> {
         return linkPreviews.map { linkPreview ->
             val imageCopy = linkPreview.image?.let {
                 // Generate the otr asymmetric key that will be used to encrypt the data
@@ -137,10 +141,13 @@ class SendTextMessageUseCase internal constructor(
                 // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
                 it.assetDataPath?.let { assetDataPath ->
                     assetDataSource.uploadAndPersistPrivateAsset(
-                        it.mimeType,
-                        assetDataPath,
-                        AES256Key(it.otrKey),
-                        null
+                        mimeType = it.mimeType,
+                        assetDataPath = assetDataPath,
+                        otrKey = AES256Key(it.otrKey),
+                        extension = null,
+                        conversationId = conversationId.toApi(),
+                        filename = "link-preview-${linkPreview.url}",
+                        filetype = it.mimeType
                     ).onFailure { failure ->
                         // on upload failure we still want link previews being included without image
                         kaliumLogger.e("Upload of link preview asset failed: $failure")

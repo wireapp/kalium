@@ -17,22 +17,49 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.mapLeft
 
 public interface RenameNodeUseCase {
-    public suspend operator fun invoke(uuid: String, path: String, newName: String): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(uuid: String, path: String, newName: String): Either<RenameNodeFailure, Unit>
 }
 
 internal class RenameNodeUseCaseImpl(
     private val cellsRepository: CellsRepository,
+    private val attachmentsRepository: CellAttachmentsRepository,
 ) : RenameNodeUseCase {
-    override suspend fun invoke(uuid: String, path: String, newName: String): Either<CoreFailure, Unit> =
-        cellsRepository.renameNode(
-            uuid = uuid,
-            path = path,
-            targetPath = "${path.substringBeforeLast("/")}/$newName"
-        ).map { }
+
+    @Suppress("ReturnCount")
+    override suspend fun invoke(uuid: String, path: String, newName: String): Either<RenameNodeFailure, Unit> {
+
+        val targetPath = "${path.substringBeforeLast("/")}/$newName"
+
+        val preCheck = cellsRepository.preCheck(targetPath).getOrElse {
+            return RenameNodeFailure.Other(it).left()
+        }
+
+        if (preCheck is PreCheckResult.FileExists) {
+            return RenameNodeFailure.FileAlreadyExists.left()
+        }
+
+        return cellsRepository.renameNode(uuid = uuid, path = path, targetPath = targetPath)
+            .flatMap {
+                attachmentsRepository.updateAssetPath(assetId = uuid, remotePath = targetPath)
+            }
+            .mapLeft {
+                RenameNodeFailure.Other(it)
+            }
+    }
+}
+
+public sealed interface RenameNodeFailure {
+    public object FileAlreadyExists : RenameNodeFailure
+    public data class Other(val error: CoreFailure) : RenameNodeFailure
 }

@@ -232,6 +232,8 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
@@ -468,6 +470,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
@@ -483,7 +486,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
@@ -509,7 +512,6 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
-import com.wire.kalium.network.utils.MockWebSocketSession
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -660,7 +662,7 @@ class UserSessionScope internal constructor(
         userAgent = userAgent,
         certificatePinning = kaliumConfigs.certPinningConfig,
         mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
-        mockWebSocketSession = if (kaliumConfigs.mockedWebSocket) MockWebSocketSession() else null,
+        mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
         kaliumLogger = userScopedLogger
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
@@ -1058,6 +1060,7 @@ class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
 
@@ -1910,8 +1913,11 @@ class UserSessionScope internal constructor(
     private val chatBubblesConfigHandler
         get() = ChatBubblesConfigHandler(userConfigRepository)
 
-    private val disableUserProfileQRCodeConfigHandler
-        get() = DisableUserProfileQRCodeConfigHandler(userConfigRepository)
+    private val enableUserProfileQRCodeConfigHandler
+        get() = EnableUserProfileQRCodeConfigHandler(userConfigRepository)
+
+    private val assetAuditLogConfigHandler
+        get() = AssetAuditLogConfigHandler(userConfigRepository)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
@@ -1927,7 +1933,8 @@ class UserSessionScope internal constructor(
             allowedGlobalOperationsHandler,
             cellsConfigHandler,
             chatBubblesConfigHandler,
-            disableUserProfileQRCodeConfigHandler,
+            enableUserProfileQRCodeConfigHandler,
+            assetAuditLogConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2029,6 +2036,12 @@ class UserSessionScope internal constructor(
             }
         )
 
+    val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase by lazy {
+        IsWireCellsEnabledForConversationUseCaseImpl(
+            conversationRepository = conversationRepository
+        )
+    }
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope by lazy {
         ClientScope(
@@ -2111,6 +2124,7 @@ class UserSessionScope internal constructor(
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
+            { joinExistingMLSConversationUseCase },
             clientRepository,
             clientRemoteRepository,
             clientIdProvider,
@@ -2170,11 +2184,14 @@ class UserSessionScope internal constructor(
             cells.publishAttachments,
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,
+            cells.getMessageAttachmentUseCase,
             fetchConversationUseCase,
             cryptoTransactionProvider,
             compositeMessageRepository,
+            isWireCellsEnabledForConversation,
+            { joinExistingMLSConversationUseCase },
             this,
-            userScopedLogger,
+            userScopedLogger
         )
     }
 
@@ -2351,7 +2368,8 @@ class UserSessionScope internal constructor(
             cellsConfigHandler,
             appsFeatureHandler,
             chatBubblesConfigHandler,
-            disableUserProfileQRCodeConfigHandler,
+            enableUserProfileQRCodeConfigHandler,
+            assetAuditLogConfigHandler,
         )
 
     val team: TeamScope

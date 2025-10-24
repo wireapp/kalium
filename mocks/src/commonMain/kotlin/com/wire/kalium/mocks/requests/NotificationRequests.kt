@@ -29,9 +29,9 @@ object NotificationRequests {
     /**
      * URL Paths
      */
-    private const val PATH_LAST_NOTIFICATIONS = "${CommonResponses.BASE_PATH_V1}notifications/last"
-    private const val PATH_PUSH_TOKENS = "${CommonResponses.BASE_PATH_V1}push/tokens"
-    private const val PATH_NOTIFICATIONS = "${CommonResponses.BASE_PATH_V1}notifications"
+    private const val PATH_LAST_NOTIFICATIONS = "${CommonResponses.BASE_PATH_V8}notifications/last"
+    private const val PATH_PUSH_TOKENS = "${CommonResponses.BASE_PATH_V8}push/tokens"
+    private const val PATH_NOTIFICATIONS = "${CommonResponses.BASE_PATH_V8}notifications"
 
     /**
      * Request / Responses

@@ -48,7 +48,15 @@ internal class UploadUserAvatarUseCaseImpl(
 
     override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult {
         return withContext(dispatcher.io) {
-            assetDataSource.uploadAndPersistPublicAsset("image/jpg", imageDataPath, imageDataSize).flatMap { asset ->
+
+            assetDataSource.uploadAndPersistPublicAsset(
+                mimeType = "image/jpg",
+                assetDataPath = imageDataPath,
+                assetDataSize = imageDataSize,
+                conversationId = null,
+                filename = "profile-picture",
+                filetype = "image/jpg"
+            ).flatMap { asset ->
                 userDataSource.updateSelfUser(newAssetId = asset.key).map { asset }
             }.fold({
                 UploadAvatarResult.Failure(it)

@@ -39,9 +39,10 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHan
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.DisableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 import io.mockative.Mockable
@@ -74,7 +75,8 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val cellsConfigHandler: CellsConfigHandler,
     private val appsFeatureHandler: AppsFeatureHandler,
     private val chatBubblesHandler: ChatBubblesConfigHandler,
-    private val disableUserProfileQRCodeConfigHandler: DisableUserProfileQRCodeConfigHandler,
+    private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
+    private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
@@ -101,7 +103,8 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 appsFeatureHandler.handle(appsModel)
             }
             chatBubblesHandler.handle(it.chatBubblesModel)
-            disableUserProfileQRCodeConfigHandler.handle(it.disableUserProfileQRCodeConfigModel)
+            enableUserProfileQRCodeConfigHandler.handle(it.enableUserProfileQRCodeConfigModel)
+            assetAuditLogConfigHandler.handle(it.assetAuditLogConfigModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (

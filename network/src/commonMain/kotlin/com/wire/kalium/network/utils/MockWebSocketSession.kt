@@ -28,12 +28,13 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 @Suppress("EmptyFunctionBlock")
 class MockWebSocketSession(
-    override val coroutineContext: CoroutineContext = EmptyCoroutineContext
+    override val coroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : WebSocketSession {
     override var masking: Boolean = false
     override var maxFrameSize: Long = Long.MAX_VALUE
 
-    override val incoming: ReceiveChannel<Frame> = Channel(Channel.UNLIMITED)
+    private val _incoming = Channel<Frame>(Channel.UNLIMITED)
+    override val incoming: ReceiveChannel<Frame> get() = _incoming
     override val outgoing: SendChannel<Frame> = Channel(Channel.UNLIMITED)
 
     override val extensions: List<WebSocketExtension<*>> = emptyList()
@@ -42,4 +43,19 @@ class MockWebSocketSession(
 
     @Suppress("DEPRECATION")
     override fun terminate() {}
+
+    suspend fun emit(message: FakeWebSocketMessage) {
+        val frame = when (message) {
+            is FakeWebSocketMessage.Binary -> Frame.Binary(true, message.json.encodeToByteArray())
+            is FakeWebSocketMessage.Text -> Frame.Text(message.text)
+            is FakeWebSocketMessage.Raw -> message.frame
+        }
+        _incoming.send(frame)
+    }
+}
+
+sealed class FakeWebSocketMessage {
+    data class Binary(val json: String) : FakeWebSocketMessage()
+    data class Text(val text: String) : FakeWebSocketMessage()
+    data class Raw(val frame: Frame) : FakeWebSocketMessage()
 }
