@@ -22,9 +22,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.Mockable
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 @Mockable
 interface MessageMetadataDAO {

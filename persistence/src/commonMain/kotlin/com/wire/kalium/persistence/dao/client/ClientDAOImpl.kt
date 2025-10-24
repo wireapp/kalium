@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.coroutines.CoroutineContext
 
 internal object ClientMapper {
     @Suppress("FunctionParameterNaming", "LongParameterList")
@@ -146,7 +145,9 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>) = withContext(writeDispatcher.value) {
+    override suspend fun tryMarkInvalid(
+        invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>
+    ) = withContext(writeDispatcher.value) {
         clientsQueries.transaction {
             invalidClientsList.forEach { (userId, clientIdList) ->
                 clientsQueries.tryMarkAsInvalid(userId, clientIdList)
@@ -230,9 +231,10 @@ internal class ClientDAOImpl internal constructor(
                 .groupBy { it.userId }
         }
 
-    override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
-        clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
-            .executeAsList()
-            .groupBy { it.userId }
-    }
+    override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
+        withContext(readDispatcher.value) {
+            clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
+                .executeAsList()
+                .groupBy { it.userId }
+        }
 }

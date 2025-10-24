@@ -187,8 +187,8 @@ class UserDatabaseBuilder internal constructor(
         database.databasePropertiesQueries.enableForeignKeyContraints()
     }
 
-    private val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(3))
-    private val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(1))
+    private val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
+    private val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(MAX_WRITE_PARALLELISM))
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)
@@ -375,6 +375,11 @@ class UserDatabaseBuilder internal constructor(
         sqlDriver.close()
         databaseScope.cancel()
         return nuke(userId, platformDatabaseData)
+    }
+
+    private companion object {
+        const val MAX_READ_PARALLELISM = 3
+        const val MAX_WRITE_PARALLELISM = 1
     }
 }
 

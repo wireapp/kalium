@@ -64,9 +64,10 @@ internal class MessageAttachmentsDaoImpl(
         queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
     }
 
-    override suspend fun updateAttachment(assetId: String, url: String?, hash: String?, remotePath: String) = withContext(writeDispatcher.value) {
-        queries.updateAttachment(url, hash, remotePath, assetId)
-    }
+    override suspend fun updateAttachment(assetId: String, url: String?, hash: String?, remotePath: String) =
+        withContext(writeDispatcher.value) {
+            queries.updateAttachment(url, hash, remotePath, assetId)
+        }
 
     override suspend fun getAssetPath(assetId: String): String? = withContext(readDispatcher.value) {
         queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path

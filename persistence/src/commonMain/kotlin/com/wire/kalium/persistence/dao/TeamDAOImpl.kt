@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Team as SQLDelightTeam
 
 class TeamMapper {

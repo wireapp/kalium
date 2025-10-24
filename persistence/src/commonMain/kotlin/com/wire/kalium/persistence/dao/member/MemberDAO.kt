@@ -74,7 +74,7 @@ interface MemberDAO {
     suspend fun getAllMembers(): List<UserIDEntity>
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class MemberDAOImpl internal constructor(
     private val membersCache: FlowCache<ConversationIDEntity, List<MemberEntity>>,
     private val memberQueries: MembersQueries,

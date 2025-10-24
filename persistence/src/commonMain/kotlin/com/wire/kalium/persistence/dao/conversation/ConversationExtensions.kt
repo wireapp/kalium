@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.Query
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.Mockable
-import kotlin.coroutines.CoroutineContext
 
 @Mockable
 interface ConversationExtensions {

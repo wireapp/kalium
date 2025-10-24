@@ -19,10 +19,8 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.SearchQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
-import com.wire.kalium.persistence.db.WriteDispatcher
 import io.mockative.Mockable
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 data class UserSearchEntity(
     val id: QualifiedIDEntity,

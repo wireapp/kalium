@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 class ConversationFolderDAOImpl internal constructor(
     private val conversationFoldersQueries: ConversationFoldersQueries,
@@ -130,11 +129,17 @@ class ConversationFolderDAOImpl internal constructor(
             }
         }
 
-    override suspend fun addConversationToFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(writeDispatcher.value) {
+    override suspend fun addConversationToFolder(
+        conversationId: QualifiedIDEntity,
+        folderId: String
+    ) = withContext(writeDispatcher.value) {
         conversationFoldersQueries.insertLabeledConversation(conversationId, folderId)
     }
 
-    override suspend fun removeConversationFromFolder(conversationId: QualifiedIDEntity, folderId: String) = withContext(writeDispatcher.value) {
+    override suspend fun removeConversationFromFolder(
+        conversationId: QualifiedIDEntity,
+        folderId: String
+    ) = withContext(writeDispatcher.value) {
         conversationFoldersQueries.deleteLabeledConversation(conversationId, folderId)
     }
 }

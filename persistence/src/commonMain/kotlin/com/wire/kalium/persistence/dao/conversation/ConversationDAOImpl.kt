@@ -512,7 +512,10 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.updateMessageTimer(messageTimer, conversationId)
     }
 
-    override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(writeDispatcher.value) {
+    override suspend fun updateUserMessageTimer(
+        conversationId: QualifiedIDEntity,
+        messageTimer: Long?
+    ) = withContext(writeDispatcher.value) {
         conversationQueries.updateUserMessageTimer(messageTimer, conversationId)
     }
 

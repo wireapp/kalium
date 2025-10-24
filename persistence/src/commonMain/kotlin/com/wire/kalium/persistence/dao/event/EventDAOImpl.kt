@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 class EventDAOImpl(
     private val eventsQueries: EventsQueries,

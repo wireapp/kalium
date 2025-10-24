@@ -39,7 +39,11 @@ internal class CompositeMessageDAOImpl internal constructor(
     private val buttonContentQueries: ButtonContentQueries,
     private val writeDispatcher: WriteDispatcher,
 ) : CompositeMessageDAO {
-    override suspend fun markAsSelected(messageId: String, conversationId: QualifiedIDEntity, buttonId: String) = withContext(writeDispatcher.value) {
+    override suspend fun markAsSelected(
+        messageId: String,
+        conversationId: QualifiedIDEntity,
+        buttonId: String
+    ) = withContext(writeDispatcher.value) {
         buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId)
     }
 

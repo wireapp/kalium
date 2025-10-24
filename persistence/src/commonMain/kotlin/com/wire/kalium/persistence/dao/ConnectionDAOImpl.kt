@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
-import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
 private class ConnectionMapper {

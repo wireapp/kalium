@@ -24,7 +24,6 @@ import app.cash.paging.PagingSource
 import com.wire.kalium.persistence.db.ReadDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.

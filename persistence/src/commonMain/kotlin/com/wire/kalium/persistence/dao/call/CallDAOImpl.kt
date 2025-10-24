@@ -30,7 +30,6 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Call as SQLDelightCall
 
 internal object CallMapper {
