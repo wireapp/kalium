@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.1.0"
 ksp = "2.1.0-1.0.28"
-activity-compose = "1.9.0"
+activity-compose = "1.11.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
 cli-kt = "3.5.0"
