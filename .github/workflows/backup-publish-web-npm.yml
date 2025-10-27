@@ -8,6 +8,9 @@ jobs:
   publish-web:
     if: github.repository == 'wireapp/kalium'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v5
       - name: Force fetch the tag to work around actions/checkout#290
@@ -21,9 +24,11 @@ jobs:
       - name: Build JS/TS
         run: ./gradlew :backup:jsBrowserProductionLibraryDistribution
 
-      - name: Publish package to npm
-        uses: JS-DevTools/npm-publish@v3
+      - name: Setup Node for npm publish (Trusted Publisher)
+        uses: actions/setup-node@v6
         with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          package: "backup/build/dist/js/productionLibrary/package.json"
+          scope: "@wireapp"
+
+      - name: Publish package to npm (OIDC Trusted Publisher)
+        working-directory: backup/build/dist/js/productionLibrary
+        run: npm publish
