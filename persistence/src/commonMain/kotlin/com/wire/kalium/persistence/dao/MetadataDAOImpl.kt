@@ -29,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
@@ -58,9 +59,7 @@ class MetadataDAOImpl internal constructor(
             .mapToOneOrNull()
     }
 
-    override suspend fun valueByKey(key: String): String? = withContext(readDispatcher.value) {
-        metadataQueries.selectValueByKey(key).executeAsOneOrNull()
-    }
+    override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
 
     override suspend fun clear(keysToKeep: List<String>?) = withContext(writeDispatcher.value) {
         if (keysToKeep == null) {
