@@ -261,11 +261,6 @@ private fun CoreFailure.getStrategy(
 
             is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
             is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> CommitStrategy.ABORT
-
-            is MLSFailure.MessageRejected.Other -> {
-                CommitStrategy.ABORT
-            }
-
         }
     } else {
         CommitStrategy.ABORT

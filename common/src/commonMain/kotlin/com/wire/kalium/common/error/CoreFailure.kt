@@ -181,6 +181,14 @@ sealed class NetworkFailure : CoreFailure {
     data object FeatureNotSupported : NetworkFailure()
 }
 
+class CommonizedMLSException(
+    val failure: MLSFailure,
+    override val cause: Throwable
+) : Exception(
+    "An error occurred during MLS operation: $failure",
+    cause
+)
+
 sealed interface MLSFailure : CoreFailure {
 
     data object WrongEpoch : MLSFailure
@@ -212,8 +220,8 @@ sealed interface MLSFailure : CoreFailure {
         data object MlsStaleMessage : MessageRejected()
         data object InvalidLeafNodeIndex : MessageRejected()
         data object InvalidLeafNodeSignature : MessageRejected()
-        data class Other(val reason: String) : MessageRejected()
     }
+
     data class Generic(val rootCause: Throwable) : MLSFailure
 }
 
