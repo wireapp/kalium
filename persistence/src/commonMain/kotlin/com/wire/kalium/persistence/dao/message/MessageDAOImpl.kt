@@ -661,7 +661,6 @@ internal class MessageDAOImpl internal constructor(
         assetViewQueries,
         mapper,
         readDispatcher,
-        writeDispatcher,
     )
 
 }

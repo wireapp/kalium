@@ -78,7 +78,6 @@ class MessageExtensionsTest : BaseDatabaseTest() {
             messageAssetViewQueries = messageAssetViewQueries,
             messageMapper = MessageMapper,
             readDispatcher = ReadDispatcher(dispatcher),
-            writeDispatcher = WriteDispatcher(dispatcher),
         )
     }
 
