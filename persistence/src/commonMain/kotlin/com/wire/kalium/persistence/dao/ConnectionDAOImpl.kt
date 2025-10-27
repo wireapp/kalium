@@ -185,7 +185,7 @@ class ConnectionDAOImpl(
         connectionsQueries.updateNotificationFlag(flag, userId)
     }
 
-    override suspend fun setAllConnectionsAsNotified() = withContext(readDispatcher.value) {
+    override suspend fun setAllConnectionsAsNotified() = withContext(writeDispatcher.value) {
         connectionsQueries.setAllConnectionsAsNotified()
     }
 
