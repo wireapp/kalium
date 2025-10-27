@@ -590,7 +590,7 @@ internal class ConversationDAOImpl internal constructor(
         }
 
     override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity? =
-        withContext(writeDispatcher.value) {
+        withContext(readDispatcher.value) {
             conversationQueries.transactionWithResult {
                 val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
                     ?: return@transactionWithResult null
