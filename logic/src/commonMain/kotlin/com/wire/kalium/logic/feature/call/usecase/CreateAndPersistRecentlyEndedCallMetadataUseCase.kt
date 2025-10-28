@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallScreenSharingMetadata
@@ -24,9 +25,10 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.isAppOrBot
+import com.wire.kalium.logic.data.user.type.isGuest
+import com.wire.kalium.logic.data.user.type.isOwner
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
@@ -55,11 +57,11 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     }
 
     private suspend fun CallMetadata.createMetadata(conversationId: ConversationId, callEndedReason: Int): RecentlyEndedCallMetadata {
-        val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType == UserType.OWNER }
+        val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType.isOwner() }
         val conversationMembers = observeConversationMembers(conversationId).first()
-        val conversationServicesCount = conversationMembers.count { member -> member.user.userType == UserType.SERVICE }
-        val guestsCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST }
-        val guestsProCount = conversationMembers.count { member -> member.user.userType == UserType.GUEST && member.user.teamId != null }
+        val conversationServicesCount = conversationMembers.count { member -> member.user.userType.isAppOrBot() }
+        val guestsCount = conversationMembers.count { member -> member.user.userType.isGuest() }
+        val guestsProCount = conversationMembers.count { member -> member.user.userType.isGuest() && member.user.teamId != null }
         val isOutgoingCall = callStatus == CallStatus.STARTED
         val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
