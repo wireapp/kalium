@@ -260,7 +260,6 @@ class UserDatabaseBuilder internal constructor(
             database.metadataQueries,
             metadataCache,
             databaseScope,
-            readDispatcher,
             writeDispatcher
         )
 

@@ -21,7 +21,6 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.cache.FlowCache
-import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
@@ -39,7 +38,6 @@ class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
     private val metadataCache: FlowCache<String, String?>,
     private val databaseScope: CoroutineScope,
-    private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : MetadataDAO {
 
