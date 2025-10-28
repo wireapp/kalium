@@ -37,8 +37,6 @@ internal class FilePagingSource(
     val tags: List<String> = emptyList(),
 ) : PagingSource<Int, Node>() {
 
-    private val nodeUuids = mutableSetOf<String>()
-
     override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node> =
         getPaginatedNodesUseCase(
             conversationId = conversationId,
@@ -55,7 +53,7 @@ internal class FilePagingSource(
             },
             { files ->
                 PagingSourceLoadResultPage(
-                    data = files.data.removeDuplicates(),
+                    data = files.data,
                     prevKey = null,
                     nextKey = files.pagination?.nextOffset
                 ) as PagingSourceLoadResult<Int, Node>
@@ -67,17 +65,6 @@ internal class FilePagingSource(
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
         }
-    }
-
-    private fun List<Node>.removeDuplicates(): List<Node> {
-        val uniqueNodes = mutableListOf<Node>()
-        for (node in this) {
-            if (node.uuid !in nodeUuids) {
-                nodeUuids.add(node.uuid)
-                uniqueNodes.add(node)
-            }
-        }
-        return uniqueNodes
     }
 }
 
