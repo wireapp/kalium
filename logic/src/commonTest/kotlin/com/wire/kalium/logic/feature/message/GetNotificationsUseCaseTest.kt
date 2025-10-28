@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
@@ -39,8 +40,8 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -505,7 +506,7 @@ class GetNotificationsUseCaseTest {
         private fun connectionRequest() = ConversationDetails.Connection(
             conversationId = conversationId(0),
             otherUser = otherUser(TestUser.USER_ID.copy(value = "other_user_id_0_value")),
-            userType = UserType.EXTERNAL,
+            userType = UserTypeInfo.Regular(UserType.EXTERNAL),
             lastModifiedDate = TIME,
             connection = Connection(
                 "conversationId",

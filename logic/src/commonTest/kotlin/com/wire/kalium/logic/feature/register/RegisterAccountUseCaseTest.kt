@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
@@ -254,7 +255,7 @@ class RegisterAccountUseCaseTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = null,
-            userType = UserType.INTERNAL,
+            userType = UserTypeInfo.Regular(UserType.INTERNAL),
         )
         val TEST_AUTH_TOKENS = AccountTokens(
             accessToken = "access_token",

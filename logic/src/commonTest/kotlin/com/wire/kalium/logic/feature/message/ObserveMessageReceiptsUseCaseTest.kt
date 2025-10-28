@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.stub.ReceiptRepositoryStub
@@ -111,7 +112,7 @@ class ObserveMessageReceiptsUseCaseTest {
                 userName = "user name",
                 userHandle = "userhandle",
                 userPreviewAssetId = null,
-                userType = UserType.INTERNAL,
+                userType = UserTypeInfo.Regular(UserType.INTERNAL),
                 isUserDeleted = false,
                 connectionStatus = ConnectionState.ACCEPTED,
                 availabilityStatus = UserAvailabilityStatus.NONE,

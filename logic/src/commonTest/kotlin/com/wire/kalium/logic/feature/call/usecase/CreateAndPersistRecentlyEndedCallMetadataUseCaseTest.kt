@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
@@ -179,7 +180,10 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                 flowOf(
                     listOf(
                         MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
-                        MemberDetails(TestUser.OTHER.copy(userType = UserType.GUEST, teamId = null), Conversation.Member.Role.Member)
+                        MemberDetails(
+                            TestUser.OTHER.copy(userType = UserTypeInfo.Regular(UserType.GUEST), teamId = null),
+                            Conversation.Member.Role.Member
+                        )
                     )
                 )
             )
@@ -190,7 +194,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                 flowOf(
                     listOf(
                         MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
-                        MemberDetails(TestUser.OTHER.copy(userType = UserType.GUEST), Conversation.Member.Role.Member)
+                        MemberDetails(TestUser.OTHER.copy(userType = UserTypeInfo.Regular(UserType.GUEST)), Conversation.Member.Role.Member)
                     )
                 )
             )
@@ -215,7 +219,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                 isCbrEnabled = false,
                 conversationName = null,
                 users = listOf(
-                    OTHER_MINIMIZED.copy(id = CALLER_ID.copy(value = "ownerId"), userType = UserType.OWNER),
+                    OTHER_MINIMIZED.copy(id = CALLER_ID.copy(value = "ownerId"), userType = UserTypeInfo.Regular(UserType.OWNER)),
                     OTHER_MINIMIZED
                 ),
                 participants = listOf(
