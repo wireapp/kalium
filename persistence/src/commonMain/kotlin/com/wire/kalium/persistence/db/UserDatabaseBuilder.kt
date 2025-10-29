@@ -96,9 +96,19 @@ import kotlin.jvm.JvmInline
 @JvmInline
 value class UserDBSecret(val value: ByteArray)
 
+/**
+ * Dispatcher for database read operations.
+ * Limited to [MAX_READ_PARALLELISM] (3) concurrent reads to prevent SQLCipher
+ * connection pool exhaustion while maintaining good throughput.
+ */
 @JvmInline
 value class ReadDispatcher(val value: CoroutineDispatcher)
 
+/**
+ * Dispatcher for database write operations.
+ * Limited to [MAX_WRITE_PARALLELISM] (1) to serialize writes
+ * and aligning with SQLite's single-writer model.
+ */
 @JvmInline
 value class WriteDispatcher(val value: CoroutineDispatcher)
 
