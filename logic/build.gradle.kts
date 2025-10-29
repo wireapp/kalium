@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 import org.jetbrains.kotlin.util.suffixIfNot
+import java.time.Duration
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -145,3 +146,30 @@ android {
         }
     }
 }
+
+// // Configure jvmTest with timeout and detailed logging to identify hanging tests
+// tasks.named<Test>("jvmTest") {
+//     // Set timeout for each individual test (30 seconds)
+//     timeout.set(Duration.ofSeconds(30))
+//
+//     // Enable detailed test logging
+//     testLogging {
+//         events("started", "passed", "skipped", "failed")
+//         showExceptions = true
+//         showCauses = true
+//         showStackTraces = true
+//         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+//     }
+//
+//     // Print test name when it starts and completes
+//     addTestListener(object : TestListener {
+//         override fun beforeSuite(suite: TestDescriptor) {}
+//         override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
+//         override fun beforeTest(testDescriptor: TestDescriptor) {
+//             logger.lifecycle("Running test: ${testDescriptor.className}.${testDescriptor.name}")
+//         }
+//         override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
+//             logger.lifecycle("Test completed: ${testDescriptor.className}.${testDescriptor.name} - ${result.resultType}")
+//         }
+//     })
+// }
