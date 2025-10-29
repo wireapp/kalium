@@ -388,7 +388,10 @@ internal class UserDataSource internal constructor(
         val knownUsers = userDAO.getUsersDetailsByQualifiedIDList(ids.map { it.toDao() })
         // TODO we should differentiate users with incomplete data not by checking if name isNullOrBlank
         // TODO but add separate property (when federated backend is down)
-        qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }
+        val knownUserIdsWithNames = knownUsers
+            .filter { !it.name.isNullOrBlank() }
+            .mapTo(mutableSetOf()) { it.id }
+        qualifiedIDList.filterNot { it in knownUserIdsWithNames }
     }.flatMap { missingIds ->
         if (missingIds.isEmpty()) Either.Right(Unit)
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet()).map { }
@@ -537,9 +540,10 @@ internal class UserDataSource internal constructor(
             }.map { allRecipients ->
                 val teamRecipients = mutableListOf<Recipient>()
                 val otherRecipients = mutableListOf<Recipient>()
+                val teamMateIdSet = teamMateIds.toSet()
 
                 allRecipients.forEach {
-                    if (teamMateIds.contains(it.id)) teamRecipients.add(it)
+                    if (it.id in teamMateIdSet) teamRecipients.add(it)
                     else otherRecipients.add(it)
                 }
 
