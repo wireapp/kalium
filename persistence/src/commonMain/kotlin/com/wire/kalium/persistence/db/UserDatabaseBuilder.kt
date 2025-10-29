@@ -385,7 +385,7 @@ class UserDatabaseBuilder internal constructor(
     }
 
     private companion object {
-        const val MAX_READ_PARALLELISM = 3
+        const val MAX_READ_PARALLELISM = 32
         const val MAX_WRITE_PARALLELISM = 1
     }
 }
