@@ -1900,8 +1900,8 @@ class CallRepositoryTest {
             initialCallMetadataProfile = callMetadataProfile
         }
 
-        fun givenEstablishedCall(callEntity: CallEntity) = apply {
-            every {
+        suspend fun givenEstablishedCall(callEntity: CallEntity) = apply {
+            coEvery {
                 callDAO.getEstablishedCall()
             }.returns(callEntity)
         }
