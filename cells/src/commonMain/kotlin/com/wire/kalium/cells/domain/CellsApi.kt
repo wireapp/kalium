@@ -29,10 +29,10 @@ internal interface CellsApi {
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
     suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
     suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit>
-    suspend fun delete(nodeUuid: String): NetworkResponse<Unit>
+    suspend fun delete(nodeUuid: String, permanentDelete: Boolean = false): NetworkResponse<Unit>
     suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO>
     suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
-    suspend fun delete(paths: List<String>): NetworkResponse<Unit>
+    suspend fun delete(paths: List<String>, permanentDelete: Boolean = false): NetworkResponse<Unit>
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
     suspend fun getPublicLink(linkUuid: String): NetworkResponse<String>
     suspend fun getNodesForPath(

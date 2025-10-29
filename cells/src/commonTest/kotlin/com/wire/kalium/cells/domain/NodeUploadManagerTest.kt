@@ -310,7 +310,7 @@ private class TestRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
-    override suspend fun deleteFile(nodeUuid: String) = Unit.right()
+    override suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean) = Unit.right()
     override suspend fun preCheck(nodePath: String) = PreCheckResult.Success.right()
     override suspend fun downloadFile(
         out: Path,
@@ -328,7 +328,7 @@ private class TestRepository : CellsRepository {
         size = 1000,
     ).right()
 
-    override suspend fun deleteFiles(paths: List<String>): Either<NetworkFailure, Unit> =
+    override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean): Either<NetworkFailure, Unit> =
         Unit.right()
 
     override suspend fun createPublicLink(nodeUuid: String, fileName: String) =

@@ -101,11 +101,11 @@ class DeleteNodeAssetUseCaseTest {
         val fileSystem = FakeFileSystem()
 
         suspend fun withSuccessDelete() = apply {
-            coEvery { cellsRepository.deleteFile(any()) }.returns(Unit.right())
+            coEvery { cellsRepository.deleteFile(any(), any()) }.returns(Unit.right())
         }
 
         suspend fun withDeleteFailure() = apply {
-            coEvery { cellsRepository.deleteFile(any()) }.returns(
+            coEvery { cellsRepository.deleteFile(any(), any()) }.returns(
                 NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
             )
         }
