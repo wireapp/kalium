@@ -446,4 +446,208 @@ class MemberDAOTest : BaseDatabaseTest() {
             assertNotNull(oneOnOneConversation)
             assertEquals(oneOnOneConversation, federatedUser.id)
         }
+
+    @Test
+    fun givenMultipleConversations_whenInsertingMembersInBatch_thenAllMembersAreInsertedInSingleTransaction() = runTest {
+        // Given
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val conversationEntity2 = TestStubs.conversationEntity2
+        val conversationEntity4 = TestStubs.conversationEntity4
+
+        val member1 = TestStubs.member1
+        val member2 = TestStubs.member2
+        val member3 = TestStubs.member3
+
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity4)
+
+        userDAO.upsertUser(TestStubs.user1)
+        userDAO.upsertUser(TestStubs.user2)
+        userDAO.upsertUser(TestStubs.user3)
+
+        val batchData = listOf(
+            listOf(member1, member2) to conversationEntity1.id,
+            listOf(member3) to conversationEntity2.id,
+            listOf(member1, member3) to conversationEntity4.id
+        )
+
+        // When
+        memberDAO.insertMembersWithQualifiedIdBatch(batchData)
+
+        // Then
+        val conversation1Members = memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        assertEquals(setOf(member1, member2), conversation1Members.toSet())
+
+        val conversation2Members = memberDAO.observeConversationMembers(conversationEntity2.id).first()
+        assertEquals(listOf(member3), conversation2Members)
+
+        val conversation4Members = memberDAO.observeConversationMembers(conversationEntity4.id).first()
+        assertEquals(setOf(member1, member3), conversation4Members.toSet())
+    }
+
+    @Test
+    fun givenEmptyBatchList_whenInsertingMembersInBatch_thenNoErrorOccurs() = runTest {
+        // Given
+        val emptyBatch = emptyList<Pair<List<MemberEntity>, QualifiedIDEntity>>()
+
+        // When & Then - should not throw
+        memberDAO.insertMembersWithQualifiedIdBatch(emptyBatch)
+    }
+
+    @Test
+    fun givenNonExistingConversation_whenInsertingMembersInBatch_thenMembersAreNotInserted() = runTest {
+        // Given
+        val nonExistingConversationId = QualifiedIDEntity("non-existing", "domain.com")
+        val member1 = TestStubs.member1
+
+        userDAO.upsertUser(TestStubs.user1)
+
+        val batchData = listOf(
+            listOf(member1) to nonExistingConversationId
+        )
+
+        // When
+        memberDAO.insertMembersWithQualifiedIdBatch(batchData)
+
+        // Then
+        val members = memberDAO.observeConversationMembers(nonExistingConversationId).first()
+        assertTrue(members.isEmpty())
+    }
+
+    @Test
+    fun givenMultipleConversationsWithExistingMembers_whenUpdatingFullMemberListInBatch_thenAllMembersAreUpdatedCorrectly() = runTest {
+        // Given
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val conversationEntity2 = TestStubs.conversationEntity2
+
+        val user1 = TestStubs.user1
+        val user2 = TestStubs.user2
+        val user3 = TestStubs.user3
+        val user4 = TestStubs.user1.copy(id = QualifiedIDEntity("user4", "domain.com"))
+
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
+        userDAO.upsertUser(user4)
+
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // Insert initial members
+        val oldMember1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
+        val oldMember2 = MemberEntity(user2.id, MemberEntity.Role.Member)
+        val oldMember3 = MemberEntity(user3.id, MemberEntity.Role.Member)
+
+        memberDAO.insertMember(oldMember1, conversationEntity1.id)
+        memberDAO.insertMember(oldMember2, conversationEntity1.id)
+        memberDAO.insertMember(oldMember3, conversationEntity2.id)
+
+        // Prepare batch update
+        val newMemberListConv1 = listOf(
+            MemberEntity(user2.id, MemberEntity.Role.Admin), // user2 role updated
+            MemberEntity(user4.id, MemberEntity.Role.Member)  // user4 added, user1 removed
+        )
+
+        val newMemberListConv2 = listOf(
+            MemberEntity(user1.id, MemberEntity.Role.Member), // user1 added, user3 removed
+            MemberEntity(user2.id, MemberEntity.Role.Member)  // user2 added
+        )
+
+        val batchData = listOf(
+            newMemberListConv1 to conversationEntity1.id,
+            newMemberListConv2 to conversationEntity2.id
+        )
+
+        // When
+        memberDAO.updateFullMemberListBatch(batchData)
+
+        // Then
+        val conversation1Members = memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        assertEquals(2, conversation1Members.size)
+        assertTrue(conversation1Members.contains(MemberEntity(user2.id, MemberEntity.Role.Admin)))
+        assertTrue(conversation1Members.contains(MemberEntity(user4.id, MemberEntity.Role.Member)))
+        assertFalse(conversation1Members.any { it.user == user1.id })
+
+        val conversation2Members = memberDAO.observeConversationMembers(conversationEntity2.id).first()
+        assertEquals(2, conversation2Members.size)
+        assertTrue(conversation2Members.contains(MemberEntity(user1.id, MemberEntity.Role.Member)))
+        assertTrue(conversation2Members.contains(MemberEntity(user2.id, MemberEntity.Role.Member)))
+        assertFalse(conversation2Members.any { it.user == user3.id })
+    }
+
+    @Test
+    fun givenMultipleConversations_whenUpdatingFullMemberListInBatchWithEmptyList_thenAllMembersAreRemoved() = runTest {
+        // Given
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val conversationEntity2 = TestStubs.conversationEntity2
+
+        userDAO.upsertUser(TestStubs.user1)
+        userDAO.upsertUser(TestStubs.user2)
+
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // Insert initial members
+        memberDAO.insertMember(TestStubs.member1, conversationEntity1.id)
+        memberDAO.insertMember(TestStubs.member2, conversationEntity2.id)
+
+        val batchData = listOf(
+            emptyList<MemberEntity>() to conversationEntity1.id,
+            emptyList<MemberEntity>() to conversationEntity2.id
+        )
+
+        // When
+        memberDAO.updateFullMemberListBatch(batchData)
+
+        // Then
+        val conversation1Members = memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        assertTrue(conversation1Members.isEmpty())
+
+        val conversation2Members = memberDAO.observeConversationMembers(conversationEntity2.id).first()
+        assertTrue(conversation2Members.isEmpty())
+    }
+
+    @Test
+    fun givenEmptyBatchList_whenUpdatingFullMemberListInBatch_thenNoErrorOccurs() = runTest {
+        // Given
+        val emptyBatch = emptyList<Pair<List<MemberEntity>, QualifiedIDEntity>>()
+
+        // When & Then - should not throw
+        memberDAO.updateFullMemberListBatch(emptyBatch)
+    }
+
+    @Test
+    fun givenLargeBatchOfConversations_whenInsertingMembersInBatch_thenAllMembersAreInserted() = runTest {
+        // Given - Create 50 conversations with members to test batch performance
+        val conversations = (1..50).map { index ->
+            TestStubs.conversationEntity1.copy(
+                id = QualifiedIDEntity("conv$index", "domain.com")
+            )
+        }
+
+        val users = (1..50).map { index ->
+            TestStubs.user1.copy(
+                id = QualifiedIDEntity("user$index", "domain.com")
+            )
+        }
+
+        conversations.forEach { conversationDAO.insertConversation(it) }
+        users.forEach { userDAO.upsertUser(it) }
+
+        val batchData = conversations.mapIndexed { index, conversation ->
+            listOf(MemberEntity(users[index].id, MemberEntity.Role.Member)) to conversation.id
+        }
+
+        // When
+        memberDAO.insertMembersWithQualifiedIdBatch(batchData)
+
+        // Then - Verify a few random conversations
+        val verifyIndices = listOf(0, 24, 49)
+        verifyIndices.forEach { index ->
+            val members = memberDAO.observeConversationMembers(conversations[index].id).first()
+            assertEquals(1, members.size)
+            assertEquals(users[index].id, members.first().user)
+        }
+    }
 }

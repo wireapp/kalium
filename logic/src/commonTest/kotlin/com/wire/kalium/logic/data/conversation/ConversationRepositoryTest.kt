@@ -1159,6 +1159,206 @@ class ConversationRepositoryTest {
         assertTrue { result.isRight() }
     }
 
+    @Test
+    fun givenMultipleConversationsRequiringInserts_whenUpdateConversationMembersIsCalled_thenBatchInsertIsUsed() = runTest {
+        // Given
+        val conversations = listOf(
+            CONVERSATION_RESPONSE.copy(id = APIConversationId("conv1", "domain")),
+            CONVERSATION_RESPONSE.copy(id = APIConversationId("conv2", "domain")),
+            CONVERSATION_RESPONSE.copy(id = APIConversationId("conv3", "domain"))
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        // When
+        val result = conversationRepository.updateConversationMembers(
+            conversations = conversations,
+            selfUserTeamId = null,
+            invalidateMembers = false
+        )
+
+        // Then
+        result.shouldSucceed()
+        coVerify {
+            arrange.memberDAO.insertMembersWithQualifiedIdBatch(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrange.memberDAO.updateFullMemberListBatch(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMultipleGroupConversationsRequiringUpdates_whenUpdateConversationMembersIsCalled_thenBatchUpdateIsUsed() = runTest {
+        // Given
+        val conversations = listOf(
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv1", "domain"),
+                type = ConversationResponse.Type.GROUP
+            ),
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv2", "domain"),
+                type = ConversationResponse.Type.GROUP
+            )
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        // When
+        val result = conversationRepository.updateConversationMembers(
+            conversations = conversations,
+            selfUserTeamId = TestTeam.TEAM_ID,
+            invalidateMembers = true
+        )
+
+        // Then
+        result.shouldSucceed()
+        coVerify {
+            arrange.memberDAO.updateFullMemberListBatch(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrange.memberDAO.insertMembersWithQualifiedIdBatch(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMixedConversationTypes_whenUpdateConversationMembersIsCalled_thenBothBatchOperationsAreUsed() = runTest {
+        // Given
+        val conversations = listOf(
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv1", "domain"),
+                type = ConversationResponse.Type.GROUP
+            ),
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv2", "domain"),
+                type = ConversationResponse.Type.ONE_TO_ONE
+            ),
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv3", "domain"),
+                type = ConversationResponse.Type.GROUP
+            )
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        // When
+        val result = conversationRepository.updateConversationMembers(
+            conversations = conversations,
+            selfUserTeamId = TestTeam.TEAM_ID,
+            invalidateMembers = true
+        )
+
+        // Then
+        result.shouldSucceed()
+        coVerify {
+            arrange.memberDAO.updateFullMemberListBatch(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrange.memberDAO.insertMembersWithQualifiedIdBatch(any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenEmptyConversationsList_whenUpdateConversationMembersIsCalled_thenNoBatchOperationsAreCalled() = runTest {
+        // Given
+        val conversations = emptyList<ConversationResponse>()
+
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        // When
+        val result = conversationRepository.updateConversationMembers(
+            conversations = conversations,
+            selfUserTeamId = null,
+            invalidateMembers = false
+        )
+
+        // Then
+        result.shouldSucceed()
+        coVerify {
+            arrange.memberDAO.updateFullMemberListBatch(any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrange.memberDAO.insertMembersWithQualifiedIdBatch(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenConversationsWithMembers_whenUpdateConversationMembersIsCalled_thenCorrectMemberDataIsPassedToBatchOperations() = runTest {
+        // Given
+        val member1 = ConversationMemberDTO.Other(USER_ID.toApi(), "wire_admin")
+        val member2 = ConversationMemberDTO.Other(OTHER_USER_ID.toApi(), "wire_member")
+
+        val conversations = listOf(
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv1", "domain"),
+                members = ConversationMembersResponse(
+                    self = ConversationMemberDTO.Self(USER_ID.toApi(), "wire_admin"),
+                    otherMembers = listOf(member1, member2)
+                ),
+                type = ConversationResponse.Type.GROUP
+            )
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        // When
+        val result = conversationRepository.updateConversationMembers(
+            conversations = conversations,
+            selfUserTeamId = TestTeam.TEAM_ID,
+            invalidateMembers = true
+        )
+
+        // Then
+        result.shouldSucceed()
+        coVerify {
+            arrange.memberDAO.updateFullMemberListBatch(matches { batch ->
+                // Verify batch contains the conversation with correct member count
+                batch.size == 1 && batch[0].first.size == 3 // self + 2 other members
+            })
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenLargeNumberOfConversations_whenUpdateConversationMembersIsCalled_thenSingleBatchOperationIsUsed() = runTest {
+        // Given - Create 100 conversations to simulate sync scenario
+        val conversations = (1..100).map { index ->
+            CONVERSATION_RESPONSE.copy(
+                id = APIConversationId("conv$index", "domain"),
+                type = ConversationResponse.Type.GROUP
+            )
+        }
+
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        // When
+        val result = conversationRepository.updateConversationMembers(
+            conversations = conversations,
+            selfUserTeamId = TestTeam.TEAM_ID,
+            invalidateMembers = true
+        )
+
+        // Then
+        result.shouldSucceed()
+        // Verify only ONE batch call is made for all 100 conversations
+        coVerify {
+            arrange.memberDAO.updateFullMemberListBatch(matches { it.size == 100 })
+        }.wasInvoked(exactly = once)
+
+        // Verify individual insert/update methods are NOT called
+        coVerify {
+            arrange.memberDAO.updateFullMemberList(any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
