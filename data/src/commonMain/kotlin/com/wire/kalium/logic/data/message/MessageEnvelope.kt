@@ -27,10 +27,12 @@ data class MessageEnvelope(
     val dataBlob: EncryptedMessageBlob? = null
 ) {
     override fun equals(other: Any?): Boolean =
-        this === other || (other is MessageEnvelope
+        this === other || (
+            other is MessageEnvelope
                 && other.senderClientId == senderClientId
                 && other.recipients == recipients
-                && other.dataBlob?.data.contentEquals(dataBlob?.data))
+                && other.dataBlob?.data.contentEquals(dataBlob?.data)
+        )
 
     override fun hashCode(): Int {
         var result = senderClientId.hashCode()
@@ -49,9 +51,11 @@ data class RecipientEntry(val userId: UserId, val clientPayloads: List<ClientPay
 data class ClientPayload(val clientId: ClientId, val payload: EncryptedMessageBlob) {
 
     override fun equals(other: Any?): Boolean =
-        this === other || (other is ClientPayload
+        this === other || (
+            other is ClientPayload
                 && other.clientId == clientId
-                && other.payload.data.contentEquals(payload.data))
+                && other.payload.data.contentEquals(payload.data)
+        )
 
     override fun hashCode(): Int = HASH_MULTIPLIER * clientId.hashCode() + payload.data.contentHashCode()
 

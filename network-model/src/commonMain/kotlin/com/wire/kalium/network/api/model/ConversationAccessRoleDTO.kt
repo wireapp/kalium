@@ -25,12 +25,16 @@ import kotlinx.serialization.Serializable
 enum class ConversationAccessRoleDTO {
     @SerialName("team_member")
     TEAM_MEMBER,
+
     @SerialName("non_team_member")
     NON_TEAM_MEMBER,
+
     @SerialName("guest")
     GUEST,
+
     @SerialName("service")
     SERVICE,
+
     @SerialName("partner")
     EXTERNAL;
 

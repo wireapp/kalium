@@ -43,7 +43,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -76,13 +75,17 @@ object TestDataImporter {
     }
 
     private fun dumpUsers(team: Team, users: List<UserData>) {
-        val json = mapOf("id" to team.id, "owner" to mapOf(
-            "email" to team.owner.email, "id" to team.owner.userId.value
-        ), "users" to users.map {
-            mapOf(
-                "email" to it.email, "id" to it.userId.value
-            )
-        }).toJsonObject()
+        val json = mapOf(
+            "id" to team.id,
+            "owner" to mapOf(
+                "email" to team.owner.email, "id" to team.owner.userId.value
+            ),
+            "users" to users.map {
+                mapOf(
+                    "email" to it.email, "id" to it.userId.value
+                )
+            }
+        ).toJsonObject()
         File("${team.name}.json").writeText(jsonSerializer.encodeToString(json))
     }
 
@@ -103,7 +106,11 @@ object TestDataImporter {
                 )
                 backendConfig.presetTeam.users.map { user ->
                     UserData(
-                        user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team, null
+                        user.email,
+                        backendConfig.passwordForUsers,
+                        UserId(user.unqualifiedId, backendConfig.domain),
+                        team,
+                        null
                     )
                 }
             } else {
@@ -119,6 +126,7 @@ object TestDataImporter {
     }
 }
 
+@Suppress("LongMethod")
 private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
     val faker = Faker()
     val ownerName = faker.name.name()
@@ -131,7 +139,11 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
     val user = post("register") {
         setBody(
             mapOf(
-                "email" to email, "name" to ownerName, "password" to backendConfig.passwordForUsers, "email_code" to code, "team" to mapOf(
+                "email" to email,
+                "name" to ownerName,
+                "password" to backendConfig.passwordForUsers,
+                "email_code" to code,
+                "team" to mapOf(
                     "name" to backendConfig.teamName, "icon" to "default", "binding" to true
                 )
             ).toJsonObject()
@@ -147,7 +159,8 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
                     "defaultProtocol" to "proteus",
                     "protocolToggleUsers" to listOf<String>(),
                     "supportedProtocols" to listOf("mls", "proteus")
-                ), "status" to "enabled"
+                ),
+                "status" to "enabled"
             ).toJsonObject()
         )
     }
@@ -156,7 +169,8 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
         put("i/teams/$teamId/features/sndFactorPasswordChallenge") {
             setBody(
                 mapOf(
-                    "status" to "disabled", "ttl" to "unlimited"
+                    "status" to "disabled",
+                    "ttl" to "unlimited"
                 ).toJsonObject()
             )
         }
@@ -200,7 +214,10 @@ private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: Stri
     val response = post("register") {
         setBody(
             mapOf(
-                "email" to email, "name" to userName, "password" to userPassword, "team_code" to invitationCode
+                "email" to email,
+                "name" to userName,
+                "password" to userPassword,
+                "team_code" to invitationCode
             ).toJsonObject()
         )
     }.body<JsonObject>()
@@ -220,7 +237,10 @@ private suspend fun HttpClient.login(
     val response = post("login") {
         setBody(
             mapOf(
-                "email" to email, "password" to password, "label" to "", "verification_code" to secondFactor
+                "email" to email,
+                "password" to password,
+                "label" to "",
+                "verification_code" to secondFactor
             ).toJsonObject()
         )
     }.body<JsonObject>()
@@ -240,7 +260,8 @@ suspend fun HttpClient.request2FA(email: String, userId: UserId): String {
     this.post("verification-code/send") {
         setBody(
             mapOf(
-                "action" to "login", "email" to email
+                "action" to "login",
+                "email" to email
             ).toJsonObject()
         )
     }
@@ -259,7 +280,10 @@ private suspend fun HttpClient.invite(teamId: String, email: String, name: Strin
         ?: error("Could not retrieve user invitation")
 }
 
-internal fun httpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
+internal fun httpClient(
+    backendConfig: BackendConfig,
+    tokenProvider: () -> BearerTokens? = { token }
+) = HttpClient(OkHttp.create()) {
     val excludedPaths = listOf("verification-code", "register", "login", "activate")
     defaultRequest {
         url(backendConfig.api)

@@ -151,7 +151,10 @@ class ConversationPool(private val delayPool: Long) {
             }
             this.prefixedConversations.getOrPut(prefix) { mutableListOf() }.add(conversation.conversationId)
             ConversationDef(
-                conversation.conversationId, creator.internalId, conversation.members().map { it.internalId }, protocol
+                conversation.conversationId,
+                creator.internalId,
+                conversation.members().map { it.internalId },
+                protocol
             )
         }
     }

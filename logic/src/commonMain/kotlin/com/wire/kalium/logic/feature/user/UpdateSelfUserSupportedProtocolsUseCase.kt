@@ -61,7 +61,8 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
             logger.d("Skip updating supported protocols, since MLS is not supported.")
             Either.Right(false)
         } else {
-            (userRepository.getSelfUser().flatMap { selfUser ->
+            (
+                userRepository.getSelfUser().flatMap { selfUser ->
                 selfSupportedProtocols().flatMap { calculatedSupportedProtocols ->
                     val finalizedSupportedProtocols = if (selfUser.supportedProtocols?.contains(SupportedProtocol.MLS) == true) {
                         calculatedSupportedProtocols + SupportedProtocol.MLS
@@ -90,7 +91,8 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                         else -> Either.Left(it)
                     }
                 }
-            } ?: Either.Left(StorageFailure.DataNotFound))
+            } ?: Either.Left(StorageFailure.DataNotFound)
+            )
         }
     }
 

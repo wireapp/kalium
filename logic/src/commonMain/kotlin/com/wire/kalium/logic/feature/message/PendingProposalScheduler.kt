@@ -82,7 +82,7 @@ internal class PendingProposalSchedulerImpl(
     private val commitPendingProposalsScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     init {
-        commitPendingProposalsScope.launch() {
+        commitPendingProposalsScope.launch {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
                 ensureActive()
                 if (syncState == IncrementalSyncStatus.Live) {
@@ -94,7 +94,7 @@ internal class PendingProposalSchedulerImpl(
 
     private suspend fun startCommittingPendingProposals() {
         kaliumLogger.d("Start listening for pending proposals to commit")
-        timers().cancellable().collect() { groupID ->
+        timers().cancellable().collect { groupID ->
             kaliumLogger.d("Committing pending proposals in ${groupID.toLogString()}")
             transactionProvider.transaction("PendingProposalScheduler") { transactionContext ->
                 transactionContext.wrapInMLSContext { mlsContext ->
@@ -113,7 +113,7 @@ internal class PendingProposalSchedulerImpl(
             .cancellable()
             .collect { timer ->
                 ensureActive()
-                launch() {
+                launch {
                     val secondsUntilFiring = timer.timestamp.minus(DateTimeUtil.currentInstant())
                     if (secondsUntilFiring.inWholeSeconds > 0) {
                         delay(secondsUntilFiring)

@@ -60,13 +60,13 @@ enum class DeviceTypeEntity {
     Tablet,
     Desktop,
     LegalHold,
-    Unknown;
+    Unknown
 }
 
 enum class ClientTypeEntity {
     Permanent,
     Temporary,
-    LegalHold;
+    LegalHold
 }
 
 @Suppress("TooManyFunctions")

@@ -42,7 +42,8 @@ object UnreadEventMapper {
         messagesCount: Long?,
     ): ConversationUnreadEventEntity {
 
-        return ConversationUnreadEventEntity(conversationId = conversationId,
+        return ConversationUnreadEventEntity(
+            conversationId = conversationId,
             unreadEvents = mapOf<UnreadEventTypeEntity, Int>()
                 .plus(UnreadEventTypeEntity.KNOCK to (knocksCount?.toInt() ?: 0))
                 .plus(UnreadEventTypeEntity.MISSED_CALL to (missedCallsCount?.toInt() ?: 0))

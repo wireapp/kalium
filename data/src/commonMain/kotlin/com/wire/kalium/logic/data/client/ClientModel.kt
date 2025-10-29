@@ -59,7 +59,7 @@ data class Client(
 enum class ClientType {
     Temporary,
     Permanent,
-    LegalHold;
+    LegalHold
 }
 
 enum class DeviceType {
@@ -67,7 +67,7 @@ enum class DeviceType {
     Tablet,
     Desktop,
     LegalHold,
-    Unknown;
+    Unknown
 }
 
 sealed class ClientCapability {
@@ -86,6 +86,7 @@ data class OtherUserClient(
 data class UpdateClientCapabilitiesParam(
     val capabilities: List<ClientCapability>
 )
+
 /**
  * True if the client is considered to be in active use.
  *
