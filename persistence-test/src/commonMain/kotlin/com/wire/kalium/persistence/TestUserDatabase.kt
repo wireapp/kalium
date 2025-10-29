@@ -25,7 +25,7 @@ import kotlinx.coroutines.test.TestDispatcher
 
 class TestUserDatabase(
     val userId: UserIDEntity,
-    private val dispatcher: TestDispatcher = StandardTestDispatcher()
+    dispatcher: TestDispatcher
 ) {
 
     val builder: UserDatabaseBuilder
