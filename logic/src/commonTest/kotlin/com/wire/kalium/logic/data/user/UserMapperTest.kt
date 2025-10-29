@@ -21,6 +21,8 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
@@ -51,7 +53,9 @@ class UserMapperTest {
         val result = userMapper.fromUserProfileDtoToUserEntity(
             givenResponse,
             expectedResult.connectionStatus,
-            givenUserTypeEntity
+            givenUserTypeEntity,
+            TestUser.SELF.id,
+            TestTeam.TEAM_ID
         )
         // Then
         assertEquals(expectedResult, result)
@@ -95,7 +99,7 @@ class UserMapperTest {
             completePicture = UserAssetId("value2", "domain"),
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
-            userType = UserType.EXTERNAL,
+            userType = UserTypeInfo.Regular(UserType.EXTERNAL),
             expiresAt = Instant.UNIX_FIRST_DATE,
             isUnderLegalHold = false,
         )
@@ -142,7 +146,7 @@ class UserMapperTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = UserAssetId("value1", "domain"),
             completePicture = UserAssetId("value2", "domain"),
-            userType = UserType.EXTERNAL,
+            userType = UserTypeInfo.Regular(UserType.EXTERNAL),
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
             botService = BotService("botid", "provider"),

@@ -105,7 +105,6 @@ private class ConnectionMapper {
             activeOneOnOneConversationId = oneToOneConversationId
         ) else null
     )
-
 }
 
 class ConnectionDAOImpl(
