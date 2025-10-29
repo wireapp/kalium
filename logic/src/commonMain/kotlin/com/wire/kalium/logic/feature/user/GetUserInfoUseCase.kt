@@ -19,15 +19,16 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.type.isRegularTeamMember
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
@@ -78,7 +79,7 @@ internal class GetUserInfoUseCaseImpl(
      */
     private suspend fun getOtherUserTeam(otherUser: OtherUser): Either<CoreFailure, Team?> {
         val teamId = otherUser.teamId
-        return if (teamId != null && otherUser.userType in listOf(UserType.INTERNAL, UserType.OWNER)) {
+        return if (teamId != null && otherUser.userType.isRegularTeamMember()) {
             val localTeam = teamRepository.getTeam(teamId).firstOrNull()
 
             if (localTeam == null) {

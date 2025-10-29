@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -34,6 +34,6 @@ data class UserSearchDetails(
     val handle: String?,
     val completeAssetId: AssetId?,
     val previewAssetId: AssetId?,
-    val type: UserType,
+    val type: UserTypeInfo,
     val connectionStatus: ConnectionState
 )

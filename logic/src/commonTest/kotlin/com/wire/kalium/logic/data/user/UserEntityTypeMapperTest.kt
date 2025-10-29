@@ -21,27 +21,16 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
+import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class UserEntityTypeMapperTest {
 
     private val userTypeMapper: UserEntityTypeMapper = UserEntityTypeMapperImpl()
-
-    @Test
-    fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        // when
-        val result = userTypeMapper.fromTeamAndDomain(
-            "someDomain",
-            "someTeamId",
-            "someTeamId",
-            "someDomain",
-            false
-        )
-        // then
-        assertEquals(UserTypeEntity.STANDARD, result)
-    }
 
     @Test
     fun givenTeamMemberWithAdminPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsAdmin() {
@@ -84,44 +73,75 @@ class UserEntityTypeMapperTest {
     }
 
     @Test
-    fun givenCommonNotTheSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
-        // given
-        val result = userTypeMapper.fromTeamAndDomain(
-            "domainB",
-            "teamA",
-            "teamB",
-            "domainA",
-            false
-        )
+    fun givenUserTypeInfoIsInternal_whenMappingToUserTypeInfoEntity_thenStandardIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.INTERNAL))
+        // then
+        assertEquals(UserTypeEntity.STANDARD, result)
+    }
+
+    @Test
+    fun givenUserTypeInfoIsAdmin_whenMappingToUserTypeInfoEntity_thenAdminIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.ADMIN))
+        // then
+        assertEquals(UserTypeEntity.ADMIN, result)
+    }
+
+    @Test
+    fun givenUserTypeInfoIsOwner_whenMappingToUserTypeInfoEntity_thenOwnerIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.OWNER))
+        // then
+        assertEquals(UserTypeEntity.OWNER, result)
+    }
+
+    @Test
+    fun givenUserTypeInfoIsExternal_whenMappingToUserTypeInfoEntity_thenExternalIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.EXTERNAL))
+        // then
+        assertEquals(UserTypeEntity.EXTERNAL, result)
+    }
+
+    @Test
+    fun givenUserTypeInfoIsFederated_whenMappingToUserTypeInfoEntity_thenFederatedIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.FEDERATED))
         // then
         assertEquals(UserTypeEntity.FEDERATED, result)
     }
 
     @Test
-    fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
+    fun givenUserTypeInfoIsGuest_whenMappingToUserTypeInfoEntity_thenGuestIsReturned() {
         // when
-        val result = userTypeMapper.fromTeamAndDomain(
-            "testDomain",
-            "teamA",
-            "teamB",
-            "testDomain",
-            false
-        )
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.GUEST))
         // then
         assertEquals(UserTypeEntity.GUEST, result)
     }
 
     @Test
-    fun givenServiceBot_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
+    fun givenUserTypeInfoIsNone_whenMappingToUserTypeInfoEntity_thenNoneIsReturned() {
         // when
-        val result = userTypeMapper.fromTeamAndDomain(
-            "domain.wire.com",
-            "teamA",
-            "teamB",
-            "domain.wire.com",
-            true
-        )
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Regular(UserType.NONE))
+        // then
+        assertEquals(UserTypeEntity.NONE, result)
+    }
+
+    @Test
+    fun givenUserTypeInfoIsService_whenMappingToUserTypeInfoEntity_thenBotIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.Bot)
         // then
         assertEquals(UserTypeEntity.SERVICE, result)
     }
+
+    @Test
+    fun givenUserTypeInfoIsApp_whenMappingToUserTypeInfoEntity_thenAppIsReturned() {
+        // when
+        val result = userTypeMapper.fromUserTypeInfo(UserTypeInfo.App)
+        // then
+        assertEquals(UserTypeEntity.APP, result)
+    }
+
 }

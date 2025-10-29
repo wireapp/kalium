@@ -69,6 +69,8 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -76,8 +78,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import io.mockative.Mockable
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -318,21 +320,35 @@ internal class UserDataSource internal constructor(
         userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
+    @Suppress("LongMethod")
     private suspend fun persistUsers(
         listUserProfileDTO: List<UserProfileDTO>,
         listTeamMemberDTO: List<TeamMemberDTO>,
     ): Either<CoreFailure, Unit> {
         val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
+        val selfTeamId = selfTeamIdProvider().getOrNull()
         val teamMembers = listUserProfileDTO
             .filter { userProfileDTO -> mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
-                    userTypeEntity =
-                    if (userProfileDTO.service != null) UserTypeEntity.SERVICE
-                    else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
+                    userTypeEntity = when {
+                        userProfileDTO.isLegacyBot() || userProfileDTO.type == UserTypeDTO.BOT -> {
+                            UserTypeEntity.SERVICE
+                        }
+
+                        userProfileDTO.type == UserTypeDTO.APP -> {
+                            UserTypeEntity.APP
+                        }
+
+                        else -> {
+                            userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
+                        }
+                    },
+                    selfUserId = selfUserId,
+                    selfTeamId = selfTeamId
                 )
             }
         val otherUsers = listUserProfileDTO
@@ -341,13 +357,16 @@ internal class UserDataSource internal constructor(
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.NOT_CONNECTED, // this won't be updated, just to avoid a null value
-                    userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
+                    userTypeEntity = userTypeEntityMapper.fromApiTypeAndTeamAndDomain(
+                        apiUserTypeDTO = userProfileDTO.type,
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUserTeamId,
                         otherUserTeamId = userProfileDTO.teamId,
                         selfUserDomain = selfUserId.domain,
-                        isService = userProfileDTO.service != null
-                    )
+                        isLegacyBot = userProfileDTO.isLegacyBot()
+                    ),
+                    selfUserId = selfUserId,
+                    selfTeamId = selfTeamId
                 )
             }
         return listUserProfileDTO

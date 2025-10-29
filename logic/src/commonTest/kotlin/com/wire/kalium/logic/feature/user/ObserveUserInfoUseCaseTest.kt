@@ -20,13 +20,14 @@ package com.wire.kalium.logic.feature.user
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -141,7 +142,7 @@ class ObserveUserInfoUseCaseTest {
     fun givenAInternalUserWithTeamNotExistingLocally_WhenGettingDetails_thenShouldReturnSuccessResultAndGetRemoteUserTeam() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withSuccessfulUserRetrieveFromDB(userType = UserType.INTERNAL)
+            .withSuccessfulUserRetrieveFromDB(userType = UserTypeInfo.Regular(UserType.INTERNAL))
             .withSuccessfulTeamRetrieve(localTeamPresent = false)
             .arrange()
 
@@ -150,7 +151,10 @@ class ObserveUserInfoUseCaseTest {
             val result = awaitItem()
 
             // then
-            assertEquals(TestUser.OTHER.copy(userType = UserType.INTERNAL), (result as GetUserInfoResult.Success).otherUser)
+            assertEquals(
+                TestUser.OTHER.copy(userType = UserTypeInfo.Regular(UserType.INTERNAL)),
+                (result as GetUserInfoResult.Success).otherUser
+            )
 
             with(arrangement) {
                 coVerify {
@@ -202,7 +206,7 @@ class ObserveUserInfoUseCaseTest {
         // given
 
         val (arrangement, useCase) = arrangement
-            .withSuccessfulUserRetrieveFromDB(userType = UserType.INTERNAL)
+            .withSuccessfulUserRetrieveFromDB(userType = UserTypeInfo.Regular(UserType.INTERNAL))
             .withFailingTeamRetrieve()
             .arrange()
 
@@ -263,18 +267,18 @@ class ObserveUserInfoUseCaseTest {
 
         suspend fun withSuccessfulUserRetrieveFromDB(
             hasTeam: Boolean = true,
-            userType: UserType = UserType.EXTERNAL
+            userType: UserTypeInfo = UserTypeInfo.Regular(UserType.EXTERNAL)
         ): ObserveUserInfoUseCaseTestArrangement {
             coEvery {
                 userRepository.getKnownUser(any())
             }.returns(
-                    flowOf(
-                        if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(
-                            teamId = null,
-                            userType = userType
-                        )
+                flowOf(
+                    if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(
+                        teamId = null,
+                        userType = userType
                     )
                 )
+            )
 
             return this
         }
@@ -317,11 +321,11 @@ class ObserveUserInfoUseCaseTest {
             coEvery {
                 teamRepository.getTeam(any())
             }.returns(
-                    flowOf(
-                        if (!localTeamPresent) null
-                        else TestTeam.TEAM
-                    )
+                flowOf(
+                    if (!localTeamPresent) null
+                    else TestTeam.TEAM
                 )
+            )
 
             if (!localTeamPresent) {
                 coEvery {

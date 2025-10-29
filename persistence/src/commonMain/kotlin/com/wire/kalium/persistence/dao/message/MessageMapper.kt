@@ -252,6 +252,7 @@ object MessageMapper {
                     messageBody = text.requireField("text")
                 )
             }
+
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
         }
