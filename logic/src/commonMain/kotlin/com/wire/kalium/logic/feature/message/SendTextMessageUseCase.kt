@@ -50,11 +50,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
-@Suppress("LongParameterList")
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
+@Suppress("LongParameterList")
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,

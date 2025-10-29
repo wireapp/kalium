@@ -102,7 +102,9 @@ class SendLocationUseCase internal constructor(
             )
             persistMessage(message)
                 .flatMap { messageSender.sendMessage(message) }
-        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
+        }.onFailure {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
+        }
     }
 
     companion object {

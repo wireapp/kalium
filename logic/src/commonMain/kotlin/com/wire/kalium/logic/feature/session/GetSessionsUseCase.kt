@@ -36,7 +36,8 @@ class GetSessionsUseCase(
                 StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound
                 is StorageFailure.Generic -> GetAllSessionsResult.Failure.Generic(it)
             }
-        }, {
+        },
+        {
             GetAllSessionsResult.Success(it)
         }
     )

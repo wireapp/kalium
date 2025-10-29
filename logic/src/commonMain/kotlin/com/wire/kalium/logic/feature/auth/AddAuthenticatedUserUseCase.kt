@@ -60,7 +60,8 @@ class AddAuthenticatedUserUseCase internal constructor(
     ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
-            }, { doesValidSessionExist ->
+            },
+        { doesValidSessionExist ->
                 when (doesValidSessionExist) {
                     true -> onUserExist(serverConfigId, ssoId, authTokens, proxyCredentials, replace)
                     false -> storeUser(serverConfigId, ssoId, authTokens, proxyCredentials)

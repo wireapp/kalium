@@ -45,7 +45,11 @@ fun initMonkey(backendConfig: BackendConfig, oldCode: String?) {
     )
     val userData = presetTeam.users.map { user ->
         UserData(
-            user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team, oldCode
+            user.email,
+            backendConfig.passwordForUsers,
+            UserId(user.unqualifiedId, backendConfig.domain),
+            team,
+            oldCode
         )
     }.single()
     // currently the monkey id is not necessary in the server since the coordinator will be the one handling events for the replayer

@@ -42,11 +42,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
-@Suppress("LongParameterList")
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
+@Suppress("LongParameterList")
 class SendButtonMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,

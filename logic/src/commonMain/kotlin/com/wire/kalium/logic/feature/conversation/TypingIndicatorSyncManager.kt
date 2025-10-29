@@ -29,6 +29,7 @@ internal class TypingIndicatorSyncManager(
     kaliumLogger: KaliumLogger
 ) {
     private val logger = kaliumLogger.withTextTag("TypingIndicatorSyncManager")
+
     /**
      * Periodically clears and drop orphaned typing indicators, so we don't keep them forever.
      */

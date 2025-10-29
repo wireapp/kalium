@@ -69,7 +69,10 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         val email = userData.email
         val password = userData.password
         val loginResult = authScope.login(
-            userIdentifier = email, password = password, shouldPersistClient = false, secondFactorVerificationCode = secondFactor
+            userIdentifier = email,
+            password = password,
+            shouldPersistClient = false,
+            secondFactorVerificationCode = secondFactor
         )
         if (loginResult !is AuthenticationResult.Success) {
             error("User creds didn't work ($email, $password)")
@@ -250,7 +253,8 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     override suspend fun removeMonkeyFromConversation(id: ConversationId, monkey: Monkey) {
         this.monkeyState.readyThen {
             conversations.removeMemberFromConversation(
-                id, monkey.monkeyType.userId()
+                id,
+                monkey.monkeyType.userId()
             )
         }
     }

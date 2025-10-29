@@ -26,7 +26,12 @@ object MemberUpdateRequestJson {
 
     val valid = ValidJsonProvider(
         MemberUpdateDTO(
-            null, null, null, null, "2022-04-11T14:15:48.044Z", MutedStatus.ALL_ALLOWED
+            null,
+            null,
+            null,
+            null,
+            "2022-04-11T14:15:48.044Z",
+            MutedStatus.ALL_ALLOWED
         )
     ) {
         """

@@ -161,5 +161,5 @@ enum class MLSPublicKeyTypeDTO {
     ED448,
 
     @SerialName("ed25519")
-    ED25519;
+    ED25519
 }

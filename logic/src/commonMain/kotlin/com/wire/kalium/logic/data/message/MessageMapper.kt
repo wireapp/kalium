@@ -638,7 +638,9 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
     is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
 
     is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
-        this.mimeType, this.assetSizeInBytes, this.assetName
+        this.mimeType,
+        this.assetSizeInBytes,
+        this.assetName
     )
 
     is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)

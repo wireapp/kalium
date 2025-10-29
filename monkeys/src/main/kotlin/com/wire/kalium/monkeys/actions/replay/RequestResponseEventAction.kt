@@ -24,7 +24,8 @@ import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class RequestResponseEventAction(private val requester: MonkeyId, private val config: EventType.RequestResponse) : Action({}) {
+class RequestResponseEventAction(private val requester: MonkeyId, private val config: EventType.RequestResponse) : Action({
+    }) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         val sender = monkeyPool.getFromTeam(this.requester.team, this.requester.index)
         val receiver = monkeyPool.getFromTeam(this.config.targetMonkey.team, this.config.targetMonkey.index)
