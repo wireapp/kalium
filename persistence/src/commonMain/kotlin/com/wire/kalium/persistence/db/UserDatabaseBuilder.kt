@@ -84,12 +84,10 @@ import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAOImpl
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
@@ -142,7 +140,6 @@ class UserDatabaseBuilder internal constructor(
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -203,7 +200,7 @@ class UserDatabaseBuilder internal constructor(
 
     private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)
     val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries, userCache, queriesContext)
+        get() = UserDAOImpl(database.usersQueries, userCache, readDispatcher, writeDispatcher)
 
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)
@@ -353,7 +350,8 @@ class UserDatabaseBuilder internal constructor(
     val conversationMetaDataDAO: ConversationMetaDataDAO
         get() = ConversationMetaDataDAOImpl(
             database.conversationMetadataQueries,
-            queriesContext
+            readDispatcher,
+            writeDispatcher
         )
 
     val messageAttachmentDraftDao: MessageAttachmentDraftDao
