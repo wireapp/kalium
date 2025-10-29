@@ -71,6 +71,7 @@ internal class CallDAOImpl(
 
     override suspend fun insertCall(call: CallEntity) = withContext(writeDispatcher.value) {
         val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
+
         callsQueries.insertCall(
             conversation_id = call.conversationId,
             id = call.id,

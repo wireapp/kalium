@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.flowOn
 class KaliumPager<EntityType : Any>(
     private val pager: Pager<Int, EntityType>,
     internal val pagingSource: PagingSource<Int, EntityType>,
-    private val coroutineContext: ReadDispatcher
+    private val readDispatcher: ReadDispatcher
 ) {
     val pagingDataFlow: Flow<PagingData<EntityType>>
-        get() = pager.flow.flowOn(coroutineContext.value)
+        get() = pager.flow.flowOn(readDispatcher.value)
 }

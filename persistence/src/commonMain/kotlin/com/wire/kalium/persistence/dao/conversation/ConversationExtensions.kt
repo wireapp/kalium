@@ -60,7 +60,7 @@ interface ConversationExtensions {
                 pagingSource(queryConfig, startingOffset)
             },
             pagingSource = pagingSource(queryConfig, startingOffset),
-            coroutineContext = readDispatcher,
+            readDispatcher = readDispatcher,
         )
 
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
