@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 import org.jetbrains.kotlin.util.suffixIfNot
-import java.time.Duration
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
