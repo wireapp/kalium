@@ -632,7 +632,9 @@ class CallManagerImpl internal constructor(
                 val onClientsRequest = OnClientsRequest(
                     conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                     qualifiedIdMapper = qualifiedIdMapper,
-                    callingScope = scope
+                    callingScope = scope,
+                    callRepository = callRepository,
+                    epochInfoUpdater = ::updateEpochInfo,
                 ).keepingStrongReference()
 
                 wcall_set_req_clients_handler(
