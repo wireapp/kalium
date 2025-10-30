@@ -333,14 +333,12 @@ class MLSMigratorTest {
             val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = CIPHER_SUITE
             )
             val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = CIPHER_SUITE
             )

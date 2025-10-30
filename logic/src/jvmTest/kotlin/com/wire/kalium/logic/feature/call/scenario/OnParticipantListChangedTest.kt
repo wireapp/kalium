@@ -214,7 +214,6 @@ class OnParticipantListChangedTest {
         val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(
             GroupID("groupid"),
             Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-            1UL,
             Clock.System.now(),
             CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
