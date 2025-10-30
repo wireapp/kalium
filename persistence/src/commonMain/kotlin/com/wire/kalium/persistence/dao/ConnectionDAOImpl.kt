@@ -21,6 +21,8 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConnectionsQueries
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +31,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
-import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
 private class ConnectionMapper {
@@ -109,30 +110,31 @@ private class ConnectionMapper {
 class ConnectionDAOImpl(
     private val connectionsQueries: ConnectionsQueries,
     private val conversationsQueries: ConversationsQueries,
-    private val queriesContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : ConnectionDAO {
 
     private val connectionMapper = ConnectionMapper()
     override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.getConnections()
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(connectionMapper::toModel) }
     }
 
-    override suspend fun getConnection(conversationId: QualifiedIDEntity): ConnectionEntity? = withContext(queriesContext) {
+    override suspend fun getConnection(conversationId: QualifiedIDEntity): ConnectionEntity? = withContext(readDispatcher.value) {
         connectionsQueries.selectConnection(conversationId).executeAsOneOrNull()?.let { connectionMapper.toModel(it) }
     }
 
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
     }
 
-    override suspend fun insertConnection(connectionEntity: ConnectionEntity) = withContext(queriesContext) {
+    override suspend fun insertConnection(connectionEntity: ConnectionEntity) = withContext(writeDispatcher.value) {
         connectionsQueries.insertConnection(
             from_id = connectionEntity.from,
             conversation_id = connectionEntity.conversationId,
@@ -144,7 +146,7 @@ class ConnectionDAOImpl(
         )
     }
 
-    override suspend fun insertConnections(users: List<ConnectionEntity>) = withContext(queriesContext) {
+    override suspend fun insertConnections(users: List<ConnectionEntity>) = withContext(writeDispatcher.value) {
         connectionsQueries.transaction {
             for (connectionEntity: ConnectionEntity in users) {
                 connectionsQueries.insertConnection(
@@ -160,11 +162,11 @@ class ConnectionDAOImpl(
         }
     }
 
-    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(queriesContext) {
+    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(writeDispatcher.value) {
         connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
     }
 
-    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {
+    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         connectionsQueries.transaction {
             connectionsQueries.deleteConnection(conversationId)
             conversationsQueries.deleteConversation(conversationId)
@@ -174,20 +176,20 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
     }
 
-    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) = withContext(queriesContext) {
+    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         connectionsQueries.updateNotificationFlag(flag, userId)
     }
 
-    override suspend fun setAllConnectionsAsNotified() = withContext(queriesContext) {
+    override suspend fun setAllConnectionsAsNotified() = withContext(writeDispatcher.value) {
         connectionsQueries.setAllConnectionsAsNotified()
     }
 
     override suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity? {
-        return withContext(queriesContext) {
+        return withContext(readDispatcher.value) {
             connectionsQueries.selectConnectionRequestByUser(userId, connectionMapper::toModel).executeAsOneOrNull()
         }
     }

@@ -20,11 +20,12 @@ package com.wire.kalium.persistence.dao.asset
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.AssetsQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 internal object AssetMapper {
     @Suppress("FunctionParameterNaming")
@@ -47,12 +48,13 @@ internal object AssetMapper {
 
 class AssetDAOImpl internal constructor(
     private val queries: AssetsQueries,
-    private val queriesContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
     private val mapper: AssetMapper = AssetMapper
 ) : AssetDAO {
 
     // TODO(federation): support the case where domain is null
-    override suspend fun insertAsset(assetEntity: AssetEntity) = withContext(queriesContext) {
+    override suspend fun insertAsset(assetEntity: AssetEntity) = withContext(writeDispatcher.value) {
         queries.insertAsset(
             assetEntity.key,
             assetEntity.domain.orEmpty(),
@@ -62,7 +64,7 @@ class AssetDAOImpl internal constructor(
         )
     }
 
-    override suspend fun insertAssets(assetsEntity: List<AssetEntity>) = withContext(queriesContext) {
+    override suspend fun insertAssets(assetsEntity: List<AssetEntity>) = withContext(writeDispatcher.value) {
         queries.transaction {
             assetsEntity.forEach { asset ->
                 queries.insertAsset(
@@ -79,11 +81,11 @@ class AssetDAOImpl internal constructor(
     override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
         return queries.selectByKey(assetKey, mapper::fromAssets)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
     }
 
-    override suspend fun updateAsset(assetEntity: AssetEntity) = withContext(queriesContext) {
+    override suspend fun updateAsset(assetEntity: AssetEntity) = withContext(writeDispatcher.value) {
         queries.updateAsset(
             assetEntity.downloadedDate,
             assetEntity.dataPath,
@@ -92,11 +94,11 @@ class AssetDAOImpl internal constructor(
         )
     }
 
-    override suspend fun deleteAsset(key: String) = withContext(queriesContext) {
+    override suspend fun deleteAsset(key: String) = withContext(writeDispatcher.value) {
         queries.deleteAsset(key)
     }
 
-    override suspend fun getAssets(): List<AssetEntity> = withContext(queriesContext) {
+    override suspend fun getAssets(): List<AssetEntity> = withContext(readDispatcher.value) {
         queries.getAssets(mapper::fromAssets).executeAsList()
     }
 }

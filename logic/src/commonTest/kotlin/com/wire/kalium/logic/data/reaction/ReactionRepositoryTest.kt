@@ -27,16 +27,24 @@ import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ReactionRepositoryTest {
 
-    private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID)
+    private val testDispatcher = StandardTestDispatcher()
+    private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, testDispatcher)
     private val reactionsDao = userDatabase.builder.reactionDAO
     private val conversationDao = userDatabase.builder.conversationDAO
     private val userDao = userDatabase.builder.userDAO
@@ -44,9 +52,18 @@ class ReactionRepositoryTest {
 
     private val reactionRepository = ReactionRepositoryImpl(SELF_USER_ID, reactionsDao)
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     @AfterTest
     fun tearDown() {
         userDatabase.delete()
+        Dispatchers.resetMain()
+        testDispatcher.cancel()
     }
 
     @Test

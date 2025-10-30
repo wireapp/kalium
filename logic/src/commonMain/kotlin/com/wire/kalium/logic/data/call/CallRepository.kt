@@ -130,7 +130,7 @@ interface CallRepository {
 
     suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus)
     fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean)
-    fun updateIsCbrEnabled(isCbrEnabled: Boolean)
+    suspend fun updateIsCbrEnabled(isCbrEnabled: Boolean)
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
@@ -372,7 +372,7 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
+    override suspend fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
         val conversationId = callDAO.getEstablishedCall().conversationId.toModel()
         _callMetadataProfile.update(conversationId) { callMetadata ->
             callMetadata.copy(isCbrEnabled = isCbrEnabled)

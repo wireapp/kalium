@@ -19,29 +19,31 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.ConversationMetadataQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 class ConversationMetaDataDAOImpl internal constructor(
     private val conversationMetadataQueries: ConversationMetadataQueries,
-    private val coroutineContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
     private val conversationMapper: ConversationMapper = ConversationMapper,
 ) : ConversationMetaDataDAO {
     override suspend fun isInformedAboutDegradedMLSVerification(
         conversationId: QualifiedIDEntity
-    ): Boolean = withContext(coroutineContext) {
+    ): Boolean = withContext(readDispatcher.value) {
         conversationMetadataQueries.isInformedAboutDegradedMLSVerification(conversationId).executeAsOne()
     }
 
     override suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean) {
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             conversationMetadataQueries.updateInformedAboutDegradedMLSVerification(isInformed, conversationId)
         }
     }
 
     override suspend fun typeAndProtocolInfo(
         conversationId: QualifiedIDEntity
-    ): ConversationTypeAndProtocolInfo? = withContext(coroutineContext) {
+    ): ConversationTypeAndProtocolInfo? = withContext(readDispatcher.value) {
         conversationMetadataQueries.typeAndProtocolInfo(conversationId).executeAsOneOrNull()?.let {
             ConversationTypeAndProtocolInfo(
                 type = it.type,

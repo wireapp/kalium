@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
@@ -73,7 +74,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         connectionDAO = db.connectionDAO
         memberDAO = db.memberDAO
         userDAO = db.userDAO
-        conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, dispatcher)
+        conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, ReadDispatcher(dispatcher))
     }
 
     @AfterTest

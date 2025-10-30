@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageExtensions
+import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -58,7 +59,7 @@ class MessageRepositoryExtensionsTest {
         val pager = Pager(pagingConfig) { fakePagingSource }
         val startingOffset = 0L
 
-        val kaliumPager = KaliumPager(pager, fakePagingSource, StandardTestDispatcher())
+        val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()

@@ -25,15 +25,22 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class ReceiptRepositoryTest {
+    private val testDispatcher = StandardTestDispatcher()
 
-    private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID)
+    private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, testDispatcher)
     private val receiptDAO = userDatabase.builder.receiptDAO
     private val conversationDao = userDatabase.builder.conversationDAO
     private val userDao = userDatabase.builder.userDAO
@@ -41,9 +48,19 @@ class ReceiptRepositoryTest {
 
     private val receiptRepository = ReceiptRepositoryImpl(receiptDAO)
 
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     @AfterTest
     fun tearDown() {
         userDatabase.delete()
+        Dispatchers.resetMain()
+        testDispatcher.cancel()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
