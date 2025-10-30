@@ -57,7 +57,7 @@ internal class DeleteMessageAttachmentsUseCaseImpl(
                 val paths = attachments.filterIsInstance<CellAssetContent>().mapNotNull { it.assetPath }
 
                 if (paths.isNotEmpty()) {
-                    cellsRepository.deleteFiles(paths)
+                    cellsRepository.deleteFiles(paths, permanentDelete = true)
                 }
 
                 val localPaths = attachments.mapNotNull { it.localPath() }
