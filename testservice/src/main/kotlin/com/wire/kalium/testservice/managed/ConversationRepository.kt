@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.debug.BrokenState

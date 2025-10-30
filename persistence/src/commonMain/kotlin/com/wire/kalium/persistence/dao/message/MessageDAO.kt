@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -182,4 +183,5 @@ interface MessageDAO {
         newCompositeContent: MessageEntityContent.Composite,
         newMessageId: String
     )
+    suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>>
 }

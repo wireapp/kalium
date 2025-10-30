@@ -57,7 +57,8 @@ import com.wire.kalium.logic.data.message.width
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
+import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
@@ -228,14 +229,16 @@ class SendMultipartMessageUseCase internal constructor(
             attachments.forEach { attachment ->
                 with(attachment as CellAssetContent) {
                     sendAssetMessage(
-                        conversationId = conversationId,
-                        assetDataPath = localPath?.toPath() ?: error(""),
-                        assetDataSize = assetSize ?: 0,
-                        assetName = assetPath ?: "",
-                        assetMimeType = mimeType,
-                        assetWidth = metadata?.width(),
-                        assetHeight = metadata?.height(),
-                        audioLengthInMs = metadata?.durationMs() ?: 0,
+                        AssetUploadParams(
+                            conversationId = conversationId,
+                            assetDataPath = localPath?.toPath() ?: error(""),
+                            assetDataSize = assetSize ?: 0,
+                            assetName = assetPath ?: "",
+                            assetMimeType = mimeType,
+                            assetWidth = metadata?.width(),
+                            assetHeight = metadata?.height(),
+                            audioLengthInMs = metadata?.durationMs() ?: 0,
+                        )
                     )
                 }
             }
