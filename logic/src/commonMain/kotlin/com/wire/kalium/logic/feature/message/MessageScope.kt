@@ -80,8 +80,8 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandlerImpl
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
-import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
-import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
+import com.wire.kalium.logic.feature.message.draft.ObserveMessageDraftUseCase
+import com.wire.kalium.logic.feature.message.draft.ObserveMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCase
@@ -505,8 +505,8 @@ class MessageScope internal constructor(
     val saveMessageDraftUseCase: SaveMessageDraftUseCase
         get() = SaveMessageDraftUseCaseImpl(messageDraftRepository)
 
-    val getMessageDraftUseCase: GetMessageDraftUseCase
-        get() = GetMessageDraftUseCaseImpl(messageDraftRepository)
+    val observeMessageDraftUseCase: ObserveMessageDraftUseCase
+        get() = ObserveMessageDraftUseCaseImpl(messageDraftRepository)
 
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)

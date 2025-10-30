@@ -28,6 +28,8 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,14 +44,14 @@ class MessageDraftRepositoryTest {
             .arrange()
 
         // When
-        val result = messageDraftRepository.getMessageDraft(TEST_CONVERSATION_ID)
+        val result = messageDraftRepository.observeMessageDraft(TEST_CONVERSATION_ID).first()
 
         // Then
         assertEquals(TEST_MESSAGE_DRAFT_ENTITY.toModel(), result)
 
         with(arrangement) {
             coVerify {
-                messageDraftDAO.getMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
+                messageDraftDAO.observeMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
             }.wasInvoked(exactly = once)
         }
     }
@@ -99,10 +101,10 @@ class MessageDraftRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withGetMessageDraft(result: MessageDraftEntity?) = apply {
+        suspend fun withGetMessageDraft(result: MessageDraftEntity) = apply {
             coEvery {
-                messageDraftDAO.getMessageDraft(any())
-            }.returns(result)
+                messageDraftDAO.observeMessageDraft(any())
+            } returns flowOf(result)
         }
 
         suspend fun withUpsertMessageDraft() = apply {
