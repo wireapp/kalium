@@ -62,6 +62,18 @@ interface MemberDAO {
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 
+    /**
+     * Batch insert members for multiple conversations in a single transaction.
+     * @param conversationsWithMembers List of pairs containing member list and conversation ID
+     */
+    suspend fun insertMembersWithQualifiedIdBatch(conversationsWithMembers: List<Pair<List<MemberEntity>, QualifiedIDEntity>>)
+
+    /**
+     * Batch update full member lists for multiple conversations in a single transaction.
+     * @param conversationsWithMembers List of pairs containing member list and conversation ID
+     */
+    suspend fun updateFullMemberListBatch(conversationsWithMembers: List<Pair<List<MemberEntity>, QualifiedIDEntity>>)
+
     suspend fun getGroupConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
@@ -205,6 +217,37 @@ internal class MemberDAOImpl internal constructor(
                 }
             }
         }
+
+    override suspend fun insertMembersWithQualifiedIdBatch(
+        conversationsWithMembers: List<Pair<List<MemberEntity>, QualifiedIDEntity>>
+    ) = withContext(coroutineContext) {
+        memberQueries.transaction {
+            conversationsWithMembers.forEach { (memberList, conversationID) ->
+                nonSuspendInsertMembersWithQualifiedId(memberList, conversationID)
+            }
+        }
+    }
+
+    override suspend fun updateFullMemberListBatch(
+        conversationsWithMembers: List<Pair<List<MemberEntity>, QualifiedIDEntity>>
+    ) = withContext(coroutineContext) {
+        memberQueries.transaction {
+            conversationsWithMembers.forEach { (memberList, conversationID) ->
+                val membersToDelete = memberQueries.selectAllMembersByConversation(conversationID)
+                    .executeAsList()
+                    .filter { member -> memberList.none { it.user == member.user } }
+
+                memberList.forEach { member ->
+                    userQueries.insertOrIgnoreUserId(member.user)
+                    memberQueries.insertOrUpdateMember(member.user, conversationID, member.role)
+                }
+
+                membersToDelete.forEach { member ->
+                    memberQueries.deleteMember(conversationID, member.user)
+                }
+            }
+        }
+    }
 
     override suspend fun getGroupConversationWithUserIdsWithBothDomains(
         firstDomain: String,
