@@ -30,7 +30,6 @@ import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -73,7 +72,7 @@ internal open class MessageApiV0 internal constructor(
         if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
         else NetworkResponse.Error(
             kException = ProteusClientsChangedError(
-                errorBody = it.body()
+                errorBody = it.parseBody()
             )
         )
     }) {
@@ -87,7 +86,7 @@ internal open class MessageApiV0 internal constructor(
         parameters: Parameters.QualifiedDefaultParameters
     ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
         if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
-        else NetworkResponse.Error(kException = ProteusClientsChangedError(errorBody = it.body()))
+        else NetworkResponse.Error(kException = ProteusClientsChangedError(errorBody = it.parseBody()))
     }) {
         httpClient.post("$PATH_BROADCAST/$PATH_PROTEUS_MESSAGE") {
             setBody(envelopeProtoMapper.encodeToProtobuf(parameters))

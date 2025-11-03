@@ -128,6 +128,8 @@ class ACMEApiImpl internal constructor(
         } ?: run {
             CustomErrors.MISSING_NONCE
         } else {
+            // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
+            //        as ACME is NOT the Wire API, and doesn't follow its error response format.
             handleUnsuccessfulResponse(httpResponse)
         }
 
@@ -208,6 +210,8 @@ class ACMEApiImpl internal constructor(
                 CustomErrors.MISSING_NONCE
             }
         } else {
+            // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
+            //        as ACME is NOT the Wire API, and doesn't follow its error response format.
             handleUnsuccessfulResponse(httpResponse)
         }
 

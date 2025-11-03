@@ -32,18 +32,14 @@ import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.GenerateGuestLinkRequest
 import com.wire.kalium.network.api.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
-import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
-import io.ktor.utils.io.errors.IOException
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -51,9 +47,7 @@ internal open class ConversationApiV4 internal constructor(
 ) : ConversationApiV3(authenticatedNetworkClient) {
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
-        wrapKaliumResponse<ConversationResponseV3>(unsuccessfulResponseOverride = { response ->
-            wrapFederationResponse(response) { handleUnsuccessfulResponse(response) }
-        }) {
+        wrapKaliumResponse<ConversationResponseV3> {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
             }
@@ -66,13 +60,13 @@ internal open class ConversationApiV4 internal constructor(
         key: String,
         uri: String?,
         password: String?
-    ): NetworkResponse<ConversationMemberAddedResponse> =
-
-        httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
+    ): NetworkResponse<ConversationMemberAddedResponse> = wrapRequest(
+        successHandler = conversationMemberAddedHandler
+    ) {
+        httpClient.post("$PATH_CONVERSATIONS/$PATH_JOIN") {
             setBody(JoinConversationRequestV4(code, key, uri, password))
-        }.execute { httpResponse ->
-            handleConversationMemberAddedResponse(httpResponse)
         }
+    }
 
     override suspend fun fetchLimitedInformationViaCode(
         code: String,
@@ -88,14 +82,12 @@ internal open class ConversationApiV4 internal constructor(
     override suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+    ): NetworkResponse<ConversationMemberAddedResponse> = wrapRequest(
+        successHandler = conversationMemberAddedHandler
+    ) {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
             setBody(addParticipantRequest)
-        }.let { response ->
-            wrapFederationResponse(response) { handleConversationMemberAddedResponse(response) }
         }
-    } catch (e: IOException) {
-        NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
     override suspend fun generateGuestRoomLink(

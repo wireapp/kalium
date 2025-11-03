@@ -25,12 +25,11 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import okio.IOException
 
 internal open class ConversationApiV2 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -47,13 +46,9 @@ internal open class ConversationApiV2 internal constructor(
     override suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+    ): NetworkResponse<ConversationMemberAddedResponse> = wrapRequest(successHandler = conversationMemberAddedHandler) {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
             setBody(addParticipantRequest)
-        }.let { response ->
-            handleConversationMemberAddedResponse(response)
         }
-    } catch (e: IOException) {
-        NetworkResponse.Error(KaliumException.GenericError(e))
     }
 }
