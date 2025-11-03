@@ -20,7 +20,9 @@ package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
@@ -131,8 +133,8 @@ object TestNetworkException {
         ErrorResponse(409, "Guest links are disabled", "guest-links-disabled")
     )
 
-    val federationNotEnabled = KaliumException.FederationError(
-        ErrorResponse(400, "no federator configured", "federation-not-enabled")
+    val federationNotEnabled = FederationError(
+        FederationErrorResponse.Generic(400, "no federator configured", "federation-not-enabled", null)
     )
 
     val accountSuspended = KaliumException.InvalidRequestError(

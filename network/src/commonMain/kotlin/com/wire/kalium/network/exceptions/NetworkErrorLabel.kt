@@ -73,12 +73,6 @@ internal object NetworkErrorLabel {
 
     const val MLS_FEDERATED_ONE2ONE_NOT_SUPPORTED = "mls-federated-one2one-not-supported"
 
-    // Federation
-    const val FEDERATION_FAILURE = "federation-remote-error"
-    const val FEDERATION_DENIED = "federation-denied"
-    const val FEDERATION_NOT_ENABLED = "federation-not-enabled"
-    const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
-
     // connection
     const val BAD_CONNECTION_UPDATE = "bad-conn-update"
     object KaliumCustom {

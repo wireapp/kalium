@@ -32,6 +32,11 @@ sealed class NetworkResponse<out T : Any> {
         val headers: Map<String, String?>,
         val httpCode: Int
     ) : NetworkResponse<T>() {
+        internal constructor(value: T, responseData: HttpResponseData) : this(
+            value,
+            responseData.headers,
+            responseData.status.value
+        )
         internal constructor(value: T, httpResponse: HttpResponse) : this(
             value,
             // small issue here where keys are converted to small case letters

@@ -24,35 +24,24 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.authenticated.connection.UpdateConnectionRequest
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v3.authenticated.ConnectionApiV3
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapFederationResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.utils.io.errors.IOException
 
 internal open class ConnectionApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ConnectionApiV3(authenticatedNetworkClient) {
 
-    override suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO> = try {
-        httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}").let { response ->
-            wrapFederationResponse(response) { wrapKaliumResponse { response } }
-        }
-    } catch (e: IOException) {
-        NetworkResponse.Error(KaliumException.GenericError(e))
+    override suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO> = wrapRequest {
+        httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
     }
 
     override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<ConnectionDTO> =
-        try {
+        wrapRequest {
             httpClient.put("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}") {
                 setBody(UpdateConnectionRequest(connectionStatus))
-            }.let { response ->
-                wrapFederationResponse(response) { wrapKaliumResponse { response } }
             }
-        } catch (e: IOException) {
-            NetworkResponse.Error(KaliumException.GenericError(e))
         }
 }

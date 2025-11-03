@@ -61,6 +61,8 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
+import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -123,14 +125,12 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+    ): NetworkResponse<ConversationMemberAddedResponse> = wrapRequest(
+        successHandler = conversationMemberAddedHandler,
+    ) {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(addParticipantRequest)
-        }.let { response ->
-            handleConversationMemberAddedResponse(response)
         }
-    } catch (e: IOException) {
-        NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
     override suspend fun addService(
@@ -247,10 +247,10 @@ internal open class ConversationApiV0 internal constructor(
                 APINotSupported("V0->3: joinConversation with password api is only available on API V4")
             )
         }
-        return httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
-            setBody(JoinConversationRequestV0(code, key, uri))
-        }.execute { httpResponse ->
-            handleConversationMemberAddedResponse(httpResponse)
+        return wrapRequest(successHandler = conversationMemberAddedHandler) {
+            httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
+                setBody(JoinConversationRequestV0(code, key, uri))
+            }.execute()
         }
     }
 
@@ -290,23 +290,14 @@ internal open class ConversationApiV0 internal constructor(
     ): NetworkResponse<Unit> =
         getApiNotSupportedError(::leaveSubconversation.name, MIN_API_VERSION_MLS)
 
-    protected suspend fun handleConversationMemberAddedResponse(
-        httpResponse: HttpResponse
-    ): NetworkResponse<ConversationMemberAddedResponse> =
-        when (httpResponse.status) {
-            HttpStatusCode.OK -> {
-                wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { httpResponse }
-                    .mapSuccess { ConversationMemberAddedResponse.Changed(it) }
-            }
-
-            HttpStatusCode.NoContent -> {
-                NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, httpResponse)
-            }
-
-            else -> {
-                wrapKaliumResponse { httpResponse }
-            }
+    protected val conversationMemberAddedHandler: suspend (HttpResponse) -> NetworkResponse<ConversationMemberAddedResponse> = { response ->
+        val result = if (response.status == HttpStatusCode.NoContent) {
+            ConversationMemberAddedResponse.Unchanged
+        } else {
+            ConversationMemberAddedResponse.Changed(response.body<EventContentDTO.Conversation.MemberJoinDTO>())
         }
+        NetworkResponse.Success(result, response)
+    }
 
     protected suspend fun handleServiceAddedResponse(
         httpResponse: HttpResponse
@@ -386,6 +377,7 @@ internal open class ConversationApiV0 internal constructor(
                 setBody(typingIndicatorMode)
             }
         }
+
     override suspend fun updateProtocol(
         conversationId: ConversationId,
         protocol: ConvProtocol
