@@ -68,8 +68,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationConflictResponse
-import com.wire.kalium.network.api.model.FederationUnreachableResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -2237,8 +2237,8 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_UNREACHABLE_DOMAINS = NetworkResponse.Error(
-            KaliumException.FederationUnreachableException(
-                FederationUnreachableResponse(
+            FederationError(
+                FederationErrorResponse.Unreachable(
                     listOf(
                         "unstableDomain1.com",
                         "unstableDomain2.com"
@@ -2248,8 +2248,8 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_CONFLICTING_BACKENDS = NetworkResponse.Error(
-            KaliumException.FederationConflictException(
-                FederationConflictResponse(
+            FederationError(
+                FederationErrorResponse.Conflict(
                     listOf(
                         "conflictingDomain1.com",
                         "conflictingDomain2.com"
@@ -2259,7 +2259,7 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_GENERAL = NetworkResponse.Error(
-            KaliumException.FederationError(ErrorResponse(422, "", "federation-remote-error"))
+            FederationError(FederationErrorResponse.Generic(422, "", "federation-remote-error", null))
         )
 
         val ERROR_MISSING_LEGALHOLD_CONSENT = NetworkResponse.Error(

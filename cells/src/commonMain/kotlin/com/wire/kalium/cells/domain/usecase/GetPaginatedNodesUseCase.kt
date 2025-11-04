@@ -78,7 +78,6 @@ internal class GetPaginatedNodesUseCaseImpl(
                 PaginatedList(
                     data = nodes.data.asSequence()
                         .filterNot { it.isDraft }
-                        .distinctBy { it.uuid }
                         .map { node ->
                             if (node.type == CellNodeType.FOLDER.value) {
                                 node.toFolderModel().copy(

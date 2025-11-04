@@ -21,14 +21,49 @@ package com.wire.kalium.network.api.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+sealed interface APIErrorResponseBody
+
+@Deprecated("Use GenericErrorResponse instead")
+typealias ErrorResponse = GenericAPIErrorResponse
+
 @Serializable
-data class ErrorResponse(
+data class GenericAPIErrorResponse(
     @SerialName("code") val code: Int,
     @SerialName("message") val message: String,
     @SerialName("label") val label: String,
-    @SerialName("data") val cause: Cause? = null,
-) {
-    fun isFederationError() = cause?.type == "federation" || label.contains("federation")
+) : APIErrorResponseBody
+
+@Serializable
+sealed interface FederationErrorResponse : APIErrorResponseBody {
+    @Serializable
+    data class Conflict(
+        @SerialName("non_federating_backends") val nonFederatingBackends: List<String>
+    ) : FederationErrorResponse
+
+    @Serializable
+    data class Unreachable(
+        @SerialName("unreachable_backends") val unreachableBackends: List<String> = emptyList()
+    ) : FederationErrorResponse
+
+    @Serializable
+    data class Generic(
+        @SerialName("code") val code: Int,
+        @SerialName("message") val message: String,
+        @SerialName("label") val label: String,
+        @SerialName("data") val cause: Cause?,
+    ) : FederationErrorResponse {
+        companion object {
+            const val FEDERATION_FAILURE = "federation-remote-error"
+            const val FEDERATION_DENIED = "federation-denied"
+            const val FEDERATION_NOT_ENABLED = "federation-not-enabled"
+            const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
+        }
+
+        fun isFederationFailure() = label == FEDERATION_FAILURE
+        fun isFederationDenied() = label == FEDERATION_DENIED
+        fun isFederationNotEnabled() = label == FEDERATION_NOT_ENABLED
+        fun isFederationUnreachableDomains() = label == FEDERATION_UNREACHABLE_DOMAINS
+    }
 }
 
 @Serializable
@@ -38,14 +73,4 @@ data class Cause(
     @SerialName("domain") val domain: String,
     @SerialName("domains") val domains: List<String> = emptyList(),
     @SerialName("path") val path: String,
-)
-
-@Serializable
-data class FederationConflictResponse(
-    @SerialName("non_federating_backends") val nonFederatingBackends: List<String>
-)
-
-@Serializable
-data class FederationUnreachableResponse(
-    @SerialName("unreachable_backends") val unreachableBackends: List<String> = emptyList()
 )
