@@ -182,4 +182,6 @@ interface MessageDAO {
         newCompositeContent: MessageEntityContent.Composite,
         newMessageId: String
     )
+
+    suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }

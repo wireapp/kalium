@@ -276,6 +276,12 @@ internal interface MessageRepository {
         newMessageId: String,
         editInstant: Instant
     ): Either<StorageFailure, Unit>
+
+    suspend fun updateAudioMessageNormalizedLoudness(
+        conversationId: ConversationId,
+        messageId: String,
+        normalizedLoudness: ByteArray
+    ): Either<CoreFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -778,6 +784,18 @@ internal class MessageDataSource internal constructor(
                 messageContent.newButtonList.map { ButtonEntity(it.text, it.id, it.isSelected) }
             ),
             newMessageId = newMessageId
+        )
+    }
+
+    override suspend fun updateAudioMessageNormalizedLoudness(
+        conversationId: ConversationId,
+        messageId: String,
+        normalizedLoudness: ByteArray
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateAudioMessageNormalizedLoudness(
+            conversationId = conversationId.toDao(),
+            messageId = messageId,
+            normalizedLoudness = normalizedLoudness
         )
     }
 }

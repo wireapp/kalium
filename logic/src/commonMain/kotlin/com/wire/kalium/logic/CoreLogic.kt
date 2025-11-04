@@ -29,6 +29,7 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
@@ -113,6 +114,8 @@ abstract class CoreLogicCommon internal constructor(
     abstract val networkStateObserver: NetworkStateObserver
 
     internal val logoutCallbackManager = LogoutCallbackManagerImpl()
+
+    abstract val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 }
 
 expect val clientPlatform: String

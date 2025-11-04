@@ -69,6 +69,8 @@ import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
@@ -525,4 +527,7 @@ class MessageScope internal constructor(
 
     val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
         get() = GetNextAudioMessageInConversationUseCase(messageRepository)
+
+    val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
+        get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
 }

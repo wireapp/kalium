@@ -644,6 +644,18 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateAudioMessageNormalizedLoudness(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        normalizedLoudness: ByteArray
+    ) = withContext(coroutineContext) {
+        queries.updateAudioMessageNormalizedLoudness(
+            asset_normalized_loudness = normalizedLoudness,
+            conversation_id = conversationId,
+            message_id = messageId
+        )
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 
 }
