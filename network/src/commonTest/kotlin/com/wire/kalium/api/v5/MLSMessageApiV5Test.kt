@@ -30,7 +30,7 @@ import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.serialization.Mls
-import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.Companion.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
