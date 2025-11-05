@@ -194,8 +194,8 @@ class UserDatabaseBuilder internal constructor(
         database.databasePropertiesQueries.enableForeignKeyContraints()
     }
 
-    private val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
-    private val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(MAX_WRITE_PARALLELISM))
+    val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
+    val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(MAX_WRITE_PARALLELISM))
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)

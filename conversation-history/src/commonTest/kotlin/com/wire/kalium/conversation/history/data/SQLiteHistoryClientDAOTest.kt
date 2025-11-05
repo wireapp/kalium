@@ -23,9 +23,14 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -35,24 +40,22 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
+@OptIn(ExperimentalTime::class, ExperimentalCoroutinesApi::class)
 class SQLiteHistoryClientDAOTest {
 
     private lateinit var testDatabase: TestUserDatabase
-    private lateinit var testDispatcher: TestDispatcher
+    private val testDispatcher: TestDispatcher = StandardTestDispatcher()
     private lateinit var historyClientDAO: SQLiteHistoryClientDAO
 
     @BeforeTest
-    fun setup() = runTest(StandardTestDispatcher()) {
-        testDispatcher = StandardTestDispatcher()
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
         testDatabase = TestUserDatabase(TEST_USER_ID, testDispatcher)
         historyClientDAO = SQLiteHistoryClientDAO(
             historyClientQueries = testDatabase.builder.historyClientQueries,
-            queriesContext = testDispatcher
+            readDispatcher = testDatabase.builder.readDispatcher,
+            writeDispatcher = testDatabase.builder.writeDispatcher
         )
-
-        // Insert fake conversations to satisfy foreign key constraint
-        insertFakeConversations()
     }
 
     private suspend fun insertFakeConversations() {
@@ -99,10 +102,13 @@ class SQLiteHistoryClientDAOTest {
     @AfterTest
     fun tearDown() {
         testDatabase.delete()
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun givenHistoryClientInserted_whenGettingAllForConversation_thenShouldReturnInsertedClient() = runTest(testDispatcher) {
+    fun givenHistoryClientInserted_whenGettingAllForConversation_thenShouldReturnInsertedClient() = runTest {
+        // Insert fake conversations to satisfy foreign key constraint
+        insertFakeConversations()
         // Given
         val conversationId = TEST_CONVERSATION_ID
         val clientId = "client1"
@@ -130,7 +136,9 @@ class SQLiteHistoryClientDAOTest {
 
     @Test
     fun givenMultipleHistoryClientsInserted_whenGettingAllForConversation_thenShouldReturnAllClientsForThatConversation() =
-        runTest(testDispatcher) {
+        runTest {
+            // Insert fake conversations to satisfy foreign key constraint
+            insertFakeConversations()
             // Given
             val conversationId1 = TEST_CONVERSATION_ID
             val conversationId2 = QualifiedIDEntity("conversation2", "domain")
@@ -177,7 +185,9 @@ class SQLiteHistoryClientDAOTest {
 
     @Test
     fun givenHistoryClientsWithDifferentDates_whenGettingAllFromDateOnwards_thenShouldReturnOnlyClientsFromThatDateOnwards() =
-        runTest(testDispatcher) {
+        runTest {
+            // Insert fake conversations to satisfy foreign key constraint
+            insertFakeConversations()
             // Given
             val conversationId = TEST_CONVERSATION_ID
             val clientId1 = "client1"
@@ -207,7 +217,9 @@ class SQLiteHistoryClientDAOTest {
         }
 
     @Test
-    fun givenHistoryClientsInserted_whenObservingAllForConversation_thenShouldEmitClientsForThatConversation() = runTest(testDispatcher) {
+    fun givenHistoryClientsInserted_whenObservingAllForConversation_thenShouldEmitClientsForThatConversation() = runTest {
+        // Insert fake conversations to satisfy foreign key constraint
+        insertFakeConversations()
         // Given
         val conversationId = TEST_CONVERSATION_ID
         val clientId1 = "client1"

@@ -24,6 +24,8 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.io.File
@@ -31,7 +33,7 @@ import java.nio.file.Files
 
 actual open class BaseDatabaseTest actual constructor() {
 
-    protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
+    protected actual val dispatcher: CoroutineDispatcher = Dispatchers.Main
     actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
     private val UserIDEntity.databaseFile
