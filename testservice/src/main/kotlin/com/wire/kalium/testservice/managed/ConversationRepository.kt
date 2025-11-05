@@ -32,7 +32,8 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
+import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.debug.BrokenState
@@ -543,14 +544,16 @@ sealed class ConversationRepository {
                             } else {
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 messages.sendAssetMessage(
-                                    conversationId,
-                                    temp.toOkioPath(),
-                                    byteArray.size.toLong(),
-                                    fileName,
-                                    type,
-                                    null,
-                                    null,
-                                    0L
+                                    AssetUploadParams(
+                                        conversationId,
+                                        temp.toOkioPath(),
+                                        byteArray.size.toLong(),
+                                        fileName,
+                                        type,
+                                        null,
+                                        null,
+                                        0L
+                                    )
                                 )
                             }
                             when (sendResult) {
@@ -630,14 +633,16 @@ sealed class ConversationRepository {
                             }
                             setMessageTimer(instance, conversationId, messageTimer)
                             val sendResult = messages.sendAssetMessage(
-                                conversationId,
-                                temp.toOkioPath(),
-                                byteArray.size.toLong(),
-                                "image",
+                                AssetUploadParams(
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    "image",
                                 type,
-                                width,
-                                height,
-                                0L
+                                    width,
+                                    height,
+                                    0L
+                                )
                             )
                             when (sendResult) {
                                 ScheduleNewAssetMessageResult.Failure.RestrictedFileType,

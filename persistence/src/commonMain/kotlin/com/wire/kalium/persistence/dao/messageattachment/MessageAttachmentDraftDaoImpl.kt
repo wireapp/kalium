@@ -64,6 +64,13 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
         )
     }
 
+    override suspend fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>> {
+        return queries.getAllDrafts(mapper = ::toDao)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+    }
+
     override suspend fun updateUploadStatus(uuid: String, status: String) = withContext(writeDispatcher.value) {
         queries.updateUploadStatus(status, uuid)
     }
@@ -74,11 +81,9 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
         }
 
     override suspend fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>> =
-        withContext(readDispatcher.value) {
             queries.getDrafts(conversationId, ::toDao).asFlow()
-                .flowOn(readDispatcher.value)
                 .mapToList()
-        }
+                .flowOn(readDispatcher.value)
 
     override suspend fun getAttachment(uuid: String): MessageAttachmentDraftEntity? = withContext(readDispatcher.value) {
         queries.getDraft(uuid, ::toDao).executeAsOneOrNull()
