@@ -18,7 +18,6 @@
 package com.wire.kalium.conversation.history.data.dao
 
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.persistence.HistoryClientQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -28,8 +27,8 @@ import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.time.ExperimentalTime
 import kotlinx.datetime.Instant
+import kotlin.time.ExperimentalTime
 
 /**
  * Implementation of [HistoryClientDAO] that uses SQLDelight to access the database.
@@ -61,12 +60,12 @@ internal class SQLiteHistoryClientDAO internal constructor(
      * @return a list of history clients
      */
     override suspend fun getAllForConversation(conversationId: QualifiedIDEntity): List<HistoryClient> =
-//         withContext(readDispatcher.value) {
+        withContext(readDispatcher.value) {
             historyClientQueries.selectAllForConversation(
                 conversation_id = conversationId,
                 mapper = ::mapToHistoryClient
             ).executeAsList()
-//         }
+        }
 
     /**
      * Selects all history clients for a given conversation ID from a specific date onwards.
@@ -97,8 +96,9 @@ internal class SQLiteHistoryClientDAO internal constructor(
             conversation_id = conversationId,
             mapper = ::mapToHistoryClient
         ).asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
+
     /**
      * Inserts a new history client.
      *
@@ -112,7 +112,7 @@ internal class SQLiteHistoryClientDAO internal constructor(
         id: String,
         secret: ByteArray,
         creationDate: Instant
-    )  {
+    ) = withContext(writeDispatcher.value) {
         historyClientQueries.insertClient(
             conversation_id = conversationId,
             id = id,
