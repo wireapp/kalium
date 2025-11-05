@@ -116,5 +116,5 @@ data class WireIdentity(
 }
 
 enum class CryptoCertificateStatus {
-    VALID, EXPIRED, REVOKED;
+    VALID, EXPIRED, REVOKED
 }

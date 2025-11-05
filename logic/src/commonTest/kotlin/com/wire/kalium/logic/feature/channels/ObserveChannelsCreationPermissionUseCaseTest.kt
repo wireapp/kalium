@@ -22,6 +22,7 @@ import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
 import com.wire.kalium.logic.data.featureConfig.ChannelFeatureConfiguration
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
 import kotlinx.coroutines.flow.Flow
@@ -77,7 +78,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     }
 
     private suspend fun singleTest(
-        userType: UserType,
+        userType: UserTypeInfo,
         persistedConfiguration: ChannelFeatureConfiguration,
         assertion: (ChannelCreationPermission) -> Unit
     ) {
@@ -95,7 +96,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     @Test
     fun givenCreationOfPublicChannelsRequiresAdminType_whenUserIsRegularMember_thenShouldReturnFalse() = runTest {
         singleTest(
-            UserType.INTERNAL,
+            UserTypeInfo.Regular(UserType.INTERNAL),
             ChannelFeatureConfiguration.Enabled(
                 createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM,
                 createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
@@ -109,7 +110,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     @Test
     fun givenCreationOfPublicChannelsRequiresAdminType_whenUserIsAdminMember_thenShouldReturnTrue() = runTest {
         singleTest(
-            UserType.ADMIN,
+            UserTypeInfo.Regular(UserType.ADMIN),
             ChannelFeatureConfiguration.Enabled(
                 createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM,
                 createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
@@ -123,7 +124,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     @Test
     fun givenCreationOfRegularChannelsRequiresRegularMember_whenUserIsExternal_thenShouldReturnFalse() = runTest {
         singleTest(
-            UserType.EXTERNAL, ChannelFeatureConfiguration.Enabled(
+            UserTypeInfo.Regular(UserType.EXTERNAL), ChannelFeatureConfiguration.Enabled(
                 createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS,
                 createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY,
             )
@@ -136,7 +137,7 @@ class ObserveChannelsCreationPermissionUseCaseTest {
     fun givenConfigsUpdate_thenShouldEmitNewValues() = runTest {
         configurationStorage.persistChannelsConfiguration(ChannelFeatureConfiguration.Disabled)
 
-        val result = testSubject(flowOf(TestUser.SELF.copy(userType = UserType.ADMIN))).invoke()
+        val result = testSubject(flowOf(TestUser.SELF.copy(userType = UserTypeInfo.Regular(UserType.ADMIN)))).invoke()
 
         result.test {
             val status = awaitItem()
@@ -164,13 +165,13 @@ class ObserveChannelsCreationPermissionUseCaseTest {
             )
         )
 
-        val selfUserFlow = MutableStateFlow(TestUser.SELF.copy(userType = UserType.INTERNAL))
+        val selfUserFlow = MutableStateFlow(TestUser.SELF.copy(userType =UserTypeInfo.Regular(UserType.INTERNAL)))
         val result = testSubject(selfUserFlow).invoke()
 
         result.test {
             val status = awaitItem()
             assertIs<ChannelCreationPermission.Forbidden>(status)
-            selfUserFlow.value = TestUser.SELF.copy(userType = UserType.ADMIN)
+            selfUserFlow.value = TestUser.SELF.copy(userType = UserTypeInfo.Regular(UserType.ADMIN))
             advanceUntilIdle()
             val newStatus = awaitItem()
             assertIs<ChannelCreationPermission.Allowed>(newStatus)

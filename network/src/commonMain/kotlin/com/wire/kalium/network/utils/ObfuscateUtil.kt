@@ -144,6 +144,8 @@ val sensitiveJsonKeys by lazy {
 }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team", "creator_client") }
 private val domainJsonKeys by lazy { listOf("domain") }
-private val sensitiveJsonObjects by lazy { listOf("qualified_id", "qualified_ids", "qualified_users", "content", "payload") }
+private val sensitiveJsonObjects by lazy {
+    listOf("qualified_id", "qualified_ids", "qualified_users", "content", "payload")
+}
 private val notSensitiveJsonKeys by lazy { listOf("type", "time") }
 private val notSensitiveJsonArray by lazy { listOf("payload") }

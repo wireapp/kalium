@@ -42,6 +42,9 @@ class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal c
         startingOffset: Long,
         pagingConfig: PagingConfig
     ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesSearchBySearchQueryAndConversationId(
-        searchQuery, conversationId, pagingConfig, startingOffset
+        searchQuery,
+        conversationId,
+        pagingConfig,
+        startingOffset
     ).flowOn(dispatcher.io)
 }

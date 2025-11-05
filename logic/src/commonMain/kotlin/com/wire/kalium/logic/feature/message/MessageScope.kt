@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.logger.KaliumLogger
@@ -56,6 +57,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCase
+import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -68,6 +71,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
@@ -135,9 +139,11 @@ class MessageScope internal constructor(
     private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
     private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
     private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
+    private val getMessageAttachment: GetMessageAttachmentUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val compositeMessageRepository: CompositeMessageRepository,
+    private val isWireCellsEnabledForConversationUseCase: IsWireCellsEnabledForConversationUseCase,
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
@@ -281,7 +287,8 @@ class MessageScope internal constructor(
 
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
         get() = GetAssetMessageTransferStatusUseCaseImpl(
-            messageRepository, dispatcher
+            messageRepository,
+            dispatcher
         )
 
     val retryFailedMessage: RetryFailedMessageUseCase
@@ -334,6 +341,14 @@ class MessageScope internal constructor(
             scope,
             dispatcher
         )
+
+    val getAudioAssetUseCase: GetAudioAssetUseCase by lazy {
+        GetAudioAssetUseCaseImpl(
+            isWireCellsEnabledForConversation = isWireCellsEnabledForConversationUseCase,
+            getMessageAsset = getAssetMessage,
+            getMessageAttachment = getMessageAttachment
+        )
+    }
 
     val getImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
         get() = GetImageAssetMessagesForConversationUseCaseImpl(

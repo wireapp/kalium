@@ -118,14 +118,18 @@ sealed class ConversationRepository {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                        log.info("Instance ${instance.instanceId}: Create conversation \"$name\" with ${
+                        log.info(
+                            "Instance ${instance.instanceId}: Create conversation \"$name\" with ${
                                     userIds.joinToString { user -> user.value + "@" + user.domain }
-                                }")
-                        when (val result = conversations.createRegularGroup(
+                                }"
+                        )
+                        when (
+                            val result = conversations.createRegularGroup(
                             name,
                             userIds,
                             CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
-                        )) {
+                        )
+                        ) {
                             is ConversationCreationResult.Success -> {
                                 Response.status(Response.Status.OK).build()
                             }
@@ -204,13 +208,16 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send button action confirmation for button $buttonId")
-                        when (val result = messages.sendButtonActionConfirmationMessage(
+                        when (
+                            val result = messages.sendButtonActionConfirmationMessage(
                             conversationId,
                             referenceMessageId,
                             buttonId,
                             userIds
-                        )) {
-                            is SendButtonActionConfirmationMessageUseCase.Result.Failure -> Response
+                        )
+                        ) {
+                            is SendButtonActionConfirmationMessageUseCase.Result.Failure ->
+                                Response
                                 .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
 
                             else -> {
@@ -354,7 +361,10 @@ sealed class ConversationRepository {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Update text message '$text'")
                             messages.sendEditTextMessage(
-                                conversationId, firstMessageId, text, mentions
+                                conversationId,
+                                firstMessageId,
+                                text,
+                                mentions
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
@@ -623,7 +633,8 @@ sealed class ConversationRepository {
                                 conversationId,
                                 temp.toOkioPath(),
                                 byteArray.size.toLong(),
-                                "image", type,
+                                "image",
+                                type,
                                 width,
                                 height,
                                 0L

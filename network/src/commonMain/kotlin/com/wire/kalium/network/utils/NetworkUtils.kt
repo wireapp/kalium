@@ -20,23 +20,17 @@
 package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationConflictResponse
-import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.call.DoubleReceiveException
 import io.ktor.client.call.NoTransformationFoundException
-import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
-import io.ktor.http.isSuccess
-import kotlinx.serialization.SerializationException
-import kotlin.coroutines.cancellation.CancellationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
@@ -146,25 +140,6 @@ internal inline fun <T : Any> NetworkResponse<T>.onSuccess(
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
 /**
- * Wraps exceptions thrown during the request or parsing of the response, like
- * exceptions thrown due to inability to reach the server.
- * This does **not** handle the response itself (i.e. HTTP status, body, etc.),
- * but may be used to catch exceptions thrown during those steps.
- *
- * @return [NetworkResponse.Success] if everything went smooth
- * @return [NetworkResponse.Error] with a [KaliumException.GenericError] in case of an error
- */
-private inline fun <reified ResponseType : Any> handlingNetworkException(
-    performRequest: () -> NetworkResponse<ResponseType>
-): NetworkResponse<ResponseType> = try {
-    performRequest()
-} catch (e: CancellationException) {
-    throw e
-} catch (e: Exception) {
-    NetworkResponse.Error(KaliumException.GenericError(e))
-}
-
-/**
  * Wraps a producer of [HttpResponse] and attempts to parse the server response based on the [BodyType].
  * @return - Successful response (HTTP Status Codes from 200 to 299):
  * a [NetworkResponse.Success] with the expected [BodyType] will be returned.
@@ -183,19 +158,22 @@ private inline fun <reified ResponseType : Any> handlingNetworkException(
  * @see KaliumException
  * @see ErrorResponse
  */
+@Deprecated(
+    message = "This is being renamed to wrapRequest! Use it instead",
+    replaceWith = ReplaceWith("wrapRequest(unsuccessfulResponseOverride, performRequest)")
+)
 internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(
-    unsuccessfulResponseOverride: (HttpResponse) -> NetworkResponse<BodyType>? = { null },
+    crossinline unsuccessfulResponseOverride: (HttpResponseData) -> NetworkResponse<BodyType>? = { null },
     performRequest: () -> HttpResponse
-): NetworkResponse<BodyType> = handlingNetworkException {
-    val result = performRequest()
-    val status = result.status
-    return if (status.isSuccess()) {
-        NetworkResponse.Success(result.body(), result)
-    } else {
-        unsuccessfulResponseOverride(result) ?: handleUnsuccessfulResponse(result)
-    }
-}
+): NetworkResponse<BodyType> = wrapRequest(
+    {
+        unsuccessfulResponseOverride(it)
+    },
+    performRequest = performRequest
+)
 
+// TODO(refactor): Remove this function completely. Currently being used in ACME, E2EI and Asset downloads.
+@Deprecated("This should not be called directly. Either wrapRequest, or use the desired ErrorResponseInterceptors as needed")
 internal suspend fun handleUnsuccessfulResponse(
     result: HttpResponse
 ): NetworkResponse.Error {
@@ -215,21 +193,10 @@ internal suspend fun handleUnsuccessfulResponse(
     } catch (_: IllegalArgumentException) {
         // When the backend returns something that is not a JSON for whatever reason.
         ErrorResponse(code = status.value, label = status.description, message = bodyText)
-    } catch (_: SerializationException) {
-        // When the backend returns a JSON that cannot be parsed.
-        ErrorResponse(code = status.value, label = status.description, message = bodyText)
     }
 
-    val federationException = errorResponse.isFederationError().let {
-        KaliumException.FederationError(errorResponse)
-    }
-
-    return if (errorResponse.isFederationError()) {
-        NetworkResponse.Error(federationException)
-    } else {
-        val kException = toStatusCodeBasedKaliumException(status, result, errorResponse)
-        NetworkResponse.Error(kException)
-    }
+    val kException = toStatusCodeBasedKaliumException(status, result, errorResponse)
+    return NetworkResponse.Error(kException)
 }
 
 private fun toStatusCodeBasedKaliumException(
@@ -252,71 +219,4 @@ private fun toStatusCodeBasedKaliumException(
         }
     }
     return kException
-}
-
-/**
- * Wrap and handles federation aware endpoints that can send errors responses
- * And raise specific federated context exceptions,
- *
- * i.e. FederationError, FederationUnreachableException, FederationConflictException
- *
- * @param response the response to wrap
- * @param delegatedHandler the fallback handler when the response cannot be handled as a federation error
- */
-suspend fun <T : Any> wrapFederationResponse(
-    response: HttpResponse,
-    delegatedHandler: suspend (HttpResponse) -> NetworkResponse<T>
-) =
-    when (response.status.value) {
-        HttpStatusCode.Conflict.value -> resolveStatusCodeBasedFirstOrFederated(response)
-
-        HttpStatusCode.UnprocessableEntity.value -> {
-            val errorResponse = try {
-                response.body()
-            } catch (_: NoTransformationFoundException) {
-                ErrorResponse(response.status.value, response.status.description, "federation-denied")
-            }
-            NetworkResponse.Error(KaliumException.FederationError(errorResponse))
-        }
-
-        HttpStatusCode.UnreachableRemoteBackends.value -> {
-            val errorResponse = try {
-                response.body()
-            } catch (_: NoTransformationFoundException) {
-                FederationUnreachableResponse(emptyList())
-            }
-            NetworkResponse.Error(KaliumException.FederationUnreachableException(errorResponse))
-        }
-
-        else -> {
-            delegatedHandler.invoke(response)
-        }
-    }
-
-/**
- * Due to the "shared" status code limitations nature of some endpoints.
- * We need to first delegate to status code based exceptions and if parse fails go for federated error,
- *
- * i.e.: '/commit-bundles' 409 for "mls-stale-message" and 409 for "federation-conflict"
- */
-private suspend fun resolveStatusCodeBasedFirstOrFederated(response: HttpResponse): NetworkResponse.Error {
-    val responseString = response.bodyAsText()
-
-    val kaliumException = try {
-        val errorResponse = KtxSerializer.json.decodeFromString<ErrorResponse>(responseString)
-
-        toStatusCodeBasedKaliumException(
-            response.status,
-            response,
-            errorResponse
-        )
-    } catch (exception: SerializationException) {
-        try {
-            val federationConflictResponse = KtxSerializer.json.decodeFromString<FederationConflictResponse>(responseString)
-            KaliumException.FederationConflictException(federationConflictResponse)
-        } catch (_: SerializationException) {
-            KaliumException.FederationConflictException(FederationConflictResponse(emptyList()))
-        }
-    }
-    return NetworkResponse.Error(kaliumException)
 }

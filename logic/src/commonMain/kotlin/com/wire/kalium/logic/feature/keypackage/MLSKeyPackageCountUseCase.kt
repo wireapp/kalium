@@ -83,7 +83,9 @@ internal class MLSKeyPackageCountUseCaseImpl(
             }.fold(
                 {
                     MLSKeyPackageCountResult.Failure.Generic(it)
-                }, { MLSKeyPackageCountResult.Success(selfClient, it, keyPackageLimitsProvider.needsRefill(it)) })
+                },
+                { MLSKeyPackageCountResult.Success(selfClient, it, keyPackageLimitsProvider.needsRefill(it)) }
+            )
         })
 }
 

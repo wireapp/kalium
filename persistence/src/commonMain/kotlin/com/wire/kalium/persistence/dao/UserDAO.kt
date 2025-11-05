@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
@@ -51,8 +52,11 @@ typealias ConversationIDEntity = QualifiedIDEntity
 
 @Serializable
 enum class SupportedProtocolEntity {
-    @SerialName("PROTEUS") PROTEUS,
-    @SerialName("MLS") MLS
+    @SerialName("PROTEUS")
+    PROTEUS,
+
+    @SerialName("MLS")
+    MLS
 }
 
 enum class UserAvailabilityStatusEntity {
@@ -74,6 +78,7 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
+    @Deprecated(message = "New Apps will not have this field anymore, kept for backward bots compatibility")
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
@@ -155,7 +160,17 @@ data class PartialUserEntity(
     val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
-enum class UserTypeEntity {
+/**
+ * Indicates the type of user: regular user, app, or bot.
+ * This is not persisted directly in the database, but rather to have a mapping between api and local storage.
+ */
+enum class UserTypeInfo {
+    REGULAR,
+    APP,
+    BOT,
+}
+
+enum class UserTypeEntity(private val userTypeInfo: UserTypeInfo = UserTypeInfo.REGULAR) {
 
     /**Team member with owner permissions */
     OWNER,
@@ -184,14 +199,22 @@ enum class UserTypeEntity {
      */
     GUEST,
 
-    /** Service bot */
-    SERVICE,
+    /** Service "Bots" (legacy) */
+    SERVICE(UserTypeInfo.BOT),
+
+    /** Apps, Bots 2.0 **/
+    APP(UserTypeInfo.APP),
 
     /**
      * A user on the same backend,
      * when current user doesn't belongs to any team
      */
     NONE;
+
+    /**
+     * @return [UserTypeInfo] corresponding to this [UserTypeEntity]
+     */
+    fun getUserTypeInfo(): UserTypeInfo = userTypeInfo
 }
 
 /**
@@ -290,6 +313,7 @@ interface UserDAO {
     suspend fun getUsersDetailsNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserDetailsEntity>>
     suspend fun getAllUsersDetailsByTeam(teamId: String): List<UserDetailsEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
+    suspend fun updateUserAccentColor(selfUserId: QualifiedIDEntity, accentId: Int)
 
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 

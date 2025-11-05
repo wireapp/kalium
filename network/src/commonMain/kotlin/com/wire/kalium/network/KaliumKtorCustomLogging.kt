@@ -204,7 +204,8 @@ class KaliumKtorCustomLogging private constructor(
                         |"endpoint":"${obfuscatePath(Url(context.url))}",
                         | "method":"${context.method.value}",
                         |  "cause":"$cause"}
-                        |  """.trimMargin()
+                        |  
+""".trimMargin()
             )
         }
     }

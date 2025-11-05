@@ -46,13 +46,18 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 api(libs.avs)
-                api(libs.jna.map {
-                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                api(
+                    libs.jna.map {
+                    project.dependencies.create(
+                        it,
+                        closureOf<ExternalModuleDependency> {
                         artifact {
                             type = "aar"
                         }
-                    })
-                })
+                    }
+                    )
+                }
+                )
             }
         }
         val jvmMain by getting {

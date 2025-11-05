@@ -32,7 +32,7 @@ enum class TeamPermission(val code: Int) {
     GET_MEMBER_PERMISSIONS(0x0200),
     GET_TEAM_CONVERSATIONS(0x0400),
     DELETE_TEAM(0x0800),
-    SET_MEMBER_PERMISSIONS(0x1000);
+    SET_MEMBER_PERMISSIONS(0x1000)
 }
 
 enum class TeamRole(val value: Int) {

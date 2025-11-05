@@ -128,6 +128,8 @@ class ACMEApiImpl internal constructor(
         } ?: run {
             CustomErrors.MISSING_NONCE
         } else {
+            // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
+            //        as ACME is NOT the Wire API, and doesn't follow its error response format.
             handleUnsuccessfulResponse(httpResponse)
         }
 
@@ -179,7 +181,8 @@ class ACMEApiImpl internal constructor(
                             location = challengeResponse.headers[LOCATION_HEADER_KEY],
                             response = challengeResponse.value.encodeToByteArray(),
                             challengeType = type
-                        ), challengeResponse.headers, challengeResponse.httpCode
+                        ),
+                            challengeResponse.headers, challengeResponse.httpCode
                     )
                 } ?: run {
                     CustomErrors.MISSING_NONCE
@@ -200,12 +203,15 @@ class ACMEApiImpl internal constructor(
                         nonce,
                         response = httpResponse.body(),
                         location = httpResponse.headers[LOCATION_HEADER_KEY].toString()
-                    ), httpResponse
+                    ),
+                        httpResponse
                 )
             } ?: run {
                 CustomErrors.MISSING_NONCE
             }
         } else {
+            // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
+            //        as ACME is NOT the Wire API, and doesn't follow its error response format.
             handleUnsuccessfulResponse(httpResponse)
         }
 
@@ -233,7 +239,8 @@ class ACMEApiImpl internal constructor(
                         token = challengeResponse.value.token,
                         target = challengeResponse.value.target,
                         nonce = nonce
-                    ), challengeResponse.headers, challengeResponse.httpCode
+                    ),
+                        challengeResponse.headers, challengeResponse.httpCode
                 )
             } ?: run {
                 CustomErrors.MISSING_NONCE

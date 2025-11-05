@@ -49,6 +49,7 @@ internal object NetworkErrorLabel {
 
     // MLS
     const val MLS_STALE_MESSAGE = "mls-stale-message"
+    const val MLS_GROUP_OUT_OF_SYNC = "mls-group-out-of-sync"
     const val MLS_SELF_REMOVAL_NOT_ALLOWED = "mls-self-removal-not-allowed"
     const val MLS_COMMIT_MISSING_REFERENCES = "mls-commit-missing-references"
     const val MLS_CLIENT_MISMATCH = "mls-client-mismatch"
@@ -72,12 +73,6 @@ internal object NetworkErrorLabel {
 
     const val MLS_FEDERATED_ONE2ONE_NOT_SUPPORTED = "mls-federated-one2one-not-supported"
 
-    // Federation
-    const val FEDERATION_FAILURE = "federation-remote-error"
-    const val FEDERATION_DENIED = "federation-denied"
-    const val FEDERATION_NOT_ENABLED = "federation-not-enabled"
-    const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
-
     // connection
     const val BAD_CONNECTION_UPDATE = "bad-conn-update"
     object KaliumCustom {
@@ -90,5 +85,5 @@ internal object NetworkErrorLabel {
 
 enum class AuthenticationCodeFailure(val responseLabel: String) {
     MISSING_AUTHENTICATION_CODE("code-authentication-required"),
-    INVALID_OR_EXPIRED_AUTHENTICATION_CODE("code-authentication-failed");
+    INVALID_OR_EXPIRED_AUTHENTICATION_CODE("code-authentication-failed")
 }

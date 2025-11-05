@@ -37,7 +37,8 @@ class GuestRoomConfigHandler(
             val hasStatusChanged = userConfigRepository.getGuestRoomLinkStatus().fold(
                 {
                     false
-                }, {
+                },
+                {
                     it.isGuestRoomLinkEnabled != status
                 }
             )

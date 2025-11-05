@@ -72,7 +72,8 @@ class SessionManagerImpl internal constructor(
                 {
                     logout(LogoutReason.SESSION_EXPIRED)
                     null
-                }, { session ->
+                },
+                { session ->
                     session
                 }
             )

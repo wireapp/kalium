@@ -42,6 +42,7 @@ enum class AuthorizationChallengeType {
      * Data Protection on Demand
      */
     DPoP,
+
     /**
      * OpenID Connect
      */

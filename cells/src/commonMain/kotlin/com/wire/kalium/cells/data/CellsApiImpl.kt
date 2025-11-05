@@ -31,6 +31,7 @@ import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
 import com.wire.kalium.cells.sdk.kmp.model.RestActionOptionsCopyMove
+import com.wire.kalium.cells.sdk.kmp.model.RestActionOptionsDelete
 import com.wire.kalium.cells.sdk.kmp.model.RestActionParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateCheckRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestCreateRequest
@@ -87,6 +88,7 @@ internal class CellsApiImpl(
                     offset = offset.toString(),
                     scope = RestLookupScope(recursive = true),
                     filters = RestLookupFilter(
+                        type = TreeNodeType.LEAF,
                         text = LookupFilterTextSearch(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
@@ -138,22 +140,24 @@ internal class CellsApiImpl(
             )
         }.mapSuccess { response -> response.toDto() }
 
-    override suspend fun delete(nodeUuid: String): NetworkResponse<Unit> =
+    override suspend fun delete(nodeUuid: String, permanentDelete: Boolean): NetworkResponse<Unit> =
         wrapCellsResponse {
             nodeServiceApi.performAction(
                 name = NodeServiceApi.NamePerformAction.delete,
                 parameters = RestActionParameters(
                     nodes = listOf(RestNodeLocator(uuid = nodeUuid)),
+                    deleteOptions = RestActionOptionsDelete(permanentDelete = permanentDelete),
                 )
             )
         }.mapSuccess {}
 
-    override suspend fun delete(paths: List<String>): NetworkResponse<Unit> =
+    override suspend fun delete(paths: List<String>, permanentDelete: Boolean): NetworkResponse<Unit> =
         wrapCellsResponse {
             nodeServiceApi.performAction(
                 name = NodeServiceApi.NamePerformAction.delete,
                 parameters = RestActionParameters(
                     nodes = paths.map { RestNodeLocator(it) },
+                    deleteOptions = RestActionOptionsDelete(permanentDelete = permanentDelete),
                 )
             )
         }.mapSuccess {}

@@ -19,28 +19,28 @@
 package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
 import com.wire.kalium.mocks.responses.conversation.SendTypingStatusNotificationRequestJson
 import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatus
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.model.ConversationId
-import com.wire.kalium.network.api.model.FederationConflictResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.FederationError
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 internal class ConversationApiV4Test : ApiTest() {
 
@@ -49,7 +49,7 @@ internal class ConversationApiV4Test : ApiTest() {
         runTest {
             val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
             val response =
-                ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
+                ErrorResponseJson.validFederationConflictingBackends(FederationErrorResponse.Conflict(conflictingBackends)).rawJson
 
             val networkClient = mockAuthenticatedNetworkClient(
                 response,
@@ -65,10 +65,11 @@ internal class ConversationApiV4Test : ApiTest() {
             val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
 
             assertFalse(result.isSuccessful())
-            assertTrue(result.kException is KaliumException.FederationConflictException)
+            assertIs<FederationError>(result.kException)
+            assertIs<FederationErrorResponse.Conflict>(result.kException.errorResponse)
             assertEquals(
-                (result.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends,
-                conflictingBackends
+                conflictingBackends,
+                result.kException.errorResponse.nonFederatingBackends
             )
         }
 
@@ -90,12 +91,9 @@ internal class ConversationApiV4Test : ApiTest() {
         val response = conversationApi.addMember(request, conversationId)
 
         assertFalse(response.isSuccessful())
-        assertTrue(response.kException is KaliumException.FederationUnreachableException)
-        assertTrue {
-            (response.kException as KaliumException.FederationUnreachableException).errorResponse.unreachableBackends.contains(
-                "foma.wire.link"
-            )
-        }
+        assertIs<FederationError>(response.kException)
+        assertIs<FederationErrorResponse.Unreachable>(response.kException.errorResponse)
+        assertContains(response.kException.errorResponse.unreachableBackends, "foma.wire.link")
     }
 
     @Test
@@ -106,7 +104,7 @@ internal class ConversationApiV4Test : ApiTest() {
             val request = AddConversationMembersRequest(listOf(userId), "Member")
             val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
             val expectedResponse =
-                ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
+                ErrorResponseJson.validFederationConflictingBackends(FederationErrorResponse.Conflict(conflictingBackends)).rawJson
 
             val networkClient = mockAuthenticatedNetworkClient(
                 expectedResponse,
@@ -120,11 +118,9 @@ internal class ConversationApiV4Test : ApiTest() {
             val response = conversationApi.addMember(request, conversationId)
 
             assertFalse(response.isSuccessful())
-            assertTrue(response.kException is KaliumException.FederationConflictException)
-            assertEquals(
-                (response.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends,
-                conflictingBackends
-            )
+            assertIs<FederationError>(response.kException)
+            assertIs<FederationErrorResponse.Conflict>(response.kException.errorResponse)
+            assertEquals(conflictingBackends, response.kException.errorResponse.nonFederatingBackends)
         }
 
     @Test

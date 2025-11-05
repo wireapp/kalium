@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
+import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.PartialUserEntity
@@ -90,7 +91,9 @@ interface UserMapper {
     fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        selfUserId: UserId,
+        selfTeamId: TeamId?
     ): UserEntity
 
     fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser
@@ -251,7 +254,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
-            userType = userEntityTypeMapper.fromUserType(userType),
+            userType = userEntityTypeMapper.fromUserTypeInfo(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
             expiresAt = expiresAt,
@@ -267,6 +270,10 @@ internal class UserMapperImpl(
         connectionState: ConnectionEntity.State,
         userTypeEntity: UserTypeEntity
     ): UserEntity = with(userDTO) {
+        // Note: SelfUserDTO does not include a 'type' field from the API,
+        // so we continue to use the inferred userTypeEntity parameter.
+        // If the API adds a type field to SelfUserDTO in the future,
+        // this should be updated to use fromApiTypeAndTeamAndDomain like UserProfileDTO.
         UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
@@ -295,7 +302,9 @@ internal class UserMapperImpl(
         newAssetId: String?
     ): UserUpdateRequest {
         return UserUpdateRequest(
-            name = newName, accentId = newAccent, assets = if (newAssetId != null) {
+            name = newName,
+            accentId = newAccent,
+                assets = if (newAssetId != null) {
                 listOf(
                     UserAssetDTO(newAssetId, AssetSizeDTO.COMPLETE, UserAssetTypeDTO.IMAGE),
                     UserAssetDTO(newAssetId, AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE)
@@ -318,7 +327,9 @@ internal class UserMapperImpl(
     override fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
+        userTypeEntity: UserTypeEntity,
+        selfUserId: UserId,
+        selfTeamId: TeamId?
     ) = UserEntity(
         id = idMapper.fromApiToDao(userProfile.id),
         name = userProfile.name,
@@ -361,12 +372,15 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = domainUserTypeMapper.fromTeamAndDomain(
-                otherUserDomain = userProfile.id.domain,
-                selfUserTeamId = selfTeamId?.value,
-                selfUserDomain = selfUserId.domain,
-                otherUserTeamId = userProfile.teamId,
-                isService = userProfile.service != null
+            userType = domainUserTypeMapper.fromUserTypeEntity(
+                userEntityTypeMapper.fromApiTypeAndTeamAndDomain(
+                    apiUserTypeDTO = userProfile.type,
+                    otherUserDomain = userProfile.id.domain,
+                    selfUserTeamId = selfTeamId?.value,
+                    otherUserTeamId = userProfile.teamId,
+                    selfUserDomain = selfUserId.domain,
+                    isLegacyBot = userProfile.isLegacyBot()
+                )
             ),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,

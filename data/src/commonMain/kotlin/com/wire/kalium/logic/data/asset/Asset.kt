@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.network.api.model.ConversationId
 import okio.Path
 
 data class UploadedAssetId(
@@ -35,7 +36,10 @@ data class UploadAssetData(
     val dataSize: Long,
     val assetType: String,
     val isPublic: Boolean,
-    val retentionType: RetentionType
+    val retentionType: RetentionType,
+    val conversationId: ConversationId? = null,
+    val filename: String? = null,
+    val filetype: String? = null,
 )
 
 enum class RetentionType {
@@ -66,6 +70,13 @@ fun isVideoMimeType(mimeType: String): Boolean = mimeType in SUPPORTED_VIDEO_ASS
 
 val SUPPORTED_IMAGE_ASSET_MIME_TYPES = setOf("image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp")
 val SUPPORTED_AUDIO_ASSET_MIME_TYPES = setOf(
-    "audio/mp3", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav", "audio/x-m4a"
+    "audio/mp3",
+    "audio/mp4",
+    "audio/mpeg",
+    "audio/ogg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/x-pn-wav",
+    "audio/x-m4a"
 )
 val SUPPORTED_VIDEO_ASSET_MIME_TYPES = setOf("video/mp4", "video/webm", "video/3gpp", "video/mkv")

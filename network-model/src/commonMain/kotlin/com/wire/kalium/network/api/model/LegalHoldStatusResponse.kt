@@ -27,10 +27,13 @@ import kotlinx.serialization.Serializable
 enum class LegalHoldStatusDTO {
     @SerialName("enabled")
     ENABLED,
+
     @SerialName("pending")
     PENDING,
+
     @SerialName("disabled")
     DISABLED,
+
     @SerialName("no_consent")
     NO_CONSENT
 }

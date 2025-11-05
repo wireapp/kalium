@@ -232,6 +232,8 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
+import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
@@ -548,7 +550,9 @@ class UserSessionScope internal constructor(
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
     private val userStorage = userStorageProvider.getOrCreate(
-        userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
+        userId,
+        platformUserStorageProperties,
+        kaliumConfigs.shouldEncryptData
     )
 
     private var _clientId: ClientId? = null
@@ -577,7 +581,9 @@ class UserSessionScope internal constructor(
 
     val federatedIdMapper: FederatedIdMapper
         get() = MapperProvider.federatedIdMapper(
-            userId, qualifiedIdMapper, globalScope.sessionRepository
+            userId,
+            qualifiedIdMapper,
+            globalScope.sessionRepository
         )
 
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
@@ -1058,6 +1064,7 @@ class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
 
@@ -1404,7 +1411,11 @@ class UserSessionScope internal constructor(
             lazy { clientRepository },
             lazy {
                 RegisterMLSClientUseCaseImpl(
-                    mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
+                    mlsClientProvider,
+                    clientRepository,
+                    keyPackageRepository,
+                    keyPackageLimitsProvider,
+                    userConfigRepository
                 )
             },
             this,
@@ -1680,7 +1691,8 @@ class UserSessionScope internal constructor(
 
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
-            userStorage.database.conversationDAO, persistMessage
+            userStorage.database.conversationDAO,
+            persistMessage
         )
 
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
@@ -1858,8 +1870,12 @@ class UserSessionScope internal constructor(
 
     private val federationEventReceiver: FederationEventReceiver
         get() = FederationEventReceiverImpl(
-            conversationRepository, connectionRepository, userRepository,
-            userStorage.database.memberDAO, persistMessage, userId
+            conversationRepository,
+            connectionRepository,
+            userRepository,
+            userStorage.database.memberDAO,
+            persistMessage,
+            userId
         )
 
     private val teamEventReceiver: TeamEventReceiver
@@ -2033,6 +2049,12 @@ class UserSessionScope internal constructor(
             }
         )
 
+    val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase by lazy {
+        IsWireCellsEnabledForConversationUseCaseImpl(
+            conversationRepository = conversationRepository
+        )
+    }
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope by lazy {
         ClientScope(
@@ -2175,12 +2197,14 @@ class UserSessionScope internal constructor(
             cells.publishAttachments,
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,
+            cells.getMessageAttachmentUseCase,
             fetchConversationUseCase,
             cryptoTransactionProvider,
             compositeMessageRepository,
+            isWireCellsEnabledForConversation,
             { joinExistingMLSConversationUseCase },
             this,
-            userScopedLogger,
+            userScopedLogger
         )
     }
 
@@ -2408,7 +2432,9 @@ class UserSessionScope internal constructor(
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(
-            conversations.observeConversationMembers, conversationRepository, userConfigRepository
+            conversations.observeConversationMembers,
+            conversationRepository,
+            userConfigRepository
         )
 
     val getOtherUserSecurityClassificationLabel: ObserveOtherUserSecurityClassificationLabelUseCase
@@ -2459,7 +2485,9 @@ class UserSessionScope internal constructor(
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
 
     private fun createPushTokenUpdater() = PushTokenUpdater(
-        clientRepository, notificationTokenRepository, pushTokenRepository
+        clientRepository,
+        notificationTokenRepository,
+        pushTokenRepository
     )
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
