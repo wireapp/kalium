@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.authenticated.notification.eventSerialization
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.plus
 
+// TODO: Make this INTERNAL
 object KtxSerializer {
     val json = Json {
         isLenient = true
