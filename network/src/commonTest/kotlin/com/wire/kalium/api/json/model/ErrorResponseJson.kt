@@ -18,41 +18,7 @@
 
 package com.wire.kalium.api.json.model
 
-import com.wire.kalium.mocks.responses.ValidJsonProvider
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.mocks.responses.ErrorResponseJson
 
-object ErrorResponseJson {
-    private val jsonProvider = { serializable: ErrorResponse ->
-        """
-        |{
-        |  "code": ${serializable.code},
-        |  "label": "${serializable.label}",
-        |  "message": "${serializable.message}"
-        |}
-        """.trimMargin()
-    }
-
-    private val federationConflictJsonProvider = { serializable: FederationErrorResponse.Conflict ->
-        """
-        |{
-        |  "non_federating_backends": ${serializable.nonFederatingBackends}
-        |}
-        """.trimMargin()
-    }
-
-    val valid = ValidJsonProvider(
-        ErrorResponse(code = 499, label = "error_label", message = "error_message"),
-        jsonProvider
-    )
-
-    fun valid(error: ErrorResponse) = ValidJsonProvider(
-        error,
-        jsonProvider
-    )
-
-    fun validFederationConflictingBackends(error: FederationErrorResponse.Conflict) = ValidJsonProvider(
-        error,
-        federationConflictJsonProvider
-    )
-}
+@Deprecated("Use the Mocks one instead", ReplaceWith("com.wire.kalium.mocks.responses.ErrorResponseJson"))
+typealias ErrorResponseJson = ErrorResponseJson

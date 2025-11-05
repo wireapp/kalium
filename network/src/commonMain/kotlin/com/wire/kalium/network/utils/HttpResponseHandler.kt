@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
@@ -77,10 +76,10 @@ internal suspend inline fun <reified ResponseType : Any> wrapRequest(
             json = json,
         )
 
-        UnauthorizedResponseInterceptor<ResponseType>().intercept(responseData)
-            ?: FederationErrorResponseInterceptor<ResponseType>().intercept(responseData)
-            ?: customErrorInterceptor!!.intercept(responseData)
-            ?: BaseErrorResponseInterceptor<ResponseType>().intercept(responseData)
+        UnauthorizedResponseInterceptor.intercept(responseData)
+            ?: FederationErrorResponseInterceptor.intercept(responseData)
+            ?: customErrorInterceptor?.intercept(responseData)
+            ?: BaseErrorResponseInterceptor.intercept(responseData)
     }
 }
 
@@ -104,7 +103,7 @@ private inline fun <reified ResponseType : Any> handlingNetworkException(
     NetworkResponse.Error(KaliumException.GenericError(e))
 }
 
-internal fun interface ErrorResponseInterceptor<ResponseType : Any> {
+internal fun interface ErrorResponseInterceptor<out ResponseType : Any> {
 
     /**
      * Intercepts the provided HTTP response to determine if it can be mapped to a specific `NetworkResponse`.
@@ -125,10 +124,10 @@ internal fun interface ErrorResponseInterceptor<ResponseType : Any> {
  * @see NetworkResponse.Error
  * @see KaliumException.Unauthorized
  */
-internal class UnauthorizedResponseInterceptor<ResponseType : Any> : ErrorResponseInterceptor<ResponseType> {
+internal object UnauthorizedResponseInterceptor : ErrorResponseInterceptor<Unit> {
     override suspend fun intercept(
         httpResponseData: HttpResponseData
-    ): NetworkResponse<ResponseType>? = if (httpResponseData.status == HttpStatusCode.Unauthorized) {
+    ): NetworkResponse.Error? = if (httpResponseData.status == HttpStatusCode.Unauthorized) {
         NetworkResponse.Error(KaliumException.Unauthorized(httpResponseData.status.value))
     } else {
         null
@@ -138,11 +137,9 @@ internal class UnauthorizedResponseInterceptor<ResponseType : Any> : ErrorRespon
 /**
  * A base implementation of the [ErrorResponseInterceptor] interface used for intercepting HTTP responses.
  * This will only return [NetworkResponse.Error], never null. And will attempt to map whatever response body
- * to a [ErrorResponse] object, the "default" error type when dealing with Wire API.
- *
- * @param ResponseType The type of the response body that is expected to represent a successful network response.
+ * to a [GenericAPIErrorResponse] object, the "default" error type when dealing with Wire API.
  */
-internal class BaseErrorResponseInterceptor<ResponseType : Any> : ErrorResponseInterceptor<ResponseType> {
+internal object BaseErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
     override suspend fun intercept(httpResponseData: HttpResponseData): NetworkResponse.Error {
         val errorResponse = try {
             httpResponseData.parseBody<GenericAPIErrorResponse>()
@@ -178,13 +175,13 @@ internal class BaseErrorResponseInterceptor<ResponseType : Any> : ErrorResponseI
  * (HTTP Status: [HttpStatusCode.Companion.UnreachableRemoteBackends])
  *
  */
-internal class FederationErrorResponseInterceptor<ResponseType : Any> : ErrorResponseInterceptor<ResponseType> {
+internal object FederationErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
 
-    override suspend fun intercept(httpResponseData: HttpResponseData): NetworkResponse<ResponseType>? {
+    override suspend fun intercept(httpResponseData: HttpResponseData): NetworkResponse.Error? {
         val genericFederationResponse = try {
             // Attempts to parse the generic federation error, to check for labels and data.type
             httpResponseData.parseBody<FederationErrorResponse.Generic>()
-        } catch (_: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
             null
         }
 
@@ -219,14 +216,12 @@ internal class FederationErrorResponseInterceptor<ResponseType : Any> : ErrorRes
         }
     }
 
-    companion object {
-        private const val FEDERATION_ERROR_TYPE = "federation"
+    private const val FEDERATION_ERROR_TYPE = "federation"
 
-        /**
-         * Custom [HttpStatusCode] to handle when one or more federated remote servers are unreachable.
-         */
-        @Suppress("MagicNumber")
-        val HttpStatusCode.Companion.UnreachableRemoteBackends: HttpStatusCode
-            get() = HttpStatusCode(533, "Unreachable remote backends")
-    }
+    /**
+     * Custom [HttpStatusCode] to handle when one or more federated remote servers are unreachable.
+     */
+    @Suppress("MagicNumber")
+    val HttpStatusCode.Companion.UnreachableRemoteBackends: HttpStatusCode
+        get() = HttpStatusCode(533, "Unreachable remote backends")
 }

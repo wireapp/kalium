@@ -31,7 +31,7 @@ import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.FederationError
-import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.Companion.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

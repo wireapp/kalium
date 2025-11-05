@@ -70,7 +70,7 @@ sealed interface FederationErrorResponse : APIErrorResponseBody {
 data class Cause(
     @SerialName("type") val type: String,
     @Deprecated("deprecated in favour for `domains`", replaceWith = ReplaceWith("domains"))
-    @SerialName("domain") val domain: String,
+    @SerialName("domain") val domain: String = "",
     @SerialName("domains") val domains: List<String> = emptyList(),
     @SerialName("path") val path: String,
 )
