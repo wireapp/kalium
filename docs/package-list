@@ -443,6 +443,7 @@ com.wire.kalium.logic.feature.analytics
 com.wire.kalium.logic.feature.appVersioning
 com.wire.kalium.logic.feature.applock
 com.wire.kalium.logic.feature.asset
+com.wire.kalium.logic.feature.asset.upload
 com.wire.kalium.logic.feature.auth
 com.wire.kalium.logic.feature.auth.autoVersioningAuth
 com.wire.kalium.logic.feature.auth.sso
