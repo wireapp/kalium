@@ -34,6 +34,7 @@ dependencies {
     detektPlugins("com.wire:detekt-rules:1.0.0-1.23.6") {
         isChanging = true
     }
+    detektPlugins(project(":detekt-rules"))
 }
 
 detekt {

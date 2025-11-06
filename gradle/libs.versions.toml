@@ -54,6 +54,7 @@ annotation = "1.9.1"
 mordant = "3.0.1"
 apache-tika = "3.1.0"
 mockk = "1.13.13"
+assertj = "3.25.3"
 faker = "1.16.0"
 robolectric = "4.12.1"
 skie = "0.10.1"
@@ -210,6 +211,7 @@ mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockativ
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
