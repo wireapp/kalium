@@ -340,6 +340,8 @@ class MessageScope internal constructor(
             messageSendFailureHandler,
             updateAssetMessageTransferStatus,
             persistMessage,
+            audioNormalizedLoudnessBuilder,
+            dispatcher,
         )
 
     val sendAssetMessage: ScheduleNewAssetMessageUseCase
@@ -352,7 +354,6 @@ class MessageScope internal constructor(
             messageRepository,
             observeFileSharingStatusUseCase,
             validateAssetMimeTypeUseCase,
-            audioNormalizedLoudnessBuilder,
             messageSendFailureHandler,
             scope,
             dispatcher,
