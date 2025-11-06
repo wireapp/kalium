@@ -572,11 +572,10 @@ internal class MessageDAOImpl internal constructor(
         }
 
     override suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>> =
-        withContext(coroutineContext) {
             assetStatusQueries.selectAllAssetTransferStatuses()
                 .asFlow()
                 .mapToList()
-        }
+                .flowOn(readDispatcher.value)
 
     override suspend fun getAllMessageAssetIdsForConversationId(
         conversationId: QualifiedIDEntity
