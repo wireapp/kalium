@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
@@ -556,6 +557,13 @@ internal class MessageDAOImpl internal constructor(
         withContext(coroutineContext) {
             assetStatusQueries.selectMessageAssetStatus(conversationId, messageId)
                 .executeAsOne()
+        }
+
+    override suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>> =
+        withContext(coroutineContext) {
+            assetStatusQueries.selectAllAssetTransferStatuses()
+                .asFlow()
+                .mapToList()
         }
 
     override suspend fun getAllMessageAssetIdsForConversationId(

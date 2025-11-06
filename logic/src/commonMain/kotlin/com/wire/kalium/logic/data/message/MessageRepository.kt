@@ -277,6 +277,8 @@ internal interface MessageRepository {
         editInstant: Instant
     ): Either<StorageFailure, Unit>
 
+    suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>>
+
     suspend fun updateAudioMessageNormalizedLoudness(
         conversationId: ConversationId,
         messageId: String,
@@ -732,6 +734,10 @@ internal class MessageDataSource internal constructor(
     ) = messageDAO.observeAssetStatuses(conversationId.toDao())
         .wrapStorageRequest()
         .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
+
+    override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
+        .wrapStorageRequest()
+        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.transfer_status.toModel() } }
 
     override suspend fun getMessageAssetTransferStatus(
         messageId: String,

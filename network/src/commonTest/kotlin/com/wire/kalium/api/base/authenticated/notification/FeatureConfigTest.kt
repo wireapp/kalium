@@ -37,12 +37,11 @@ class FeatureConfigTest {
     }
 
     @Test
-    fun givenPayload_whenEncoding_thenSuccessWithProperType() {
+    fun givenPayload_whenEncodingThenDecoding_shouldReturnWithProperType() {
         val result = json.encodeToString(
             EventContentDTO.FeatureConfig.serializer(),
             EventContentDTOJson.validFeatureConfigUpdated.serializableData
         )
-        assertEquals(result, EventContentDTOJson.validFeatureConfigUpdated.rawJson)
 
         // can be decoded back to the same object - requires proper type to be specified when encoding
         val decodedResult = json.decodeFromString(

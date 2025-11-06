@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseTest
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseTest
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
@@ -450,7 +450,7 @@ class RetryFailedMessageUseCaseTest {
         }
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement = apply {
-            ScheduleNewAssetMessageUseCaseTest.fakeKaliumFileSystem.sink(dataPath).buffer().use {
+            fakeKaliumFileSystem.sink(dataPath).buffer().use {
                 it.write(data)
                 it.flush()
             }
