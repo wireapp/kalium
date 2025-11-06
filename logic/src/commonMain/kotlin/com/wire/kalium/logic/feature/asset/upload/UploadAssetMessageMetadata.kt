@@ -43,6 +43,7 @@ internal data class UploadAssetMessageMetadata(
     val audioLengthInMs: Long,
     val audioNormalizedLoudness: ByteArray?
 ) {
+    @Suppress("CyclomaticComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false

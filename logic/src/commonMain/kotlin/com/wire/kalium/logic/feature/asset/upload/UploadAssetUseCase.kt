@@ -45,6 +45,7 @@ internal interface UploadAssetUseCase {
     suspend operator fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class UploadAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageSender: MessageSender,
