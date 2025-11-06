@@ -68,6 +68,7 @@ abstract class CoreLogicCommon internal constructor(
             authenticationScopeProvider,
             logoutCallbackManager,
             workSchedulerProvider,
+            audioNormalizedLoudnessBuilder
         )
     }
     fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope

@@ -106,7 +106,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
         advanceUntilIdle()
 
@@ -140,7 +141,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
             advanceUntilIdle()
 
@@ -174,7 +176,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
             advanceUntilIdle()
 
@@ -213,7 +216,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
 
         advanceUntilIdle()
@@ -269,7 +273,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
 
             advanceUntilIdle()
@@ -324,7 +329,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
             advanceUntilIdle()
 
@@ -367,7 +373,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
             advanceUntilIdle()
 
@@ -415,7 +422,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
             advanceUntilIdle()
 
@@ -469,7 +477,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetMimeType = "text/plain",
                 assetWidth = null,
                 assetHeight = null,
-                audioLengthInMs = 0
+                audioLengthInMs = 0,
+                audioNormalizedLoudness = null
             )
             advanceUntilIdle()
 
@@ -521,7 +530,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
         advanceUntilIdle()
 
@@ -567,7 +577,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
         advanceUntilIdle()
 
@@ -605,7 +616,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
         advanceUntilIdle()
 
@@ -635,7 +647,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
         advanceUntilIdle()
 
@@ -680,7 +693,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "image/png",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
         advanceUntilIdle()
 
@@ -697,6 +711,54 @@ class ScheduleNewAssetMessageUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    private fun testGeneratingAudioNormalizedLoudness(mimeType: String, audioNormalizedLoudness: ByteArray?, builderInvoked: Boolean) =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.wav"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val expectedAssetId = dummyUploadedAssetId
+            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
+                .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+                .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .withAudioNormalizedLoudnessBuilderResult(byteArrayOf(1, 2, 3))
+                .arrange()
+            // When
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = mimeType,
+                assetWidth = null,
+                assetHeight = null,
+                audioLengthInMs = 100,
+                audioNormalizedLoudness = audioNormalizedLoudness,
+            )
+            advanceUntilIdle()
+            // Then
+            coVerify {
+                arrangement.audioNormalizedLoudnessBuilder(eq(dataPath.toString()))
+            }.wasInvoked(exactly = if(builderInvoked) once else 0)
+        }
+
+    @Test
+    fun givenNonAudioAsset_whenSending_thenDoNotGenerateItWhenSending() =
+        testGeneratingAudioNormalizedLoudness("image/png", null, false)
+
+    @Test
+    fun givenAudioAssetWithoutNormalizedLoudness_whenSending_thenGenerateItWhenSending() =
+        testGeneratingAudioNormalizedLoudness("audio/wav", null, true)
+
+    @Test
+    fun givenAudioAssetAlreadyWithNormalizedLoudness_whenSending_thenDoNotGenerateItWhenSending() =
+        testGeneratingAudioNormalizedLoudness("audio/wav", byteArrayOf(1, 2, 3), false)
+
     private class Arrangement(val coroutineScope: CoroutineScope) {
         val persistMessage = mock(PersistMessageUseCase::class)
         val messageSender = mock(MessageSender::class)
@@ -710,7 +772,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
         val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
         val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(ObserveFileSharingStatusUseCase::class)
-
+        val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = mock(AudioNormalizedLoudnessBuilder::class)
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
@@ -894,6 +956,12 @@ class ScheduleNewAssetMessageUseCaseTest {
             }.returns(result)
         }
 
+        suspend fun withAudioNormalizedLoudnessBuilderResult(result: ByteArray?) = apply {
+            coEvery {
+                audioNormalizedLoudnessBuilder(any())
+            }.returns(result)
+        }
+
         suspend fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
             updateTransferStatus,
@@ -909,6 +977,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             coroutineScope,
             observerFileSharingStatusUseCase,
             validateAssetMimeTypeUseCase,
+            audioNormalizedLoudnessBuilder,
             testDispatcher
         ).also {
             withToggleReadReceiptsStatus()

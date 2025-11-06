@@ -19,11 +19,17 @@
 
 package com.wire.kalium.logic.feature.asset
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
@@ -32,6 +38,7 @@ import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -43,29 +50,23 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import okio.Path
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 interface ScheduleNewAssetMessageUseCase {
     /**
@@ -78,6 +79,10 @@ interface ScheduleNewAssetMessageUseCase {
      * @param assetDataSize the size of the original asset file
      * @param assetName the name of the original asset file
      * @param assetMimeType the type of the asset file
+     * @param assetWidth the width of the asset in case it's an image, null otherwise
+     * @param assetHeight the height of the asset in case it's an image, null otherwise
+     * @param audioLengthInMs the length of the audio in milliseconds in case it's an audio file, 0 otherwise
+     * @param audioNormalizedLoudness the normalized loudness data in case it's an audio file, null otherwise
      * @return an [ScheduleNewAssetMessageResult] containing a [CoreFailure] in case the creation and the local persistence of the original
      * asset message went wrong or the [ScheduleNewAssetMessageResult.Success.messageId] in case the creation of the preview asset message
      * succeeded. Note that this doesn't imply that the asset upload will succeed, it just confirms that the creation and persistence of the
@@ -92,7 +97,8 @@ interface ScheduleNewAssetMessageUseCase {
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?,
-        audioLengthInMs: Long
+        audioLengthInMs: Long,
+        audioNormalizedLoudness: ByteArray?
     ): ScheduleNewAssetMessageResult
 }
 
@@ -113,6 +119,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val scope: CoroutineScope,
     private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
     private val validateAssetFileUseCase: ValidateAssetFileTypeUseCase,
+    private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
 
@@ -127,7 +134,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?,
-        audioLengthInMs: Long
+        audioLengthInMs: Long,
+        audioNormalizedLoudness: ByteArray?
     ): ScheduleNewAssetMessageResult {
         observeFileSharingStatus().first().also {
             when (it.state) {
@@ -170,6 +178,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 assetHeight = assetHeight,
                 expireAfter = messageTimer,
                 audioLengthInMs = audioLengthInMs,
+                audioNormalizedLoudness = audioNormalizedLoudness,
                 expectsReadConfirmation = expectsReadConfirmation
             ).onSuccess { (currentAssetMessageContent, message) ->
                 // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
@@ -222,6 +231,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetHeight: Int?,
         expireAfter: Duration?,
         audioLengthInMs: Long,
+        audioNormalizedLoudness: ByteArray?,
         expectsReadConfirmation: Boolean
     ): Either<CoreFailure, Pair<AssetMessageMetadata, Message.Regular>> = currentClientIdProvider().flatMap { currentClientId ->
         // Create a temporary asset key and domain
@@ -244,7 +254,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         sha256Key = SHA256Key(byteArrayOf()),
                         // Asset ID will be replaced with right value after asset upload
                         assetId = UploadedAssetId(generatedAssetUuid, tempAssetDomain),
-                        audioLengthInMs = audioLengthInMs
+                        audioLengthInMs = audioLengthInMs,
+                        audioNormalizedLoudness = audioNormalizedLoudness,
                     )
 
                     val message = Message.Regular(
@@ -274,12 +285,22 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }
     }
 
+    private suspend fun getOrBuildAudioNormalizedLoudnessIfNeeded(content: AssetMessageMetadata): ByteArray? = when {
+        !isAudioMimeType(content.mimeType) -> null
+        content.audioNormalizedLoudness != null -> content.audioNormalizedLoudness
+        else -> audioNormalizedLoudnessBuilder(content.assetDataPath.toString())
+    }
+
     private suspend fun uploadAssetAndUpdateMessage(
         currentAssetMessageContent: AssetMessageMetadata,
         message: Message.Regular,
         conversationId: ConversationId,
         expectsReadConfirmation: Boolean
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
+        val audioNormalizedLoudnessDeferred = async {
+            getOrBuildAudioNormalizedLoudnessIfNeeded(currentAssetMessageContent).also {
+            }
+        }
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
             mimeType = currentAssetMessageContent.mimeType,
@@ -293,9 +314,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, message.id)
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, message.id, TYPE)
         }.flatMap { (assetId, sha256) ->
-            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist
-            // and update the message on the DB layer to display the changes on the Conversation screen
-            val updatedAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
+            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload,
+            // we also update the generated audio normalized loudness if applicable,
+            // and we persist and update the message on the DB layer to display the changes on the Conversation screen
+            val updatedAssetMessageContent = currentAssetMessageContent.copy(
+                sha256Key = sha256,
+                assetId = assetId,
+                audioNormalizedLoudness = audioNormalizedLoudnessDeferred.await()
+            )
             val updatedMessage = message.copy(
                 content = MessageContent.Asset(
                     value = provideAssetMessageContent(
@@ -329,6 +355,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     }
                 }
         }
+    }
 
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(
@@ -347,7 +374,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     isAudioMimeType(mimeType) -> {
                         AssetContent.AssetMetadata.Audio(
                             durationMs = audioLengthInMs,
-                            normalizedLoudness = null
+                            normalizedLoudness = audioNormalizedLoudness,
                         )
                     }
 
@@ -390,5 +417,45 @@ private data class AssetMessageMetadata(
     val assetHeight: Int?,
     val otrKey: AES256Key,
     val sha256Key: SHA256Key,
-    val audioLengthInMs: Long
-)
+    val audioLengthInMs: Long,
+    val audioNormalizedLoudness: ByteArray?,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as AssetMessageMetadata
+
+        if (assetDataSize != other.assetDataSize) return false
+        if (assetWidth != other.assetWidth) return false
+        if (assetHeight != other.assetHeight) return false
+        if (audioLengthInMs != other.audioLengthInMs) return false
+        if (conversationId != other.conversationId) return false
+        if (mimeType != other.mimeType) return false
+        if (assetId != other.assetId) return false
+        if (assetDataPath != other.assetDataPath) return false
+        if (assetName != other.assetName) return false
+        if (otrKey != other.otrKey) return false
+        if (sha256Key != other.sha256Key) return false
+        if (!audioNormalizedLoudness.contentEquals(other.audioNormalizedLoudness)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = assetDataSize.hashCode()
+        result = 31 * result + (assetWidth ?: 0)
+        result = 31 * result + (assetHeight ?: 0)
+        result = 31 * result + audioLengthInMs.hashCode()
+        result = 31 * result + conversationId.hashCode()
+        result = 31 * result + mimeType.hashCode()
+        result = 31 * result + assetId.hashCode()
+        result = 31 * result + assetDataPath.hashCode()
+        result = 31 * result + assetName.hashCode()
+        result = 31 * result + otrKey.hashCode()
+        result = 31 * result + sha256Key.hashCode()
+        result = 31 * result + (audioNormalizedLoudness?.contentHashCode() ?: 0)
+        return result
+    }
+}
+
