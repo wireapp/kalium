@@ -2,7 +2,7 @@
 <html class="no-js">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>countMessagesForBackup</title>
+    <title>ReadDispatcher</title>
 <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
     <script>document.documentElement.classList.replace("no-js","js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
@@ -90,12 +90,55 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="member" id="content" pageids="persistence::com.wire.kalium.persistence.dao.message/MessageDAOImpl/countMessagesForBackup/#kotlin.collections.Collection[com.wire.kalium.persistence.dao.message.MessageEntity.ContentType]/PointingToDeclaration//-1479438426">
-  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.dao.message</a><span class="delimiter">/</span><a href="index.html">MessageDAOImpl</a><span class="delimiter">/</span><span class="current">countMessagesForBackup</span></div>
+<div class="main-content" data-page-type="classlike" id="content" pageids="persistence::com.wire.kalium.persistence.db/ReadDispatcher///PointingToDeclaration//-1479438426">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.db</a><span class="delimiter">/</span><span class="current">ReadDispatcher</span></div>
   <div class="cover ">
-    <h1 class="cover"><span>count</span><wbr><span>Messages</span><wbr><span>For</span><wbr><span><span>Backup</span></span></h1>
+    <h1 class="cover"><span>Read</span><wbr><span><span>Dispatcher</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">value </span><span class="token keyword">class </span><a href="index.html">ReadDispatcher</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div><p class="paragraph">Dispatcher for database read operations. Limited to MAX_READ_PARALLELISM (3) concurrent reads to prevent SQLCipher connection pool exhaustion while maintaining good throughput.</p></div></div>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="count-messages-for-backup.html"><span class="token function">countMessagesForBackup</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">contentTypes<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Collection///PointingToDeclaration/">Collection</span><span class="token operator">&lt;</span><a href="../-message-entity/-content-type/index.html">MessageEntity.ContentType</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></div></div></div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1612719334%2FConstructors%2F-1479438426" anchor-label="ReadDispatcher" id="-1612719334%2FConstructors%2F-1479438426" data-filterable-set=":persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-read-dispatcher.html"><span>Read</span><wbr><span><span>Dispatcher</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1612719334%2FConstructors%2F-1479438426"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">value<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="253328163%2FProperties%2F-1479438426" anchor-label="value" id="253328163%2FProperties%2F-1479438426" data-filterable-set=":persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="value.html"><span><span>value</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="253328163%2FProperties%2F-1479438426"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="value.html">value</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
