@@ -33,7 +33,7 @@ import java.nio.file.Files
 
 actual open class BaseDatabaseTest actual constructor() {
 
-    protected actual val dispatcher: CoroutineDispatcher = Dispatchers.Main
+    protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
     actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
     private val UserIDEntity.databaseFile
