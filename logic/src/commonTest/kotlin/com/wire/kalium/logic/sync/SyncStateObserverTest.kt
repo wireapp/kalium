@@ -36,10 +36,18 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.mock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -49,9 +57,25 @@ import kotlin.time.Duration
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncStateObserverTest {
 
+    private val testDispatcher = StandardTestDispatcher()
+    
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+        testDispatcher.cancel()
+    }
+    
     @Test
     fun givenSlowSyncFailed_whenWaitingUntilLiveOrFailure_thenShouldReturnFailure() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO))
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
 
@@ -62,7 +86,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenIncrementalSyncFailedAndSlowSyncIsComplete_whenWaitingUntilLiveOrFailure_thenShouldReturnFailure() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         val failedState = IncrementalSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO)
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(failedState)
@@ -74,7 +98,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncIsBeingPerformedAndFails_whenWaitingUntilLiveOrFailure_thenShouldWaitAndThenFail() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(SlowSyncStep.CONNECTIONS))
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
 
@@ -91,7 +115,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncIsBeingPerformedAndSucceedsButIncrementalFails_whenWaitingUntilLiveOrFailure_thenShouldWaitAndThenFail() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(SlowSyncStep.CONNECTIONS))
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
 
@@ -111,7 +135,7 @@ class SyncStateObserverTest {
     @Test
     fun givenSlowSyncIsCompleteAndIncrementalSyncIsOngoing_whenWaitingUntilLiveOrFailure_thenShouldWaitUntilCompleteReturnSucceed() =
         runTest {
-            val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+            val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
             arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
 
@@ -135,7 +159,7 @@ class SyncStateObserverTest {
     @Test
     fun givenSlowSyncIsCompleteAndIncrementalSyncIsOngoingButFails_whenWaitingUntilLiveOrFailure_thenShouldWaitUntilFailure() =
         runTest {
-            val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+            val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
             arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
 
@@ -159,7 +183,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncFailed_whenWaitingUntilStartedOrFailure_thenShouldReturnFailure() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration, Duration.ZERO))
 
         val result = syncManager.waitUntilStartedOrFailure()
@@ -169,7 +193,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncOngoing_whenWaitingUntilStartedOrFailure_thenShouldReturnSuccess() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(SlowSyncStep.CONNECTIONS))
 
         val result = syncManager.waitUntilStartedOrFailure()
@@ -179,7 +203,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncComplete_whenWaitingUntilStartedOrFailure_thenShouldReturnSuccess() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
         val result = syncManager.waitUntilStartedOrFailure()
@@ -189,7 +213,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncRepositoryReturnsOngoingState_whenCallingIsSlowSyncOngoing_thenReturnTrue() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(SlowSyncStep.CONNECTIONS))
 
         val result = syncManager.isSlowSyncOngoing()
@@ -199,7 +223,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncRepositoryReturnsDifferentStateThanOngoing_whenCallingIsSlowSyncOngoing_thenReturnFalse() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
 
         val result = syncManager.isSlowSyncOngoing()
@@ -209,7 +233,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncRepositoryReturnsCompleteState_whenCallingIsSlowSyncCompleted_thenReturnTrue() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
         val result = syncManager.isSlowSyncCompleted()
@@ -219,7 +243,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncRepositoryReturnsDifferentStateThanComplete_whenCallingIsSlowSyncCompleted_thenReturnFalse() = runTest {
-        val (arrangement, syncManager) = Arrangement(backgroundScope).arrange()
+        val (arrangement, syncManager) = Arrangement(backgroundScope, testDispatcher).arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
 
         advanceUntilIdle()
@@ -232,7 +256,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncStatusEmitsFailedState_whenRunningUseCase_thenEmitFailedState() = runTest(TestKaliumDispatcher.default) {
-        val (_, observer) = Arrangement(backgroundScope)
+        val (_, observer) = Arrangement(backgroundScope, testDispatcher)
             .withSlowSyncFailureState()
             .withIncrementalSyncLiveState()
             .arrange()
@@ -246,7 +270,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncStatusEmitsOngoingState_whenRunningUseCase_thenEmitSlowSyncState() = runTest(TestKaliumDispatcher.default) {
-        val (_, observer) = Arrangement(backgroundScope)
+        val (_, observer) = Arrangement(backgroundScope, testDispatcher)
             .withSlowSyncOngoingState()
             .withIncrementalSyncLiveState()
             .arrange()
@@ -260,7 +284,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenSlowSyncStatusEmitsPendingState_whenRunningUseCase_thenEmitWaitingState() = runTest(TestKaliumDispatcher.default) {
-        val (_, observer) = Arrangement(backgroundScope)
+        val (_, observer) = Arrangement(backgroundScope, testDispatcher)
             .withSlowSyncPendingState()
             .withIncrementalSyncLiveState()
             .arrange()
@@ -273,7 +297,7 @@ class SyncStateObserverTest {
 
     @Test
     fun givenIncrementalSyncStateEmitsLiveState_whenRunningUseCase_thenEmitLiveState() = runTest(TestKaliumDispatcher.default) {
-        val (_, observer) = Arrangement(backgroundScope)
+        val (_, observer) = Arrangement(backgroundScope, testDispatcher)
             .withSlowSyncCompletedState()
             .withIncrementalSyncLiveState()
             .arrange()
@@ -288,7 +312,7 @@ class SyncStateObserverTest {
     @Test
     fun givenIncrementalSyncStateEmitsFailedState_whenRunningUseCase_thenEmitFailedState() =
         runTest(TestKaliumDispatcher.default) {
-            val (_, observer) = Arrangement(backgroundScope)
+            val (_, observer) = Arrangement(backgroundScope, testDispatcher)
                 .withSlowSyncCompletedState()
                 .withIncrementalSyncFailedState()
                 .arrange()
@@ -303,7 +327,7 @@ class SyncStateObserverTest {
     @Test
     fun givenIncrementalSyncStateEmitsFetchingPendingEventsState_whenRunningUseCase_thenEmitGatheringPendingEventsState() =
         runTest(TestKaliumDispatcher.default) {
-            val (_, observer) = Arrangement(backgroundScope)
+            val (_, observer) = Arrangement(backgroundScope, testDispatcher)
                 .withSlowSyncCompletedState()
                 .withIncrementalSyncFetchingPendingEventsState()
                 .arrange()
@@ -318,7 +342,7 @@ class SyncStateObserverTest {
     @Test
     fun givenIncrementalSyncStateEmitsPendingState_whenRunningUseCase_thenEmitGatheringPendingEventsState() =
         runTest(TestKaliumDispatcher.default) {
-            val (_, observer) = Arrangement(backgroundScope)
+            val (_, observer) = Arrangement(backgroundScope, testDispatcher)
                 .withSlowSyncCompletedState()
                 .withIncrementalSyncPendingState()
                 .arrange()
@@ -331,8 +355,9 @@ class SyncStateObserverTest {
         }
 
     @Suppress("unused")
-    private class Arrangement(private val scope: CoroutineScope) {
-        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
+    private class Arrangement(private val scope: CoroutineScope, testDispatcher: TestDispatcher) {
+
+        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"), dispatcher = testDispatcher)
         val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
         val sessionRepository = mock(SessionRepository::class)
 

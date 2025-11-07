@@ -42,7 +42,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -102,7 +101,6 @@ internal class OneOnOneResolverImpl(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : OneOnOneResolver {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
     // TODO: inherit the scope of UserSessionScope so it's cancelled if user logs out, etc.

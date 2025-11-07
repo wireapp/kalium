@@ -23,21 +23,24 @@ import com.wire.kalium.persistence.MessageDraftsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftMapper.toDao
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 class MessageDraftDAOImpl internal constructor(
     private val queries: MessageDraftsQueries,
     private val messagesQueries: MessagesQueries,
     private val conversationsQueries: ConversationsQueries,
-    private val coroutineContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : MessageDraftDAO {
 
     override suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity) =
-        withContext(coroutineContext) {
+        withContext(writeDispatcher.value) {
             val conversationExists = conversationsQueries.selectConversationByQualifiedId(messageDraft.conversationId)
                 .executeAsOneOrNull() != null
 
@@ -77,17 +80,18 @@ class MessageDraftDAOImpl internal constructor(
             }
         }
 
-    override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
-        withContext(coroutineContext) {
-            queries.getDraft(conversationIDEntity, ::toDao).executeAsOneOrNull()
-        }
+    override suspend fun observeMessageDraft(conversationIDEntity: ConversationIDEntity) =
+            queries.getDraft(conversationIDEntity, ::toDao)
+                .asFlow()
+                .mapToOneOrNull()
+                .flowOn(readDispatcher.value)
 
-    override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) {
+    override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) = withContext(writeDispatcher.value) {
         queries.deleteDraft(conversationIDEntity)
     }
 
     override suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>> = queries.getDrafts(::toDao)
         .asFlow()
-        .flowOn(coroutineContext)
+        .flowOn(readDispatcher.value)
         .mapToList()
 }
