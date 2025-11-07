@@ -149,6 +149,10 @@ sealed interface MessageContent {
 
         data object Deleted : Content
 
+        data class Multipart(
+            val text: String?,
+        ) : Content
+
         data object Invalid : Content
     }
 
