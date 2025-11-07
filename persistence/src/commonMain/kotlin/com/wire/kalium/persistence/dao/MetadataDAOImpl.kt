@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.cache.FlowCache
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -32,20 +33,19 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
-import kotlin.coroutines.CoroutineContext
 
 class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
     private val metadataCache: FlowCache<String, String?>,
     private val databaseScope: CoroutineScope,
-    private val queriesContext: CoroutineContext
+    private val writeDispatcher: WriteDispatcher,
 ) : MetadataDAO {
 
-    override suspend fun insertValue(value: String, key: String) = withContext(queriesContext) {
+    override suspend fun insertValue(value: String, key: String) = withContext(writeDispatcher.value) {
         metadataQueries.insertValue(key, value)
     }
 
-    override suspend fun deleteValue(key: String) = withContext(queriesContext) {
+    override suspend fun deleteValue(key: String) = withContext(writeDispatcher.value) {
         metadataQueries.deleteValue(key)
     }
 
@@ -59,7 +59,7 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
 
-    override suspend fun clear(keysToKeep: List<String>?) = withContext(queriesContext) {
+    override suspend fun clear(keysToKeep: List<String>?) = withContext(writeDispatcher.value) {
         if (keysToKeep == null) {
             metadataQueries.deleteAll()
         } else {

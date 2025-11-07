@@ -23,13 +23,14 @@ import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneNotNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.coroutines.CoroutineContext
 
 internal object ClientMapper {
     @Suppress("FunctionParameterNaming", "LongParameterList")
@@ -67,7 +68,8 @@ internal object ClientMapper {
 @Suppress("TooManyFunctions")
 internal class ClientDAOImpl internal constructor(
     private val clientsQueries: ClientsQueries,
-    private val queriesContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
     private val mapper: ClientMapper = ClientMapper
 ) : ClientDAO {
 
@@ -76,7 +78,7 @@ internal class ClientDAOImpl internal constructor(
      * the isValid status is always true when inserting a client but if the client already exists
      * then any new value will be ignored.
      */
-    override suspend fun insertClient(client: InsertClientParam): Unit = withContext(queriesContext) {
+    override suspend fun insertClient(client: InsertClientParam): Unit = withContext(writeDispatcher.value) {
         clientsQueries.transaction {
             insert(client)
             val changes = clientsQueries.selectChanges().executeAsOne()
@@ -106,7 +108,7 @@ internal class ClientDAOImpl internal constructor(
         clientsQueries.selectChanges().executeAsOne() > 0
     }
 
-    override suspend fun insertClients(clients: List<InsertClientParam>) = withContext(queriesContext) {
+    override suspend fun insertClients(clients: List<InsertClientParam>) = withContext(writeDispatcher.value) {
         clientsQueries.transaction {
             val anyInsertedOrModified = clients.map { client -> insert(client) }.any { it }
             if (!anyInsertedOrModified) {
@@ -118,7 +120,7 @@ internal class ClientDAOImpl internal constructor(
 
     override suspend fun removeClientsAndReturnUsersWithNoClients(
         redundantClientsOfUsers: Map<UserIDEntity, List<String>>
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         clientsQueries.transactionWithResult {
             redundantClientsOfUsers.entries.forEach {
                 val userId = it.key
@@ -129,7 +131,7 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) = withContext(queriesContext) {
+    override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) = withContext(writeDispatcher.value) {
         clientsQueries.transaction {
             clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
                 val anyInsertedOrModified = clientsList.map { client -> insert(client) }.any { it }
@@ -143,7 +145,9 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>) = withContext(queriesContext) {
+    override suspend fun tryMarkInvalid(
+        invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>
+    ) = withContext(writeDispatcher.value) {
         clientsQueries.transaction {
             invalidClientsList.forEach { (userId, clientIdList) ->
                 clientsQueries.tryMarkAsInvalid(userId, clientIdList)
@@ -152,7 +156,7 @@ internal class ClientDAOImpl internal constructor(
     }
 
     override suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) =
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             clientsQueries.updateClientProteusVerificationStatus(verified, userId, clientId)
         }
 
@@ -160,23 +164,25 @@ internal class ClientDAOImpl internal constructor(
         clientsQueries.selectByUserAndClientId(userId, clientId, mapper::fromClient)
             .asFlow()
             .mapToOneNotNull()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
 
     override suspend fun recipientsIfTheyArePartOfConversation(
         conversationId: ConversationIDEntity,
         userIds: Set<QualifiedIDEntity>
-    ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {
+    ): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectRecipientsByConversationAndUserId(conversationId, userIds, mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
     }
 
-    override suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>> =
+    // TODO(MO): instead of selecting as list and then grouping, do the grouping in SQL directly
+    override suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClients(mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
+    }
 
-    override suspend fun isMLSCapable(userId: QualifiedIDEntity, clientId: String): Boolean? = withContext(queriesContext) {
+    override suspend fun isMLSCapable(userId: QualifiedIDEntity, clientId: String): Boolean? = withContext(readDispatcher.value) {
         clientsQueries.isClientMLSCapable(userId, clientId)
             .executeAsOneOrNull()
     }
@@ -184,50 +190,51 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
-    override suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client> = withContext(queriesContext) {
+    override suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper = mapper::fromClient)
             .executeAsList()
     }
 
-    override suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>> = withContext(queriesContext) {
+    override suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper = mapper::fromClient)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
     }
 
     override suspend fun getClientsOfUsersByQualifiedIDs(
         ids: List<QualifiedIDEntity>
-    ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {
+    ): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClientsByUserIdList(ids, mapper = mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
     }
 
-    override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit = withContext(queriesContext) {
+    override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit = withContext(writeDispatcher.value) {
         clientsQueries.deleteClientsOfUser(qualifiedID)
     }
 
     override suspend fun deleteClient(
         userId: QualifiedIDEntity,
         clientId: String
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         clientsQueries.deleteClient(userId, clientId)
     }
 
     override suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
-        withContext(queriesContext) {
+        withContext(readDispatcher.value) {
             clientsQueries.selectAllClientsByConversation(id, mapper = mapper::fromClient)
                 .executeAsList()
                 .groupBy { it.userId }
         }
 
-    override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {
-        clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
-            .executeAsList()
-            .groupBy { it.userId }
-    }
+    override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
+        withContext(readDispatcher.value) {
+            clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
+                .executeAsList()
+                .groupBy { it.userId }
+        }
 }

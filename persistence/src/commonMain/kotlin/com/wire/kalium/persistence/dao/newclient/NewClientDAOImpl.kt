@@ -21,12 +21,13 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.NewClientQueries
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.coroutines.CoroutineContext
 
 internal object NewClientMapper {
     @Suppress("FunctionParameterNaming", "LongParameterList")
@@ -45,35 +46,37 @@ internal object NewClientMapper {
 
 internal class NewClientDAOImpl(
     private val newClientsQueries: NewClientQueries,
-    private val queriesContext: CoroutineContext,
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
     private val mapper: NewClientMapper = NewClientMapper
 ) : NewClientDAO {
 
-    override suspend fun insertNewClient(client: InsertClientParam) = with(client) {
-        withContext(queriesContext) {
-            newClientsQueries.insertNewClient(
-                user_id = userId,
-                id = id,
-                device_type = deviceType,
-                client_type = clientType,
-                is_valid = true,
-                is_mls_capable = isMLSCapable,
-                registration_date = registrationDate,
-                last_active = lastActive,
-                model = model,
-                label = label,
-                mls_public_keys = mlsPublicKeys
-            )
+    override suspend fun insertNewClient(client: InsertClientParam) =
+        withContext(writeDispatcher.value) {
+            with(client) {
+                newClientsQueries.insertNewClient(
+                    user_id = userId,
+                    id = id,
+                    device_type = deviceType,
+                    client_type = clientType,
+                    is_valid = true,
+                    is_mls_capable = isMLSCapable,
+                    registration_date = registrationDate,
+                    last_active = lastActive,
+                    model = model,
+                    label = label,
+                    mls_public_keys = mlsPublicKeys
+                )
+            }
         }
-    }
 
     override suspend fun observeNewClients(): Flow<List<NewClientEntity>> =
         newClientsQueries.selectNewClientsForUser(mapper::fromClient)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
 
-    override suspend fun clearNewClients() = withContext(queriesContext) {
+    override suspend fun clearNewClients() = withContext(writeDispatcher.value) {
         newClientsQueries.clearNewClients()
     }
 }
