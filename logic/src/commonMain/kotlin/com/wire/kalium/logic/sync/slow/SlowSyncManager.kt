@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -73,7 +72,6 @@ internal interface SlowSyncManager {
 
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
-        val MIN_TIME_BETWEEN_SLOW_SYNCS = 31.days
     }
 }
 
@@ -146,11 +144,6 @@ internal fun SlowSyncManager(
                         SlowSyncParam.NotPerformedBefore
                     }
 
-                    DateTimeUtil.currentInstant() > (latestSlowSync + SlowSyncManager.MIN_TIME_BETWEEN_SLOW_SYNCS) -> {
-                        logger.i("Slow sync too old - last slow sync was performed on '$latestSlowSync'")
-                        SlowSyncParam.LastSlowSyncTooOld
-                    }
-
                     else -> {
                         SlowSyncParam.Success
                     }
@@ -192,7 +185,6 @@ internal fun SlowSyncManager(
             logger.i("SlowSync criteria ready, checking if SlowSync is needed or already performed")
 
             when (isSlowSyncNeeded) {
-                SlowSyncParam.LastSlowSyncTooOld,
                 SlowSyncParam.NotPerformedBefore -> {
                     performSlowSync(emptyList())
                 }
