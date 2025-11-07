@@ -43,6 +43,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversatio
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
@@ -71,6 +72,7 @@ class StaleEpochVerifierTest {
             withIsGroupOutOfSync(Either.Right(false))
             withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            withConversationEpoch(23UL)
         }
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
@@ -86,6 +88,7 @@ class StaleEpochVerifierTest {
             withIsGroupOutOfSync(Either.Right(false))
             withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            withConversationEpoch(23UL)
         }
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
@@ -103,6 +106,7 @@ class StaleEpochVerifierTest {
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
+            withConversationEpoch(23UL)
         }
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
@@ -123,6 +127,7 @@ class StaleEpochVerifierTest {
             withFetchConversationSucceeding()
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            withConversationEpoch(23UL)
         }
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
@@ -140,6 +145,7 @@ class StaleEpochVerifierTest {
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
+            withConversationEpoch(23UL)
         }
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
@@ -280,6 +286,13 @@ class StaleEpochVerifierTest {
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
+
+        suspend fun withConversationEpoch(epoch: ULong) {
+            coEvery {
+                mlsContext.conversationEpoch(any())
+            }.returns(epoch)
+        }
+
         suspend fun arrange() = run {
             block()
             this@Arrangement to StaleEpochVerifierImpl(

@@ -454,7 +454,12 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldSucceed()
 
         coVerify {
@@ -470,7 +475,12 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldSucceed()
 
         coVerify {
@@ -486,7 +496,12 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberThrowing(MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldSucceed()
 
         coVerify {
@@ -503,7 +518,12 @@ class MLSConversationRepositoryTest {
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldFail()
     }
 
@@ -516,7 +536,12 @@ class MLSConversationRepositoryTest {
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldFail()
     }
 
@@ -569,7 +594,11 @@ class MLSConversationRepositoryTest {
             .withJoinByExternalCommitThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
-        val result = mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+        val result = mlsConversationRepository.joinGroupByExternalCommit(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            Arrangement.PUBLIC_GROUP_STATE
+        )
         result.shouldFail()
     }
 
@@ -1677,13 +1706,13 @@ class MLSConversationRepositoryTest {
 
         suspend fun withUpdateMLSGroupIdAndStateSuccessful() = apply {
             coEvery {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
             }.returns(Unit)
         }
 
         suspend fun withUpdateMLSGroupIdAndStateFailing(failure: StorageFailure.Generic) = apply {
             coEvery {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
             }.throws(failure.rootCause)
         }
 
@@ -1784,14 +1813,13 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
 
         result.shouldSucceed()
         coVerify {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
-                0L,
                 ConversationEntity.GroupState.PENDING_JOIN
             )
         }.wasInvoked(exactly = once)
@@ -1806,14 +1834,17 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L, customState)
+        val result = mlsConversationRepository.updateGroupIdAndState(
+            conversationId,
+            newGroupId,
+            customState
+        )
 
         result.shouldSucceed()
         coVerify {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
-                0L,
                 customState
             )
         }.wasInvoked(exactly = once)
@@ -1828,7 +1859,7 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateFailing(storageFailure)
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
 
         result.shouldFail {
             assertIs<StorageFailure.Generic>(it)
@@ -1851,14 +1882,13 @@ class MLSConversationRepositoryTest {
                 .withUpdateMLSGroupIdAndStateSuccessful()
                 .arrange()
 
-            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L,state)
+            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, state)
 
             result.shouldSucceed()
             coVerify {
                 arrangement.conversationDAO.updateMLSGroupIdAndState(
                     conversationId.toDao(),
                     newGroupId.toCrypto(),
-                    0L,
                     state
                 )
             }.wasInvoked(exactly = once)
