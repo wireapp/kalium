@@ -20,17 +20,16 @@ package com.wire.kalium.logic.data.message.draft
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 @Mockable
 internal interface MessageDraftRepository {
 
-    suspend fun observeMessageDraft(conversationId: ConversationId): Flow<MessageDraft?>
+    suspend fun getMessageDraft(conversationId: ConversationId): MessageDraft?
     suspend fun saveMessageDraft(messageDraft: MessageDraft): Either<StorageFailure, Unit>
     suspend fun removeMessageDraft(conversationId: ConversationId)
 }
@@ -39,8 +38,9 @@ internal class MessageDraftDataSource internal constructor(
     private val messageDraftDAO: MessageDraftDAO,
 ) : MessageDraftRepository {
 
-    override suspend fun observeMessageDraft(conversationId: ConversationId): Flow<MessageDraft?> =
-        messageDraftDAO.observeMessageDraft(conversationId.toDao()).map { it?.toModel() }
+    override suspend fun getMessageDraft(conversationId: ConversationId): MessageDraft? = wrapStorageRequest {
+        messageDraftDAO.getMessageDraft(conversationId.toDao())?.toModel()
+    }.getOrNull()
 
     override suspend fun saveMessageDraft(messageDraft: MessageDraft) = wrapStorageRequest {
         messageDraftDAO.upsertMessageDraft(messageDraft.toDao())
