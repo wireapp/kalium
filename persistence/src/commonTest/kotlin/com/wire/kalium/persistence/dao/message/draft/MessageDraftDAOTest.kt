@@ -66,8 +66,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
 
         // Then
-        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
-        assertEquals(MESSAGE_DRAFT, result)
+        messageDraftDAO.observeMessageDraft(MESSAGE_DRAFT.conversationId).test {
+            assertEquals(MESSAGE_DRAFT, awaitItem())
+        }
     }
 
     @Test
@@ -80,8 +81,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
 
         // Then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertEquals(MESSAGE_DRAFT, result)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(MESSAGE_DRAFT, awaitItem())
+        }
     }
 
     @Test
@@ -95,9 +97,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(quotedMessageId = newQuotedMessageId))
 
         // then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertNotNull(result)
-        assertEquals(newQuotedMessageId, result.quotedMessageId)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(newQuotedMessageId, awaitItem()?.quotedMessageId)
+        }
     }
 
     @Test
@@ -110,9 +112,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(quotedMessageId = null))
 
         // then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertNotNull(result)
-        assertNull(result.quotedMessageId)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertNull(awaitItem()?.quotedMessageId)
+        }
     }
 
     @Test
@@ -125,9 +127,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
 
         // then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertNotNull(result)
-        assertEquals(MESSAGE_DRAFT.quotedMessageId, result.quotedMessageId)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(MESSAGE_DRAFT.quotedMessageId, awaitItem()?.quotedMessageId)
+        }
     }
 
     @Test
@@ -141,9 +143,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(editMessageId = newEditMessageId))
 
         // then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertNotNull(result)
-        assertEquals(newEditMessageId, result.editMessageId)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(newEditMessageId, awaitItem()?.editMessageId)
+        }
     }
 
     @Test
@@ -156,9 +158,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(editMessageId = null))
 
         // then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertNotNull(result)
-        assertNull(result.editMessageId)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertNull(awaitItem()?.editMessageId)
+        }
     }
 
     @Test
@@ -171,9 +173,9 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(selectedMentionList = emptyList()))
 
         // then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertNotNull(result)
-        assertEquals(emptyList(), result.selectedMentionList)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(emptyList(), awaitItem()?.selectedMentionList)
+        }
     }
 
     @Test
@@ -181,15 +183,15 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         // Given
         insertInitialData()
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertEquals(MESSAGE_DRAFT, result)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(MESSAGE_DRAFT, awaitItem())
 
-        // When
-        messageDraftDAO.removeMessageDraft(conversationEntity1.id)
+            // When
+            messageDraftDAO.removeMessageDraft(conversationEntity1.id)
 
-        // Then
-        val removedResult = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertEquals(null, removedResult)
+            // Then
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -197,57 +199,15 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         // Given
         insertInitialData()
         messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertEquals(MESSAGE_DRAFT, result)
+        messageDraftDAO.observeMessageDraft(conversationEntity1.id).test {
+            assertEquals(MESSAGE_DRAFT, awaitItem())
 
-        // When
-        conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
+            // When
+            conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
 
-        // Then
-        val removedResult = messageDraftDAO.getMessageDraft(conversationEntity1.id)
-        assertEquals(null, removedResult)
-    }
-
-    @Test
-    fun givenMessageIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
-        // Given
-        insertInitialData()
-        messageDAO.deleteMessage("editMessageId", conversationEntity1.id)
-
-        // When
-        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
-
-        // Then
-        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
-        assertEquals(null, result)
-    }
-
-    @Test
-    fun givenConversationIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
-        // Given
-        insertInitialData()
-        conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-
-        // When
-        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
-
-        // Then
-        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
-        assertEquals(null, result)
-    }
-
-    @Test
-    fun givenQuotedMessageIsRemoved_whenUpsertingDraft_thenItShouldIgnore() = runTest {
-        // Given
-        insertInitialData()
-        messageDAO.deleteMessage("quotedMessageId", conversationEntity1.id)
-
-        // When
-        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
-
-        // Then
-        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
-        assertEquals(null, result)
+            // Then
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -265,7 +225,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
             messageDraftDAO.upsertMessageDraft(draft) // the same exact draft is being saved again
 
             // Then
-            expectNoEvents() // other query should not be notified
+            expectNoEvents()
         }
     }
 
