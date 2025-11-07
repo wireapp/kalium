@@ -720,6 +720,12 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
         )
     }
 
+    it.contentType == MessageEntity.ContentType.MULTIPART -> {
+        MessageContent.QuotedMessageDetails.Multipart(
+            text = it.textBody,
+        )
+    }
+
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
