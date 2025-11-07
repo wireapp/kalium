@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftMapper.toDao
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -79,10 +80,11 @@ class MessageDraftDAOImpl internal constructor(
             }
         }
 
-    override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
-        withContext(readDispatcher.value) {
-            queries.getDraft(conversationIDEntity, ::toDao).executeAsOneOrNull()
-        }
+    override suspend fun observeMessageDraft(conversationIDEntity: ConversationIDEntity) =
+            queries.getDraft(conversationIDEntity, ::toDao)
+                .asFlow()
+                .mapToOneOrNull()
+                .flowOn(readDispatcher.value)
 
     override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) = withContext(writeDispatcher.value) {
         queries.deleteDraft(conversationIDEntity)
