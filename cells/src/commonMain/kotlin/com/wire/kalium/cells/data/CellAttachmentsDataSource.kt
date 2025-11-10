@@ -144,6 +144,7 @@ private fun MessageAttachmentEntity.toModel(): MessageAttachment? =
             mimeType = mimeType,
             assetPath = assetPath,
             assetSize = assetSize,
+            contentUrl = contentUrl,
             previewUrl = previewUrl?.takeIf { it.isNotEmpty() },
             localPath = localPath?.takeIf { it.isNotEmpty() },
             transferStatus = AssetTransferStatus.valueOf(assetTransferStatus),
