@@ -21,20 +21,24 @@ package com.wire.kalium.logic.feature.message.draft
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.draft.MessageDraft
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
-import kotlinx.coroutines.flow.Flow
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
- * Observe message draft use case
+ * Get message draft use case
  * @param conversationId the id of the conversation to get message draft
  * @return [MessageDraft] or null if draft doesn't exist
  */
-interface ObserveMessageDraftUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<MessageDraft?>
+interface GetMessageDraftUseCase {
+    suspend operator fun invoke(conversationId: ConversationId): MessageDraft?
 }
 
-class ObserveMessageDraftUseCaseImpl internal constructor(
+class GetMessageDraftUseCaseImpl internal constructor(
     private val messageDraftRepository: MessageDraftRepository,
-) : ObserveMessageDraftUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId): Flow<MessageDraft?> =
-        messageDraftRepository.observeMessageDraft(conversationId)
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) : GetMessageDraftUseCase {
+    override suspend operator fun invoke(conversationId: ConversationId): MessageDraft? = withContext(dispatcher.io) {
+        messageDraftRepository.getMessageDraft(conversationId)
+    }
 }
