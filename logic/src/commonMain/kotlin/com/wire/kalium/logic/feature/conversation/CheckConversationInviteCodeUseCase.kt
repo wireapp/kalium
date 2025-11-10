@@ -21,11 +21,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
@@ -55,7 +55,8 @@ class CheckConversationInviteCodeUseCase internal constructor(
                     is NetworkFailure.NoNetworkConnection,
                     is NetworkFailure.FederatedBackendFailure,
                     is NetworkFailure.FeatureNotSupported,
-                    is NetworkFailure.ProxyError -> Result.Failure.Generic(failure)
+                    is NetworkFailure.ProxyError,
+                    is NetworkFailure.MlsMessageRejectedFailure -> Result.Failure.Generic(failure)
 
                     is NetworkFailure.ServerMiscommunication -> handleServerMissCommunicationError(failure)
                 }

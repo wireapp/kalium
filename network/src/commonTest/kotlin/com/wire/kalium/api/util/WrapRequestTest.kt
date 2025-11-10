@@ -23,9 +23,12 @@ import com.wire.kalium.mocks.responses.PreKeyJson
 import com.wire.kalium.mocks.responses.QualifiedSendMessageResponseJson
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.request
@@ -138,6 +141,21 @@ internal class WrapRequestTest : ApiTest() {
         result.kException.printStackTrace()
         assertIs<KaliumException.InvalidRequestError>(result.kException)
         assertEquals(expectedError, result.kException.errorResponse)
+    }
+
+    @Test
+    fun givenFailureWithMlsErrorResponseBody_whenWrappingRequest_thenShouldReturnMlsError() = runTest {
+        val errorBody = MLSErrorResponse.WelcomeMismatch("Oh noes!")
+        val expectedError = NetworkResponse.Error(MLSError(errorBody))
+        val responseBody = KtxSerializer.json.encodeToString(MLSErrorResponse.serializer(), errorBody)
+        val client = mockUnboundNetworkClient(
+            responseBody = responseBody,
+            statusCode = HttpStatusCode.UnprocessableEntity
+        )
+        val result = wrapRequest<Unit> {
+            client.httpClient.request()
+        }
+        assertEquals(expectedError, result)
     }
 
     @Test
