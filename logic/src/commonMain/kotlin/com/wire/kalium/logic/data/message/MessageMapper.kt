@@ -333,6 +333,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.LEGAL_HOLD -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> null
+            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> null
 
             MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
                 messageId = message.id,
@@ -498,9 +499,12 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
                 MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
         }
     }
+
     is MessageEntityContent.NewConversationWithCellMessage -> MessageContent.NewConversationWithCellMessage
     is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
         MessageContent.NewConversationWithCellSelfDeleteDisabledMessage
+
+    is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
 
 fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
@@ -812,6 +816,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
 
     MessageContent.NewConversationWithCellMessage -> MessageEntityContent.NewConversationWithCellMessage
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
+    is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
 }
 
 fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {

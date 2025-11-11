@@ -226,6 +226,9 @@ internal class MessageDAOImpl internal constructor(
 
                         is MessageEntityContent.ConversationStartedUnverifiedWarning -> true
 
+//                         is MessageEntityContent.AppsAccessChanged ->
+//                             it messageContent.enabled
+
                         else -> false
                     }
                 }?.let {

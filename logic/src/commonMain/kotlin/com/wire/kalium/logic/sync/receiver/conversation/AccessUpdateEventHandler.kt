@@ -18,13 +18,13 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mockable
 
@@ -42,6 +42,9 @@ fun AccessUpdateEventHandler(
 
     override suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit> =
         wrapStorageRequest {
+            println("YM. AccessUpdateEventHandler: updating access for conversation ${event.conversationId}")
+            println("YM. AccessUpdateEventHandler: accessList ${conversationMapper.fromModelToDAOAccess(event.access)}")
+            println("YM. AccessUpdateEventHandler: accessRoleList ${conversationMapper.fromModelToDAOAccessRole(event.accessRole)}")
             conversationDAO.updateAccess(
                 conversationID = event.conversationId.toDao(),
                 accessList = conversationMapper.fromModelToDAOAccess(event.access),

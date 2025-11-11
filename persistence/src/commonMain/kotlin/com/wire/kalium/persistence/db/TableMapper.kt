@@ -36,6 +36,7 @@ import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAttachmentDraft
 import com.wire.kalium.persistence.MessageAttachments
+import com.wire.kalium.persistence.MessageConversationAppsEnabledChangedContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -76,6 +77,7 @@ import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -303,5 +305,9 @@ internal object TableMapper {
     val historyClientAdapter = HistoryClient.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         creation_dateAdapter = InstantTypeAdapter,
+    )
+
+    val conversationAppsAccessChangedAdapter = MessageConversationAppsEnabledChangedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
     )
 }
