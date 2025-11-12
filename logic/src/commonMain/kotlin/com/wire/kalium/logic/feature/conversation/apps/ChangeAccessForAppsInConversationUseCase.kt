@@ -44,7 +44,10 @@ class ChangeAccessForAppsInConversationUseCase internal constructor(
         )
 
         when (result) {
-            is UpdateConversationAccessRoleUseCase.Result.Failure -> result
+            is UpdateConversationAccessRoleUseCase.Result.Failure -> {
+                // No system message is inserted on failure
+            }
+
             is UpdateConversationAccessRoleUseCase.Result.Success -> {
                 systemMessageInserter.insertConversationAppsAccessChanged(
                     conversationId = conversationId,
