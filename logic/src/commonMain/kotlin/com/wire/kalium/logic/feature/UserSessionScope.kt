@@ -1736,7 +1736,8 @@ class UserSessionScope internal constructor(
     private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
         get() = AccessUpdateEventHandler(
             conversationDAO = userStorage.database.conversationDAO,
-            selfUserId = userId
+            selfUserId = userId,
+            systemMessageInserter = systemMessageInserter
         )
 
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
@@ -2120,6 +2121,7 @@ class UserSessionScope internal constructor(
             persistConversationsUseCase,
             cryptoTransactionProvider,
             resetMlsConversation,
+            systemMessageInserter
         )
     }
 

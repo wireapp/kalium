@@ -19,10 +19,12 @@ package com.wire.kalium.logic.feature.conversation.apps
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.feature.conversation.UpdateConversationAccessRoleUseCase
 
 class ChangeAccessForAppsInConversationUseCase internal constructor(
-    private val updateConversationAccessRole: UpdateConversationAccessRoleUseCase
+    private val updateConversationAccessRole: UpdateConversationAccessRoleUseCase,
+    private val systemMessageInserter: SystemMessageInserter,
 ) {
 
     suspend operator fun invoke(
@@ -37,9 +39,12 @@ class ChangeAccessForAppsInConversationUseCase internal constructor(
         )
 
         when (result) {
-            is UpdateConversationAccessRoleUseCase.Result.Failure -> TODO("just return the same error")
+            is UpdateConversationAccessRoleUseCase.Result.Failure -> result
             is UpdateConversationAccessRoleUseCase.Result.Success -> {
-                // todo write system message.
+                systemMessageInserter.insertConversationAppsAccessChanged(
+                    conversationId = conversationId,
+                    isAppsAccessEnabled = accessRoles.contains(Conversation.AccessRole.SERVICE)
+                )
             }
         }
 

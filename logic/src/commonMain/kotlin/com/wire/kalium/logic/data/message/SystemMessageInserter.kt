@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.message.LocalId
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
@@ -48,6 +48,12 @@ internal interface SystemMessageInserter {
     suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
 
     suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId)
+
+    suspend fun insertConversationAppsAccessChanged(
+        eventId: String = LocalId.generate(),
+        conversationId: ConversationId,
+        isAppsAccessEnabled: Boolean
+    )
 }
 
 internal class SystemMessageInserterImpl(
@@ -128,6 +134,25 @@ internal class SystemMessageInserterImpl(
             Message.System(
                 id = LocalId.generate(),
                 content = MessageContent.ConversationStartedUnverifiedWarning,
+                conversationId = conversationId,
+                date = Clock.System.now(),
+                senderUserId = selfUserId,
+                status = Message.Status.Sent,
+                visibility = Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
+    }
+
+    override suspend fun insertConversationAppsAccessChanged(
+        eventId: String,
+        conversationId: ConversationId,
+        isAppsAccessEnabled: Boolean
+    ) {
+        persistMessage(
+            Message.System(
+                id = eventId,
+                content = MessageContent.ConversationAppsEnabledChanged(isAppsAccessEnabled),
                 conversationId = conversationId,
                 date = Clock.System.now(),
                 senderUserId = selfUserId,
