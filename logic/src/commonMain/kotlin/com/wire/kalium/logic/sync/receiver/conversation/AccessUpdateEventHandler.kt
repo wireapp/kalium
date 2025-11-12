@@ -73,6 +73,7 @@ internal fun AccessUpdateEventHandler(
                 systemMessageInserter.insertConversationAppsAccessChanged(
                     eventId = event.id,
                     conversationId = event.conversationId,
+                    senderUserId = event.qualifiedFrom,
                     isAppsAccessEnabled = false
                 )
             }
@@ -82,6 +83,7 @@ internal fun AccessUpdateEventHandler(
                 systemMessageInserter.insertConversationAppsAccessChanged(
                     eventId = event.id,
                     conversationId = event.conversationId,
+                    senderUserId = event.qualifiedFrom,
                     isAppsAccessEnabled = true
                 )
             }

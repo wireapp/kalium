@@ -52,6 +52,7 @@ internal interface SystemMessageInserter {
     suspend fun insertConversationAppsAccessChanged(
         eventId: String = LocalId.generate(),
         conversationId: ConversationId,
+        senderUserId: UserId,
         isAppsAccessEnabled: Boolean
     )
 }
@@ -147,6 +148,7 @@ internal class SystemMessageInserterImpl(
     override suspend fun insertConversationAppsAccessChanged(
         eventId: String,
         conversationId: ConversationId,
+        senderUserId: UserId,
         isAppsAccessEnabled: Boolean
     ) {
         persistMessage(
@@ -155,7 +157,7 @@ internal class SystemMessageInserterImpl(
                 content = MessageContent.ConversationAppsEnabledChanged(isAppsAccessEnabled),
                 conversationId = conversationId,
                 date = Clock.System.now(),
-                senderUserId = selfUserId,
+                senderUserId = senderUserId,
                 status = Message.Status.Sent,
                 visibility = Message.Visibility.VISIBLE,
                 expirationData = null
