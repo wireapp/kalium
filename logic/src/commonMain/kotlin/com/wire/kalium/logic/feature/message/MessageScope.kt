@@ -68,18 +68,18 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
-import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
@@ -89,8 +89,8 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandlerImpl
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
-import com.wire.kalium.logic.feature.message.draft.ObserveMessageDraftUseCase
-import com.wire.kalium.logic.feature.message.draft.ObserveMessageDraftUseCaseImpl
+import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
+import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCase
@@ -532,8 +532,8 @@ class MessageScope internal constructor(
     val saveMessageDraftUseCase: SaveMessageDraftUseCase
         get() = SaveMessageDraftUseCaseImpl(messageDraftRepository)
 
-    val observeMessageDraftUseCase: ObserveMessageDraftUseCase
-        get() = ObserveMessageDraftUseCaseImpl(messageDraftRepository)
+    val getMessageDraftUseCase: GetMessageDraftUseCase
+        get() = GetMessageDraftUseCaseImpl(messageDraftRepository)
 
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
