@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
@@ -48,9 +48,9 @@ class UploadAssetUseCaseTest {
 
     @Test
     fun givenAValidMessage_whenUploadStarts_thenTransferStatusUpdatedCorrectly() = runTest(testDispatcher.default) {
-        val (arrangement, uploadAsset) = Arrangement()
-            .withUploadSuccess()
-            .arrange()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+        }
 
         uploadAsset(assetMessage(), uploadMetadata)
 
@@ -65,9 +65,9 @@ class UploadAssetUseCaseTest {
 
     @Test
     fun givenAValidMessage_whenUploadSucceeds_thenTransferStatusUpdatedCorrectly() = runTest(testDispatcher.default) {
-        val (arrangement, uploadAsset) = Arrangement()
-            .withUploadSuccess()
-            .arrange()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+        }
 
         uploadAsset(assetMessage(), uploadMetadata)
 
@@ -82,9 +82,9 @@ class UploadAssetUseCaseTest {
 
     @Test
     fun givenAValidMessage_whenUploadSucceeds_thenLocalFileIsRemoved() = runTest(testDispatcher.default) {
-        val (arrangement, uploadAsset) = Arrangement()
-            .withUploadSuccess()
-            .arrange()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+        }
 
         uploadAsset(assetMessage(), uploadMetadata)
 
@@ -95,9 +95,9 @@ class UploadAssetUseCaseTest {
 
     @Test
     fun givenAValidMessage_whenUploadFails_thenTransferStatusUpdatedCorrectly() = runTest(testDispatcher.default) {
-        val (arrangement, uploadAsset) = Arrangement()
-            .withUploadFailure()
-            .arrange()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadFailure()
+        }
 
         uploadAsset(assetMessage(), uploadMetadata)
 
@@ -112,9 +112,9 @@ class UploadAssetUseCaseTest {
 
     @Test
     fun givenAValidMessage_whenUploadSucceeds_thenAssetMessageIsPersisted() = runTest(testDispatcher.default) {
-        val (arrangement, uploadAsset) = Arrangement()
-            .withUploadSuccess()
-            .arrange()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+        }
 
         uploadAsset(assetMessage(), uploadMetadata)
 
@@ -125,9 +125,9 @@ class UploadAssetUseCaseTest {
 
     @Test
     fun givenAValidMessage_whenUploadSucceeds_thenAssetMessageIsSent() = runTest(testDispatcher.default) {
-        val (arrangement, uploadAsset) = Arrangement()
-            .withUploadSuccess()
-            .arrange()
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+        }
 
         uploadAsset(assetMessage(), uploadMetadata)
 
@@ -138,16 +138,14 @@ class UploadAssetUseCaseTest {
 
     private fun testGeneratingAudioNormalizedLoudness(mimeType: String, audioNormalizedLoudness: ByteArray?, builderInvoked: Boolean) =
         runTest(testDispatcher.default) {
-            val (arrangement, uploadAsset) = Arrangement()
-                .withUploadSuccess()
-                .withAudioNormalizedLoudnessBuilderResult(byteArrayOf(1, 2, 3))
-                .arrange()
+            val (arrangement, uploadAsset) = Arrangement().arrange {
+                withUploadSuccess()
+                withAudioNormalizedLoudnessBuilderResult(uploadMetadata.assetDataPath.toString(), byteArrayOf(1, 2, 3))
+            }
 
             uploadAsset(assetMessage(), uploadMetadata.copy(mimeType = mimeType, audioNormalizedLoudness = audioNormalizedLoudness))
 
-            coVerify {
-                arrangement.audioNormalizedLoudnessBuilder(eq(uploadMetadata.assetDataPath.toString()))
-            }.wasInvoked(exactly = if(builderInvoked) once else 0)
+            arrangement.audioNormalizedLoudnessBuilder.assertInvoked(uploadMetadata.assetDataPath.toString(), if(builderInvoked) 1 else 0)
         }
 
     @Test
@@ -178,10 +176,8 @@ class UploadAssetUseCaseTest {
             }.returns(CoreFailure.Unknown(null).left())
         }
 
-        suspend fun withAudioNormalizedLoudnessBuilderResult(result: ByteArray?) = apply {
-            coEvery {
-                audioNormalizedLoudnessBuilder(any())
-            }.returns(result)
+        fun withAudioNormalizedLoudnessBuilderResult(filePath: String, result: ByteArray?) = apply {
+            audioNormalizedLoudnessBuilder.every(filePath, result)
         }
 
         val assetDataSource: AssetRepository = mock(AssetRepository::class)
@@ -189,9 +185,10 @@ class UploadAssetUseCaseTest {
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
         val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase = mock(UpdateAssetMessageTransferStatusUseCase::class)
         val persistMessage: PersistMessageUseCase = mock(PersistMessageUseCase::class)
-        val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = mock(AudioNormalizedLoudnessBuilder::class)
+        val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock()
 
-        suspend fun arrange(): Pair<Arrangement, UploadAssetUseCaseImpl> {
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UploadAssetUseCaseImpl> {
+            block()
 
             coEvery {
                 updateAssetMessageTransferStatus(any(), any(), any())
@@ -199,7 +196,7 @@ class UploadAssetUseCaseTest {
 
             coEvery {
                 assetDataSource.deleteAssetLocally(any())
-            } returns(Unit.right())
+            } returns (Unit.right())
 
             coEvery {
                 persistMessage(any())

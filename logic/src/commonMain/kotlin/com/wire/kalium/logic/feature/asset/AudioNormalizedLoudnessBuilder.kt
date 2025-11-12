@@ -17,10 +17,7 @@
  */
 package com.wire.kalium.logic.feature.asset
 
-import io.mockative.Mockable
-
-@Mockable
-interface AudioNormalizedLoudnessBuilder {
+fun interface AudioNormalizedLoudnessBuilder {
     /**
      * Generates audio normalized loudness [ByteArray] for the given file path.
      * @param filePath the path to the audio file.
