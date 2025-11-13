@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -37,6 +37,7 @@ import com.wire.kalium.persistence.dao.message.LocalId
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.uuid.Uuid
 
 /**
  * This class is responsible to generate system messages for new group conversations.
@@ -66,6 +67,11 @@ internal interface NewGroupConversationSystemMessagesCreator {
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
+    suspend fun conversationAppsAccessIfEnabled(
+        conversationId: ConversationId,
+        hasAppsAccessEnabled: Boolean,
+        creatorId: UserId
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -244,6 +250,29 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 )
             )
         } ?: Either.Right(Unit)
+    }
+
+    override suspend fun conversationAppsAccessIfEnabled(
+        conversationId: ConversationId,
+        hasAppsAccessEnabled: Boolean,
+        creatorId: UserId
+    ): Either<CoreFailure, Unit> {
+        return if (hasAppsAccessEnabled) {
+            persistMessage(
+                Message.System(
+                    LocalId.generate(),
+                    MessageContent.ConversationAppsEnabledChanged(isEnabled = true),
+                    conversationId,
+                    Clock.System.now(),
+                    creatorId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+        } else {
+            Unit.right()
+        }
     }
 
     private suspend fun isSelfATeamMember() = selfTeamIdProvider().fold({ false }, { it != null })
