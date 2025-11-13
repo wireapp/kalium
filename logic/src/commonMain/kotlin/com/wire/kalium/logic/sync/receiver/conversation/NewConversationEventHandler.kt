@@ -131,9 +131,10 @@ internal class NewConversationEventHandlerImpl(
                 event.dateTime
             )
             newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
-                event.conversationId,
-                event.conversation.hasAppsAccessEnabled(),
-                event.senderUserId
+                eventId = event.id,
+                conversationId = event.conversationId,
+                hasAppsAccessEnabled = event.conversation.hasAppsAccessEnabled(),
+                creatorId = event.senderUserId
             )
         }
     }

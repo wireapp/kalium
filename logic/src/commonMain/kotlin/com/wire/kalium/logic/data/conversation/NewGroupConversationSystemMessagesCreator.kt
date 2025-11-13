@@ -68,6 +68,7 @@ internal interface NewGroupConversationSystemMessagesCreator {
 
     suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
     suspend fun conversationAppsAccessIfEnabled(
+        eventId: String = LocalId.generate(),
         conversationId: ConversationId,
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId
@@ -253,6 +254,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     }
 
     override suspend fun conversationAppsAccessIfEnabled(
+        eventId: String,
         conversationId: ConversationId,
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId
@@ -260,7 +262,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         return if (hasAppsAccessEnabled) {
             persistMessage(
                 Message.System(
-                    LocalId.generate(),
+                    eventId,
                     MessageContent.ConversationAppsEnabledChanged(isEnabled = true),
                     conversationId,
                     Clock.System.now(),

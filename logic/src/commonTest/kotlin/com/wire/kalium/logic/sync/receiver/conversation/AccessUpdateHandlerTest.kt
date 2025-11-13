@@ -189,7 +189,7 @@ class AccessUpdateHandlerTest {
     fun givenInitialConversationWithServiceRole_whenHandlingAccessUpdate_thenSystemMessageIsInserted() = runTest {
         // Given
         val event = TestEvent.accessUpdate().copy(
-            accessRole = setOf(AccessRole.TEAM_MEMBER, AccessRole.SERVICE)
+            accessRole = setOf(AccessRole.TEAM_MEMBER)
         )
 
         val (arrangement, eventHandler) = Arrangement()
@@ -199,9 +199,9 @@ class AccessUpdateHandlerTest {
             )
             .withMappingModelToDAOAccessRole(
                 event.accessRole,
-                listOf(ConversationEntity.AccessRole.TEAM_MEMBER, ConversationEntity.AccessRole.SERVICE)
+                listOf(ConversationEntity.AccessRole.TEAM_MEMBER)
             )
-            .withExistingConversationAccessRole(null) // No existing conversation
+            .withExistingConversationAccessRole(listOf(ConversationEntity.AccessRole.TEAM_MEMBER)) // No service conversation
             .arrange()
 
         // When
@@ -328,6 +328,19 @@ class AccessUpdateHandlerTest {
             every {
                 conversationMapper.fromModelToDAOAccessRole(param)
             }.returns(result)
+        }
+
+        fun withInsertMessageReturningUnit() = apply {
+            runBlocking {
+                coEvery {
+                    systemMessageInserter.insertConversationAppsAccessChanged(
+                        eventId = any(),
+                        conversationId = any(),
+                        senderUserId = any(),
+                        isAppsAccessEnabled = any()
+                    )
+                }.returns(Unit)
+            }
         }
 
         suspend fun withExistingConversationAccessRole(accessRoles: List<ConversationEntity.AccessRole>?) = apply {

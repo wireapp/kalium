@@ -179,9 +179,9 @@ internal class ConversationGroupRepositoryImpl(
             newGroupConversationSystemMessagesCreator.value.conversationCellStatus(conversationEntity)
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationAppsAccessIfEnabled(
-                conversationEntity.id.toModel(),
-                conversationResponse.hasAppsAccessEnabled(),
-                selfUserId
+                conversationId = conversationEntity.id.toModel(),
+                hasAppsAccessEnabled = conversationResponse.hasAppsAccessEnabled(),
+                creatorId = selfUserId,
             )
         }.flatMap {
             when (protocol) {
