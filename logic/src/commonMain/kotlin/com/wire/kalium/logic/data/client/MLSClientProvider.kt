@@ -142,7 +142,7 @@ class MLSClientProviderImpl(
             kaliumLogger.w("$TAG: Cannot fetch MLS config, MLS is disabled.")
             return MLSFailure.Disabled.left()
         }
-        return userConfigRepository.getSupportedCipherSuite().flatMapLeft<CoreFailure, SupportedCipherSuite> {
+        return userConfigRepository.getSupportedCipherSuite().flatMapLeft {
             featureConfigRepository.getFeatureConfigs().map {
                 it.mlsModel.supportedCipherSuite
             }.flatMap {

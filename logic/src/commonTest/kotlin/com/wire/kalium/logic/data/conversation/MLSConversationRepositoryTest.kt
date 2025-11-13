@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CommonizedMLSException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
@@ -1697,9 +1698,21 @@ class MLSConversationRepositoryTest {
             val TIME = Instant.DISTANT_PAST
             val TEST_CAUSE = Throwable("TEST! This is just a stub for a Cause")
             val INVALID_REQUEST_ERROR = CommonizedMLSException(MLSFailure.Generic(TEST_CAUSE), TEST_CAUSE)
-            val MLS_STALE_MESSAGE_ERROR = CommonizedMLSException(MLSFailure.MessageRejected.MlsStaleMessage, TEST_CAUSE)
-            val MLS_CLIENT_MISMATCH_ERROR = CommonizedMLSException(MLSFailure.MessageRejected.MlsClientMismatch, TEST_CAUSE)
-            val MLS_COMMIT_MISSING_REFERENCES_ERROR = CommonizedMLSException(MLSFailure.MessageRejected.MlsCommitMissingReferences, TEST_CAUSE)
+            val MLS_STALE_MESSAGE_ERROR = CommonizedMLSException(
+                MLSFailure.MessageRejected(
+                    NetworkFailure.MlsMessageRejectedFailure.StaleMessage
+                ), TEST_CAUSE
+            )
+            val MLS_CLIENT_MISMATCH_ERROR = CommonizedMLSException(
+                MLSFailure.MessageRejected(
+                    NetworkFailure.MlsMessageRejectedFailure.ClientMismatch
+                ), TEST_CAUSE
+            )
+            val MLS_COMMIT_MISSING_REFERENCES_ERROR = CommonizedMLSException(
+                MLSFailure.MessageRejected(
+                    NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences
+                ), TEST_CAUSE
+            )
             val MLS_PUBLIC_KEY = MLSPublicKeys(
                 removal = mapOf(
                     "ed25519" to "gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="
@@ -1851,7 +1864,7 @@ class MLSConversationRepositoryTest {
                 .withUpdateMLSGroupIdAndStateSuccessful()
                 .arrange()
 
-            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L,state)
+            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L, state)
 
             result.shouldSucceed()
             coVerify {

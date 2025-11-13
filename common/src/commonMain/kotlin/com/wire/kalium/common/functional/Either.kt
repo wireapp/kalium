@@ -123,7 +123,7 @@ inline fun <L, R> Either<L, R>.getOrFail(fn: (failure: L) -> R): R =
  * Left-biased flatMap() FP convention which means that Left is assumed to be the default case
  * to operate on. If it is Right, operations like map, flatMap, ... return the Right value unchanged.
  */
-inline fun <L, R> Either<L, R>.flatMapLeft(fn: (L) -> Either<L, R>): Either<L, R> =
+inline fun <T, L, R> Either<L, R>.flatMapLeft(fn: (L) -> Either<T, R>): Either<T, R> =
     when (this) {
         is Left -> fn(value)
         is Right -> Right(value)
