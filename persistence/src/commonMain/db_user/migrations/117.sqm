@@ -1,4 +1,3 @@
--- todo(ym) rename to the right version before applying
 CREATE TABLE MessageConversationAppsEnabledChangedContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
