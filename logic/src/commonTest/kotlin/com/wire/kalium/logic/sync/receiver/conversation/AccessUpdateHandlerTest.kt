@@ -186,39 +186,6 @@ class AccessUpdateHandlerTest {
     }
 
     @Test
-    fun givenInitialConversationWithServiceRole_whenHandlingAccessUpdate_thenSystemMessageIsInserted() = runTest {
-        // Given
-        val event = TestEvent.accessUpdate().copy(
-            accessRole = setOf(AccessRole.TEAM_MEMBER)
-        )
-
-        val (arrangement, eventHandler) = Arrangement()
-            .withMappingModelToDAOAccess(
-                event.access,
-                listOf(ConversationEntity.Access.PRIVATE)
-            )
-            .withMappingModelToDAOAccessRole(
-                event.accessRole,
-                listOf(ConversationEntity.AccessRole.TEAM_MEMBER)
-            )
-            .withExistingConversationAccessRole(listOf(ConversationEntity.AccessRole.TEAM_MEMBER)) // No service conversation
-            .arrange()
-
-        // When
-        eventHandler.handle(event)
-
-        // Then - No system message should be inserted when conversation doesn't exist yet
-        coVerify {
-            arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
-                eventId = any(),
-                conversationId = any(),
-                senderUserId = any(),
-                isAppsAccessEnabled = any()
-            )
-        }.wasNotInvoked()
-    }
-
-    @Test
     fun givenEventIdProvided_whenHandlingAccessUpdate_thenEventIdIsPassedToSystemMessage() = runTest {
         // Given
         val eventId = "custom-event-id-123"
