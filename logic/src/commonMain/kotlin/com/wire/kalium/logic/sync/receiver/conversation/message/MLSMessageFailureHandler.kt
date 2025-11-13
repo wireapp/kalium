@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 
 sealed class MLSMessageFailureResolution {
     data object Ignore : MLSMessageFailureResolution()
@@ -33,13 +34,25 @@ sealed class MLSMessageFailureResolution {
 
 internal object MLSMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
-        return when (failure) {
+        fun handleRejected(rejectedFailure: NetworkFailure.MlsMessageRejectedFailure) = when (rejectedFailure) {
+            NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex,
+            NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
+
+            is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> TODO("Handle Groupf Out Of Sync")
+
+            NetworkFailure.MlsMessageRejectedFailure.ClientMismatch,
+            NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences,
+            NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo,
+            is NetworkFailure.MlsMessageRejectedFailure.Other,
+            NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> MLSMessageFailureResolution.InformUser
+        }
+        return when (val failure = failure.wrapNetworkMlsFailureIfApplicable()) {
             // Received messages targeting a future epoch (outside epoch bounds), we might have lost messages.
             is MLSFailure.WrongEpoch,
             is MLSFailure.InvalidGroupId -> MLSMessageFailureResolution.OutOfSync
 
-            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
-            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
+            is NetworkFailure.MlsMessageRejectedFailure -> handleRejected(failure)
+            is MLSFailure.MessageRejected -> handleRejected(failure.cause)
 
             // Received already sent or received message, can safely be ignored.
             is MLSFailure.DuplicateMessage,
@@ -57,7 +70,6 @@ internal object MLSMessageFailureHandler {
             MLSFailure.CommitForMissingProposal,
             MLSFailure.ConversationNotFound,
             MLSFailure.BufferedCommit,
-            is MLSFailure.MessageRejected,
             MLSFailure.OrphanWelcome,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 

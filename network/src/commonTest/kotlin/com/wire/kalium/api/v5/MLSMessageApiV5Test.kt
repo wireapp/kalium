@@ -25,10 +25,12 @@ import com.wire.kalium.mocks.responses.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.NetworkResponse
@@ -137,7 +139,7 @@ internal class MLSMessageApiV5Test : ApiTest() {
     }
 
     @Test
-    fun givenCommitBundle_whenSendingBundleFailsConflictNonFederated_theRequestShouldFailWithRegularInvalidRequestError() = runTest {
+    fun givenCommitBundle_whenSendingBundleFailsMLSStaleMessage_theRequestShouldFailWithMLSRequestError() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid(
                 ErrorResponse(
@@ -158,7 +160,8 @@ internal class MLSMessageApiV5Test : ApiTest() {
         val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
 
         assertFalse(response.isSuccessful())
-        assertEquals(KaliumException.InvalidRequestError::class, response.kException::class)
+        assertIs<MLSError>(response.kException)
+        assertIs<MLSErrorResponse.StaleMessage>(response.kException.errorBody)
     }
 
     private companion object {
