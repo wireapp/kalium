@@ -28,8 +28,8 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.HistoryClient
-import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.LabeledConversation
+import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -77,7 +77,6 @@ import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
-import com.wire.kalium.persistence.dao.message.MessageEntityContent
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(

@@ -274,7 +274,7 @@ class ConversationScope internal constructor(
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
-        get() = UpdateConversationAccessRoleUseCase(conversationRepository, conversationGroupRepository, syncManager)
+        get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
 
     val changeAccessForAppsInConversation: ChangeAccessForAppsInConversationUseCase
         get() = ChangeAccessForAppsInConversationUseCase(updateConversationAccess, systemMessageInserter, selfUserId)
