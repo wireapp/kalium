@@ -336,6 +336,7 @@ $dokka.location:com.wire.kalium.logic.util/DummyCallManager/startCall/#[Error ty
 $dokka.location:com.wire.kalium.logic.util/DummyCallManager/updateConversationClients/#[Error type: Unresolved type for ConversationId]#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/update-conversation-clients.html
 $dokka.location:com.wire.kalium.logic.util/DummyCallManager/updateEpochInfo/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for EpochInfo]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/update-epoch-info.html
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[jvm]view.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/audioNormalizedLoudnessBuilder/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]audio-normalized-loudness-builder.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/deleteSessionScope/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]delete-session-scope.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/networkStateObserver/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]network-state-observer.html
