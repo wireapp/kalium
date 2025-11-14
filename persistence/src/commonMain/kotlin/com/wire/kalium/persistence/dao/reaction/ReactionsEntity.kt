@@ -24,13 +24,27 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
 data class ReactionsEntity(
-    val totalReactions: ReactionsCountEntity,
-    val selfUserReactions: UserReactionsEntity
+    val reactions: List<ReactionEntity>
 ) {
+    // Backward-compatible properties for gradual migration
+    @Deprecated("Use reactions list instead", ReplaceWith("reactions.associate { it.emoji to it.count }"))
+    val totalReactions: ReactionsCountEntity
+        get() = reactions.associate { it.emoji to it.count }
+
+    @Deprecated("Use reactions list instead", ReplaceWith("reactions.filter { it.isSelf }.map { it.emoji }.toSet()"))
+    val selfUserReactions: UserReactionsEntity
+        get() = reactions.filter { it.isSelf }.map { it.emoji }.toSet()
+
     companion object {
-        val EMPTY = ReactionsEntity(emptyMap(), emptySet())
+        val EMPTY = ReactionsEntity(emptyList())
     }
 }
+
+data class ReactionEntity(
+    val emoji: String,
+    val count: Int,
+    val isSelf: Boolean
+)
 
 data class MessageReactionEntity(
     val emoji: String,

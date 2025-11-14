@@ -33,10 +33,13 @@ class ReactionMapperTest {
         val result = ReactionMapper.reactionsFromJsonString(reactionsJson)
 
         // Then
-        assertEquals(2, result.totalReactions.size)
-        assertEquals(3, result.totalReactions["👍"])
-        assertEquals(5, result.totalReactions["❤️"])
-        assertEquals(setOf("👍"), result.selfUserReactions)
+        assertEquals(2, result.reactions.size)
+        assertEquals("👍", result.reactions[0].emoji)
+        assertEquals(3, result.reactions[0].count)
+        assertEquals(true, result.reactions[0].isSelf)
+        assertEquals("❤️", result.reactions[1].emoji)
+        assertEquals(5, result.reactions[1].count)
+        assertEquals(false, result.reactions[1].isSelf)
     }
 
     @Test
@@ -48,8 +51,7 @@ class ReactionMapperTest {
         val result = ReactionMapper.reactionsFromJsonString(reactionsJson)
 
         // Then
-        assertTrue(result.totalReactions.isEmpty())
-        assertTrue(result.selfUserReactions.isEmpty())
+        assertTrue(result.reactions.isEmpty())
     }
 
     @Test
@@ -73,8 +75,11 @@ class ReactionMapperTest {
         val result = ReactionMapper.reactionsFromJsonString(reactionsJson)
 
         // Then
-        assertEquals(3, result.totalReactions.size)
-        assertEquals(setOf("👍", "❤️"), result.selfUserReactions)
+        assertEquals(3, result.reactions.size)
+        assertEquals(2, result.reactions.count { it.isSelf })
+        assertTrue(result.reactions[0].isSelf)
+        assertTrue(result.reactions[1].isSelf)
+        assertEquals(false, result.reactions[2].isSelf)
     }
 
     @Test
@@ -86,8 +91,8 @@ class ReactionMapperTest {
         val result = ReactionMapper.reactionsFromJsonString(reactionsJson)
 
         // Then
-        assertEquals(2, result.totalReactions.size)
-        assertTrue(result.selfUserReactions.isEmpty())
+        assertEquals(2, result.reactions.size)
+        assertTrue(result.reactions.none { it.isSelf })
     }
 
     @Test

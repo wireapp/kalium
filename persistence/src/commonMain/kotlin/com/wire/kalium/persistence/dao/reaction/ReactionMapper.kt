@@ -39,9 +39,15 @@ object ReactionMapper {
 
         return try {
             val reactionItems: List<ReactionItem> = serializer.decodeFromString(reactionsJson)
-            val totalReactions = reactionItems.associate { it.emoji to it.count }
-            val selfUserReactions = reactionItems.filter { it.isSelf }.map { it.emoji }.toSet()
-            ReactionsEntity(totalReactions, selfUserReactions)
+            ReactionsEntity(
+                reactions = reactionItems.map { item ->
+                    ReactionEntity(
+                        emoji = item.emoji,
+                        count = item.count,
+                        isSelf = item.isSelf
+                    )
+                }
+            )
         } catch (_: SerializationException) {
             ReactionsEntity.EMPTY
         }
