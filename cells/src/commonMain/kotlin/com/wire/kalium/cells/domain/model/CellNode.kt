@@ -29,6 +29,7 @@ public data class CellNode(
     val isRecycled: Boolean = false,
     val isDraft: Boolean = false,
     val contentUrl: String? = null,
+    val contentUrlExpiresAt: Long? = null,
     val contentHash: String? = null,
     val mimeType: String? = null,
     val previews: List<NodePreview>? = null,

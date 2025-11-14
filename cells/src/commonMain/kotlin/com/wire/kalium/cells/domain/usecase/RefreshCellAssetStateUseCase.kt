@@ -141,7 +141,13 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
             }
         }
 
-        attachmentsRepository.updateAttachment(attachment.id, node.contentUrl, node.contentHash, node.path)
+        attachmentsRepository.updateAttachment(
+            assetId = attachment.id,
+            contentUrl = node.contentUrl,
+            contentUrlExpiresAt = node.contentUrlExpiresAt,
+            hash = node.contentHash,
+            remotePath = node.path
+        )
 
         // Update transfer status for attachments previously marked as NOT_FOUND
         // This happens after we regain access to the file
