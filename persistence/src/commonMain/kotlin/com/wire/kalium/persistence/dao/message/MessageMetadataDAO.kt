@@ -20,9 +20,9 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.MessageMetadataQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.Mockable
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 @Mockable
 interface MessageMetadataDAO {
@@ -31,10 +31,10 @@ interface MessageMetadataDAO {
 
 internal class MessageMetadataDAOImpl internal constructor(
     private val metaDataQueries: MessageMetadataQueries,
-    private val coroutineContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher
 ) : MessageMetadataDAO {
     override suspend fun originalSenderId(conversationId: ConversationIDEntity, messageId: String): UserIDEntity? =
-        withContext(coroutineContext) {
+        withContext(readDispatcher.value) {
             metaDataQueries.originalSenderId(conversationId, messageId).executeAsOneOrNull()
         }
 }

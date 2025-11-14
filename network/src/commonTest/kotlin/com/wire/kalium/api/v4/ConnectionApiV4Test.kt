@@ -23,14 +23,17 @@ import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.mocks.mocks.connection.ConnectionMocks
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConnectionApiV4
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 internal class ConnectionApiV4Test : ApiTest() {
@@ -86,10 +89,9 @@ internal class ConnectionApiV4Test : ApiTest() {
 
             // then
             assertFalse(response.isSuccessful())
-            assertTrue(response.kException is KaliumException.FederationError)
-            assertTrue(
-                (response.kException as KaliumException.FederationError).errorResponse.label == "federation-denied"
-            )
+            assertIs<FederationError>(response.kException)
+            assertIs<FederationErrorResponse.Generic>(response.kException.errorResponse)
+            assertEquals("federation-denied", response.kException.errorResponse.label)
         }
 
     private companion object {

@@ -127,7 +127,8 @@ object FeatureConfigJson {
     val featureConfigResponseSerializerResponse = ValidJsonProvider(
         FeatureConfigResponse(
             AppLock(
-                AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED
+                AppLockConfigDTO(true, 0),
+                FeatureFlagStatusDTO.ENABLED
             ),
             ClassifiedDomains(ClassifiedDomainsConfigDTO(listOf()), FeatureFlagStatusDTO.ENABLED),
             ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfigDTO(false)),

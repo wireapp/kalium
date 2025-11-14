@@ -18,17 +18,17 @@
 package com.wire.kalium.conversation.history.data.dao
 
 import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.persistence.HistoryClientQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
+import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
-import kotlin.time.ExperimentalTime
 import kotlinx.datetime.Instant
+import kotlin.time.ExperimentalTime
 
 /**
  * Implementation of [HistoryClientDAO] that uses SQLDelight to access the database.
@@ -36,7 +36,8 @@ import kotlinx.datetime.Instant
 @OptIn(ExperimentalTime::class)
 internal class SQLiteHistoryClientDAO internal constructor(
     private val historyClientQueries: HistoryClientQueries,
-    private val queriesContext: CoroutineContext = Dispatchers.IO
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : HistoryClientDAO {
 
     /**
@@ -59,7 +60,7 @@ internal class SQLiteHistoryClientDAO internal constructor(
      * @return a list of history clients
      */
     override suspend fun getAllForConversation(conversationId: QualifiedIDEntity): List<HistoryClient> =
-        withContext(queriesContext) {
+        withContext(readDispatcher.value) {
             historyClientQueries.selectAllForConversation(
                 conversation_id = conversationId,
                 mapper = ::mapToHistoryClient
@@ -76,7 +77,7 @@ internal class SQLiteHistoryClientDAO internal constructor(
     override suspend fun getAllForConversationFromDateOnwards(
         conversationId: QualifiedIDEntity,
         fromDate: Instant
-    ): List<HistoryClient> = withContext(queriesContext) {
+    ): List<HistoryClient> = withContext(readDispatcher.value) {
         historyClientQueries.selectAllForConversationFromDateOnwards(
             conversation_id = conversationId,
             creation_date = fromDate,
@@ -94,7 +95,9 @@ internal class SQLiteHistoryClientDAO internal constructor(
         historyClientQueries.selectAllForConversation(
             conversation_id = conversationId,
             mapper = ::mapToHistoryClient
-        ).asFlow().mapToList(queriesContext)
+        ).asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
 
     /**
      * Inserts a new history client.
@@ -109,7 +112,7 @@ internal class SQLiteHistoryClientDAO internal constructor(
         id: String,
         secret: ByteArray,
         creationDate: Instant
-    ) = withContext(queriesContext) {
+    ) = withContext(writeDispatcher.value) {
         historyClientQueries.insertClient(
             conversation_id = conversationId,
             id = id,

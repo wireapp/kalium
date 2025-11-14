@@ -27,8 +27,12 @@ import com.wire.kalium.persistence.utils.IgnoreJvm
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,6 +49,7 @@ class DatabaseExporterTest : BaseDatabaseTest() {
 
     @BeforeTest
     fun setUp() {
+        Dispatchers.setMain(dispatcher)
         deleteDatabase(selfUserId)
         localDB = createDatabase(selfUserId, passphrase = null, enableWAL = false)
 
@@ -60,6 +65,12 @@ class DatabaseExporterTest : BaseDatabaseTest() {
                 insertConversation(TEST_CONVERSATION_2)
             }
         }
+    }
+
+    @AfterTest
+    fun clear() {
+        Dispatchers.resetMain()
+        this.deleteDatabase(selfUserId)
     }
 
     @Test

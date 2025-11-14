@@ -115,7 +115,9 @@ internal class MLSMigratorImpl(
             .flatMap { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
-                        conversationId, selfUserId, Protocol.MIXED
+                        conversationId,
+                        selfUserId,
+                        Protocol.MIXED
                     )
                     if (callRepository.establishedCallsFlow().first().isNotEmpty()) {
                         systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(
@@ -141,7 +143,9 @@ internal class MLSMigratorImpl(
             }, { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
-                        conversationId, selfUserId, Protocol.MLS
+                        conversationId,
+                        selfUserId,
+                        Protocol.MLS
                     )
                 }
                 Either.Right(Unit)

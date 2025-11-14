@@ -77,7 +77,9 @@ internal class LeaveSubconversationUseCaseImpl(
         selfClientIdProvider().flatMap { selfClientId ->
             subconversationRepository.getSubconversationInfo(conversationId, subconversationId)?.let {
                 Either.Right(it)
-            } ?: wrapApiRequest { conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi()) }.flatMap {
+            } ?: wrapApiRequest {
+                conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
+            }.flatMap {
                 if (it.members.contains(SubconversationMemberDTO(selfClientId.value, selfUserId.value, selfUserId.domain))) {
                     Either.Right(GroupID(it.groupId))
                 } else {

@@ -16,16 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.common.error
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isFederationDenied
-import com.wire.kalium.network.exceptions.isFederationNotEnabled
+import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -37,6 +41,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 const val SOCKS_EXCEPTION = "socks"
 
+@Suppress("CyclomaticComplexMethod", "NestedBlockDepth")
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> =
     when (val result = networkCall()) {
         is NetworkResponse.Success -> Either.Right(result.value)
@@ -44,23 +49,29 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
             when {
-                exception is KaliumException.FederationError -> {
-                    if (exception.isFederationDenied()) {
-                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
-                    } else if (exception.isFederationNotEnabled()) {
-                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationNotEnabled(exception.errorResponse.label))
-                    } else {
-                        Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
+                exception is FederationError -> {
+                    when (val errorResponse = exception.errorResponse) {
+                        is FederationErrorResponse.Conflict -> {
+                            Either.Left(NetworkFailure.FederatedBackendFailure.ConflictingBackends(errorResponse.nonFederatingBackends))
+                        }
+
+                        is FederationErrorResponse.Unreachable -> {
+                            Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(errorResponse.unreachableBackends))
+                        }
+
+                        is FederationErrorResponse.Generic -> {
+                            if (errorResponse.isFederationDenied()) {
+                                Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(errorResponse.label))
+                            } else if (errorResponse.isFederationNotEnabled()) {
+                                Either.Left(NetworkFailure.FederatedBackendFailure.FederationNotEnabled(errorResponse.label))
+                            } else {
+                                Either.Left(NetworkFailure.FederatedBackendFailure.General(errorResponse.label))
+                            }
+                        }
                     }
                 }
 
-                exception is KaliumException.FederationUnreachableException -> {
-                    Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(exception.errorResponse.unreachableBackends))
-                }
-
-                exception is KaliumException.FederationConflictException -> {
-                    Either.Left(NetworkFailure.FederatedBackendFailure.ConflictingBackends(exception.errorResponse.nonFederatingBackends))
-                }
+                exception is MLSError -> Either.Left(mapMLSError(exception))
 
                 // todo SocketException is platform specific so need to wrap it in our own exceptions
                 exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true -> {
@@ -85,6 +96,30 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
             }
         }
     }
+
+fun mapMLSError(mlsError: MLSError): NetworkFailure.MlsMessageRejectedFailure = when (val body = mlsError.errorBody) {
+    is MLSErrorResponse.ClientMismatch -> NetworkFailure.MlsMessageRejectedFailure.ClientMismatch
+    is MLSErrorResponse.CommitMissingReferences -> NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences
+    is MLSErrorResponse.GroupOutOfSync -> {
+        val ids = body.missingUsers.map { user -> UserId(user.value, user.domain) }
+        NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(ids)
+    }
+
+    is MLSErrorResponse.InvalidLeafNodeIndex -> NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex
+    is MLSErrorResponse.InvalidLeafNodeSignature -> NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature
+    is MLSErrorResponse.StaleMessage -> NetworkFailure.MlsMessageRejectedFailure.StaleMessage
+    is MLSErrorResponse.MissingGroupInfo -> NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo
+    is MLSErrorResponse.UnsupportedProposal,
+    is MLSErrorResponse.ClientSenderUserMismatch,
+    is MLSErrorResponse.GroupConversationMismatch,
+    is MLSErrorResponse.NotEnabled,
+    is MLSErrorResponse.ProposalNotFound,
+    is MLSErrorResponse.ProtocolError,
+    is MLSErrorResponse.SelfRemovalNotAllowed,
+    is MLSErrorResponse.SubconversationJoinParentMissing,
+    is MLSErrorResponse.UnsupportedMessage,
+    is MLSErrorResponse.WelcomeMismatch -> NetworkFailure.MlsMessageRejectedFailure.Other(body)
+}
 
 inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<ProteusFailure, T> {
     return try {

@@ -153,10 +153,12 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
     private suspend inline fun <reified T, reified B> post(endpoint: String, body: B): T {
         try {
             return flow<T> {
-                emit(httpClient.post(url(endpoint)) {
+                emit(
+                    httpClient.post(url(endpoint)) {
                     contentType(ContentType.Application.Json)
                     setBody(body)
-                }.body())
+                }.body()
+                )
             }.retry(RETRY_COUNT).first()
         } catch (e: Exception) {
             logger.e("Error $endpoint: $e")
@@ -168,10 +170,12 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
     private suspend inline fun <reified B> postNoBody(endpoint: String, body: B): HttpStatusCode {
         try {
             return flow {
-                emit(httpClient.post(url(endpoint)) {
+                emit(
+                    httpClient.post(url(endpoint)) {
                     contentType(ContentType.Application.Json)
                     setBody(body)
-                }.status)
+                }.status
+                )
             }.retry(RETRY_COUNT).first()
         } catch (e: Exception) {
             logger.e("Error $endpoint: $e")
@@ -254,7 +258,8 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
         isDestroyable: Boolean
     ): MonkeyConversation {
         val result: ConversationId = post(
-            CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
+            CREATE_CONVERSATION,
+            CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
         )
         return MonkeyConversation(this, result, isDestroyable, monkeyList)
     }

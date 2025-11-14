@@ -130,15 +130,15 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun deleteFile(nodeUuid: String) = withContext(dispatchers.io) {
+    override suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean) = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.delete(nodeUuid)
+            cellsApi.delete(nodeUuid, permanentDelete)
         }
     }
 
-    override suspend fun deleteFiles(paths: List<String>) = withContext(dispatchers.io) {
+    override suspend fun deleteFiles(paths: List<String>, permanentDelete: Boolean) = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.delete(paths)
+            cellsApi.delete(paths, permanentDelete)
         }
     }
 

@@ -23,9 +23,11 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
@@ -276,6 +278,14 @@ internal interface MessageRepository {
         newMessageId: String,
         editInstant: Instant
     ): Either<StorageFailure, Unit>
+
+    suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>>
+
+    suspend fun updateAudioMessageNormalizedLoudness(
+        conversationId: ConversationId,
+        messageId: String,
+        normalizedLoudness: ByteArray
+    ): Either<CoreFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -539,6 +549,8 @@ internal class MessageDataSource internal constructor(
     ): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message.value)
+        }.flatMapLeft { networkFailure ->
+            Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
         }.flatMap { response ->
             Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }
@@ -727,6 +739,10 @@ internal class MessageDataSource internal constructor(
         .wrapStorageRequest()
         .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
 
+    override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
+        .wrapStorageRequest()
+        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.transfer_status.toModel() } }
+
     override suspend fun getMessageAssetTransferStatus(
         messageId: String,
         conversationId: ConversationId
@@ -778,6 +794,18 @@ internal class MessageDataSource internal constructor(
                 messageContent.newButtonList.map { ButtonEntity(it.text, it.id, it.isSelected) }
             ),
             newMessageId = newMessageId
+        )
+    }
+
+    override suspend fun updateAudioMessageNormalizedLoudness(
+        conversationId: ConversationId,
+        messageId: String,
+        normalizedLoudness: ByteArray
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateAudioMessageNormalizedLoudness(
+            conversationId = conversationId.toDao(),
+            messageId = messageId,
+            normalizedLoudness = normalizedLoudness
         )
     }
 }

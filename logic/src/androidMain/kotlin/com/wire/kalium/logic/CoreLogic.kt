@@ -19,10 +19,13 @@
 package com.wire.kalium.logic
 
 import android.content.Context
+import com.waz.audioeffect.AudioEffect
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
@@ -102,6 +105,11 @@ actual class CoreLogic(
             userAgent
         )
     }
+
+    override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
+        dispatcher = KaliumDispatcherImpl.io,
+        audioEffect = AudioEffect(appContext),
+    )
 }
 
 @Suppress("MayBeConst")

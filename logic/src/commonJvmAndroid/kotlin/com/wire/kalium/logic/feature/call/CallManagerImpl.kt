@@ -96,6 +96,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.toInstant
 import kotlinx.serialization.json.Json
 import java.util.Collections
@@ -181,7 +182,7 @@ class CallManagerImpl internal constructor(
                 "$TAG -> constantBitRateStateChangeHandler for userId: ${userId.obfuscateId()} " +
                         "clientId: ${clientId.obfuscateId()}  isCbrEnabled: $isEnabled"
             )
-            callRepository.updateIsCbrEnabled(isEnabled)
+            runBlocking { callRepository.updateIsCbrEnabled(isEnabled) }
         }.keepingStrongReference()
 
     private fun startHandleAsync(): Deferred<Handle> {
@@ -632,7 +633,9 @@ class CallManagerImpl internal constructor(
                 val onClientsRequest = OnClientsRequest(
                     conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                     qualifiedIdMapper = qualifiedIdMapper,
-                    callingScope = scope
+                    callingScope = scope,
+                    callRepository = callRepository,
+                    epochInfoUpdater = ::updateEpochInfo,
                 ).keepingStrongReference()
 
                 wcall_set_req_clients_handler(

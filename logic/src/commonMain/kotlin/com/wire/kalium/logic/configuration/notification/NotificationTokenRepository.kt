@@ -41,7 +41,9 @@ class NotificationTokenDataSource(
     override fun persistNotificationToken(token: String, transport: String, applicationId: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { tokenStorage.saveToken(token, transport, applicationId) }
 
-    override fun getNotificationToken(): Either<StorageFailure, NotificationToken> = wrapStorageRequest { tokenStorage.getToken() }.map {
+    override fun getNotificationToken(): Either<StorageFailure, NotificationToken> = wrapStorageRequest {
+        tokenStorage.getToken()
+    }.map {
         with(it) { NotificationToken(token, transport, applicationId) }
     }
 }

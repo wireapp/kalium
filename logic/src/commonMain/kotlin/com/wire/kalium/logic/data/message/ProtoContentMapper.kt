@@ -514,7 +514,9 @@ class ProtoContentMapperImpl(
         mentions = protoContent.text?.mentions?.mapNotNull { messageMentionMapper.fromProtoToModel(it) } ?: emptyList(),
         quotedMessageReference = protoContent.text?.quote?.let {
             MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
+                quotedMessageId = it.quotedMessageId,
+                quotedMessageSha256 = it.quotedMessageSha256?.array,
+                isVerified = false
             )
         },
         quotedMessageDetails = null,
@@ -559,7 +561,9 @@ class ProtoContentMapperImpl(
                 type = when (receiptContent.type) {
                     ReceiptType.DELIVERED -> Confirmation.Type.DELIVERED
                     ReceiptType.READ -> Confirmation.Type.READ
-                }, firstMessageId = firstMessage, moreMessageIds = restOfMessageIds
+                },
+                firstMessageId = firstMessage,
+                moreMessageIds = restOfMessageIds
             )
         )
     }
@@ -668,7 +672,9 @@ class ProtoContentMapperImpl(
             is MessageEdit.Content.Text -> {
                 val mentions = editContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
                 MessageContent.TextEdited(
-                    editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
+                    editMessageId = replacingMessageId,
+                    newContent = editContent.value.content,
+                    newMentions = mentions
                 )
             }
 
@@ -782,7 +788,9 @@ class ProtoContentMapperImpl(
         mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
+                quotedMessageId = it.quotedMessageId,
+                quotedMessageSha256 = it.quotedMessageSha256?.array,
+                isVerified = false
             )
         },
         quotedMessageDetails = null

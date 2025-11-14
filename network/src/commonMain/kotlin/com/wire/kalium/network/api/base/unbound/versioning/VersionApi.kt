@@ -56,7 +56,7 @@ class VersionApiImpl internal constructor(
     )
 
     override suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<ServerConfigDTO.MetaData> = wrapKaliumResponse({
-        if (it.status.value != HttpStatusCode.NotFound.value) null
+        if (it.status != HttpStatusCode.NotFound) null
         else {
             NetworkResponse.Success(VersionInfoDTO(), it)
         }

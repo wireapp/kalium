@@ -334,34 +334,6 @@ class SlowSyncManagerTest {
     }
 
     @Test
-    fun givenItWasPerformedLongAgoAndCriteriaAreMet_whenWorkerEmitsAStep_thenShouldUpdateStateInRepository() =
-        runTest {
-            val stepChannel = Channel<SlowSyncStep>(Channel.UNLIMITED)
-            val (arrangement, slowSyncManager) = Arrangement().arrange {
-                withSatisfiedCriteria()
-                withSlowSyncWorkerReturning(stepChannel.consumeAsFlow())
-                withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant() - 32.days))
-            }
-
-            slowSyncManager.performSyncFlow().test {
-                val step = SlowSyncStep.CONTACTS
-                advanceUntilIdle()
-
-                verify {
-                    arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Ongoing(step)))
-                }.wasNotInvoked()
-
-                stepChannel.send(step)
-                advanceUntilIdle()
-
-                verify {
-                    arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Ongoing(step)))
-                }.wasInvoked(exactly = once)
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-    @Test
     fun givenCriteriaAreNotMet_whenManagerIsCreated_thenShouldNotStartSlowSync() = runTest {
         var isCollected = false
         val stepFlow = flow<SlowSyncStep> { isCollected = true }

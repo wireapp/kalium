@@ -19,40 +19,43 @@ package com.wire.kalium.persistence.dao.event
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.EventsQueries
+import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
 
 class EventDAOImpl(
     private val eventsQueries: EventsQueries,
-    private val queriesContext: CoroutineContext
+    private val readDispatcher: ReadDispatcher,
+    private val writeDispatcher: WriteDispatcher,
 ) : EventDAO {
 
     override suspend fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>> {
         return eventsQueries.selectAll(::mapEvent)
             .asFlow()
-            .flowOn(queriesContext)
+            .flowOn(readDispatcher.value)
             .mapToList()
     }
 
     override suspend fun observeUnprocessedEvents(): Flow<List<EventEntity>> {
         return eventsQueries.selectUnprocessedEvents(::mapEvent)
             .asFlow()
+            .flowOn(readDispatcher.value)
             .mapToList()
     }
 
-    override suspend fun getUnprocessedEvents(): List<EventEntity> = withContext(queriesContext) {
+    override suspend fun getUnprocessedEvents(): List<EventEntity> = withContext(readDispatcher.value) {
         eventsQueries.selectUnprocessedEvents(::mapEvent).executeAsList()
     }
 
-    override suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>) = withContext(queriesContext) {
+    override suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>) = withContext(writeDispatcher.value) {
         eventsQueries.deleteUnprocessedLiveEventsByIds(ids)
     }
 
     override suspend fun insertEvents(events: List<NewEventEntity>) {
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             eventsQueries.transaction {
                 events.forEach { event ->
                     eventsQueries.insertOrIgnoreEvent(
@@ -68,19 +71,19 @@ class EventDAOImpl(
     }
 
     override suspend fun deleteProcessedEventsBefore(id: Long) {
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             eventsQueries.deleteProcessedEventsBefore(id)
         }
     }
 
     override suspend fun deleteAllProcessedEvents() {
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             eventsQueries.deleteAllProcessedEvents()
         }
     }
 
     override suspend fun getEventById(id: String): EventEntity? {
-        return withContext(queriesContext) {
+        return withContext(readDispatcher.value) {
             eventsQueries.getById(id, ::mapEvent)
                 .executeAsOneOrNull()
         }
@@ -89,13 +92,13 @@ class EventDAOImpl(
     override suspend fun markEventAsProcessed(
         eventId: String,
     ) {
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             eventsQueries.markEventAsProcessed(eventId)
         }
     }
 
     override suspend fun setAllUnprocessedEventsAsPending() {
-        withContext(queriesContext) {
+        withContext(writeDispatcher.value) {
             eventsQueries.setAllUnprocessedEventsAsPending()
         }
     }

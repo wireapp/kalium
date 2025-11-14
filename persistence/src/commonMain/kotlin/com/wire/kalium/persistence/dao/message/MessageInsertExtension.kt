@@ -88,7 +88,8 @@ internal class MessageInsertExtensionImpl(
                 assetName = assetName,
                 assetOtrKey = assetOtrKey,
                 assetSha256 = assetSha256Key,
-                assetEncryptionAlgorithm = assetEncryptionAlgorithm
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                assetNormalizedLoudness = assetNormalizedLoudness,
             )
         }
     }

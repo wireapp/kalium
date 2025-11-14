@@ -38,7 +38,9 @@ internal class CodeUpdateHandlerImpl internal constructor(
 ) : CodeUpdatedHandler {
     override suspend fun handle(event: Event.Conversation.CodeUpdated) = wrapStorageRequest {
         conversationDAO.updateGuestRoomLink(
-            event.conversationId.toDao(), event.link(serverConfigLinks.accounts), event.isPasswordProtected
+            event.conversationId.toDao(),
+            event.link(serverConfigLinks.accounts),
+            event.isPasswordProtected
         )
     }
 }

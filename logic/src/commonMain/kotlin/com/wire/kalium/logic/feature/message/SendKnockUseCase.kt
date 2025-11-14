@@ -40,10 +40,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
-@Suppress("LongParameterList")
 /**
  * Sending a ping/knock message to a conversation
  */
+@Suppress("LongParameterList")
 class SendKnockUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
@@ -87,7 +87,9 @@ class SendKnockUseCase internal constructor(
             )
             persistMessage(message)
                 .flatMap { messageSender.sendMessage(message) }
-        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
+        }.onFailure {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
+        }
     }
 
     companion object {

@@ -24,12 +24,16 @@ import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.mocks.responses.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationConflictResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.serialization.Mls
-import com.wire.kalium.network.utils.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -38,6 +42,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -102,8 +107,9 @@ internal class MLSMessageApiV5Test : ApiTest() {
         val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
         val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
 
-        assertFalse(response.isSuccessful())
-        assertEquals(KaliumException.FederationUnreachableException::class, response.kException::class)
+        assertIs<NetworkResponse.Error>(response)
+        assertIs<FederationError>(response.kException)
+        assertIs<FederationErrorResponse.Unreachable>(response.kException.errorResponse)
     }
 
     @Test
@@ -111,11 +117,10 @@ internal class MLSMessageApiV5Test : ApiTest() {
         val nonFederatingBackends = listOf("bella.wire.link", "foma.wire.link")
         val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.validFederationConflictingBackends(
-                FederationConflictResponse(nonFederatingBackends)
+                FederationErrorResponse.Conflict(nonFederatingBackends)
             ).rawJson,
             statusCode = HttpStatusCode.Conflict,
-            assertion =
-            {
+            assertion = {
                 assertPost()
                 assertContentType(ContentType.Message.Mls)
                 assertPathEqual(PATH_COMMIT_BUNDLES)
@@ -125,15 +130,16 @@ internal class MLSMessageApiV5Test : ApiTest() {
         val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
 
         assertFalse(response.isSuccessful())
-        assertEquals(KaliumException.FederationConflictException::class, response.kException::class)
+        assertIs<FederationError>(response.kException)
+        assertIs<FederationErrorResponse.Conflict>(response.kException.errorResponse)
         assertEquals(
             expected = nonFederatingBackends,
-            actual = (response.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends
+            actual = response.kException.errorResponse.nonFederatingBackends
         )
     }
 
     @Test
-    fun givenCommitBundle_whenSendingBundleFailsConflictNonFederated_theRequestShouldFailWithRegularInvalidRequestError() = runTest {
+    fun givenCommitBundle_whenSendingBundleFailsMLSStaleMessage_theRequestShouldFailWithMLSRequestError() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid(
                 ErrorResponse(
@@ -154,7 +160,8 @@ internal class MLSMessageApiV5Test : ApiTest() {
         val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
 
         assertFalse(response.isSuccessful())
-        assertEquals(KaliumException.InvalidRequestError::class, response.kException::class)
+        assertIs<MLSError>(response.kException)
+        assertIs<MLSErrorResponse.StaleMessage>(response.kException.errorBody)
     }
 
     private companion object {

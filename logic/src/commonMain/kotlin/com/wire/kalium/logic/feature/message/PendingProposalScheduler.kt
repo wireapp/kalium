@@ -34,7 +34,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -77,12 +76,11 @@ internal class PendingProposalSchedulerImpl(
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
     private val commitPendingProposalsScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     init {
-        commitPendingProposalsScope.launch() {
+        commitPendingProposalsScope.launch {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
                 ensureActive()
                 if (syncState == IncrementalSyncStatus.Live) {
@@ -94,7 +92,7 @@ internal class PendingProposalSchedulerImpl(
 
     private suspend fun startCommittingPendingProposals() {
         kaliumLogger.d("Start listening for pending proposals to commit")
-        timers().cancellable().collect() { groupID ->
+        timers().cancellable().collect { groupID ->
             kaliumLogger.d("Committing pending proposals in ${groupID.toLogString()}")
             transactionProvider.transaction("PendingProposalScheduler") { transactionContext ->
                 transactionContext.wrapInMLSContext { mlsContext ->
@@ -113,7 +111,7 @@ internal class PendingProposalSchedulerImpl(
             .cancellable()
             .collect { timer ->
                 ensureActive()
-                launch() {
+                launch {
                     val secondsUntilFiring = timer.timestamp.minus(DateTimeUtil.currentInstant())
                     if (secondsUntilFiring.inWholeSeconds > 0) {
                         delay(secondsUntilFiring)

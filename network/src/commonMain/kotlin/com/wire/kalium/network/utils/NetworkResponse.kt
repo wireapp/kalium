@@ -32,6 +32,11 @@ sealed class NetworkResponse<out T : Any> {
         val headers: Map<String, String?>,
         val httpCode: Int
     ) : NetworkResponse<T>() {
+        internal constructor(value: T, responseData: HttpResponseData) : this(
+            value,
+            responseData.headers,
+            responseData.status.value
+        )
         internal constructor(value: T, httpResponse: HttpResponse) : this(
             value,
             // small issue here where keys are converted to small case letters
@@ -54,8 +59,8 @@ sealed class NetworkResponse<out T : Any> {
     data class Error(val kException: KaliumException) : NetworkResponse<Nothing>()
 }
 
-@OptIn(ExperimentalContracts::class)
 // TODO(refactor): make internal
+@OptIn(ExperimentalContracts::class)
 fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
     contract {
         returns(true) implies (this@isSuccessful is NetworkResponse.Success)

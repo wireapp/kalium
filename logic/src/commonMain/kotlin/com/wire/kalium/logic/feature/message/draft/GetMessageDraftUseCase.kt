@@ -18,7 +18,11 @@
 
 package com.wire.kalium.logic.feature.message.draft
 
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.draft.MessageDraft
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.util.KaliumDispatcher
@@ -35,10 +39,21 @@ interface GetMessageDraftUseCase {
 }
 
 class GetMessageDraftUseCaseImpl internal constructor(
+    private val messageRepository: MessageRepository,
     private val messageDraftRepository: MessageDraftRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetMessageDraftUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): MessageDraft? = withContext(dispatcher.io) {
-        messageDraftRepository.getMessageDraft(conversationId)
+        messageDraftRepository.getMessageDraft(conversationId)?.let { draft ->
+            draft.copy(
+                isMultipartEdit = draft.isMultipartEdit()
+            )
+        }
     }
+
+    private suspend fun MessageDraft.isMultipartEdit() =
+        editMessageId?.let {
+            val message = messageRepository.getMessageById(conversationId, it).getOrNull()
+            (message as? Message.Regular)?.content is MessageContent.Multipart
+        } ?: false
 }

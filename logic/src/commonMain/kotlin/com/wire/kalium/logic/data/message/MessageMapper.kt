@@ -638,7 +638,9 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
     is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
 
     is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
-        this.mimeType, this.assetSizeInBytes, this.assetName
+        this.mimeType,
+        this.assetSizeInBytes,
+        this.assetName
     )
 
     is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
@@ -715,6 +717,12 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
     it.contentType == MessageEntity.ContentType.LOCATION -> {
         MessageContent.QuotedMessageDetails.Location(
             locationName = it.locationName,
+        )
+    }
+
+    it.contentType == MessageEntity.ContentType.MULTIPART -> {
+        MessageContent.QuotedMessageDetails.Multipart(
+            text = it.textBody,
         )
     }
 

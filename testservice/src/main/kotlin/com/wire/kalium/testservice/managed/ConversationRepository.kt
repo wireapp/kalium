@@ -32,7 +32,8 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
+import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
+import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.debug.BrokenState
@@ -118,14 +119,18 @@ sealed class ConversationRepository {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                        log.info("Instance ${instance.instanceId}: Create conversation \"$name\" with ${
+                        log.info(
+                            "Instance ${instance.instanceId}: Create conversation \"$name\" with ${
                                     userIds.joinToString { user -> user.value + "@" + user.domain }
-                                }")
-                        when (val result = conversations.createRegularGroup(
+                                }"
+                        )
+                        when (
+                            val result = conversations.createRegularGroup(
                             name,
                             userIds,
                             CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
-                        )) {
+                        )
+                        ) {
                             is ConversationCreationResult.Success -> {
                                 Response.status(Response.Status.OK).build()
                             }
@@ -204,13 +209,16 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send button action confirmation for button $buttonId")
-                        when (val result = messages.sendButtonActionConfirmationMessage(
+                        when (
+                            val result = messages.sendButtonActionConfirmationMessage(
                             conversationId,
                             referenceMessageId,
                             buttonId,
                             userIds
-                        )) {
-                            is SendButtonActionConfirmationMessageUseCase.Result.Failure -> Response
+                        )
+                        ) {
+                            is SendButtonActionConfirmationMessageUseCase.Result.Failure ->
+                                Response
                                 .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
 
                             else -> {
@@ -354,7 +362,10 @@ sealed class ConversationRepository {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Update text message '$text'")
                             messages.sendEditTextMessage(
-                                conversationId, firstMessageId, text, mentions
+                                conversationId,
+                                firstMessageId,
+                                text,
+                                mentions
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
@@ -533,14 +544,17 @@ sealed class ConversationRepository {
                             } else {
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 messages.sendAssetMessage(
-                                    conversationId,
-                                    temp.toOkioPath(),
-                                    byteArray.size.toLong(),
-                                    fileName,
-                                    type,
-                                    null,
-                                    null,
-                                    0L
+                                    AssetUploadParams(
+                                        conversationId,
+                                        temp.toOkioPath(),
+                                        byteArray.size.toLong(),
+                                        fileName,
+                                        type,
+                                        null,
+                                        null,
+                                        0L,
+                                        null
+                                    )
                                 )
                             }
                             when (sendResult) {
@@ -620,13 +634,17 @@ sealed class ConversationRepository {
                             }
                             setMessageTimer(instance, conversationId, messageTimer)
                             val sendResult = messages.sendAssetMessage(
-                                conversationId,
-                                temp.toOkioPath(),
-                                byteArray.size.toLong(),
-                                "image", type,
-                                width,
-                                height,
-                                0L
+                                AssetUploadParams(
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    "image",
+                                type,
+                                    width,
+                                    height,
+                                    0L,
+                                    null
+                                )
                             )
                             when (sendResult) {
                                 ScheduleNewAssetMessageResult.Failure.RestrictedFileType,

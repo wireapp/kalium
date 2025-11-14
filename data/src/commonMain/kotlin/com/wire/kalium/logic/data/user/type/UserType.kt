@@ -50,7 +50,7 @@ enum class UserType {
      * A user on the same backend,
      * when current user doesn't belongs to any team
      */
-    NONE;
+    NONE
 }
 
 sealed class UserTypeInfo {

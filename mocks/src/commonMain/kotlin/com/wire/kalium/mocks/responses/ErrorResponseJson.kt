@@ -18,11 +18,11 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationConflictResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
 
 object ErrorResponseJson {
-    private val jsonProvider = { serializable: ErrorResponse ->
+    private val jsonProvider = { serializable: GenericAPIErrorResponse ->
         """
         |{
         |  "code": ${serializable.code},
@@ -32,7 +32,7 @@ object ErrorResponseJson {
         """.trimMargin()
     }
 
-    private val federationConflictJsonProvider = { serializable: FederationConflictResponse ->
+    private val federationConflictJsonProvider = { serializable: FederationErrorResponse.Conflict ->
         """
         |{
         |  "non_federating_backends": ${serializable.nonFederatingBackends}
@@ -40,18 +40,51 @@ object ErrorResponseJson {
         """.trimMargin()
     }
 
+    private val federationUnreachableJsonProvider = { serializable: FederationErrorResponse.Unreachable ->
+        """
+        |{
+        |  "unreachable_backends": ${serializable.unreachableBackends}
+        |}
+        """.trimMargin()
+    }
+
+    private val genericFederationJsonProvider = { serializable: FederationErrorResponse.Generic ->
+        """
+        |{
+        |   "label":"${serializable.label}",
+        |   "code": ${serializable.code},
+        |   "message": "${serializable.message}",
+        |   "data": {
+        |       "type": "${serializable.cause!!.type}",
+        |       "domains": ${serializable.cause!!.domains},
+        |       "path": "${serializable.cause!!.path}"
+        |   }
+        |}
+        """.trimMargin()
+    }
+
     val valid = ValidJsonProvider(
-        ErrorResponse(code = 499, label = "error_label", message = "error_message"),
+        GenericAPIErrorResponse(code = 499, label = "error_label", message = "error_message"),
         jsonProvider
     )
 
-    fun valid(error: ErrorResponse) = ValidJsonProvider(
+    fun valid(error: GenericAPIErrorResponse) = ValidJsonProvider(
         error,
         jsonProvider
     )
 
-    fun validFederationConflictingBackends(error: FederationConflictResponse) = ValidJsonProvider(
+    fun validFederationConflictingBackends(error: FederationErrorResponse.Conflict) = ValidJsonProvider(
         error,
         federationConflictJsonProvider
+    )
+
+    fun validFederationUnreachableBackends(error: FederationErrorResponse.Unreachable) = ValidJsonProvider(
+        error,
+        federationUnreachableJsonProvider
+    )
+
+    fun validFederationGeneric(error: FederationErrorResponse.Generic) = ValidJsonProvider(
+        error,
+        genericFederationJsonProvider
     )
 }

@@ -46,6 +46,7 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
+import okio.use
 
 @Mockable
 interface AssetRepository {
@@ -265,11 +266,10 @@ internal class AssetDataSource(
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
-
-                // we should also consider for avatar images, the compression for preview vs complete picture
-                assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
-                    .also { dataSource.close() }
+                kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath).use { dataSource ->
+                    // we should also consider for avatar images, the compression for preview vs complete picture
+                    assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
+                }
             }
         }
             .flatMap { assetResponse ->
@@ -355,7 +355,8 @@ internal class AssetDataSource(
                     val decodedAssetPath =
                         kaliumFileSystem.providePersistentAssetPath(
                             buildFileName(
-                                assetId, assetName.fileExtension()
+                                assetId,
+                                    assetName.fileExtension()
                                     ?: getExtensionFromMimeType(mimeType)
                             )
                         )

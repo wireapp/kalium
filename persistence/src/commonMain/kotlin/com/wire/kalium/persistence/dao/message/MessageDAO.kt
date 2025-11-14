@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -171,7 +172,7 @@ interface MessageDAO {
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
     ): Flow<List<MessageEntity>>
-    fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
+    suspend fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 
     suspend fun updateMessagesStatusIfNotRead(status: MessageEntity.Status, conversationId: QualifiedIDEntity, messageIds: List<String>)
 
@@ -182,4 +183,7 @@ interface MessageDAO {
         newCompositeContent: MessageEntityContent.Composite,
         newMessageId: String
     )
+    suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>>
+
+    suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }

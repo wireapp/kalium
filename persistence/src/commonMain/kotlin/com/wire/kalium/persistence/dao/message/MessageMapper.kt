@@ -117,7 +117,8 @@ object MessageMapper {
                 )
 
                 (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
-                    senderName = senderName, messageBody = text.requireField("text")
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
                 )
 
                 else -> MessagePreviewEntityContent.Text(
@@ -242,7 +243,8 @@ object MessageMapper {
                 )
 
                 (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
-                    senderName = senderName, messageBody = text.requireField("text")
+                    senderName = senderName,
+                    messageBody = text.requireField("text")
                 )
 
                 else -> MessagePreviewEntityContent.Text(

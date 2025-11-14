@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManager
@@ -94,6 +95,7 @@ class GlobalKaliumScope internal constructor(
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     val logoutCallbackManager: LogoutCallbackManager,
     val workSchedulerProvider: WorkSchedulerProvider,
+    val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()

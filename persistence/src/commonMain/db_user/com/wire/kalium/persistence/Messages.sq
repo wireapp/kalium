@@ -477,7 +477,7 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
-    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 }
 
@@ -509,7 +509,7 @@ selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 countBackupMessages:
-SELECT count(*) FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType;
+SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;
 
 selectForBackup:
 SELECT * FROM MessageDetailsView
@@ -636,3 +636,8 @@ WHERE Message.conversation_id = :conversationId
 AND AssetContent.asset_mime_type LIKE "%audio/%"
 AND Message.creation_date > (SELECT Message.creation_date FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId)
 LIMIT 1;
+
+updateAudioMessageNormalizedLoudness:
+UPDATE MessageAssetContent
+SET asset_normalized_loudness = ?
+WHERE message_id = ? AND conversation_id = ?;

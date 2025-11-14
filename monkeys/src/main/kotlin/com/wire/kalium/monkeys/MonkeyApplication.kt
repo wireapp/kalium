@@ -69,6 +69,7 @@ fun CoroutineScope.stopIM() {
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val dataFilePath by argument(help = "path to the test data file")
+
     @Suppress("MagicNumber")
     private val delayPool by option(
         "-d",
@@ -162,7 +163,12 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
                     conversationPool.createPrefixedConversations(
-                        coreLogic, prefix, config.groupCount, config.userCount, config.protocol, monkeyPool
+                        coreLogic,
+                        prefix,
+                        config.groupCount,
+                        config.userCount,
+                        config.protocol,
+                        monkeyPool
                     ).forEach {
                         eventChannel.send(Event(it.owner, EventType.CreateConversation(it)))
                     }

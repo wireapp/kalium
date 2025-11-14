@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.every
@@ -52,7 +53,7 @@ class ConversationRepositoryExtensionsTest {
     fun givenParameters_whenPaginatedConversationDetailsWithEvents_thenShouldCallDaoExtensionsWithRightParameters() = runTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
-        val kaliumPager = KaliumPager(pager, fakePagingSource, StandardTestDispatcher())
+        val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
         val (arrangement, conversationRepositoryExtensions) = Arrangement()
             .withConversationExtensionsReturningPager(kaliumPager)
             .arrange()
