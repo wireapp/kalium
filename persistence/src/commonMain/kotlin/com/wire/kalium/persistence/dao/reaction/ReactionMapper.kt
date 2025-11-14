@@ -40,9 +40,8 @@ object ReactionMapper {
         return try {
             val reactionItems: List<ReactionItem> = serializer.decodeFromString(reactionsJson)
             ReactionsEntity(
-                reactions = reactionItems.map { item ->
-                    ReactionEntity(
-                        emoji = item.emoji,
+                reactions = reactionItems.associate { item ->
+                    item.emoji to ReactionEntity(
                         count = item.count,
                         isSelf = item.isSelf
                     )

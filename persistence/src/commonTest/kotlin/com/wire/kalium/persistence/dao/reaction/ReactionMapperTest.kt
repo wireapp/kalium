@@ -34,12 +34,10 @@ class ReactionMapperTest {
 
         // Then
         assertEquals(2, result.reactions.size)
-        assertEquals("👍", result.reactions[0].emoji)
-        assertEquals(3, result.reactions[0].count)
-        assertEquals(true, result.reactions[0].isSelf)
-        assertEquals("❤️", result.reactions[1].emoji)
-        assertEquals(5, result.reactions[1].count)
-        assertEquals(false, result.reactions[1].isSelf)
+        assertEquals(3, result.reactions["👍"]?.count)
+        assertEquals(true, result.reactions["👍"]?.isSelf)
+        assertEquals(5, result.reactions["❤️"]?.count)
+        assertEquals(false, result.reactions["❤️"]?.isSelf)
     }
 
     @Test
@@ -76,10 +74,10 @@ class ReactionMapperTest {
 
         // Then
         assertEquals(3, result.reactions.size)
-        assertEquals(2, result.reactions.count { it.isSelf })
-        assertTrue(result.reactions[0].isSelf)
-        assertTrue(result.reactions[1].isSelf)
-        assertEquals(false, result.reactions[2].isSelf)
+        assertEquals(2, result.reactions.count { it.value.isSelf })
+        assertTrue(result.reactions["👍"]?.isSelf == true)
+        assertTrue(result.reactions["❤️"]?.isSelf == true)
+        assertEquals(false, result.reactions["😂"]?.isSelf)
     }
 
     @Test
@@ -92,7 +90,7 @@ class ReactionMapperTest {
 
         // Then
         assertEquals(2, result.reactions.size)
-        assertTrue(result.reactions.none { it.isSelf })
+        assertTrue(result.reactions.all { !it.value.isSelf })
     }
 
     @Test

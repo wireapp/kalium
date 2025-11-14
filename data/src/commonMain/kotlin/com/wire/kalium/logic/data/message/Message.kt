@@ -582,15 +582,23 @@ sealed interface Message {
 
     @JvmInline
     value class Reactions(
-        val reactions: List<Reaction>
+        val reactions: Map<String, Reaction>
     ) {
+        // Backward-compatible properties for gradual migration
+        @Deprecated("Use reactions map instead", ReplaceWith("reactions.mapValues { it.value.count }"))
+        val totalReactions: ReactionsCount
+            get() = reactions.mapValues { it.value.count }
+
+        @Deprecated("Use reactions map instead", ReplaceWith("reactions.filter { it.value.isSelf }.keys"))
+        val selfUserReactions: UserReactions
+            get() = reactions.filter { it.value.isSelf }.keys
+
         companion object {
-            val EMPTY = Reactions(emptyList())
+            val EMPTY = Reactions(emptyMap())
         }
     }
 
     data class Reaction(
-        val emoji: String,
         val count: Int,
         val isSelf: Boolean
     )

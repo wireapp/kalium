@@ -178,9 +178,8 @@ class MessageMapperImpl(
         },
         visibility = message.visibility.toModel(),
         reactions = Message.Reactions(
-            reactions = message.reactions.reactions.map { reaction ->
+            reactions = message.reactions.reactions.mapValues { (_, reaction) ->
                 Message.Reaction(
-                    emoji = reaction.emoji,
                     count = reaction.count,
                     isSelf = reaction.isSelf
                 )
