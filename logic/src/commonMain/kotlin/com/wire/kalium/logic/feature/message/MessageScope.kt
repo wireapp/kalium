@@ -527,7 +527,7 @@ class MessageScope internal constructor(
         get() = SaveMessageDraftUseCaseImpl(messageDraftRepository)
 
     val getMessageDraftUseCase: GetMessageDraftUseCase
-        get() = GetMessageDraftUseCaseImpl(messageDraftRepository)
+        get() = GetMessageDraftUseCaseImpl(messageRepository, messageDraftRepository)
 
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
