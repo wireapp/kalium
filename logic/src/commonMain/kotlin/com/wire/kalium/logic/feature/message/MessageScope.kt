@@ -55,6 +55,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCase
@@ -77,6 +78,8 @@ import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
@@ -151,6 +154,7 @@ class MessageScope internal constructor(
     private val compositeMessageRepository: CompositeMessageRepository,
     private val isWireCellsEnabledForConversationUseCase: IsWireCellsEnabledForConversationUseCase,
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
+    private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -336,6 +340,8 @@ class MessageScope internal constructor(
             messageSendFailureHandler,
             updateAssetMessageTransferStatus,
             persistMessage,
+            audioNormalizedLoudnessBuilder,
+            dispatcher,
         )
 
     val sendAssetMessage: ScheduleNewAssetMessageUseCase
@@ -527,7 +533,7 @@ class MessageScope internal constructor(
         get() = SaveMessageDraftUseCaseImpl(messageDraftRepository)
 
     val getMessageDraftUseCase: GetMessageDraftUseCase
-        get() = GetMessageDraftUseCaseImpl(messageDraftRepository)
+        get() = GetMessageDraftUseCaseImpl(messageRepository, messageDraftRepository)
 
     val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
@@ -549,4 +555,7 @@ class MessageScope internal constructor(
 
     val observeAssetUploadState: ObserveAssetUploadStateUseCase
         get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository)
+
+    val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
+        get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
 }
