@@ -238,6 +238,7 @@ class SendMultipartMessageUseCase internal constructor(
                             assetWidth = metadata?.width(),
                             assetHeight = metadata?.height(),
                             audioLengthInMs = metadata?.durationMs() ?: 0,
+                            audioNormalizedLoudness = (metadata as? AssetContent.AssetMetadata.Audio)?.normalizedLoudness
                         )
                     )
                 }

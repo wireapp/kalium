@@ -2203,6 +2203,7 @@ class UserSessionScope internal constructor(
             compositeMessageRepository,
             isWireCellsEnabledForConversation,
             { joinExistingMLSConversationUseCase },
+            globalScope.audioNormalizedLoudnessBuilder,
             this,
             userScopedLogger
         )
