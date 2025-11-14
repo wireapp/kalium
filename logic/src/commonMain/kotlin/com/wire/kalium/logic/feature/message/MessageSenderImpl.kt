@@ -18,14 +18,26 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
@@ -42,26 +54,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.logger.logStructuredJson
-import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.wrapInMLSContext
-import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -284,27 +282,26 @@ internal class MessageSenderImpl internal constructor(
             }
             .flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(mlsMessage).fold({
-                    if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                        if ((it.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
-                            logger.logStructuredJson(
-                                level = KaliumLogLevel.WARN,
-                                leadingMessage = "Message Send Stale",
-                                jsonStringKeyValues = mapOf(
-                                    "message" to message.toLogString(),
-                                    "protocolInfo" to protocolInfo.toLogMap(),
-                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
-                                    "errorInfo" to "$it"
-                                )
+                    if (it is NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
+                        logger.logStructuredJson(
+                            level = KaliumLogLevel.WARN,
+                            leadingMessage = "Message Send Stale",
+                            jsonStringKeyValues = mapOf(
+                                "message" to message.toLogString(),
+                                "protocolInfo" to protocolInfo.toLogMap(),
+                                "protocol" to CreateConversationParam.Protocol.MLS.name,
+                                "errorInfo" to "$it"
                             )
-                            return staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
-                                .flatMap {
-                                    syncManager.waitUntilLiveOrFailure().flatMap {
-                                        attemptToSend(transactionContext, message)
-                                    }
+                        )
+                        return staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
+                            .flatMap {
+                                syncManager.waitUntilLiveOrFailure().flatMap {
+                                    attemptToSend(transactionContext, message)
                                 }
-                        }
+                            }
+                    } else {
+                        Either.Left(it)
                     }
-                    Either.Left(it)
                 }, { messageSent ->
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
                         Either.Right(messageSent.time)

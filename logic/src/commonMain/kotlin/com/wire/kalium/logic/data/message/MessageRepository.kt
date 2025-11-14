@@ -23,9 +23,11 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapFlowStorageRequest
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
@@ -541,6 +543,8 @@ internal class MessageDataSource internal constructor(
     ): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message.value)
+        }.flatMapLeft { networkFailure ->
+            Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
         }.flatMap { response ->
             Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }

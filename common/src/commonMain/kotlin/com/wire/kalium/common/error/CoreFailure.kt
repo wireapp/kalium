@@ -20,8 +20,11 @@ package com.wire.kalium.common.error
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 sealed interface CoreFailure {
 
@@ -176,6 +179,36 @@ sealed class NetworkFailure : CoreFailure {
     }
 
     /**
+     * Result of requests rejected by the distribution service (API).
+     */
+    @Serializable
+    sealed class MlsMessageRejectedFailure : NetworkFailure() {
+        @Serializable
+        data object ClientMismatch : MlsMessageRejectedFailure()
+
+        @Serializable
+        data object CommitMissingReferences : MlsMessageRejectedFailure()
+
+        @Serializable
+        data object StaleMessage : MlsMessageRejectedFailure()
+
+        @Serializable
+        data object MissingGroupInfo : MlsMessageRejectedFailure()
+
+        @Serializable
+        data object InvalidLeafNodeIndex : MlsMessageRejectedFailure()
+
+        @Serializable
+        data object InvalidLeafNodeSignature : MlsMessageRejectedFailure()
+
+        @Serializable
+        data class Other(@SerialName("remoteCause") val remoteCause: MLSErrorResponse) : MlsMessageRejectedFailure()
+
+        @Serializable
+        data class GroupOutOfSync(@SerialName("missingUsers") val missingUsers: List<UserId>) : MlsMessageRejectedFailure()
+    }
+
+    /**
      * Failure due to a feature not supported by the current client/backend.
      */
     data object FeatureNotSupported : NetworkFailure()
@@ -208,22 +241,21 @@ sealed interface MLSFailure : CoreFailure {
     data object StaleCommit : MLSFailure
     data object InternalErrors : MLSFailure
     data object Disabled : MLSFailure
-    data object Other : MLSFailure
     data object CommitForMissingProposal : MLSFailure
     data object ConversationNotFound : MLSFailure
     data object OrphanWelcome : MLSFailure
     data object BufferedCommit : MLSFailure
     data object InvalidGroupId : MLSFailure
-    sealed class MessageRejected : MLSFailure {
-        data object MlsClientMismatch : MessageRejected()
-        data object MlsCommitMissingReferences : MessageRejected()
-        data object MlsStaleMessage : MessageRejected()
-        data object InvalidLeafNodeIndex : MessageRejected()
-        data object InvalidLeafNodeSignature : MessageRejected()
-    }
 
+    data class MessageRejected(val cause: NetworkFailure.MlsMessageRejectedFailure) : MLSFailure
+
+    data class Other(val message: String) : MLSFailure
     data class Generic(val rootCause: Throwable) : MLSFailure
 }
+
+fun CoreFailure.wrapNetworkMlsFailureIfApplicable(): CoreFailure = if (this is NetworkFailure.MlsMessageRejectedFailure) {
+    MLSFailure.MessageRejected(this)
+} else this
 
 interface E2EIFailure : CoreFailure {
     data object Disabled : E2EIFailure

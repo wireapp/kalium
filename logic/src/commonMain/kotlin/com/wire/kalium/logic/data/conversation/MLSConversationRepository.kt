@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
@@ -239,29 +240,23 @@ private fun CoreFailure.getStrategy(
     retryOnStaleMessage: Boolean = true
 ): CommitStrategy {
     return if (this is MLSFailure.MessageRejected && remainingAttempts > 0) {
-        when (this) {
-            MLSFailure.MessageRejected.MlsClientMismatch -> {
-                if (retryOnClientMismatch) {
+        when (this.cause) {
+            NetworkFailure.MlsMessageRejectedFailure.ClientMismatch -> if (retryOnClientMismatch) {
                     CommitStrategy.RETRY
                 } else {
                     CommitStrategy.ABORT
                 }
-            }
-
-            MLSFailure.MessageRejected.MlsCommitMissingReferences -> {
+            NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences -> CommitStrategy.RETRY
+            NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> if (retryOnStaleMessage) {
                 CommitStrategy.RETRY
+            } else {
+                CommitStrategy.ABORT
             }
-
-            MLSFailure.MessageRejected.MlsStaleMessage -> {
-                if (retryOnStaleMessage) {
-                    CommitStrategy.RETRY
-                } else {
-                    CommitStrategy.ABORT
-                }
-            }
-
-            is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
-            is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> CommitStrategy.ABORT
+            NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex,
+            NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature -> CommitStrategy.ABORT
+            is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> TODO("Handle Group Out Of Sync")
+            NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo,
+            is NetworkFailure.MlsMessageRejectedFailure.Other -> CommitStrategy.ABORT
         }
     } else {
         CommitStrategy.ABORT
