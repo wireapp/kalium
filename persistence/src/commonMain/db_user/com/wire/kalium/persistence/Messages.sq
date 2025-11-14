@@ -42,6 +42,10 @@ CREATE INDEX message_status_index ON Message(status);
 CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
 CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
+CREATE INDEX idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
+CREATE INDEX idx_msg_conv_vis ON Message(conversation_id, visibility);
+CREATE INDEX idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
+
 CREATE TABLE MessageLinkPreview (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -499,7 +503,7 @@ selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
 
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
