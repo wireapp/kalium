@@ -32,6 +32,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.jvm.JvmInline
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -579,14 +580,28 @@ sealed interface Message {
         VISIBLE, DELETED, HIDDEN
     }
 
-    data class Reactions(
-        val totalReactions: ReactionsCount,
-        val selfUserReactions: UserReactions
+    @JvmInline
+    value class Reactions(
+        val reactions: Map<String, Reaction>
     ) {
+        // Backward-compatible properties for gradual migration
+        @Deprecated("Use reactions map instead", ReplaceWith("reactions.mapValues { it.value.count }"))
+        val totalReactions: ReactionsCount
+            get() = reactions.mapValues { it.value.count }
+
+        @Deprecated("Use reactions map instead", ReplaceWith("reactions.filter { it.value.isSelf }.keys"))
+        val selfUserReactions: UserReactions
+            get() = reactions.filter { it.value.isSelf }.keys
+
         companion object {
-            val EMPTY = Reactions(emptyMap(), emptySet())
+            val EMPTY = Reactions(emptyMap())
         }
     }
+
+    data class Reaction(
+        val count: Int,
+        val isSelf: Boolean
+    )
 }
 
 @Suppress("MagicNumber")
