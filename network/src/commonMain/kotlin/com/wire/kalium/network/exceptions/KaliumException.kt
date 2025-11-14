@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageRes
 import com.wire.kalium.network.api.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_PENDING_ACTIVATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_SUSPENDED
@@ -42,11 +43,6 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CONSENT
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_PROTOCOL_ERROR
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_TEAM_MEMBER
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_CONVERSATION
@@ -99,6 +95,10 @@ data class ProteusClientsChangedError(
 
 data class APINotSupported(
     val errorBody: String
+) : KaliumException.FeatureError()
+
+data class MLSError(
+    val errorBody: MLSErrorResponse
 ) : KaliumException.FeatureError()
 
 data class FederationError(val errorResponse: FederationErrorResponse) : KaliumException.FeatureError()
@@ -179,22 +179,6 @@ fun KaliumException.InvalidRequestError.isOperationDenied(): Boolean {
     return errorResponse.label == OPERATION_DENIED
 }
 
-fun KaliumException.InvalidRequestError.isMlsStaleMessage(): Boolean {
-    return errorResponse.label == MLS_STALE_MESSAGE
-}
-
-fun KaliumException.InvalidRequestError.isMlsClientMismatch(): Boolean {
-    return errorResponse.label == MLS_CLIENT_MISMATCH
-}
-
-fun KaliumException.InvalidRequestError.isMlsCommitMissingReferences(): Boolean {
-    return errorResponse.label == MLS_COMMIT_MISSING_REFERENCES
-}
-
-fun KaliumException.InvalidRequestError.isMlsMissingGroupInfo(): Boolean {
-    return errorResponse.label == MLS_MISSING_GROUP_INFO
-}
-
 fun KaliumException.InvalidRequestError.isNotTeamMember(): Boolean {
     return errorResponse.label == NOT_TEAM_MEMBER
 }
@@ -213,10 +197,6 @@ fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
 
 fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
     return errorResponse.label == ACCESS_DENIED
-}
-
-fun KaliumException.InvalidRequestError.isMLSProtocol(): Boolean {
-    return errorResponse.label == MLS_PROTOCOL_ERROR
 }
 
 fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {

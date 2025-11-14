@@ -19,9 +19,11 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -43,9 +45,6 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMlsMissingGroupInfo
-import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -107,14 +106,21 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     ): Either<CoreFailure, Unit> =
         joinOrEstablishMLSGroup(transactionContext, conversation, mlsPublicKeys)
             .flatMapLeft { failure ->
-                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
+                val failure = failure.wrapNetworkMlsFailureIfApplicable()
+                if (failure !is MLSFailure.MessageRejected) return@flatMapLeft Either.Left(failure)
+                when (failure.cause) {
+                    is NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo -> {
+                        logger.w("Conversation has no group info, ignoring...")
+                        Either.Right(Unit)
+                    }
+
+                    is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
                         logger.logStructuredJson(
                             level = KaliumLogLevel.WARN,
                             leadingMessage = "Join-Establish MLS Group Stale",
-                            jsonStringKeyValues = conversation.logData(failure)
+                            jsonStringKeyValues = conversation.logData()
                         )
-                        // Re-fetch current epoch and try again
+                        // Re-fetch the current epoch and try again
                         if (conversation.type == Conversation.Type.OneOnOne) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
                                 fetchMLSOneToOneConversation(transactionContext, it.first()).map {
@@ -128,14 +134,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 joinOrEstablishMLSGroup(transactionContext, conversation, null)
                             }
                         }
-                    } else if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsMissingGroupInfo()) {
-                        logger.w("Conversation has no group info, ignoring...")
-                        Either.Right(Unit)
-                    } else {
+                    }
+
+                    else -> {
                         Either.Left(failure)
                     }
-                } else {
-                    Either.Left(failure)
                 }
             }
 

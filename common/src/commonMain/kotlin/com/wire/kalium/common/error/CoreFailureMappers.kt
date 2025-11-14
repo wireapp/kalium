@@ -23,10 +23,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -68,6 +71,8 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
                     }
                 }
 
+                exception is MLSError -> Either.Left(mapMLSError(exception))
+
                 // todo SocketException is platform specific so need to wrap it in our own exceptions
                 exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true -> {
                     Either.Left(NetworkFailure.ProxyError(exception.cause))
@@ -91,6 +96,30 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
             }
         }
     }
+
+fun mapMLSError(mlsError: MLSError): NetworkFailure.MlsMessageRejectedFailure = when (val body = mlsError.errorBody) {
+    is MLSErrorResponse.ClientMismatch -> NetworkFailure.MlsMessageRejectedFailure.ClientMismatch
+    is MLSErrorResponse.CommitMissingReferences -> NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences
+    is MLSErrorResponse.GroupOutOfSync -> {
+        val ids = body.missingUsers.map { user -> UserId(user.value, user.domain) }
+        NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(ids)
+    }
+
+    is MLSErrorResponse.InvalidLeafNodeIndex -> NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex
+    is MLSErrorResponse.InvalidLeafNodeSignature -> NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature
+    is MLSErrorResponse.StaleMessage -> NetworkFailure.MlsMessageRejectedFailure.StaleMessage
+    is MLSErrorResponse.MissingGroupInfo -> NetworkFailure.MlsMessageRejectedFailure.MissingGroupInfo
+    is MLSErrorResponse.UnsupportedProposal,
+    is MLSErrorResponse.ClientSenderUserMismatch,
+    is MLSErrorResponse.GroupConversationMismatch,
+    is MLSErrorResponse.NotEnabled,
+    is MLSErrorResponse.ProposalNotFound,
+    is MLSErrorResponse.ProtocolError,
+    is MLSErrorResponse.SelfRemovalNotAllowed,
+    is MLSErrorResponse.SubconversationJoinParentMissing,
+    is MLSErrorResponse.UnsupportedMessage,
+    is MLSErrorResponse.WelcomeMismatch -> NetworkFailure.MlsMessageRejectedFailure.Other(body)
+}
 
 inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<ProteusFailure, T> {
     return try {
