@@ -28,14 +28,15 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.HistoryClient
-import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.LabeledConversation
+import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAttachmentDraft
 import com.wire.kalium.persistence.MessageAttachments
+import com.wire.kalium.persistence.MessageConversationAppsEnabledChangedContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -303,5 +304,9 @@ internal object TableMapper {
     val historyClientAdapter = HistoryClient.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         creation_dateAdapter = InstantTypeAdapter,
+    )
+
+    val conversationAppsAccessChangedAdapter = MessageConversationAppsEnabledChangedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
     )
 }

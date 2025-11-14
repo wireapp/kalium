@@ -339,6 +339,10 @@ sealed interface MessageContent {
         val receiptMode: Boolean
     ) : System
 
+    data class ConversationAppsEnabledChanged(
+        val isEnabled: Boolean
+    ) : System
+
     data class ConversationReceiptModeChanged(
         val receiptMode: Boolean
     ) : System
@@ -499,6 +503,7 @@ fun MessageContent?.getType() = when (this) {
     null -> "null"
     MessageContent.NewConversationWithCellMessage -> "NewConversationWithCell"
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> "NewConversationWithCellSelfDeleteDisabled"
+    is MessageContent.ConversationAppsEnabledChanged -> "ConversationAppsEnabledChanged"
 }
 
 sealed interface MessagePreviewContent {

@@ -19,14 +19,15 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 /**
@@ -47,17 +48,36 @@ import kotlinx.coroutines.flow.first
  *
  * @see Conversation.Access
  */
-
-class UpdateConversationAccessRoleUseCase internal constructor(
-    private val conversationRepository: ConversationRepository,
-    private val conversationGroupRepository: ConversationGroupRepository,
-    private val syncManager: SyncManager
-) {
+@Mockable
+interface UpdateConversationAccessRoleUseCase {
+    /**
+     * @param conversationId the id of the conversation
+     * @param accessRoles the set of access roles to set
+     * @param access the set of access to set
+     * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
+     */
     suspend operator fun invoke(
         conversationId: ConversationId,
         accessRoles: Set<Conversation.AccessRole>,
         access: Set<Conversation.Access>,
-    ): Result {
+    ): Result
+
+    sealed interface Result {
+        data object Success : Result
+        data class Failure(val cause: CoreFailure) : Result
+    }
+}
+
+internal class UpdateConversationAccessRoleUseCaseImpl internal constructor(
+    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
+    private val syncManager: SyncManager
+) : UpdateConversationAccessRoleUseCase {
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        accessRoles: Set<Conversation.AccessRole>,
+        access: Set<Conversation.Access>,
+    ): UpdateConversationAccessRoleUseCase.Result {
 
         syncManager.waitUntilLiveOrFailure().flatMap {
             if (!accessRoles.contains(Conversation.AccessRole.GUEST)
@@ -72,14 +92,9 @@ class UpdateConversationAccessRoleUseCase internal constructor(
         return conversationRepository
             .updateAccessInfo(conversationId, access, accessRoles)
             .fold({
-                Result.Failure(it)
+                UpdateConversationAccessRoleUseCase.Result.Failure(it)
             }, {
-                Result.Success
+                UpdateConversationAccessRoleUseCase.Result.Success
             })
-    }
-
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
     }
 }

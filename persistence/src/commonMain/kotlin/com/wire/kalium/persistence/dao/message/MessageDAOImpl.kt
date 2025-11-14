@@ -226,6 +226,9 @@ internal class MessageDAOImpl internal constructor(
 
                         is MessageEntityContent.ConversationStartedUnverifiedWarning -> true
 
+                        is MessageEntityContent.ConversationAppsAccessChanged ->
+                            it.isConversationAppsEnabled == messageContent.isEnabled
+
                         else -> false
                     }
                 }?.let {
@@ -572,10 +575,10 @@ internal class MessageDAOImpl internal constructor(
         }
 
     override suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>> =
-            assetStatusQueries.selectAllAssetTransferStatuses()
-                .asFlow()
-                .mapToList()
-                .flowOn(readDispatcher.value)
+        assetStatusQueries.selectAllAssetTransferStatuses()
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getAllMessageAssetIdsForConversationId(
         conversationId: QualifiedIDEntity

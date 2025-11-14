@@ -268,6 +268,16 @@ CREATE TABLE MessageLegalHoldContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageConversationAppsEnabledChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      is_apps_enabled INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
@@ -425,6 +435,10 @@ VALUES(?, ?, ?);
 
 insertConversationReceiptModeChanged:
 INSERT OR IGNORE INTO MessageConversationReceiptModeChangedContent(message_id, conversation_id, receipt_mode)
+VALUES(?, ?, ?);
+
+insertConversationAppsEnabledChanged:
+INSERT OR IGNORE INTO MessageConversationAppsEnabledChangedContent(message_id, conversation_id, is_apps_enabled)
 VALUES(?, ?, ?);
 
 insertConversationMessageTimerChanged:
