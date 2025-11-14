@@ -73,26 +73,28 @@ FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
 FailedToDecryptContent.error_code AS decryptionErrorCode,
 FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
-'{' || IFNULL(
-    (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
-    FROM (
-        SELECT COUNT(*) count, Reaction.emoji emoji
-        FROM Reaction
-        WHERE Reaction.message_id = Message.id
-        AND Reaction.conversation_id = Message.conversation_id
-        GROUP BY Reaction.emoji
-    )),
-    '')
-|| '}' AS allReactionsJson,
 IFNULL(
-    (SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
-    FROM Reaction
-    WHERE Reaction.message_id = Message.id
-        AND Reaction.conversation_id = Message.conversation_id
-        AND Reaction.sender_id = SelfUser.id
+    (SELECT '[' ||
+        GROUP_CONCAT(
+            '{"emoji":"' || emoji ||
+            '","count":' || count ||
+            ',"isSelf":' || CASE WHEN isSelf > 0 THEN 'true' ELSE 'false' END ||
+            '}'
+        ) || ']'
+    FROM (
+        SELECT
+            Reaction.emoji AS emoji,
+            COUNT(*) AS count,
+            SUM(CASE WHEN Reaction.sender_id = s.id THEN 1 ELSE 0 END) AS isSelf
+        FROM Reaction
+        CROSS JOIN SelfUser s
+        WHERE Reaction.message_id = Message.id
+            AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )
     ),
     '[]'
-) AS selfReactionsJson,
+) AS reactionsJson,
 IFNULL(
     (SELECT '[' || GROUP_CONCAT(
         '{"start":' || start || ', "length":' || length ||
