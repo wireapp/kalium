@@ -77,11 +77,12 @@ internal class CellAttachmentsDataSource(
     override suspend fun updateAttachment(
         assetId: String,
         contentUrl: String?,
+        contentUrlExpiresAt: Long?,
         hash: String?,
         remotePath: String,
     ) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            messageAttachments.updateAttachment(assetId, contentUrl, hash, remotePath)
+            messageAttachments.updateAttachment(assetId, contentUrl, contentUrlExpiresAt, hash, remotePath)
         }
     }
 
@@ -145,6 +146,7 @@ private fun MessageAttachmentEntity.toModel(): MessageAttachment? =
             assetPath = assetPath,
             assetSize = assetSize,
             contentUrl = contentUrl,
+            contentUrlExpiresAt = contentExpiresAt,
             previewUrl = previewUrl?.takeIf { it.isNotEmpty() },
             localPath = localPath?.takeIf { it.isNotEmpty() },
             transferStatus = AssetTransferStatus.valueOf(assetTransferStatus),

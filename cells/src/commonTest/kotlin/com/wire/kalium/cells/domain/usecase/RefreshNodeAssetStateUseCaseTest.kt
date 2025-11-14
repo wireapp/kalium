@@ -74,6 +74,7 @@ class RefreshNodeAssetStateUseCaseTest {
             ownerUserId = "ownerUserId",
             conversationId = "conversationId",
             publicLinkId = "publicLinkId",
+            contentUrlExpiresAt = null,
         )
         private val testAttachment = CellAssetContent(
             id = assetId,
@@ -154,7 +155,13 @@ class RefreshNodeAssetStateUseCaseTest {
         useCase.invoke(assetId)
 
         coVerify {
-            arrangement.attachmentsRepository.updateAttachment(assetId, testNode.contentUrl, testNode.contentHash, testNode.path)
+            arrangement.attachmentsRepository.updateAttachment(
+                assetId,
+                testNode.contentUrl,
+                testNode.contentUrlExpiresAt,
+                testNode.contentHash,
+                testNode.path
+            )
         }.wasInvoked(once)
     }
 
@@ -501,7 +508,7 @@ class RefreshNodeAssetStateUseCaseTest {
             coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
             coEvery { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
             coEvery { attachmentsRepository.savePreviewUrl(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.updateAttachment(any(), any(), any(), any()) }.returns(Unit.right())
+            coEvery { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to RefreshCellAssetStateUseCaseImpl(
                 cellsRepository = cellsRepository,

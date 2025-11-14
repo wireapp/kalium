@@ -33,6 +33,7 @@ internal data class CellNodeDTO(
     val isRecycled: Boolean = false,
     val isDraft: Boolean = false,
     val contentUrl: String?,
+    val contentUrlExpiresAt: Long?,
     val contentHash: String?,
     val mimeType: String?,
     val previews: List<PreviewDto>? = null,
@@ -53,6 +54,7 @@ internal fun CellNodeDTO.toModel() = CellNode(
     isRecycled = isRecycled,
     isDraft = isDraft,
     contentUrl = contentUrl,
+    contentUrlExpiresAt = contentUrlExpiresAt,
     contentHash = contentHash,
     mimeType = mimeType,
     previews = previews?.map { it.toModel() },
@@ -73,6 +75,7 @@ internal fun CellNode.toDto() = CellNodeDTO(
     isRecycled = isRecycled,
     isDraft = isDraft,
     contentUrl = contentUrl,
+    contentUrlExpiresAt = contentUrlExpiresAt,
     contentHash = contentHash,
     mimeType = mimeType,
     ownerUserId = ownerUserId,
@@ -81,6 +84,7 @@ internal fun CellNode.toDto() = CellNodeDTO(
     tags = tags
 )
 
+@Suppress("MagicNumber")
 internal fun RestNode.toDto() = CellNodeDTO(
     uuid = uuid,
     versionId = versionMeta?.versionId ?: "",
@@ -92,6 +96,7 @@ internal fun RestNode.toDto() = CellNodeDTO(
     isRecycled = isRecycled ?: false,
     isDraft = isDraft ?: false,
     contentUrl = preSignedGET?.url,
+    contentUrlExpiresAt = preSignedGET?.expiresAt?.toLongOrNull()?.let { it * 1000 },
     contentHash = contentHash,
     mimeType = contentType,
     previews = previews.toDto(),
