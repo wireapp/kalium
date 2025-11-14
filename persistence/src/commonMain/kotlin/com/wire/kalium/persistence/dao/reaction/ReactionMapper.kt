@@ -20,14 +20,15 @@ package com.wire.kalium.persistence.dao.reaction
 
 import com.wire.kalium.persistence.MessageDetailsReactions
 import com.wire.kalium.persistence.util.JsonSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.SerializationException
 
 @Serializable
 data class ReactionItem(
-    val emoji: String,
-    val count: Int,
-    val isSelf: Boolean
+    @SerialName("emoji") val emoji: String,
+    @SerialName("count") val count: Int,
+    @SerialName("isSelf") val isSelf: Boolean
 )
 
 object ReactionMapper {
@@ -41,7 +42,7 @@ object ReactionMapper {
             val totalReactions = reactionItems.associate { it.emoji to it.count }
             val selfUserReactions = reactionItems.filter { it.isSelf }.map { it.emoji }.toSet()
             ReactionsEntity(totalReactions, selfUserReactions)
-        } catch (e: Exception) {
+        } catch (_: SerializationException) {
             ReactionsEntity.EMPTY
         }
     }
