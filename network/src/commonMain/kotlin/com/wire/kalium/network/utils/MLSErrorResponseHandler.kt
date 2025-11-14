@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,16 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.message.draft
+package com.wire.kalium.network.utils
 
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.network.api.model.MLSErrorResponse
+import com.wire.kalium.network.exceptions.MLSError
 
-data class MessageDraft(
-    val conversationId: ConversationId,
-    val text: String,
-    val editMessageId: String?,
-    val quotedMessageId: String?,
-    val selectedMentionList: List<MessageMention>,
-    val isMultipartEdit: Boolean = false,
-)
+internal object MLSErrorResponseHandler : ErrorResponseInterceptor<Any> {
+    override suspend fun intercept(httpResponseData: HttpResponseData): NetworkResponse.Error? = try {
+        NetworkResponse.Error(MLSError(httpResponseData.parseBody<MLSErrorResponse>()))
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+}

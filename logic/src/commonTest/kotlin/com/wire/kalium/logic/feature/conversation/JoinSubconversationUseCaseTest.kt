@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
@@ -240,14 +241,8 @@ class JoinSubconversationUseCaseTest {
                     )
                 )
             )
-            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
-                KaliumException.InvalidRequestError(
-                    ErrorResponse(
-                        403,
-                        "The conversation epoch in a message is too old",
-                        "mls-stale-message"
-                    )
-                )
+            val MLS_STALE_MESSAGE_FAILURE = MLSFailure.MessageRejected(
+                NetworkFailure.MlsMessageRejectedFailure.StaleMessage
             )
             val CONVERSATION_ID = ConversationId("id1", "domain")
             val SUBCONVERSATION_ID = SubconversationId("subconversation_id")

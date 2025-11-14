@@ -78,6 +78,7 @@ internal suspend inline fun <reified ResponseType : Any> wrapRequest(
 
         UnauthorizedResponseInterceptor.intercept(responseData)
             ?: FederationErrorResponseInterceptor.intercept(responseData)
+            ?: MLSErrorResponseHandler.intercept(responseData)
             ?: customErrorInterceptor?.intercept(responseData)
             ?: BaseErrorResponseInterceptor.intercept(responseData)
     }

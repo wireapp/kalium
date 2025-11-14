@@ -43,28 +43,21 @@ actual fun commonizeMLSException(exception: Exception): CommonizedMLSException {
                 } else if (otherError.startsWith(INVALID_GROUP_ID)) {
                     MLSFailure.InvalidGroupId
                 } else {
-                    MLSFailure.Other
+                    MLSFailure.Other(mlsError.msg)
                 }
             }
 
             is MlsException.OrphanWelcome -> MLSFailure.OrphanWelcome
             is MlsException.BufferedCommit -> MLSFailure.BufferedCommit
-            is MlsException.MessageRejected -> mapMessageRejected(mlsError.reason, exception)
+            is MlsException.MessageRejected -> mapMessageRejected(mlsError)
         }
     } else {
         MLSFailure.Generic(exception)
     }.run { CommonizedMLSException(this, exception) }
 }
 
-private fun mapMessageRejected(message: String, cause: Throwable): MLSFailure {
-    return when {
-        message.contains("mls-stale-message") -> MLSFailure.MessageRejected.MlsStaleMessage
-        message.contains("mls-client-mismatch") -> MLSFailure.MessageRejected.MlsClientMismatch
-        message.contains("mls-commit-missing-references") -> MLSFailure.MessageRejected.MlsCommitMissingReferences
-        message.contains("mls-invalid-leaf-node-index") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        message.contains("mls-invalid-leaf-node-signature") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        else -> MLSFailure.Generic(cause)
-    }
+private fun mapMessageRejected(mlsError: MlsException.MessageRejected): MLSFailure {
+    return MLSTransportFailureSerialization.parseString(mlsError.reason)
 }
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"

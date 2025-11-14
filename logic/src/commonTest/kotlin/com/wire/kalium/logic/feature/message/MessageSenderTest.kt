@@ -1232,15 +1232,7 @@ class MessageSenderTest {
                 Instant.DISTANT_PAST,
                 CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
-            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
-                KaliumException.InvalidRequestError(
-                    ErrorResponse(
-                        409,
-                        "The conversation epoch in a message is too old",
-                        "mls-stale-message"
-                    )
-                )
-            )
+            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.MlsMessageRejectedFailure.StaleMessage
             val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure.General("error")
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
