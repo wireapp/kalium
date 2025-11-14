@@ -25,34 +25,50 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mockable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 
 @Mockable
 internal interface UploadAssetUseCase {
     suspend operator fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class UploadAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
     private val persistMessage: PersistMessageUseCase,
+    private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
+    private val dispatcher: KaliumDispatcher
 ) : UploadAssetUseCase {
 
-    override suspend fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata): Either<CoreFailure, Unit> {
+    private suspend fun getOrBuildAudioNormalizedLoudnessIfNeeded(metadata: UploadAssetMessageMetadata): ByteArray? = when {
+        !isAudioMimeType(metadata.mimeType) -> null
+        metadata.audioNormalizedLoudness != null -> metadata.audioNormalizedLoudness
+        else -> audioNormalizedLoudnessBuilder(metadata.assetDataPath.toString())
+    }
+
+    override suspend fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata) = withContext(dispatcher.io) {
 
         updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
 
-        return assetDataSource.uploadAndPersistPrivateAsset(
+        val audioNormalizedLoudnessDeferred = async { getOrBuildAudioNormalizedLoudnessIfNeeded(metadata) }
+
+        assetDataSource.uploadAndPersistPrivateAsset(
             mimeType = metadata.mimeType,
             assetDataPath = metadata.assetDataPath,
             otrKey = metadata.otrKey,
@@ -68,9 +84,14 @@ internal class UploadAssetUseCaseImpl(
             // We delete asset added temporarily that was used to show the loading
             assetDataSource.deleteAssetLocally(metadata.assetId.key)
         }.flatMap { (assetId, sha256) ->
-            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist
-            // and update the message on the DB layer to display the changes on the Conversation screen
-            val updatedAssetMessageContent = metadata.copy(sha256Key = sha256, assetId = assetId)
+            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload,
+            // we also update the generated audio normalized loudness if applicable,
+            // and we persist and update the message on the DB layer to display the changes on the Conversation screen
+            val updatedAssetMessageContent = metadata.copy(
+                sha256Key = sha256,
+                assetId = assetId,
+                audioNormalizedLoudness = audioNormalizedLoudnessDeferred.await()
+            )
             val updatedMessage = message.copy(
                 content = MessageContent.Asset(
                     value = updatedAssetMessageContent.toAssetContent()

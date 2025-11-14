@@ -184,4 +184,6 @@ interface MessageDAO {
         newMessageId: String
     )
     suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>>
+
+    suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }

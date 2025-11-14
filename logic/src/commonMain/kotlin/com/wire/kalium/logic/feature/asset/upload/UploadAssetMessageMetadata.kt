@@ -40,8 +40,45 @@ internal data class UploadAssetMessageMetadata(
     val assetHeight: Int?,
     val otrKey: AES256Key,
     val sha256Key: SHA256Key,
-    val audioLengthInMs: Long
-)
+    val audioLengthInMs: Long,
+    val audioNormalizedLoudness: ByteArray?
+) {
+    @Suppress("CyclomaticComplexMethod")
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as UploadAssetMessageMetadata
+        if (assetDataSize != other.assetDataSize) return false
+        if (assetWidth != other.assetWidth) return false
+        if (assetHeight != other.assetHeight) return false
+        if (audioLengthInMs != other.audioLengthInMs) return false
+        if (conversationId != other.conversationId) return false
+        if (mimeType != other.mimeType) return false
+        if (assetId != other.assetId) return false
+        if (assetDataPath != other.assetDataPath) return false
+        if (assetName != other.assetName) return false
+        if (otrKey != other.otrKey) return false
+        if (sha256Key != other.sha256Key) return false
+        if (!audioNormalizedLoudness.contentEquals(other.audioNormalizedLoudness)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = assetDataSize.hashCode()
+        result = 31 * result + (assetWidth ?: 0)
+        result = 31 * result + (assetHeight ?: 0)
+        result = 31 * result + audioLengthInMs.hashCode()
+        result = 31 * result + conversationId.hashCode()
+        result = 31 * result + mimeType.hashCode()
+        result = 31 * result + assetId.hashCode()
+        result = 31 * result + assetDataPath.hashCode()
+        result = 31 * result + assetName.hashCode()
+        result = 31 * result + otrKey.hashCode()
+        result = 31 * result + sha256Key.hashCode()
+        result = 31 * result + (audioNormalizedLoudness?.contentHashCode() ?: 0)
+        return result
+    }
+}
 
 internal fun AssetUploadParams.createTempAssetMetadata(assetKey: String, path: Path) = UploadAssetMessageMetadata(
     conversationId = conversationId,
@@ -56,7 +93,8 @@ internal fun AssetUploadParams.createTempAssetMetadata(assetKey: String, path: P
     sha256Key = SHA256Key(byteArrayOf()),
     // Asset ID will be replaced with right value after asset upload
     assetId = UploadedAssetId(assetKey, ""),
-    audioLengthInMs = audioLengthInMs
+    audioLengthInMs = audioLengthInMs,
+    audioNormalizedLoudness = audioNormalizedLoudness
 )
 
 internal fun UploadAssetMessageMetadata.toAssetContent() = AssetContent(
@@ -71,7 +109,7 @@ internal fun UploadAssetMessageMetadata.toAssetContent() = AssetContent(
         isAudioMimeType(mimeType) -> {
             AssetContent.AssetMetadata.Audio(
                 durationMs = audioLengthInMs,
-                normalizedLoudness = null
+                normalizedLoudness = audioNormalizedLoudness
             )
         }
 

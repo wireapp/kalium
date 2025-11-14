@@ -552,7 +552,8 @@ sealed class ConversationRepository {
                                         type,
                                         null,
                                         null,
-                                        0L
+                                        0L,
+                                        null
                                     )
                                 )
                             }
@@ -641,7 +642,8 @@ sealed class ConversationRepository {
                                 type,
                                     width,
                                     height,
-                                    0L
+                                    0L,
+                                    null
                                 )
                             )
                             when (sendResult) {
