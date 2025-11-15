@@ -104,6 +104,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletio
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
@@ -155,6 +156,7 @@ class MessageScope internal constructor(
     private val isWireCellsEnabledForConversationUseCase: IsWireCellsEnabledForConversationUseCase,
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
+    private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -245,6 +247,7 @@ class MessageScope internal constructor(
             userRepository,
             staleEpochVerifier,
             transactionProvider,
+            mlsMissingUsersMessageRejectionHandlerProvider(),
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
         )
