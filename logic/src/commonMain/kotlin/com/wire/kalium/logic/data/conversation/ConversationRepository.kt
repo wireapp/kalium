@@ -67,6 +67,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEvent
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
@@ -441,20 +442,29 @@ internal class ConversationDataSource internal constructor(
         selfUserTeamId: TeamId?,
         invalidateMembers: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        // Batch conversations by operation type to minimize database transactions
+        val conversationsToUpdate = mutableListOf<Pair<List<MemberEntity>, QualifiedIDEntity>>()
+        val conversationsToInsert = mutableListOf<Pair<List<MemberEntity>, QualifiedIDEntity>>()
+
         conversations.forEach { conversationsResponse ->
+            val members = memberMapper.fromApiModelToDaoModel(conversationsResponse.members)
+            val conversationId = idMapper.fromApiToDao(conversationsResponse.id)
+
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
             if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId) == ConversationEntity.Type.GROUP) {
-                memberDAO.updateFullMemberList(
-                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
-                    idMapper.fromApiToDao(conversationsResponse.id)
-                )
+                conversationsToUpdate.add(members to conversationId)
             } else {
-                memberDAO.insertMembersWithQualifiedId(
-                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
-                    idMapper.fromApiToDao(conversationsResponse.id)
-                )
+                conversationsToInsert.add(members to conversationId)
             }
+        }
+
+        // Execute batch operations
+        if (conversationsToUpdate.isNotEmpty()) {
+            memberDAO.updateFullMemberListBatch(conversationsToUpdate)
+        }
+        if (conversationsToInsert.isNotEmpty()) {
+            memberDAO.insertMembersWithQualifiedIdBatch(conversationsToInsert)
         }
     }
 
