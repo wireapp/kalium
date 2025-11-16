@@ -2,10 +2,9 @@ CREATE INDEX IF NOT EXISTS idx_msg_conv_date_desc ON Message(conversation_id, cr
 CREATE INDEX IF NOT EXISTS idx_msg_conv_vis ON Message(conversation_id, visibility);
 CREATE INDEX IF NOT EXISTS idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
 
-CREATE INDEX IF NOT EXISTS reaction_msg_conv_emoji ON Reaction(message_id, conversation_id, emoji);
-CREATE INDEX IF NOT EXISTS reaction_msg_conv_sender ON Reaction(message_id, conversation_id, sender_id);
-
+DROP INDEX IF EXISTS reaction_emoji_index;
 CREATE INDEX IF NOT EXISTS receipt_msg_type ON Receipt(message_id, type);
+
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT

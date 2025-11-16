@@ -11,9 +11,6 @@ CREATE TABLE Reaction (
     PRIMARY KEY (message_id, conversation_id, sender_id, emoji)
 );
 CREATE INDEX reaction_sender_index ON Reaction(sender_id);
-CREATE INDEX reaction_emoji_index ON Reaction(emoji);
-CREATE INDEX reaction_msg_conv_emoji ON Reaction(message_id, conversation_id, emoji);
-CREATE INDEX reaction_msg_conv_sender ON Reaction(message_id, conversation_id, sender_id);
 
 doesMessageExist:
 SELECT 1 FROM Message WHERE id = :message_id AND conversation_id = :conversation_id;
