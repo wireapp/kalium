@@ -5,7 +5,7 @@ CREATE INDEX IF NOT EXISTS idx_msg_conv_vis_date_desc ON Message(conversation_id
 DROP INDEX IF EXISTS reaction_emoji_index;
 CREATE INDEX IF NOT EXISTS receipt_msg_type ON Receipt(message_id, type);
 
-
+DROP VIEW IF EXISTS MessageDetailsView;
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
