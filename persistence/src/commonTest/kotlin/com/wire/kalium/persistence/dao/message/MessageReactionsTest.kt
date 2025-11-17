@@ -66,10 +66,6 @@ class MessageReactionsTest : BaseMessageTest() {
         insertInitialData()
         val firstEmoji = "🫡"
         val secondEmoji = "🫥"
-        val expectedReactionCounts = mapOf(
-            firstEmoji to 2,
-            secondEmoji to 1
-        )
         reactionDAO.insertReaction(
             initialMessageEntity.id,
             initialMessageEntity.conversationId,
@@ -97,8 +93,10 @@ class MessageReactionsTest : BaseMessageTest() {
 
         // Then
         assertIs<MessageEntity.Regular>(result)
-        val reactionCount = result.reactions.totalReactions
-        assertEquals(expectedReactionCounts.entries, reactionCount.entries)
+        val reactions = result.reactions.reactions
+        assertEquals(2, reactions.size)
+        assertEquals(2, reactions[firstEmoji]?.count)
+        assertEquals(1, reactions[secondEmoji]?.count)
     }
 
     private suspend fun testSelfUserReactions(initialMessageEntity: MessageEntity, queryMessageEntity: suspend () -> MessageEntity?) {
@@ -106,7 +104,7 @@ class MessageReactionsTest : BaseMessageTest() {
         insertInitialData()
         val firstEmoji = "🫡"
         val secondEmoji = "🫥"
-        val expectedReactionCounts = setOf(firstEmoji, secondEmoji)
+        val thirdEmoji = "😡"
         reactionDAO.insertReaction(
             initialMessageEntity.id,
             initialMessageEntity.conversationId,
@@ -133,7 +131,7 @@ class MessageReactionsTest : BaseMessageTest() {
             initialMessageEntity.conversationId,
             OTHER_USER.id,
             Instant.DISTANT_PAST,
-            "😡"
+            thirdEmoji
         )
 
         // When
@@ -141,11 +139,14 @@ class MessageReactionsTest : BaseMessageTest() {
 
         // Then
         assertIs<MessageEntity.Regular>(result)
-        val reactionCount = result.reactions.selfUserReactions
-        assertEquals(expectedReactionCounts, reactionCount)
+        val reactions = result.reactions.reactions
+        assertEquals(3, reactions.size)
+        assertEquals(true, reactions[firstEmoji]?.isSelf) // Self user reacted
+        assertEquals(true, reactions[secondEmoji]?.isSelf) // Self user reacted
+        assertEquals(false, reactions[thirdEmoji]?.isSelf) // Other user reacted
     }
 
-    protected override suspend fun insertInitialData() {
+    override suspend fun insertInitialData() {
         super.insertInitialData()
         messageDAO.insertOrIgnoreMessages(
             listOf(

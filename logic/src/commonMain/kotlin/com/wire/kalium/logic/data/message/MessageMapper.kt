@@ -177,7 +177,14 @@ class MessageMapperImpl(
             )
         },
         visibility = message.visibility.toModel(),
-        reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+        reactions = Message.Reactions(
+            reactions = message.reactions.reactions.mapValues { (_, reaction) ->
+                Message.ReactionData(
+                    count = reaction.count,
+                    isSelf = reaction.isSelf
+                )
+            }
+        ),
         senderUserName = message.senderName,
         isSelfMessage = message.isSelfMessage,
         expectsReadConfirmation = message.expectsReadConfirmation,

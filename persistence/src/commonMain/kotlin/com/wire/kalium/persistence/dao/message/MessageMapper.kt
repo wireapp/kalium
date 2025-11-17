@@ -31,7 +31,6 @@ import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
-import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -363,8 +362,7 @@ object MessageMapper {
         lastEdit: Instant?,
         visibility: MessageEntity.Visibility,
         content: MessageEntityContent,
-        allReactionsJson: String?,
-        selfReactionsJson: String?,
+        reactionsJson: String?,
         senderName: String?,
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
@@ -388,10 +386,7 @@ object MessageMapper {
                 expireAfterMs = expireAfterMillis,
                 selfDeletionEndDate = selfDeletionEndDate,
                 visibility = visibility,
-                reactions = ReactionsEntity(
-                    totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
-                    selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-                ),
+                reactions = ReactionMapper.reactionsFromJsonString(reactionsJson),
                 senderName = senderName,
                 isSelfMessage = isSelfMessage,
                 expectsReadConfirmation = expectsReadConfirmation,
@@ -518,8 +513,7 @@ object MessageMapper {
         decryptionErrorCode: Long?,
         isDecryptionResolved: Boolean?,
         conversationName: String?,
-        allReactionsJson: String,
-        selfReactionsJson: String,
+        reactionsJson: String,
         mentions: String,
         attachments: String?,
         quotedMessageId: String?,
@@ -771,8 +765,7 @@ object MessageMapper {
             lastEditTimestamp,
             visibility,
             content,
-            allReactionsJson,
-            selfReactionsJson,
+            reactionsJson,
             senderName,
             isSelfMessage,
             expectsReadConfirmation,

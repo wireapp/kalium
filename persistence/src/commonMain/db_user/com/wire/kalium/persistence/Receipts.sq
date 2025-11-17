@@ -12,6 +12,8 @@ CREATE TABLE Receipt (
     PRIMARY KEY (message_id, conversation_id, user_id, type)
 );
 
+CREATE INDEX receipt_msg_type ON Receipt(message_id, type);
+
 -- TODO: Cast to proper types when/if SQLDelight supports it:
 insertReceipt:
 WITH insertion(message_id, conversation_id, user_id, type, date) AS(

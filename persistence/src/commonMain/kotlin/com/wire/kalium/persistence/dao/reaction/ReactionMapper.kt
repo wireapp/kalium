@@ -20,15 +20,45 @@ package com.wire.kalium.persistence.dao.reaction
 
 import com.wire.kalium.persistence.MessageDetailsReactions
 import com.wire.kalium.persistence.util.JsonSerializer
-import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+
+@Serializable
+data class ReactionItem(
+    @SerialName("emoji") val emoji: String,
+    @SerialName("count") val count: Int,
+    @SerialName("isSelf") val isSelf: Boolean
+)
 
 object ReactionMapper {
     private val serializer = JsonSerializer()
+
+    fun reactionsFromJsonString(reactionsJson: String?): ReactionsEntity {
+        if (reactionsJson == null) return ReactionsEntity.EMPTY
+
+        return try {
+            val reactionItems: List<ReactionItem> = serializer.decodeFromString(reactionsJson)
+            ReactionsEntity(
+                reactions = reactionItems.associate { item ->
+                    item.emoji to ReactionDataEntity(
+                        count = item.count,
+                        isSelf = item.isSelf
+                    )
+                }
+            )
+        } catch (_: SerializationException) {
+            ReactionsEntity.EMPTY
+        }
+    }
+
+    @Deprecated("Use reactionsFromJsonString instead", ReplaceWith("reactionsFromJsonString(reactionsJson).totalReactions"))
     fun reactionsCountFromJsonString(allReactionJson: String?): ReactionsCountEntity =
         allReactionJson?.let {
             serializer.decodeFromString(allReactionJson)
         } ?: emptyMap()
 
+    @Deprecated("Use reactionsFromJsonString instead", ReplaceWith("reactionsFromJsonString(reactionsJson).selfUserReactions"))
     fun userReactionsFromJsonString(userReactionsJson: String?): UserReactionsEntity =
         userReactionsJson?.let {
             serializer.decodeFromString(userReactionsJson)

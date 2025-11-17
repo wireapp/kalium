@@ -1,14 +1,10 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+CREATE INDEX IF NOT EXISTS idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
+CREATE INDEX IF NOT EXISTS idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
+
+DROP INDEX IF EXISTS reaction_emoji_index;
+CREATE INDEX IF NOT EXISTS receipt_msg_type ON Receipt(message_id, type);
+
+DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
