@@ -39,9 +39,9 @@ SELECT
     User.connection_status AS lastMessageSenderConnectionStatus,
     User.deleted AS lastMessageSenderIsDeleted,
     (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
-    MemberChangeContent.member_change_list AS lastMessageMemberChangeList,
-    MemberChangeContent.member_change_type AS lastMessageMemberChangeType,
-    ConversationNameChangedContent.conversation_name AS lastMessageUpdateConversationName,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS lastMessageMemberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS lastMessageMemberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
     COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
     TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
     TextContent.text_body AS lastMessageText,
@@ -57,12 +57,10 @@ LEFT JOIN Message
     ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
 LEFT JOIN User
     ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageMemberChangeContent AS MemberChangeContent
-    ON LastMessage.message_id = MemberChangeContent.message_id AND LastMessage.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageSystemContent AS SystemContent
+    ON LastMessage.message_id = SystemContent.message_id AND LastMessage.conversation_id = SystemContent.conversation_id
 LEFT JOIN MessageMention AS Mention
     ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
-    ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent
     ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent
