@@ -142,6 +142,10 @@ data class ConversationResponse(
         @SerialName("channel")
         CHANNEL,
     }
+
+    fun hasAppsAccessEnabled(): Boolean {
+        return accessRole?.any { it == ConversationAccessRoleDTO.SERVICE } == true
+    }
 }
 
 @Serializable

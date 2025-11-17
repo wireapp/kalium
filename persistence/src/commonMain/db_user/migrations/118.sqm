@@ -1,0 +1,4 @@
+CREATE INDEX IF NOT EXISTS idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
+CREATE INDEX IF NOT EXISTS idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
+
+CREATE INDEX IF NOT EXISTS receipt_msg_type ON Receipt(message_id, type);

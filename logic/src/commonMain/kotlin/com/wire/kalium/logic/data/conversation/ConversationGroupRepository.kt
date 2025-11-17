@@ -178,6 +178,12 @@ internal class ConversationGroupRepositoryImpl(
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationCellStatus(conversationEntity)
         }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationAppsAccessIfEnabled(
+                conversationId = conversationEntity.id.toModel(),
+                hasAppsAccessEnabled = conversationResponse.hasAppsAccessEnabled(),
+                creatorId = selfUserId,
+            )
+        }.flatMap {
             when (protocol) {
                 is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
                 is Conversation.ProtocolInfo.MLSCapable ->
