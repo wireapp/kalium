@@ -1,5 +1,4 @@
 CREATE INDEX IF NOT EXISTS idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
-CREATE INDEX IF NOT EXISTS idx_msg_conv_vis ON Message(conversation_id, visibility);
 CREATE INDEX IF NOT EXISTS idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
 
 CREATE INDEX IF NOT EXISTS reaction_msg_conv_emoji ON Reaction(message_id, conversation_id, emoji);
