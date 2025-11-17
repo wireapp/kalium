@@ -254,6 +254,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -528,6 +529,7 @@ object MessageMapper {
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
         quotedLocationName: String?,
+        isConversationAppsEnabled: Boolean?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
@@ -657,6 +659,10 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessageEntityContent.ConversationReceiptModeChanged(
                 receiptMode = conversationReceiptModeChanged ?: false
+            )
+
+            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessageEntityContent.ConversationAppsAccessChanged(
+                isEnabled = isConversationAppsEnabled ?: false
             )
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost

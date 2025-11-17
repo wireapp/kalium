@@ -43,7 +43,6 @@ CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
 CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 CREATE INDEX idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
-CREATE INDEX idx_msg_conv_vis ON Message(conversation_id, visibility);
 CREATE INDEX idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
 
 CREATE TABLE MessageLinkPreview (
@@ -272,6 +271,16 @@ CREATE TABLE MessageLegalHoldContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageConversationAppsEnabledChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      is_apps_enabled INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
@@ -429,6 +438,10 @@ VALUES(?, ?, ?);
 
 insertConversationReceiptModeChanged:
 INSERT OR IGNORE INTO MessageConversationReceiptModeChangedContent(message_id, conversation_id, receipt_mode)
+VALUES(?, ?, ?);
+
+insertConversationAppsEnabledChanged:
+INSERT OR IGNORE INTO MessageConversationAppsEnabledChangedContent(message_id, conversation_id, is_apps_enabled)
 VALUES(?, ?, ?);
 
 insertConversationMessageTimerChanged:

@@ -424,8 +424,14 @@ sealed interface Message {
                 MessageContent.NewConversationWithCellMessage -> mutableMapOf(
                     typeKey to "newConversationWithCellMessage"
                 )
+
                 MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> mutableMapOf(
                     typeKey to "newConversationWithCellSelfDeleteDisabledMessage"
+                )
+
+                is MessageContent.ConversationAppsEnabledChanged -> mutableMapOf(
+                    typeKey to "conversationAppsEnabledChanged",
+                    "isEnabled" to "${content.isEnabled}"
                 )
             }
 

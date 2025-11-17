@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
@@ -415,11 +415,11 @@ class UpdateConversationAccessUseCaseTest {
     }
 
     private class Arrangement {
-                val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock(ConversationRepository::class)
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
         val syncManager = mock(SyncManager::class)
 
-        val updateConversationAccess: UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCase(
+        val updateConversationAccess: UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCaseImpl(
             conversationRepository,
             conversationGroupRepository,
             syncManager
