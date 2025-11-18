@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.migration
 
 import app.cash.sqldelight.db.SqlDriver
 import kotlinx.coroutines.test.runTest
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -43,141 +44,15 @@ class Migration119Test : SchemaMigrationTest() {
 
     /**
      * Returns the migration SQL for migration 119.
-     * This is copied from 119.sqm to ensure we're testing the actual migration.
+     * This reads the actual migration file from disk to ensure tests match the real migration.
      */
-    private fun getMigration119Sql() = """
-        -- Migration 119: Consolidate system message content tables into MessageSystemContent
-
-        -- Step 1: Create the new consolidated table
-        CREATE TABLE IF NOT EXISTS MessageSystemContent (
-            message_id TEXT NOT NULL,
-            conversation_id TEXT NOT NULL,
-            content_type TEXT NOT NULL,
-
-            -- Generic typed fields for flexible storage
-            text_1 TEXT,
-            integer_1 INTEGER,
-            boolean_1 INTEGER,
-            list_1 TEXT,
-            enum_1 TEXT,
-            blob_1 BLOB,
-
-            FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-            PRIMARY KEY (message_id, conversation_id)
-        );
-
-        -- Step 2: Create index for efficient querying by content type
-        CREATE INDEX IF NOT EXISTS idx_system_content_type ON MessageSystemContent(content_type);
-
-        -- Step 3: Migrate data from old tables to new consolidated table
-
-        -- 3.1: Migrate MessageMemberChangeContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, list_1, enum_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'MEMBER_CHANGE' AS content_type,
-            member_change_list AS list_1,
-            member_change_type AS enum_1
-        FROM MessageMemberChangeContent;
-
-        -- 3.2: Migrate MessageFailedToDecryptContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, blob_1, boolean_1, integer_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'FAILED_DECRYPT' AS content_type,
-            unknown_encoded_data AS blob_1,
-            is_decryption_resolved AS boolean_1,
-            error_code AS integer_1
-        FROM MessageFailedToDecryptContent;
-
-        -- 3.3: Migrate MessageConversationChangedContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, text_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'CONVERSATION_RENAMED' AS content_type,
-            conversation_name AS text_1
-        FROM MessageConversationChangedContent;
-
-        -- 3.4: Migrate MessageNewConversationReceiptModeContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, boolean_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'NEW_CONVERSATION_RECEIPT_MODE' AS content_type,
-            receipt_mode AS boolean_1
-        FROM MessageNewConversationReceiptModeContent;
-
-        -- 3.5: Migrate MessageConversationReceiptModeChangedContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, boolean_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'CONVERSATION_RECEIPT_MODE_CHANGED' AS content_type,
-            receipt_mode AS boolean_1
-        FROM MessageConversationReceiptModeChangedContent;
-
-        -- 3.6: Migrate MessageConversationTimerChangedContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, integer_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'CONVERSATION_TIMER_CHANGED' AS content_type,
-            message_timer AS integer_1
-        FROM MessageConversationTimerChangedContent;
-
-        -- 3.7: Migrate MessageFederationTerminatedContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, list_1, enum_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'FEDERATION_TERMINATED' AS content_type,
-            domain_list AS list_1,
-            federation_type AS enum_1
-        FROM MessageFederationTerminatedContent;
-
-        -- 3.8: Migrate MessageConversationProtocolChangedContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, enum_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'CONVERSATION_PROTOCOL_CHANGED' AS content_type,
-            protocol AS enum_1
-        FROM MessageConversationProtocolChangedContent;
-
-        -- 3.9: Migrate MessageLegalHoldContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, list_1, enum_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'LEGAL_HOLD' AS content_type,
-            legal_hold_member_list AS list_1,
-            legal_hold_type AS enum_1
-        FROM MessageLegalHoldContent;
-
-        -- 3.10: Migrate MessageConversationAppsEnabledChangedContent
-        INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, boolean_1)
-        SELECT
-            message_id,
-            conversation_id,
-            'CONVERSATION_APPS_ENABLED_CHANGED' AS content_type,
-            is_apps_enabled AS boolean_1
-        FROM MessageConversationAppsEnabledChangedContent;
-
-        -- Step 4: Drop old tables (in reverse dependency order)
-        DROP TABLE IF EXISTS MessageConversationAppsEnabledChangedContent;
-        DROP TABLE IF EXISTS MessageLegalHoldContent;
-        DROP TABLE IF EXISTS MessageConversationProtocolChangedContent;
-        DROP TABLE IF EXISTS MessageFederationTerminatedContent;
-        DROP TABLE IF EXISTS MessageConversationTimerChangedContent;
-        DROP TABLE IF EXISTS MessageConversationReceiptModeChangedContent;
-        DROP TABLE IF EXISTS MessageNewConversationReceiptModeContent;
-        DROP TABLE IF EXISTS MessageConversationChangedContent;
-        DROP TABLE IF EXISTS MessageFailedToDecryptContent;
-        DROP TABLE IF EXISTS MessageMemberChangeContent;
-    """.trimIndent()
+    private fun getMigration119Sql(): String {
+        val migrationFile = File("src/commonMain/db_user/migrations/119.sqm")
+        if (!migrationFile.exists()) {
+            throw error("Migration file not found: ${migrationFile.absolutePath}")
+        }
+        return migrationFile.readText()
+    }
 
     @Test
     fun testMemberChangeContentMigration() = runTest(dispatcher) {
