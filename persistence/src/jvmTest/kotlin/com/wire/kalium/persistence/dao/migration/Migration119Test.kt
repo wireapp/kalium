@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.migration
 
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import kotlinx.coroutines.test.runTest
 import java.io.File
@@ -86,7 +87,7 @@ class Migration119Test : SchemaMigrationTest() {
                         list1 = cursor.getString(1)
                         enum1 = cursor.getString(2)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("MEMBER_CHANGE", contentType)
@@ -137,7 +138,7 @@ class Migration119Test : SchemaMigrationTest() {
                         boolean1 = cursor.getLong(2)
                         integer1 = cursor.getLong(3)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("FAILED_DECRYPT", contentType)
@@ -175,7 +176,7 @@ class Migration119Test : SchemaMigrationTest() {
                         contentType = cursor.getString(0)
                         text1 = cursor.getString(1)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("CONVERSATION_RENAMED", contentType)
@@ -221,7 +222,7 @@ class Migration119Test : SchemaMigrationTest() {
                         contentType = cursor.getString(0)
                         boolean1 = cursor.getLong(1)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("NEW_CONVERSATION_RECEIPT_MODE", contentType)
@@ -237,7 +238,7 @@ class Migration119Test : SchemaMigrationTest() {
                         contentType = cursor.getString(0)
                         boolean1 = cursor.getLong(1)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("CONVERSATION_RECEIPT_MODE_CHANGED", contentType)
@@ -273,7 +274,7 @@ class Migration119Test : SchemaMigrationTest() {
                         contentType = cursor.getString(0)
                         integer1 = cursor.getLong(1)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("CONVERSATION_TIMER_CHANGED", contentType)
@@ -310,7 +311,7 @@ class Migration119Test : SchemaMigrationTest() {
                         list1 = cursor.getString(1)
                         enum1 = cursor.getString(2)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("FEDERATION_TERMINATED", contentType)
@@ -346,7 +347,7 @@ class Migration119Test : SchemaMigrationTest() {
                         contentType = cursor.getString(0)
                         enum1 = cursor.getString(1)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("CONVERSATION_PROTOCOL_CHANGED", contentType)
@@ -383,7 +384,7 @@ class Migration119Test : SchemaMigrationTest() {
                         list1 = cursor.getString(1)
                         enum1 = cursor.getString(2)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("LEGAL_HOLD", contentType)
@@ -419,7 +420,7 @@ class Migration119Test : SchemaMigrationTest() {
                         contentType = cursor.getString(0)
                         boolean1 = cursor.getLong(1)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("CONVERSATION_APPS_ENABLED_CHANGED", contentType)
@@ -470,7 +471,7 @@ class Migration119Test : SchemaMigrationTest() {
                     while (cursor.next().value) {
                         contentTypes.add(cursor.getString(0) ?: "")
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertTrue(contentTypes.contains("MEMBER_CHANGE"))
@@ -499,7 +500,7 @@ class Migration119Test : SchemaMigrationTest() {
                     if (cursor.next().value) {
                         indexExists = true
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertTrue(indexExists, "Index idx_system_content_type should be created")
@@ -529,7 +530,6 @@ class Migration119Test : SchemaMigrationTest() {
                 var conversationId: String? = null
                 var contentType: String? = null
                 var text1: String? = null
-                var text2: String? = null
                 var integer1: Long? = null
                 var boolean1: Long? = null
                 var list1: String? = null
@@ -537,7 +537,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var blob1: ByteArray? = null
 
                 driver.executeQuery(null, """
-                    SELECT message_id, conversation_id, content_type, text_1, text_2, integer_1, boolean_1, list_1, enum_1, blob_1
+                    SELECT message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = '$MESSAGE_ID'
                 """.trimIndent(), mapper = { cursor ->
@@ -546,14 +546,13 @@ class Migration119Test : SchemaMigrationTest() {
                         conversationId = cursor.getString(1)
                         contentType = cursor.getString(2)
                         text1 = cursor.getString(3)
-                        text2 = cursor.getString(4)
-                        integer1 = cursor.getLong(5)
-                        boolean1 = cursor.getLong(6)
-                        list1 = cursor.getString(7)
-                        enum1 = cursor.getString(8)
-                        blob1 = cursor.getBytes(9)
+                        integer1 = cursor.getLong(4)
+                        boolean1 = cursor.getLong(5)
+                        list1 = cursor.getString(6)
+                        enum1 = cursor.getString(7)
+                        blob1 = cursor.getBytes(8)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 // Verify PKs
@@ -569,7 +568,6 @@ class Migration119Test : SchemaMigrationTest() {
 
                 // Verify unused fields are NULL
                 assertNull(text1)
-                assertNull(text2)
                 assertNull(integer1)
                 assertNull(boolean1)
                 assertNull(blob1)
@@ -601,7 +599,6 @@ class Migration119Test : SchemaMigrationTest() {
                 var conversationId: String? = null
                 var contentType: String? = null
                 var text1: String? = null
-                var text2: String? = null
                 var integer1: Long? = null
                 var boolean1: Long? = null
                 var list1: String? = null
@@ -609,7 +606,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var blob1: ByteArray? = null
 
                 driver.executeQuery(null, """
-                    SELECT message_id, conversation_id, content_type, text_1, text_2, integer_1, boolean_1, list_1, enum_1, blob_1
+                    SELECT message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = '$MESSAGE_ID'
                 """.trimIndent(), mapper = { cursor ->
@@ -618,14 +615,13 @@ class Migration119Test : SchemaMigrationTest() {
                         conversationId = cursor.getString(1)
                         contentType = cursor.getString(2)
                         text1 = cursor.getString(3)
-                        text2 = cursor.getString(4)
-                        integer1 = cursor.getLong(5)
-                        boolean1 = cursor.getLong(6)
-                        list1 = cursor.getString(7)
-                        enum1 = cursor.getString(8)
-                        blob1 = cursor.getBytes(9)
+                        integer1 = cursor.getLong(4)
+                        boolean1 = cursor.getLong(5)
+                        list1 = cursor.getString(6)
+                        enum1 = cursor.getString(7)
+                        blob1 = cursor.getBytes(8)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 // Verify all fields
@@ -639,7 +635,6 @@ class Migration119Test : SchemaMigrationTest() {
 
                 // Verify unused fields are NULL
                 assertNull(text1)
-                assertNull(text2)
                 assertNull(list1)
                 assertNull(enum1)
             }
@@ -662,7 +657,6 @@ class Migration119Test : SchemaMigrationTest() {
                 var conversationId: String? = null
                 var contentType: String? = null
                 var text1: String? = null
-                var text2: String? = null
                 var integer1: Long? = null
                 var boolean1: Long? = null
                 var list1: String? = null
@@ -670,7 +664,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var blob1: ByteArray? = null
 
                 driver.executeQuery(null, """
-                    SELECT message_id, conversation_id, content_type, text_1, text_2, integer_1, boolean_1, list_1, enum_1, blob_1
+                    SELECT message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = '$MESSAGE_ID'
                 """.trimIndent(), mapper = { cursor ->
@@ -679,14 +673,13 @@ class Migration119Test : SchemaMigrationTest() {
                         conversationId = cursor.getString(1)
                         contentType = cursor.getString(2)
                         text1 = cursor.getString(3)
-                        text2 = cursor.getString(4)
-                        integer1 = cursor.getLong(5)
-                        boolean1 = cursor.getLong(6)
-                        list1 = cursor.getString(7)
-                        enum1 = cursor.getString(8)
-                        blob1 = cursor.getBytes(9)
+                        integer1 = cursor.getLong(4)
+                        boolean1 = cursor.getLong(5)
+                        list1 = cursor.getString(6)
+                        enum1 = cursor.getString(7)
+                        blob1 = cursor.getBytes(8)
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals(MESSAGE_ID, messageId)
@@ -695,7 +688,6 @@ class Migration119Test : SchemaMigrationTest() {
                 assertEquals("Complete Conversation Name", text1)
 
                 // Verify unused fields are NULL
-                assertNull(text2)
                 assertNull(integer1)
                 assertNull(boolean1)
                 assertNull(list1)
@@ -730,7 +722,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var unusedFields1 = 0
 
                 driver.executeQuery(null, """
-                    SELECT content_type, boolean_1, text_1, text_2, integer_1, list_1, enum_1, blob_1
+                    SELECT content_type, boolean_1, text_1, integer_1, list_1, enum_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = 'msg-new'
                 """.trimIndent(), mapper = { cursor ->
@@ -739,18 +731,17 @@ class Migration119Test : SchemaMigrationTest() {
                         boolean1_1 = cursor.getLong(1)
                         // Count NULL fields
                         if (cursor.getString(2) == null) unusedFields1++
-                        if (cursor.getString(3) == null) unusedFields1++
-                        if (cursor.getLong(4) == null) unusedFields1++
+                        if (cursor.getLong(3) == null) unusedFields1++
+                        if (cursor.getString(4) == null) unusedFields1++
                         if (cursor.getString(5) == null) unusedFields1++
-                        if (cursor.getString(6) == null) unusedFields1++
-                        if (cursor.getBytes(7) == null) unusedFields1++
+                        if (cursor.getBytes(6) == null) unusedFields1++
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("NEW_CONVERSATION_RECEIPT_MODE", contentType1)
                 assertEquals(1L, boolean1_1)
-                assertEquals(6, unusedFields1, "All unused fields should be NULL")
+                assertEquals(5, unusedFields1, "All unused fields should be NULL")
 
                 // Verify CONVERSATION_RECEIPT_MODE_CHANGED
                 var contentType2: String? = null
@@ -758,7 +749,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var unusedFields2 = 0
 
                 driver.executeQuery(null, """
-                    SELECT content_type, boolean_1, text_1, text_2, integer_1, list_1, enum_1, blob_1
+                    SELECT content_type, boolean_1, text_1, integer_1, list_1, enum_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = 'msg-changed'
                 """.trimIndent(), mapper = { cursor ->
@@ -767,18 +758,17 @@ class Migration119Test : SchemaMigrationTest() {
                         boolean1_2 = cursor.getLong(1)
                         // Count NULL fields
                         if (cursor.getString(2) == null) unusedFields2++
-                        if (cursor.getString(3) == null) unusedFields2++
-                        if (cursor.getLong(4) == null) unusedFields2++
+                        if (cursor.getLong(3) == null) unusedFields2++
+                        if (cursor.getString(4) == null) unusedFields2++
                         if (cursor.getString(5) == null) unusedFields2++
-                        if (cursor.getString(6) == null) unusedFields2++
-                        if (cursor.getBytes(7) == null) unusedFields2++
+                        if (cursor.getBytes(6) == null) unusedFields2++
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("CONVERSATION_RECEIPT_MODE_CHANGED", contentType2)
                 assertEquals(0L, boolean1_2)
-                assertEquals(6, unusedFields2, "All unused fields should be NULL")
+                assertEquals(5, unusedFields2, "All unused fields should be NULL")
             }
         )
     }
@@ -803,7 +793,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var nullFieldCount = 0
 
                 driver.executeQuery(null, """
-                    SELECT content_type, list_1, enum_1, text_1, text_2, integer_1, boolean_1, blob_1
+                    SELECT content_type, list_1, enum_1, text_1, integer_1, boolean_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = '$MESSAGE_ID'
                 """.trimIndent(), mapper = { cursor ->
@@ -813,18 +803,17 @@ class Migration119Test : SchemaMigrationTest() {
                         enum1 = cursor.getString(2)
                         // Count unused fields
                         if (cursor.getString(3) == null) nullFieldCount++
-                        if (cursor.getString(4) == null) nullFieldCount++
+                        if (cursor.getLong(4) == null) nullFieldCount++
                         if (cursor.getLong(5) == null) nullFieldCount++
-                        if (cursor.getLong(6) == null) nullFieldCount++
-                        if (cursor.getBytes(7) == null) nullFieldCount++
+                        if (cursor.getBytes(6) == null) nullFieldCount++
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("FEDERATION_TERMINATED", contentType)
                 assertEquals("""["domain1.com", "domain2.co.uk", "subdomain.example.org"]""", list1)
                 assertEquals("CONNECTION_REMOVED", enum1)
-                assertEquals(5, nullFieldCount, "All 5 unused fields should be NULL")
+                assertEquals(4, nullFieldCount, "All 4 unused fields should be NULL")
             }
         )
     }
@@ -849,7 +838,7 @@ class Migration119Test : SchemaMigrationTest() {
                 var nullFieldCount = 0
 
                 driver.executeQuery(null, """
-                    SELECT content_type, list_1, enum_1, text_1, text_2, integer_1, boolean_1, blob_1
+                    SELECT content_type, list_1, enum_1, text_1, integer_1, boolean_1, blob_1
                     FROM MessageSystemContent
                     WHERE message_id = '$MESSAGE_ID'
                 """.trimIndent(), mapper = { cursor ->
@@ -858,18 +847,17 @@ class Migration119Test : SchemaMigrationTest() {
                         list1 = cursor.getString(1)
                         enum1 = cursor.getString(2)
                         if (cursor.getString(3) == null) nullFieldCount++
-                        if (cursor.getString(4) == null) nullFieldCount++
+                        if (cursor.getLong(4) == null) nullFieldCount++
                         if (cursor.getLong(5) == null) nullFieldCount++
-                        if (cursor.getLong(6) == null) nullFieldCount++
-                        if (cursor.getBytes(7) == null) nullFieldCount++
+                        if (cursor.getBytes(6) == null) nullFieldCount++
                     }
-                    app.cash.sqldelight.db.QueryResult.Unit
+                    QueryResult.Unit
                 }, 0)
 
                 assertEquals("LEGAL_HOLD", contentType)
                 assertEquals("""["user1@domain1.com", "user2@domain2.com", "user3@domain1.com"]""", list1)
                 assertEquals("DISABLED_FOR_CONVERSATION", enum1)
-                assertEquals(5, nullFieldCount)
+                assertEquals(4, nullFieldCount)
             }
         )
     }
@@ -965,7 +953,7 @@ class Migration119Test : SchemaMigrationTest() {
                         if (cursor.next().value) {
                             actualType = cursor.getString(0)
                         }
-                        app.cash.sqldelight.db.QueryResult.Unit
+                        QueryResult.Unit
                     }, 0)
 
                     assertEquals(expectedType, actualType, "Message $msgId should have correct content_type")
@@ -990,7 +978,7 @@ class Migration119Test : SchemaMigrationTest() {
             if (cursor.next().value) {
                 tableExists = true
             }
-            app.cash.sqldelight.db.QueryResult.Unit
+            QueryResult.Unit
         }, 0)
 
         assertEquals(false, tableExists, "Table $tableName should not exist after migration")
