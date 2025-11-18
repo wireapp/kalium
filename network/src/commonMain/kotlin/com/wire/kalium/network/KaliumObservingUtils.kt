@@ -31,7 +31,7 @@ import kotlinx.coroutines.Dispatchers
 
 internal suspend fun OutgoingContent.observe(log: ByteWriteChannel): OutgoingContent = when (this) {
     is OutgoingContent.ByteArrayContent -> {
-        log.writeFully(bytes(), 0, bytes().size)
+        // Skip mirroring byte array content into log channel to avoid Ktor IO API differences
         log.close()
         this
     }

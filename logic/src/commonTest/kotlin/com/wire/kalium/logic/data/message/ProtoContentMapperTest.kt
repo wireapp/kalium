@@ -34,7 +34,7 @@ import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.Text
-import io.ktor.utils.io.core.toByteArray
+ 
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

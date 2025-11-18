@@ -44,9 +44,8 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
 import io.ktor.utils.io.close
-import io.ktor.utils.io.core.ByteReadPacket
-import io.ktor.utils.io.core.isNotEmpty
-import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
@@ -95,17 +94,13 @@ internal open class AssetApiV0 internal constructor(
     private suspend fun handleAssetContentDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {
         val channel = httpResponse.body<ByteReadChannel>()
         tempFileSink.use { sink ->
+            val array = ByteArray(BUFFER_SIZE.toInt())
             while (!channel.isClosedForRead) {
-                val packet = channel.readRemaining(BUFFER_SIZE)
-                while (packet.isNotEmpty) {
-                    val (bytes, size) = packet.readBytes().let { byteArray ->
-                        Buffer().write(byteArray) to byteArray.size.toLong()
-                    }
-                    sink.write(bytes, size).also {
-                        bytes.clear()
-                        sink.flush()
-                    }
-                }
+                val read = channel.readAvailable(array, 0, array.size)
+                if (read <= 0) break
+                val buffer = Buffer().write(array, 0, read)
+                sink.write(buffer, read.toLong())
+                sink.flush()
             }
             channel.cancel()
             sink.close()
@@ -203,9 +198,8 @@ internal class StreamAssetContent internal constructor(
         val contentBuffer = Buffer()
         val fileContentStream = fileContentStream()
         while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
-            contentBuffer.readByteArray().let { content ->
-                channel.writePacket(ByteReadPacket(content))
-            }
+            val content = contentBuffer.readByteArray()
+            channel.writeFully(content, 0, content.size)
         }
         channel.writeStringUtf8(closingArray)
         channel.flush()

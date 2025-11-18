@@ -40,7 +40,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 
 internal open class ConversationApiV5 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,

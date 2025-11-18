@@ -66,7 +66,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.ktor.utils.io.core.toByteArray
+ 
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

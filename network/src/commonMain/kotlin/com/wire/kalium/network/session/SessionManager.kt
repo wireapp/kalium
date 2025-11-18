@@ -33,9 +33,9 @@ import io.ktor.client.utils.buildHeaders
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpProtocolVersion
 import io.ktor.http.HttpStatusCode
-import io.ktor.util.InternalAPI
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.InternalAPI
 import io.mockative.Mockable
 import kotlin.coroutines.CoroutineContext
 
@@ -68,7 +68,6 @@ fun HttpClientConfig<*>.installAuth(bearerAuthProvider: BearerAuthProvider) {
     }
 }
 
-@OptIn(InternalAPI::class)
 private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
     receivePipeline.intercept(HttpReceivePipeline.Before) { response ->
         if (response.status == HttpStatusCode.Unauthorized) {
@@ -77,13 +76,14 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
                 append(HttpHeaders.WWWAuthenticate, "Bearer")
             }
             proceedWith(
+                @InternalAPI
                 object : HttpResponse() {
                     override val call: HttpClientCall = response.call
                     override val status: HttpStatusCode = response.status
                     override val version: HttpProtocolVersion = response.version
                     override val requestTime: GMTDate = response.requestTime
                     override val responseTime: GMTDate = response.responseTime
-                    override val content: ByteReadChannel = response.content
+                    override val rawContent: ByteReadChannel = response.rawContent
                     override val headers get() = headers
                     override val coroutineContext: CoroutineContext = response.coroutineContext
                 }

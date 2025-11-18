@@ -158,8 +158,8 @@ internal open class NotificationApiV0 internal constructor(
                 logger.v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
-                        // assuming here the byteArray is an ASCII character set
-                        val jsonString = io.ktor.utils.io.core.String(frame.data)
+                        // assuming here the byteArray is an ASCII/UTF-8 character set
+                        val jsonString = frame.data.decodeToString()
 
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
                         val event = KtxSerializer.json.decodeFromString<EventResponseToStore>(jsonString)

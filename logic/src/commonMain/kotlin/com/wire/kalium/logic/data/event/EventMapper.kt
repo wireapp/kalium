@@ -54,8 +54,6 @@ import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_REC
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import io.ktor.utils.io.charsets.Charsets
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -335,7 +333,7 @@ class EventMapper(
         eventContentDTO.time,
         eventContentDTO.data.text,
         eventContentDTO.data.encryptedExternalData?.let {
-            EncryptedData(Base64.decodeFromBase64(it.toByteArray(Charsets.UTF_8)))
+            EncryptedData(Base64.decodeFromBase64(it.encodeToByteArray()))
         }
     )
 

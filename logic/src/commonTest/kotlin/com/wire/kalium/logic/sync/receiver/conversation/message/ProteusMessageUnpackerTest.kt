@@ -39,7 +39,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
-import io.ktor.utils.io.core.toByteArray
+ 
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

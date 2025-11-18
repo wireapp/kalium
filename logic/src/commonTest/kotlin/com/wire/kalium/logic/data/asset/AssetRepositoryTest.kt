@@ -42,7 +42,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
-import io.ktor.utils.io.core.toByteArray
+ 
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -68,7 +68,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
         val (arrangement, assetRepository) = Arrangement()
@@ -99,7 +99,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 

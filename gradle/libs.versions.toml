@@ -12,7 +12,7 @@ compose-material3 = "1.0.0-alpha01"
 compose-jetbrains = "1.8.2"
 fileKit = "0.10.0-beta04"
 android-security = "1.1.0-alpha06"
-ktor = "2.3.10"
+ktor = "3.3.2"
 okio = "3.9.0"
 ok-http = "4.12.0"
 # 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 uploaded to a temporary repo
@@ -174,13 +174,13 @@ ktor-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 ktor-jsClient = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
-ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-serverNetty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
 ktor-serverLogging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
-ktor-serverContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serverContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
 ktor-serverCallId = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
 ktor-serverMetrics = { module = "io.ktor:ktor-server-metrics-micrometer-jvm", version.ref = "ktor" }
-ktor-statusPages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
+ktor-statusPages = { module = "io.ktor:ktor-server-status-pages-jvm", version.ref = "ktor" }
 
 # okio
 okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }

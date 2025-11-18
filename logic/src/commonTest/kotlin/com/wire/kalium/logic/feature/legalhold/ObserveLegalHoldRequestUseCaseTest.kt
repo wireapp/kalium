@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.ktor.utils.io.core.toByteArray
+ 
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
