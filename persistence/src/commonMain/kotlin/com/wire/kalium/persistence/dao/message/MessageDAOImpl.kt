@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -215,7 +216,9 @@ internal class MessageDAOImpl internal constructor(
                 .firstOrNull {
                     LocalId.check(it.id) && when (messageContent) {
                         is MessageEntityContent.MemberChange ->
-                            messageContent.memberChangeType == it.memberChangeType &&
+                            messageContent.memberChangeType == MessageEntity.MemberChangeType.entries.first { entries ->
+                                entries.name == it.memberChangeType
+                            } &&
                                     it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
 
                         is MessageEntityContent.ConversationRenamed ->
@@ -428,7 +431,7 @@ internal class MessageDAOImpl internal constructor(
         messageId: String,
         newMembers: List<QualifiedIDEntity>
     ): Unit = withContext(writeDispatcher.value) {
-        queries.updateMessageLegalHoldContentMembers(newMembers, messageId, conversationId)
+        queries.updateSystemMessageLegalHoldMembers(QualifiedIDListAdapter.encode(newMembers), messageId, conversationId)
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
@@ -464,7 +467,7 @@ internal class MessageDAOImpl internal constructor(
         userId: QualifiedIDEntity,
         clientId: String,
     ) = withContext(writeDispatcher.value) {
-        queries.markMessagesAsDecryptionResolved(userId, clientId)
+        queries.updateSystemMessageDecryptionResolved(userId, clientId)
     }
 
     override suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(

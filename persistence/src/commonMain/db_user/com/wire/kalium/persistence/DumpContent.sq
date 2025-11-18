@@ -62,7 +62,6 @@ INSERT INTO MessageSystemContent
            local_db.MessageSystemContent.conversation_id,
            local_db.MessageSystemContent.content_type,
            local_db.MessageSystemContent.text_1,
-           local_db.MessageSystemContent.text_2,
            local_db.MessageSystemContent.integer_1,
            local_db.MessageSystemContent.boolean_1,
            local_db.MessageSystemContent.list_1,

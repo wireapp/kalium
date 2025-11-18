@@ -115,13 +115,13 @@ SELECT
 FROM MessageFederationTerminatedContent;
 
 -- 3.8: Migrate MessageConversationProtocolChangedContent
--- Field mapping: text_1 = protocol
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, text_1)
+-- Field mapping: enum_1 = protocol
+INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, enum_1)
 SELECT
     message_id,
     conversation_id,
     'CONVERSATION_PROTOCOL_CHANGED' AS content_type,
-    protocol AS text_1
+    protocol AS enum_1
 FROM MessageConversationProtocolChangedContent;
 
 -- 3.9: Migrate MessageLegalHoldContent
@@ -241,7 +241,7 @@ CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemConten
 CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.enum_1 END AS federationType,
 
 -- Protocol changed (content_type = 'CONVERSATION_PROTOCOL_CHANGED')
-CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.text_1 END AS conversationProtocolChanged,
+CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.enum_1 END AS conversationProtocolChanged,
 
 -- Legal hold fields (content_type = 'LEGAL_HOLD')
 CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.list_1 END AS legalHoldMemberList,

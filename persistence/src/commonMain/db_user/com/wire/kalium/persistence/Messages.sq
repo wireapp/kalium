@@ -189,12 +189,11 @@ CREATE TABLE MessageSystemContent (
       content_type TEXT NOT NULL, -- Discriminator: MEMBER_CHANGE, FAILED_DECRYPT, CONVERSATION_RENAMED, etc.
 
       -- Generic typed fields for flexible storage
-      text_1 TEXT,      -- conversation_name, protocol, etc.
-      text_2 TEXT,      -- Reserved for future use
+      text_1 TEXT,      -- conversation_name, etc.
       integer_1 INTEGER, -- message_timer, error_code, etc.
       boolean_1 INTEGER AS Boolean, -- receipt_mode, is_apps_enabled, is_decryption_resolved
       list_1 TEXT,      -- member lists (List<QualifiedIDEntity>), domain lists (List<String>)
-      enum_1 TEXT,      -- member_change_type, federation_type, legal_hold_type
+      enum_1 TEXT,      -- member_change_type, federation_type, legal_hold_type, protocol
       blob_1 BLOB,      -- unknown_encoded_data for failed decryption
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -351,56 +350,56 @@ VALUES(?, ?, ?, ?, ?, ?);
 -- These replace the individual insert queries above for system message content
 
 insertSystemMessageContent:
-INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1, text_2, integer_1, boolean_1, list_1, enum_1, blob_1)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- Convenience queries for specific system message types using the consolidated table
 
 insertSystemMemberChange:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
-VALUES(?, ?, 'MEMBER_CHANGE', :content_type, :user_id_list);
+VALUES(?, ?, 'MEMBER_CHANGE', :member_change_list, :member_change_type);
 
 insertSystemFailedDecryption:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, blob_1, boolean_1, integer_1)
-VALUES(?, ?, 'FAILED_DECRYPT', ?, 0, ?);
+VALUES(?, ?, 'FAILED_DECRYPT', :unknown_encoded_data, 0, :error_code);
 
 insertSystemConversationRenamed:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1)
-VALUES(?, ?, 'CONVERSATION_RENAMED', ?);
+VALUES(:message_id, :conversation_id, 'CONVERSATION_RENAMED', :conversation_name);
 
 insertSystemNewConversationReceiptMode:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
-VALUES(?, ?, 'NEW_CONVERSATION_RECEIPT_MODE', ?);
+VALUES(?, ?, 'NEW_CONVERSATION_RECEIPT_MODE', :receipt_mode);
 
 insertSystemConversationReceiptModeChanged:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
-VALUES(?, ?, 'CONVERSATION_RECEIPT_MODE_CHANGED', ?);
+VALUES(?, ?, 'CONVERSATION_RECEIPT_MODE_CHANGED', :receipt_mode);
 
 insertSystemConversationAppsEnabledChanged:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
-VALUES(?, ?, 'CONVERSATION_APPS_ENABLED_CHANGED', ?);
+VALUES(?, ?, 'CONVERSATION_APPS_ENABLED_CHANGED', :is_apps_enabled);
 
 insertSystemConversationTimerChanged:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, integer_1)
-VALUES(?, ?, 'CONVERSATION_TIMER_CHANGED', ?);
+VALUES(:message_id, :conversation_id, 'CONVERSATION_TIMER_CHANGED', :message_timer);
 
 insertSystemFederationTerminated:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
-VALUES(?, ?, 'FEDERATION_TERMINATED', ?, ?);
+VALUES(:message_id, :conversation_id, 'FEDERATION_TERMINATED', :domain_list, :federation_type);
 
 insertSystemConversationProtocolChanged:
-INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1)
-VALUES(?, ?, 'CONVERSATION_PROTOCOL_CHANGED', ?);
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, enum_1)
+VALUES(:message_id, :conversation_id, 'CONVERSATION_PROTOCOL_CHANGED', :protocol);
 
 insertSystemLegalHold:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
-VALUES(?, ?, 'LEGAL_HOLD', ?, ?);
+VALUES(?, ?, 'LEGAL_HOLD', :legal_hold_member_list, :legal_hold_type);
 
 -- Update query for system content
 updateSystemMessageLegalHoldMembers:
 UPDATE MessageSystemContent
-SET list_1 = ?
-WHERE message_id = ? AND conversation_id = ? AND content_type = 'LEGAL_HOLD';
+SET list_1 = :user_id_list
+WHERE message_id = :message_id AND conversation_id = :conversation_id AND content_type = 'LEGAL_HOLD';
 
 updateSystemMessageDecryptionResolved:
 UPDATE MessageSystemContent

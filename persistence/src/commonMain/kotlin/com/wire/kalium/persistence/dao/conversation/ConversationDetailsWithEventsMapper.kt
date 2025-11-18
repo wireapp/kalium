@@ -108,8 +108,8 @@ data object ConversationDetailsWithEventsMapper {
         lastMessageSenderConnectionStatus: ConnectionEntity.State?,
         lastMessageSenderIsDeleted: Boolean?,
         lastMessageIsSelfMessage: Boolean,
-        lastMessageMemberChangeList: List<QualifiedIDEntity>?,
-        lastMessageMemberChangeType: MessageEntity.MemberChangeType?,
+        lastMessageMemberChangeList: String?,
+        lastMessageMemberChangeType: String?,
         lastMessageUpdateConversationName: String?,
         lastMessageIsMentioningSelfUser: Boolean,
         lastMessageIsQuotingSelfUser: Boolean?,
@@ -180,39 +180,40 @@ data object ConversationDetailsWithEventsMapper {
             messagesCount = unreadMessagesCount,
         ),
         lastMessage =
-        @Suppress("ComplexCondition") // we need to check all these fields
-        if (
-            lastMessageId != null && lastMessageContentType != null && lastMessageDate != null
-            && lastMessageVisibility != null && lastMessageSenderUserId != null && lastMessageIsEphemeral != null
-            && lastMessageIsSelfMessage != null && lastMessageIsMentioningSelfUser != null
-        ) {
-            MessageMapper.toPreviewEntity(
-                id = lastMessageId,
-                conversationId = qualifiedId,
-                contentType = lastMessageContentType,
-                date = lastMessageDate,
-                visibility = lastMessageVisibility,
-                senderUserId = lastMessageSenderUserId,
-                isEphemeral = lastMessageIsEphemeral,
-                senderName = lastMessageSenderName,
-                senderConnectionStatus = lastMessageSenderConnectionStatus,
-                senderIsDeleted = lastMessageSenderIsDeleted,
-                selfUserId = selfUserId,
-                isSelfMessage = lastMessageIsSelfMessage,
-                memberChangeList = lastMessageMemberChangeList,
-                memberChangeType = lastMessageMemberChangeType,
-                updatedConversationName = lastMessageUpdateConversationName,
-                conversationName = name,
-                isMentioningSelfUser = lastMessageIsMentioningSelfUser,
-                isQuotingSelfUser = lastMessageIsQuotingSelfUser,
-                text = lastMessageText,
-                assetMimeType = lastMessageAssetMimeType,
-                isUnread = lastMessageDate > lastReadDate,
-                isNotified = if (lastNotifiedMessageDate?.let { lastMessageDate > it } ?: false) 1 else 0,
-                mutedStatus = mutedStatus,
-                conversationType = type,
-            )
-        } else null,
+            @Suppress("ComplexCondition") // we need to check all these fields
+            if (
+                lastMessageId != null && lastMessageContentType != null && lastMessageDate != null
+                && lastMessageVisibility != null && lastMessageSenderUserId != null && lastMessageIsEphemeral != null
+                && lastMessageIsSelfMessage != null && lastMessageIsMentioningSelfUser != null
+            ) {
+                MessageMapper.toPreviewEntity(
+                    id = lastMessageId,
+                    conversationId = qualifiedId,
+                    contentType = lastMessageContentType,
+                    date = lastMessageDate,
+                    visibility = lastMessageVisibility,
+                    senderUserId = lastMessageSenderUserId,
+                    isEphemeral = lastMessageIsEphemeral,
+                    senderName = lastMessageSenderName,
+                    senderConnectionStatus = lastMessageSenderConnectionStatus,
+                    senderIsDeleted = lastMessageSenderIsDeleted,
+                    selfUserId = selfUserId,
+                    isSelfMessage = lastMessageIsSelfMessage,
+                    memberChangeList = lastMessageMemberChangeList,
+                    memberChangeType = lastMessageMemberChangeType,
+                    updateConversationName = lastMessageUpdateConversationName,
+                    conversationName = name,
+                    isMentioningSelfUser = lastMessageIsMentioningSelfUser,
+                    isQuotingSelfUser = lastMessageIsQuotingSelfUser,
+                    text = lastMessageText,
+                    assetMimeType = lastMessageAssetMimeType,
+                    isUnread = lastMessageDate > lastReadDate,
+                    shouldNotify = if (lastNotifiedMessageDate?.let { lastMessageDate > it } ?: false) 1
+                        else 0, // TODO: write unit test for this
+                    mutedStatus = mutedStatus,
+                    conversationType = type,
+                )
+            } else null,
         messageDraft = if (!messageDraftText.isNullOrBlank()) {
             MessageDraftMapper.toDao(
                 conversationId = qualifiedId,

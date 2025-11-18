@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
+import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -160,8 +162,7 @@ object MessageMapper {
                         } else {
                             MessagePreviewEntityContent.ConversationMembersRemoved(
                                 senderName = senderName,
-                                isContainSelfUserId = userIdList
-                                    .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                                isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                                 otherUserIdList = userIdList.filterNot { it == selfUserId },
                             )
                         }
@@ -184,15 +185,13 @@ object MessageMapper {
                     )
 
                     MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessagePreviewEntityContent.FederatedMembersRemoved(
-                        isContainSelfUserId = userIdList
-                            .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
 
                     MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMembersRemoved(
                         senderName = senderName,
-                        isContainSelfUserId = userIdList
-                            .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
                 }
@@ -272,26 +271,26 @@ object MessageMapper {
         senderIsDeleted: Boolean?,
         selfUserId: QualifiedIDEntity?,
         isSelfMessage: Boolean,
-        memberChangeList: List<QualifiedIDEntity>?,
-        memberChangeType: MessageEntity.MemberChangeType?,
-        updatedConversationName: String?,
+        memberChangeList: String?,
+        memberChangeType: String?,
+        updateConversationName: String?,
         conversationName: String?,
         isMentioningSelfUser: Boolean,
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
         isUnread: Boolean,
-        isNotified: Long,
+        shouldNotify: Long,
         mutedStatus: ConversationEntity.MutedStatus?,
-        conversationType: ConversationEntity.Type?
+        conversationType: ConversationEntity.Type?,
     ): MessagePreviewEntity {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
             visibility = visibility,
             senderName = senderName,
             isSelfMessage = isSelfMessage,
-            memberChangeList = memberChangeList,
-            memberChangeType = memberChangeType,
+            memberChangeList = memberChangeList?.let { QualifiedIDListAdapter.decode(it) },
+            memberChangeType = memberChangeType?.let { MessageEntity.MemberChangeType.entries.first { entry -> entry.name == it } },
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             isEphemeral = isEphemeral,
@@ -502,8 +501,8 @@ object MessageMapper {
         assetNormalizedLoudness: ByteArray?,
         assetDataPath: String?,
         callerId: QualifiedIDEntity?,
-        memberChangeList: List<QualifiedIDEntity>?,
-        memberChangeType: MessageEntity.MemberChangeType?,
+        memberChangeList: String?,
+        memberChangeType: String?,
         unknownContentTypeName: String?,
         unknownContentData: ByteArray?,
         restrictedAssetMimeType: String?,
@@ -536,15 +535,15 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
-        federationDomainList: List<String>?,
-        federationType: MessageEntity.FederationType?,
-        conversationProtocolChanged: ConversationEntity.Protocol?,
+        federationDomainList: String?,
+        federationType: String?,
+        conversationProtocolChanged: String?,
         latitude: Float?,
         longitude: Float?,
         locationName: String?,
         locationZoom: Int?,
-        legalHoldMemberList: List<QualifiedIDEntity>?,
-        legalHoldType: MessageEntity.LegalHoldType?,
+        legalHoldMemberList: String?,
+        legalHoldType: String?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -593,8 +592,12 @@ object MessageMapper {
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
             MessageEntity.ContentType.MEMBER_CHANGE -> MessageEntityContent.MemberChange(
-                memberUserIdList = memberChangeList.requireField("memberChangeList"),
-                memberChangeType = memberChangeType.requireField("memberChangeType")
+                memberUserIdList = QualifiedIDListAdapter.decode(
+                    memberChangeList.requireField("memberChangeList")
+                ),
+                memberChangeType = MessageEntity.MemberChangeType.entries.first {
+                    it.name == memberChangeType.requireField("memberChangeType")
+                }
             )
 
             MessageEntity.ContentType.MISSED_CALL -> MessageEntityContent.MissedCall
@@ -678,13 +681,22 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessageEntityContent.ConversationVerifiedMLS
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessageEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.FEDERATION -> MessageEntityContent.Federation(
-                domainList = federationDomainList.requireField("federationDomainList"),
-                type = federationType.requireField("federationType")
+                domainList = StringListAdapter.decode(
+                    federationDomainList.requireField("federationDomainList")
+                ),
+                type = MessageEntity.FederationType.entries.first {
+                    it.name == federationType.requireField("federationType")
+                }
             )
 
-            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessageEntityContent.ConversationProtocolChanged(
-                protocol = conversationProtocolChanged ?: ConversationEntity.Protocol.PROTEUS
-            )
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED ->
+                MessageEntityContent.ConversationProtocolChanged(
+                    protocol = conversationProtocolChanged?.let {
+                        ConversationEntity.Protocol.entries.first {
+                            it.name == conversationProtocolChanged
+                        }
+                    } ?: ConversationEntity.Protocol.PROTEUS
+                )
 
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL ->
                 MessageEntityContent.ConversationProtocolChangedDuringACall
@@ -698,8 +710,8 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
-                memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
-                type = legalHoldType.requireField("legalHoldType")
+                memberUserIdList = QualifiedIDListAdapter.decode(legalHoldMemberList.requireField("memberChangeList")),
+                type = MessageEntity.LegalHoldType.entries.first { it.name == legalHoldType.requireField("legalHoldType") }
             )
 
             MessageEntity.ContentType.MULTIPART -> MessageEntityContent.Multipart(
@@ -799,13 +811,11 @@ object MessageMapper {
         "Field $fieldName null when unpacking message content"
     }
 
-    private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> =
-        messageMentions?.let {
-            serializer.decodeFromString(it)
-        } ?: emptyList()
+    private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> = messageMentions?.let {
+        serializer.decodeFromString(it)
+    } ?: emptyList()
 
-    private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> =
-        messageAttachments?.let {
-            serializer.decodeFromString(it)
-        } ?: emptyList()
+    private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> = messageAttachments?.let {
+        serializer.decodeFromString(it)
+    } ?: emptyList()
 }
