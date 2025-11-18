@@ -90,7 +90,10 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
         withContext(writeDispatcher.value) {
-            queries.markMessageAsDeleted(id, conversationsId)
+            queries.markMessageAsDeleted(
+                message_id = id,
+                conversation_id = conversationsId
+            )
             unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
         }
 

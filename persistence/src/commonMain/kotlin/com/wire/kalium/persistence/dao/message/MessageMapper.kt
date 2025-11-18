@@ -379,7 +379,7 @@ object MessageMapper {
                 conversationId = conversationId,
                 date = date,
                 senderUserId = senderUserId,
-                senderClientId = senderClientId!!,
+                senderClientId = senderClientId.requireField("senderClientId"),
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
                 expireAfterMs = expireAfterMillis,
