@@ -1,6 +1,6 @@
 -- Migration 119: Consolidate system message content tables into MessageSystemContent
 -- This migration consolidates 10 separate system message content tables into a single table
--- with generic typed columns, reducing JOIN complexity in MessageDetailsView from 12 to 2 JOINs.
+-- with generic typed columns, reducing JOIN complexity in MessageDetailsView.
 --
 -- Tables being consolidated:
 -- 1. MessageMemberChangeContent
@@ -14,7 +14,6 @@
 -- 9. MessageLegalHoldContent
 -- 10. MessageConversationAppsEnabledChangedContent
 --
--- Note: MessageRecipientFailure remains separate (different cardinality - multiple records per message)
 
 -- Step 1: Create the new consolidated table
 CREATE TABLE IF NOT EXISTS MessageSystemContent (
@@ -24,7 +23,6 @@ CREATE TABLE IF NOT EXISTS MessageSystemContent (
 
     -- Generic typed fields for flexible storage
     text_1 TEXT,      -- conversation_name, protocol, etc.
-    text_2 TEXT,      -- Reserved for future use
     integer_1 INTEGER, -- message_timer, error_code, etc.
     boolean_1 INTEGER, -- receipt_mode, is_apps_enabled, is_decryption_resolved
     list_1 TEXT,      -- member lists, domain lists
@@ -159,7 +157,6 @@ DROP TABLE IF EXISTS MessageMemberChangeContent;
 
 -- Step 5: Recreate MessageDetailsView with the new consolidated table
 DROP VIEW IF EXISTS MessageDetailsView;
-
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -214,38 +211,8 @@ AssetData.data_path AS assetDataPath,
 MissedCallContent.caller_id AS callerId,
 
 -- System message content from consolidated table
--- Member change fields (content_type = 'MEMBER_CHANGE')
 CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
 CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
-
--- Failed decryption fields (content_type = 'FAILED_DECRYPT')
-CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.blob_1 END AS failedToDecryptData,
-CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.integer_1 END AS decryptionErrorCode,
-CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.boolean_1 END AS isDecryptionResolved,
-
--- Conversation name change (content_type = 'CONVERSATION_RENAMED')
-CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS conversationName,
-
--- Apps enabled (content_type = 'CONVERSATION_APPS_ENABLED_CHANGED')
-CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN SystemContent.boolean_1 END AS isConversationAppsEnabled,
-
--- Receipt mode fields
-CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
-CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
-
--- Timer change (content_type = 'CONVERSATION_TIMER_CHANGED')
-CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
-
--- Federation terminated fields (content_type = 'FEDERATION_TERMINATED')
-CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.list_1 END AS federationDomainList,
-CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.enum_1 END AS federationType,
-
--- Protocol changed (content_type = 'CONVERSATION_PROTOCOL_CHANGED')
-CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.enum_1 END AS conversationProtocolChanged,
-
--- Legal hold fields (content_type = 'LEGAL_HOLD')
-CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.list_1 END AS legalHoldMemberList,
-CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.enum_1 END AS legalHoldType,
 
 UnknownContent.unknown_type_name AS unknownContentTypeName,
 UnknownContent.unknown_encoded_data AS unknownContentData,
@@ -253,6 +220,11 @@ RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 
+CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.blob_1 END AS failedToDecryptData,
+CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.integer_1 END AS decryptionErrorCode,
+CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.boolean_1 END AS isDecryptionResolved,
+
+CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS conversationName,
 IFNULL(
     (SELECT '[' ||
         GROUP_CONCAT(
@@ -323,6 +295,11 @@ QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 QuotedLocationContent.name AS quotedLocationName,
 
+CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN SystemContent.boolean_1 END AS isConversationAppsEnabled,
+CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
+
+CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
+CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
 FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
 
@@ -336,11 +313,15 @@ IFNULL(
     ),
     '[]'
 ) AS buttonsJson,
-
+CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.list_1 END AS federationDomainList,
+CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.enum_1 END AS federationType,
+CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.enum_1 END AS conversationProtocolChanged,
 ConversationLocationContent.latitude AS latitude,
 ConversationLocationContent.longitude AS longitude,
 ConversationLocationContent.name AS locationName,
-ConversationLocationContent.zoom AS locationZoom
+ConversationLocationContent.zoom AS locationZoom,
+CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.list_1 END AS legalHoldMemberList,
+CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.enum_1 END AS legalHoldType
 
 FROM Message
 JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id
@@ -349,7 +330,6 @@ LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.messa
 LEFT JOIN Asset AS AssetData ON AssetContent.asset_id = AssetData.key
 LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
 
--- NEW: Single consolidated system content table instead of 10+ separate tables
 LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
 
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id

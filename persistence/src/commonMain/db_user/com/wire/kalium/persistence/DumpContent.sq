@@ -51,7 +51,6 @@ INSERT INTO MessageRestrictedAssetContent
         WHERE selfdelete_message_id.id IS NULL
            OR selfdelete_message_id.conversation_id IS NULL;
 
--- Dump consolidated system message content (excludes self-deleting messages)
 WITH selfdelete_message_id AS (
     SELECT local_db.Message.id, local_db.Message.conversation_id
         FROM local_db.Message

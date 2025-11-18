@@ -63,7 +63,6 @@ AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
 AssetData.data_path AS assetDataPath,
 MissedCallContent.caller_id AS callerId,
 
--- System message content from consolidated table
 CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
 CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
 
@@ -183,7 +182,6 @@ LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.messa
 LEFT JOIN Asset AS AssetData ON AssetContent.asset_id = AssetData.key
 LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
 
--- Consolidated system message content
 LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
 
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id

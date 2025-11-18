@@ -177,12 +177,6 @@ CREATE TABLE MessageConversationLocationContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
--- Consolidated system message content table
--- Replaces: MessageMemberChangeContent, MessageFailedToDecryptContent, MessageConversationChangedContent,
---           MessageNewConversationReceiptModeContent, MessageConversationReceiptModeChangedContent,
---           MessageConversationTimerChangedContent, MessageFederationTerminatedContent,
---           MessageConversationProtocolChangedContent, MessageLegalHoldContent, MessageConversationAppsEnabledChangedContent
--- Note: MessageRecipientFailure remains separate due to different cardinality (can have multiple records per message)
 CREATE TABLE MessageSystemContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -200,7 +194,6 @@ CREATE TABLE MessageSystemContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
--- Index for efficient querying by content type
 CREATE INDEX idx_system_content_type ON MessageSystemContent(content_type);
 
 needsToBeNotified:
@@ -346,14 +339,9 @@ insertLocationMessageContent:
 INSERT OR IGNORE INTO MessageConversationLocationContent(message_id, conversation_id, latitude, longitude, name, zoom)
 VALUES(?, ?, ?, ?, ?, ?);
 
--- Consolidated system message insert queries
--- These replace the individual insert queries above for system message content
-
 insertSystemMessageContent:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
-
--- Convenience queries for specific system message types using the consolidated table
 
 insertSystemMemberChange:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
