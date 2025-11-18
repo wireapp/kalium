@@ -23,9 +23,12 @@ import io.ktor.util.encodeBase64
 
 /**
  *
- * TODO(qol): Move to a utils module?
+ * TODO(qol): Move to a utils module? or delete
  */
 object Base64 {
     fun encodeToBase64(originalString: ByteArray): ByteArray = originalString.encodeBase64().encodeToByteArray()
+
+    // TODO: why!! and when it is used it is a string is string is converted
+        // to byte array and then back to string and then decoded to bse64
     fun decodeFromBase64(encoded: ByteArray): ByteArray = encoded.decodeToString().decodeBase64Bytes()
 }
