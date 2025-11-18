@@ -28,12 +28,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Tests for migration 119: Consolidating system message content tables into MessageSystemContent
+ * Tests for migration 120: Consolidating system message content tables into MessageSystemContent
  *
  * This migration consolidates 10 separate system message content tables into a single table
  * with generic typed columns.
  */
-class Migration119Test : SchemaMigrationTest() {
+class Migration120Test : SchemaMigrationTest() {
 
     companion object {
         // Test data constants
@@ -41,16 +41,17 @@ class Migration119Test : SchemaMigrationTest() {
         private const val CONVERSATION_ID = "test-conversation-id"
         private const val USER_ID = "user-id@domain.com"
         private const val USER_ID_2 = "user-id-2@domain.com"
+        private const val MIGRATION_NAME = 120
     }
 
     /**
-     * Returns the migration SQL for migration 119.
+     * Returns the migration SQL for migration 120.
      * This reads the actual migration file from disk to ensure tests match the real migration.
      */
-    private fun getMigration119Sql(): String {
-        val migrationFile = File("src/commonMain/db_user/migrations/119.sqm")
+    private fun getMigration120Sql(): String {
+        val migrationFile = File("src/commonMain/db_user/migrations/$MIGRATION_NAME.sqm")
         if (!migrationFile.exists()) {
-            throw error("Migration file not found: ${migrationFile.absolutePath}")
+            error("Migration file not found: ${migrationFile.absolutePath}")
         }
         return migrationFile.readText()
     }
@@ -58,7 +59,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testMemberChangeContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Insert test data into MessageMemberChangeContent
                 driver.executeInsert("""
@@ -66,7 +67,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '["$USER_ID", "$USER_ID_2"]', 'ADDED')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify the data was migrated to MessageSystemContent
                 val count = driver.countRows("MessageSystemContent")
@@ -103,7 +104,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testFailedToDecryptContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Insert test data into MessageFailedToDecryptContent
                 val testData = byteArrayOf(0x01, 0x02, 0x03)
@@ -119,7 +120,7 @@ class Migration119Test : SchemaMigrationTest() {
                     bindLong(4, 404)
                 }
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify the data was migrated
                 var contentType: String? = null
@@ -155,14 +156,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testConversationRenamedContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageConversationChangedContent (message_id, conversation_id, conversation_name)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', 'New Conversation Name')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var text1: String? = null
@@ -190,7 +191,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testReceiptModeContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Test NEW_CONVERSATION_RECEIPT_MODE
                 driver.executeInsert("""
@@ -204,7 +205,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('msg-2', '$CONVERSATION_ID', 0)
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 val count = driver.countRows("MessageSystemContent")
                 assertEquals(2, count)
@@ -253,14 +254,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testTimerChangedContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageConversationTimerChangedContent (message_id, conversation_id, message_timer)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', 86400000)
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var integer1: Long? = null
@@ -288,14 +289,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testFederationTerminatedContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageFederationTerminatedContent (message_id, conversation_id, domain_list, federation_type)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '["domain1.com", "domain2.com"]', 'REMOVED')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var list1: String? = null
@@ -326,14 +327,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testProtocolChangedContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageConversationProtocolChangedContent (message_id, conversation_id, protocol)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', 'MLS')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var enum1: String? = null
@@ -361,14 +362,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testLegalHoldContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageLegalHoldContent (message_id, conversation_id, legal_hold_member_list, legal_hold_type)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '["$USER_ID"]', 'ENABLED')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var list1: String? = null
@@ -399,14 +400,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testAppsEnabledChangedContentMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageConversationAppsEnabledChangedContent (message_id, conversation_id, is_apps_enabled)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', 1)
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var boolean1: Long? = null
@@ -434,7 +435,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testMultipleSystemMessagesMigration() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Insert multiple different system message types
                 driver.executeInsert("""
@@ -457,7 +458,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('msg-4', '$CONVERSATION_ID', 'MLS')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify all 4 messages were migrated
                 val count = driver.countRows("MessageSystemContent")
@@ -485,11 +486,11 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testIndexCreation() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // No setup needed, just test index creation
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify index exists
                 var indexExists = false
@@ -515,7 +516,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testMemberChangeDataIntegrity_AllFieldsPreserved() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Insert with all possible data
                 driver.executeInsert("""
@@ -523,7 +524,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '["$USER_ID", "$USER_ID_2"]', 'FEDERATION_REMOVED')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify ALL fields in the migrated row
                 var messageId: String? = null
@@ -578,7 +579,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testFailedDecryptDataIntegrity_AllFieldsPreserved() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 val testData = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05)
                 driver.execute(null, """
@@ -593,7 +594,7 @@ class Migration119Test : SchemaMigrationTest() {
                     bindLong(4, 500)
                 }
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var messageId: String? = null
                 var conversationId: String? = null
@@ -644,14 +645,14 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testConversationRenamedDataIntegrity_AllFieldsPreserved() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 driver.executeInsert("""
                     INSERT INTO MessageConversationChangedContent (message_id, conversation_id, conversation_name)
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', 'Complete Conversation Name')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var messageId: String? = null
                 var conversationId: String? = null
@@ -700,7 +701,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testAllReceiptModeTypesDataIntegrity() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // NEW_CONVERSATION_RECEIPT_MODE
                 driver.executeInsert("""
@@ -714,7 +715,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('msg-changed', '$CONVERSATION_ID', 0)
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify NEW_CONVERSATION_RECEIPT_MODE
                 var contentType1: String? = null
@@ -776,7 +777,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testFederationTerminatedDataIntegrity_ComplexListPreserved() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Complex domain list with multiple domains
                 val complexDomainList = """["domain1.com", "domain2.co.uk", "subdomain.example.org"]"""
@@ -785,7 +786,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '$complexDomainList', 'CONNECTION_REMOVED')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var list1: String? = null
@@ -821,7 +822,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testLegalHoldDataIntegrity_ComplexMemberList() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Complex member list with multiple qualified IDs
                 val memberList = """["user1@domain1.com", "user2@domain2.com", "user3@domain1.com"]"""
@@ -830,7 +831,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '$memberList', 'DISABLED_FOR_CONVERSATION')
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 var contentType: String? = null
                 var list1: String? = null
@@ -865,7 +866,7 @@ class Migration119Test : SchemaMigrationTest() {
     @Test
     fun testAllSystemMessageTypesNoDataLoss() = runTest(dispatcher) {
         runMigrationTest(
-            schemaVersion = 119,
+            schemaVersion = MIGRATION_NAME,
             setupOldSchema = { driver ->
                 // Insert one of each type with maximum data complexity
                 driver.executeInsert("""
@@ -925,7 +926,7 @@ class Migration119Test : SchemaMigrationTest() {
                     VALUES ('msg10', '$CONVERSATION_ID', 1)
                 """)
             },
-            migrationSql = { getMigration119Sql() },
+            migrationSql = { getMigration120Sql() },
             verifyNewSchema = { driver ->
                 // Verify count
                 val totalCount = driver.countRows("MessageSystemContent")
