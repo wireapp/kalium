@@ -29,6 +29,6 @@ object Base64 {
     fun encodeToBase64(originalString: ByteArray): ByteArray = originalString.encodeBase64().encodeToByteArray()
 
     // TODO: why!! and when it is used it is a string is string is converted
-        // to byte array and then back to string and then decoded to bse64
+    // to byte array and then back to string and then decoded to bse64
     fun decodeFromBase64(encoded: ByteArray): ByteArray = encoded.decodeToString().decodeBase64Bytes()
 }
