@@ -154,7 +154,7 @@ internal open class NotificationApiV0 internal constructor(
                 val closeReason = if (isNormalClosure(cause)) {
                     CloseReason(CloseReason.Codes.NORMAL, "Normal closure")
                 } else {
-                    CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Error: ${cause.message}")
+                    CloseReason(CloseReason.Codes.INTERNAL_ERROR, "Error: ${cause?.message}")
                 }
                 defaultClientWebSocketSession.close(closeReason)
                 logger.w("Websocket Closed", cause)
