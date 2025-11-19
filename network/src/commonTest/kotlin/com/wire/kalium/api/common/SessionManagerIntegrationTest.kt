@@ -72,7 +72,7 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldRefreshToken = oldTokens!!.refreshToken ?: ""
+                oldRefreshToken = oldTokens?.refreshToken
             )
             newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
@@ -118,7 +118,7 @@ class SessionManagerIntegrationTest {
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
             val newSession = sessionManager.updateToken(
                 accessTokenApi = AccessTokenApiV0(client),
-                oldRefreshToken = oldTokens!!.refreshToken ?: ""
+                oldRefreshToken = oldTokens?.refreshToken
             )
             newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)

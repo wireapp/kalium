@@ -42,7 +42,11 @@ interface SessionManager {
      * @return The updated SessionDTO object.
      * @see FailureToRefreshTokenException
      */
-    suspend fun updateToken(accessTokenApi: AccessTokenApi, oldRefreshToken: String): SessionDTO
+    suspend fun updateToken(
+        accessTokenApi: AccessTokenApi,
+        oldRefreshToken: String?
+    ): SessionDTO
+
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 
