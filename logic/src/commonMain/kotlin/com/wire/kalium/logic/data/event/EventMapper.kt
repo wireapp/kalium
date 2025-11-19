@@ -333,7 +333,7 @@ class EventMapper(
         eventContentDTO.time,
         eventContentDTO.data.text,
         eventContentDTO.data.encryptedExternalData?.let {
-            EncryptedData(Base64.decodeFromBase64(it.encodeToByteArray()))
+            EncryptedData(Base64.decodeFromBase64(it))
         }
     )
 

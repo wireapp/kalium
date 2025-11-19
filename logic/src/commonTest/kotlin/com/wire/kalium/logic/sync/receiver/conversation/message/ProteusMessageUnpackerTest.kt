@@ -82,7 +82,7 @@ class ProteusMessageUnpackerTest {
             CryptoClientId(messageEvent.senderClientId.value)
         )
 
-        val decodedByteArray = Base64.decodeFromBase64(messageEvent.content.toByteArray())
+        val decodedByteArray = Base64.decodeFromBase64(messageEvent.content)
         coVerify {
             arrangement.proteusContext.decryptMessage<Any>(eq(cryptoSessionId), matches { it.contentEquals(decodedByteArray) }, any())
         }.wasInvoked(exactly = once)

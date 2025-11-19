@@ -68,7 +68,7 @@ internal class ProteusMessageUnpackerImpl(
         event: Event.Conversation.NewMessage,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
     ): Either<CoreFailure, T> {
-        val decodedContentBytes = Base64.decodeFromBase64(event.content.encodeToByteArray())
+        val decodedContentBytes = Base64.decodeFromBase64(event.content)
         val cryptoSessionId = CryptoSessionId(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),
             CryptoClientId(event.senderClientId.value)
