@@ -28,7 +28,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
- 
 import io.mockative.any
 import io.mockative.of
 import io.mockative.coEvery

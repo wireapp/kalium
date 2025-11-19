@@ -42,7 +42,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
- 
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

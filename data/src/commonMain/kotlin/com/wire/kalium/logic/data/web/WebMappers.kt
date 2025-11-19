@@ -62,8 +62,6 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
         }
 
         is WebEventContent.Conversation.AssetMessage -> {
-//             val otrKey: ByteArray? = data.otrKey?.values?.map { it.toByte() }?.let { list -> ByteArray(list.size) { idx -> list[idx] } }
-//             val sha256 = data.sha256?.values?.map { it.toByte() }?.let { list -> ByteArray(list.size) { idx -> list[idx] } }
             val otrKey = data.otrKey?.values?.map { it.toByte() }?.toByteArray()
             val sha256 = data.sha256?.values?.map { it.toByte() }?.toByteArray()
             val mimeType = data.contentType ?: ""

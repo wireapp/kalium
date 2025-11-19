@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.asset.UploadedAssetId
- 
 
 object TestAsset {
 
