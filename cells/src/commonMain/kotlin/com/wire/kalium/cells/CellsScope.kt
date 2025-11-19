@@ -81,12 +81,16 @@ import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
@@ -240,5 +244,13 @@ public class CellsScope(
 
     public val getCellFileUseCase: GetCellFileUseCase by lazy {
         GetCellFileUseCaseImpl(cellsRepository)
+    }
+
+    public val createPublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase by lazy {
+        CreatePublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val updatePublicLinkPasswordUseCase: UpdatePublicLinkPasswordUseCase by lazy {
+        UpdatePublicLinkPasswordUseCaseImpl(cellsRepository)
     }
 }

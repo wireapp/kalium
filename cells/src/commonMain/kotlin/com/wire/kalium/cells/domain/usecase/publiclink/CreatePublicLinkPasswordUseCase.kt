@@ -18,29 +18,16 @@
 package com.wire.kalium.cells.domain.usecase.publiclink
 
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.cells.domain.model.CellsCredentials
-import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
 
-/**
- * Get public link with given UUID from Wire Cell server
- */
-public interface GetPublicLinkUseCase {
-    public suspend operator fun invoke(linkUuid: String): Either<CoreFailure, PublicLink>
+public interface CreatePublicLinkPasswordUseCase {
+    public suspend operator fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit>
 }
 
-internal class GetPublicLinkUseCaseImpl(
-    private val cellsCredentials: CellsCredentials?,
-    private val cellsRepository: CellsRepository,
-) : GetPublicLinkUseCase {
-    override suspend fun invoke(linkUuid: String): Either<CoreFailure, PublicLink> {
-        return cellsRepository.getPublicLink(linkUuid)
-            .map { link ->
-                link.copy(
-                    url = "${cellsCredentials?.serverUrl}${link.url}"
-                )
-            }
-    }
+internal class CreatePublicLinkPasswordUseCaseImpl(
+    private val repository: CellsRepository
+) : CreatePublicLinkPasswordUseCase {
+    override suspend fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit> =
+        repository.createPublicLinkPassword(linkUuid, password)
 }
