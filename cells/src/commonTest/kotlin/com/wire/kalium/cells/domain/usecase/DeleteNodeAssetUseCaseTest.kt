@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
- 
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
