@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
- 
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
