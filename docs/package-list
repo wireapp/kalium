@@ -422,6 +422,7 @@ com.wire.kalium.logic.data.message.linkpreview
 com.wire.kalium.logic.data.message.mention
 com.wire.kalium.logic.data.message.reaction
 com.wire.kalium.logic.data.message.receipt
+com.wire.kalium.logic.data.mls
 com.wire.kalium.logic.data.mlspublickeys
 com.wire.kalium.logic.data.notification
 com.wire.kalium.logic.data.prekey
