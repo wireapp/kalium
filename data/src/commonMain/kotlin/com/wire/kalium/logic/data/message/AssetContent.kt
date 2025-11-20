@@ -119,6 +119,7 @@ data class CellAssetContent(
     val contentHash: String? = null,
     val localPath: String? = null,
     val contentUrl: String? = null,
+    val contentUrlExpiresAt: Long? = null,
     val previewUrl: String? = null,
     val metadata: AssetMetadata?,
     val transferStatus: AssetTransferStatus,

@@ -73,26 +73,28 @@ FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
 FailedToDecryptContent.error_code AS decryptionErrorCode,
 FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
 ConversationNameChangedContent.conversation_name AS conversationName,
-'{' || IFNULL(
-    (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
-    FROM (
-        SELECT COUNT(*) count, Reaction.emoji emoji
-        FROM Reaction
-        WHERE Reaction.message_id = Message.id
-        AND Reaction.conversation_id = Message.conversation_id
-        GROUP BY Reaction.emoji
-    )),
-    '')
-|| '}' AS allReactionsJson,
 IFNULL(
-    (SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
-    FROM Reaction
-    WHERE Reaction.message_id = Message.id
-        AND Reaction.conversation_id = Message.conversation_id
-        AND Reaction.sender_id = SelfUser.id
+    (SELECT '[' ||
+        GROUP_CONCAT(
+            '{"emoji":"' || emoji ||
+            '","count":' || count ||
+            ',"isSelf":' || CASE WHEN isSelf > 0 THEN 'true' ELSE 'false' END ||
+            '}'
+        ) || ']'
+    FROM (
+        SELECT
+            Reaction.emoji AS emoji,
+            COUNT(*) AS count,
+            SUM(CASE WHEN Reaction.sender_id = s.id THEN 1 ELSE 0 END) AS isSelf
+        FROM Reaction
+        CROSS JOIN SelfUser s
+        WHERE Reaction.message_id = Message.id
+            AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )
     ),
     '[]'
-) AS selfReactionsJson,
+) AS reactionsJson,
 IFNULL(
     (SELECT '[' || GROUP_CONCAT(
         '{"start":' || start || ', "length":' || length ||
@@ -120,7 +122,8 @@ IFNULL(
         "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
         "content_hash":"' || IFNULL(content_hash,'') || '",
         "content_url":"' || IFNULL(content_url,'') || '",
-        "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
+        "preview_url":"' || IFNULL(preview_url,'') || '",
+        "content_url_expires_at":"' || IFNULL(content_url_expires_at,0) || '"}') || ']'
     FROM MessageAttachments
     WHERE (MessageAttachments.message_id = Message.id
         AND MessageAttachments.conversation_id = Message.conversation_id)
@@ -141,6 +144,7 @@ QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 QuotedLocationContent.name AS quotedLocationName,
 
+ConversationAppsEnabledChanged.is_apps_enabled AS isConversationAppsEnabled,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
@@ -189,6 +193,7 @@ LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_i
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 -- end joins for quoted messages
+LEFT JOIN MessageConversationAppsEnabledChangedContent AS ConversationAppsEnabledChanged ON Message.id = ConversationAppsEnabledChanged.message_id AND Message.conversation_id = ConversationAppsEnabledChanged.conversation_id
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id

@@ -88,7 +88,8 @@ internal class MessageInsertExtensionImpl(
                 assetName = assetName,
                 assetOtrKey = assetOtrKey,
                 assetSha256 = assetSha256Key,
-                assetEncryptionAlgorithm = assetEncryptionAlgorithm
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                assetNormalizedLoudness = assetNormalizedLoudness,
             )
         }
     }
@@ -118,8 +119,8 @@ internal class MessageInsertExtensionImpl(
             sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
             visibility = message.visibility,
             last_edit_date =
-            if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
-            else null,
+                if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
+                else null,
             status = message.status,
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
@@ -369,12 +370,20 @@ internal class MessageInsertExtensionImpl(
                     )
                 }
             }
+
             is MessageEntityContent.NewConversationWithCellMessage -> {
                 /* no-op */
             }
+
             is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.ConversationAppsAccessChanged -> messagesQueries.insertConversationAppsEnabledChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                is_apps_enabled = content.isEnabled
+            )
         }
     }
 
@@ -438,6 +447,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.TeamMemberRemoved,
                 is MessageEntityContent.LegalHold,
                 is MessageEntityContent.NewConversationWithCellMessage,
+                is MessageEntityContent.ConversationAppsAccessChanged,
                 is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
                     -> {
                     /* no-op */
@@ -543,5 +553,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.NewConversationWithCellMessage -> MessageEntity.ContentType.CONVERSATION_WITH_CELL
         is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED
+
+        is MessageEntityContent.ConversationAppsAccessChanged -> MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED
     }
 }

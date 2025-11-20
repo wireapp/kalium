@@ -19,13 +19,13 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import io.mockative.Mockable
 
@@ -134,6 +134,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.History -> false
             is MessageContent.NewConversationWithCellMessage -> false
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
+            is MessageContent.ConversationAppsEnabledChanged -> false
         }
 
     @Suppress("ComplexMethod")
@@ -194,6 +195,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.InCallEmoji,
             is MessageContent.History,
             is MessageContent.NewConversationWithCellMessage,
+            is MessageContent.ConversationAppsEnabledChanged,
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
         }
 }

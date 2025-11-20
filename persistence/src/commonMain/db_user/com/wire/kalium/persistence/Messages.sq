@@ -42,6 +42,9 @@ CREATE INDEX message_status_index ON Message(status);
 CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
 CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
+CREATE INDEX idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
+CREATE INDEX idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
+
 CREATE TABLE MessageLinkPreview (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -268,6 +271,16 @@ CREATE TABLE MessageLegalHoldContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageConversationAppsEnabledChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      is_apps_enabled INTEGER AS Boolean  NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
@@ -427,6 +440,10 @@ insertConversationReceiptModeChanged:
 INSERT OR IGNORE INTO MessageConversationReceiptModeChangedContent(message_id, conversation_id, receipt_mode)
 VALUES(?, ?, ?);
 
+insertConversationAppsEnabledChanged:
+INSERT OR IGNORE INTO MessageConversationAppsEnabledChangedContent(message_id, conversation_id, is_apps_enabled)
+VALUES(?, ?, ?);
+
 insertConversationMessageTimerChanged:
 INSERT OR IGNORE INTO MessageConversationTimerChangedContent(message_id, conversation_id, message_timer)
 VALUES(?, ?, ?);
@@ -473,7 +490,7 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
-    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm, asset_normalized_loudness = :assetNormalizedLoudness
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 }
 
@@ -499,13 +516,13 @@ selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY creation_date DESC;
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
 
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
 countBackupMessages:
-SELECT count(*) FROM MessageDetailsView WHERE visibility = "VISIBLE" AND selfDeletionEndDate IS NULL AND contentType IN :contentType;
+SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;
 
 selectForBackup:
 SELECT * FROM MessageDetailsView
@@ -631,4 +648,10 @@ FROM Message LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = Asset
 WHERE Message.conversation_id = :conversationId
 AND AssetContent.asset_mime_type LIKE "%audio/%"
 AND Message.creation_date > (SELECT Message.creation_date FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId)
+ORDER BY Message.creation_date ASC
 LIMIT 1;
+
+updateAudioMessageNormalizedLoudness:
+UPDATE MessageAssetContent
+SET asset_normalized_loudness = ?
+WHERE message_id = ? AND conversation_id = ?;

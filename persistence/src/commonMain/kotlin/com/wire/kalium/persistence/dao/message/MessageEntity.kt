@@ -148,7 +148,7 @@ sealed interface MessageEntity {
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
-        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED,
+        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED
     }
 
     enum class MemberChangeType {
@@ -299,7 +299,7 @@ sealed class MessageEntityContent {
         // Local path
         val assetDataPath: String? = null,
 
-    ) : Regular()
+        ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()
     data class Location(
@@ -350,6 +350,7 @@ sealed class MessageEntityContent {
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
+    data class ConversationAppsAccessChanged(val isEnabled: Boolean) : System()
     data object ConversationProtocolChangedDuringACall : System()
     data object HistoryLostProtocolChanged : System()
     data object HistoryLost : System()

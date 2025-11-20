@@ -31,7 +31,6 @@ import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
-import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -255,6 +254,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -362,8 +362,7 @@ object MessageMapper {
         lastEdit: Instant?,
         visibility: MessageEntity.Visibility,
         content: MessageEntityContent,
-        allReactionsJson: String?,
-        selfReactionsJson: String?,
+        reactionsJson: String?,
         senderName: String?,
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
@@ -387,10 +386,7 @@ object MessageMapper {
                 expireAfterMs = expireAfterMillis,
                 selfDeletionEndDate = selfDeletionEndDate,
                 visibility = visibility,
-                reactions = ReactionsEntity(
-                    totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
-                    selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-                ),
+                reactions = ReactionMapper.reactionsFromJsonString(reactionsJson),
                 senderName = senderName,
                 isSelfMessage = isSelfMessage,
                 expectsReadConfirmation = expectsReadConfirmation,
@@ -517,8 +513,7 @@ object MessageMapper {
         decryptionErrorCode: Long?,
         isDecryptionResolved: Boolean?,
         conversationName: String?,
-        allReactionsJson: String,
-        selfReactionsJson: String,
+        reactionsJson: String,
         mentions: String,
         attachments: String?,
         quotedMessageId: String?,
@@ -534,6 +529,7 @@ object MessageMapper {
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
         quotedLocationName: String?,
+        isConversationAppsEnabled: Boolean?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
@@ -665,6 +661,10 @@ object MessageMapper {
                 receiptMode = conversationReceiptModeChanged ?: false
             )
 
+            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessageEntityContent.ConversationAppsAccessChanged(
+                isEnabled = isConversationAppsEnabled ?: false
+            )
+
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
             MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> MessageEntityContent.HistoryLostProtocolChanged
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
@@ -765,8 +765,7 @@ object MessageMapper {
             lastEditTimestamp,
             visibility,
             content,
-            allReactionsJson,
-            selfReactionsJson,
+            reactionsJson,
             senderName,
             isSelfMessage,
             expectsReadConfirmation,
