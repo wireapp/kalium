@@ -83,7 +83,7 @@ internal class RecoverMLSConversationsUseCaseImpl(
         val protocol = conversation.protocol
         return if (protocol is Conversation.ProtocolInfo.MLS) {
             transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.isGroupOutOfSync(mlsContext, protocol.groupId, protocol.epoch)
+                mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, protocol.epoch)
             }
                 .fold({ checkEpochFailure ->
                     Either.Left(checkEpochFailure)
