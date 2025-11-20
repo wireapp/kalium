@@ -21,33 +21,37 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 
 internal interface AccountRepositoryArrangement {
 
     val accountRepository: AccountRepository
     suspend fun withUpdateSelfUserAvailabilityStatus(
         result: Either<StorageFailure, Unit>,
-        newStatus: Matcher<UserAvailabilityStatus> = AnyMatcher(valueOf())
+        newStatus: UserAvailabilityStatus? = null
     )
 }
 
 internal class AccountRepositoryArrangementImpl : AccountRepositoryArrangement {
 
-    override val accountRepository: AccountRepository = mock(AccountRepository::class)
+    override val accountRepository: AccountRepository = mock<AccountRepository>()
 
     override suspend fun withUpdateSelfUserAvailabilityStatus(
         result: Either<StorageFailure, Unit>,
-        newStatus: Matcher<UserAvailabilityStatus>
+        newStatus: UserAvailabilityStatus?
     ) {
-        coEvery {
-            accountRepository.updateSelfUserAvailabilityStatus(matches { newStatus.matches(it) })
-        }.returns(result)
+        if (newStatus != null) {
+            everySuspend {
+                accountRepository.updateSelfUserAvailabilityStatus(newStatus)
+            } returns result
+        } else {
+            everySuspend {
+                accountRepository.updateSelfUserAvailabilityStatus(any())
+            } returns result
+        }
     }
 
 }
