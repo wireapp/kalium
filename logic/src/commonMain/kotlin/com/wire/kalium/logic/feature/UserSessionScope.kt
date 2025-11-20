@@ -159,6 +159,7 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftDataSource
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
+import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
@@ -318,6 +319,8 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandlerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
@@ -761,6 +764,14 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository,
             mutex = mlsMutex
         )
+
+    private val mlsMissingUsersRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler = {
+        MLSMissingUsersMessageRejectionHandlerImpl(
+            mlsConversationRepository,
+            ConversationProtocolGetterImpl(userStorage.database.conversationDAO),
+            userScopedLogger
+        )
+    }
 
     private val e2eiRepository: E2EIRepository
         get() = E2EIRepositoryImpl(
@@ -2159,6 +2170,7 @@ class UserSessionScope internal constructor(
             notificationTokenRepository,
             this,
             userStorage,
+            mlsMissingUsersRejectionHandlerProvider,
             updateSelfClientCapabilityToConsumableNotifications,
             users.serverLinks,
             fetchConversationUseCase,
@@ -2206,6 +2218,7 @@ class UserSessionScope internal constructor(
             isWireCellsEnabledForConversation,
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
+            mlsMissingUsersRejectionHandlerProvider,
             this,
             userScopedLogger
         )

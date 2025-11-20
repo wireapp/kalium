@@ -35,10 +35,9 @@ sealed class MLSMessageFailureResolution {
 internal object MLSMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
         fun handleRejected(rejectedFailure: NetworkFailure.MlsMessageRejectedFailure) = when (rejectedFailure) {
+            is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync,
             NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex,
             NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature -> MLSMessageFailureResolution.ResetConversation
-
-            is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> TODO("Handle Groupf Out Of Sync")
 
             NetworkFailure.MlsMessageRejectedFailure.ClientMismatch,
             NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences,
