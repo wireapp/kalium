@@ -45,7 +45,8 @@ SELECT
     COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
     TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
     TextContent.text_body AS lastMessageText,
-    AssetContent.asset_mime_type AS lastMessageAssetMimeType
+    COALESCE(AssetContent.asset_mime_type, AttachmentsContent.asset_mime_type) AS lastMessageAssetMimeType,
+    AttachmentsContent.attachments_count AS lastMessageAttachmentsCount
 FROM ConversationDetails
 LEFT JOIN UnreadEventCountsGrouped
     ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
@@ -65,6 +66,18 @@ LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
     ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent
     ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+LEFT JOIN (
+    SELECT
+        message_id,
+        conversation_id,
+        CASE
+            WHEN COUNT(DISTINCT asset_mime_type) = 1 THEN MIN(asset_mime_type)
+            ELSE NULL
+        END AS asset_mime_type,
+        COUNT(*) attachments_count
+    FROM MessageAttachments
+    GROUP BY message_id, conversation_id
+) AS AttachmentsContent ON LastMessage.message_id = AttachmentsContent.message_id AND LastMessage.conversation_id = AttachmentsContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE

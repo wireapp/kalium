@@ -424,7 +424,7 @@ sealed class MessagePreviewEntityContent {
 
     data class Composite(val senderName: String?, val messageBody: String?) : MessagePreviewEntityContent()
 
-    data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
+    data class Asset(val senderName: String?, val type: AssetTypeEntity, val count: Int = 0) : MessagePreviewEntityContent()
 
     data class MentionedSelf(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 

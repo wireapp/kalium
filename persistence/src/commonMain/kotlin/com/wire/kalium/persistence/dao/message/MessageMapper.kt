@@ -54,6 +54,7 @@ object MessageMapper {
         isGroupConversation: Boolean,
         text: String?,
         assetMimeType: String?,
+        lastMessageAttachmentsCount: Int,
         selfUserId: QualifiedIDEntity?,
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
@@ -71,6 +72,7 @@ object MessageMapper {
                 isQuotingSelfUser,
                 text,
                 assetMimeType,
+                lastMessageAttachmentsCount,
                 selfUserId,
                 senderUserId
             )
@@ -90,6 +92,7 @@ object MessageMapper {
         isQuotingSelfUser: Boolean?,
         text: String?,
         assetMimeType: String?,
+        lastMessageAttachmentsCount: Int,
         selfUserId: QualifiedIDEntity?,
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
@@ -220,7 +223,6 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessagePreviewEntityContent.ConversationVerificationDegradedMls
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS -> MessagePreviewEntityContent.ConversationVerificationDegradedProteus
-            MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
@@ -229,33 +231,56 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.MULTIPART -> when {
-                isSelfMessage -> MessagePreviewEntityContent.Text(
-                    senderName = senderName,
-                    messageBody = text.requireField("text")
-                )
-
-                (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
-                    senderName = senderName,
-                    // requireField here is safe since if a message have a quote, it must have a text
-                    messageBody = text.requireField("text")
-                )
-
-                (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
-                    senderName = senderName,
-                    messageBody = text.requireField("text")
-                )
-
-                else -> MessagePreviewEntityContent.Text(
-                    senderName = senderName,
-                    messageBody = text.requireField("text")
-                )
-            }
+            MessageEntity.ContentType.MULTIPART -> handleMultipPart(
+                isSelfMessage = isSelfMessage,
+                senderName = senderName,
+                text = text,
+                assetMimeType = assetMimeType,
+                lastMessageAttachmentsCount = lastMessageAttachmentsCount,
+                isQuotingSelfUser = isQuotingSelfUser,
+                isMentioningSelfUser = isMentioningSelfUser
+            )
 
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
         }
+    }
+
+    private fun handleMultipPart(
+        isSelfMessage: Boolean,
+        senderName: String?,
+        text: String?,
+        assetMimeType: String?,
+        lastMessageAttachmentsCount: Int,
+        isQuotingSelfUser: Boolean?,
+        isMentioningSelfUser: Boolean
+    ): MessagePreviewEntityContent = when {
+
+        (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
+            senderName = senderName,
+            // requireField here is safe since if a message have a quote, it must have a text
+            messageBody = text.requireField("text")
+        )
+
+        (isMentioningSelfUser) -> MessagePreviewEntityContent.MentionedSelf(
+            senderName = senderName,
+            messageBody = text.requireField("text")
+        )
+
+        else -> MessagePreviewEntityContent.Asset(
+            senderName = senderName,
+            count = lastMessageAttachmentsCount,
+            type = assetMimeType?.let {
+                when {
+                    it.contains("image/") -> AssetTypeEntity.IMAGE
+                    it.contains("video/") -> AssetTypeEntity.VIDEO
+                    it.contains("audio/") -> AssetTypeEntity.AUDIO
+                    else -> AssetTypeEntity.GENERIC_ASSET
+                }
+            } ?: AssetTypeEntity.GENERIC_ASSET
+        )
     }
 
     @Suppress("ComplexMethod", "UNUSED_PARAMETER")
@@ -283,7 +308,8 @@ object MessageMapper {
         isUnread: Boolean,
         isNotified: Long,
         mutedStatus: ConversationEntity.MutedStatus?,
-        conversationType: ConversationEntity.Type?
+        conversationType: ConversationEntity.Type?,
+        lastMessageAttachmentsCount: Long?,
     ): MessagePreviewEntity {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
@@ -298,6 +324,7 @@ object MessageMapper {
             isGroupConversation = conversationType == ConversationEntity.Type.GROUP,
             text = text,
             assetMimeType = assetMimeType,
+            lastMessageAttachmentsCount = lastMessageAttachmentsCount?.toInt() ?: 0,
             selfUserId = selfUserId,
             senderUserId = senderUserId
         )

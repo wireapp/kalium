@@ -59,6 +59,7 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -69,6 +70,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.DelicateKaliumApi
@@ -78,7 +80,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlinx.serialization.builtins.SetSerializer
@@ -490,19 +491,15 @@ internal class ConversationDataSource internal constructor(
     ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
             conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
-            if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()
-        ) { conversationList, lastMessageList, unreadEvents, drafts ->
-            val lastMessageMap = lastMessageList.associateBy { it.conversationId }
-            val messageDraftMap = drafts.filter { it.text.isNotBlank() }.associateBy { it.conversationId }
+        ) { conversationList, unreadEvents, drafts ->
+            val messageDraftMap = emptyMap<ConversationIDEntity, MessageDraftEntity>()
             val unreadEventsMap = unreadEvents.associateBy { it.conversationId }
-
             conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetailsWithEvents(
                     ConversationDetailsWithEventsEntity(
                         conversationViewEntity = conversation,
-                        lastMessage = lastMessageMap[conversation.id],
                         messageDraft = messageDraftMap[conversation.id],
                         unreadEvents = unreadEventsMap[conversation.id] ?: ConversationUnreadEventEntity(conversation.id, mapOf()),
                     )
