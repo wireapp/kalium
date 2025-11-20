@@ -28,12 +28,15 @@ import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.Pagination
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
@@ -48,6 +51,7 @@ import okio.use
 @Suppress("TooManyFunctions")
 internal class CellsDataSource internal constructor(
     private val cellsApi: CellsApi,
+    private val publicLinkDao: PublicLinkDao,
     private val awsClient: CellsAwsClient,
     private val fileSystem: FileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
@@ -270,6 +274,22 @@ internal class CellsDataSource internal constructor(
     override suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.removeTagsFromNode(uuid = uuid)
+        }
+    }
+
+    override suspend fun getPublicLinkPassword(linkUuid: String): Either<StorageFailure, String?> = wrapStorageRequest {
+        publicLinkDao.get(linkUuid)?.password
+    }
+
+    override suspend fun savePublicLinkPassword(linkUuid: String, password: String) {
+        wrapStorageRequest {
+            publicLinkDao.insert(linkUuid, password)
+        }
+    }
+
+    override suspend fun clearPublicLinkPassword(linkUuid: String) {
+        wrapStorageRequest {
+            publicLinkDao.delete(linkUuid)
         }
     }
 }

@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import io.mockative.Mockable
 import okio.Path
@@ -67,4 +68,7 @@ internal interface CellsRepository {
     suspend fun getAllTags(): Either<NetworkFailure, List<String>>
     suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit>
     suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit>
+    suspend fun getPublicLinkPassword(linkUuid: String): Either<StorageFailure, String?>
+    suspend fun savePublicLinkPassword(linkUuid: String, password: String)
+    suspend fun clearPublicLinkPassword(linkUuid: String)
 }
