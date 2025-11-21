@@ -59,6 +59,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
@@ -98,6 +99,7 @@ class DebugScope internal constructor(
     private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
     private val userStorage: UserStorage,
+    private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val updateSelfClientCapabilityToConsumableNotifications:
     UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val selfServerConfig: SelfServerConfigUseCase,
@@ -195,6 +197,7 @@ class DebugScope internal constructor(
             userRepository,
             staleEpochVerifier,
             transactionProvider,
+            mlsMissingUsersMessageRejectionHandlerProvider(),
             { message, expirationData ->
                 ephemeralMessageDeletionHandler.enqueueSelfDeletion(
                     message,

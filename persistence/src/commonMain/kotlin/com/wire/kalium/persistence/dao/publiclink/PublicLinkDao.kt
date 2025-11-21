@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao.publiclink
 
-package com.wire.kalium.logic.util
+import io.mockative.Mockable
 
-import io.ktor.util.decodeBase64Bytes
-import io.ktor.util.encodeBase64
-import io.ktor.utils.io.core.toByteArray
+data class PublicLinkEntity(
+    val id: String,
+    val password: String,
+)
 
-/**
- *
- * TODO(qol): Move to a utils module?
- */
-object Base64 {
-    fun encodeToBase64(originalString: ByteArray): ByteArray = originalString.encodeBase64().toByteArray()
-    fun decodeFromBase64(encoded: String): ByteArray = encoded.decodeBase64Bytes()
+@Mockable
+interface PublicLinkDao {
+    suspend fun insert(id: String, password: String)
+    suspend fun update(id: String, password: String)
+    suspend fun get(id: String): PublicLinkEntity?
+    suspend fun delete(id: String)
 }

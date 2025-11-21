@@ -20,4 +20,6 @@ package com.wire.kalium.cells.domain.model
 public data class PublicLink(
     val uuid: String,
     val url: String,
+    val expiresAt: String? = null,
+    val passwordRequired: Boolean = false,
 )

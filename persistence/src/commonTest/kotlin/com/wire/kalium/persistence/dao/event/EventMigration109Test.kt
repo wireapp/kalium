@@ -47,7 +47,7 @@ class EventMigration109Test : BaseDatabaseTest() {
     private fun runMigration109Query() {
         // This is the exact query from 109/sqm.sq
         val updateQuery = """
-            UPDATE Metadata 
+            UPDATE Metadata
             SET stringValue = COALESCE(
                 (SELECT event_id 
                  FROM Events 

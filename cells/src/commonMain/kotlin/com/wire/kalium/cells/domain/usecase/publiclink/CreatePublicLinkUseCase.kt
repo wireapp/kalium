@@ -24,7 +24,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
-public const val SECURE_PUBLIC_LINK_ENABLED: Boolean = false
+public const val SECURE_PUBLIC_LINK_ENABLED: Boolean = true
 
 /**
  * Create new public link for given asset id. Created Public link is stored on the Wire Cell server.

@@ -15,28 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase.publiclink
+package com.wire.kalium.logic.feature.mls
 
-import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 
-/**
- * Delete public link with given UUID from Wire Cells server.
- * Also removes password from local storage if it was set.
- */
-public interface DeletePublicLinkUseCase {
-    public suspend operator fun invoke(linkUuid: String): Either<CoreFailure, Unit>
-}
+class FakeMLSMissingUsersRejectionHandler : MLSMissingUsersMessageRejectionHandler {
+    var callCount = 0
 
-internal class DeletePublicLinkUseCaseImpl(
-    private val cellsRepository: CellsRepository,
-) : DeletePublicLinkUseCase {
-    override suspend fun invoke(linkUuid: String): Either<CoreFailure, Unit> {
-        return cellsRepository.deletePublicLink(linkUuid)
-            .onSuccess {
-                cellsRepository.clearPublicLinkPassword(linkUuid)
-            }
-    }
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        groupId: GroupID,
+        mlsFailure: NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync
+    ): Either<CoreFailure, Unit> = Either.Right(Unit).also { callCount++ }
 }
