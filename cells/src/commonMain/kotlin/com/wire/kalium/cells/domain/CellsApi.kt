@@ -34,7 +34,7 @@ internal interface CellsApi {
     suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
     suspend fun delete(paths: List<String>, permanentDelete: Boolean = false): NetworkResponse<Unit>
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
-    suspend fun getPublicLink(linkUuid: String): NetworkResponse<String>
+    suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink>
     suspend fun getNodesForPath(
         path: String,
         limit: Int? = null,
@@ -60,4 +60,7 @@ internal interface CellsApi {
     suspend fun getAllTags(): NetworkResponse<List<String>>
     suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit>
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
+    suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
+    suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
+    suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
 }

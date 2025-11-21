@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -50,6 +51,8 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.mls.FakeMLSMissingUsersRejectionHandler
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
@@ -63,8 +66,6 @@ import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
@@ -322,6 +323,52 @@ class MessageSenderTest {
             coVerify {
                 arrangement.staleEpochVerifier.verifyEpoch(any(), eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
             }.wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenGroupOutOfSyncResponse_whenSendingMlsMessage_thenCallFailureHandlerAndSendSuccessfullyAfterwards() {
+        // given
+        val missingUsers = listOf(
+            TestUser.OTHER_USER_ID,
+            TestUser.OTHER_USER_ID.copy(value = "value2")
+        )
+        val response = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(missingUsers))
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(response), times = 1)
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            assertEquals(1, arrangement.mlsMissingUsersMessageRejectionHandler.callCount)
+            result.shouldSucceed()
+        }
+    }
+
+    @Test
+    fun givenNoFailures_whenSendingMlsMessage_thenShouldNotCallMLSOutOfSyncHandler() {
+        // given
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            assertEquals(0, arrangement.mlsMissingUsersMessageRejectionHandler.callCount)
         }
     }
 
@@ -997,6 +1044,7 @@ class MessageSenderTest {
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
         val syncManager = mock(SyncManager::class)
         val userRepository = mock(UserRepository::class)
+        val mlsMissingUsersMessageRejectionHandler = FakeMLSMissingUsersRejectionHandler()
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
@@ -1032,6 +1080,7 @@ class MessageSenderTest {
                 },
                 staleEpochVerifier = staleEpochVerifier,
                 transactionProvider = cryptoTransactionProvider,
+                mlsMissingUsersMessageRejectionHandler = mlsMissingUsersMessageRejectionHandler,
                 scope = testScope
             )
         }

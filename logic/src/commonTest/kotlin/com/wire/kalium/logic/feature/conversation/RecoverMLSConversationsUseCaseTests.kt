@@ -61,7 +61,7 @@ class RecoverMLSConversationsUseCaseTests {
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.wasInvoked(conversations.size)
 
         coVerify {
@@ -85,7 +85,7 @@ class RecoverMLSConversationsUseCaseTests {
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.wasInvoked(conversations.size)
 
         coVerify {
@@ -109,7 +109,7 @@ class RecoverMLSConversationsUseCaseTests {
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
@@ -133,7 +133,7 @@ class RecoverMLSConversationsUseCaseTests {
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.wasInvoked(twice)
 
         coVerify {
@@ -156,7 +156,7 @@ class RecoverMLSConversationsUseCaseTests {
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
@@ -203,16 +203,16 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withConversationIsOutOfSyncReturnsTrueFor(groupIds: List<GroupID>) = apply {
             coEvery {
-                mlsConversationRepository.isGroupOutOfSync(any(), matches { it in groupIds }, any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it in groupIds }, any())
             }.returns(Either.Right(true))
         }
 
         suspend fun withConversationIsOutOfSyncReturnsFalseFor(groupID: GroupID) = apply {
             coEvery {
-                mlsConversationRepository.isGroupOutOfSync(any(), eq(groupID), any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), eq(groupID), any())
             }.returns(Either.Right(false))
             coEvery {
-                mlsConversationRepository.isGroupOutOfSync(any(), matches { it != groupID }, any())
+                mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it != groupID }, any())
             }.returns(Either.Right(true))
         }
 
