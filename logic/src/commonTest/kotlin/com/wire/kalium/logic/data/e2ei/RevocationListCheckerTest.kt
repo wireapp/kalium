@@ -122,7 +122,7 @@ class RevocationListCheckerTest {
         suspend fun withE2EIRepositorySuccess() = apply {
             coEvery {
                 certificateRevocationListRepository.getClientDomainCRL(any())
-            }.returns(Either.Right("result".toByteArray()))
+            }.returns(Either.Right("result".encodeToByteArray()))
         }
 
         suspend fun withRegisterCrl() = apply {

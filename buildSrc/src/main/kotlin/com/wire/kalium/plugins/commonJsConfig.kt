@@ -20,20 +20,22 @@ package com.wire.kalium.plugins
 
 import org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl
 
-fun KotlinJsTargetDsl.commonJsConfig(jsModuleNameOverride: String?, enableJsTests: Boolean) {
-    if (jsModuleNameOverride != null) {
-        moduleName = jsModuleNameOverride
+fun KotlinJsTargetDsl.commonJsConfig(
+    jsModuleNameOverride: String?,
+    enableJsTests: Boolean
+) {
+    jsModuleNameOverride?.let { outputModuleName.set(it) }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xes-long-as-bigint")
     }
+
     browser {
-//                     // Not needed for now, but if we include UI with CSS in the future, we can enable it
-//                     commonWebpackConfig {
-//                         cssSupport.enabled = true
-//                     }
         testTask {
             enabled = enableJsTests
-            useMocha {
-                timeout = "5s"
-            }
+            useMocha { timeout = "5s" }
         }
+        // if later we need to enable CSS
+        // commonWebpackConfig { cssSupport { enabled.set(true) } }
     }
 }
