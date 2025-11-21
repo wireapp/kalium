@@ -51,7 +51,6 @@ plugins {
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
-//     alias(libs.plugins.completeKotlin)
     alias(libs.plugins.dagCommand)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.jetbrains) apply false
@@ -140,7 +139,7 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
 
 rootProject.plugins.withType<NodeJsPlugin> {
     rootProject.the<NodeJsEnvSpec>().version = "17.6.0"
-    // If you want to use the downloaded Node instead of system Node:
+    // If we want to use the downloaded Node instead of system Node:
     // rootProject.the<NodeJsEnvSpec>().download.set(true)
 }
 

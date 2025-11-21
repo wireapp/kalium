@@ -24,16 +24,14 @@ fun KotlinJsTargetDsl.commonJsConfig(
     jsModuleNameOverride: String?,
     enableJsTests: Boolean
 ) {
-    // ✅ new API (Provider-based)
     jsModuleNameOverride?.let { outputModuleName.set(it) }
 
     browser {
         testTask {
             enabled = enableJsTests
-            // keep whatever you had; both "5s" and millis work
             useMocha { timeout = "5s" }
         }
-        // if you later enable CSS, keep your webpack config here
+        // if later we need to enable CSS
         // commonWebpackConfig { cssSupport { enabled.set(true) } }
     }
 }

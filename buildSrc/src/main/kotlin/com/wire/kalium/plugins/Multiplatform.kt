@@ -46,7 +46,6 @@ internal fun Project.configureDefaultMultiplatform(
         ?: error("No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?")
 
     kotlinExtension.apply {
-        // New compilerOptions DSL
         compilerOptions {
             optIn.add("kotlin.RequiresOptIn")
             optIn.add("kotlin.uuid.ExperimentalUuidApi")
@@ -74,13 +73,10 @@ internal fun Project.configureDefaultMultiplatform(
         }
     }
 
-    // Android Gradle Plugin configuration
     (this as org.gradle.api.plugins.ExtensionAware).extensions
         .configure<com.android.build.gradle.LibraryExtension>("android") {
             commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
         }
-
-    // --- Source set dependencies: use an explicit receiver ---
 
     val androidInstrTest = kotlinExtension.sourceSets.getByName("androidInstrumentedTest")
     androidInstrTest.dependencies {
@@ -117,7 +113,6 @@ internal fun Project.configureDefaultMultiplatform(
         }
     }
 
-    // Language settings for all source sets
     kotlinExtension.sourceSets.all {
         languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
     }

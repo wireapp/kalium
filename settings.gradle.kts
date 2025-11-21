@@ -36,7 +36,6 @@ rootDir
 
 pluginManagement {
     repositories {
-//         mavenLocal() // Check local Maven first for the forked Mockative version
         gradlePluginPortal()
         google()
         mavenCentral()
@@ -62,7 +61,6 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
-//         mavenLocal() // Check local Maven first for the forked Mockative version
         mavenCentral()
     }
     versionCatalogs {
