@@ -201,7 +201,7 @@ class CertificateRevocationListRepositoryTest {
 
         suspend fun withClientDomainCRL() = apply {
             coEvery { acmeApi.getClientDomainCRL(any(), any<String?>()) }
-                .returns(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
+                .returns(NetworkResponse.Success("some_response".encodeToByteArray(), mapOf(), 200))
         }
     }
 
