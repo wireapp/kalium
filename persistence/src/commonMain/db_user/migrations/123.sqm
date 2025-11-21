@@ -60,6 +60,10 @@ LEFT JOIN MessageDraft
 LEFT JOIN (
     SELECT
         conversation_id,
+        CASE
+            WHEN COUNT(DISTINCT mime_type) = 1 THEN MIN(mime_type)
+            ELSE NULL
+        END AS mime_type,
         COUNT(*) attachments_count
     FROM MessageAttachmentDraft
     GROUP BY conversation_id

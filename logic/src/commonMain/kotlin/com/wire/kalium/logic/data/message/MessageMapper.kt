@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.conversation.DraftAttachmentsOverview
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
@@ -65,6 +66,7 @@ interface MessageMapper {
     fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview
+    fun fromDraftAttachmentsOverviewToMessagePreview(draftAttachmentsOverview: DraftAttachmentsOverview): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
@@ -245,7 +247,18 @@ class MessageMapperImpl(
         return MessagePreview(
             id = message.conversationId.toString(),
             conversationId = message.conversationId.toModel(),
-            content = MessagePreviewContent.Draft(message.text),
+            content = MessagePreviewContent.Draft(message.text, null, 0),
+            visibility = Message.Visibility.VISIBLE,
+            isSelfMessage = true,
+            senderUserId = selfUserId
+        )
+    }
+
+    override fun fromDraftAttachmentsOverviewToMessagePreview(draftAttachmentsOverview: DraftAttachmentsOverview): MessagePreview {
+        return MessagePreview(
+            id = draftAttachmentsOverview.conversationId.toString(),
+            conversationId = draftAttachmentsOverview.conversationId.toModel(),
+            content = MessagePreviewContent.Draft(null, draftAttachmentsOverview.mimeType, draftAttachmentsOverview.count),
             visibility = Message.Visibility.VISIBLE,
             isSelfMessage = true,
             senderUserId = selfUserId
@@ -528,7 +541,12 @@ fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
 
 @Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
-    is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel(), count = count)
+    is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(
+        username = senderName,
+        type = type.toModel(),
+        count = count
+    )
+
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
     is MessagePreviewEntityContent.MemberJoined -> MessagePreviewContent.WithUser.MemberJoined(senderName)

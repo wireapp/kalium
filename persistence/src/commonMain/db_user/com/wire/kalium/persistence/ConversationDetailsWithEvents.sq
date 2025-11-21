@@ -28,6 +28,8 @@ SELECT
     MessageDraft.edit_message_id AS messageDraftEditMessageId,
     MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
     MessageDraft.mention_list AS messageDraftMentionList,
+    DraftAttachments.mime_type AS messageDraftAttachmentMimeType,
+    IFNULL(CAST(DraftAttachments.attachments_count AS INTEGER), 0) AS messageDraftAttachmentsCount,
     -- last message
     Message.id AS lastMessageId,
     Message.content_type AS lastMessageContentType,
@@ -52,6 +54,17 @@ LEFT JOIN UnreadEventCountsGrouped
     ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
 LEFT JOIN MessageDraft
     ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
+LEFT JOIN (
+    SELECT
+        conversation_id,
+        CASE
+            WHEN COUNT(DISTINCT mime_type) = 1 THEN MIN(mime_type)
+            ELSE NULL
+        END AS mime_type,
+        COUNT(*) attachments_count
+    FROM MessageAttachmentDraft
+    GROUP BY conversation_id
+) AS DraftAttachments ON ConversationDetails.qualifiedId = DraftAttachments.conversation_id
 LEFT JOIN LastMessage
     ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
 LEFT JOIN Message

@@ -380,6 +380,9 @@ internal class ConversationMapperImpl(
             lastMessage = when {
                 daoModel.conversationViewEntity.archived -> null // no last message in archived conversations
                 daoModel.messageDraft != null -> messageMapper.fromDraftToMessagePreview(daoModel.messageDraft!!)
+                daoModel.messageAttachmentDraft != null -> messageMapper.fromDraftAttachmentsOverviewToMessagePreview(
+                    daoModel.messageAttachmentDraft!!
+                )
                 daoModel.lastMessage != null -> messageMapper.fromEntityToMessagePreview(daoModel.lastMessage!!)
                 else -> null
             },

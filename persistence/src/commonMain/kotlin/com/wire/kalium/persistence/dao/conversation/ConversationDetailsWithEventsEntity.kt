@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
@@ -25,6 +26,13 @@ data class ConversationDetailsWithEventsEntity(
     val conversationViewEntity: ConversationViewEntity,
     val lastMessage: MessagePreviewEntity? = null,
     val messageDraft: MessageDraftEntity? = null,
+    val messageAttachmentDraft: DraftAttachmentsOverview? = null,
     val unreadEvents: ConversationUnreadEventEntity = ConversationUnreadEventEntity(conversationViewEntity.id, mapOf()),
     val hasNewActivitiesToShow: Boolean = false,
+)
+
+data class DraftAttachmentsOverview(
+    val conversationId: QualifiedIDEntity,
+    val mimeType: String?,
+    val count: Int,
 )

@@ -586,5 +586,5 @@ sealed interface MessagePreviewContent {
         data object DegradedProteus : VerificationChanged()
     }
 
-    data class Draft(val message: String) : MessagePreviewContent
+    data class Draft(val message: String?, val attachmentType: String?, val attachmentsCount: Int) : MessagePreviewContent
 }
