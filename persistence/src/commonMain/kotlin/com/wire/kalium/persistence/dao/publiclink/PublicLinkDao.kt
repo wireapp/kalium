@@ -15,11 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.persistence.dao.publiclink
 
-public data class PublicLink(
-    val uuid: String,
-    val url: String,
-    val expiresAt: String? = null,
-    val passwordRequired: Boolean = false,
+import io.mockative.Mockable
+
+data class PublicLinkEntity(
+    val id: String,
+    val password: String,
 )
+
+@Mockable
+interface PublicLinkDao {
+    suspend fun insert(id: String, password: String)
+    suspend fun update(id: String, password: String)
+    suspend fun get(id: String): PublicLinkEntity?
+    suspend fun delete(id: String)
+}

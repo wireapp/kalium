@@ -2564,6 +2564,7 @@ class UserSessionScope internal constructor(
                     attachmentsDao = messageAttachments,
                     assetsDao = assetDAO,
                     userDao = userDAO,
+                    publicLinkDao = publicLinks,
                 )
             },
             sessionManager = sessionManager,

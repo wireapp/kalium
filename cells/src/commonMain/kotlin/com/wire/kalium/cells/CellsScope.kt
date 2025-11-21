@@ -81,12 +81,18 @@ import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
@@ -95,6 +101,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
+import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -115,6 +122,7 @@ public class CellsScope(
         val attachmentsDao: MessageAttachmentsDao,
         val assetsDao: AssetDAO,
         val userDao: UserDAO,
+        val publicLinkDao: PublicLinkDao,
     )
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -137,6 +145,7 @@ public class CellsScope(
     private val cellsRepository: CellsRepository
         get() = CellsDataSource(
             cellsApi = cellsApi,
+            publicLinkDao = dao.publicLinkDao,
             awsClient = cellAwsClient,
             fileSystem = FileSystem.SYSTEM
         )
@@ -240,5 +249,17 @@ public class CellsScope(
 
     public val getCellFileUseCase: GetCellFileUseCase by lazy {
         GetCellFileUseCaseImpl(cellsRepository)
+    }
+
+    public val createPublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase by lazy {
+        CreatePublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val updatePublicLinkPasswordUseCase: UpdatePublicLinkPasswordUseCase by lazy {
+        UpdatePublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val getPublicLinkPassword: GetPublicLinkPasswordUseCase by lazy {
+        GetPublicLinkPasswordUseCaseImpl(cellsRepository)
     }
 }
