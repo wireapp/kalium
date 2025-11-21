@@ -26,6 +26,10 @@ fun KotlinJsTargetDsl.commonJsConfig(
 ) {
     jsModuleNameOverride?.let { outputModuleName.set(it) }
 
+    compilerOptions {
+        freeCompilerArgs.add("-Xes-long-as-bigint")
+    }
+
     browser {
         testTask {
             enabled = enableJsTests
