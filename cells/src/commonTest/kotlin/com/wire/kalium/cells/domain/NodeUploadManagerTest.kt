@@ -334,9 +334,24 @@ private class TestRepository : CellsRepository {
     override suspend fun createPublicLink(nodeUuid: String, fileName: String) =
         PublicLink("", "").right()
 
-    override suspend fun getPublicLink(linkUuid: String) = "".right()
+    override suspend fun getPublicLink(linkUuid: String) = PublicLink(
+        uuid = "",
+        url = ""
+    ).right()
 
     override suspend fun deletePublicLink(linkUuid: String) = Unit.right()
+    override suspend fun createPublicLinkPassword(
+        linkUuid: String,
+        password: String
+    ): Either<NetworkFailure, Unit> = Unit.right()
+
+    override suspend fun updatePublicLinkPassword(
+        linkUuid: String,
+        password: String
+    ): Either<NetworkFailure, Unit> = Unit.right()
+
+    override suspend fun removePublicLinkPassword(linkUuid: String): Either<NetworkFailure, Unit> = Unit.right()
+
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()

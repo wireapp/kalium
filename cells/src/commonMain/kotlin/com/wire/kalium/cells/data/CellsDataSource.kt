@@ -208,6 +208,24 @@ internal class CellsDataSource internal constructor(
         }
     }
 
+    override suspend fun createPublicLinkPassword(linkUuid: String, password: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.createPublicLinkPassword(linkUuid, password)
+        }
+    }
+
+    override suspend fun updatePublicLinkPassword(linkUuid: String, password: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.updatePublicLinkPassword(linkUuid, password)
+        }
+    }
+
+    override suspend fun removePublicLinkPassword(linkUuid: String) = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.removePublicLinkPassword(linkUuid)
+        }
+    }
+
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.createFolder(folderName)
