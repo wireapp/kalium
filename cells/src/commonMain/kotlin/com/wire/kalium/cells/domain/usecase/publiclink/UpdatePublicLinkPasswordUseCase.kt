@@ -20,7 +20,13 @@ package com.wire.kalium.cells.domain.usecase.publiclink
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onSuccess
 
+/**
+ * Update the password of a public link with the given [linkUuid].
+ * If [password] is null, the password will be removed.
+ * Local password is also updated (or removed).
+ */
 public interface UpdatePublicLinkPasswordUseCase {
     public suspend operator fun invoke(linkUuid: String, password: String?): Either<CoreFailure, Unit>
 }
@@ -34,7 +40,13 @@ internal class UpdatePublicLinkPasswordUseCaseImpl(
     ): Either<CoreFailure, Unit> =
         if (password.isNullOrEmpty()) {
             repository.removePublicLinkPassword(linkUuid)
+                .onSuccess {
+                    repository.clearPublicLinkPassword(linkUuid)
+                }
         } else {
             repository.updatePublicLinkPassword(linkUuid, password)
+                .onSuccess {
+                    repository.savePublicLinkPassword(linkUuid, password)
+                }
         }
 }

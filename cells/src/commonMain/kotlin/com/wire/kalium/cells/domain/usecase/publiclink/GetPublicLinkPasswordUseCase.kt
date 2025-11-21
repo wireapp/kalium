@@ -18,25 +18,16 @@
 package com.wire.kalium.cells.domain.usecase.publiclink
 
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.getOrNull
 
-/**
- * Delete public link with given UUID from Wire Cells server.
- * Also removes password from local storage if it was set.
- */
-public interface DeletePublicLinkUseCase {
-    public suspend operator fun invoke(linkUuid: String): Either<CoreFailure, Unit>
+public interface GetPublicLinkPasswordUseCase {
+    public suspend operator fun invoke(linkUuid: String): String?
 }
 
-internal class DeletePublicLinkUseCaseImpl(
-    private val cellsRepository: CellsRepository,
-) : DeletePublicLinkUseCase {
-    override suspend fun invoke(linkUuid: String): Either<CoreFailure, Unit> {
-        return cellsRepository.deletePublicLink(linkUuid)
-            .onSuccess {
-                cellsRepository.clearPublicLinkPassword(linkUuid)
-            }
-    }
+internal class GetPublicLinkPasswordUseCaseImpl(
+    private val repository: CellsRepository
+) : GetPublicLinkPasswordUseCase {
+
+    override suspend fun invoke(linkUuid: String): String? =
+        repository.getPublicLinkPassword(linkUuid).getOrNull()
 }

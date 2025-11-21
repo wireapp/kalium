@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
@@ -359,4 +360,7 @@ private class TestRepository : CellsRepository {
     override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = listOf<String>().right()
     override suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun getPublicLinkPassword(linkUuid: String): Either<StorageFailure, String?> = null.right()
+    override suspend fun savePublicLinkPassword(linkUuid: String, password: String) {}
+    override suspend fun clearPublicLinkPassword(linkUuid: String) {}
 }

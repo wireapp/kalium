@@ -78,6 +78,8 @@ import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftD
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
+import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
+import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -363,6 +365,9 @@ class UserDatabaseBuilder internal constructor(
 
     val messageAttachments: MessageAttachmentsDao
         get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)
+
+    val publicLinks: PublicLinkDao
+        get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(
