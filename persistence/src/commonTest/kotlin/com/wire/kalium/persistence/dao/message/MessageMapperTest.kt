@@ -319,7 +319,8 @@ class MessageMapperTest {
                 isUnread = false,
                 isNotified = 0,
                 mutedStatus = null,
-                conversationType = conversationType
+                conversationType = conversationType,
+                lastMessageAttachmentsCount = 0
             )
         }
     }
