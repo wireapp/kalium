@@ -477,7 +477,7 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         fun withLocalFileAvailable() = apply {
-            fileSystem.write(localPath.toPath()) { "".toByteArray()}
+            fileSystem.write(localPath.toPath()) { "".encodeToByteArray()}
         }
 
         fun withLocalFileMissing() = apply {

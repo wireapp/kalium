@@ -110,7 +110,7 @@ class DeleteNodeAssetUseCaseTest {
         }
 
         fun withLocalFileAvailable() = apply {
-            fileSystem.write(localPath.toPath()) { "".toByteArray()}
+            fileSystem.write(localPath.toPath()) { "".encodeToByteArray()}
         }
 
         suspend fun arrange(): Pair<Arrangement, DeleteCellAssetUseCaseImpl> {

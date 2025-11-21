@@ -264,7 +264,7 @@ class NodeUploadManagerTest {
         }
 
         fun withFileExists(path: Path) = apply {
-            fileSystem.write(path) { "".toByteArray() }
+            fileSystem.write(path) { "".encodeToByteArray() }
         }
 
         fun withFileMissing(path: Path) = apply {

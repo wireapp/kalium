@@ -138,7 +138,7 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
 }
 
 rootProject.plugins.withType<NodeJsPlugin> {
-    rootProject.the<NodeJsEnvSpec>().version = "17.6.0"
+    rootProject.the<NodeJsEnvSpec>().version = "18.18.0"
     // If we want to use the downloaded Node instead of system Node:
     // rootProject.the<NodeJsEnvSpec>().download.set(true)
 }

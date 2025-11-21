@@ -46,7 +46,7 @@ class CellsApiTest {
                     RestCreateCheckResponse(
                         results = listOf(RestCheckResult(exists = false))
                     )
-                ).toByteArray()
+                ).encodeToByteArray()
             )
             .arrange()
 
@@ -74,7 +74,7 @@ class CellsApiTest {
                     RestCreateCheckResponse(
                         results = listOf(RestCheckResult(exists = false))
                     )
-                ).toByteArray()
+                ).encodeToByteArray()
             )
             .arrange()
 
