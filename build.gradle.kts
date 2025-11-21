@@ -68,7 +68,6 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
-//         mavenLocal() // Check local Maven first for the forked Mockative version
         google()
         mavenCentral()
         // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 is uploaded
