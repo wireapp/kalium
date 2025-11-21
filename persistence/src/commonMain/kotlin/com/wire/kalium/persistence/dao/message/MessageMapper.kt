@@ -232,7 +232,6 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MULTIPART -> handleMultipPart(
-                isSelfMessage = isSelfMessage,
                 senderName = senderName,
                 text = text,
                 assetMimeType = assetMimeType,
@@ -249,7 +248,6 @@ object MessageMapper {
     }
 
     private fun handleMultipPart(
-        isSelfMessage: Boolean,
         senderName: String?,
         text: String?,
         assetMimeType: String?,

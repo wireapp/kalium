@@ -528,7 +528,11 @@ fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
 
 @Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
-    is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel(), count = count)
+    is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(
+        username = senderName,
+        type = type.toModel(),
+        count = count
+    )
     is MessagePreviewEntityContent.ConversationNameChange -> MessagePreviewContent.WithUser.ConversationNameChange(adminName)
     is MessagePreviewEntityContent.Knock -> MessagePreviewContent.WithUser.Knock(senderName)
     is MessagePreviewEntityContent.MemberJoined -> MessagePreviewContent.WithUser.MemberJoined(senderName)
