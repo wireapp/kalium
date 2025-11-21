@@ -36,12 +36,13 @@ rootDir
 
 pluginManagement {
     repositories {
+//         mavenLocal() // Check local Maven first for the forked Mockative version
         gradlePluginPortal()
         google()
         mavenCentral()
         // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143
         // until mockative releases a new version with a proper fix
-        maven(url = "https://raw.githubusercontent.com/saleniuk/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
+        maven(url = "https://raw.githubusercontent.com/mohamadjaara/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
     }
 
     // If it is a F-droid release, delete these lines. Deleting `useVersion(...)` should be enough.
@@ -49,7 +50,7 @@ pluginManagement {
         eachPlugin {
             if (requested.id.id.contains("io.mockative") && requested.version == "3.0.1") {
                 println("REPLACING MOCKATIVE WITH FIX. This should NOT happen on F-Droid builds!")
-                useVersion("3.0.1-fix")
+                useVersion("3.0.4-kotlin-2.2.21")
             }
         }
     }
@@ -61,6 +62,7 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
+//         mavenLocal() // Check local Maven first for the forked Mockative version
         mavenCentral()
     }
     versionCatalogs {
