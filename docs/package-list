@@ -629,6 +629,7 @@ com.wire.kalium.persistence.dao.message.attachment
 com.wire.kalium.persistence.dao.message.draft
 com.wire.kalium.persistence.dao.messageattachment
 com.wire.kalium.persistence.dao.newclient
+com.wire.kalium.persistence.dao.publiclink
 com.wire.kalium.persistence.dao.reaction
 com.wire.kalium.persistence.dao.receipt
 com.wire.kalium.persistence.dao.unread
