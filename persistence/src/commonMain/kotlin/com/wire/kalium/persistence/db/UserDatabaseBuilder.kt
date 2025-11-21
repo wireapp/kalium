@@ -84,6 +84,10 @@ import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAOImpl
+import com.wire.kalium.persistence.db.feeders.MentionsFeeder
+import com.wire.kalium.persistence.db.feeders.MessagesFeeder
+import com.wire.kalium.persistence.db.feeders.ReactionsFeeder
+import com.wire.kalium.persistence.db.feeders.UnreadEventsFeeder
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -293,6 +297,18 @@ class UserDatabaseBuilder internal constructor(
 
     val databaseOptimizer: DatabaseOptimizer
         get() = DatabaseOptimizer(this)
+
+    val messagesFeeder: MessagesFeeder
+        get() = MessagesFeeder(this)
+
+    val mentionsFeeder: MentionsFeeder
+        get() = MentionsFeeder(this)
+
+    val reactionFeeder: ReactionsFeeder
+        get() = ReactionsFeeder(this)
+
+    val unreadEventsFeeder: UnreadEventsFeeder
+        get() = UnreadEventsFeeder(this)
 
     val callDAO: CallDAO
         get() = CallDAOImpl(database.callsQueries, readDispatcher, writeDispatcher)
