@@ -22,7 +22,7 @@ object AppVersionBlackListResponseDTOJson {
     val validAndroid =
         """
         |{
-        |  "oldestAccepted": 21,
+        |  "oldestAccepted": 21
         |  "blacklisted": []
         |}
         """.trimMargin()

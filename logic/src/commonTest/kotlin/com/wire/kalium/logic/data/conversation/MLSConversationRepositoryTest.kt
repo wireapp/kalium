@@ -103,6 +103,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -1822,12 +1823,12 @@ class MLSConversationRepositoryTest {
                 )
             )
 
-            val CRYPTO_MLS_PUBLIC_KEY: ByteArray = MLS_PUBLIC_KEY.removal?.get("ed25519")!!.decodeBase64Bytes()
+            val CRYPTO_MLS_PUBLIC_KEY: ByteArray = Base64.decode(MLS_PUBLIC_KEY.removal?.get("ed25519")!!)
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
                 "wire.com",
-                "keyPackage",
-                "keyPackageRef",
+                Base64.encode("keyPackage".encodeToByteArray()),
+                Base64.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL).encode("keyPackageRef".encodeToByteArray()),
                 "user1"
             )
             val WELCOME = "welcome".encodeToByteArray()

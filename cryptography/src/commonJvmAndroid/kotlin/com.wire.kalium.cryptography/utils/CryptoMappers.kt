@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-@file: Suppress("TooManyFunctions")
+@file:Suppress("TooManyFunctions")
 
 package com.wire.kalium.cryptography.utils
 
@@ -45,8 +45,9 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
-import io.ktor.util.decodeBase64Bytes
+
 import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 
 fun MLSCiphersuite.toCrypto(): Ciphersuite = when (this) {
     MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
@@ -99,7 +100,7 @@ fun MlsGroupInfoEncryptionType.toCryptography(): GroupInfoEncryptionType = when 
     MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> GroupInfoEncryptionType.JWE_ENCRYPTED
 }
 
-fun PreKeyCrypto.toCrypto(): ProteusAutoPrekeyBundle = ProteusAutoPrekeyBundle(id.toUShort(), pkb.decodeBase64Bytes())
+fun PreKeyCrypto.toCrypto(): ProteusAutoPrekeyBundle = ProteusAutoPrekeyBundle(id.toUShort(), Base64.decode(pkb))
 
 fun ProteusAutoPrekeyBundle.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), pkb.encodeBase64())
 
@@ -178,4 +179,4 @@ fun com.wire.crypto.CrlRegistration.toCryptography() = CrlRegistration(
     expiration
 )
 
-fun MLSGroupId.toCrypto() = com.wire.crypto.ConversationId(this.decodeBase64Bytes())
+fun MLSGroupId.toCrypto() = com.wire.crypto.ConversationId(Base64.decode(this))

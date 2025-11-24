@@ -20,7 +20,6 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
-import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.any
 import io.mockative.doesNothing
@@ -31,6 +30,7 @@ import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlin.io.encoding.Base64
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -119,14 +119,14 @@ class SecurityHelperTest {
 
     @Test
     fun givenV2Exists_whenCallingMlsDBSecret_thenReturnsV2WithoutMigration() = runTest {
-        val v2b64 = "newBase64"
+        val v2b64 = Base64.encode("newBase64".encodeToByteArray())
 
         setupSequencedGetPassphrase(mlsV2Alias, listOf(v2b64))
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
 
         val secret = securityHelper.mlsDBSecret(userId, rootPath)
 
-        assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
+        assertTrue(secret.passphrase.contentEquals(Base64.decode(v2b64)))
         verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
     }
 
@@ -188,14 +188,14 @@ class SecurityHelperTest {
 
     @Test
     fun givenV2Exists_whenCallingProteusDBSecret_thenReturnsV2WithoutMigration() = runTest {
-        val v2b64 = "proteusV2Secret"
+        val v2b64 = Base64.encode("proteusV2Secret".encodeToByteArray())
 
         setupSequencedGetPassphrase(proteusV2Alias, listOf(v2b64))
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
 
         val secret = securityHelper.proteusDBSecret(userId, rootPath)
 
-        assertTrue(secret.passphrase.contentEquals(v2b64.decodeBase64Bytes()))
+        assertTrue(secret.passphrase.contentEquals(Base64.decode(v2b64)))
         verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
     }
 
@@ -230,7 +230,7 @@ class SecurityHelperTest {
 
     @Test
     fun whenCallingProteusDBSecretTwiceForSameUser_thenReturnsSameValue() = runTest {
-        val secretB64 = "proteusSecretValue"
+        val secretB64 = Base64.encode("proteusSecretValue".encodeToByteArray())
         setupSequencedGetPassphrase(proteusV2Alias, listOf(secretB64, secretB64))
         every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
 
@@ -259,7 +259,7 @@ class SecurityHelperTest {
         // Verify stored key is base64 encoded
         assertTrue(capturedV2Keys[0].isNotEmpty())
         // Verify the returned secret matches what was stored
-        assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
+        assertTrue(secret.passphrase.contentEquals(Base64.decode(capturedV2Keys[0])))
     }
 
     @Test
@@ -281,6 +281,6 @@ class SecurityHelperTest {
         // Verify stored key is base64 encoded
         assertTrue(capturedV2Keys[0].isNotEmpty())
         // Verify the returned secret matches what was stored
-        assertTrue(secret.passphrase.contentEquals(capturedV2Keys[0].decodeBase64Bytes()))
+        assertTrue(secret.passphrase.contentEquals(Base64.decode(capturedV2Keys[0])))
     }
 }

@@ -25,9 +25,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
-import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mockable
+import kotlin.io.encoding.Base64
 
 internal expect class SecureRandom internal constructor() {
     fun nextBytes(length: Int): ByteArray
@@ -63,7 +63,7 @@ internal class SecurityHelperImpl(
     override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
         // Step 1: Try current format (v2) - return if found
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
-            ?.let { return MlsDBSecret(it.decodeBase64Bytes()) }
+            ?.let { return MlsDBSecret(Base64.decode(it)) }
 
         // Step 2: Try legacy format (v1) - migrate to v2 if found
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
@@ -76,7 +76,7 @@ internal class SecurityHelperImpl(
 
         // Step 3: Generate new secret as fallback
         return getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
-            MlsDBSecret(it.decodeBase64Bytes())
+            MlsDBSecret(Base64.decode(it))
         }
     }
 
@@ -84,7 +84,7 @@ internal class SecurityHelperImpl(
     override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret {
             // Step 1: Try current format (v2) - return if found
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
-                ?.let { return ProteusDBSecret(it.decodeBase64Bytes()) }
+                ?.let { return ProteusDBSecret(Base64.decode(it)) }
 
             // Step 2: Try legacy format (v1) - migrate to v2 if found
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
@@ -97,7 +97,7 @@ internal class SecurityHelperImpl(
 
             // Step 3: Generate new secret as fallback
             return getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
-                ProteusDBSecret(it.decodeBase64Bytes())
+                ProteusDBSecret(Base64.decode(it))
             }
         }
 
@@ -119,7 +119,7 @@ internal class SecurityHelperImpl(
     }
 
     private val String.toPreservedByteArray: ByteArray
-        get() = this.decodeBase64Bytes()
+        get() = Base64.decode(this)
 
     private val ByteArray.toPreservedString: String
         get() = this.encodeBase64()
