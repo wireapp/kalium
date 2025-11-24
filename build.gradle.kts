@@ -137,6 +137,7 @@ moduleGraphConfig {
     readmePath.set("./README.md")
     heading.set("#### Dependency Graph")
     rootModulesRegex.set(":logic")
+    setStyleByModuleType.set(true)
     showFullPath.set(true)
 }
 
