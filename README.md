@@ -248,6 +248,28 @@ graph LR
   :data:data-mappers --> :core:cryptography
   :data:data-mappers --> :data:network-model
   :data:data-mappers --> :core:util
+
+classDef kotlin-multiplatform fill:#C792EA,stroke:#fff,stroke-width:2px,color:#fff;
+class :core:cryptography kotlin-multiplatform
+class :core:logger kotlin-multiplatform
+class :data:network kotlin-multiplatform
+class :data:network-model kotlin-multiplatform
+class :data:protobuf kotlin-multiplatform
+class :core:util kotlin-multiplatform
+class :data:network-util kotlin-multiplatform
+class :test:mocks kotlin-multiplatform
+class :core:common kotlin-multiplatform
+class :core:data kotlin-multiplatform
+class :data:persistence kotlin-multiplatform
+class :data:persistence-test kotlin-multiplatform
+class :logic kotlin-multiplatform
+class :domain:calling kotlin-multiplatform
+class :data:data-mappers kotlin-multiplatform
+class :api:cells kotlin-multiplatform
+class :api:backup kotlin-multiplatform
+class :domain:messaging:sending kotlin-multiplatform
+class :test:data-mocks kotlin-multiplatform
+
 ```
 #### Logo
 
