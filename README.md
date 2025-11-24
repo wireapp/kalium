@@ -134,6 +134,61 @@ You can run locally in your terminal:
 }%%
 
 graph LR
+  :logic["logic"]
+  subgraph :core
+    :core:cryptography["cryptography"]
+    :core:logger["logger"]
+    :core:util["util"]
+    :core:common["common"]
+    :core:data["data"]
+    :core:cryptography["cryptography"]
+    :core:common["common"]
+    :core:data["data"]
+    :core:logger["logger"]
+    :core:cryptography["cryptography"]
+    :core:util["util"]
+    :core:data["data"]
+    :core:common["common"]
+  end
+  subgraph :data
+    :data:network["network"]
+    :data:network-model["network-model"]
+    :data:protobuf["protobuf"]
+    :data:network-util["network-util"]
+    :data:persistence["persistence"]
+    :data:network["network"]
+    :data:persistence["persistence"]
+    :data:persistence-test["persistence-test"]
+    :data:network-util["network-util"]
+    :data:network["network"]
+    :data:data-mappers["data-mappers"]
+    :data:persistence["persistence"]
+    :data:protobuf["protobuf"]
+    :data:persistence-test["persistence-test"]
+    :data:network-model["network-model"]
+    :data:network-util["network-util"]
+    :data:data-mappers["data-mappers"]
+  end
+  subgraph :test
+    :test:mocks["mocks"]
+    :test:data-mocks["data-mocks"]
+    :test:data-mocks["data-mocks"]
+    :test:mocks["mocks"]
+  end
+  subgraph :domain
+    :domain:calling["calling"]
+    subgraph :messaging
+      :domain:messaging:sending["sending"]
+      :domain:messaging:sending["sending"]
+    end
+  end
+  subgraph :api
+    :api:cells["cells"]
+    :api:backup["backup"]
+    :api:backup["backup"]
+    :api:cells["cells"]
+  end
+
   :core:cryptography --> :core:logger
   :data:network --> :data:network-model
   :data:network --> :core:logger
