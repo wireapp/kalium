@@ -65,10 +65,10 @@ kotlin {
     sourceSets {
         val commonMain by sourceSets.getting {
             dependencies {
-                implementation(projects.network)
-                implementation(projects.cryptography)
+                implementation(projects.data.network)
+                implementation(projects.core.cryptography)
                 implementation(projects.logic)
-                implementation(projects.util)
+                implementation(projects.core.util)
 
                 implementation(libs.cliKt)
                 implementation(libs.ktor.utils)

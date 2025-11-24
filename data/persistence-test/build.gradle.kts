@@ -22,51 +22,29 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(true)
-    }
+    multiplatform()
 }
 
 kotlin {
+
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(projects.api.backup)
-                implementation(projects.core.cryptography)
-                implementation(projects.data.protobuf)
-                implementation(projects.core.logger)
-
-                implementation(libs.coroutines.core)
-                implementation(libs.okio.core)
-            }
-        }
-
-        val nonJsMain by creating {
-            dependsOn(commonMain)
-            dependencies {
-                implementation(projects.data.network)
                 implementation(projects.data.persistence)
+                implementation(libs.kotlin.test)
+                // coroutines
+                implementation(libs.coroutines.core)
+                implementation(libs.coroutines.test)
+                implementation(libs.settings.kmp)
+                implementation(libs.settings.kmpTest)
             }
         }
-
-        val jvmMain by getting {
-            dependsOn(nonJsMain)
-            dependencies {
-                implementation(projects.logic)
-                implementation(projects.domain.calling)
-            }
-        }
-
         val androidMain by getting {
-            dependsOn(nonJsMain)
             dependencies {
-                implementation(projects.logic)
-                implementation(projects.domain.calling)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
+                implementation(libs.androidtest.core)
             }
-        }
-
-        val appleMain by getting {
-            dependsOn(nonJsMain)
         }
     }
 }

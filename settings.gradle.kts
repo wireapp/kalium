@@ -24,7 +24,7 @@
 // Assume that all folders that contain a build.gradle.kts and are not buildSrc should be included
 rootDir
     .walk()
-    .maxDepth(2)
+    .maxDepth(3)
     .filter { it != rootDir }
     .filter {
         it.name != "buildSrc" && it.isDirectory &&

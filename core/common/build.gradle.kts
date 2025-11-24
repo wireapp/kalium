@@ -15,58 +15,53 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
+    alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(true)
-    }
+    multiplatform()
 }
 
 kotlin {
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
-                implementation(projects.api.backup)
-                implementation(projects.core.cryptography)
-                implementation(projects.data.protobuf)
+                implementation(projects.core.data)
                 implementation(projects.core.logger)
-
-                implementation(libs.coroutines.core)
-                implementation(libs.okio.core)
-            }
-        }
-
-        val nonJsMain by creating {
-            dependsOn(commonMain)
-            dependencies {
-                implementation(projects.data.network)
+                implementation(projects.core.util)
                 implementation(projects.data.persistence)
+                implementation(projects.data.network)
+                implementation(projects.data.networkUtil)
+                implementation(projects.core.cryptography)
+                implementation(libs.ktxSerialization)
+                implementation(libs.coroutines.core)
             }
         }
 
+        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
+
+        val appleMain by getting
         val jvmMain by getting {
-            dependsOn(nonJsMain)
+            addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(projects.logic)
-                implementation(projects.domain.calling)
+                implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
             }
         }
 
         val androidMain by getting {
-            dependsOn(nonJsMain)
+            addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(projects.logic)
-                implementation(projects.domain.calling)
+                implementation(libs.work)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
-        }
-
-        val appleMain by getting {
-            dependsOn(nonJsMain)
         }
     }
 }
