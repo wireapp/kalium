@@ -43,14 +43,14 @@ jobs:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./gradlew :cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew :sample:cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
 
       - name: Build the samples
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./gradlew :samples:compileKotlinJvm
+          ./gradlew :sample:samples:compileKotlinJvm
 
       - name: Build the testservice
         env:

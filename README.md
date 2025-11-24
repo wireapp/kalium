@@ -79,27 +79,27 @@ Commands:
 ##### JVM
 
 ```
-./gradlew :cli:assemble
+./gradlew :sample:cli:assemble
 java -jar cli/build/libs/cli.jar login --email <email> --password <password> listen-group 
 ```
 
 or if you want the jar file deleted after your run:
 
 ```
-./gradlew :cli:run  --console=plain --quiet --args="login --email <email> --password <password> listen-group"
+./gradlew :sample:cli:run  --console=plain --quiet --args="login --email <email> --password <password> listen-group"
 ```
 
 ##### Native (Mac)
 
 For running on arm64 mac
 ```
-./gradlew :cli:macosArm64Binaries
+./gradlew :sample:cli:macosArm64Binaries
 ./cli/build/bin/macosArm64/debugExecutable/cli.kexe login
 ```
 
 For running on intel mac
 ```
-./gradlew :cli:macosX64Binaries
+./gradlew :sample:cli:macosX64Binaries
 ./cli/build/bin/macosX64/debugExecutable/cli.kexe login
 ```
 
