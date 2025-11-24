@@ -31,7 +31,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(projects.api.backup)
+                implementation(projects.domain.backup)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.protobuf)
                 implementation(projects.core.logger)

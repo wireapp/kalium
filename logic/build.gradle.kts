@@ -46,8 +46,8 @@ kotlin {
                 api(projects.core.logger)
                 api(projects.domain.calling)
                 implementation(projects.core.util)
-                implementation(projects.api.cells)
-                implementation(projects.api.backup)
+                implementation(projects.domain.cells)
+                implementation(projects.domain.backup)
                 implementation(projects.domain.messaging.sending)
 
                 // coroutines
