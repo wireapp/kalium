@@ -146,7 +146,7 @@ internal class AuthenticatedWebSocketClient(
             install(WebSockets) {
                 // Depending on the Engine (OkHttp for example), we might
                 // need to set this value there too, as this here won't work
-                pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS
+                pingIntervalMillis = WEBSOCKET_PING_INTERVAL_MILLIS
             }
         }
 

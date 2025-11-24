@@ -89,8 +89,10 @@ class SessionManagerImpl internal constructor(
 
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
-        oldRefreshToken: String
+        oldRefreshToken: String?
     ): SessionDTO {
+        require(!oldRefreshToken.isNullOrEmpty()) { "Refresh token is missing" }
+
         val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {
             val currentClientId = currentClientIdProvider().nullableFold({ null }, { it })

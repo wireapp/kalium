@@ -27,7 +27,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

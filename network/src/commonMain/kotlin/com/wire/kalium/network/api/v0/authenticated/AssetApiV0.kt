@@ -42,15 +42,14 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.cancel
 import io.ktor.utils.io.close
-import io.ktor.utils.io.core.ByteReadPacket
-import io.ktor.utils.io.core.isNotEmpty
-import io.ktor.utils.io.core.readBytes
+import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
 import okio.Source
+import okio.buffer
 import okio.use
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -67,9 +66,7 @@ internal open class AssetApiV0 internal constructor(
         tempFileSink: Sink
     ): NetworkResponse<Unit> = runCatching {
         httpClient.prepareGet(buildAssetsPath(assetId, assetDomain)) {
-            if (!assetToken.isNullOrBlank()) {
-                header(HEADER_ASSET_TOKEN, assetToken)
-            }
+            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
                 handleAssetContentDownload(httpResponse, tempFileSink)
@@ -94,21 +91,13 @@ internal open class AssetApiV0 internal constructor(
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     private suspend fun handleAssetContentDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {
         val channel = httpResponse.body<ByteReadChannel>()
-        tempFileSink.use { sink ->
+        tempFileSink.buffer().use { bufferedSink ->
+            val array = ByteArray(BUFFER_SIZE.toInt())
             while (!channel.isClosedForRead) {
-                val packet = channel.readRemaining(BUFFER_SIZE)
-                while (packet.isNotEmpty) {
-                    val (bytes, size) = packet.readBytes().let { byteArray ->
-                        Buffer().write(byteArray) to byteArray.size.toLong()
-                    }
-                    sink.write(bytes, size).also {
-                        bytes.clear()
-                        sink.flush()
-                    }
-                }
+                val read = channel.readAvailable(array, 0, array.size)
+                if (read <= 0) break
+                bufferedSink.write(array, 0, read)
             }
-            channel.cancel()
-            sink.close()
         }
         NetworkResponse.Success(Unit, httpResponse)
     } catch (e: CancellationException) {
@@ -172,39 +161,31 @@ internal class StreamAssetContent internal constructor(
     private val fileContentStream: () -> Source,
 ) : OutgoingContent.WriteChannelContent() {
     private val openingData: String by lazy {
-        val body = StringBuilder()
+        buildString {
+            // Part 1: Metadata
+            append("--frontier\r\n")
+            append("Content-Type: application/json;charset=utf-8\r\n")
+            append("Content-Length: ${metadata.length}\r\n\r\n")
+            append(metadata)
+            append("\r\n")
 
-        body.append("--frontier\r\n")
-        body.append("Content-Type: application/json;charset=utf-8\r\n")
-        body.append("Content-Length: ")
-            .append(metadata.length)
-            .append("\r\n\r\n")
-        body.append(metadata)
-            .append("\r\n")
-
-        // Part 2
-        body.append("--frontier\r\n")
-        body.append("Content-Type: application/octet-stream")
-            .append("\r\n")
-        body.append("Content-Length: ")
-            .append(encryptedDataSize)
-            .append("\r\n")
-        body.append("Content-MD5: ")
-            .append(md5)
-            .append("\r\n\r\n")
-
-        body.toString()
+            // Part 2: Asset content
+            append("--frontier\r\n")
+            append("Content-Type: application/octet-stream\r\n")
+            append("Content-Length: $encryptedDataSize\r\n")
+            append("Content-MD5: $md5\r\n\r\n")
+        }
     }
 
     private val closingArray = "\r\n--frontier--\r\n"
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
         channel.writeStringUtf8(openingData)
-        val contentBuffer = Buffer()
-        val fileContentStream = fileContentStream()
-        while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
-            contentBuffer.readByteArray().let { content ->
-                channel.writePacket(ByteReadPacket(content))
+        fileContentStream().use { source ->
+            val buffer = Buffer()
+            while (source.read(buffer, BUFFER_SIZE) != -1L) {
+                val byteArray = buffer.readByteArray()
+                channel.writeFully(byteArray)
             }
         }
         channel.writeStringUtf8(closingArray)

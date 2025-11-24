@@ -19,7 +19,7 @@
 package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
-import io.ktor.utils.io.core.use
+import okio.use
 import okio.Buffer
 import okio.Sink
 import okio.Source
