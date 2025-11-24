@@ -150,10 +150,21 @@ graph LR
     :core:data["data"]
     :core:common["common"]
   end
+  subgraph :domain
+    :domain:backup["backup"]
+    :domain:calling["calling"]
+    :domain:cells["cells"]
+    :domain:backup["backup"]
+    :domain:cells["cells"]
+    subgraph :messaging
+      :domain:messaging:sending["sending"]
+      :domain:messaging:sending["sending"]
+    end
+  end
   subgraph :data
+    :data:protobuf["protobuf"]
     :data:network["network"]
     :data:network-model["network-model"]
-    :data:protobuf["protobuf"]
     :data:network-util["network-util"]
     :data:persistence["persistence"]
     :data:network["network"]
@@ -175,21 +186,9 @@ graph LR
     :test:data-mocks["data-mocks"]
     :test:mocks["mocks"]
   end
-  subgraph :domain
-    :domain:calling["calling"]
-    subgraph :messaging
-      :domain:messaging:sending["sending"]
-      :domain:messaging:sending["sending"]
-    end
-  end
-  subgraph :api
-    :api:cells["cells"]
-    :api:backup["backup"]
-    :api:backup["backup"]
-    :api:cells["cells"]
-  end
 
   :core:cryptography --> :core:logger
+  :domain:backup --> :data:protobuf
   :data:network --> :data:network-model
   :data:network --> :core:logger
   :data:network --> :data:protobuf
@@ -217,8 +216,8 @@ graph LR
   :logic --> :data:persistence
   :logic --> :data:protobuf
   :logic --> :core:util
-  :logic --> :api:cells
-  :logic --> :api:backup
+  :logic --> :domain:cells
+  :logic --> :domain:backup
   :logic --> :domain:messaging:sending
   :logic --> :data:persistence-test
   :logic --> :test:data-mocks
@@ -228,7 +227,6 @@ graph LR
   :test:data-mocks --> :data:persistence
   :test:data-mocks --> :data:network-model
   :test:data-mocks --> :core:util
-  :api:backup --> :data:protobuf
   :data:network-util --> :core:logger
   :core:data --> :data:network-model
   :core:data --> :core:util
@@ -237,11 +235,11 @@ graph LR
   :domain:messaging:sending --> :core:data
   :domain:messaging:sending --> :core:logger
   :domain:messaging:sending --> :core:util
-  :api:cells --> :core:common
-  :api:cells --> :data:network
-  :api:cells --> :core:data
-  :api:cells --> :core:util
-  :api:cells --> :data:persistence
+  :domain:cells --> :core:common
+  :domain:cells --> :data:network
+  :domain:cells --> :core:data
+  :domain:cells --> :core:util
+  :domain:cells --> :data:persistence
   :data:data-mappers --> :core:data
   :data:data-mappers --> :data:protobuf
   :data:data-mappers --> :data:persistence
@@ -252,9 +250,10 @@ graph LR
 classDef kotlin-multiplatform fill:#C792EA,stroke:#fff,stroke-width:2px,color:#fff;
 class :core:cryptography kotlin-multiplatform
 class :core:logger kotlin-multiplatform
+class :domain:backup kotlin-multiplatform
+class :data:protobuf kotlin-multiplatform
 class :data:network kotlin-multiplatform
 class :data:network-model kotlin-multiplatform
-class :data:protobuf kotlin-multiplatform
 class :core:util kotlin-multiplatform
 class :data:network-util kotlin-multiplatform
 class :test:mocks kotlin-multiplatform
@@ -265,8 +264,7 @@ class :data:persistence-test kotlin-multiplatform
 class :logic kotlin-multiplatform
 class :domain:calling kotlin-multiplatform
 class :data:data-mappers kotlin-multiplatform
-class :api:cells kotlin-multiplatform
-class :api:backup kotlin-multiplatform
+class :domain:cells kotlin-multiplatform
 class :domain:messaging:sending kotlin-multiplatform
 class :test:data-mocks kotlin-multiplatform
 
