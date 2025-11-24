@@ -45,7 +45,6 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
-
 import io.ktor.util.encodeBase64
 import kotlin.io.encoding.Base64
 
