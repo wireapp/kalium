@@ -19,8 +19,10 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -33,7 +35,6 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -49,6 +50,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -67,6 +69,9 @@ import kotlinx.datetime.Instant
 
 // TODO(modularisation): Move to :messaging:sending.
 //                       It ain't gonna be easy :)
+// TODO(refactor): Split MLS and Proteus logic.
+//                 The Envelope Creation, Sending and Retry mechanisms are tailored to each protocol
+//                 And could live in different implementation classes
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
@@ -81,6 +86,7 @@ internal class MessageSenderImpl internal constructor(
     private val userRepository: UserRepository,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val transactionProvider: CryptoTransactionProvider,
+    private val mlsMissingUsersMessageRejectionHandler: MLSMissingUsersMessageRejectionHandler,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
@@ -275,32 +281,36 @@ internal class MessageSenderImpl internal constructor(
         transactionContext: CryptoTransactionContext,
         protocolInfo: Conversation.ProtocolInfo.MLS,
         message: Message.Sendable
-    ): Either<CoreFailure, Instant> {
-        return transactionContext
-            .wrapInMLSContext { mlsContext ->
-                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
-            }
+    ): Either<CoreFailure, Instant> =
+        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
             .flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(mlsMessage).fold({
-                    if (it is NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
-                        logger.logStructuredJson(
-                            level = KaliumLogLevel.WARN,
-                            leadingMessage = "Message Send Stale",
-                            jsonStringKeyValues = mapOf(
-                                "message" to message.toLogString(),
-                                "protocolInfo" to protocolInfo.toLogMap(),
-                                "protocol" to CreateConversationParam.Protocol.MLS.name,
-                                "errorInfo" to "$it"
+                    when (val mlsRejectionCause = (it.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
+                        is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
+                            mlsMissingUsersMessageRejectionHandler.handle(
+                                transactionContext,
+                                message.conversationId,
+                                protocolInfo.groupId,
+                                mlsRejectionCause
+                            ).flatMap { attemptToSend(transactionContext, message) }
+                        }
+                        is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
+                            logger.logStructuredJson(
+                                level = KaliumLogLevel.WARN,
+                                leadingMessage = "Message Send Stale",
+                                jsonStringKeyValues = mapOf(
+                                    "message" to message.toLogString(),
+                                    "protocolInfo" to protocolInfo.toLogMap(),
+                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
+                                    "errorInfo" to "$it"
+                                )
                             )
-                        )
-                        return staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
-                            .flatMap {
-                                syncManager.waitUntilLiveOrFailure().flatMap {
-                                    attemptToSend(transactionContext, message)
+                            staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
+                                .flatMap {
+                                    syncManager.waitUntilLiveOrFailure().flatMap { attemptToSend(transactionContext, message) }
                                 }
-                            }
-                    } else {
-                        Either.Left(it)
+                        }
+                        else -> Either.Left(it)
                     }
                 }, { messageSent ->
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
@@ -330,7 +340,6 @@ internal class MessageSenderImpl internal constructor(
                     )
                 )
             }
-    }
 
     /**
      * Attempts to send a Proteus envelope

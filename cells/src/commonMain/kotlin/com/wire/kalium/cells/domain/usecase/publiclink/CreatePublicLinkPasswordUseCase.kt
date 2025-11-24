@@ -23,20 +23,19 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
 
 /**
- * Delete public link with given UUID from Wire Cells server.
- * Also removes password from local storage if it was set.
+ * Creates password for public link with given UUID.
+ * Also saves password in local database.
  */
-public interface DeletePublicLinkUseCase {
-    public suspend operator fun invoke(linkUuid: String): Either<CoreFailure, Unit>
+public interface CreatePublicLinkPasswordUseCase {
+    public suspend operator fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit>
 }
 
-internal class DeletePublicLinkUseCaseImpl(
-    private val cellsRepository: CellsRepository,
-) : DeletePublicLinkUseCase {
-    override suspend fun invoke(linkUuid: String): Either<CoreFailure, Unit> {
-        return cellsRepository.deletePublicLink(linkUuid)
+internal class CreatePublicLinkPasswordUseCaseImpl(
+    private val repository: CellsRepository
+) : CreatePublicLinkPasswordUseCase {
+    override suspend fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit> =
+        repository.createPublicLinkPassword(linkUuid, password)
             .onSuccess {
-                cellsRepository.clearPublicLinkPassword(linkUuid)
+                repository.savePublicLinkPassword(linkUuid, password)
             }
-    }
 }

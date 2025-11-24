@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.persistence.dao.publiclink
 
-public data class PublicLink(
-    val uuid: String,
-    val url: String,
-    val expiresAt: String? = null,
-    val passwordRequired: Boolean = false,
-)
+internal data object PublicLinkMapper {
+    fun toDao(id: String, password: String) = PublicLinkEntity(
+        id = id,
+        password = password
+    )
+}

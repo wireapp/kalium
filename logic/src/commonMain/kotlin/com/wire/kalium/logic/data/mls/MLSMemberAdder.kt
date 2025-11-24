@@ -15,28 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase.publiclink
+package com.wire.kalium.logic.data.mls
 
-import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.user.UserId
 
-/**
- * Delete public link with given UUID from Wire Cells server.
- * Also removes password from local storage if it was set.
- */
-public interface DeletePublicLinkUseCase {
-    public suspend operator fun invoke(linkUuid: String): Either<CoreFailure, Unit>
-}
-
-internal class DeletePublicLinkUseCaseImpl(
-    private val cellsRepository: CellsRepository,
-) : DeletePublicLinkUseCase {
-    override suspend fun invoke(linkUuid: String): Either<CoreFailure, Unit> {
-        return cellsRepository.deletePublicLink(linkUuid)
-            .onSuccess {
-                cellsRepository.clearPublicLinkPassword(linkUuid)
-            }
-    }
+internal fun interface MLSMemberAdder {
+    suspend fun addMemberToMLSGroup(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit>
 }

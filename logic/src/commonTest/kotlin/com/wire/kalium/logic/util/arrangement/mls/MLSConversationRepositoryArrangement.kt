@@ -28,7 +28,7 @@ import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.mock
 
-interface MLSConversationRepositoryArrangement {
+internal interface MLSConversationRepositoryArrangement {
     val mlsConversationRepository: MLSConversationRepository
 
     suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>)
@@ -41,12 +41,12 @@ interface MLSConversationRepositoryArrangement {
     ): MLSConversationRepositoryArrangementImpl
 }
 
-class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
+internal class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
     override val mlsConversationRepository = mock(MLSConversationRepository::class)
 
     override suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
         coEvery {
-            mlsConversationRepository.isGroupOutOfSync(any(), any(), any())
+            mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.returns(result)
     }
 

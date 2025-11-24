@@ -37,10 +37,9 @@ internal class GetPublicLinkUseCaseImpl(
 ) : GetPublicLinkUseCase {
     override suspend fun invoke(linkUuid: String): Either<CoreFailure, PublicLink> {
         return cellsRepository.getPublicLink(linkUuid)
-            .map {
-                PublicLink(
-                    uuid = linkUuid,
-                    url = "${cellsCredentials?.serverUrl}$it"
+            .map { link ->
+                link.copy(
+                    url = "${cellsCredentials?.serverUrl}${link.url}"
                 )
             }
     }

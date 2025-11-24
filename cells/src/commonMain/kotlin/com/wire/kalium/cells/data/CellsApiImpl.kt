@@ -189,11 +189,17 @@ internal class CellsApiImpl(
             } ?: PreCheckResultDTO()
         }
 
-    override suspend fun getPublicLink(linkUuid: String): NetworkResponse<String> =
+    @Suppress("ReturnCount")
+    override suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink> =
         wrapCellsResponse {
             nodeServiceApi.getPublicLink(linkUuid)
         }.mapSuccess { response ->
-            response.linkUrl ?: return networkError("Link URL not found")
+            PublicLink(
+                uuid = response.uuid ?: return networkError("UUID is null"),
+                url = response.linkUrl ?: return networkError("Link URL not found"),
+                expiresAt = response.accessEnd,
+                passwordRequired = response.passwordRequired ?: false,
+            )
         }
 
     @Suppress("ReturnCount")
@@ -218,6 +224,61 @@ internal class CellsApiImpl(
             )
         }
     }
+
+    // Helper function to fetch public link before updating it
+    private suspend fun withPublicLink(uuid: String, block: suspend (RestShareLink) -> Unit) =
+        wrapCellsResponse {
+            nodeServiceApi.getPublicLink(uuid)
+        }.mapSuccess { link ->
+            block(link)
+        }
+
+    override suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit> =
+        withPublicLink(linkUuid) { link ->
+            wrapCellsResponse {
+                nodeServiceApi.updatePublicLink(
+                    linkUuid = linkUuid,
+                    publicLinkRequest = RestPublicLinkRequest(
+                        link = link.copy(
+                            passwordRequired = true
+                        ),
+                        createPassword = password,
+                        passwordEnabled = true,
+                    )
+                )
+            }
+        }
+
+    override suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit> =
+        withPublicLink(linkUuid) { link ->
+            wrapCellsResponse {
+                nodeServiceApi.updatePublicLink(
+                    linkUuid = linkUuid,
+                    publicLinkRequest = RestPublicLinkRequest(
+                        link = link.copy(
+                            passwordRequired = true
+                        ),
+                        updatePassword = password,
+                        passwordEnabled = true,
+                    )
+                )
+            }
+        }
+
+    override suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit> =
+        withPublicLink(linkUuid) { link ->
+            wrapCellsResponse {
+                nodeServiceApi.updatePublicLink(
+                    linkUuid = linkUuid,
+                    publicLinkRequest = RestPublicLinkRequest(
+                        link = link.copy(
+                            passwordRequired = false
+                        ),
+                        passwordEnabled = false,
+                    )
+                )
+            }
+        }
 
     override suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit> =
         wrapCellsResponse {
