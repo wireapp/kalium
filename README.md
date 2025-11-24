@@ -134,85 +134,120 @@ You can run locally in your terminal:
 }%%
 
 graph LR
-  :persistence["persistence"]
-  :logger["logger"]
-  :util["util"]
-  :backup["backup"]
-  :protobuf["protobuf"]
-  :persistence-test["persistence-test"]
-  :persistence["persistence"]
-  :network["network"]
-  :network-model["network-model"]
-  :network-util["network-util"]
-  :mocks["mocks"]
   :logic["logic"]
-  :common["common"]
-  :data["data"]
-  :network-util["network-util"]
-  :logger["logger"]
-  :calling["calling"]
-  :network["network"]
-  :cryptography["cryptography"]
-  :persistence["persistence"]
-  :protobuf["protobuf"]
-  :util["util"]
-  :cells["cells"]
-  :backup["backup"]
-  :persistence-test["persistence-test"]
-  :cryptography["cryptography"]
-  :mocks["mocks"]
-  :network-util["network-util"]
-  :cells["cells"]
-  :common["common"]
-  :network["network"]
-  :data["data"]
-  :network-model["network-model"]
-  :data["data"]
-  :common["common"]
-  :cryptography["cryptography"]
+  subgraph :core
+    :core:cryptography["cryptography"]
+    :core:logger["logger"]
+    :core:util["util"]
+    :core:common["common"]
+    :core:data["data"]
+    :core:cryptography["cryptography"]
+    :core:common["common"]
+    :core:data["data"]
+    :core:logger["logger"]
+    :core:cryptography["cryptography"]
+    :core:util["util"]
+    :core:data["data"]
+    :core:common["common"]
+  end
+  subgraph :data
+    :data:network["network"]
+    :data:network-model["network-model"]
+    :data:protobuf["protobuf"]
+    :data:network-util["network-util"]
+    :data:persistence["persistence"]
+    :data:network["network"]
+    :data:persistence["persistence"]
+    :data:persistence-test["persistence-test"]
+    :data:network-util["network-util"]
+    :data:network["network"]
+    :data:data-mappers["data-mappers"]
+    :data:persistence["persistence"]
+    :data:protobuf["protobuf"]
+    :data:persistence-test["persistence-test"]
+    :data:network-model["network-model"]
+    :data:network-util["network-util"]
+    :data:data-mappers["data-mappers"]
+  end
+  subgraph :test
+    :test:mocks["mocks"]
+    :test:data-mocks["data-mocks"]
+    :test:data-mocks["data-mocks"]
+    :test:mocks["mocks"]
+  end
+  subgraph :domain
+    :domain:calling["calling"]
+    subgraph :messaging
+      :domain:messaging:sending["sending"]
+      :domain:messaging:sending["sending"]
+    end
+  end
+  subgraph :api
+    :api:cells["cells"]
+    :api:backup["backup"]
+    :api:backup["backup"]
+    :api:cells["cells"]
+  end
 
-  :persistence --> :logger
-  :persistence --> :util
-  :backup --> :protobuf
-  :persistence-test --> :persistence
-  :network --> :network-model
-  :network --> :logger
-  :network --> :protobuf
-  :network --> :util
-  :network --> :network-util
-  :network --> :mocks
-  :logic --> :common
-  :logic --> :data
-  :logic --> :network-util
-  :logic --> :logger
-  :logic --> :calling
-  :logic --> :network
-  :logic --> :cryptography
-  :logic --> :persistence
-  :logic --> :protobuf
-  :logic --> :util
-  :logic --> :cells
-  :logic --> :backup
-  :logic --> :persistence-test
-  :cryptography --> :logger
-  :mocks --> :network-model
-  :network-util --> :logger
-  :cells --> :common
-  :cells --> :network
-  :cells --> :data
-  :cells --> :util
-  :cells --> :persistence
-  :network-model --> :logger
-  :network-model --> :util
-  :data --> :network-model
-  :data --> :util
-  :common --> :data
-  :common --> :logger
-  :common --> :util
-  :common --> :persistence
-  :common --> :network
-  :common --> :network-util
-  :common --> :cryptography
+  :core:cryptography --> :core:logger
+  :data:network --> :data:network-model
+  :data:network --> :core:logger
+  :data:network --> :data:protobuf
+  :data:network --> :core:util
+  :data:network --> :data:network-util
+  :data:network --> :test:mocks
+  :core:common --> :core:data
+  :core:common --> :core:logger
+  :core:common --> :core:util
+  :core:common --> :data:persistence
+  :core:common --> :data:network
+  :core:common --> :data:network-util
+  :core:common --> :core:cryptography
+  :data:persistence --> :core:logger
+  :data:persistence --> :core:util
+  :data:persistence-test --> :data:persistence
+  :logic --> :core:common
+  :logic --> :core:data
+  :logic --> :data:network-util
+  :logic --> :core:logger
+  :logic --> :domain:calling
+  :logic --> :data:network
+  :logic --> :data:data-mappers
+  :logic --> :core:cryptography
+  :logic --> :data:persistence
+  :logic --> :data:protobuf
+  :logic --> :core:util
+  :logic --> :api:cells
+  :logic --> :api:backup
+  :logic --> :domain:messaging:sending
+  :logic --> :data:persistence-test
+  :logic --> :test:data-mocks
+  :data:network-model --> :core:logger
+  :data:network-model --> :core:util
+  :test:data-mocks --> :core:data
+  :test:data-mocks --> :data:persistence
+  :test:data-mocks --> :data:network-model
+  :test:data-mocks --> :core:util
+  :api:backup --> :data:protobuf
+  :data:network-util --> :core:logger
+  :core:data --> :data:network-model
+  :core:data --> :core:util
+  :test:mocks --> :data:network-model
+  :domain:messaging:sending --> :core:common
+  :domain:messaging:sending --> :core:data
+  :domain:messaging:sending --> :core:logger
+  :domain:messaging:sending --> :core:util
+  :api:cells --> :core:common
+  :api:cells --> :data:network
+  :api:cells --> :core:data
+  :api:cells --> :core:util
+  :api:cells --> :data:persistence
+  :data:data-mappers --> :core:data
+  :data:data-mappers --> :data:protobuf
+  :data:data-mappers --> :data:persistence
+  :data:data-mappers --> :core:cryptography
+  :data:data-mappers --> :data:network-model
+  :data:data-mappers --> :core:util
 ```
 #### Logo
 
