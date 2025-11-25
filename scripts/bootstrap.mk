@@ -1,6 +1,7 @@
 # initial setup/bootstrap related targets
 SHELL := /bin/bash
 AVS_VERSION := 9.7.1
+CORE_CRYPTO_VERSION := 9.1.1
 
 ifeq ($(JAVA_HOME),)
 	export JAVA_HOME := $(shell /usr/libexec/java_home)
@@ -49,3 +50,12 @@ $(AVS_FRAMEWORK_ARTIFACT): $(AVS_FRAMEWORK_LOCATION)
 setup/pre-push-hook:
 	mkdir -p .git/hooks
 	cp .githooks/pre-push .git/hooks/pre-push
+
+# CoreCrypto iOS frameworks
+.PHONY: setup/core-crypto-ios clean-core-crypto-ios
+setup/core-crypto-ios:
+	@./scripts/download-core-crypto-ios.sh $(CORE_CRYPTO_VERSION)
+
+clean-core-crypto-ios:
+	@echo "Removing CoreCrypto iOS frameworks"
+	@rm -rf cryptography/frameworks

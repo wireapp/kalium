@@ -1,0 +1,37 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
+// swift-module-flags: -target arm64-apple-ios16.6-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name WireCoreCrypto
+// swift-module-flags-ignorable:  -interface-compiler-version 6.1.2
+import Swift
+import System
+@_exported import WireCoreCrypto
+@_exported import WireCoreCryptoUniffi
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+public protocol CoreCryptoProtocol {
+  static func historyClient(_ historySecret: WireCoreCryptoUniffi.HistorySecret) async throws -> Self
+  func transaction<Result>(_ block: @escaping (_ context: any WireCoreCryptoUniffi.CoreCryptoContextProtocol) async throws -> Result) async throws -> Result
+  func provideTransport(transport: any WireCoreCryptoUniffi.MlsTransport) async throws
+  func registerEpochObserver(_ epochObserver: any WireCoreCryptoUniffi.EpochObserver) async throws
+  func registerHistoryObserver(_ historyObserver: any WireCoreCryptoUniffi.HistoryObserver) async throws
+  func isHistorySharingEnabled(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  static func setLogger(_ logger: any WireCoreCryptoUniffi.CoreCryptoLogger)
+  static func setMaxLogLevel(_ level: WireCoreCryptoUniffi.CoreCryptoLogLevel)
+  static func version() -> Swift.String
+  static func buildMetadata() -> WireCoreCryptoUniffi.BuildMetadata
+}
+@_hasMissingDesignatedInitializers final public class CoreCrypto : WireCoreCrypto.CoreCryptoProtocol {
+  convenience public init(keystorePath: Swift.String, key: WireCoreCryptoUniffi.DatabaseKey) async throws
+  public static func historyClient(_ historySecret: WireCoreCryptoUniffi.HistorySecret) async throws -> WireCoreCrypto.CoreCrypto
+  final public func transaction<Result>(_ block: @escaping (_ context: any WireCoreCryptoUniffi.CoreCryptoContextProtocol) async throws -> Result) async throws -> Result
+  final public func provideTransport(transport: any WireCoreCryptoUniffi.MlsTransport) async throws
+  final public func registerEpochObserver(_ epochObserver: any WireCoreCryptoUniffi.EpochObserver) async throws
+  final public func registerHistoryObserver(_ historyObserver: any WireCoreCryptoUniffi.HistoryObserver) async throws
+  final public func isHistorySharingEnabled(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  public static func setLogger(_ logger: any WireCoreCryptoUniffi.CoreCryptoLogger)
+  public static func setMaxLogLevel(_ level: WireCoreCryptoUniffi.CoreCryptoLogLevel)
+  public static func version() -> Swift.String
+  public static func buildMetadata() -> WireCoreCryptoUniffi.BuildMetadata
+  @objc deinit
+}

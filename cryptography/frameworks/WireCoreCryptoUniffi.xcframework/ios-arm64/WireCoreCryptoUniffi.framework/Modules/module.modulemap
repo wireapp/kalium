@@ -1,0 +1,11 @@
+framework module WireCoreCryptoUniffi {
+  umbrella header "WireCoreCryptoUniffi.h"
+  export *
+
+  module * { export * }
+}
+
+module WireCoreCryptoUniffi.Swift {
+  header "WireCoreCryptoUniffi-Swift.h"
+  requires objc
+}

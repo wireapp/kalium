@@ -1,0 +1,1353 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
+// swift-module-flags: -target arm64-apple-ios16.6-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name WireCoreCryptoUniffi
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -interface-compiler-version 6.1.2
+import Foundation
+import Swift
+@_exported import WireCoreCryptoUniffi
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+public protocol ClientIdProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class ClientId : WireCoreCryptoUniffi.ClientIdProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.ClientId.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+}
+@_documentation(visibility: private) public struct FfiConverterTypeClientId {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.ClientId
+  public static func lower(_ value: WireCoreCryptoUniffi.ClientId) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.ClientId
+  public static func write(_ value: WireCoreCryptoUniffi.ClientId, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeClientId_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.ClientId
+@_documentation(visibility: private) public func FfiConverterTypeClientId_lower(_ value: WireCoreCryptoUniffi.ClientId) -> Swift.UnsafeMutableRawPointer
+public protocol ConversationIdProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class ConversationId : WireCoreCryptoUniffi.ConversationIdProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.ConversationId.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+  open var debugDescription: Swift.String {
+    get
+  }
+  open var description: Swift.String {
+    get
+  }
+  public static func == (self: WireCoreCryptoUniffi.ConversationId, other: WireCoreCryptoUniffi.ConversationId) -> Swift.Bool
+  open func hash(into hasher: inout Swift.Hasher)
+}
+extension WireCoreCryptoUniffi.ConversationId : Swift.CustomDebugStringConvertible {
+}
+extension WireCoreCryptoUniffi.ConversationId : Swift.CustomStringConvertible {
+}
+extension WireCoreCryptoUniffi.ConversationId : Swift.Equatable {
+}
+extension WireCoreCryptoUniffi.ConversationId : Swift.Hashable {
+  open var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeConversationId {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.ConversationId
+  public static func lower(_ value: WireCoreCryptoUniffi.ConversationId) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.ConversationId
+  public static func write(_ value: WireCoreCryptoUniffi.ConversationId, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeConversationId_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.ConversationId
+@_documentation(visibility: private) public func FfiConverterTypeConversationId_lower(_ value: WireCoreCryptoUniffi.ConversationId) -> Swift.UnsafeMutableRawPointer
+public protocol CoreCryptoProtocol : AnyObject, Swift.Sendable {
+  func clientPublicKey(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> Foundation.Data
+  func conversationCiphersuite(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.Ciphersuite
+  func conversationEpoch(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.UInt64
+  func conversationExists(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  func e2eiIsEnabled(ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> Swift.Bool
+  func e2eiIsPkiEnvSetup() async -> Swift.Bool
+  func exportSecretKey(conversationId: WireCoreCryptoUniffi.ConversationId, keyLength: Swift.UInt32) async throws -> Foundation.Data
+  func getClientIds(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> [WireCoreCryptoUniffi.ClientId]
+  func getDeviceIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, deviceIds: [WireCoreCryptoUniffi.ClientId]) async throws -> [WireCoreCryptoUniffi.WireIdentity]
+  func getExternalSender(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Foundation.Data
+  func getUserIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, userIds: [Swift.String]) async throws -> [Swift.String : [WireCoreCryptoUniffi.WireIdentity]]
+  func isHistorySharingEnabled(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  func proteusFingerprint() async throws -> Swift.String
+  func proteusFingerprintLocal(sessionId: Swift.String) async throws -> Swift.String
+  func proteusFingerprintPrekeybundle(prekey: Foundation.Data) throws -> Swift.String
+  func proteusFingerprintRemote(sessionId: Swift.String) async throws -> Swift.String
+  func proteusLastResortPrekeyId() throws -> Swift.UInt16
+  func proteusSessionExists(sessionId: Swift.String) async throws -> Swift.Bool
+  func provideTransport(callbacks: any WireCoreCryptoUniffi.MlsTransport) async throws
+  func randomBytes(len: Swift.UInt32) async throws -> Foundation.Data
+  func registerEpochObserver(epochObserver: any WireCoreCryptoUniffi.EpochObserver) async throws
+  func registerHistoryObserver(historyObserver: any WireCoreCryptoUniffi.HistoryObserver) async throws
+  func reseedRng(seed: Foundation.Data) async throws
+  func transaction(command: any WireCoreCryptoUniffi.CoreCryptoCommand) async throws
+}
+open class CoreCrypto : WireCoreCryptoUniffi.CoreCryptoProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.CoreCrypto.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func clientPublicKey(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> Foundation.Data
+  open func conversationCiphersuite(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.Ciphersuite
+  open func conversationEpoch(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.UInt64
+  open func conversationExists(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  open func e2eiIsEnabled(ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> Swift.Bool
+  open func e2eiIsPkiEnvSetup() async -> Swift.Bool
+  open func exportSecretKey(conversationId: WireCoreCryptoUniffi.ConversationId, keyLength: Swift.UInt32) async throws -> Foundation.Data
+  open func getClientIds(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> [WireCoreCryptoUniffi.ClientId]
+  open func getDeviceIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, deviceIds: [WireCoreCryptoUniffi.ClientId]) async throws -> [WireCoreCryptoUniffi.WireIdentity]
+  open func getExternalSender(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Foundation.Data
+  open func getUserIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, userIds: [Swift.String]) async throws -> [Swift.String : [WireCoreCryptoUniffi.WireIdentity]]
+  open func isHistorySharingEnabled(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  open func proteusFingerprint() async throws -> Swift.String
+  open func proteusFingerprintLocal(sessionId: Swift.String) async throws -> Swift.String
+  open func proteusFingerprintPrekeybundle(prekey: Foundation.Data) throws -> Swift.String
+  open func proteusFingerprintRemote(sessionId: Swift.String) async throws -> Swift.String
+  open func proteusLastResortPrekeyId() throws -> Swift.UInt16
+  open func proteusSessionExists(sessionId: Swift.String) async throws -> Swift.Bool
+  open func provideTransport(callbacks: any WireCoreCryptoUniffi.MlsTransport) async throws
+  open func randomBytes(len: Swift.UInt32) async throws -> Foundation.Data
+  open func registerEpochObserver(epochObserver: any WireCoreCryptoUniffi.EpochObserver) async throws
+  open func registerHistoryObserver(historyObserver: any WireCoreCryptoUniffi.HistoryObserver) async throws
+  open func reseedRng(seed: Foundation.Data) async throws
+  open func transaction(command: any WireCoreCryptoUniffi.CoreCryptoCommand) async throws
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCoreCrypto {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.CoreCrypto
+  public static func lower(_ value: WireCoreCryptoUniffi.CoreCrypto) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CoreCrypto
+  public static func write(_ value: WireCoreCryptoUniffi.CoreCrypto, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCoreCrypto_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.CoreCrypto
+@_documentation(visibility: private) public func FfiConverterTypeCoreCrypto_lower(_ value: WireCoreCryptoUniffi.CoreCrypto) -> Swift.UnsafeMutableRawPointer
+public protocol CoreCryptoCommand : AnyObject, Swift.Sendable {
+  func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws
+}
+open class CoreCryptoCommandImpl : WireCoreCryptoUniffi.CoreCryptoCommand, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.CoreCryptoCommandImpl.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCoreCryptoCommand {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.CoreCryptoCommand
+  public static func lower(_ value: any WireCoreCryptoUniffi.CoreCryptoCommand) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> any WireCoreCryptoUniffi.CoreCryptoCommand
+  public static func write(_ value: any WireCoreCryptoUniffi.CoreCryptoCommand, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoCommand_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.CoreCryptoCommand
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoCommand_lower(_ value: any WireCoreCryptoUniffi.CoreCryptoCommand) -> Swift.UnsafeMutableRawPointer
+public protocol CoreCryptoContextProtocol : AnyObject, Swift.Sendable {
+  func addClientsToConversation(conversationId: WireCoreCryptoUniffi.ConversationId, keyPackages: [WireCoreCryptoUniffi.KeyPackage]) async throws -> [Swift.String]?
+  func clientKeypackages(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType, amountRequested: Swift.UInt32) async throws -> [WireCoreCryptoUniffi.KeyPackage]
+  func clientPublicKey(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> Foundation.Data
+  func clientValidKeypackagesCount(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> Swift.UInt64
+  func commitPendingProposals(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  func conversationCiphersuite(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.Ciphersuite
+  func conversationEpoch(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.UInt64
+  func conversationExists(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  func createConversation(conversationId: WireCoreCryptoUniffi.ConversationId, creatorCredentialType: WireCoreCryptoUniffi.CredentialType, config: WireCoreCryptoUniffi.ConversationConfiguration) async throws
+  func decryptMessage(conversationId: WireCoreCryptoUniffi.ConversationId, payload: Foundation.Data) async throws -> WireCoreCryptoUniffi.DecryptedMessage
+  func deleteStaleKeyPackages(ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws
+  func disableHistorySharing(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  func e2eiConversationState(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.E2eiConversationState
+  func e2eiEnrollmentStash(enrollment: WireCoreCryptoUniffi.E2eiEnrollment) async throws -> Foundation.Data
+  func e2eiEnrollmentStashPop(handle: Foundation.Data) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  func e2eiIsEnabled(ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> Swift.Bool
+  func e2eiIsPkiEnvSetup() async throws -> Swift.Bool
+  func e2eiMlsInitOnly(enrollment: WireCoreCryptoUniffi.E2eiEnrollment, certificateChain: Swift.String, nbKeyPackage: Swift.UInt32?) async throws -> [Swift.String]?
+  func e2eiNewActivationEnrollment(displayName: Swift.String, handle: Swift.String, team: Swift.String?, expirySec: Swift.UInt32, ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  func e2eiNewEnrollment(clientId: Swift.String, displayName: Swift.String, handle: Swift.String, team: Swift.String?, expirySec: Swift.UInt32, ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  func e2eiNewRotateEnrollment(displayName: Swift.String?, handle: Swift.String?, team: Swift.String?, expirySec: Swift.UInt32, ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  func e2eiRegisterAcmeCa(trustAnchorPem: Swift.String) async throws
+  func e2eiRegisterCrl(crlDp: Swift.String, crlDer: Foundation.Data) async throws -> WireCoreCryptoUniffi.CrlRegistration
+  func e2eiRegisterIntermediateCa(certPem: Swift.String) async throws -> [Swift.String]?
+  func e2eiRotate(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  func enableHistorySharing(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  func encryptMessage(conversationId: WireCoreCryptoUniffi.ConversationId, message: Foundation.Data) async throws -> Foundation.Data
+  func exportSecretKey(conversationId: WireCoreCryptoUniffi.ConversationId, keyLength: Swift.UInt32) async throws -> WireCoreCryptoUniffi.SecretKey
+  func getClientIds(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> [WireCoreCryptoUniffi.ClientId]
+  func getData() async throws -> Foundation.Data?
+  func getDeviceIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, deviceIds: [WireCoreCryptoUniffi.ClientId]) async throws -> [WireCoreCryptoUniffi.WireIdentity]
+  func getExternalSender(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.ExternalSenderKey
+  func getUserIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, userIds: [Swift.String]) async throws -> [Swift.String : [WireCoreCryptoUniffi.WireIdentity]]
+  func joinByExternalCommit(groupInfo: WireCoreCryptoUniffi.GroupInfo, customConfiguration: WireCoreCryptoUniffi.CustomConfiguration, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> WireCoreCryptoUniffi.WelcomeBundle
+  func markConversationAsChildOf(childId: WireCoreCryptoUniffi.ConversationId, parentId: WireCoreCryptoUniffi.ConversationId) async throws
+  func mlsInit(clientId: WireCoreCryptoUniffi.ClientId, ciphersuites: [WireCoreCryptoUniffi.Ciphersuite], nbKeyPackage: Swift.UInt32?) async throws
+  func processWelcomeMessage(welcomeMessage: WireCoreCryptoUniffi.Welcome, customConfiguration: WireCoreCryptoUniffi.CustomConfiguration) async throws -> WireCoreCryptoUniffi.WelcomeBundle
+  func proteusDecrypt(sessionId: Swift.String, ciphertext: Foundation.Data) async throws -> Foundation.Data
+  func proteusDecryptSafe(sessionId: Swift.String, ciphertext: Foundation.Data) async throws -> Foundation.Data
+  func proteusEncrypt(sessionId: Swift.String, plaintext: Foundation.Data) async throws -> Foundation.Data
+  func proteusEncryptBatched(sessions: [Swift.String], plaintext: Foundation.Data) async throws -> [Swift.String : Foundation.Data]
+  func proteusFingerprint() async throws -> Swift.String
+  func proteusFingerprintLocal(sessionId: Swift.String) async throws -> Swift.String
+  func proteusFingerprintPrekeybundle(prekey: Foundation.Data) throws -> Swift.String
+  func proteusFingerprintRemote(sessionId: Swift.String) async throws -> Swift.String
+  func proteusInit() async throws
+  func proteusLastResortPrekey() async throws -> Foundation.Data
+  func proteusLastResortPrekeyId() throws -> Swift.UInt16
+  func proteusNewPrekey(prekeyId: Swift.UInt16) async throws -> Foundation.Data
+  func proteusNewPrekeyAuto() async throws -> WireCoreCryptoUniffi.ProteusAutoPrekeyBundle
+  func proteusReloadSessions() async throws
+  func proteusSessionDelete(sessionId: Swift.String) async throws
+  func proteusSessionExists(sessionId: Swift.String) async throws -> Swift.Bool
+  func proteusSessionFromMessage(sessionId: Swift.String, envelope: Foundation.Data) async throws -> Foundation.Data
+  func proteusSessionFromPrekey(sessionId: Swift.String, prekey: Foundation.Data) async throws
+  func proteusSessionSave(sessionId: Swift.String) async throws
+  func randomBytes(len: Swift.UInt32) async throws -> Foundation.Data
+  func removeClientsFromConversation(conversationId: WireCoreCryptoUniffi.ConversationId, clients: [WireCoreCryptoUniffi.ClientId]) async throws
+  func saveX509Credential(enrollment: WireCoreCryptoUniffi.E2eiEnrollment, certificateChain: Swift.String) async throws -> [Swift.String]?
+  func setData(data: Foundation.Data) async throws
+  func updateKeyingMaterial(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  func wipeConversation(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+}
+open class CoreCryptoContext : WireCoreCryptoUniffi.CoreCryptoContextProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.CoreCryptoContext.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func addClientsToConversation(conversationId: WireCoreCryptoUniffi.ConversationId, keyPackages: [WireCoreCryptoUniffi.KeyPackage]) async throws -> [Swift.String]?
+  open func clientKeypackages(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType, amountRequested: Swift.UInt32) async throws -> [WireCoreCryptoUniffi.KeyPackage]
+  open func clientPublicKey(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> Foundation.Data
+  open func clientValidKeypackagesCount(ciphersuite: WireCoreCryptoUniffi.Ciphersuite, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> Swift.UInt64
+  open func commitPendingProposals(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  open func conversationCiphersuite(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.Ciphersuite
+  open func conversationEpoch(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.UInt64
+  open func conversationExists(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> Swift.Bool
+  open func createConversation(conversationId: WireCoreCryptoUniffi.ConversationId, creatorCredentialType: WireCoreCryptoUniffi.CredentialType, config: WireCoreCryptoUniffi.ConversationConfiguration) async throws
+  open func decryptMessage(conversationId: WireCoreCryptoUniffi.ConversationId, payload: Foundation.Data) async throws -> WireCoreCryptoUniffi.DecryptedMessage
+  open func deleteStaleKeyPackages(ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws
+  open func disableHistorySharing(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  open func e2eiConversationState(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.E2eiConversationState
+  open func e2eiEnrollmentStash(enrollment: WireCoreCryptoUniffi.E2eiEnrollment) async throws -> Foundation.Data
+  open func e2eiEnrollmentStashPop(handle: Foundation.Data) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  open func e2eiIsEnabled(ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> Swift.Bool
+  open func e2eiIsPkiEnvSetup() async throws -> Swift.Bool
+  open func e2eiMlsInitOnly(enrollment: WireCoreCryptoUniffi.E2eiEnrollment, certificateChain: Swift.String, nbKeyPackage: Swift.UInt32?) async throws -> [Swift.String]?
+  open func e2eiNewActivationEnrollment(displayName: Swift.String, handle: Swift.String, team: Swift.String?, expirySec: Swift.UInt32, ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  open func e2eiNewEnrollment(clientId: Swift.String, displayName: Swift.String, handle: Swift.String, team: Swift.String?, expirySec: Swift.UInt32, ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  open func e2eiNewRotateEnrollment(displayName: Swift.String?, handle: Swift.String?, team: Swift.String?, expirySec: Swift.UInt32, ciphersuite: WireCoreCryptoUniffi.Ciphersuite) async throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  open func e2eiRegisterAcmeCa(trustAnchorPem: Swift.String) async throws
+  open func e2eiRegisterCrl(crlDp: Swift.String, crlDer: Foundation.Data) async throws -> WireCoreCryptoUniffi.CrlRegistration
+  open func e2eiRegisterIntermediateCa(certPem: Swift.String) async throws -> [Swift.String]?
+  open func e2eiRotate(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  open func enableHistorySharing(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  open func encryptMessage(conversationId: WireCoreCryptoUniffi.ConversationId, message: Foundation.Data) async throws -> Foundation.Data
+  open func exportSecretKey(conversationId: WireCoreCryptoUniffi.ConversationId, keyLength: Swift.UInt32) async throws -> WireCoreCryptoUniffi.SecretKey
+  open func getClientIds(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> [WireCoreCryptoUniffi.ClientId]
+  open func getData() async throws -> Foundation.Data?
+  open func getDeviceIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, deviceIds: [WireCoreCryptoUniffi.ClientId]) async throws -> [WireCoreCryptoUniffi.WireIdentity]
+  open func getExternalSender(conversationId: WireCoreCryptoUniffi.ConversationId) async throws -> WireCoreCryptoUniffi.ExternalSenderKey
+  open func getUserIdentities(conversationId: WireCoreCryptoUniffi.ConversationId, userIds: [Swift.String]) async throws -> [Swift.String : [WireCoreCryptoUniffi.WireIdentity]]
+  open func joinByExternalCommit(groupInfo: WireCoreCryptoUniffi.GroupInfo, customConfiguration: WireCoreCryptoUniffi.CustomConfiguration, credentialType: WireCoreCryptoUniffi.CredentialType) async throws -> WireCoreCryptoUniffi.WelcomeBundle
+  open func markConversationAsChildOf(childId: WireCoreCryptoUniffi.ConversationId, parentId: WireCoreCryptoUniffi.ConversationId) async throws
+  open func mlsInit(clientId: WireCoreCryptoUniffi.ClientId, ciphersuites: [WireCoreCryptoUniffi.Ciphersuite], nbKeyPackage: Swift.UInt32?) async throws
+  open func processWelcomeMessage(welcomeMessage: WireCoreCryptoUniffi.Welcome, customConfiguration: WireCoreCryptoUniffi.CustomConfiguration) async throws -> WireCoreCryptoUniffi.WelcomeBundle
+  open func proteusDecrypt(sessionId: Swift.String, ciphertext: Foundation.Data) async throws -> Foundation.Data
+  open func proteusDecryptSafe(sessionId: Swift.String, ciphertext: Foundation.Data) async throws -> Foundation.Data
+  open func proteusEncrypt(sessionId: Swift.String, plaintext: Foundation.Data) async throws -> Foundation.Data
+  open func proteusEncryptBatched(sessions: [Swift.String], plaintext: Foundation.Data) async throws -> [Swift.String : Foundation.Data]
+  open func proteusFingerprint() async throws -> Swift.String
+  open func proteusFingerprintLocal(sessionId: Swift.String) async throws -> Swift.String
+  open func proteusFingerprintPrekeybundle(prekey: Foundation.Data) throws -> Swift.String
+  open func proteusFingerprintRemote(sessionId: Swift.String) async throws -> Swift.String
+  open func proteusInit() async throws
+  open func proteusLastResortPrekey() async throws -> Foundation.Data
+  open func proteusLastResortPrekeyId() throws -> Swift.UInt16
+  open func proteusNewPrekey(prekeyId: Swift.UInt16) async throws -> Foundation.Data
+  open func proteusNewPrekeyAuto() async throws -> WireCoreCryptoUniffi.ProteusAutoPrekeyBundle
+  open func proteusReloadSessions() async throws
+  open func proteusSessionDelete(sessionId: Swift.String) async throws
+  open func proteusSessionExists(sessionId: Swift.String) async throws -> Swift.Bool
+  open func proteusSessionFromMessage(sessionId: Swift.String, envelope: Foundation.Data) async throws -> Foundation.Data
+  open func proteusSessionFromPrekey(sessionId: Swift.String, prekey: Foundation.Data) async throws
+  open func proteusSessionSave(sessionId: Swift.String) async throws
+  open func randomBytes(len: Swift.UInt32) async throws -> Foundation.Data
+  open func removeClientsFromConversation(conversationId: WireCoreCryptoUniffi.ConversationId, clients: [WireCoreCryptoUniffi.ClientId]) async throws
+  open func saveX509Credential(enrollment: WireCoreCryptoUniffi.E2eiEnrollment, certificateChain: Swift.String) async throws -> [Swift.String]?
+  open func setData(data: Foundation.Data) async throws
+  open func updateKeyingMaterial(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+  open func wipeConversation(conversationId: WireCoreCryptoUniffi.ConversationId) async throws
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCoreCryptoContext {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.CoreCryptoContext
+  public static func lower(_ value: WireCoreCryptoUniffi.CoreCryptoContext) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CoreCryptoContext
+  public static func write(_ value: WireCoreCryptoUniffi.CoreCryptoContext, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoContext_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.CoreCryptoContext
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoContext_lower(_ value: WireCoreCryptoUniffi.CoreCryptoContext) -> Swift.UnsafeMutableRawPointer
+public protocol CoreCryptoLogger : AnyObject, Swift.Sendable {
+  func log(level: WireCoreCryptoUniffi.CoreCryptoLogLevel, message: Swift.String, context: Swift.String?) throws
+}
+open class CoreCryptoLoggerImpl : WireCoreCryptoUniffi.CoreCryptoLogger, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.CoreCryptoLoggerImpl.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func log(level: WireCoreCryptoUniffi.CoreCryptoLogLevel, message: Swift.String, context: Swift.String?) throws
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCoreCryptoLogger {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.CoreCryptoLogger
+  public static func lower(_ value: any WireCoreCryptoUniffi.CoreCryptoLogger) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> any WireCoreCryptoUniffi.CoreCryptoLogger
+  public static func write(_ value: any WireCoreCryptoUniffi.CoreCryptoLogger, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoLogger_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.CoreCryptoLogger
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoLogger_lower(_ value: any WireCoreCryptoUniffi.CoreCryptoLogger) -> Swift.UnsafeMutableRawPointer
+public protocol DatabaseProtocol : AnyObject, Swift.Sendable {
+}
+open class Database : WireCoreCryptoUniffi.DatabaseProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.Database.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+}
+@_documentation(visibility: private) public struct FfiConverterTypeDatabase {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.Database
+  public static func lower(_ value: WireCoreCryptoUniffi.Database) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.Database
+  public static func write(_ value: WireCoreCryptoUniffi.Database, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeDatabase_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.Database
+@_documentation(visibility: private) public func FfiConverterTypeDatabase_lower(_ value: WireCoreCryptoUniffi.Database) -> Swift.UnsafeMutableRawPointer
+public protocol DatabaseKeyProtocol : AnyObject, Swift.Sendable {
+}
+open class DatabaseKey : WireCoreCryptoUniffi.DatabaseKeyProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.DatabaseKey.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(key: Foundation.Data) throws
+  @objc deinit
+  public static func == (self: WireCoreCryptoUniffi.DatabaseKey, other: WireCoreCryptoUniffi.DatabaseKey) -> Swift.Bool
+}
+extension WireCoreCryptoUniffi.DatabaseKey : Swift.Equatable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeDatabaseKey {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.DatabaseKey
+  public static func lower(_ value: WireCoreCryptoUniffi.DatabaseKey) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.DatabaseKey
+  public static func write(_ value: WireCoreCryptoUniffi.DatabaseKey, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeDatabaseKey_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.DatabaseKey
+@_documentation(visibility: private) public func FfiConverterTypeDatabaseKey_lower(_ value: WireCoreCryptoUniffi.DatabaseKey) -> Swift.UnsafeMutableRawPointer
+public protocol E2eiEnrollmentProtocol : AnyObject, Swift.Sendable {
+  func certificateRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  func checkOrderRequest(orderUrl: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  func checkOrderResponse(order: Foundation.Data) async throws -> Swift.String
+  func createDpopToken(expirySecs: Swift.UInt32, backendNonce: Swift.String) async throws -> Swift.String
+  func directoryResponse(directory: Foundation.Data) async throws -> WireCoreCryptoUniffi.AcmeDirectory
+  func finalizeRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  func finalizeResponse(finalize: Foundation.Data) async throws -> Swift.String
+  func newAccountRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  func newAccountResponse(account: Foundation.Data) async throws
+  func newAuthzRequest(url: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  func newAuthzResponse(authz: Foundation.Data) async throws -> WireCoreCryptoUniffi.NewAcmeAuthz
+  func newDpopChallengeRequest(accessToken: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  func newDpopChallengeResponse(challenge: Foundation.Data) async throws
+  func newOidcChallengeRequest(idToken: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  func newOidcChallengeResponse(challenge: Foundation.Data) async throws
+  func newOrderRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  func newOrderResponse(order: Foundation.Data) async throws -> WireCoreCryptoUniffi.NewAcmeOrder
+}
+open class E2eiEnrollment : WireCoreCryptoUniffi.E2eiEnrollmentProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.E2eiEnrollment.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func certificateRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  open func checkOrderRequest(orderUrl: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  open func checkOrderResponse(order: Foundation.Data) async throws -> Swift.String
+  open func createDpopToken(expirySecs: Swift.UInt32, backendNonce: Swift.String) async throws -> Swift.String
+  open func directoryResponse(directory: Foundation.Data) async throws -> WireCoreCryptoUniffi.AcmeDirectory
+  open func finalizeRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  open func finalizeResponse(finalize: Foundation.Data) async throws -> Swift.String
+  open func newAccountRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  open func newAccountResponse(account: Foundation.Data) async throws
+  open func newAuthzRequest(url: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  open func newAuthzResponse(authz: Foundation.Data) async throws -> WireCoreCryptoUniffi.NewAcmeAuthz
+  open func newDpopChallengeRequest(accessToken: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  open func newDpopChallengeResponse(challenge: Foundation.Data) async throws
+  open func newOidcChallengeRequest(idToken: Swift.String, previousNonce: Swift.String) async throws -> Foundation.Data
+  open func newOidcChallengeResponse(challenge: Foundation.Data) async throws
+  open func newOrderRequest(previousNonce: Swift.String) async throws -> Foundation.Data
+  open func newOrderResponse(order: Foundation.Data) async throws -> WireCoreCryptoUniffi.NewAcmeOrder
+}
+@_documentation(visibility: private) public struct FfiConverterTypeE2eiEnrollment {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  public static func lower(_ value: WireCoreCryptoUniffi.E2eiEnrollment) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.E2eiEnrollment
+  public static func write(_ value: WireCoreCryptoUniffi.E2eiEnrollment, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeE2eiEnrollment_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.E2eiEnrollment
+@_documentation(visibility: private) public func FfiConverterTypeE2eiEnrollment_lower(_ value: WireCoreCryptoUniffi.E2eiEnrollment) -> Swift.UnsafeMutableRawPointer
+public protocol EpochObserver : AnyObject, Swift.Sendable {
+  func epochChanged(conversationId: WireCoreCryptoUniffi.ConversationId, epoch: Swift.UInt64) async throws
+}
+open class EpochObserverImpl : WireCoreCryptoUniffi.EpochObserver, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.EpochObserverImpl.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func epochChanged(conversationId: WireCoreCryptoUniffi.ConversationId, epoch: Swift.UInt64) async throws
+}
+@_documentation(visibility: private) public struct FfiConverterTypeEpochObserver {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.EpochObserver
+  public static func lower(_ value: any WireCoreCryptoUniffi.EpochObserver) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> any WireCoreCryptoUniffi.EpochObserver
+  public static func write(_ value: any WireCoreCryptoUniffi.EpochObserver, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeEpochObserver_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.EpochObserver
+@_documentation(visibility: private) public func FfiConverterTypeEpochObserver_lower(_ value: any WireCoreCryptoUniffi.EpochObserver) -> Swift.UnsafeMutableRawPointer
+public protocol ExternalSenderKeyProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class ExternalSenderKey : WireCoreCryptoUniffi.ExternalSenderKeyProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.ExternalSenderKey.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+  open var description: Swift.String {
+    get
+  }
+  public static func == (self: WireCoreCryptoUniffi.ExternalSenderKey, other: WireCoreCryptoUniffi.ExternalSenderKey) -> Swift.Bool
+  open func hash(into hasher: inout Swift.Hasher)
+}
+extension WireCoreCryptoUniffi.ExternalSenderKey : Swift.CustomStringConvertible {
+}
+extension WireCoreCryptoUniffi.ExternalSenderKey : Swift.Equatable {
+}
+extension WireCoreCryptoUniffi.ExternalSenderKey : Swift.Hashable {
+  open var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeExternalSenderKey {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.ExternalSenderKey
+  public static func lower(_ value: WireCoreCryptoUniffi.ExternalSenderKey) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.ExternalSenderKey
+  public static func write(_ value: WireCoreCryptoUniffi.ExternalSenderKey, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeExternalSenderKey_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.ExternalSenderKey
+@_documentation(visibility: private) public func FfiConverterTypeExternalSenderKey_lower(_ value: WireCoreCryptoUniffi.ExternalSenderKey) -> Swift.UnsafeMutableRawPointer
+public protocol GroupInfoProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class GroupInfo : WireCoreCryptoUniffi.GroupInfoProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.GroupInfo.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+  open var description: Swift.String {
+    get
+  }
+  public static func == (self: WireCoreCryptoUniffi.GroupInfo, other: WireCoreCryptoUniffi.GroupInfo) -> Swift.Bool
+  open func hash(into hasher: inout Swift.Hasher)
+}
+extension WireCoreCryptoUniffi.GroupInfo : Swift.CustomStringConvertible {
+}
+extension WireCoreCryptoUniffi.GroupInfo : Swift.Equatable {
+}
+extension WireCoreCryptoUniffi.GroupInfo : Swift.Hashable {
+  open var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeGroupInfo {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.GroupInfo
+  public static func lower(_ value: WireCoreCryptoUniffi.GroupInfo) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.GroupInfo
+  public static func write(_ value: WireCoreCryptoUniffi.GroupInfo, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeGroupInfo_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.GroupInfo
+@_documentation(visibility: private) public func FfiConverterTypeGroupInfo_lower(_ value: WireCoreCryptoUniffi.GroupInfo) -> Swift.UnsafeMutableRawPointer
+public protocol HistoryObserver : AnyObject, Swift.Sendable {
+  func historyClientCreated(conversationId: WireCoreCryptoUniffi.ConversationId, secret: WireCoreCryptoUniffi.HistorySecret) async throws
+}
+open class HistoryObserverImpl : WireCoreCryptoUniffi.HistoryObserver, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.HistoryObserverImpl.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func historyClientCreated(conversationId: WireCoreCryptoUniffi.ConversationId, secret: WireCoreCryptoUniffi.HistorySecret) async throws
+}
+@_documentation(visibility: private) public struct FfiConverterTypeHistoryObserver {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.HistoryObserver
+  public static func lower(_ value: any WireCoreCryptoUniffi.HistoryObserver) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> any WireCoreCryptoUniffi.HistoryObserver
+  public static func write(_ value: any WireCoreCryptoUniffi.HistoryObserver, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeHistoryObserver_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.HistoryObserver
+@_documentation(visibility: private) public func FfiConverterTypeHistoryObserver_lower(_ value: any WireCoreCryptoUniffi.HistoryObserver) -> Swift.UnsafeMutableRawPointer
+public protocol KeyPackageProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class KeyPackage : WireCoreCryptoUniffi.KeyPackageProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.KeyPackage.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+  open var description: Swift.String {
+    get
+  }
+  public static func == (self: WireCoreCryptoUniffi.KeyPackage, other: WireCoreCryptoUniffi.KeyPackage) -> Swift.Bool
+  open func hash(into hasher: inout Swift.Hasher)
+}
+extension WireCoreCryptoUniffi.KeyPackage : Swift.CustomStringConvertible {
+}
+extension WireCoreCryptoUniffi.KeyPackage : Swift.Equatable {
+}
+extension WireCoreCryptoUniffi.KeyPackage : Swift.Hashable {
+  open var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeKeyPackage {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.KeyPackage
+  public static func lower(_ value: WireCoreCryptoUniffi.KeyPackage) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.KeyPackage
+  public static func write(_ value: WireCoreCryptoUniffi.KeyPackage, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeKeyPackage_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.KeyPackage
+@_documentation(visibility: private) public func FfiConverterTypeKeyPackage_lower(_ value: WireCoreCryptoUniffi.KeyPackage) -> Swift.UnsafeMutableRawPointer
+public protocol MlsTransport : AnyObject, Swift.Sendable {
+  func sendCommitBundle(commitBundle: WireCoreCryptoUniffi.CommitBundle) async -> WireCoreCryptoUniffi.MlsTransportResponse
+  func sendMessage(mlsMessage: Foundation.Data) async -> WireCoreCryptoUniffi.MlsTransportResponse
+  func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async -> WireCoreCryptoUniffi.MlsTransportData
+}
+open class MlsTransportImpl : WireCoreCryptoUniffi.MlsTransport, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.MlsTransportImpl.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  @objc deinit
+  open func sendCommitBundle(commitBundle: WireCoreCryptoUniffi.CommitBundle) async -> WireCoreCryptoUniffi.MlsTransportResponse
+  open func sendMessage(mlsMessage: Foundation.Data) async -> WireCoreCryptoUniffi.MlsTransportResponse
+  open func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async -> WireCoreCryptoUniffi.MlsTransportData
+}
+@_documentation(visibility: private) public struct FfiConverterTypeMlsTransport {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.MlsTransport
+  public static func lower(_ value: any WireCoreCryptoUniffi.MlsTransport) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> any WireCoreCryptoUniffi.MlsTransport
+  public static func write(_ value: any WireCoreCryptoUniffi.MlsTransport, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeMlsTransport_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> any WireCoreCryptoUniffi.MlsTransport
+@_documentation(visibility: private) public func FfiConverterTypeMlsTransport_lower(_ value: any WireCoreCryptoUniffi.MlsTransport) -> Swift.UnsafeMutableRawPointer
+public protocol SecretKeyProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class SecretKey : WireCoreCryptoUniffi.SecretKeyProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.SecretKey.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+  open var description: Swift.String {
+    get
+  }
+  public static func == (self: WireCoreCryptoUniffi.SecretKey, other: WireCoreCryptoUniffi.SecretKey) -> Swift.Bool
+  open func hash(into hasher: inout Swift.Hasher)
+}
+extension WireCoreCryptoUniffi.SecretKey : Swift.CustomStringConvertible {
+}
+extension WireCoreCryptoUniffi.SecretKey : Swift.Equatable {
+}
+extension WireCoreCryptoUniffi.SecretKey : Swift.Hashable {
+  open var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeSecretKey {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.SecretKey
+  public static func lower(_ value: WireCoreCryptoUniffi.SecretKey) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.SecretKey
+  public static func write(_ value: WireCoreCryptoUniffi.SecretKey, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeSecretKey_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.SecretKey
+@_documentation(visibility: private) public func FfiConverterTypeSecretKey_lower(_ value: WireCoreCryptoUniffi.SecretKey) -> Swift.UnsafeMutableRawPointer
+public protocol WelcomeProtocol : AnyObject, Swift.Sendable {
+  func copyBytes() -> Foundation.Data
+}
+open class Welcome : WireCoreCryptoUniffi.WelcomeProtocol, @unchecked Swift.Sendable {
+  @_documentation(visibility: private) public struct NoPointer {
+    public init()
+  }
+  @_documentation(visibility: private) required public init(unsafeFromRawPointer pointer: Swift.UnsafeMutableRawPointer)
+  @_documentation(visibility: private) public init(noPointer: WireCoreCryptoUniffi.Welcome.NoPointer)
+  @_documentation(visibility: private) public func uniffiClonePointer() -> Swift.UnsafeMutableRawPointer
+  convenience public init(bytes: Foundation.Data)
+  @objc deinit
+  open func copyBytes() -> Foundation.Data
+  open var description: Swift.String {
+    get
+  }
+  public static func == (self: WireCoreCryptoUniffi.Welcome, other: WireCoreCryptoUniffi.Welcome) -> Swift.Bool
+  open func hash(into hasher: inout Swift.Hasher)
+}
+extension WireCoreCryptoUniffi.Welcome : Swift.CustomStringConvertible {
+}
+extension WireCoreCryptoUniffi.Welcome : Swift.Equatable {
+}
+extension WireCoreCryptoUniffi.Welcome : Swift.Hashable {
+  open var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeWelcome {
+  public static func lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.Welcome
+  public static func lower(_ value: WireCoreCryptoUniffi.Welcome) -> Swift.UnsafeMutableRawPointer
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.Welcome
+  public static func write(_ value: WireCoreCryptoUniffi.Welcome, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeWelcome_lift(_ pointer: Swift.UnsafeMutableRawPointer) throws -> WireCoreCryptoUniffi.Welcome
+@_documentation(visibility: private) public func FfiConverterTypeWelcome_lower(_ value: WireCoreCryptoUniffi.Welcome) -> Swift.UnsafeMutableRawPointer
+public struct AcmeChallenge {
+  public var delegate: Foundation.Data
+  public var url: Swift.String
+  public var target: Swift.String
+  public init(delegate: Foundation.Data, url: Swift.String, target: Swift.String)
+}
+extension WireCoreCryptoUniffi.AcmeChallenge : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.AcmeChallenge : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.AcmeChallenge, rhs: WireCoreCryptoUniffi.AcmeChallenge) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeAcmeChallenge {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.AcmeChallenge
+  public static func write(_ value: WireCoreCryptoUniffi.AcmeChallenge, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeAcmeChallenge_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.AcmeChallenge
+@_documentation(visibility: private) public func FfiConverterTypeAcmeChallenge_lower(_ value: WireCoreCryptoUniffi.AcmeChallenge) -> WireCoreCryptoUniffi.RustBuffer
+public struct AcmeDirectory {
+  public var newNonce: Swift.String
+  public var newAccount: Swift.String
+  public var newOrder: Swift.String
+  public var revokeCert: Swift.String
+  public init(newNonce: Swift.String, newAccount: Swift.String, newOrder: Swift.String, revokeCert: Swift.String)
+}
+extension WireCoreCryptoUniffi.AcmeDirectory : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.AcmeDirectory : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.AcmeDirectory, rhs: WireCoreCryptoUniffi.AcmeDirectory) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeAcmeDirectory {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.AcmeDirectory
+  public static func write(_ value: WireCoreCryptoUniffi.AcmeDirectory, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeAcmeDirectory_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.AcmeDirectory
+@_documentation(visibility: private) public func FfiConverterTypeAcmeDirectory_lower(_ value: WireCoreCryptoUniffi.AcmeDirectory) -> WireCoreCryptoUniffi.RustBuffer
+public struct BufferedDecryptedMessage {
+  public var message: Foundation.Data?
+  public var isActive: Swift.Bool
+  public var commitDelay: Swift.UInt64?
+  public var senderClientId: WireCoreCryptoUniffi.ClientId?
+  public var hasEpochChanged: Swift.Bool
+  public var identity: WireCoreCryptoUniffi.WireIdentity
+  public var crlNewDistributionPoints: [Swift.String]?
+  public init(message: Foundation.Data?, isActive: Swift.Bool, commitDelay: Swift.UInt64?, senderClientId: WireCoreCryptoUniffi.ClientId?, hasEpochChanged: Swift.Bool, identity: WireCoreCryptoUniffi.WireIdentity, crlNewDistributionPoints: [Swift.String]?)
+}
+extension WireCoreCryptoUniffi.BufferedDecryptedMessage : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeBufferedDecryptedMessage {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.BufferedDecryptedMessage
+  public static func write(_ value: WireCoreCryptoUniffi.BufferedDecryptedMessage, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeBufferedDecryptedMessage_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.BufferedDecryptedMessage
+@_documentation(visibility: private) public func FfiConverterTypeBufferedDecryptedMessage_lower(_ value: WireCoreCryptoUniffi.BufferedDecryptedMessage) -> WireCoreCryptoUniffi.RustBuffer
+public struct BuildMetadata {
+  public var timestamp: Swift.String
+  public var cargoDebug: Swift.String
+  public var cargoFeatures: Swift.String
+  public var optLevel: Swift.String
+  public var targetTriple: Swift.String
+  public var gitBranch: Swift.String
+  public var gitDescribe: Swift.String
+  public var gitSha: Swift.String
+  public var gitDirty: Swift.String
+  public init(timestamp: Swift.String, cargoDebug: Swift.String, cargoFeatures: Swift.String, optLevel: Swift.String, targetTriple: Swift.String, gitBranch: Swift.String, gitDescribe: Swift.String, gitSha: Swift.String, gitDirty: Swift.String)
+}
+extension WireCoreCryptoUniffi.BuildMetadata : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.BuildMetadata : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.BuildMetadata, rhs: WireCoreCryptoUniffi.BuildMetadata) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeBuildMetadata {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.BuildMetadata
+  public static func write(_ value: WireCoreCryptoUniffi.BuildMetadata, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeBuildMetadata_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.BuildMetadata
+@_documentation(visibility: private) public func FfiConverterTypeBuildMetadata_lower(_ value: WireCoreCryptoUniffi.BuildMetadata) -> WireCoreCryptoUniffi.RustBuffer
+public struct CommitBundle {
+  public var welcome: WireCoreCryptoUniffi.Welcome?
+  public var commit: Foundation.Data
+  public var groupInfo: WireCoreCryptoUniffi.GroupInfoBundle
+  public var encryptedMessage: Foundation.Data?
+  public init(welcome: WireCoreCryptoUniffi.Welcome?, commit: Foundation.Data, groupInfo: WireCoreCryptoUniffi.GroupInfoBundle, encryptedMessage: Foundation.Data?)
+}
+extension WireCoreCryptoUniffi.CommitBundle : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCommitBundle {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CommitBundle
+  public static func write(_ value: WireCoreCryptoUniffi.CommitBundle, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCommitBundle_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.CommitBundle
+@_documentation(visibility: private) public func FfiConverterTypeCommitBundle_lower(_ value: WireCoreCryptoUniffi.CommitBundle) -> WireCoreCryptoUniffi.RustBuffer
+public struct ConversationConfiguration {
+  public var ciphersuite: WireCoreCryptoUniffi.Ciphersuite?
+  public var externalSenders: [WireCoreCryptoUniffi.ExternalSenderKey]
+  public var custom: WireCoreCryptoUniffi.CustomConfiguration
+  public init(ciphersuite: WireCoreCryptoUniffi.Ciphersuite?, externalSenders: [WireCoreCryptoUniffi.ExternalSenderKey], custom: WireCoreCryptoUniffi.CustomConfiguration)
+}
+extension WireCoreCryptoUniffi.ConversationConfiguration : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeConversationConfiguration {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.ConversationConfiguration
+  public static func write(_ value: WireCoreCryptoUniffi.ConversationConfiguration, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeConversationConfiguration_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.ConversationConfiguration
+@_documentation(visibility: private) public func FfiConverterTypeConversationConfiguration_lower(_ value: WireCoreCryptoUniffi.ConversationConfiguration) -> WireCoreCryptoUniffi.RustBuffer
+public struct CrlRegistration {
+  public var dirty: Swift.Bool
+  public var expiration: Swift.UInt64?
+  public init(dirty: Swift.Bool, expiration: Swift.UInt64?)
+}
+extension WireCoreCryptoUniffi.CrlRegistration : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.CrlRegistration : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.CrlRegistration, rhs: WireCoreCryptoUniffi.CrlRegistration) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCrlRegistration {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CrlRegistration
+  public static func write(_ value: WireCoreCryptoUniffi.CrlRegistration, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCrlRegistration_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.CrlRegistration
+@_documentation(visibility: private) public func FfiConverterTypeCrlRegistration_lower(_ value: WireCoreCryptoUniffi.CrlRegistration) -> WireCoreCryptoUniffi.RustBuffer
+public struct CustomConfiguration {
+  public var keyRotationSpan: Foundation.TimeInterval?
+  public var wirePolicy: WireCoreCryptoUniffi.WirePolicy?
+  public init(keyRotationSpan: Foundation.TimeInterval?, wirePolicy: WireCoreCryptoUniffi.WirePolicy?)
+}
+extension WireCoreCryptoUniffi.CustomConfiguration : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.CustomConfiguration : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.CustomConfiguration, rhs: WireCoreCryptoUniffi.CustomConfiguration) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCustomConfiguration {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CustomConfiguration
+  public static func write(_ value: WireCoreCryptoUniffi.CustomConfiguration, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCustomConfiguration_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.CustomConfiguration
+@_documentation(visibility: private) public func FfiConverterTypeCustomConfiguration_lower(_ value: WireCoreCryptoUniffi.CustomConfiguration) -> WireCoreCryptoUniffi.RustBuffer
+public struct DecryptedMessage {
+  public var message: Foundation.Data?
+  public var isActive: Swift.Bool
+  public var commitDelay: Swift.UInt64?
+  public var senderClientId: WireCoreCryptoUniffi.ClientId?
+  public var hasEpochChanged: Swift.Bool
+  public var identity: WireCoreCryptoUniffi.WireIdentity
+  public var bufferedMessages: [WireCoreCryptoUniffi.BufferedDecryptedMessage]?
+  public var crlNewDistributionPoints: [Swift.String]?
+  public init(message: Foundation.Data?, isActive: Swift.Bool, commitDelay: Swift.UInt64?, senderClientId: WireCoreCryptoUniffi.ClientId?, hasEpochChanged: Swift.Bool, identity: WireCoreCryptoUniffi.WireIdentity, bufferedMessages: [WireCoreCryptoUniffi.BufferedDecryptedMessage]?, crlNewDistributionPoints: [Swift.String]?)
+}
+extension WireCoreCryptoUniffi.DecryptedMessage : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeDecryptedMessage {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.DecryptedMessage
+  public static func write(_ value: WireCoreCryptoUniffi.DecryptedMessage, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeDecryptedMessage_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.DecryptedMessage
+@_documentation(visibility: private) public func FfiConverterTypeDecryptedMessage_lower(_ value: WireCoreCryptoUniffi.DecryptedMessage) -> WireCoreCryptoUniffi.RustBuffer
+public struct GroupInfoBundle {
+  public var encryptionType: WireCoreCryptoUniffi.MlsGroupInfoEncryptionType
+  public var ratchetTreeType: WireCoreCryptoUniffi.MlsRatchetTreeType
+  public var payload: WireCoreCryptoUniffi.GroupInfo
+  public init(encryptionType: WireCoreCryptoUniffi.MlsGroupInfoEncryptionType, ratchetTreeType: WireCoreCryptoUniffi.MlsRatchetTreeType, payload: WireCoreCryptoUniffi.GroupInfo)
+}
+extension WireCoreCryptoUniffi.GroupInfoBundle : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeGroupInfoBundle {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.GroupInfoBundle
+  public static func write(_ value: WireCoreCryptoUniffi.GroupInfoBundle, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeGroupInfoBundle_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.GroupInfoBundle
+@_documentation(visibility: private) public func FfiConverterTypeGroupInfoBundle_lower(_ value: WireCoreCryptoUniffi.GroupInfoBundle) -> WireCoreCryptoUniffi.RustBuffer
+public struct HistorySecret {
+  public var clientId: WireCoreCryptoUniffi.ClientId
+  public var data: Foundation.Data
+  public init(clientId: WireCoreCryptoUniffi.ClientId, data: Foundation.Data)
+}
+extension WireCoreCryptoUniffi.HistorySecret : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeHistorySecret {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.HistorySecret
+  public static func write(_ value: WireCoreCryptoUniffi.HistorySecret, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeHistorySecret_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.HistorySecret
+@_documentation(visibility: private) public func FfiConverterTypeHistorySecret_lower(_ value: WireCoreCryptoUniffi.HistorySecret) -> WireCoreCryptoUniffi.RustBuffer
+public struct NewAcmeAuthz {
+  public var identifier: Swift.String
+  public var keyauth: Swift.String?
+  public var challenge: WireCoreCryptoUniffi.AcmeChallenge
+  public init(identifier: Swift.String, keyauth: Swift.String?, challenge: WireCoreCryptoUniffi.AcmeChallenge)
+}
+extension WireCoreCryptoUniffi.NewAcmeAuthz : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.NewAcmeAuthz : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.NewAcmeAuthz, rhs: WireCoreCryptoUniffi.NewAcmeAuthz) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeNewAcmeAuthz {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.NewAcmeAuthz
+  public static func write(_ value: WireCoreCryptoUniffi.NewAcmeAuthz, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeNewAcmeAuthz_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.NewAcmeAuthz
+@_documentation(visibility: private) public func FfiConverterTypeNewAcmeAuthz_lower(_ value: WireCoreCryptoUniffi.NewAcmeAuthz) -> WireCoreCryptoUniffi.RustBuffer
+public struct NewAcmeOrder {
+  public var delegate: Foundation.Data
+  public var authorizations: [Swift.String]
+  public init(delegate: Foundation.Data, authorizations: [Swift.String])
+}
+extension WireCoreCryptoUniffi.NewAcmeOrder : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.NewAcmeOrder : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.NewAcmeOrder, rhs: WireCoreCryptoUniffi.NewAcmeOrder) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeNewAcmeOrder {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.NewAcmeOrder
+  public static func write(_ value: WireCoreCryptoUniffi.NewAcmeOrder, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeNewAcmeOrder_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.NewAcmeOrder
+@_documentation(visibility: private) public func FfiConverterTypeNewAcmeOrder_lower(_ value: WireCoreCryptoUniffi.NewAcmeOrder) -> WireCoreCryptoUniffi.RustBuffer
+public struct ProteusAutoPrekeyBundle {
+  public var id: Swift.UInt16
+  public var pkb: Foundation.Data
+  public init(id: Swift.UInt16, pkb: Foundation.Data)
+}
+extension WireCoreCryptoUniffi.ProteusAutoPrekeyBundle : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.ProteusAutoPrekeyBundle : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.ProteusAutoPrekeyBundle, rhs: WireCoreCryptoUniffi.ProteusAutoPrekeyBundle) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeProteusAutoPrekeyBundle {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.ProteusAutoPrekeyBundle
+  public static func write(_ value: WireCoreCryptoUniffi.ProteusAutoPrekeyBundle, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeProteusAutoPrekeyBundle_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.ProteusAutoPrekeyBundle
+@_documentation(visibility: private) public func FfiConverterTypeProteusAutoPrekeyBundle_lower(_ value: WireCoreCryptoUniffi.ProteusAutoPrekeyBundle) -> WireCoreCryptoUniffi.RustBuffer
+public struct WelcomeBundle {
+  public var id: WireCoreCryptoUniffi.ConversationId
+  public var crlNewDistributionPoints: [Swift.String]?
+  public init(id: WireCoreCryptoUniffi.ConversationId, crlNewDistributionPoints: [Swift.String]?)
+}
+extension WireCoreCryptoUniffi.WelcomeBundle : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeWelcomeBundle {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.WelcomeBundle
+  public static func write(_ value: WireCoreCryptoUniffi.WelcomeBundle, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeWelcomeBundle_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.WelcomeBundle
+@_documentation(visibility: private) public func FfiConverterTypeWelcomeBundle_lower(_ value: WireCoreCryptoUniffi.WelcomeBundle) -> WireCoreCryptoUniffi.RustBuffer
+public struct WireIdentity {
+  public var clientId: Swift.String
+  public var status: WireCoreCryptoUniffi.DeviceStatus
+  public var thumbprint: Swift.String
+  public var credentialType: WireCoreCryptoUniffi.CredentialType
+  public var x509Identity: WireCoreCryptoUniffi.X509Identity?
+  public init(clientId: Swift.String, status: WireCoreCryptoUniffi.DeviceStatus, thumbprint: Swift.String, credentialType: WireCoreCryptoUniffi.CredentialType, x509Identity: WireCoreCryptoUniffi.X509Identity?)
+}
+extension WireCoreCryptoUniffi.WireIdentity : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.WireIdentity : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.WireIdentity, rhs: WireCoreCryptoUniffi.WireIdentity) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeWireIdentity {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.WireIdentity
+  public static func write(_ value: WireCoreCryptoUniffi.WireIdentity, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeWireIdentity_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.WireIdentity
+@_documentation(visibility: private) public func FfiConverterTypeWireIdentity_lower(_ value: WireCoreCryptoUniffi.WireIdentity) -> WireCoreCryptoUniffi.RustBuffer
+public struct X509Identity {
+  public var handle: Swift.String
+  public var displayName: Swift.String
+  public var domain: Swift.String
+  public var certificate: Swift.String
+  public var serialNumber: Swift.String
+  public var notBefore: Foundation.Date
+  public var notAfter: Foundation.Date
+  public init(handle: Swift.String, displayName: Swift.String, domain: Swift.String, certificate: Swift.String, serialNumber: Swift.String, notBefore: Foundation.Date, notAfter: Foundation.Date)
+}
+extension WireCoreCryptoUniffi.X509Identity : Swift.Sendable {
+}
+extension WireCoreCryptoUniffi.X509Identity : Swift.Equatable, Swift.Hashable {
+  public static func == (lhs: WireCoreCryptoUniffi.X509Identity, rhs: WireCoreCryptoUniffi.X509Identity) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+@_documentation(visibility: private) public struct FfiConverterTypeX509Identity {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.X509Identity
+  public static func write(_ value: WireCoreCryptoUniffi.X509Identity, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeX509Identity_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.X509Identity
+@_documentation(visibility: private) public func FfiConverterTypeX509Identity_lower(_ value: WireCoreCryptoUniffi.X509Identity) -> WireCoreCryptoUniffi.RustBuffer
+public enum Ciphersuite : Swift.UInt16 {
+  case mls128Dhkemx25519Aes128gcmSha256Ed25519
+  case mls128Dhkemp256Aes128gcmSha256P256
+  case mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
+  case mls256Dhkemx448Aes256gcmSha512Ed448
+  case mls256Dhkemp521Aes256gcmSha512P521
+  case mls256Dhkemx448Chacha20poly1305Sha512Ed448
+  case mls256Dhkemp384Aes256gcmSha384P384
+  public init?(rawValue: Swift.UInt16)
+  public typealias RawValue = Swift.UInt16
+  public var rawValue: Swift.UInt16 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.Ciphersuite : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCiphersuite {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.Ciphersuite
+  public static func write(_ value: WireCoreCryptoUniffi.Ciphersuite, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCiphersuite_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.Ciphersuite
+@_documentation(visibility: private) public func FfiConverterTypeCiphersuite_lower(_ value: WireCoreCryptoUniffi.Ciphersuite) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.Ciphersuite : Swift.Equatable, Swift.Hashable {
+}
+public enum CoreCryptoError : Swift.Error {
+  case Mls(mlsError: WireCoreCryptoUniffi.MlsError)
+  case Proteus(exception: WireCoreCryptoUniffi.ProteusError)
+  case E2ei(e2eiError: Swift.String)
+  case TransactionFailed(error: Swift.String)
+  case Other(msg: Swift.String)
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCoreCryptoError {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CoreCryptoError
+  public static func write(_ value: WireCoreCryptoUniffi.CoreCryptoError, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoError_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.CoreCryptoError
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoError_lower(_ value: WireCoreCryptoUniffi.CoreCryptoError) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.CoreCryptoError : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.CoreCryptoError, b: WireCoreCryptoUniffi.CoreCryptoError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.CoreCryptoError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public enum CoreCryptoLogLevel : Swift.UInt8 {
+  case off
+  case trace
+  case debug
+  case info
+  case warn
+  case error
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.CoreCryptoLogLevel : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCoreCryptoLogLevel {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CoreCryptoLogLevel
+  public static func write(_ value: WireCoreCryptoUniffi.CoreCryptoLogLevel, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoLogLevel_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.CoreCryptoLogLevel
+@_documentation(visibility: private) public func FfiConverterTypeCoreCryptoLogLevel_lower(_ value: WireCoreCryptoUniffi.CoreCryptoLogLevel) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.CoreCryptoLogLevel : Swift.Equatable, Swift.Hashable {
+}
+public enum CredentialType : Swift.UInt8 {
+  case basic
+  case x509
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.CredentialType : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeCredentialType {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.CredentialType
+  public static func write(_ value: WireCoreCryptoUniffi.CredentialType, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeCredentialType_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.CredentialType
+@_documentation(visibility: private) public func FfiConverterTypeCredentialType_lower(_ value: WireCoreCryptoUniffi.CredentialType) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.CredentialType : Swift.Equatable, Swift.Hashable {
+}
+public enum DeviceStatus : Swift.UInt8 {
+  case valid
+  case expired
+  case revoked
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.DeviceStatus : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeDeviceStatus {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.DeviceStatus
+  public static func write(_ value: WireCoreCryptoUniffi.DeviceStatus, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeDeviceStatus_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.DeviceStatus
+@_documentation(visibility: private) public func FfiConverterTypeDeviceStatus_lower(_ value: WireCoreCryptoUniffi.DeviceStatus) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.DeviceStatus : Swift.Equatable, Swift.Hashable {
+}
+public enum E2eiConversationState : Swift.UInt8 {
+  case verified
+  case notVerified
+  case notEnabled
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.E2eiConversationState : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeE2eiConversationState {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.E2eiConversationState
+  public static func write(_ value: WireCoreCryptoUniffi.E2eiConversationState, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeE2eiConversationState_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.E2eiConversationState
+@_documentation(visibility: private) public func FfiConverterTypeE2eiConversationState_lower(_ value: WireCoreCryptoUniffi.E2eiConversationState) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.E2eiConversationState : Swift.Equatable, Swift.Hashable {
+}
+public enum EpochChangedReportingError : Swift.Error {
+  case Ffi(message: Swift.String)
+}
+@_documentation(visibility: private) public struct FfiConverterTypeEpochChangedReportingError {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.EpochChangedReportingError
+  public static func write(_ value: WireCoreCryptoUniffi.EpochChangedReportingError, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeEpochChangedReportingError_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.EpochChangedReportingError
+@_documentation(visibility: private) public func FfiConverterTypeEpochChangedReportingError_lower(_ value: WireCoreCryptoUniffi.EpochChangedReportingError) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.EpochChangedReportingError : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.EpochChangedReportingError, b: WireCoreCryptoUniffi.EpochChangedReportingError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.EpochChangedReportingError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public enum LoggingError : Swift.Error {
+  case Ffi(message: Swift.String)
+}
+@_documentation(visibility: private) public struct FfiConverterTypeLoggingError {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.LoggingError
+  public static func write(_ value: WireCoreCryptoUniffi.LoggingError, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeLoggingError_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.LoggingError
+@_documentation(visibility: private) public func FfiConverterTypeLoggingError_lower(_ value: WireCoreCryptoUniffi.LoggingError) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.LoggingError : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.LoggingError, b: WireCoreCryptoUniffi.LoggingError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.LoggingError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public enum MlsError : Swift.Error {
+  case ConversationAlreadyExists(conversationId: Foundation.Data)
+  case DuplicateMessage
+  case BufferedFutureMessage
+  case WrongEpoch
+  case BufferedCommit
+  case MessageEpochTooOld
+  case SelfCommitIgnored
+  case UnmergedPendingGroup
+  case StaleProposal
+  case StaleCommit
+  case OrphanWelcome
+  case MessageRejected(reason: Swift.String)
+  case Other(msg: Swift.String)
+}
+@_documentation(visibility: private) public struct FfiConverterTypeMlsError {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.MlsError
+  public static func write(_ value: WireCoreCryptoUniffi.MlsError, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeMlsError_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.MlsError
+@_documentation(visibility: private) public func FfiConverterTypeMlsError_lower(_ value: WireCoreCryptoUniffi.MlsError) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.MlsError : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.MlsError, b: WireCoreCryptoUniffi.MlsError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.MlsError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public enum MlsGroupInfoEncryptionType : Swift.UInt8 {
+  case plaintext
+  case jweEncrypted
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.MlsGroupInfoEncryptionType : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeMlsGroupInfoEncryptionType {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.MlsGroupInfoEncryptionType
+  public static func write(_ value: WireCoreCryptoUniffi.MlsGroupInfoEncryptionType, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeMlsGroupInfoEncryptionType_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.MlsGroupInfoEncryptionType
+@_documentation(visibility: private) public func FfiConverterTypeMlsGroupInfoEncryptionType_lower(_ value: WireCoreCryptoUniffi.MlsGroupInfoEncryptionType) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.MlsGroupInfoEncryptionType : Swift.Equatable, Swift.Hashable {
+}
+public enum MlsRatchetTreeType : Swift.UInt8 {
+  case full
+  case delta
+  case byRef
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.MlsRatchetTreeType : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeMlsRatchetTreeType {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.MlsRatchetTreeType
+  public static func write(_ value: WireCoreCryptoUniffi.MlsRatchetTreeType, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeMlsRatchetTreeType_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.MlsRatchetTreeType
+@_documentation(visibility: private) public func FfiConverterTypeMlsRatchetTreeType_lower(_ value: WireCoreCryptoUniffi.MlsRatchetTreeType) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.MlsRatchetTreeType : Swift.Equatable, Swift.Hashable {
+}
+public enum MlsTransportResponse {
+  case success
+  case retry
+  case abort(reason: Swift.String)
+}
+extension WireCoreCryptoUniffi.MlsTransportResponse : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeMlsTransportResponse {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.MlsTransportResponse
+  public static func write(_ value: WireCoreCryptoUniffi.MlsTransportResponse, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeMlsTransportResponse_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.MlsTransportResponse
+@_documentation(visibility: private) public func FfiConverterTypeMlsTransportResponse_lower(_ value: WireCoreCryptoUniffi.MlsTransportResponse) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.MlsTransportResponse : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.MlsTransportResponse, b: WireCoreCryptoUniffi.MlsTransportResponse) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public enum NewHistoryClientReportingError : Swift.Error {
+  case Ffi(message: Swift.String)
+}
+@_documentation(visibility: private) public struct FfiConverterTypeNewHistoryClientReportingError {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.NewHistoryClientReportingError
+  public static func write(_ value: WireCoreCryptoUniffi.NewHistoryClientReportingError, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeNewHistoryClientReportingError_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.NewHistoryClientReportingError
+@_documentation(visibility: private) public func FfiConverterTypeNewHistoryClientReportingError_lower(_ value: WireCoreCryptoUniffi.NewHistoryClientReportingError) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.NewHistoryClientReportingError : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.NewHistoryClientReportingError, b: WireCoreCryptoUniffi.NewHistoryClientReportingError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.NewHistoryClientReportingError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public enum ProteusError : Swift.Error {
+  case SessionNotFound
+  case DuplicateMessage
+  case RemoteIdentityChanged
+  case Other(errorCode: Swift.UInt16)
+}
+@_documentation(visibility: private) public struct FfiConverterTypeProteusError {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.ProteusError
+  public static func write(_ value: WireCoreCryptoUniffi.ProteusError, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeProteusError_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.ProteusError
+@_documentation(visibility: private) public func FfiConverterTypeProteusError_lower(_ value: WireCoreCryptoUniffi.ProteusError) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.ProteusError : Swift.Equatable, Swift.Hashable {
+  public static func == (a: WireCoreCryptoUniffi.ProteusError, b: WireCoreCryptoUniffi.ProteusError) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.ProteusError : Foundation.LocalizedError {
+  public var errorDescription: Swift.String? {
+    get
+  }
+}
+public enum WirePolicy : Swift.UInt8 {
+  case plaintext
+  case ciphertext
+  public init?(rawValue: Swift.UInt8)
+  public typealias RawValue = Swift.UInt8
+  public var rawValue: Swift.UInt8 {
+    get
+  }
+}
+extension WireCoreCryptoUniffi.WirePolicy : Swift.Sendable {
+}
+@_documentation(visibility: private) public struct FfiConverterTypeWirePolicy {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.WirePolicy
+  public static func write(_ value: WireCoreCryptoUniffi.WirePolicy, into buf: inout [Swift.UInt8])
+}
+@_documentation(visibility: private) public func FfiConverterTypeWirePolicy_lift(_ buf: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.WirePolicy
+@_documentation(visibility: private) public func FfiConverterTypeWirePolicy_lower(_ value: WireCoreCryptoUniffi.WirePolicy) -> WireCoreCryptoUniffi.RustBuffer
+extension WireCoreCryptoUniffi.WirePolicy : Swift.Equatable, Swift.Hashable {
+}
+public typealias MlsTransportData = Foundation.Data
+@_documentation(visibility: private) public struct FfiConverterTypeMlsTransportData {
+  public static func read(from buf: inout (data: Foundation.Data, offset: Foundation.Data.Index)) throws -> WireCoreCryptoUniffi.MlsTransportData
+  public static func write(_ value: WireCoreCryptoUniffi.MlsTransportData, into buf: inout [Swift.UInt8])
+  public static func lift(_ value: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.MlsTransportData
+  public static func lower(_ value: WireCoreCryptoUniffi.MlsTransportData) -> WireCoreCryptoUniffi.RustBuffer
+}
+@_documentation(visibility: private) public func FfiConverterTypeMlsTransportData_lift(_ value: WireCoreCryptoUniffi.RustBuffer) throws -> WireCoreCryptoUniffi.MlsTransportData
+@_documentation(visibility: private) public func FfiConverterTypeMlsTransportData_lower(_ value: WireCoreCryptoUniffi.MlsTransportData) -> WireCoreCryptoUniffi.RustBuffer
+public func uniffiForeignFutureHandleCountCoreCryptoFfi() -> Swift.Int
+public func buildMetadata() -> WireCoreCryptoUniffi.BuildMetadata
+public func ciphersuiteDefault() -> WireCoreCryptoUniffi.Ciphersuite
+public func ciphersuiteFromU16(discriminant: Swift.UInt16) throws -> WireCoreCryptoUniffi.Ciphersuite
+public func coreCryptoDeferredInit(path: Swift.String, key: WireCoreCryptoUniffi.DatabaseKey, entropySeed: Foundation.Data?) async throws -> WireCoreCryptoUniffi.CoreCrypto
+public func coreCryptoHistoryClient(historySecret: WireCoreCryptoUniffi.HistorySecret) async throws -> WireCoreCryptoUniffi.CoreCrypto
+public func coreCryptoNew(path: Swift.String, key: WireCoreCryptoUniffi.DatabaseKey, clientId: WireCoreCryptoUniffi.ClientId, ciphersuites: [WireCoreCryptoUniffi.Ciphersuite], entropySeed: Foundation.Data?, nbKeyPackage: Swift.UInt32?) async throws -> WireCoreCryptoUniffi.CoreCrypto
+public func migrateDatabaseKeyTypeToBytes(path: Swift.String, oldKey: Swift.String, newKey: WireCoreCryptoUniffi.DatabaseKey) async throws
+public func openDatabase(name: Swift.String, key: WireCoreCryptoUniffi.DatabaseKey) async throws -> WireCoreCryptoUniffi.Database
+public func setLogger(logger: any WireCoreCryptoUniffi.CoreCryptoLogger, level: WireCoreCryptoUniffi.CoreCryptoLogLevel)
+public func setLoggerOnly(logger: any WireCoreCryptoUniffi.CoreCryptoLogger)
+public func setMaxLogLevel(level: WireCoreCryptoUniffi.CoreCryptoLogLevel)
+public func updateDatabaseKey(name: Swift.String, oldKey: WireCoreCryptoUniffi.DatabaseKey, newKey: WireCoreCryptoUniffi.DatabaseKey) async throws
+public func version() -> Swift.String
+public func uniffiEnsureCoreCryptoFfiInitialized()
+extension WireCoreCryptoUniffi.Ciphersuite : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.CoreCryptoLogLevel : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.CredentialType : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.DeviceStatus : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.E2eiConversationState : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.MlsGroupInfoEncryptionType : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.MlsRatchetTreeType : Swift.RawRepresentable {}
+extension WireCoreCryptoUniffi.WirePolicy : Swift.RawRepresentable {}
