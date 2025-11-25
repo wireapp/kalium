@@ -70,15 +70,14 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 is uploaded
-        // until mockative releases a new version with a proper fix
-        maven(url = "https://raw.githubusercontent.com/mohamadjaara/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
     }
 
     configurations.all {
-        resolutionStrategy {
-            force("io.mockative:mockative:3.0.4-kotlin-2.2.21")
-            force("io.mockative:mockative-jvm:3.0.4-kotlin-2.2.21")
+        resolutionStrategy.dependencySubstitution {
+            substitute(module("io.mockative:mockative-processor"))
+                .using(module("io.github.mohamadjaara:mockative-processor:3.1.2"))
+            substitute(module("io.mockative:mockative"))
+                .using(module("io.github.mohamadjaara:mockative:3.1.2"))
         }
     }
 }
