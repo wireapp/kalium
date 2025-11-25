@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.COLLABORA_INTEGRATION_ENABLED
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
@@ -106,7 +105,6 @@ internal class GetPaginatedNodesUseCaseImpl(
     private fun isEditSupported(path: String): Boolean {
         val extension = path.substringAfterLast('.', "").lowercase()
         return when {
-            COLLABORA_INTEGRATION_ENABLED == false -> false
             extension in listOf("odf", "docx", "xlsx", "pptx") -> true
             else -> false
         }
