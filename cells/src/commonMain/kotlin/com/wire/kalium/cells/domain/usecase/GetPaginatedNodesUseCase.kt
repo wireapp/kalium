@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.COLLABORA_INTEGRATION_ENABLED
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
@@ -91,11 +92,23 @@ internal class GetPaginatedNodesUseCaseImpl(
                                     metadata = attachment?.metadata,
                                     userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
                                     conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                    isEditSupported = isEditSupported(node.path)
                                 )
                             }
                         }.toList(),
                     pagination = nodes.pagination
                 )
             }
+    }
+
+    // TODO: remove when server returns the flag
+    // Temporary hardcoding the supported file types
+    private fun isEditSupported(path: String): Boolean {
+        val extension = path.substringAfterLast('.', "").lowercase()
+        return when {
+            COLLABORA_INTEGRATION_ENABLED == false -> false
+            extension in listOf("odf", "docx", "xlsx", "pptx") -> true
+            else -> false
+        }
     }
 }

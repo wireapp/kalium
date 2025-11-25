@@ -109,6 +109,10 @@ import okio.FileSystem
 import okio.SYSTEM
 import kotlin.coroutines.CoroutineContext
 
+// Cells feature flags
+public const val SECURE_PUBLIC_LINK_ENABLED: Boolean = false
+public const val COLLABORA_INTEGRATION_ENABLED: Boolean = false
+
 public class CellsScope(
     private val cellsClient: HttpClient,
     private val dao: CellScopeDao,
