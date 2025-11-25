@@ -1,0 +1,510 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2A0000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0000002 /* main.swift */; };
+		2A0000003 /* WireCoreCrypto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000004 /* WireCoreCrypto.framework */; };
+		2A0000005 /* WireCoreCryptoUniffi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000006 /* WireCoreCryptoUniffi.framework */; };
+		2A0000007 /* WireCoreCrypto.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000004 /* WireCoreCrypto.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		2A0000008 /* WireCoreCryptoUniffi.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000006 /* WireCoreCryptoUniffi.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		2A000001B /* KotlinTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001C /* KotlinTestRunner.swift */; };
+		2A000001D /* CoreCryptoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A000001E /* CoreCryptoTests.swift */; };
+		2A000001F /* WireCoreCrypto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000004 /* WireCoreCrypto.framework */; };
+		2A0000020 /* WireCoreCryptoUniffi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A0000006 /* WireCoreCryptoUniffi.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2A0000021 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2A0000015 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A0000012;
+			remoteInfo = KaliumCryptoTestRunner;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2A0000009 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				2A0000007 /* WireCoreCrypto.framework in Embed Frameworks */,
+				2A0000008 /* WireCoreCryptoUniffi.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2A000000A /* KaliumCryptoTestRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KaliumCryptoTestRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A0000002 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		2A0000004 /* WireCoreCrypto.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WireCoreCrypto.framework; path = "../frameworks/WireCoreCrypto.xcframework/ios-arm64-simulator/WireCoreCrypto.framework"; sourceTree = "<group>"; };
+		2A0000006 /* WireCoreCryptoUniffi.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WireCoreCryptoUniffi.framework; path = "../frameworks/WireCoreCryptoUniffi.xcframework/ios-arm64-simulator/WireCoreCryptoUniffi.framework"; sourceTree = "<group>"; };
+		2A000000B /* KaliumCryptoTestRunner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KaliumCryptoTestRunner.entitlements; sourceTree = "<group>"; };
+		2A000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2A000001C /* KotlinTestRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KotlinTestRunner.swift; sourceTree = "<group>"; };
+		2A000001E /* CoreCryptoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreCryptoTests.swift; sourceTree = "<group>"; };
+		2A0000022 /* KaliumCryptoTestRunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KaliumCryptoTestRunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2A000000D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000003 /* WireCoreCrypto.framework in Frameworks */,
+				2A0000005 /* WireCoreCryptoUniffi.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A0000023 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A000001F /* WireCoreCrypto.framework in Frameworks */,
+				2A0000020 /* WireCoreCryptoUniffi.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2A000000E = {
+			isa = PBXGroup;
+			children = (
+				2A000000F /* KaliumCryptoTestRunner */,
+				2A0000024 /* KaliumCryptoTestRunnerTests */,
+				2A0000010 /* Frameworks */,
+				2A0000011 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2A0000011 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2A000000A /* KaliumCryptoTestRunner.app */,
+				2A0000022 /* KaliumCryptoTestRunnerTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2A000000F /* KaliumCryptoTestRunner */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000002 /* main.swift */,
+				2A000001C /* KotlinTestRunner.swift */,
+				2A000000B /* KaliumCryptoTestRunner.entitlements */,
+				2A000000C /* Info.plist */,
+			);
+			path = KaliumCryptoTestRunner;
+			sourceTree = "<group>";
+		};
+		2A0000010 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2A0000004 /* WireCoreCrypto.framework */,
+				2A0000006 /* WireCoreCryptoUniffi.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		2A0000024 /* KaliumCryptoTestRunnerTests */ = {
+			isa = PBXGroup;
+			children = (
+				2A000001E /* CoreCryptoTests.swift */,
+			);
+			path = KaliumCryptoTestRunnerTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2A0000012 /* KaliumCryptoTestRunner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A0000013 /* Build configuration list for PBXNativeTarget "KaliumCryptoTestRunner" */;
+			buildPhases = (
+				2A0000014 /* Sources */,
+				2A000000D /* Frameworks */,
+				2A0000009 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KaliumCryptoTestRunner;
+			productName = KaliumCryptoTestRunner;
+			productReference = 2A000000A /* KaliumCryptoTestRunner.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2A0000025 /* KaliumCryptoTestRunnerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A0000026 /* Build configuration list for PBXNativeTarget "KaliumCryptoTestRunnerTests" */;
+			buildPhases = (
+				2A0000027 /* Sources */,
+				2A0000023 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A0000028 /* PBXTargetDependency */,
+			);
+			name = KaliumCryptoTestRunnerTests;
+			productName = KaliumCryptoTestRunnerTests;
+			productReference = 2A0000022 /* KaliumCryptoTestRunnerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2A0000015 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					2A0000012 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					2A0000025 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = 2A0000012;
+					};
+				};
+			};
+			buildConfigurationList = 2A0000016 /* Build configuration list for PBXProject "KaliumCryptoTestRunner" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 2A000000E;
+			productRefGroup = 2A0000011 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2A0000012 /* KaliumCryptoTestRunner */,
+				2A0000025 /* KaliumCryptoTestRunnerTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2A0000014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000001 /* main.swift in Sources */,
+				2A000001B /* KotlinTestRunner.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2A0000027 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A000001D /* CoreCryptoTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2A0000028 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A0000012 /* KaliumCryptoTestRunner */;
+			targetProxy = 2A0000021 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2A0000017 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		2A0000018 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		2A0000019 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KaliumCryptoTestRunner/KaliumCryptoTestRunner.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCrypto.xcframework/ios-arm64-simulator",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCryptoUniffi.xcframework/ios-arm64-simulator",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KaliumCryptoTestRunner/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.kalium.cryptography.testrunner;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2A000001A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KaliumCryptoTestRunner/KaliumCryptoTestRunner.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCrypto.xcframework/ios-arm64-simulator",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCryptoUniffi.xcframework/ios-arm64-simulator",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KaliumCryptoTestRunner/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.kalium.cryptography.testrunner;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2A0000029 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCrypto.xcframework/ios-arm64-simulator",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCryptoUniffi.xcframework/ios-arm64-simulator",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.kalium.cryptography.testrunner.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaliumCryptoTestRunner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KaliumCryptoTestRunner";
+			};
+			name = Debug;
+		};
+		2A000002A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCrypto.xcframework/ios-arm64-simulator",
+					"$(PROJECT_DIR)/../frameworks/WireCoreCryptoUniffi.xcframework/ios-arm64-simulator",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.kalium.cryptography.testrunner.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KaliumCryptoTestRunner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KaliumCryptoTestRunner";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2A0000016 /* Build configuration list for PBXProject "KaliumCryptoTestRunner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A0000017 /* Debug */,
+				2A0000018 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2A0000013 /* Build configuration list for PBXNativeTarget "KaliumCryptoTestRunner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A0000019 /* Debug */,
+				2A000001A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2A0000026 /* Build configuration list for PBXNativeTarget "KaliumCryptoTestRunnerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A0000029 /* Debug */,
+				2A000002A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2A0000015 /* Project object */;
+}
