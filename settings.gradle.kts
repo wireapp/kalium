@@ -40,13 +40,6 @@ pluginManagement {
         google()
         mavenCentral()
     }
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.id == "io.mockative" || requested.id.id == "io.github.mohamadjaara.mockative") {
-                useModule("io.github.mohamadjaara:mockative-plugin:${requested.version}")
-            }
-        }
-    }
 }
 
 plugins {

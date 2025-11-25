@@ -71,15 +71,6 @@ allprojects {
         google()
         mavenCentral()
     }
-
-    configurations.all {
-        resolutionStrategy.dependencySubstitution {
-            substitute(module("io.mockative:mockative-processor"))
-                .using(module("io.github.mohamadjaara:mockative-processor:3.1.2"))
-            substitute(module("io.mockative:mockative"))
-                .using(module("io.github.mohamadjaara:mockative:3.1.2"))
-        }
-    }
 }
 
 dagCommand {
