@@ -37,7 +37,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.ExtractFilesParam
-import com.wire.kalium.logic.util.IgnoreIOS
+import com.wire.kalium.logic.util.CustomAnnotaion
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
@@ -49,7 +49,6 @@ import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.Path
 import okio.Source
@@ -60,7 +59,7 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
+@CustomAnnotaion // TODO re-enable when BackupUtils is implemented on Darwin
 class RestoreBackupUseCaseTest {
 
     private val fakeFileSystem = FakeKaliumFileSystem()

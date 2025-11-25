@@ -18,4 +18,4 @@
 
 package com.wire.kalium.cryptography
 
-actual  annotation class  IgnoreIOS
+actual annotation class IgnoreIOS

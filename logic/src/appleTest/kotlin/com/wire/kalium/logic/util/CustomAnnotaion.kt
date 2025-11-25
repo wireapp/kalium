@@ -18,4 +18,6 @@
 
 package com.wire.kalium.logic.util
 
-expect annotation class IgnoreIOS()
+import kotlin.test.Ignore
+
+actual annotation class CustomAnnotaion
