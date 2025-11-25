@@ -220,6 +220,7 @@ sealed interface MLSFailure : CoreFailure {
         data object MlsStaleMessage : MessageRejected()
         data object InvalidLeafNodeIndex : MessageRejected()
         data object InvalidLeafNodeSignature : MessageRejected()
+        data class Other(val reason: Throwable) : MessageRejected()
     }
 
     data class Generic(val rootCause: Throwable) : MLSFailure

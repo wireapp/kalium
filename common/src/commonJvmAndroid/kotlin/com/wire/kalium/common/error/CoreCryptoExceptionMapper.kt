@@ -63,7 +63,7 @@ private fun mapMessageRejected(message: String, cause: Throwable): MLSFailure {
         message.contains("mls-commit-missing-references") -> MLSFailure.MessageRejected.MlsCommitMissingReferences
         message.contains("mls-invalid-leaf-node-index") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
         message.contains("mls-invalid-leaf-node-signature") -> MLSFailure.MessageRejected.InvalidLeafNodeIndex
-        else -> MLSFailure.Generic(cause)
+        else -> MLSFailure.MessageRejected.Other(cause)
     }
 }
 
