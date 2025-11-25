@@ -10,6 +10,6 @@ Feature-specific business logic organized by capabilities and use cases.
 - `messaging/sending` - Message sending logic
 - `messaging/receiving` - Message receiving logic
 
-**Dependencies:** Core layer and Data layer
-**Used by:** Logic layer
-**Guidelines:** Each domain module should focus on a single feature or capability.
+- **Dependencies:** Core layer and Data layer
+- **Used by:** Logic layer
+- **Guidelines:** Each domain module should focus on a single feature or capability.

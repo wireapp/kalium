@@ -9,5 +9,5 @@ Foundation layer providing low-level infrastructure and utilities.
 - `logger` - Logging infrastructure and configuration
 - `util` - Utility functions, platform abstractions, and serialization
 
-**Dependencies:** Core modules should only depend on other core modules and external libraries.
-**Used by:** Data layer, Domain layer, Logic layer
+- **Dependencies:** Core modules should only depend on other core modules and external libraries.
+- **Used by:** Data layer, Domain layer, Logic layer
