@@ -22,33 +22,18 @@ import com.wire.kalium.plugins.commonJvmConfig
 @Suppress("DSL_SCOPE_VIOLATION")
 
 plugins {
-    application
     kotlin("multiplatform")
 }
 val mainFunctionClassName = "com.wire.kalium.cli.MainKt"
-
-application {
-    mainClass.set(mainFunctionClassName)
-}
-
-tasks.jar {
-    manifest.attributes["Main-Class"] = mainFunctionClassName
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
 
 kotlin {
     applyDefaultHierarchyTemplate()
     val jvmTarget = jvm {
         commonJvmConfig(includeNativeInterop = false)
-        tasks.named("run", JavaExec::class) {
-            isIgnoreExitValue = true
-            standardInput = System.`in`
-            standardOutput = System.out
+
+        // Configure JVM binary using the new KMP/JVM binaries DSL
+        mainRun {
+            mainClass.set(mainFunctionClassName)
         }
     }
     macosX64 {
@@ -90,19 +75,36 @@ kotlin {
                 implementation(libs.ktor.iosHttp)
             }
         }
-
-        tasks.withType<JavaExec> {
-            // code to make run task in kotlin multiplatform work
-            val compilation = jvmTarget.compilations.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation>("main")
-
-            val classes = files(
-                compilation.runtimeDependencyFiles,
-                compilation.output.allOutputs
-            )
-            classpath(classes)
-            setJvmArgs(listOf("-Djava.library.path=/usr/local/lib/:./native/libs"))
-        }
     }
+}
+
+// Configure fat JAR after Kotlin configuration
+tasks.named<Jar>("jvmJar") {
+    manifest {
+        attributes["Main-Class"] = mainFunctionClassName
+    }
+    val dependencies = configurations
+        .named("jvmRuntimeClasspath")
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Configure JVM run tasks
+tasks.withType<JavaExec> {
+    isIgnoreExitValue = true
+    standardInput = System.`in`
+    standardOutput = System.out
+    val jvmTarget = kotlin.targets.getByName("jvm") as org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
+    val compilation = jvmTarget.compilations.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation>("main")
+
+    val classes = files(
+        compilation.runtimeDependencyFiles,
+        compilation.output.allOutputs
+    )
+    classpath(classes)
+    setJvmArgs(listOf("-Djava.library.path=/usr/local/lib/:./native/libs"))
 }
 
 commonDokkaConfig()

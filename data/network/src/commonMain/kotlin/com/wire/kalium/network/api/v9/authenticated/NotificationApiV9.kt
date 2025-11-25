@@ -40,12 +40,12 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
-import io.ktor.websocket.close
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.encodeToJsonElement
@@ -119,9 +119,9 @@ internal open class NotificationApiV9 internal constructor(
         defaultClientWebSocketSession.incoming
             .consumeAsFlow()
             .onCompletion {
-                defaultClientWebSocketSession.close()
+                defaultClientWebSocketSession.cancel()
                 logger.w("Websocket Closed", it)
-                session?.close(it)
+                session?.cancel()
                 session = null
                 emit(WebSocketEvent.Close(it))
             }
@@ -129,8 +129,8 @@ internal open class NotificationApiV9 internal constructor(
                 logger.v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
-                        // assuming here the byteArray is an ASCII character set
-                        val jsonString = io.ktor.utils.io.core.String(frame.data)
+                        // assuming here the byteArray is an ASCII/UTF-8 character set
+                        val jsonString = frame.data.decodeToString()
 
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
                         val event = KtxSerializer.json.decodeFromString<ConsumableNotificationResponse>(jsonString)

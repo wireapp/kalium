@@ -85,7 +85,6 @@ sourceSets {
             implementation(libs.ktor.serialization)
             implementation(libs.ktor.okHttp)
             implementation(libs.ktor.contentNegotiation)
-            implementation(libs.ktor.json)
             implementation(libs.ktor.authClient)
             implementation(libs.ktor.server)
             implementation(libs.ktor.serverNetty)

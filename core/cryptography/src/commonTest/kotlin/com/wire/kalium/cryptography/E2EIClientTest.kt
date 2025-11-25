@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -195,7 +194,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               "revokeCert": "https://acme.elna.wire.link/acme/keycloakteams/revoke-cert",
               "keyChange": "https://acme.elna.wire.link/acme/keycloakteams/key-change"
             }
-            """.toByteArray()
+            """.encodeToByteArray()
 
         val NONCE = "TGR6Rk45RlR2WDlzanMxWEpYd21YaFR0SkZBYTNzUWk"
 
@@ -204,7 +203,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                "contact": ["anonymous@anonymous.invalid"],
                 "status": "valid",
                 "orders": "https://acme.elna.wire.link/acme/keycloakteams/account/9ftonrYafcLPjIGsFyABdgnen9TLrBpv/orders"
-            }""".toByteArray()
+            }""".encodeToByteArray()
 
         val AUTHZ_URL1 = "https://acme.elna.wire.link/acme/keycloakteams/authz/1gpp07FUGPh6bFhnAZTuhhPIoGAx2xpw"
         val AUTHZ_URL2 = "https://acme.elna.wire.link/acme/keycloakteams/authz/mGCAn2FaKAVlO7n2MXdCaRjRsSwEHrel"
@@ -234,7 +233,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               ],
               "finalize": "$FINALIZE_ORDER_URL"
             }
-        """.toByteArray()
+        """.encodeToByteArray()
 
         val DPOP_AUTHZ_API_RESPONSE = """
             {
@@ -254,7 +253,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               ],
               "wildcard": false,
               "expires": "3000-04-04T09:42:17Z"
-            }""".toByteArray()
+            }""".encodeToByteArray()
         val OIDC_AUTHZ_API_RESPONSE = """
             {
               "identifier": {
@@ -274,7 +273,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               "wildcard": false,
               "expires": "3000-04-04T09:42:17Z"
             }
-            """.toByteArray()
+            """.encodeToByteArray()
 
         val ACCESS_TOKEN_RESPONSE = """
             {
@@ -294,7 +293,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               "validated": "2024-04-03T11:09:49Z",
               "url": "https://acme.elna.wire.link/acme/keycloakteams/challenge/lHJZD35qsabL3O6zmnhphK0G3NBhmJir/jIfnktV1nSrDdJ5zuBoUnH90V65hfuCA",
               "target": "https://elna.wire.link/clients/a07b91b6fc50a19a/access-token"
-            }""".toByteArray()
+            }""".encodeToByteArray()
 
         val OIDC_CHALLENGE_RESPONSE = """
             {
@@ -304,7 +303,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               "validated": "2024-04-03T11:09:49Z",
               "url": "https://acme.elna.wire.link/acme/keycloakteams/challenge/YsZCZdrVlh56Icla8k8PJuPhD3MZsogs/JghpemWlBCI6TKRcQNfWQKpsoDlZDWDz",
               "target": "https://keycloak.bund-next.wire.link/auth/realms/master?client_id=wireapp"
-            }""".toByteArray()
+            }""".encodeToByteArray()
 
         val ORDER_RESPONSE = """
             {
@@ -328,7 +327,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "https://acme.elna.wire.link/acme/keycloakteams/authz/YsZCZdrVlh56Icla8k8PJuPhD3MZsogs"
               ],
               "finalize": "https://acme.elna.wire.link/acme/keycloakteams/order/goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi/finalize"
-            }""".toByteArray()
+            }""".encodeToByteArray()
         val FINALIZE_RESPONSE = """
             {
               "id": "goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi",
@@ -352,7 +351,7 @@ class E2EIClientTest : BaseMLSClientTest() {
               ],
               "finalize": "https://acme.elna.wire.link/acme/keycloakteams/order/goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi/finalize",
               "certificate": "https://acme.elna.wire.link/acme/keycloakteams/certificate/cMFLY1InYUGVfOdrlgx9zoAIvipW6ocf"
-            }""".toByteArray()
+            }""".encodeToByteArray()
     }
 
     private val mlsTransporter = object : MLSTransporter {

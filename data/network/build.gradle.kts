@@ -52,7 +52,6 @@ kotlin {
                 // ktor
                 api(libs.ktor.core)
                 implementation(libs.ktor.utils)
-                implementation(libs.ktor.json)
                 implementation(libs.ktor.serialization)
                 implementation(libs.ktor.logging)
                 implementation(libs.ktor.authClient)

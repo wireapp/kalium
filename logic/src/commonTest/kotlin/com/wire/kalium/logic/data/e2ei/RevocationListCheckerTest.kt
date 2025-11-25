@@ -29,7 +29,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -123,7 +122,7 @@ class RevocationListCheckerTest {
         suspend fun withE2EIRepositorySuccess() = apply {
             coEvery {
                 certificateRevocationListRepository.getClientDomainCRL(any())
-            }.returns(Either.Right("result".toByteArray()))
+            }.returns(Either.Right("result".encodeToByteArray()))
         }
 
         suspend fun withRegisterCrl() = apply {
