@@ -30,7 +30,6 @@ import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -47,7 +46,7 @@ class CellsApiTest {
                     RestCreateCheckResponse(
                         results = listOf(RestCheckResult(exists = false))
                     )
-                ).toByteArray()
+                ).encodeToByteArray()
             )
             .arrange()
 
@@ -75,7 +74,7 @@ class CellsApiTest {
                     RestCreateCheckResponse(
                         results = listOf(RestCheckResult(exists = false))
                     )
-                ).toByteArray()
+                ).encodeToByteArray()
             )
             .arrange()
 

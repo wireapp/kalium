@@ -168,8 +168,6 @@ internal class ClientApiV0Test : ApiTest() {
             }
         )
         val clientApi = ClientApiV0(networkClient)
-        clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
-
         val actual = clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
         assertIs<NetworkResponse.Success<Unit>>(actual)
         assertTrue(actual.isSuccessful())

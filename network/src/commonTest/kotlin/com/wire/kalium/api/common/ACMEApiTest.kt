@@ -21,16 +21,23 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample.ACME_RESPONSE_SAMPLE
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample.jsonProviderAcmeChallengeResponse
-import com.wire.kalium.network.api.base.unbound.acme.*
+import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
+import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.unbound.acme.CertificateChain
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.http.*
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
-import kotlin.test.*
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 internal class ACMEApiTest : ApiTest() {
 

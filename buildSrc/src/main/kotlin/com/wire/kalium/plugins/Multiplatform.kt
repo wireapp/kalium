@@ -21,7 +21,6 @@ package com.wire.kalium.plugins
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.kotlin.dsl.dependencies
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 /**
@@ -43,32 +42,32 @@ internal fun Project.configureDefaultMultiplatform(
     androidNamespaceSuffix: String = this.name,
     jsModuleNameOverride: String? = null,
 ) {
-    val kotlinExtension = extensions.findByName("kotlin") as? KotlinMultiplatformExtension
-    check(kotlinExtension != null) {
-        "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
-    }
+    val kotlinExtension = extensions.findByType(KotlinMultiplatformExtension::class.java)
+        ?: error("No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?")
+
     kotlinExtension.apply {
         compilerOptions {
             optIn.add("kotlin.RequiresOptIn")
             optIn.add("kotlin.uuid.ExperimentalUuidApi")
         }
+
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
         }
+
         applyDefaultHierarchyTemplate()
+
         jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
 
         androidTarget {
             commmonKotlinAndroidTargetConfig()
-            dependencies {
-                add("coreLibraryDesugaring", library("desugarJdkLibs"))
-            }
+            // ⇣ DO NOT open a `dependencies {}` block here; add to the project instead:
+            project.dependencies.add("coreLibraryDesugaring", library("desugarJdkLibs"))
         }
 
         if (enableJs) {
             js { commonJsConfig(jsModuleNameOverride, enableJsTests) }
         }
-
         if (enableApple) {
             commonAppleMultiplatformConfig()
         }
@@ -79,35 +78,30 @@ internal fun Project.configureDefaultMultiplatform(
             commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
         }
 
-    kotlinExtension.sourceSets.getByName("androidInstrumentedTest") {
+    val androidInstrTest = kotlinExtension.sourceSets.getByName("androidInstrumentedTest")
+    androidInstrTest.dependencies {
+        implementation(library("androidtest.core"))
+        implementation(library("androidtest.runner"))
+        implementation(library("androidtest.rules"))
+    }
 
-        dependencies {
-            // Add common runner and rules to Android Instrumented Tests
-            implementation(library("androidtest.core"))
-            implementation(library("androidtest.runner"))
-            implementation(library("androidtest.rules"))
+    val commonTest = kotlinExtension.sourceSets.getByName("commonTest")
+    commonTest.dependencies {
+        implementation(library("kotlin.test"))
+    }
+
+    val commonMain = kotlinExtension.sourceSets.getByName("commonMain")
+    commonMain.dependencies {
+        dependenciesToAdd.forEach {
+            implementation(project(":${it.projectName}"))
         }
     }
 
-    kotlinExtension.sourceSets.getByName("commonTest") {
-        dependencies {
-            implementation(library("kotlin.test"))
-        }
-    }
-
-    kotlinExtension.sourceSets.getByName("commonMain") {
-        dependencies {
-            dependenciesToAdd.forEach {
-                implementation(project(":${it.projectName}"))
-            }
-        }
-    }
-
+    // Resolution strategy tweaks
     configurations.all {
         resolutionStrategy {
             force("org.jetbrains.kotlin:kotlin-test:${libs.findVersion("kotlin").get().requiredVersion}")
             eachDependency {
-                // TODO remove when all libraries will be using higher jna version than 5.16
                 if (requested.group == "net.java.dev.jna" && requested.name == "jna") {
                     useVersion("5.17.0")
                     because("Required for 16KB page support on Android 15+")
@@ -120,11 +114,7 @@ internal fun Project.configureDefaultMultiplatform(
     }
 
     kotlinExtension.sourceSets.all {
-        languageSettings {
-            // Most of the native code requires this opt-in
-            // We absolutely need it and are accepting the risk of the API being experimental
-            optIn("kotlinx.cinterop.ExperimentalForeignApi")
-        }
+        languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
     }
 
     commonDokkaConfig()

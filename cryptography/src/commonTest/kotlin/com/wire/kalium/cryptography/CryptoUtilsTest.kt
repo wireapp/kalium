@@ -27,8 +27,6 @@ import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import io.ktor.utils.io.core.String
-import io.ktor.utils.io.core.toByteArray
 import okio.Path.Companion.toPath
 import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
@@ -189,7 +187,7 @@ class CryptoUtilsTest {
         val decryptedData = decryptDataWithAES256(EncryptedData(encryptedData), randomAES256Key)
 
         // Then
-        assertTrue(input.size % 16 == 0)
+        assertEquals(input.size % 16, 0)
         assertEquals(input.size, decryptedData.data.size)
         assertContentEquals(input, decryptedData.data)
     }
@@ -200,7 +198,7 @@ class CryptoUtilsTest {
     fun givenDummyText_whenEncryptedAndDecryptedWithAES256_returnsOriginalText() {
         // Given
         val testMessage = "Hello Crypto World"
-        val inputData = testMessage.toByteArray()
+        val inputData = testMessage.encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val fakeFileSystem = FakeFileSystem()
         val rootPath = "/Users/me".toPath()
@@ -224,7 +222,7 @@ class CryptoUtilsTest {
         val decryptedData = fakeFileSystem.read(decryptedDataPath) {
             readByteArray()
         }
-        val decodedMessage = String(decryptedData)
+        val decodedMessage = decryptedData.decodeToString()
 
         // Then
         assertEquals(decryptedDataSize, inputData.size.toLong())

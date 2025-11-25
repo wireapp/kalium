@@ -31,7 +31,7 @@ import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf

@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
