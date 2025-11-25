@@ -1,0 +1,6 @@
+package = com.wire.kalium.cryptography.swift
+language = Objective-C
+headers = CoreCryptoWrapper.h
+headerFilter = CoreCryptoWrapper.h
+
+linkerOpts = -lCoreCryptoWrapper -framework WireCoreCrypto -framework WireCoreCryptoUniffi

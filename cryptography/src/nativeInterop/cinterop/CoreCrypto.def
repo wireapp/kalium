@@ -1,0 +1,6 @@
+package = com.wire.kalium.cryptography.corecrypto
+headers = core_crypto_ffiFFI.h
+headerFilter = core_crypto_ffiFFI.h
+
+compilerOpts = -framework WireCoreCryptoUniffi
+linkerOpts = -framework WireCoreCryptoUniffi -framework WireCoreCrypto

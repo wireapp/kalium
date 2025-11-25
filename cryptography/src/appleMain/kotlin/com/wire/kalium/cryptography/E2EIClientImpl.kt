@@ -17,73 +17,246 @@
  */
 package com.wire.kalium.cryptography
 
+import com.wire.kalium.cryptography.swift.AcmeDirectoryWrapper
+import com.wire.kalium.cryptography.swift.E2eiEnrollmentWrapper
+import com.wire.kalium.cryptography.swift.NewAcmeAuthzWrapper
+import com.wire.kalium.cryptography.swift.NewAcmeOrderWrapper
+import kotlinx.cinterop.ExperimentalForeignApi
+import platform.Foundation.NSData
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+
 @Suppress("TooManyFunctions")
-class E2EIClientImpl : E2EIClient {
-    override suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory {
-        TODO("Not yet implemented")
-    }
+@OptIn(ExperimentalForeignApi::class)
+class E2EIClientImpl(
+    internal val enrollmentWrapper: E2eiEnrollmentWrapper
+) : E2EIClient {
 
-    override suspend fun getNewAccountRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    private val defaultDPoPTokenExpiry: UInt = 30U
 
-    override suspend fun setAccountResponse(account: JsonRawData) {
-        TODO("Not yet implemented")
-    }
+    override suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.directoryResponse(directory.toNSData()) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toAcmeDirectory())
+                }
+            }
+        }
 
-    override suspend fun getNewOrderRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewAccountRequest(previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newAccountRequest(previousNonce) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
 
-    override suspend fun setOrderResponse(order: JsonRawData): NewAcmeOrder {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setAccountResponse(account: JsonRawData) =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newAccountResponse(account.toNSData()) { error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(Unit)
+                }
+            }
+        }
 
-    override suspend fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewOrderRequest(previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newOrderRequest(previousNonce) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
 
-    override suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setOrderResponse(order: JsonRawData): NewAcmeOrder =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newOrderResponse(order.toNSData()) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toNewAcmeOrder())
+                }
+            }
+        }
 
-    override suspend fun createDpopToken(backendNonce: String): DpopToken {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newAuthzRequestWithUrl(url = url, previousNonce = previousNonce) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
 
-    override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newAuthzResponse(authz.toNSData()) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toNewAcmeAuthz())
+                }
+            }
+        }
 
-    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun createDpopToken(backendNonce: String): DpopToken =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.createDpopTokenWithExpirySecs(
+                expirySecs = defaultDPoPTokenExpiry,
+                backendNonce = backendNonce
+            ) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!)
+                }
+            }
+        }
 
-    override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newDpopChallengeRequestWithAccessToken(
+                accessToken = accessToken,
+                previousNonce = previousNonce
+            ) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
 
-    override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newOidcChallengeRequestWithIdToken(
+                idToken = idToken,
+                previousNonce = previousNonce
+            ) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
 
-    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newOidcChallengeResponse(challenge.toNSData()) { error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(Unit)
+                }
+            }
+        }
 
-    override suspend fun checkOrderResponse(order: JsonRawData): String {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.newDpopChallengeResponse(challenge.toNSData()) { error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(Unit)
+                }
+            }
+        }
 
-    override suspend fun finalizeRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.checkOrderRequestWithOrderUrl(
+                orderUrl = orderUrl,
+                previousNonce = previousNonce
+            ) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
 
-    override suspend fun finalizeResponse(finalize: JsonRawData): String {
-        TODO("Not yet implemented")
-    }
+    override suspend fun checkOrderResponse(order: JsonRawData): String =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.checkOrderResponse(order.toNSData()) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!)
+                }
+            }
+        }
 
-    override suspend fun certificateRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
+    override suspend fun finalizeRequest(previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.finalizeRequest(previousNonce) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
+
+    override suspend fun finalizeResponse(finalize: JsonRawData): String =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.finalizeResponse(finalize.toNSData()) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!)
+                }
+            }
+        }
+
+    override suspend fun certificateRequest(previousNonce: String): JsonRawData =
+        suspendCoroutine { continuation ->
+            enrollmentWrapper.certificateRequest(previousNonce) { result, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toKotlinException())
+                } else {
+                    continuation.resume(result!!.toByteArray())
+                }
+            }
+        }
+
+    companion object {
+        @OptIn(ExperimentalForeignApi::class)
+        fun AcmeDirectoryWrapper.toAcmeDirectory() = AcmeDirectory(
+            newNonce = this.newNonce(),
+            newAccount = this.newAccount(),
+            newOrder = this.newOrder()
+        )
+
+        @OptIn(ExperimentalForeignApi::class)
+        fun NewAcmeOrderWrapper.toNewAcmeOrder() = NewAcmeOrder(
+            delegate = this.delegate().toByteArray(),
+            authorizations = this.authorizations().map { it as String }
+        )
+
+        @OptIn(ExperimentalForeignApi::class)
+        fun NewAcmeAuthzWrapper.toNewAcmeAuthz() = NewAcmeAuthz(
+            identifier = this.identifier(),
+            keyAuth = this.keyauth(),
+            challenge = AcmeChallenge(
+                delegate = this.challenge().delegate().toByteArray(),
+                url = this.challenge().url(),
+                target = this.challenge().target()
+            )
+        )
     }
 }
