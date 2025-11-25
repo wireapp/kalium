@@ -19,11 +19,17 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
-import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.engine.darwin.certificates.CertificatePinner
+
+private const val SOCKS_PROXY_ENABLE_KEY = "SOCKSEnable"
+private const val SOCKS_PROXY_HOST_KEY = "SOCKSProxy"
+private const val SOCKS_PROXY_PORT_KEY = "SOCKSPort"
+private const val SOCKS_PROXY_USER_KEY = "SOCKSUser"
+private const val SOCKS_PROXY_PASSWORD_KEY = "SOCKSPassword"
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
@@ -31,15 +37,29 @@ actual fun defaultHttpEngine(
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning
 ): HttpClientEngine {
-    if (serverConfigDTOApiProxy != null) {
-        throw IllegalArgumentException("Proxy is not supported on iOS")
-    }
-    if (proxyCredentials != null) {
-        throw IllegalArgumentException("Proxy is not supported on iOS")
-    }
-
     return Darwin.create {
         pipelining = true
+
+        if (serverConfigDTOApiProxy != null) {
+            configureSession {
+                val proxyDict = mutableMapOf<Any?, Any?>(
+                    SOCKS_PROXY_ENABLE_KEY to 1,
+                    SOCKS_PROXY_HOST_KEY to serverConfigDTOApiProxy.host,
+                    SOCKS_PROXY_PORT_KEY to serverConfigDTOApiProxy.port
+                )
+
+                if (serverConfigDTOApiProxy.needsAuthentication && proxyCredentials != null) {
+                    proxyCredentials.username?.let { username ->
+                        proxyDict[SOCKS_PROXY_USER_KEY] = username
+                    }
+                    proxyCredentials.password?.let { password ->
+                        proxyDict[SOCKS_PROXY_PASSWORD_KEY] = password
+                    }
+                }
+
+                connectionProxyDictionary = proxyDict
+            }
+        }
 
         if (certificatePinning.isNotEmpty()) {
             val certPinner: CertificatePinner = CertificatePinner.Builder().apply {
@@ -51,7 +71,6 @@ actual fun defaultHttpEngine(
             }.build()
             handleChallenge(certPinner)
         }
-
     }
 }
 
