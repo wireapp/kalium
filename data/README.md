@@ -11,5 +11,6 @@ Data access and transformation layer handling persistence, networking, and mappi
 - `protobuf` - Protocol buffer message definitions
 - `data-mappers` - Mapping between network models, persistence models, and domain models
 
-- **Dependencies:** Core layer only
-- **Used by:** Domain layer, Logic layer
+**Dependencies:**  Core layer only
+
+**Used by:** Domain layer, Logic layer
