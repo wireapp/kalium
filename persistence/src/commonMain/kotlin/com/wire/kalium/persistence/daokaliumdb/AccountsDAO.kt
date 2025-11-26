@@ -204,16 +204,18 @@ internal class AccountsDAOImpl internal constructor(
         ssoIdEntity: SsoIdEntity?,
         serverConfigId: String,
         isPersistentWebSocketEnabled: Boolean
-    ) = withContext(queriesContext) {
-        queries.insertOrReplace(
-            scimExternalId = ssoIdEntity?.scimExternalId,
-            subject = ssoIdEntity?.subject,
-            tenant = ssoIdEntity?.tenant,
-            id = userIDEntity,
-            serverConfigId = serverConfigId,
-            logoutReason = null,
-            isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
-        )
+    ) {
+        withContext(queriesContext) {
+            queries.insertOrReplace(
+                scimExternalId = ssoIdEntity?.scimExternalId,
+                subject = ssoIdEntity?.subject,
+                tenant = ssoIdEntity?.tenant,
+                id = userIDEntity,
+                serverConfigId = serverConfigId,
+                logoutReason = null,
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+            )
+        }
     }
 
     override suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
@@ -261,8 +263,10 @@ internal class AccountsDAOImpl internal constructor(
             .flowOn(queriesContext)
             .mapToOneOrNull()
 
-    override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) = withContext(queriesContext) {
-        currentAccountQueries.update(userIDEntity)
+    override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
+        withContext(queriesContext) {
+            currentAccountQueries.update(userIDEntity)
+        }
     }
 
     override suspend fun updateSsoIdAndScimInfo(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, managedBy: ManagedByEntity?) =
@@ -279,20 +283,23 @@ internal class AccountsDAOImpl internal constructor(
             }
         }
 
-    override suspend fun deleteAccount(userIDEntity: UserIDEntity) =
+    override suspend fun deleteAccount(userIDEntity: UserIDEntity) {
         withContext(queriesContext) {
             queries.delete(userIDEntity)
         }
+    }
 
-    override suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) =
+    override suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) {
         withContext(queriesContext) {
             queries.markAccountAsLoggedOut(logoutReason, userIDEntity)
         }
+    }
 
-    override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) =
+    override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) {
         withContext(queriesContext) {
             queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
         }
+    }
 
     override suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean = withContext(queriesContext) {
         queries.persistentWebSocketStatus(userIDEntity).executeAsOne()

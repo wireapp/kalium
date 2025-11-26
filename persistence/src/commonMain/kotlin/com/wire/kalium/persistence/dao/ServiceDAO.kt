@@ -99,17 +99,19 @@ internal class ServiceDAOImpl(
     ): Flow<List<ServiceEntity>> =
         serviceQueries.searchByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(readDispatcher.value).mapToList()
 
-    override suspend fun insert(service: ServiceEntity) = withContext(writeDispatcher.value) {
-        serviceQueries.insert(
-            id = service.id,
-            name = service.name,
-            description = service.description,
-            summary = service.summary,
-            tags = service.tags,
-            enabled = service.enabled,
-            preview_asset_id = service.previewAssetId,
-            complete_asset_id = service.completeAssetId
-        )
+    override suspend fun insert(service: ServiceEntity) {
+        withContext(writeDispatcher.value) {
+            serviceQueries.insert(
+                id = service.id,
+                name = service.name,
+                description = service.description,
+                summary = service.summary,
+                tags = service.tags,
+                enabled = service.enabled,
+                preview_asset_id = service.previewAssetId,
+                complete_asset_id = service.completeAssetId
+            )
+        }
     }
 
     override suspend fun insertMultiple(serviceList: List<ServiceEntity>) = withContext(writeDispatcher.value) {
