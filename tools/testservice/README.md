@@ -13,7 +13,7 @@ In root folder execute:
 Create fat jar for standalone execution:
 
 ```shell
-./gradlew :tools::testservice:jar
+./gradlew :tools:testservice:jar
 ```
 
 Run fat jar:
