@@ -16,18 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network
+import SwiftUI
 
-import com.wire.kalium.network.api.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.session.CertificatePinning
-import io.ktor.client.engine.HttpClientEngine
-
-public expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?,
-    ignoreSSLCertificates: Boolean = false,
-    certificatePinning: CertificatePinning
-): HttpClientEngine
-
-public expect fun clearTextTrafficEngine(): HttpClientEngine
+@main
+struct iosAppApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}

@@ -22,6 +22,7 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mockative)
+    alias(libs.plugins.skie)
 }
 
 kaliumLibrary {
@@ -38,6 +39,10 @@ kotlin {
         }
     }
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(projects.protobuf)

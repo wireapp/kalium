@@ -45,20 +45,20 @@ import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("MagicNumber", "LongParameterList")
-interface UnauthenticatedNetworkContainer {
-    val loginApi: LoginApi
-    val registerApi: RegisterApi
-    val sso: SSOLoginApi
-    val appVersioningApi: AppVersioningApi
-    val verificationCodeApi: VerificationCodeApi
-    val domainLookupApi: DomainLookupApi
-    val remoteVersion: VersionApi
-    val serverConfigApi: ServerConfigApi
-    val getDomainRegistrationApi: GetDomainRegistrationApi
+public interface UnauthenticatedNetworkContainer {
+    public val loginApi: LoginApi
+    public val registerApi: RegisterApi
+    public val sso: SSOLoginApi
+    public val appVersioningApi: AppVersioningApi
+    public val verificationCodeApi: VerificationCodeApi
+    public val domainLookupApi: DomainLookupApi
+    public val remoteVersion: VersionApi
+    public val serverConfigApi: ServerConfigApi
+    public val getDomainRegistrationApi: GetDomainRegistrationApi
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
-    companion object {
-        fun create(
+    public companion object {
+        public fun create(
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,

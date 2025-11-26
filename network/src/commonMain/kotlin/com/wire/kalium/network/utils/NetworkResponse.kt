@@ -24,9 +24,12 @@ import io.ktor.http.parseServerSetCookieHeader
 import io.ktor.util.toMap
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
+import kotlin.native.ObjCName
 
-sealed class NetworkResponse<out T : Any> {
-    data class Success<out T : Any>(
+@ObjCName("NetworkResponse")
+public sealed class NetworkResponse<out T : Any> {
+    @ObjCName("NetworkResponseSuccess")
+    public data class Success<out T : Any>(
         val value: T,
         // TODO(refactor): to be deleted since data in the headers have to be extracted in network and not exposed
         val headers: Map<String, String?>,
@@ -47,7 +50,7 @@ sealed class NetworkResponse<out T : Any> {
             httpResponse.status.value
         )
 
-        val cookies: Map<String, String> by lazy {
+        public val cookies: Map<String, String> by lazy {
             // don't use HttpHeaders.SetCookie until the case sensitivity issue is solved
             this.headers["set-cookie"]?.splitSetCookieHeader()?.flatMap { it.splitSetCookieHeader() }
                 ?.map { parseServerSetCookieHeader(it) }?.associate {
@@ -56,12 +59,13 @@ sealed class NetworkResponse<out T : Any> {
         }
     }
 
-    data class Error(val kException: KaliumException) : NetworkResponse<Nothing>()
+    @ObjCName("NetworkResponseError")
+    public data class Error(val kException: KaliumException) : NetworkResponse<Nothing>()
 }
 
 // TODO(refactor): make internal
 @OptIn(ExperimentalContracts::class)
-fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
+public fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
     contract {
         returns(true) implies (this@isSuccessful is NetworkResponse.Success)
         returns(false) implies (this@isSuccessful is NetworkResponse.Error)

@@ -19,6 +19,7 @@
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.skie)
 }
 
 kaliumLibrary {
@@ -27,6 +28,10 @@ kaliumLibrary {
 
 kotlin {
     sourceSets {
+        all {
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+            languageSettings.optIn("kotlin.experimental.ExperimentalObjCName")
+        }
         val commonMain by getting {
             dependencies {
                 implementation(projects.util)

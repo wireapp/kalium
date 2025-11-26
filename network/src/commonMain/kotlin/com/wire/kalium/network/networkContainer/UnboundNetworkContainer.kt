@@ -30,12 +30,14 @@ import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import kotlin.native.ObjCName
 
-interface UnboundNetworkContainer {
-    val serverConfigApi: ServerConfigApi
-    val versionApi: VersionApi
-    val acmeApi: ACMEApi
-    val cellsClient: HttpClient
+@ObjCName("UnboundNetworkContainer")
+public interface UnboundNetworkContainer {
+    public val serverConfigApi: ServerConfigApi
+    public val versionApi: VersionApi
+    public val acmeApi: ACMEApi
+    public val cellsClient: HttpClient
 }
 
 private interface UnboundNetworkClientProvider {
@@ -74,12 +76,13 @@ internal class UnboundClearTextTrafficNetworkClientProviderImpl(
     }
 }
 
-class UnboundNetworkContainerCommon(
+@ObjCName("UnboundNetworkContainerCommon")
+public class UnboundNetworkContainerCommon(
     userAgent: String,
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
-    val developmentApiEnabled: Boolean
+    public val developmentApiEnabled: Boolean
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         userAgent,

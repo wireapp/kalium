@@ -17,11 +17,14 @@
  */
 
 package com.wire.kalium.network.api.model
+
+import kotlin.native.ObjCName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ServiceDTO(
+@ObjCName("Service")
+public data class ServiceDTO(
     @SerialName("id")
     val id: String,
     @SerialName("provider")

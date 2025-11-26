@@ -18,11 +18,13 @@
 
 package com.wire.kalium.network.api.model
 
+import kotlin.native.ObjCName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserAssetDTO(
+@ObjCName("UserAsset")
+public data class UserAssetDTO(
     @SerialName("key")
     val key: String,
     @SerialName("size")
@@ -31,11 +33,12 @@ data class UserAssetDTO(
     val type: UserAssetTypeDTO
 )
 
-fun List<UserAssetDTO>?.getPreviewAssetOrNull() = this?.firstOrNull { it.size == AssetSizeDTO.PREVIEW }
-fun List<UserAssetDTO>?.getCompleteAssetOrNull() = this?.firstOrNull { it.size == AssetSizeDTO.COMPLETE }
+public fun List<UserAssetDTO>?.getPreviewAssetOrNull(): UserAssetDTO? = this?.firstOrNull { it.size == AssetSizeDTO.PREVIEW }
+public fun List<UserAssetDTO>?.getCompleteAssetOrNull(): UserAssetDTO? = this?.firstOrNull { it.size == AssetSizeDTO.COMPLETE }
 
 @Serializable
-enum class AssetSizeDTO {
+@ObjCName("AssetSize")
+public enum class AssetSizeDTO {
     @SerialName("preview")
     PREVIEW,
 
@@ -48,7 +51,8 @@ enum class AssetSizeDTO {
 }
 
 @Serializable
-enum class UserAssetTypeDTO {
+@ObjCName("UserAssetType")
+public enum class UserAssetTypeDTO {
     @SerialName("image")
     IMAGE;
 

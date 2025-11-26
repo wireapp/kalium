@@ -18,21 +18,23 @@
 
 package com.wire.kalium.network.api.model
 
+import kotlin.native.ObjCName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-typealias ConversationId = QualifiedID
-typealias SubconversationId = String
-typealias NonQualifiedConversationId = String
-typealias UserId = QualifiedID
-typealias NonQualifiedUserId = String
-typealias TeamId = String
-typealias AssetId = QualifiedID
-typealias AssetKey = String
-typealias MLSPublicKey = String
+public typealias ConversationId = QualifiedID
+public typealias SubconversationId = String
+public typealias NonQualifiedConversationId = String
+public typealias UserId = QualifiedID
+public typealias NonQualifiedUserId = String
+public typealias TeamId = String
+public typealias AssetId = QualifiedID
+public typealias AssetKey = String
+public typealias MLSPublicKey = String
 
 @Serializable
-data class QualifiedID(
+@ObjCName("QualifiedId")
+public data class QualifiedID(
     @SerialName("id")
     val value: String,
     @SerialName("domain")
@@ -40,7 +42,8 @@ data class QualifiedID(
 )
 
 @Serializable
-data class UserSsoIdDTO(
+@ObjCName("UserSsoId")
+public data class UserSsoIdDTO(
     @SerialName("scim_external_id")
     val scimExternalId: String?,
     @SerialName("subject")

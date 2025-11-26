@@ -18,4 +18,7 @@
 
 package com.wire.kalium.network.api.model
 
-data class ProxyCredentialsDTO(val username: String?, val password: String?)
+import kotlin.native.ObjCName
+
+@ObjCName("ProxyCredentials")
+public data class ProxyCredentialsDTO(val username: String?, val password: String?)

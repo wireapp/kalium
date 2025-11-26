@@ -19,27 +19,30 @@
 package com.wire.kalium.network.api.model
 
 import com.wire.kalium.network.api.unauthenticated.register.NewBindingTeamDTO
+import kotlin.native.ObjCName
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class UserDTO {
-    abstract val id: UserId
-    abstract val name: String
-    abstract val handle: String?
-    abstract val teamId: TeamId?
-    abstract val accentId: Int
-    abstract val assets: List<UserAssetDTO>
-    abstract val deleted: Boolean?
-    abstract val email: String?
-    abstract val expiresAt: String?
-    abstract val nonQualifiedId: NonQualifiedUserId
-    abstract val service: ServiceDTO?
-    abstract val supportedProtocols: List<SupportedProtocolDTO>?
+@ObjCName("User")
+public sealed class UserDTO {
+    public abstract val id: UserId
+    public abstract val name: String
+    public abstract val handle: String?
+    public abstract val teamId: TeamId?
+    public abstract val accentId: Int
+    public abstract val assets: List<UserAssetDTO>
+    public abstract val deleted: Boolean?
+    public abstract val email: String?
+    public abstract val expiresAt: String?
+    public abstract val nonQualifiedId: NonQualifiedUserId
+    public abstract val service: ServiceDTO?
+    public abstract val supportedProtocols: List<SupportedProtocolDTO>?
 }
 
 @Serializable
-data class UserProfileDTO(
+@ObjCName("UserProfile")
+public data class UserProfileDTO(
     @SerialName("qualified_id") override val id: UserId,
     @SerialName("name") override val name: String,
     @SerialName("handle") override val handle: String?,
@@ -57,13 +60,14 @@ data class UserProfileDTO(
     @SerialName("type") val type: UserTypeDTO?
 ) : UserDTO()
 
-fun UserProfileDTO.isLegacyBot() = this.service != null
+public fun UserProfileDTO.isLegacyBot(): Boolean = this.service != null
 
-fun UserProfileDTO.isTeamMember(selfUserTeamId: String?, selfUserDomain: String?) =
+public fun UserProfileDTO.isTeamMember(selfUserTeamId: String?, selfUserDomain: String?): Boolean =
     (selfUserTeamId != null && this.teamId == selfUserTeamId && this.id.domain == selfUserDomain)
 
 @Serializable
-data class SelfUserDTO(
+@ObjCName("SelfUser")
+public data class SelfUserDTO(
     @SerialName("qualified_id") override val id: UserId,
     @SerialName("name") override val name: String,
     @SerialName("handle") override val handle: String?,
@@ -84,7 +88,8 @@ data class SelfUserDTO(
 ) : UserDTO()
 
 @Serializable
-data class NewUserDTO(
+@ObjCName("NewUser")
+public data class NewUserDTO(
     @SerialName("accent_id") val accentId: Int?,
     @SerialName("assets") val assets: List<UserAssetDTO>?,
     @SerialName("email") val email: String?,
@@ -107,7 +112,8 @@ data class NewUserDTO(
 )
 
 @Serializable
-enum class ManagedByDTO {
+@ObjCName("ManagedBy")
+public enum class ManagedByDTO {
     @SerialName("wire")
     WIRE,
 
@@ -120,7 +126,8 @@ enum class ManagedByDTO {
 }
 
 @Serializable
-enum class SupportedProtocolDTO {
+@ObjCName("SupportedProtocol")
+public enum class SupportedProtocolDTO {
     @SerialName("proteus")
     PROTEUS,
 
@@ -133,7 +140,8 @@ enum class SupportedProtocolDTO {
 }
 
 @Serializable
-enum class UserTypeDTO {
+@ObjCName("UserType")
+public enum class UserTypeDTO {
     @SerialName("regular")
     REGULAR,
 

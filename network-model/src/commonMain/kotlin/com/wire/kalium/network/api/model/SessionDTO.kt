@@ -18,7 +18,10 @@
 
 package com.wire.kalium.network.api.model
 
-data class SessionDTO(
+import kotlin.native.ObjCName
+
+@ObjCName("Session")
+public data class SessionDTO(
     val userId: QualifiedID,
     val tokenType: String,
     val accessToken: String,
@@ -26,4 +29,10 @@ data class SessionDTO(
     val cookieLabel: String?
 )
 
-data class AuthenticationResultDTO(val sessionDTO: SessionDTO, val userDTO: SelfUserDTO)
+@ObjCName("AuthenticationResult")
+public data class AuthenticationResultDTO(
+    @ObjCName("session")
+    val sessionDTO: SessionDTO,
+    @ObjCName("user")
+    val userDTO: SelfUserDTO
+)

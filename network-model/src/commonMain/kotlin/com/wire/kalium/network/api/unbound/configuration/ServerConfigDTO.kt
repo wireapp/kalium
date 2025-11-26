@@ -18,12 +18,17 @@
 
 package com.wire.kalium.network.api.unbound.configuration
 
-data class ServerConfigDTO(
+import kotlin.native.ObjCName
+
+@ObjCName("ServerConfig")
+public data class ServerConfigDTO(
     val id: String,
     val links: Links,
+    @ObjCName("metadata")
     val metaData: MetaData
 ) {
-    data class Links(
+    @ObjCName("ServerConfigLinks")
+    public data class Links(
         val api: String,
         val accounts: String,
         val webSocket: String,
@@ -35,41 +40,49 @@ data class ServerConfigDTO(
         val apiProxy: ApiProxy?
     )
 
-    data class MetaData(
+    @ObjCName("ServerConfigMetadata")
+    public data class MetaData(
         val federation: Boolean,
         val commonApiVersion: ApiVersionDTO,
         val domain: String?
     )
 
-    data class ApiProxy(
+    @ObjCName("ServerConfigApiProxy")
+    public data class ApiProxy(
         val needsAuthentication: Boolean,
         val host: String,
         val port: Int
     )
 }
 
-fun isProxyRequired(serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?): Boolean {
+public fun isProxyRequired(serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?): Boolean {
     return serverConfigDTOApiProxy != null
 }
 
-sealed class ApiVersionDTO(open val version: Int) {
+@ObjCName("ApiVersion")
+public sealed class ApiVersionDTO(open val version: Int) {
 
-    sealed class Invalid(override val version: Int) : ApiVersionDTO(version) {
-        data object New : Invalid(NEW_API_VERSION_NUMBER)
-        data object Unknown : Invalid(UNKNOWN_API_VERSION_NUMBER)
+    @ObjCName("ApiVersionInvalid")
+    public sealed class Invalid(override val version: Int) : ApiVersionDTO(version) {
+        @ObjCName("ApiVersionNew")
+        public data object New : Invalid(NEW_API_VERSION_NUMBER)
+        @ObjCName("ApiVersionUnknown")
+        public data object Unknown : Invalid(UNKNOWN_API_VERSION_NUMBER)
     }
 
-    data class Valid(override val version: Int) : ApiVersionDTO(version)
+    @ObjCName("ApiVersionValid")
+    public data class Valid(override val version: Int) : ApiVersionDTO(version)
 
-    companion object {
-        fun fromInt(value: Int): ApiVersionDTO {
+    public companion object {
+        @ObjCName("create")
+        public fun fromInt(value: Int): ApiVersionDTO {
             return if (value >= MINIMUM_VALID_API_VERSION) Valid(value)
             else if (value == NEW_API_VERSION_NUMBER) Invalid.New
             else Invalid.Unknown
         }
 
-        const val NEW_API_VERSION_NUMBER = -1
-        const val UNKNOWN_API_VERSION_NUMBER = -2
-        const val MINIMUM_VALID_API_VERSION = 0
+        public const val NEW_API_VERSION_NUMBER: Int = -1
+        public const val UNKNOWN_API_VERSION_NUMBER: Int = -2
+        public const val MINIMUM_VALID_API_VERSION: Int = 0
     }
 }
