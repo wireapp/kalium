@@ -22,7 +22,6 @@ import com.wire.kalium.cryptography.swift.E2eiEnrollmentWrapper
 import com.wire.kalium.cryptography.swift.NewAcmeAuthzWrapper
 import com.wire.kalium.cryptography.swift.NewAcmeOrderWrapper
 import kotlinx.cinterop.ExperimentalForeignApi
-import platform.Foundation.NSData
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine

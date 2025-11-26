@@ -307,6 +307,8 @@ class ProteusClientCoreCryptoImpl private constructor(
     }
 
     companion object {
+
+        @Suppress("UnusedParameter")
         suspend fun create(wrapper: CoreCryptoWrapper, rootDir: String): ProteusClientCoreCryptoImpl {
             // Initialize Proteus
             suspendCoroutine { continuation ->

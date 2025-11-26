@@ -23,10 +23,10 @@ import com.wire.kalium.cryptography.swift.E2eiEnrollmentWrapper
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.allocArrayOf
-import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.get
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.reinterpret
 import kotlinx.coroutines.CoroutineScope
 import platform.Foundation.NSData
 import platform.Foundation.NSError
@@ -53,6 +53,7 @@ actual suspend fun coreCryptoCentral(
     )
 
     // Setup logger
+    @Suppress("MagicNumber")
     val logger = CoreCryptoLoggerWrapper { level, message, context ->
         when (level.toInt()) {
             1 -> kaliumLogger.v("$message. $context")
@@ -169,6 +170,7 @@ class CoreCryptoCentralImpl(
         return E2EIClientImpl(enrollmentWrapper)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerTrustAnchors(pem: CertificateChain) {
         try {
             suspendCoroutine { continuation ->
@@ -184,6 +186,7 @@ class CoreCryptoCentralImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
         return try {
             suspendCoroutine { continuation ->
@@ -210,6 +213,7 @@ class CoreCryptoCentralImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
         try {
             suspendCoroutine { continuation ->
@@ -237,11 +241,11 @@ internal fun ByteArray.toNSData(): NSData = memScoped {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal fun NSData.toByteArray(): ByteArray {
-    if (this.length.toInt() == 0) return ByteArray(0)
-    val bytes = this.bytes ?: return ByteArray(0)
-    return memScoped {
-        val pointer = bytes.reinterpret<ByteVar>()
+internal fun NSData.toByteArray(): ByteArray = when {
+    (this.length.toInt() == 0) -> ByteArray(0)
+    this.bytes == null -> ByteArray(0)
+    else -> memScoped {
+        val pointer = bytes!!.reinterpret<ByteVar>()
         ByteArray(this@toByteArray.length.toInt()) { index ->
             pointer[index]
         }

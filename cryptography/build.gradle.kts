@@ -18,8 +18,7 @@
 
 import com.wire.kalium.plugins.appleTargets
 
-@Suppress("DSL_SCOPE_VIOLATION")
-plugins {
+@Suppress("DSL_SCOPE_VIOLATION") plugins {
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -58,8 +57,8 @@ swiftTargetConfigs.forEach { (targetName, config) ->
         group = "swift"
         description = "Compiles Swift wrapper for $targetName"
 
-        val coreCryptoFrameworkPath = "${projectDir}/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}"
-        val uniffiFrameworkPath = "${projectDir}/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}"
+        val coreCryptoFrameworkPath = "$projectDir/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}"
+        val uniffiFrameworkPath = "$projectDir/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}"
 
         inputs.dir(swiftWrapperSourceDir)
         inputs.dir(coreCryptoFrameworkPath)
@@ -81,21 +80,31 @@ swiftTargetConfigs.forEach { (targetName, config) ->
             }.standardOutput.asText.get().trim()
         }
 
-        commandLine(
+        val arguments = listOf(
             "swiftc",
             "-emit-library",
             "-emit-objc-header",
-            "-emit-objc-header-path", "${outputDir}/CoreCryptoWrapper.h",
-            "-module-name", "CoreCryptoWrapper",
-            "-sdk", sdkPath,
-            "-target", config.targetTriple,
-            "-F", coreCryptoFrameworkPath,
-            "-F", uniffiFrameworkPath,
-            "-framework", "WireCoreCrypto",
-            "-framework", "WireCoreCryptoUniffi",
-            "-o", "${outputDir}/libCoreCryptoWrapper.a",
-            *swiftFiles.toTypedArray()
-        )
+            "-emit-objc-header-path",
+            "$outputDir/CoreCryptoWrapper.h",
+            "-module-name",
+            "CoreCryptoWrapper",
+            "-sdk",
+            sdkPath,
+            "-target",
+            config.targetTriple,
+            "-F",
+            coreCryptoFrameworkPath,
+            "-F",
+            uniffiFrameworkPath,
+            "-framework",
+            "WireCoreCrypto",
+            "-framework",
+            "WireCoreCryptoUniffi",
+            "-o",
+            "$outputDir/libCoreCryptoWrapper.a"
+        ) + swiftFiles
+
+        commandLine(arguments)
     }
 }
 
@@ -108,15 +117,17 @@ kotlin {
         val targetName = target.targetName
         val config = swiftTargetConfigs[targetName]!!
         val swiftOutputDir = File(swiftWrapperBuildDir, targetName)
-        val coreCryptoFrameworkPath = "${projectDir}/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}/WireCoreCrypto.framework"
-        val uniffiFrameworkPath = "${projectDir}/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}/WireCoreCryptoUniffi.framework"
+        val coreCryptoFrameworkPath =
+            "$projectDir/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}/WireCoreCrypto.framework"
+        val uniffiFrameworkPath =
+            "$projectDir/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}/WireCoreCryptoUniffi.framework"
 
         val compileSwiftTask = tasks.named("compileSwiftWrapper${targetName.replaceFirstChar { it.uppercase() }}")
 
         target.binaries.all {
             linkerOpts("-framework", "Security")
-            linkerOpts("-F", "${projectDir}/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}")
-            linkerOpts("-F", "${projectDir}/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}")
+            linkerOpts("-F", "$projectDir/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}")
+            linkerOpts("-F", "$projectDir/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}")
             linkerOpts("-framework", "WireCoreCrypto")
             linkerOpts("-framework", "WireCoreCryptoUniffi")
             linkerOpts("-L", swiftOutputDir.absolutePath)
@@ -212,8 +223,10 @@ listOf("iosArm64", "iosSimulatorArm64").forEach { targetName ->
         group = "swift"
         description = "Copies CoreCrypto frameworks for $targetName test execution"
 
-        val coreCryptoFrameworkPath = "${projectDir}/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}/WireCoreCrypto.framework"
-        val uniffiFrameworkPath = "${projectDir}/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}/WireCoreCryptoUniffi.framework"
+        val coreCryptoFrameworkPath =
+            "$projectDir/frameworks/WireCoreCrypto.xcframework/${config.xcframeworkSlice}/WireCoreCrypto.framework"
+        val uniffiFrameworkPath =
+            "$projectDir/frameworks/WireCoreCryptoUniffi.xcframework/${config.xcframeworkSlice}/WireCoreCryptoUniffi.framework"
 
         from(coreCryptoFrameworkPath) {
             into("WireCoreCrypto.framework")
@@ -228,9 +241,6 @@ listOf("iosArm64", "iosSimulatorArm64").forEach { targetName ->
         dependsOn("copyFrameworksFor${capitalizedTarget}Test")
     }
 }
-
-// SwiftKlib configuration removed - using direct cinterop with WireCoreCrypto XCFrameworks
-// The XCFrameworks already expose Obj-C compatible APIs via UniFFI bindings
 
 android {
     testOptions.unitTests.all {
