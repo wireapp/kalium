@@ -512,6 +512,7 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserverManager
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
@@ -550,6 +551,7 @@ class UserSessionScope internal constructor(
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
+    private val networkStateObserverManager: NetworkStateObserverManager,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
     private val userStorage = userStorageProvider.getOrCreate(
@@ -1128,6 +1130,8 @@ class UserSessionScope internal constructor(
             slowSyncManager,
             incrementalSyncManager,
             this,
+            userId,
+            networkStateObserverManager,
             userScopedLogger = userScopedLogger
         )
     }

@@ -38,6 +38,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserverManager
+import com.wire.kalium.network.NetworkStateObserverManagerImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -113,6 +115,10 @@ abstract class CoreLogicCommon internal constructor(
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
     abstract val networkStateObserver: NetworkStateObserver
+
+    val networkStateObserverManager: NetworkStateObserverManager by lazy {
+        NetworkStateObserverManagerImpl(networkStateObserver)
+    }
 
     internal val logoutCallbackManager = LogoutCallbackManagerImpl()
 

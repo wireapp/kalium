@@ -78,6 +78,7 @@ actual class CoreLogic(
             globalDatabaseBuilder,
             userStorageProvider,
             networkStateObserver,
+            networkStateObserverManager,
             logoutCallbackManager,
             userAgent
         )

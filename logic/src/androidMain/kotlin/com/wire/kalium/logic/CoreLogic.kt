@@ -101,6 +101,7 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
+            networkStateObserverManager,
             logoutCallbackManager,
             userAgent
         )

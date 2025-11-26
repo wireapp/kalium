@@ -31,6 +31,14 @@ interface NetworkStateObserver {
     fun observeNetworkState(): StateFlow<NetworkState>
 
     /**
+     * Register the network callback to start receiving network state updates.
+     * This is a no-op for implementations that don't require explicit registration.
+     */
+    fun register() {
+        // Default no-op implementation
+    }
+
+    /**
      * Unregister the network callback and clean up resources.
      * This is a no-op for implementations that don't require cleanup.
      */

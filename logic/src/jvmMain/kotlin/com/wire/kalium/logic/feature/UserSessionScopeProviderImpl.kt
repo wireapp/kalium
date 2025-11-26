@@ -34,6 +34,7 @@ import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserverManager
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import java.io.File
@@ -49,6 +50,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
+    private val networkStateObserverManager: NetworkStateObserverManager,
     private val logoutCallback: LogoutCallback,
     userAgent: String,
     private val useInMemoryDatabase: Boolean
@@ -82,6 +84,7 @@ internal actual class UserSessionScopeProviderImpl(
             userStorageProvider,
             this,
             networkStateObserver,
+            networkStateObserverManager,
             logoutCallback,
             userAgent
         )

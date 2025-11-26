@@ -53,22 +53,13 @@ internal actual class NetworkStateObserverImpl(
         kaliumDispatcher = kaliumDispatcher
     )
 
-    private val defaultNetworkDataStateFlow: MutableStateFlow<DefaultNetworkData>
+    private val defaultNetworkDataStateFlow: MutableStateFlow<DefaultNetworkData> = MutableStateFlow(DefaultNetworkData.NotConnected)
     private val networkStateFlow: StateFlow<NetworkState>
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default)
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var isRegistered = false
 
     init {
-        val initialDefaultNetworkData = connectivityManager.activeNetwork?.let {
-            val defaultNetworkCapabilities =
-                connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-            DefaultNetworkData.Connected(it, defaultNetworkCapabilities)
-        } ?: DefaultNetworkData.NotConnected
-        defaultNetworkDataStateFlow = MutableStateFlow(initialDefaultNetworkData)
-        val initialState = when (initialDefaultNetworkData) {
-            is DefaultNetworkData.Connected -> initialDefaultNetworkData.networkCapabilities.toState()
-            is DefaultNetworkData.NotConnected -> NetworkState.NotConnected
-        }
         networkStateFlow = defaultNetworkDataStateFlow
             .map { networkData ->
                 if (networkData is DefaultNetworkData.Connected) {
@@ -77,7 +68,24 @@ internal actual class NetworkStateObserverImpl(
                 } else NetworkState.NotConnected
             }
             .buffer(capacity = 0)
-            .stateIn(scope, SharingStarted.Eagerly, initialState)
+            .stateIn(scope, SharingStarted.Eagerly, NetworkState.NotConnected)
+    }
+
+    override fun register() {
+        if (isRegistered) {
+            kaliumLogger.d("${NetworkStateObserver.TAG} already registered, skipping")
+            return
+        }
+
+        kaliumLogger.i("${NetworkStateObserver.TAG} registering network callback")
+
+        // Get initial state
+        val initialDefaultNetworkData = connectivityManager.activeNetwork?.let {
+            val defaultNetworkCapabilities =
+                connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            DefaultNetworkData.Connected(it, defaultNetworkCapabilities)
+        } ?: DefaultNetworkData.NotConnected
+        defaultNetworkDataStateFlow.value = initialDefaultNetworkData
 
         networkCallback = object : ConnectivityManager.NetworkCallback() {
 
@@ -174,14 +182,22 @@ internal actual class NetworkStateObserverImpl(
             }
         }
         networkCallback?.let { connectivityManager.registerDefaultNetworkCallback(it) }
+        isRegistered = true
     }
 
     override fun unregister() {
+        if (!isRegistered) {
+            kaliumLogger.d("${NetworkStateObserver.TAG} not registered, skipping unregister")
+            return
+        }
+
         networkCallback?.let {
             kaliumLogger.i("${NetworkStateObserver.TAG} unregistering network callback")
             connectivityManager.unregisterNetworkCallback(it)
             networkCallback = null
         }
+        defaultNetworkDataStateFlow.value = DefaultNetworkData.NotConnected
+        isRegistered = false
     }
 
     private fun NetworkCapabilities?.toState(): NetworkState {

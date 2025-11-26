@@ -24,8 +24,10 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
+import com.wire.kalium.network.NetworkStateObserverManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -98,6 +100,8 @@ internal class SyncExecutorImpl(
     private val slowSyncManager: SlowSyncManager,
     private val incrementalSyncManager: IncrementalSyncManager,
     private val scope: CoroutineScope,
+    private val userId: UserId,
+    private val networkStateObserverManager: NetworkStateObserverManager,
     userScopedLogger: KaliumLogger = kaliumLogger,
 ) : SyncExecutor() {
 
@@ -118,9 +122,11 @@ internal class SyncExecutorImpl(
                 .collectLatest { shouldSync ->
                     if (shouldSync) {
                         logger.i("!! Starting Sync to fulfill requests !!")
+                        networkStateObserverManager.acquireNetworkObservation(userId.toString())
                         performSync()
                     } else {
                         logger.i("!! Stopping sync, as there are no requests for it. !!")
+                        networkStateObserverManager.releaseNetworkObservation(userId.toString())
                     }
                 }
         }

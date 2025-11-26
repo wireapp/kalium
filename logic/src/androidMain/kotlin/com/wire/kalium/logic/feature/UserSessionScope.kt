@@ -34,6 +34,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserverManager
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -53,6 +54,7 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
+    networkStateObserverManager: NetworkStateObserverManager,
     logoutCallback: LogoutCallback,
 ): UserSessionScope {
     val platformUserStorageProperties =
@@ -76,6 +78,7 @@ internal fun UserSessionScope(
         clientConfig,
         platformUserStorageProperties,
         networkStateObserver,
+        networkStateObserverManager,
         logoutCallback
     )
 }

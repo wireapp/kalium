@@ -658,7 +658,11 @@ class NetworkStateObserverImplTest {
 
         // endregion
 
-        internal fun arrange() = this to networkStateObserverImpl
+        internal fun arrange(): Pair<Arrangement, NetworkStateObserverImpl> {
+            // Register the observer to start receiving network callbacks
+            networkStateObserverImpl.register()
+            return this to networkStateObserverImpl
+        }
     }
 
     enum class NetworkType(val type: Int) {
