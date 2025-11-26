@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.util.CustomAnnotaion
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
 import kotlinx.coroutines.test.runTest
 import okio.Path
@@ -34,7 +34,7 @@ import kotlin.test.assertTrue
 
 typealias UserId = QualifiedID
 
-@CustomAnnotaion // TODO re-enable when backup support is implemented
+@IgnoreIOS // TODO re-enable when backup support is implemented
 class VerifyBackupUseCaseTest {
 
     @BeforeTest

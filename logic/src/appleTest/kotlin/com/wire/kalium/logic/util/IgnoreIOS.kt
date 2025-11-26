@@ -18,5 +18,6 @@
 
 package com.wire.kalium.logic.util
 
-@Deprecated("To be deleted")
-expect annotation class CustomAnnotaion()
+import kotlin.test.Ignore
+
+actual typealias IgnoreIOS = Ignore

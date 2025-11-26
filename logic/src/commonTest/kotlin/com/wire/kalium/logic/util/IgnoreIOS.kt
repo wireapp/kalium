@@ -18,4 +18,5 @@
 
 package com.wire.kalium.logic.util
 
-actual annotation class CustomAnnotaion
+@Deprecated("To be deleted")
+expect annotation class IgnoreIOS()
