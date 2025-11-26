@@ -33,7 +33,6 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -266,7 +265,7 @@ class NodeUploadManagerTest {
         }
 
         fun withFileExists(path: Path) = apply {
-            fileSystem.write(path) { "".toByteArray() }
+            fileSystem.write(path) { "".encodeToByteArray() }
         }
 
         fun withFileMissing(path: Path) = apply {
@@ -356,7 +355,7 @@ private class TestRepository : CellsRepository {
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
-    override suspend fun restoreNode(path: String): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = listOf<String>().right()
     override suspend fun updateNodeTags(uuid: String, tags: List<String>): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun removeNodeTags(uuid: String): Either<NetworkFailure, Unit> = Unit.right()

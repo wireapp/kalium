@@ -27,14 +27,10 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
-import io.ktor.http.charset
 import io.ktor.http.content.OutgoingContent
-import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.charsets.Charsets
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Job
 
@@ -131,14 +127,6 @@ internal class KaliumHttpLogger(
 """.trimMargin()
             )
         }
-    }
-
-    suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel) {
-        responseHeaderMonitor.join()
-
-        val text = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "\"response body omitted\""
-        responseLog["Content-Type"] = contentType?.charset() ?: Charsets.UTF_8
-        responseLog["Content"] = obfuscatedJsonMessage(text)
     }
 
     fun closeRequestLog() {

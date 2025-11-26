@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -478,7 +477,7 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         fun withLocalFileAvailable() = apply {
-            fileSystem.write(localPath.toPath()) { "".toByteArray()}
+            fileSystem.write(localPath.toPath()) { "".encodeToByteArray()}
         }
 
         fun withLocalFileMissing() = apply {

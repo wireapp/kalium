@@ -1,6 +1,6 @@
 [versions]
-kotlin = "2.1.0"
-ksp = "2.1.0-1.0.28"
+kotlin = "2.2.21"
+ksp = "2.2.21-2.0.4"
 activity-compose = "1.9.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
@@ -12,12 +12,12 @@ compose-material3 = "1.0.0-alpha01"
 compose-jetbrains = "1.8.2"
 fileKit = "0.10.0-beta04"
 android-security = "1.1.0-alpha06"
-ktor = "2.3.10"
+ktor = "3.3.2"
 okio = "3.9.0"
 ok-http = "4.12.0"
 # 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 uploaded to a temporary repo
 # until mockative releases a new version with a proper fix
-mockative = "3.0.1"
+mockative = "3.1.4"
 android-work = "2.9.0"
 android-test-runner = "1.6.2"
 android-test-core-ktx = "1.6.1"
@@ -25,8 +25,8 @@ android-test-rules = "1.6.1"
 android-test-core = "1.6.1"
 androidx-arch = "2.2.0"
 androidx-test-orchestrator = "1.5.1"
-androidx-sqlite = "2.4.0"
-ktx-datetime = { strictly = "0.5.0" }
+androidx-sqlite = "2.6.1"
+ktx-datetime = { strictly = "0.6.1" }
 ktx-serialization = "1.8.1"
 ktx-atomicfu = "0.26.1"
 kover = "0.7.6"
@@ -38,10 +38,9 @@ sqldelight = "2.0.1"
 sqlcipher-android = "4.10.0"
 pbandk = "0.15.0"
 turbine = "1.1.0"
-avs = "10.1.29"
+avs = "10.1.32"
 jna = "5.17.0"
 core-crypto = "9.1.1"
-completeKotlin = "1.1.0"
 desugar-jdk = "2.1.3"
 kermit = "2.0.3"
 detekt = "1.23.8"
@@ -56,7 +55,7 @@ apache-tika = "3.1.0"
 mockk = "1.13.13"
 faker = "1.16.0"
 robolectric = "4.12.1"
-skie = "0.10.1"
+skie = "0.10.8"
 stately = "2.1.0"
 micrometer = "1.12.5"
 konsist = "0.15.1"
@@ -69,14 +68,13 @@ jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.48.0.0"
 kotlinx-io = "0.5.3"
-cells-sdk = "0.1.1-alpha10"
+cells-sdk = "0.1.1-alpha16"
 
 [plugins]
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
-completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
 dagCommand = { id = "io.github.leandroborgesferreira.dag-command", version.ref = "dagCommand" }
 moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -93,7 +91,7 @@ skie = { id = "co.touchlab.skie", version.ref = "skie" }
 benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }
 allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
-mockative = { id = "io.mockative", version.ref = "mockative" }
+mockative = { id = "io.github.mohamadjaara.mockative", version.ref = "mockative" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
@@ -174,13 +172,13 @@ ktor-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 ktor-jsClient = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
-ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-serverNetty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
 ktor-serverLogging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
-ktor-serverContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serverContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
 ktor-serverCallId = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
 ktor-serverMetrics = { module = "io.ktor:ktor-server-metrics-micrometer-jvm", version.ref = "ktor" }
-ktor-statusPages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
+ktor-statusPages = { module = "io.ktor:ktor-server-status-pages-jvm", version.ref = "ktor" }
 
 # okio
 okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
@@ -206,7 +204,7 @@ r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
 sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
 
 # mocks and testing
-mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
+mockative-runtime = { module = "io.github.mohamadjaara:mockative", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }

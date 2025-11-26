@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.common.functional.Either
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

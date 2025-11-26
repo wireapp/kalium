@@ -42,7 +42,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -68,7 +67,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
         val (arrangement, assetRepository) = Arrangement()
@@ -99,7 +98,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
@@ -137,7 +136,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
@@ -166,7 +165,7 @@ class AssetRepositoryTest {
         // Given
         val dummyPath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dummyPath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val (arrangement, assetRepository) = Arrangement()
             .withRawStoredData(dummyData, fullDataPath)
@@ -447,7 +446,7 @@ class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
         val assetName = "La Gioconda.jpg"
-        val encryptionKey = AES256Key("some-encryption-key".toByteArray())
+        val encryptionKey = AES256Key("some-encryption-key".encodeToByteArray())
         val assetSha256 = SHA256Key(byteArrayOf(1, 2, 3))
 
         val (arrangement, assetRepository) = Arrangement()
@@ -493,7 +492,7 @@ class AssetRepositoryTest {
     fun givenAnAssetId_whenAssetIsAlreadyDownloaded_thenShouldReturnItsBinaryDataFromDB() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
-        val expectedImage = "my_image_asset".toByteArray()
+        val expectedImage = "my_image_asset".encodeToByteArray()
         val dummyPath = fakeKaliumFileSystem.providePersistentAssetPath("dummy_data_path")
 
         val (arrangement, assetRepository) = Arrangement()
@@ -571,7 +570,7 @@ class AssetRepositoryTest {
     fun givenAssetFileExists_whenDeletingRemotelyAsset_thenFileShouldBeDeleted() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
-        val assetRawData = "some-dummy-data".toByteArray()
+        val assetRawData = "some-dummy-data".encodeToByteArray()
         val assetFile = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.toString())
 
         val (_, assetRepository) = Arrangement()
@@ -594,7 +593,7 @@ class AssetRepositoryTest {
     fun givenAssetFileExists_whenDeletingLocallyAsset_thenFileShouldBeDeleted() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
-        val assetRawData = "some-dummy-data".toByteArray()
+        val assetRawData = "some-dummy-data".encodeToByteArray()
         val assetFile = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.toString())
 
         val (_, assetRepository) = Arrangement()
@@ -617,7 +616,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val dataSize = dummyData.size.toLong()
         val assetId = "some_key"
         val assetDomain = "some_domain"
@@ -656,7 +655,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val dataSize = dummyData.size.toLong()
         val assetId = "some_key"
         val assetDomain = "some_domain"
@@ -692,7 +691,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val dataSize = dummyData.size.toLong()
         val assetId = "some_key"
         val assetDomain = "some_domain"
@@ -720,7 +719,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
         // this conv id is hardcoded for public assets
         val testConversationId = ConversationId("00000000-0000-0000-0000-000000000000", "no-domain")
@@ -761,7 +760,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "temp-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
         val testConversationId = ConversationId("conv-id", "conv-domain")
         val testFilename = "test-filename"
@@ -802,7 +801,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
         val testConversationId = ConversationId("conv-id", "conv-domain")
@@ -845,7 +844,7 @@ class AssetRepositoryTest {
         // Given
         val dataNamePath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
-        val dummyData = "some-dummy-data".toByteArray()
+        val dummyData = "some-dummy-data".encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
         val testConversationId = ConversationId("conv-id", "conv-domain")

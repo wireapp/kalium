@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -111,7 +110,7 @@ class DeleteNodeAssetUseCaseTest {
         }
 
         fun withLocalFileAvailable() = apply {
-            fileSystem.write(localPath.toPath()) { "".toByteArray()}
+            fileSystem.write(localPath.toPath()) { "".encodeToByteArray()}
         }
 
         suspend fun arrange(): Pair<Arrangement, DeleteCellAssetUseCaseImpl> {
