@@ -18,4 +18,4 @@ WORKDIR /app
 COPY . .
 
 RUN ./gradlew clean
-RUN ./gradlew :testservice:shadowJar
+RUN ./gradlew :tools:testservice:shadowJar

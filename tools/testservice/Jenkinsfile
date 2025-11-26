@@ -27,7 +27,7 @@ pipeline {
             steps {
                 withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
                     withCredentials([usernamePassword(credentialsId: 'READ_PACKAGES_GITHUB_TOKEN', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
-                        sh './gradlew :testservice:shadowJar'
+                        sh './gradlew :tools:testservice:shadowJar'
                     }
                 }
             }
