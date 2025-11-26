@@ -276,6 +276,170 @@ class NetworkStateObserverImplTest {
             }
         }
 
+    // region Edge cases for network tracking and race conditions
+
+    @Test
+    fun givenDefaultNetwork_whenCapabilitiesChangedForNonDefaultNetwork_thenStateDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Simulate capabilities changed callback for non-default network (edge case / race condition)
+                arrangement.simulateCapabilitiesChangedForNonDefaultNetwork(NetworkType.WIFI, withInternetValidated = false)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetwork_whenOnLostCalledForNonDefaultNetwork_thenStateDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Simulate onLost callback for non-default network (edge case / race condition)
+                arrangement.simulateOnLostForNonDefaultNetwork(NetworkType.WIFI)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetwork_whenBlockedStatusChangedForNonDefaultNetwork_thenStateDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Simulate blocked status changed for non-default network
+                arrangement.simulateBlockedStatusChangedForNonDefaultNetwork(NetworkType.WIFI, blocked = true)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkWithInternet_whenDefaultChangesToNetworkWithInternet_thenStateDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given - both networks have internet
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Switch default network
+                arrangement.changeDefaultNetwork(NetworkType.WIFI)
+                // State should remain ConnectedWithInternet (no intermediate states)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkWithInternet_whenDefaultChangesToNetworkWithoutInternet_thenStateChanges() =
+        runTest(dispatcher.default) {
+            // given - mobile has internet, wifi doesn't
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = false)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Switch to network without internet
+                arrangement.changeDefaultNetwork(NetworkType.WIFI)
+                assertEquals(NetworkState.ConnectedWithoutInternet, awaitItem())
+            }
+        }
+
+    @Test
+    fun givenNotConnected_whenBlockedStatusChangedCalled_thenStateRemainsNotConnected() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.NotConnected, awaitItem())
+                // Simulate blocked status changed when not connected (should be ignored)
+                arrangement.simulateBlockedStatusChangedWhenNotConnected(blocked = false)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetwork_whenStaleOnLostArrivesAfterNetworkSwitch_thenStateDoesNotChange() =
+        runTest(dispatcher.default) {
+            // This tests the race condition where onLost for old network arrives after onAvailable for new network
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Switch default to WIFI
+                arrangement.changeDefaultNetwork(NetworkType.WIFI)
+                // Now simulate a stale onLost for MOBILE arriving after the switch
+                arrangement.simulateStaleOnLostAfterNetworkSwitch(NetworkType.MOBILE)
+                // State should remain connected (not switch to NotConnected)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetwork_whenStaleCapabilitiesChangedArrivesAfterNetworkSwitch_thenStateDoesNotChange() =
+        runTest(dispatcher.default) {
+            // This tests the race condition where capabilities for old network arrive after switch
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeNetworkState().test {
+                assertEquals(NetworkState.ConnectedWithInternet, awaitItem())
+                // Switch default to WIFI
+                arrangement.changeDefaultNetwork(NetworkType.WIFI)
+                // Now simulate stale capabilities for MOBILE (without internet) arriving after switch
+                arrangement.simulateStaleCapabilitiesAfterNetworkSwitch(NetworkType.MOBILE, withInternetValidated = false)
+                // State should remain ConnectedWithInternet (not change based on old network)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenConnectedNetwork_whenUnregisterCalled_thenCallbackIsUnregistered() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .arrange()
+
+            assertEquals(NetworkState.ConnectedWithInternet, networkStateObserverImpl.observeNetworkState().value)
+
+            // when
+            networkStateObserverImpl.unregister()
+
+            // then - verify callback count decreased
+            assertEquals(0, arrangement.getRegisteredCallbackCount())
+        }
+
+    // endregion
+
     /*
      * All the network logic and changes emulated by functions in this class are following Android network state documentation and examples
      * https://developer.android.com/training/basics/network-ops/reading-network-state
@@ -395,6 +559,104 @@ class NetworkStateObserverImplTest {
         private fun ConnectivityManager.getNetworkByType(networkType: NetworkType): Network? = allNetworks.firstOrNull {
             getNetworkInfo(it)?.type == networkType.type
         }
+
+        // region Edge case simulation helpers
+
+        /**
+         * Simulates a race condition where capabilities changed callback arrives for a non-default network.
+         * This should be ignored by the observer.
+         */
+        fun simulateCapabilitiesChangedForNonDefaultNetwork(networkType: NetworkType, withInternetValidated: Boolean) = apply {
+            connectivityManager.getNetworkByType(networkType)?.let { network ->
+                val capabilities = ShadowNetworkCapabilities.newInstance().apply {
+                    shadowOf(this).apply {
+                        if (withInternetValidated) {
+                            addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                            addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                        }
+                    }
+                }
+                // Directly invoke callback without checking if it's the default network
+                shadowOf(connectivityManager).networkCallbacks.forEach {
+                    it.onCapabilitiesChanged(network, capabilities)
+                }
+            }
+        }
+
+        /**
+         * Simulates a race condition where onLost callback arrives for a non-default network.
+         * This should be ignored by the observer.
+         */
+        fun simulateOnLostForNonDefaultNetwork(networkType: NetworkType) = apply {
+            connectivityManager.getNetworkByType(networkType)?.let { network ->
+                // Directly invoke callback without checking if it's the default network
+                shadowOf(connectivityManager).networkCallbacks.forEach {
+                    it.onLost(network)
+                }
+            }
+        }
+
+        /**
+         * Simulates blocked status changed for a non-default network.
+         * This should be ignored by the observer.
+         */
+        fun simulateBlockedStatusChangedForNonDefaultNetwork(networkType: NetworkType, blocked: Boolean) = apply {
+            connectivityManager.getNetworkByType(networkType)?.let { network ->
+                shadowOf(connectivityManager).networkCallbacks.forEach {
+                    it.onBlockedStatusChanged(network, blocked)
+                }
+            }
+        }
+
+        /**
+         * Simulates blocked status changed when there's no connected network.
+         * Creates a fake network just for the callback.
+         */
+        fun simulateBlockedStatusChangedWhenNotConnected(blocked: Boolean) = apply {
+            val fakeNetwork = ShadowNetwork.newInstance(999)
+            shadowOf(connectivityManager).networkCallbacks.forEach {
+                it.onBlockedStatusChanged(fakeNetwork, blocked)
+            }
+        }
+
+        /**
+         * Simulates a stale onLost callback arriving after the default network has already switched.
+         * This can happen due to callback delivery timing.
+         */
+        fun simulateStaleOnLostAfterNetworkSwitch(networkType: NetworkType) = apply {
+            connectivityManager.getNetworkByType(networkType)?.let { network ->
+                shadowOf(connectivityManager).networkCallbacks.forEach {
+                    it.onLost(network)
+                }
+            }
+        }
+
+        /**
+         * Simulates stale capabilities callback arriving after the default network has switched.
+         * This can happen due to callback delivery timing.
+         */
+        fun simulateStaleCapabilitiesAfterNetworkSwitch(networkType: NetworkType, withInternetValidated: Boolean) = apply {
+            connectivityManager.getNetworkByType(networkType)?.let { network ->
+                val capabilities = ShadowNetworkCapabilities.newInstance().apply {
+                    shadowOf(this).apply {
+                        if (withInternetValidated) {
+                            addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                            addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                        }
+                    }
+                }
+                shadowOf(connectivityManager).networkCallbacks.forEach {
+                    it.onCapabilitiesChanged(network, capabilities)
+                }
+            }
+        }
+
+        /**
+         * Returns the number of registered network callbacks.
+         */
+        fun getRegisteredCallbackCount(): Int = shadowOf(connectivityManager).networkCallbacks.size
+
+        // endregion
 
         internal fun arrange() = this to networkStateObserverImpl
     }
