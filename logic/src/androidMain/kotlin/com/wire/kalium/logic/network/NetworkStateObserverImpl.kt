@@ -41,7 +41,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 internal actual class NetworkStateObserverImpl(
-    connectivityManager: ConnectivityManager,
+    private val connectivityManager: ConnectivityManager,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : NetworkStateObserver {
 
@@ -56,6 +56,7 @@ internal actual class NetworkStateObserverImpl(
     private val defaultNetworkDataStateFlow: MutableStateFlow<DefaultNetworkData>
     private val networkStateFlow: StateFlow<NetworkState>
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default)
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     init {
         val initialDefaultNetworkData = connectivityManager.activeNetwork?.let {
@@ -78,7 +79,7 @@ internal actual class NetworkStateObserverImpl(
             .buffer(capacity = 0)
             .stateIn(scope, SharingStarted.Eagerly, initialState)
 
-        val callback = object : ConnectivityManager.NetworkCallback() {
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
 
             override fun onCapabilitiesChanged(
                 network: Network,
@@ -101,17 +102,29 @@ internal actual class NetworkStateObserverImpl(
                     }
                 }
                 kaliumLogger.logStructuredJson(KaliumLogLevel.INFO, "${NetworkStateObserver.TAG} capabilities changed", loggerMessage)
-                defaultNetworkDataStateFlow.update {
-                    DefaultNetworkData.Connected(
-                        network,
-                        networkCapabilities
-                    )
+                defaultNetworkDataStateFlow.update { current ->
+                    // Only update if this is for the current tracked network or if not connected
+                    if (current is DefaultNetworkData.Connected && current.network == network) {
+                        current.copy(networkCapabilities = networkCapabilities)
+                    } else if (current is DefaultNetworkData.NotConnected) {
+                        // New network becoming available
+                        DefaultNetworkData.Connected(network, networkCapabilities)
+                    } else {
+                        current
+                    }
                 }
             }
 
             override fun onLost(network: Network) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} lost connection")
-                defaultNetworkDataStateFlow.update { DefaultNetworkData.NotConnected }
+                defaultNetworkDataStateFlow.update { current ->
+                    // Only mark as not connected if this is for the current tracked network
+                    if (current is DefaultNetworkData.Connected && current.network == network) {
+                        DefaultNetworkData.NotConnected
+                    } else {
+                        current
+                    }
+                }
                 super.onLost(network)
             }
 
@@ -123,7 +136,14 @@ internal actual class NetworkStateObserverImpl(
 
             override fun onAvailable(network: Network) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} connection available")
-                defaultNetworkDataStateFlow.update { DefaultNetworkData.Connected(network) }
+                // Note: onCapabilitiesChanged will be called shortly after with actual capabilities
+                // We preserve existing capabilities if switching networks to avoid brief "no internet" state
+                defaultNetworkDataStateFlow.update { current ->
+                    when (current) {
+                        is DefaultNetworkData.Connected -> current.copy(network = network)
+                        is DefaultNetworkData.NotConnected -> DefaultNetworkData.Connected(network)
+                    }
+                }
                 super.onAvailable(network)
             }
 
@@ -134,24 +154,34 @@ internal actual class NetworkStateObserverImpl(
 
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
-                defaultNetworkDataStateFlow.update {
-                    val updatedValue = when (it) {
+                defaultNetworkDataStateFlow.update { current ->
+                    val updatedValue = when (current) {
                         is DefaultNetworkData.Connected -> {
-                            it.copy(isBlocked = blocked)
+                            // Only update if this is for the current tracked network
+                            if (current.network == network) {
+                                current.copy(isBlocked = blocked)
+                            } else {
+                                current
+                            }
                         }
 
-                        is DefaultNetworkData.NotConnected -> {
-                            if (blocked) it
-                            else DefaultNetworkData.Connected(network)
-                        }
+                        is DefaultNetworkData.NotConnected -> current
                     }
-                    kaliumLogger.d("${NetworkStateObserver.TAG} default network state $it changed to $updatedValue")
+                    kaliumLogger.d("${NetworkStateObserver.TAG} default network state $current changed to $updatedValue")
                     updatedValue
                 }
                 super.onBlockedStatusChanged(network, blocked)
             }
         }
-        connectivityManager.registerDefaultNetworkCallback(callback)
+        networkCallback?.let { connectivityManager.registerDefaultNetworkCallback(it) }
+    }
+
+    override fun unregister() {
+        networkCallback?.let {
+            kaliumLogger.i("${NetworkStateObserver.TAG} unregistering network callback")
+            connectivityManager.unregisterNetworkCallback(it)
+            networkCallback = null
+        }
     }
 
     private fun NetworkCapabilities?.toState(): NetworkState {

@@ -30,6 +30,14 @@ interface NetworkStateObserver {
 
     fun observeNetworkState(): StateFlow<NetworkState>
 
+    /**
+     * Unregister the network callback and clean up resources.
+     * This is a no-op for implementations that don't require cleanup.
+     */
+    fun unregister() {
+        // Default no-op implementation
+    }
+
     // Delay which will be completed earlier if there is a reconnection in the meantime.
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration) {
         // Delay for given amount but break it if reconnected again.
