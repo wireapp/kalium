@@ -23,8 +23,8 @@ import KaliumNetwork
 
 enum AppFlowState {
     case serverConfig
-    case login(ServerConfigDTO.Links)
-    case loggedIn(LoginResult, ServerConfigDTO.Links)
+    case login(ServerConfig.ServerConfigLinks)
+    case loggedIn(LoginResult, ServerConfig.ServerConfigLinks)
 }
 
 // MARK: - Main Content View
@@ -122,7 +122,7 @@ struct ServerConfigView: View {
         }
     }
 
-    private func serverConfigDisplay(_ links: ServerConfigDTO.Links) -> some View {
+    private func serverConfigDisplay(_ links: ServerConfig.ServerConfigLinks) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "checkmark.circle.fill")
@@ -215,7 +215,7 @@ struct ServerConfigView: View {
 
 struct LoginView: View {
     @ObservedObject var viewModel: AppFlowViewModel
-    let serverConfigLinks: ServerConfigDTO.Links
+    let serverConfigLinks: ServerConfig.ServerConfigLinks
 
     var body: some View {
         ScrollView {
@@ -423,7 +423,7 @@ struct LoginView: View {
 struct TokenResultView: View {
     @ObservedObject var viewModel: AppFlowViewModel
     let loginResult: LoginResult
-    let serverConfigLinks: ServerConfigDTO.Links
+    let serverConfigLinks: ServerConfig.ServerConfigLinks
 
     var body: some View {
         ScrollView {
@@ -610,7 +610,7 @@ class AppFlowViewModel: ObservableObject {
 
     // Server config screen
     @Published var configUrl: String = ""
-    @Published var serverConfigLinks: ServerConfigDTO.Links?
+    @Published var serverConfigLinks: ServerConfig.ServerConfigLinks?
 
     // Login screen
     @Published var email: String = ""

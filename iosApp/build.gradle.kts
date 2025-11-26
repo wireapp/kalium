@@ -28,7 +28,7 @@ kotlin {
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "KaliumNetwork"
-            isStatic = true
+            isStatic = false  // Dynamic framework to share Kotlin runtime with other frameworks
 
             // Export the network module and its dependencies for Swift access
             export(projects.network)

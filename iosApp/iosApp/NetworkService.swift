@@ -63,8 +63,8 @@ enum NetworkError: LocalizedError {
 // MARK: - Login Result (combines session and user)
 
 struct LoginResult {
-    let session: SessionDTO
-    let selfUser: SelfUserDTO
+    let session: Session
+    let selfUser: SelfUser
     let rawSessionJson: String
     let rawSelfUserJson: String
 }
@@ -72,14 +72,14 @@ struct LoginResult {
 // MARK: - Network Service using KaliumNetwork
 
 class NetworkService {
-    private var proxyCredentials: ProxyCredentialsDTO?
+    private var proxyCredentials: ProxyCredentials?
 
     init() {}
 
     /// Configure proxy credentials for subsequent requests
-    func configureProxy(_ proxy: ServerConfigDTO.ApiProxy?, credentials: (username: String, password: String)?) {
+    func configureProxy(_ proxy: ServerConfig.ServerConfigApiProxy?, credentials: (username: String, password: String)?) {
         if let creds = credentials {
-            self.proxyCredentials = ProxyCredentialsDTO(
+            self.proxyCredentials = ProxyCredentials(
                 username: creds.username,
                 password: creds.password
             )
@@ -91,7 +91,7 @@ class NetworkService {
     // MARK: - Server Config API (using KaliumNetwork)
 
     /// Fetches server configuration from a JSON config URL using KaliumNetwork
-    func fetchServerConfig(configUrl: String) async throws -> ServerConfigDTO.Links {
+    func fetchServerConfig(configUrl: String) async throws -> ServerConfig.ServerConfigLinks {
         let unboundContainer = UnboundNetworkContainerCommon(
             userAgent: "WireIOSExperiment/1.0",
             ignoreSSLCertificates: false,
@@ -114,9 +114,9 @@ class NetworkService {
                     return
                 }
 
-                if let successResponse = response as? NetworkResponseSuccess<ServerConfigDTO.Links> {
+                if let successResponse = response as? NetworkResponseNetworkResponseSuccess<ServerConfig.ServerConfigLinks> {
                     continuation.resume(returning: successResponse.value)
-                } else if let errorResponse = response as? NetworkResponseError {
+                } else if let errorResponse = response as? NetworkResponseNetworkResponseError {
                     continuation.resume(throwing: NetworkError.kaliumError(errorResponse.kException))
                 } else {
                     continuation.resume(throwing: NetworkError.decodingError("Unknown response type"))
@@ -131,16 +131,16 @@ class NetworkService {
     func login(
         email: String,
         password: String,
-        serverConfigLinks: ServerConfigDTO.Links
+        serverConfigLinks: ServerConfig.ServerConfigLinks
     ) async throws -> LoginResult {
         // First, fetch the API version to get metadata
         let metaData = try await fetchApiVersion(baseUrl: serverConfigLinks.api)
 
-        // Create the full ServerConfigDTO required for login
-        let serverConfigDTO = ServerConfigDTO(
+        // Create the full ServerConfig required for login
+        let serverConfigDTO = ServerConfig(
             id: UUID().uuidString,
             links: serverConfigLinks,
-            metaData: metaData
+            metadata: metaData
         )
 
         // Create the unauthenticated network container
@@ -174,7 +174,7 @@ class NetworkService {
                     return
                 }
 
-                if let successResponse = response as? NetworkResponseSuccess<KotlinPair<SessionDTO, SelfUserDTO>> {
+                if let successResponse = response as? NetworkResponseNetworkResponseSuccess<KotlinPair<Session, SelfUser>> {
                     let pair = successResponse.value
                     guard let session = pair.first, let selfUser = pair.second else {
                         continuation.resume(throwing: NetworkError.missingData("Missing session or user data"))
@@ -189,7 +189,7 @@ class NetworkService {
                     )
                     continuation.resume(returning: result)
 
-                } else if let errorResponse = response as? NetworkResponseError {
+                } else if let errorResponse = response as? NetworkResponseNetworkResponseError {
                     let exception = errorResponse.kException
                     let rawJson = exception.description()
                     continuation.resume(throwing: NetworkError.httpError(
@@ -206,7 +206,7 @@ class NetworkService {
 
     // MARK: - Version API (using KaliumNetwork)
 
-    private func fetchApiVersion(baseUrl: String) async throws -> ServerConfigDTO.MetaData {
+    private func fetchApiVersion(baseUrl: String) async throws -> ServerConfig.ServerConfigMetadata {
         let unboundContainer = UnboundNetworkContainerCommon(
             userAgent: "WireIOSExperiment/1.0",
             ignoreSSLCertificates: false,
@@ -229,9 +229,9 @@ class NetworkService {
                     return
                 }
 
-                if let successResponse = response as? NetworkResponseSuccess<ServerConfigDTO.MetaData> {
+                if let successResponse = response as? NetworkResponseNetworkResponseSuccess<ServerConfig.ServerConfigMetadata> {
                     continuation.resume(returning: successResponse.value)
-                } else if let errorResponse = response as? NetworkResponseError {
+                } else if let errorResponse = response as? NetworkResponseNetworkResponseError {
                     continuation.resume(throwing: NetworkError.kaliumError(errorResponse.kException))
                 } else {
                     continuation.resume(throwing: NetworkError.decodingError("Unknown response type"))
@@ -242,7 +242,7 @@ class NetworkService {
 
     // MARK: - Helper Methods
 
-    private func formatSessionAsJson(_ session: SessionDTO) -> String {
+    private func formatSessionAsJson(_ session: Session) -> String {
         return """
         {
           "user_id": {
@@ -257,7 +257,7 @@ class NetworkService {
         """
     }
 
-    private func formatSelfUserAsJson(_ user: SelfUserDTO) -> String {
+    private func formatSelfUserAsJson(_ user: SelfUser) -> String {
         return """
         {
           "id": "\(user.id.value)",
