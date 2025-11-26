@@ -65,7 +65,6 @@ object FeatureConfigTest {
             status = Status.ENABLED,
         ),
         appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
-        chatBubblesConfigModel: ChatBubblesConfigModel? = ChatBubblesConfigModel(Status.ENABLED),
         enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel? = EnableUserProfileQRCodeConfigModel(
             status = Status.ENABLED,
         ),
@@ -94,7 +93,6 @@ object FeatureConfigTest {
         allowedGlobalOperationsModel,
         cellsConfigModel,
         appsModel,
-        chatBubblesConfigModel,
         enableUserProfileQRCodeConfigModel,
         assetAuditLogConfigModel,
     )
