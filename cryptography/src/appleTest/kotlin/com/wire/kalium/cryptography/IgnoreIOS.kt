@@ -18,4 +18,6 @@
 
 package com.wire.kalium.cryptography
 
-actual annotation class IgnoreIOS
+import kotlin.test.Ignore
+
+actual typealias IgnoreIOS = Ignore
