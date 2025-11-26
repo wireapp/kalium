@@ -32,7 +32,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExtractFilesParam
-import com.wire.kalium.logic.util.CustomAnnotaion
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
@@ -60,7 +60,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@CustomAnnotaion // TODO re-enable when BackupUtils is implemented on Darwin
+@IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateBackupUseCaseTest {
 
