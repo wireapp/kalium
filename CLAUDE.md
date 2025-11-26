@@ -78,7 +78,7 @@ java -jar cli/build/libs/cli.jar login --email <email> --password <password> lis
 
 ### Native Libraries
 
-Native libraries (libsodium, cryptobox-c, cryptobox4j) are required for cryptography operations. On macOS 12:
+Native libraries (AVS) are required. On macOS 12:
 
 ```bash
 # Build from source
