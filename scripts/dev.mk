@@ -22,7 +22,7 @@ db/verify-all-migrations:
 	do \
 		rm persistence/src/commonMain/db_user/migrations/$$i.sqm; \
 	done
-	./gradlew :persistence:verifySqlDelightMigration
+	./gradlew :persistence:verifySqlDelightMigration --info --stacktrace
 
 # detekt
 detekt/run-verify:
