@@ -25,6 +25,8 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Verify DB Migrations
+        env:
+          GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g"
         run: |
           make db/verify-all-migrations
 
