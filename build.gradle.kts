@@ -139,6 +139,8 @@ moduleGraphConfig {
     heading.set("#### Dependency Graph")
     nestingEnabled.set(true)
     rootModulesRegex.set(":logic")
+    setStyleByModuleType.set(true)
+    showFullPath.set(true)
 }
 
 tasks.register("runAllUnitTests") {

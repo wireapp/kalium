@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.plugins
 
-enum class FrequentModules(val projectName: String) {
-    COMMON("core:common"),
-    DATA("core:data"),
-    LOGGER("core:logger"),
-    UTIL("core:util"),
+@Suppress("DSL_SCOPE_VIOLATION")
+plugins {
+    alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
+}
+
+kaliumLibrary {
+    multiplatform()
+}
+
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                api(projects.core.logger)
+
+                implementation(libs.coroutines.core)
+            }
+        }
+    }
 }

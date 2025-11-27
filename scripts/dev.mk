@@ -1,7 +1,7 @@
 # dev related targets, ie: sql migrations, detekt, etc.
 # sql delight
 db/verify-global-migration:
-	./gradlew :persistence:verifyCommonMainGlobalDatabaseMigration
+	./gradlew :data:persistence:verifyCommonMainGlobalDatabaseMigration
 
 # the delete of 2.db and the migrations files from 1 -> 33 is a workaround for the following issue:
 # https://github.com/cashapp/sqldelight/issues/4154
@@ -9,20 +9,20 @@ db/verify-global-migration:
 # it result to false nigaive when validating the migration
 # and need to be reverted as soon as https://github.com/cashapp/sqldelight/issues/4154 is fixed
 db/verify-user-migration:
-	rm persistence/src/commonMain/db_user/schemas/2.db
+	rm data/persistence/src/commonMain/db_user/schemas/2.db
 	for i in {1..33}; \
 	do \
-		rm persistence/src/commonMain/db_user/migrations/$$i.sqm; \
+		rm data/persistence/src/commonMain/db_user/migrations/$$i.sqm; \
 	done
-	./gradlew :persistence:verifyCommonMainUserDatabaseMigration
+	./gradlew :data:persistence:verifyCommonMainUserDatabaseMigration
 
 db/verify-all-migrations:
-	rm persistence/src/commonMain/db_user/schemas/2.db
+	rm data/persistence/src/commonMain/db_user/schemas/2.db
 	for i in {1..33}; \
 	do \
-		rm persistence/src/commonMain/db_user/migrations/$$i.sqm; \
+		rm data/persistence/src/commonMain/db_user/migrations/$$i.sqm; \
 	done
-	./gradlew :persistence:verifySqlDelightMigration
+	./gradlew :data:persistence:verifySqlDelightMigration
 
 # detekt
 detekt/run-verify:

@@ -1,0 +1,82 @@
+pipeline {
+    agent { label 'webapp_node170' }
+    parameters { 
+        booleanParam(name: 'clean', defaultValue: false, description: 'Build everything clean including libsodium and cryptobox (takes long)')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build crypto libraries') {
+            when { expression { 
+                   return params.clean
+                }
+            }
+            steps {
+                withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
+                    sh 'PATH=$HOME/.cargo/bin:$PATH make'
+                    sh 'sudo cp $WORKSPACE/native/libs/lib* /usr/lib/'
+                    sh './gradlew clean'
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                withMaven(jdk: 'JDK17', maven: 'M3', mavenLocalRepo: '.repository') {
+                    withCredentials([usernamePassword(credentialsId: 'READ_PACKAGES_GITHUB_TOKEN', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
+                        sh './gradlew :tools:testservice:shadowJar'
+                    }
+                }
+            }
+        }
+        stage('Deploy on Linux') {
+            when {
+                expression { return sh(returnStdout: true, script: 'uname -s').contains('Linux') }
+            }
+            steps {
+                ansiblePlaybook(
+                    credentialsId: 'callingservice_debian',
+                    disableHostKeyChecking: true,
+                    forks: 2,
+                    inventory: 'ansible/hosts.ini',
+                    playbook: 'ansible/site.yml',
+                    extras: '-verbose'
+                )
+            }
+        }
+        stage('Deploy on macOS') {
+            when {
+                expression { return sh(returnStdout: true, script: 'uname -s').contains('Darwin') }
+            }
+            steps {
+                sh "echo 'macOS'"
+            }
+        }
+        stage('Test') {
+            steps {
+                build job: 'kalium-testservice-smoke-test', wait: false
+            }
+        }
+    }
+
+    post {
+        success {
+            node( 'built-in' ) {
+                withCredentials([ string( credentialsId: 'JENKINSBOT_ETS', variable: 'jenkinsbot_secret' ) ]) {
+                    wireSend secret: "$jenkinsbot_secret", message: "✅ ${JOB_NAME} #${BUILD_ID} succeeded\n**New version of kalium testservice deployed**"
+                }
+            }
+        }
+
+        failure {
+            node( 'built-in' ) {
+                withCredentials([ string( credentialsId: 'JENKINSBOT_ETS', variable: 'jenkinsbot_secret' ) ]) {
+                    wireSend secret: "$jenkinsbot_secret", message: "❌ ${JOB_NAME} #${BUILD_ID} failed\n${BUILD_URL}console"
+                }
+            }
+        }
+    }
+}
