@@ -35,7 +35,7 @@ jobs:
             GITHUB_USER: ${{ github.actor }}
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            ./gradlew :samples:compileKotlinIosX64
+            ./gradlew :sample:samples:compileKotlinIosX64
 
       - name: iOS Tests
         run: ./gradlew iOSOnlyAffectedTest
@@ -81,7 +81,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@v6.0.0
         continue-on-error: true
         with:
             name: test-results

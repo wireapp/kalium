@@ -166,7 +166,7 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.isGroupOutOfSync(
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(
                 any(),
                 eq(TestSubConversationDetails.groupId),
                 eq(TestSubConversationDetails.epoch)

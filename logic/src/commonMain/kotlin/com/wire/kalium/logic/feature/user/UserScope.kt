@@ -55,8 +55,6 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
-import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCase
-import com.wire.kalium.logic.feature.client.IsChatBubblesEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
@@ -294,11 +292,6 @@ class UserScope internal constructor(
     val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
         get() = IsWireCellsEnabledForConversationUseCaseImpl(
             conversationRepository = conversationRepository
-        )
-
-    val isChatBubblesEnabled: IsChatBubblesEnabledUseCase
-        get() = IsChatBubblesEnabledUseCaseImpl(
-            userConfigRepository = userConfigRepository
         )
 
     val isProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase

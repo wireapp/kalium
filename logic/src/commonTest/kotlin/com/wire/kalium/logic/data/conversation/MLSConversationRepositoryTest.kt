@@ -37,6 +37,8 @@ import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.MockProtocolInfo
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
@@ -44,6 +46,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.KEY_PACKAGE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.MLS_CLIENT_MISMATCH_ERROR
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.MLS_PUBLIC_KEY
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_CAUSE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WELCOME_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
@@ -92,6 +95,7 @@ import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.times
 import io.mockative.twice
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -455,7 +459,12 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldSucceed()
 
         coVerify {
@@ -471,7 +480,12 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldSucceed()
 
         coVerify {
@@ -487,12 +501,82 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberThrowing(MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldSucceed()
 
         coVerify {
             arrangement.mlsContext.addMember(any(), any())
         }.wasInvoked(twice)
+    }
+
+    @Test
+    fun givenGroupOutOfSyncError_whenCallingAddMemberToMLSGroup_thenAddMissingMembersAndRetry() = runTest {
+        val missingUsers = listOf(TestUser.OTHER_USER_ID)
+        val groupOutOfSyncError = CommonizedMLSException(
+            MLSFailure.MessageRejected(
+                NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(missingUsers)
+            ), TEST_CAUSE
+        )
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withGetConversationByGroupID(
+                MockConversation.entity().copy(protocolInfo = MockProtocolInfo.mlsEntity())
+            )
+            .withClaimKeyPackagesSuccessful()
+            .withAddMLSMemberThrowing(groupOutOfSyncError, times = 1)
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.mlsContext.addMember(any(), any())
+            // 3 times:
+            //      - The original attempt
+            //      - The adding of missing users
+            //      - The retry of the original attempt
+        }.wasInvoked(3.times)
+    }
+
+    @Test
+    fun givenPersistentGroupOutOfSyncError_whenCallingRemoveMemberFromMLSGroup_thenShouldGiveUpAfter2Tries() = runTest {
+        val missingUsers = listOf(TestUser.OTHER_USER_ID)
+        val groupOutOfSyncError = CommonizedMLSException(
+            MLSFailure.MessageRejected(
+                NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(missingUsers)
+            ), TEST_CAUSE
+        )
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withGetConversationByGroupID(
+                MockConversation.entity().copy(protocolInfo = MockProtocolInfo.mlsEntity())
+            )
+            .withClaimKeyPackagesSuccessful()
+            .withAddMLSMemberThrowing(groupOutOfSyncError)
+            .withMembers(listOf(CRYPTO_CLIENT_ID))
+            .withRemoveMemberThrowing(groupOutOfSyncError)
+            .arrange()
+
+        val result = mlsConversationRepository.removeClientsFromMLSGroup(
+            arrangement.mlsContext, Arrangement.GROUP_ID, listOf(
+                QualifiedClientID(ClientId(CRYPTO_CLIENT_ID.value), UserId(CRYPTO_CLIENT_ID.userId.value, CRYPTO_CLIENT_ID.userId.domain))
+            )
+        )
+        result.shouldFail()
+
+        coVerify {
+            arrangement.mlsContext.addMember(any(), any())
+        }.wasInvoked(2.times)
     }
 
     @Test
@@ -504,7 +588,12 @@ class MLSConversationRepositoryTest {
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldFail()
     }
 
@@ -517,7 +606,12 @@ class MLSConversationRepositoryTest {
             .withClearProposalTimerSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.addMemberToMLSGroup(arrangement.mlsContext, Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1), CIPHER_SUITE)
+        val result = mlsConversationRepository.addMemberToMLSGroup(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_ID1),
+            CIPHER_SUITE
+        )
         result.shouldFail()
     }
 
@@ -570,7 +664,11 @@ class MLSConversationRepositoryTest {
             .withJoinByExternalCommitThrowing(Arrangement.INVALID_REQUEST_ERROR)
             .arrange()
 
-        val result = mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+        val result = mlsConversationRepository.joinGroupByExternalCommit(
+            arrangement.mlsContext,
+            Arrangement.GROUP_ID,
+            Arrangement.PUBLIC_GROUP_STATE
+        )
         result.shouldFail()
     }
 
@@ -899,7 +997,7 @@ class MLSConversationRepositoryTest {
             .withGetGroupEpochReturn(returnEpoch)
             .arrange()
 
-        val result = mlsConversationRepository.isGroupOutOfSync(arrangement.mlsContext, Arrangement.GROUP_ID, conversationEpoch)
+        val result = mlsConversationRepository.isLocalGroupEpochStale(arrangement.mlsContext, Arrangement.GROUP_ID, conversationEpoch)
         result.shouldSucceed()
 
         coVerify {
@@ -1403,6 +1501,11 @@ class MLSConversationRepositoryTest {
         suspend fun withClearProposalTimerSuccessful() = apply {
             coEvery { conversationDAO.clearProposalTimer(any()) }
                 .returns(Unit)
+        }
+
+        suspend fun withGetConversationByGroupID(conversationEntity: ConversationEntity) = apply {
+            coEvery { conversationDAO.getConversationByGroupID(any()) }
+                .returns(conversationEntity)
         }
 
         suspend fun withClaimKeyPackagesSuccessful(
