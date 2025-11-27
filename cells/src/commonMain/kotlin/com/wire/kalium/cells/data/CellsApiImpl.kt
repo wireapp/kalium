@@ -19,6 +19,7 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
+import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
@@ -44,6 +45,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdate
 import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdateOp
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeUpdates
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
@@ -386,6 +388,18 @@ internal class CellsApiImpl(
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
         nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA)
     }.mapSuccess { it.propertyValues ?: emptyList() }
+
+    override suspend fun getNodeVersions(
+        uuid: String,
+        query: RestNodeVersionsFilter
+    ): NetworkResponse<List<NodeVersionDTO>> = wrapCellsResponse {
+        nodeServiceApi.nodeVersions(
+            uuid = uuid,
+            query = query
+        )
+    }.mapSuccess { collection ->
+        collection.versions?.map { it.toDto() } ?: emptyList()
+    }
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))

@@ -19,22 +19,16 @@ package com.wire.kalium.cells.domain
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
+import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.network.utils.NetworkResponse
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
-    suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
-    suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
-    suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit>
-    suspend fun delete(nodeUuid: String, permanentDelete: Boolean = false): NetworkResponse<Unit>
     suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO>
-    suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
-    suspend fun delete(paths: List<String>, permanentDelete: Boolean = false): NetworkResponse<Unit>
-    suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
-    suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink>
     suspend fun getNodesForPath(
         path: String,
         limit: Int? = null,
@@ -44,7 +38,25 @@ internal interface CellsApi {
         tags: List<String> = emptyList()
     ): NetworkResponse<GetNodesResponseDTO>
 
+    suspend fun getAllTags(): NetworkResponse<List<String>>
+    suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink>
+    suspend fun getNodeVersions(
+        uuid: String,
+        query: RestNodeVersionsFilter = RestNodeVersionsFilter()
+    ): NetworkResponse<List<NodeVersionDTO>>
+
+    suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
+    suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit>
+    suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit>
+    suspend fun delete(nodeUuid: String, permanentDelete: Boolean = false): NetworkResponse<Unit>
+    suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink>
+    suspend fun delete(paths: List<String>, permanentDelete: Boolean = false): NetworkResponse<Unit>
+    suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
+
     suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO>
+    suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
+    suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
+    suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit>
     suspend fun moveNode(
         uuid: String,
         path: String,
@@ -56,11 +68,8 @@ internal interface CellsApi {
         path: String,
         targetPath: String,
     ): NetworkResponse<Unit>
+
     suspend fun restoreNode(uuid: String): NetworkResponse<Unit>
-    suspend fun getAllTags(): NetworkResponse<List<String>>
-    suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit>
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
-    suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
-    suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
 }
