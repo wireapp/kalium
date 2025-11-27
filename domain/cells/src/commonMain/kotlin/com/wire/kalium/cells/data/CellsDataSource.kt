@@ -296,4 +296,8 @@ internal class CellsDataSource internal constructor(
     override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?) = wrapApiRequest {
         cellsApi.setPublicLinkExpiration(linkUuid, expiresAt)
     }
+
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
+        cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
+    }
 }
