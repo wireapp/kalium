@@ -113,6 +113,8 @@ internal fun RestNode.toDto() = CellNodeDTO(
     publicLinkId = shares?.firstOrNull()?.uuid,
 )
 
+internal fun RestNode.editorUrl(urlKey: String): String? = this.editorURLs?.get(urlKey)?.url
+
 private fun List<RestFilePreview>?.toDto() = when {
     isNullOrEmpty() -> null
     all { it.error == true } -> null
