@@ -14,15 +14,19 @@ jobs:
     uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     needs: [detekt]
-    runs-on: ubuntu-latest
+    runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
+      - name: Set up JDK
+        uses: buildjet/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
       - name: Verify DB Migrations
         env:
