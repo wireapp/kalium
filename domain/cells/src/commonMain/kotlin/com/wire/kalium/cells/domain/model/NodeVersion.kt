@@ -17,9 +17,6 @@
  */
 package com.wire.kalium.cells.domain.model
 
-import com.wire.kalium.cells.domain.model.FilePreview
-import com.wire.kalium.cells.domain.model.PreSignedUrl
-
 public data class NodeVersion(
     val id: String,
     val hash: String?,

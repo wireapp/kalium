@@ -296,7 +296,7 @@ internal class CellsDataSource internal constructor(
 
     override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection ->  collection.map { it.toModel() } }
+            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection -> collection.map { it.toModel() } }
         }
     }
 }
