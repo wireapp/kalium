@@ -115,6 +115,7 @@ data object ConversationDetailsWithEventsMapper {
         lastMessageIsQuotingSelfUser: Boolean?,
         lastMessageText: String?,
         lastMessageAssetMimeType: String?,
+        lastMessageAttachmentsCount: Long?,
     ): ConversationDetailsWithEventsEntity = ConversationDetailsWithEventsEntity(
         conversationViewEntity = ConversationMapper.fromViewToModel(
             qualifiedId = qualifiedId,
@@ -207,6 +208,7 @@ data object ConversationDetailsWithEventsMapper {
                 isQuotingSelfUser = lastMessageIsQuotingSelfUser,
                 text = lastMessageText,
                 assetMimeType = lastMessageAssetMimeType,
+                lastMessageAttachmentsCount = lastMessageAttachmentsCount,
                 isUnread = lastMessageDate > lastReadDate,
                 isNotified = if (lastNotifiedMessageDate?.let { lastMessageDate > it } ?: false) 1 else 0,
                 mutedStatus = mutedStatus,

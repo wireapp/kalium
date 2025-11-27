@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
-import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
@@ -63,7 +62,6 @@ internal class MessageDAOImpl internal constructor(
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
-    private val messagePreviewQueries: MessagePreviewQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val userQueries: UsersQueries,
@@ -430,12 +428,6 @@ internal class MessageDAOImpl internal constructor(
     ): Unit = withContext(writeDispatcher.value) {
         queries.updateMessageLegalHoldContentMembers(newMembers, messageId, conversationId)
     }
-
-    override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-        messagePreviewQueries.getLastMessages(mapper::toPreviewEntity)
-            .asFlow()
-            .flowOn(readDispatcher.value)
-            .mapToList()
 
     override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
         return unreadEventsQueries.getConversationsUnreadEventCountsGrouped(unreadEventMapper::toConversationUnreadEntity)

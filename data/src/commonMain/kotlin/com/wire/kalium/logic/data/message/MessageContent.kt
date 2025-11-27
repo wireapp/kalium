@@ -515,7 +515,7 @@ sealed interface MessagePreviewContent {
 
         data class Composite(override val username: String?, val messageBody: String?) : WithUser
 
-        data class Asset(override val username: String?, val type: AssetType) : WithUser
+        data class Asset(override val username: String?, val type: AssetType, val count: Int) : WithUser
 
         data class MentionedSelf(override val username: String?) : WithUser
 

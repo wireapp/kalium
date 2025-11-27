@@ -102,7 +102,6 @@ interface MessageDAO {
     suspend fun updateLegalHoldMessageMembers(conversationId: QualifiedIDEntity, messageId: String, newMembers: List<QualifiedIDEntity>)
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
-    suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>>
     suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>>
