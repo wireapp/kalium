@@ -130,6 +130,6 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     private companion object {
-        val IGNORED_MODULES = listOf(":android", ":protobuf", ":protobuf-codegen")
+        val IGNORED_MODULES = listOf(":data:protobuf", ":tools:protobuf-codegen")
     }
 }

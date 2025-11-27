@@ -15,11 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.plugins
+plugins {
+    kotlin("jvm")
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.compose.jetbrains)
+}
 
-enum class FrequentModules(val projectName: String) {
-    COMMON("core:common"),
-    DATA("core:data"),
-    LOGGER("core:logger"),
-    UTIL("core:util"),
+dependencies {
+    implementation(projects.domain.backup)
+    implementation(compose.desktop.currentOs)
+    implementation(compose.materialIconsExtended)
+    implementation(kotlin("reflect"))
+    implementation(libs.compose.fileKit.core)
+    implementation(libs.compose.fileKit.compose)
+    implementation(libs.coroutines.core)
+    implementation(libs.ktxSerialization)
+}
+
+compose.desktop {
+    application {
+        mainClass = "MainKt"
+        nativeDistributions {
+            linux {
+                modules("jdk.security.auth")
+            }
+        }
+    }
 }
