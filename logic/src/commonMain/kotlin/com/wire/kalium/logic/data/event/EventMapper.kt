@@ -576,11 +576,6 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.EnableUserProfileQRCode)
         )
 
-        is FeatureConfigData.ChatBubbles -> Event.FeatureConfig.ChatBubblesConfigUpdated(
-            id,
-            (featureConfigUpdatedDTO.data as FeatureConfigData.ChatBubbles).toModel()
-        )
-
         is FeatureConfigData.AssetAuditLog -> Event.FeatureConfig.AssetAuditLogConfigUpdated(
             id,
             (featureConfigUpdatedDTO.data as FeatureConfigData.AssetAuditLog).toModel()

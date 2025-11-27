@@ -65,6 +65,7 @@ public sealed class Node {
         val metadata: AssetMetadata? = null,
         val publicLinkId: String? = null,
         override val tags: List<String> = emptyList(),
+        val isEditSupported: Boolean = false,
     ) : Node()
 }
 

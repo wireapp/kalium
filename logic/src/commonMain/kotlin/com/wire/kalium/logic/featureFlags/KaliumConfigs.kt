@@ -52,6 +52,8 @@ data class KaliumConfigs(
     val maxRemoteSearchResultCount: Int = 30,
     val enableCalling: Boolean = true,
     val isMlsResetEnabled: Boolean = false,
+    val securePublicLinkSettings: Boolean = false,
+    val collaboraIntegration: Boolean = false,
 )
 
 sealed interface BuildFileRestrictionState {

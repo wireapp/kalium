@@ -67,8 +67,6 @@ data class FeatureConfigResponse(
     val cells: FeatureConfigData.Cells?,
     @SerialName("apps")
     val apps: FeatureConfigData.Apps?,
-    @SerialName("chatBubbles")
-    val chatBubbles: FeatureConfigData.ChatBubbles?,
     @SerialName("simplifiedUserConnectionRequestQRCode")
     val enableUserProfileQRCode: FeatureConfigData.EnableUserProfileQRCode?,
     @SerialName("assetAuditLog")
@@ -335,13 +333,6 @@ sealed class FeatureConfigData {
     @SerialName("apps")
     @Serializable
     data class Apps(
-        @SerialName("status")
-        val status: FeatureFlagStatusDTO
-    ) : FeatureConfigData()
-
-    @SerialName("chatBubbles")
-    @Serializable
-    data class ChatBubbles(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
