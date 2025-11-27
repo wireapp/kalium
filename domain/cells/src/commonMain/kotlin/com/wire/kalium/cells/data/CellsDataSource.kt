@@ -303,4 +303,8 @@ internal class CellsDataSource internal constructor(
             cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection -> collection.map { it.toModel() } }
         }
     }
+
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
+        cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
+    }
 }
