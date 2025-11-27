@@ -49,7 +49,7 @@ import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

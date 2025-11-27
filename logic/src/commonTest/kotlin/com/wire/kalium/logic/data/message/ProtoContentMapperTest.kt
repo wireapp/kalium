@@ -34,7 +34,6 @@ import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.Text
-import io.ktor.utils.io.core.toByteArray
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -92,7 +91,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenProtoAssetContentWithStatusNotUploaded_whenMappingBackFromProtoData_thenTheDecodingGoesCorrectly() {
         val assetName = "Mocked-Asset.bin"
-        val mockedAsset = assetName.toByteArray()
+        val mockedAsset = assetName.encodeToByteArray()
         val protobuf = GenericMessage(
             messageId = TEST_MESSAGE_UUID,
             content = GenericMessage.Content.Asset(
@@ -113,7 +112,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenProtoAssetContent_whenMappingBack_thenTheContentsShouldMatchTheOriginal() {
         val assetName = "Mocked-Asset.bin"
-        val mockedAsset = assetName.toByteArray()
+        val mockedAsset = assetName.encodeToByteArray()
         val defaultRemoteData = AssetContent.RemoteData(
             otrKey = ByteArray(0),
             sha256 = ByteArray(0),
@@ -477,7 +476,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenExpiringAssetContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val assetName = "Mocked-Asset.bin"
-        val mockedAsset = assetName.toByteArray()
+        val mockedAsset = assetName.encodeToByteArray()
         val defaultRemoteData = AssetContent.RemoteData(
             otrKey = ByteArray(0),
             sha256 = ByteArray(0),

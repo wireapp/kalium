@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.framework.TestUser
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq

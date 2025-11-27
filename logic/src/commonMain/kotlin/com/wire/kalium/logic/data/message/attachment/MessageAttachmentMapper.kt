@@ -92,6 +92,7 @@ fun MessageAttachmentEntity.toModel() =
             transferStatus = AssetTransferStatus.valueOf(assetTransferStatus),
             contentHash = contentHash?.takeIf { it.isNotEmpty() },
             contentUrl = contentUrl?.takeIf { it.isNotEmpty() },
+            contentUrlExpiresAt = contentExpiresAt,
         )
     } else {
         // TODO: implement support for regular assets WPB-16590

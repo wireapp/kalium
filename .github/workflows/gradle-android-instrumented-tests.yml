@@ -57,7 +57,7 @@ jobs:
 
       - name: Build the samples
         run: |
-          ./gradlew :samples:compileDebugSources
+          ./gradlew :sample:samples:compileDebugSources
 
         # API 30+ emulators only have x86_64 system images.
       - name: Get AVD info
@@ -125,7 +125,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@v6.0.0
         continue-on-error: true
         with:
           name: test-results

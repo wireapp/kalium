@@ -46,7 +46,7 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

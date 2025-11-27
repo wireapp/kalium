@@ -101,7 +101,7 @@ interface E2EIRepository {
 }
 
 @Suppress("LongParameterList")
-class E2EIRepositoryImpl(
+internal class E2EIRepositoryImpl(
     private val e2EIApi: E2EIApi,
     private val acmeApi: ACMEApi,
     private val e2EIClientProvider: E2EIClientProvider,

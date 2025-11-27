@@ -28,5 +28,5 @@ import io.ktor.utils.io.core.toByteArray
  */
 object Base64 {
     fun encodeToBase64(originalString: ByteArray): ByteArray = originalString.encodeBase64().toByteArray()
-    fun decodeFromBase64(encoded: ByteArray): ByteArray = encoded.decodeToString().decodeBase64Bytes()
+    fun decodeFromBase64(encoded: String): ByteArray = encoded.decodeBase64Bytes()
 }
