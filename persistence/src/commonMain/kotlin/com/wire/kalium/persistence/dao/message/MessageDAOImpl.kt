@@ -431,12 +431,6 @@ internal class MessageDAOImpl internal constructor(
         queries.updateMessageLegalHoldContentMembers(newMembers, messageId, conversationId)
     }
 
-    override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-        messagePreviewQueries.getLastMessages(mapper::toPreviewEntity)
-            .asFlow()
-            .flowOn(readDispatcher.value)
-            .mapToList()
-
     override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
         return unreadEventsQueries.getConversationsUnreadEventCountsGrouped(unreadEventMapper::toConversationUnreadEntity)
             .asFlow()

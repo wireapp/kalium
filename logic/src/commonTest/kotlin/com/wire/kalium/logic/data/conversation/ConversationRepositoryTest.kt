@@ -445,7 +445,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
-            .withLastMessages(listOf(messagePreviewEntity))
             .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
             .withMessageDrafts(listOf())
             .arrange()
@@ -488,7 +487,6 @@ class ConversationRepositoryTest {
 
             val (_, conversationRepository) = Arrangement()
                 .withConversations(listOf(conversationEntity))
-                .withLastMessages(listOf(MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)))
                 .withMessageDrafts(listOf())
                 .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
                 .arrange()
@@ -582,7 +580,6 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
-            .withLastMessages(listOf())
             .withMessageDrafts(listOf())
             .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
             .arrange()
@@ -1266,12 +1263,6 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.getAllConversationDetails(any(), any())
             }.returns(flowOf(conversations))
-        }
-
-        suspend fun withLastMessages(messages: List<MessagePreviewEntity>) = apply {
-            coEvery {
-                messageDAO.observeLastMessages()
-            }.returns(flowOf(messages))
         }
 
         suspend fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {

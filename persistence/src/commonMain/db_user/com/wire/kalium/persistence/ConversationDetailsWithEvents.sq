@@ -28,6 +28,8 @@ SELECT
     MessageDraft.edit_message_id AS messageDraftEditMessageId,
     MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
     MessageDraft.mention_list AS messageDraftMentionList,
+    DraftAttachments.mime_type AS messageDraftAttachmentMimeType,
+    IFNULL(CAST(DraftAttachments.attachments_count AS INTEGER), 0) AS messageDraftAttachmentsCount,
     -- last message
     Message.id AS lastMessageId,
     Message.content_type AS lastMessageContentType,
@@ -45,12 +47,24 @@ SELECT
     COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
     TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
     TextContent.text_body AS lastMessageText,
-    AssetContent.asset_mime_type AS lastMessageAssetMimeType
+    COALESCE(AssetContent.asset_mime_type, AttachmentsContent.asset_mime_type) AS lastMessageAssetMimeType,
+    AttachmentsContent.attachments_count AS lastMessageAttachmentsCount
 FROM ConversationDetails
 LEFT JOIN UnreadEventCountsGrouped
     ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
 LEFT JOIN MessageDraft
     ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
+LEFT JOIN (
+    SELECT
+        conversation_id,
+        CASE
+            WHEN COUNT(DISTINCT mime_type) = 1 THEN MIN(mime_type)
+            ELSE NULL
+        END AS mime_type,
+        COUNT(*) attachments_count
+    FROM MessageAttachmentDraft
+    GROUP BY conversation_id
+) AS DraftAttachments ON ConversationDetails.qualifiedId = DraftAttachments.conversation_id
 LEFT JOIN LastMessage
     ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
 LEFT JOIN Message
@@ -65,6 +79,18 @@ LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent
     ON LastMessage.message_id = ConversationNameChangedContent.message_id AND LastMessage.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent
     ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+LEFT JOIN (
+    SELECT
+        message_id,
+        conversation_id,
+        CASE
+            WHEN COUNT(DISTINCT asset_mime_type) = 1 THEN MIN(asset_mime_type)
+            ELSE NULL
+        END AS asset_mime_type,
+        COUNT(*) attachments_count
+    FROM MessageAttachments
+    GROUP BY message_id, conversation_id
+) AS AttachmentsContent ON LastMessage.message_id = AttachmentsContent.message_id AND LastMessage.conversation_id = AttachmentsContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE
