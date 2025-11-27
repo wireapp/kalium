@@ -35,20 +35,20 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(projects.common)
-                implementation(projects.network)
-                api(projects.data)
-                implementation(projects.dataMappers)
-                api(projects.networkUtil)
-                implementation(projects.cryptography)
-                implementation(projects.persistence)
-                implementation(projects.protobuf)
-                api(projects.logger)
-                api(projects.calling)
-                implementation(projects.util)
-                implementation(projects.cells)
-                implementation(projects.backup)
-                implementation(projects.messaging.sending)
+                api(projects.core.common)
+                implementation(projects.data.network)
+                api(projects.core.data)
+                implementation(projects.data.dataMappers)
+                api(projects.data.networkUtil)
+                implementation(projects.core.cryptography)
+                implementation(projects.data.persistence)
+                implementation(projects.data.protobuf)
+                api(projects.core.logger)
+                api(projects.domain.calling)
+                implementation(projects.core.util)
+                implementation(projects.domain.cells)
+                implementation(projects.domain.backup)
+                implementation(projects.domain.messaging.sending)
 
                 // coroutines
                 implementation(libs.coroutines.core)
@@ -75,9 +75,9 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(projects.common)
-                implementation(projects.persistenceTest)
-                implementation(projects.dataMocks)
+                implementation(projects.core.common)
+                implementation(projects.data.persistenceTest)
+                implementation(projects.test.dataMocks)
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
