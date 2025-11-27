@@ -23,14 +23,14 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Build XCFramework
-        run: ./gradlew :backup:assembleBackupReleaseXCFramework
+        run: ./gradlew :domain:backup:assembleBackupReleaseXCFramework
 
       - name: Create XCFramework Zip
-        working-directory: backup/build/XCFrameworks/release
+        working-directory: domain/backup/build/XCFrameworks/release
         run: zip -rXq KaliumBackup.xcframework.zip KaliumBackup.xcframework
 
       - name: Upload XCFramework (GH Releases)
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip
+            domain/backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip

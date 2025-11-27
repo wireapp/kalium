@@ -39,7 +39,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -83,7 +82,7 @@ class ProteusMessageUnpackerTest {
             CryptoClientId(messageEvent.senderClientId.value)
         )
 
-        val decodedByteArray = Base64.decodeFromBase64(messageEvent.content.toByteArray())
+        val decodedByteArray = Base64.decodeFromBase64(messageEvent.content)
         coVerify {
             arrangement.proteusContext.decryptMessage<Any>(eq(cryptoSessionId), matches { it.contentEquals(decodedByteArray) }, any())
         }.wasInvoked(exactly = once)

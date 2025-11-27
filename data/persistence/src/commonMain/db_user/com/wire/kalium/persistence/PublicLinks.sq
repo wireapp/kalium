@@ -1,0 +1,18 @@
+CREATE TABLE PublicLink (
+    id TEXT NOT NULL,
+    password TEXT NOT NULL,
+    PRIMARY KEY (id)
+);
+
+deleteLink:
+DELETE FROM PublicLink WHERE id = ?;
+
+insertLink:
+INSERT INTO PublicLink(id, password) VALUES(?, ?) ON CONFLICT(id) DO UPDATE SET password = excluded.password;
+
+
+updateLink:
+UPDATE PublicLink SET password = ? WHERE id = ?;
+
+getLink:
+SELECT * FROM PublicLink WHERE id = ?;

@@ -56,8 +56,6 @@ fun FeatureFlagStatusDTO.toModel(): Status =
         FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
     }
 
-fun FeatureConfigData.ChatBubbles.toModel() = ChatBubblesConfigModel(status.toModel())
-
 fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
 
 @Suppress("TooManyFunctions")
@@ -88,7 +86,6 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
-                chatBubblesModel = chatBubbles?.toModel(),
                 enableUserProfileQRCodeConfigModel = enableUserProfileQRCode?.let {
                     fromDTO(it)
                 },
