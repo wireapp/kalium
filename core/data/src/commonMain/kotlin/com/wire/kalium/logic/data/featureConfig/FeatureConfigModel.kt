@@ -47,7 +47,6 @@ data class FeatureConfigModel(
     val allowedGlobalOperationsModel: AllowedGlobalOperationsModel?,
     val cellsModel: CellsConfigModel?,
     val appsModel: ConfigsStatusModel?,
-    val chatBubblesModel: ChatBubblesConfigModel?,
     val enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel?,
     val assetAuditLogConfigModel: AssetAuditLogConfigModel?,
 )
@@ -169,12 +168,6 @@ data class CellsConfigModel(
 data class EnableUserProfileQRCodeConfigModel(
     @SerialName("status")
     val status: Status,
-)
-
-@Serializable
-data class ChatBubblesConfigModel(
-    @SerialName("status")
-    val status: Status
 )
 
 @Serializable
