@@ -247,6 +247,14 @@ class DebugScope internal constructor(
 
     val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
 
+    val debugFeedConversationUseCase
+        get(): DebugFeedConversationUseCase = DebugFeedConversationUseCaseImpl(
+            userStorage.database.messagesFeeder,
+            userStorage.database.reactionFeeder,
+            userStorage.database.unreadEventsFeeder,
+            userStorage.database.mentionsFeeder,
+        )
+
     val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
         get() = StartUsingAsyncNotificationsUseCaseImpl(selfServerConfig, updateSelfClientCapabilityToConsumableNotifications)
 
