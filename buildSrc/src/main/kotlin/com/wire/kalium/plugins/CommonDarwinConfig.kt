@@ -24,18 +24,14 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 fun Project.appleTargets(): List<String> =
     listOf(
-        "iosX64",
         "iosArm64",
         "iosSimulatorArm64",
-        "macosX64",
         "macosArm64"
     )
 
 fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
-    macosX64()
     macosArm64()
 
     targets

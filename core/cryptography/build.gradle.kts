@@ -1,3 +1,5 @@
+import com.wire.kalium.plugins.appleTargets
+
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -99,7 +101,7 @@ kotlin {
     }
 }
 
-listOf("iosArm64", "iosSimulatorArm64", "macosArm64").forEach {
+project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
 }
 
