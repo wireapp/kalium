@@ -80,11 +80,10 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
-          target: ${{ steps.avd-info.outputs.target }}
+          target: google_apis
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
-          disk-size: 10000M
           disable-animations: true
           script: ./gradlew connectedAndroidOnlyAffectedTest
 
