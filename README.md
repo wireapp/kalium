@@ -97,12 +97,6 @@ For running on arm64 mac
 ./cli/build/bin/macosArm64/debugExecutable/cli.kexe login
 ```
 
-For running on intel mac
-```
-./gradlew :sample:cli:macosX64Binaries
-./cli/build/bin/macosX64/debugExecutable/cli.kexe login
-```
-
 #### Detekt rules
 
 We use and try to maintain our codestyle uniformed, so apart from having our checks in place in our
