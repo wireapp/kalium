@@ -16,8 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.wire.kalium.plugins.appleTargets
-
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
@@ -29,21 +27,23 @@ plugins {
 kaliumLibrary {
     multiplatform {
         includeNativeInterop.set(true)
+        enableApple.set(false)
+        enableJs.set(false)
     }
 }
 
 kotlin {
-    iosX64 {
-        binaries.all {
-            linkerOpts("-framework", "Security")
-        }
-    }
     iosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
         }
     }
     iosSimulatorArm64 {
+        binaries.all {
+            linkerOpts("-framework", "Security")
+        }
+    }
+    macosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
         }
@@ -85,12 +85,6 @@ kotlin {
             }
         }
         val jvmTest by getting
-        val jsMain by getting {
-            dependencies {
-                implementation(npm("@wireapp/store-engine", "4.9.9"))
-            }
-        }
-        val jsTest by getting
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
@@ -105,7 +99,7 @@ kotlin {
     }
 }
 
-project.appleTargets().forEach {
+listOf("iosArm64", "iosSimulatorArm64", "macosArm64").forEach {
     registerCopyTestResourcesTask(it)
 }
 
