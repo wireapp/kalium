@@ -84,7 +84,7 @@ jobs:
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
-          disk-size: 8000M
+          disk-size: 10000M
           disable-animations: true
           script: ./gradlew connectedAndroidOnlyAffectedTest
 
