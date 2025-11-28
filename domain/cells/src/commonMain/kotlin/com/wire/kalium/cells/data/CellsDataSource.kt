@@ -292,4 +292,8 @@ internal class CellsDataSource internal constructor(
             publicLinkDao.delete(linkUuid)
         }
     }
+
+    override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?) = wrapApiRequest {
+        cellsApi.setPublicLinkExpiration(linkUuid, expiresAt)
+    }
 }

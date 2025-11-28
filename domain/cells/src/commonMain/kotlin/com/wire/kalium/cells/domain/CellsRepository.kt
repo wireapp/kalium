@@ -71,4 +71,5 @@ internal interface CellsRepository {
     suspend fun getPublicLinkPassword(linkUuid: String): Either<StorageFailure, String?>
     suspend fun savePublicLinkPassword(linkUuid: String, password: String)
     suspend fun clearPublicLinkPassword(linkUuid: String)
+    suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?): Either<NetworkFailure, Unit>
 }

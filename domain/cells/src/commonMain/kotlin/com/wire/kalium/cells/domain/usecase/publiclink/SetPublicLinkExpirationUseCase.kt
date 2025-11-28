@@ -20,22 +20,18 @@ package com.wire.kalium.cells.domain.usecase.publiclink
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onSuccess
 
 /**
- * Creates password for public link with given UUID.
- * Also saves password in local database.
+ * Update the expiration of a public link with the given [linkUuid].
+ * If [expiresAt] is null, the expiration will be removed.
  */
-public fun interface CreatePublicLinkPasswordUseCase {
-    public suspend operator fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit>
+public fun interface SetPublicLinkExpirationUseCase {
+    public suspend operator fun invoke(linkUuid: String, expiresAt: Long?): Either<CoreFailure, Unit>
 }
 
-internal class CreatePublicLinkPasswordUseCaseImpl(
+internal class SetPublicLinkExpirationUseCaseImpl(
     private val repository: CellsRepository
-) : CreatePublicLinkPasswordUseCase {
-    override suspend fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit> =
-        repository.createPublicLinkPassword(linkUuid, password)
-            .onSuccess {
-                repository.savePublicLinkPassword(linkUuid, password)
-            }
+) : SetPublicLinkExpirationUseCase {
+    override suspend fun invoke(linkUuid: String, expiresAt: Long?): Either<CoreFailure, Unit> =
+        repository.setPublicLinkExpiration(linkUuid, expiresAt)
 }
