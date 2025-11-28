@@ -74,8 +74,11 @@ jobs:
 
       - name: Free disk space
         run: |
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
+          echo "=== Initial disk usage ==="
+          df -h
+          rm -rf /usr/local/lib/android
+          rm -rf /usr/share/dotnet
+          echo "=== Final disk usage ==="
           df -h
 
       - name: Android Instrumentation Tests
@@ -90,9 +93,8 @@ jobs:
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
+          disk-size: 8000M
           disable-animations: true
-          internal-storage: 1200M
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ./gradlew connectedAndroidOnlyAffectedTest
 
       - name: Archive Test Reports
