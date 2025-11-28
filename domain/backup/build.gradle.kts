@@ -118,11 +118,7 @@ kotlin {
         val appleTest by getting {
             dependsOn(nonJsTest)
         }
-        val iosX64Main by getting {
-            dependencies {
-                implementation(libs.pbandk.runtime.iosX64)
-            }
-        }
+
         val iosArm64Main by getting {
             dependencies {
                 implementation(libs.pbandk.runtime.iosArm64)
@@ -131,11 +127,6 @@ kotlin {
         val iosSimulatorArm64Main by getting {
             dependencies {
                 implementation(libs.pbandk.runtime.iosSimulatorArm64)
-            }
-        }
-        val macosX64Main by getting {
-            dependencies {
-                implementation(libs.pbandk.runtime.macX64)
             }
         }
         val macosArm64Main by getting {
