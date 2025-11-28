@@ -90,7 +90,12 @@ kotlin {
                 implementation(libs.sqlite.xerialDriver)
             }
         }
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation("org.liquibase:liquibase-core:4.28.0")
+                implementation("org.xerial:sqlite-jdbc:3.42.0.0")  // Stable for Liquibase 4.28
+            }
+        }
         val jsMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jsDriver)
