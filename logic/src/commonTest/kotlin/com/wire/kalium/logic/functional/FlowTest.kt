@@ -29,11 +29,9 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class FlowTest {
 
-
     @Test
     fun givenAListOfItems_whenFlatMappingFromIterable_thenTheMappedResultsShouldBeEmitted() = runTest {
         val items = listOf(1, 2)
-
         val result = items.flatMapFromIterable { flowOf(it * 2) }
 
         result.test {
