@@ -24,6 +24,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      # trying https://github.com/actions/runner-images/issues/10386#issuecomment-2271613335
+      - name: Free Disk Space Before Build
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
@@ -80,7 +95,7 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
-          target: google_apis
+          target: ${{ steps.avd-info.outputs.target }}
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
