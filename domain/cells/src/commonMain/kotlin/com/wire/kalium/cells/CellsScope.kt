@@ -91,6 +91,8 @@ import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkPasswordUseC
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.SetPublicLinkExpirationUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.SetPublicLinkExpirationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
@@ -261,5 +263,9 @@ public class CellsScope(
 
     public val getPublicLinkPassword: GetPublicLinkPasswordUseCase by lazy {
         GetPublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val setPublicLinkExpiration: SetPublicLinkExpirationUseCase by lazy {
+        SetPublicLinkExpirationUseCaseImpl(cellsRepository)
     }
 }

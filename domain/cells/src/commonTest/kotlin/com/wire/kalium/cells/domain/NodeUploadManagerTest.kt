@@ -362,4 +362,5 @@ private class TestRepository : CellsRepository {
     override suspend fun getPublicLinkPassword(linkUuid: String): Either<StorageFailure, String?> = null.right()
     override suspend fun savePublicLinkPassword(linkUuid: String, password: String) {}
     override suspend fun clearPublicLinkPassword(linkUuid: String) {}
+    override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?) = Unit.right()
 }
