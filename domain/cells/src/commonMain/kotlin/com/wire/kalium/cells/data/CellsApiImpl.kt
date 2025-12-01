@@ -78,7 +78,7 @@ internal class CellsApiImpl(
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
         wrapCellsResponse {
-            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
+            nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
 
     override suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String> =
