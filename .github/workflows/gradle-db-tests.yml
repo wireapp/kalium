@@ -29,7 +29,22 @@ jobs:
         env:
           GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g"
         run: |
-          ./gradlew :data:persistence:jvmTest, --tests, com.wire.kalium.persistence.migrations.VerifyDatabaseMigrationsTest
+          ./gradlew :data:persistence:jvmTest --tests com.wire.kalium.persistence.migrations.VerifyDatabaseMigrationsTest
+
+      - name: Archive Test Results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results
+          path: |
+            ./**/build/*schema-dumps/**/*.json
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/linux@v2
+        if: ${{ always() }}
+        with:
+          files: |
+            **/build/*schema-dumps/**/*.json    
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
