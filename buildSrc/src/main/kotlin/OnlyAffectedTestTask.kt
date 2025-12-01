@@ -84,15 +84,14 @@ open class OnlyAffectedTestTask : DefaultTask() {
                 )
             }
 
-        runTargetTasks(tasksName)
+        tasksName.forEach(::runTargetTask)
     }
 
-    private fun runTargetTasks(targetTasks: List<String>) {
-        if (targetTasks.isEmpty()) return
-        println("\uD83D\uDD27 Running tests on: ${targetTasks.joinToString(", ")}")
+    private fun runTargetTask(targetTask: String) {
+        println("\uD83D\uDD27 Running tests on '$targetTask'.")
         val execOperations = services.get<ExecOperations>()
         execOperations.exec {
-            args(targetTasks)
+            args(targetTask)
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
