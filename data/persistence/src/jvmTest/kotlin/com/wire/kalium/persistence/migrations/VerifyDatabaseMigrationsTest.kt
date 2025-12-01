@@ -31,6 +31,8 @@ class VerifyDatabaseMigrationsTest {
 
     @Test
     fun verifyUserDatabaseMigrations() {
+        // given
+        // clean up and prepare base schema for derivation
         File("build/user-schema-dumps").deleteRecursively()
         File("src/commonMain/db_user/schemas/34.db")
             .copyTo(File(DatabaseSchemaSource.UserDatabaseDefaults.derivedSchemaDbPath), overwrite = true)
@@ -44,10 +46,13 @@ class VerifyDatabaseMigrationsTest {
         val freshDBSqlDump = freshDbDumper.dumpToJson()
         val derivedDBSqlDump = derivedDbDumper.dumpToJson()
 
+        // when
         val result = differenceOf(
             original = freshDBSqlDump.readLines(),
             updated = derivedDBSqlDump.readLines(),
         )
+        // then
+
         assertEquals(
             expected = true,
             actual = result.operations.isEmpty(),
@@ -58,6 +63,8 @@ class VerifyDatabaseMigrationsTest {
 
     @Test
     fun verifyGlobalDatabaseMigrations() {
+        // given
+        // clean up and prepare base schema for derivation
         File("build/global-schema-dumps").deleteRecursively()
         File("src/commonMain/db_global/schemas/5.db")
             .copyTo(File(DatabaseSchemaSource.GlobalDatabaseDefaults.derivedSchemaDbPath), overwrite = true)
@@ -71,10 +78,13 @@ class VerifyDatabaseMigrationsTest {
         val freshDBSqlDump = freshDbDumper.dumpToJson()
         val derivedDBSqlDump = derivedDbDumper.dumpToJson()
 
+        // when
         val result = differenceOf(
             original = freshDBSqlDump.readLines(),
             updated = derivedDBSqlDump.readLines(),
         )
+
+        // then
         assertEquals(
             expected = true,
             actual = result.operations.isEmpty(),
