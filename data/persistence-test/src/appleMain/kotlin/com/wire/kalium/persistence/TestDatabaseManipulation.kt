@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -31,19 +32,14 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
-import platform.Foundation.NSUUID
 import platform.Foundation.NSUserDomainMask
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
-    // Generate unique userId to ensure database isolation on iOS.
-    // SQLiter uses "file:{name}?mode=memory&cache=shared" for named in-memory databases,
-    // which causes data sharing between connections with the same name.
-    val uniqueUserId = UserIDEntity("${userId.value}_${NSUUID().UUIDString}", userId.domain)
-    return inMemoryDatabase(uniqueUserId, dispatcher)
+    return inMemoryDatabase(userId, dispatcher)
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
-    DatabaseFileContext.deleteDatabase(FileNameUtil.userDBName(userId))
+    clearInMemoryDatabase(userId)
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
