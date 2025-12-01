@@ -63,4 +63,5 @@ internal interface CellsApi {
     suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
+    suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>
 }

@@ -64,9 +64,13 @@ internal class CellsApiImpl(
     private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
 
+    @Suppress("MagicNumber")
     private companion object {
         private const val AWAIT_TIMEOUT = "5s"
         const val TAGS_METADATA = "usermeta-tags"
+
+        private fun Long.toClientTime() = this * 1000
+        private fun Long.toServerTime() = this / 1000
     }
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
@@ -197,7 +201,7 @@ internal class CellsApiImpl(
             PublicLink(
                 uuid = response.uuid ?: return networkError("UUID is null"),
                 url = response.linkUrl ?: return networkError("Link URL not found"),
-                expiresAt = response.accessEnd,
+                expiresAt = response.accessEnd?.toLongOrNull()?.toClientTime(),
                 passwordRequired = response.passwordRequired ?: false,
             )
         }
@@ -275,6 +279,20 @@ internal class CellsApiImpl(
                             passwordRequired = false
                         ),
                         passwordEnabled = false,
+                    )
+                )
+            }
+        }
+
+    override suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit> =
+        withPublicLink(linkUuid) { link ->
+            wrapCellsResponse {
+                nodeServiceApi.updatePublicLink(
+                    linkUuid = linkUuid,
+                    publicLinkRequest = RestPublicLinkRequest(
+                        link = link.copy(
+                            accessEnd = expireAt?.toServerTime()?.toString()
+                        ),
                     )
                 )
             }
