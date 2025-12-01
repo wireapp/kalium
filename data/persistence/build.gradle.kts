@@ -92,8 +92,7 @@ kotlin {
         }
         val jvmTest by getting {
             dependencies {
-                implementation("org.liquibase:liquibase-core:4.28.0")
-                implementation("org.xerial:sqlite-jdbc:3.42.0.0")  // Stable for Liquibase 4.28
+                implementation(libs.difference.jvm)
             }
         }
         val jsMain by getting {

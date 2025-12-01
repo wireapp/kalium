@@ -69,6 +69,7 @@ jmhReport = "0.9.6"
 xerialDriver = "3.49.1.0"
 kotlinx-io = "0.5.3"
 cells-sdk = "0.1.1-alpha16"
+difference = "1.1.1"
 
 [plugins]
 # Home-made convention plugins
@@ -150,8 +151,8 @@ coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "co
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
 
 # Compose Desktop / Multiplatform
-compose-fileKit-core = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "fileKit"}
-compose-fileKit-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "fileKit"}
+compose-fileKit-core = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "fileKit" }
+compose-fileKit-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "fileKit" }
 
 # cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
@@ -225,6 +226,7 @@ apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika"
 faker = { module = "io.github.serpro69:kotlin-faker", version.ref = "faker" }
 concurrentCollections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "stately" }
 statelyCommons = { module = "co.touchlab:stately-common", version.ref = "stately" }
+difference-jvm = { module = "dev.andrewbailey.difference:difference-jvm", version.ref = "difference" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
