@@ -39,13 +39,6 @@ jobs:
           path: |
             ./**/build/*schema-dumps/**/*.json
 
-      - name: Publish DB test artifacts
-        uses: EnricoMi/publish-unit-test-result-action/linux@v2
-        if: ${{ always() }}
-        with:
-          files: |
-            **/build/*schema-dumps/**/*.json    
-
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.
