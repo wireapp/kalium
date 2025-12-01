@@ -13,7 +13,7 @@ jobs:
   detekt:
     uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-    needs: [detekt]
+    needs: [ detekt ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,11 +24,12 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
+      # Probably redundant since this is part of the test, but leave it as a separate step for clarity and now runs under 1 min.
       - name: Verify DB Migrations
         env:
           GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g"
         run: |
-          make db/verify-all-migrations
+          ./gradlew :data:persistence:jvmTest, --tests, com.wire.kalium.persistence.migrations.VerifyDatabaseMigrationsTest
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.

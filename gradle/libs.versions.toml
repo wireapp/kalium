@@ -32,8 +32,6 @@ ktx-atomicfu = "0.26.1"
 kover = "0.7.6"
 multiplatform-settings = "1.3.0"
 moduleGraph = "0.12.0"
-# if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
-# and delete the workaround in the dev.mk file
 sqldelight = "2.2.1"
 sqlcipher-android = "4.10.0"
 pbandk = "0.15.0"
