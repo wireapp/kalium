@@ -66,6 +66,15 @@ tasks.withType<Test> {
     }
 }
 
+// Workaround for Kotlin Native test report writing issue
+// See: https://youtrack.jetbrains.com/issue/KT-61757
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+        reports.junitXml.required.set(false)
+        reports.html.required.set(false)
+    }
+}
+
 allprojects {
     repositories {
         google()

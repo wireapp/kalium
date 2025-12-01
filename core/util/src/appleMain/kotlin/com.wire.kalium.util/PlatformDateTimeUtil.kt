@@ -30,13 +30,29 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * @param instant date-time as [kotlinx.datetime.Instant]
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
-    actual fun fromInstantToIsoDateTimeString(instant: Instant): String =
-        instant.toString() // TODO:"Implement own iOS method"
+    actual fun fromInstantToIsoDateTimeString(instant: Instant): String {
+        // Truncate to milliseconds to ensure consistent precision across platforms
+        val truncatedInstant = Instant.fromEpochMilliseconds(instant.toEpochMilliseconds())
+        val str = truncatedInstant.toString()
+
+        // Normalize to always have exactly 3 decimal places (.SSS format)
+        return str.replace(Regex("""(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?Z""")) { match ->
+            val dateTimePart = match.groupValues[1]
+            val fractionPart = match.groupValues[2].ifEmpty { "0" }
+            val normalizedFraction = fractionPart.padEnd(3, '0').take(3)
+            "$dateTimePart.${normalizedFraction}Z"
+        }
+    }
 
     /**
      * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
      * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
-    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
-        instant.toString() // TODO:"Implement own iOS method"
+    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String {
+        val str = instant.toString()
+        // Extract just the date and time parts without fractional seconds
+        return str.replace(Regex("""(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*""")) { match ->
+            "${match.groupValues[1]}-${match.groupValues[2]}-${match.groupValues[3]}_${match.groupValues[4]}:${match.groupValues[5]}:${match.groupValues[6]}"
+        }
+    }
 }

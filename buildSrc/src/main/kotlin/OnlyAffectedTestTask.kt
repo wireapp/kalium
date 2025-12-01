@@ -84,14 +84,15 @@ open class OnlyAffectedTestTask : DefaultTask() {
                 )
             }
 
-        tasksName.forEach(::runTargetTask)
+        runTargetTasks(tasksName)
     }
 
-    private fun runTargetTask(targetTask: String) {
-        println("\uD83D\uDD27 Running tests on '$targetTask'.")
+    private fun runTargetTasks(targetTasks: List<String>) {
+        if (targetTasks.isEmpty()) return
+        println("\uD83D\uDD27 Running tests on: ${targetTasks.joinToString(", ")}")
         val execOperations = services.get<ExecOperations>()
         execOperations.exec {
-            args(targetTask)
+            args(targetTasks)
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
@@ -126,7 +127,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String, val ignoredModules: List<String> = emptyList()) {
         ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest", IGNORED_MODULES),
         ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest", IGNORED_MODULES),
-        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test", IGNORED_MODULES);
+        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosSimulatorArm64Test", IGNORED_MODULES);
     }
 
     private companion object {

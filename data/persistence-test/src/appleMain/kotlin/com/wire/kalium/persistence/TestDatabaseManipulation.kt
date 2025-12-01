@@ -31,10 +31,15 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSUUID
 import platform.Foundation.NSUserDomainMask
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
-    return inMemoryDatabase(userId, dispatcher)
+    // Generate unique userId to ensure database isolation on iOS.
+    // SQLiter uses "file:{name}?mode=memory&cache=shared" for named in-memory databases,
+    // which causes data sharing between connections with the same name.
+    val uniqueUserId = UserIDEntity("${userId.value}_${NSUUID().UUIDString}", userId.domain)
+    return inMemoryDatabase(uniqueUserId, dispatcher)
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
