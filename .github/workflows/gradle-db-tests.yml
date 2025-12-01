@@ -35,7 +35,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: test-results
+          name: db-test-artifacts
           path: |
             ./**/build/*schema-dumps/**/*.json
 
