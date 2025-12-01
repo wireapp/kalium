@@ -20,6 +20,7 @@ package com.wire.kalium.util
 
 import kotlinx.datetime.Instant
 
+@Suppress("MagicNumber")
 actual open class PlatformDateTimeUtil actual constructor() {
 
     /**
@@ -52,7 +53,9 @@ actual open class PlatformDateTimeUtil actual constructor() {
         val str = instant.toString()
         // Extract just the date and time parts without fractional seconds
         return str.replace(Regex("""(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*""")) { match ->
-            "${match.groupValues[1]}-${match.groupValues[2]}-${match.groupValues[3]}_${match.groupValues[4]}:${match.groupValues[5]}:${match.groupValues[6]}"
+            "${match.groupValues[1]}-${match.groupValues[2]}-" +
+                    "${match.groupValues[3]}_${match.groupValues[4]}:" +
+                    "${match.groupValues[5]}:${match.groupValues[6]}"
         }
     }
 }
