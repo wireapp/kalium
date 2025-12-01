@@ -24,7 +24,7 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
-      # Probably redundant since this is part of the test, but leave it as a separate step for clarity and artifacting purposes.
+      # Probably redundant since this is part of the test suite, leaving as a separate step for clarity and artifacting purposes.
       - name: Verify DB Migrations
         env:
           GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g"
