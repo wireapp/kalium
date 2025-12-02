@@ -112,12 +112,14 @@ internal class SQLiteHistoryClientDAO internal constructor(
         id: String,
         secret: ByteArray,
         creationDate: Instant
-    ) = withContext(writeDispatcher.value) {
-        historyClientQueries.insertClient(
-            conversation_id = conversationId,
-            id = id,
-            secret = secret,
-            creation_date = creationDate
-        )
+    ) {
+        withContext(writeDispatcher.value) {
+            historyClientQueries.insertClient(
+                conversation_id = conversationId,
+                id = id,
+                secret = secret,
+                creation_date = creationDate
+            )
+        }
     }
 }

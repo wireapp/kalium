@@ -15,11 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.persistence.migrations.dump
 
-public data class PublicLink(
-    val uuid: String,
-    val url: String,
-    val expiresAt: Long? = null,
-    val passwordRequired: Boolean = false,
-)
+/**
+ * Enum representing different types of SQL objects.
+ * Internals are excluded like virtual tables and shadow tables.
+ *
+ * https://www.sqlite.org/fileformat2.html#storage_of_the_sql_database_schema
+ */
+enum class SqlObjectType(val type: String) {
+    TABLE("table"),
+    VIEW("view"),
+    INDEX("index"),
+    TRIGGER("trigger")
+}
