@@ -40,13 +40,13 @@ class GetNodeVersionsUseCaseTest {
 
     @Test
     fun `GIVEN repository returns failure WHEN invoking use case THEN it returns failure`() = runTest {
-        fakeRepository.result = Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException()))
+        val failure = Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException()))
+        fakeRepository.result = failure
         val useCase = GetNodeVersionsUseCaseImpl(fakeRepository)
 
         val result = useCase(UUID)
 
-        val expectedFailure = NetworkFailure.ServerMiscommunication(IllegalStateException())
-        assertEquals(Either.Left(expectedFailure), result)
+        assertEquals(failure, result)
     }
 
     companion object {
