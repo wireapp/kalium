@@ -1,5 +1,3 @@
-import com.wire.kalium.plugins.appleTargets
-
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -18,6 +16,8 @@ import com.wire.kalium.plugins.appleTargets
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import com.wire.kalium.plugins.appleTargets
+
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
@@ -30,7 +30,6 @@ kaliumLibrary {
     multiplatform {
         includeNativeInterop.set(true)
         enableApple.set(false)
-        enableJs.set(false)
     }
 }
 
@@ -79,6 +78,11 @@ kotlin {
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("@wireapp/store-engine", "4.9.9"))
+            }
+        }
 
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
@@ -86,6 +90,8 @@ kotlin {
                 implementation(libs.coreCryptoJvm)
             }
         }
+        val jsTest by getting
+
         val jvmTest by getting
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
