@@ -6,18 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging platform. It handles end-to-end encryption, messaging protocols, voice/video calling, and backup functionality across JVM, Android, iOS, and JavaScript platforms.
 
+**Requirements:** JDK 21
+
 **Key Technologies:**
 - Kotlin 2.2.21 with Kotlin Multiplatform
 - Gradle with Kotlin DSL
-- SQLDelight 2.0.1 for database layer
+- SQLDelight 2.2.1 for database layer (SQLCipher encrypted)
 - Ktor 3.3.2 for HTTP networking
-- CoreCrypto 9.1.1 + libsodium for cryptography
-- AVS 10.1.32 for audio/video calling
-- Protocol Buffers for serialization
+- CoreCrypto 9.1.1 + libsodium for cryptography (MLS protocol)
+- AVS 10.1.33 for audio/video calling
+- Protocol Buffers (pbandk) for serialization
 
 ## Build Commands
-
-### Basic Build & Test
 
 ```bash
 # Clean build
@@ -26,224 +26,133 @@ Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging plat
 # JVM tests (requires native libraries)
 ./gradlew jvmTest -Djava.library.path=./native/libs
 
-# Android unit tests (only affected modules)
-./gradlew androidUnitOnlyAffectedTest
+# Android unit tests
+./gradlew testDebugUnitTest                    # All modules
+./gradlew androidUnitOnlyAffectedTest          # Only affected modules
+./gradlew :logic:testDebugUnitTest             # Single module
 
-# Run all unit tests across all modules
-./gradlew runAllUnitTests
+# Run single test class
+./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest"
 
-# Aggregate test results into HTML report
-./gradlew aggregateTestResults
-
-# Code coverage report
-./gradlew jvmTest koverXmlReport -Djava.library.path=./native/libs
-```
-
-### Code Quality
-
-```bash
-# Run Detekt linting
+# Linting
 ./gradlew detekt
 
-# Or via Makefile
-make detekt/run-verify
+# Database migration verification
+./gradlew :data:persistence:verifySqlDelightMigration
 
-# Verify database migrations
-./gradlew :persistence:verifySqlDelightMigration
-make db/verify-all-migrations
+# Code coverage
+./gradlew jvmTest koverXmlReport -Djava.library.path=./native/libs
 ```
 
 ### CLI Application
 
 ```bash
 # Build JVM CLI
-./gradlew :cli:assemble
-java -jar cli/build/libs/cli.jar login --email <email> --password <password> listen-group
+./gradlew :sample:cli:assemble
+java -jar sample/cli/build/libs/cli.jar login --email <email> --password <password> listen-group
 
-# Build native CLI (macOS ARM64)
-./gradlew :cli:macosArm64Binaries
-./cli/build/bin/macosArm64/debugExecutable/cli.kexe login
-
-# Build native CLI (macOS Intel)
-./gradlew :cli:macosX64Binaries
-./cli/build/bin/macosX64/debugExecutable/cli.kexe login
-```
-
-### Documentation
-
-```bash
-# Generate API documentation
-./gradlew dokkaHtmlMultiModule
+# Native CLI (macOS)
+./gradlew :sample:cli:macosArm64Binaries   # ARM64
+./gradlew :sample:cli:macosX64Binaries     # Intel
 ```
 
 ### Native Libraries
 
-Native libraries (AVS) are required. On macOS 12:
+Native libraries (AVS) are required for JVM tests and CLI:
 
 ```bash
-# Build from source
-make
-
-# Libraries output to: ./native/libs
+make                                    # Build from source, outputs to ./native/libs
 ```
 
-When running tasks requiring native libraries, pass: `-Djava.library.path=./native/libs`
+Always pass `-Djava.library.path=./native/libs` when running JVM tests or CLI.
 
 ## Architecture
 
 ### Module Structure
 
-Kalium uses a modular architecture with 28+ modules organized by functionality:
+Modules are organized by layer with colon-separated paths:
 
-**Core SDK:**
-- `:logic` - Main SDK entry point, orchestrates all other modules
-- `:common` - Shared data models and utilities
-- `:data` - Data layer abstractions and DTOs
-- `:data-mappers` - Transformations between network/persistence/domain models
+**Core (`core:*`):**
+- `:core:common` - Shared data models and utilities
+- `:core:data` - Data layer abstractions and DTOs
+- `:core:cryptography` - Encryption using libsodium and CoreCrypto
+- `:core:logger` - Logging infrastructure (Kermit-based)
+- `:core:util` - General utilities, `Either<Failure, Success>` error handling
 
-**Communication:**
-- `:network` - HTTP client (Ktor-based) with retry logic and authentication
-- `:network-model` - Request/response models
-- `:network-util` - Network utilities (connectivity, error handling)
-- `:messaging:sending` - Message sending pipeline
-- `:messaging:receiving` - Message receiving and processing
+**Data (`data:*`):**
+- `:data:network` - HTTP client (Ktor) with retry logic and authentication
+- `:data:network-model` - Request/response models
+- `:data:network-util` - Network utilities
+- `:data:persistence` - SQLDelight database layer
+- `:data:persistence-test` - Database test fixtures
+- `:data:data-mappers` - Transformations between network/persistence/domain models
+- `:data:protobuf` - Protocol Buffer definitions
 
-**Persistence:**
-- `:persistence` - SQLDelight database layer with SQLCipher encryption
-- `:persistence-test` - Test fixtures for database testing
-- `:conversation-history` - Conversation history management
+**Domain (`domain:*`):**
+- `:domain:backup` - Backup and restore with encryption
+- `:domain:calling` - Voice/video calling via AVS library
+- `:domain:cells` - Cell-based storage system
+- `:domain:conversation-history` - Conversation history management
+- `:domain:messaging:sending` - Message sending pipeline
+- `:domain:messaging:receiving` - Message receiving and processing
 
-**Security:**
-- `:cryptography` - Encryption/decryption using libsodium and CoreCrypto
-- `:backup` - Backup and restore with encryption
-- `:backup-verification` - Backup integrity verification
+**Logic:**
+- `:logic` - Main SDK entry point, orchestrates all other modules, contains use cases
 
-**Other:**
-- `:calling` - Voice/video calling via AVS library
-- `:cells` - Cell-based storage system
-- `:protobuf` - Protocol Buffer definitions
-- `:logger` - Logging infrastructure (Kermit-based)
-- `:util` - General utilities
-- `:cli` - Command-line application
-- `:samples` - Sample applications
-- `:monkeys` - Test servers (Docker-based)
-- `:benchmarks` - JMH performance benchmarks
+**Test (`test:*`):**
+- `:test:mocks` - Network model mocks
+- `:test:data-mocks` - Data layer mocks
+- `:test:benchmarks` - JMH performance benchmarks
+- `:test:tango-tests` - Integration tests
 
-### Dependency Flow
+**Sample/Tools:**
+- `:sample:cli` - Command-line application
+- `:sample:samples` - Sample applications
+- `:tools:backup-verification` - Backup integrity verification
+- `:tools:protobuf-codegen` - Protobuf code generation
 
-The `:logic` module is the main SDK entry point and depends on most other modules. Key dependencies:
+### Multiplatform Source Sets
 
-```
-:logic → :common → :data → :network-model
-       → :network → :network-util
-       → :cryptography
-       → :persistence
-       → :calling
-       → :backup
-```
-
-All modules depend on `:logger` and most on `:util` for shared functionality.
-
-### Multiplatform Structure
-
-Each module typically has platform-specific source sets:
+Each module has platform-specific source sets:
 - `commonMain/commonTest` - Shared Kotlin code
 - `jvmMain/jvmTest` - JVM-specific code
 - `androidMain/androidUnitTest` - Android-specific code
-- `iosMain/iosTest` - iOS-specific code (partial support)
-- `jsMain/jsTest` - JavaScript code (minimal support)
+- `iosMain/iosTest` - iOS (partial support)
+- `jsMain/jsTest` - JavaScript (minimal support)
 
 ## Testing
 
-### Frameworks & Tools
-- JUnit 5 (JUnitPlatform) for test structure
-- Mockative 3.1.4 for mocking (preferred over Mockk)
-- Turbine 1.1.0 for Flow testing
-- Robolectric 4.12.1 for Android unit tests
-- Kotest for assertions
+**Frameworks:**
+- Mockative for mocking (`@Mock` for interfaces, `@Mockable` for classes)
+- Turbine for Flow testing (`test {}` blocks)
+- Robolectric for Android unit tests
+- Use `:data:persistence-test` fixtures for in-memory database testing
 
-### Writing Tests
-- Place common tests in `commonTest` when possible
-- Use Mockative annotations: `@Mock` for interfaces, mark classes as `@Mockable` in production code
-- For Android-specific tests requiring Android framework, use `androidUnitTest` with Robolectric
-- Flow testing: Use Turbine's `test {}` blocks for collecting emissions
-- Database tests: Use `:persistence-test` fixtures for in-memory database testing
+Place common tests in `commonTest` when possible.
 
-### Running Specific Tests
+## Code Conventions
 
-```bash
-# Single module JVM tests
-./gradlew :logic:jvmTest -Djava.library.path=./native/libs
+- `suspend` functions for async, `Flow` for reactive streams
+- `Either<Failure, Success>` pattern for error handling (from `:core:util`)
+- `kotlinx-datetime` types (`Instant`, `LocalDateTime`) for dates
+- `kotlinx.serialization` with `@Serializable` annotation
+- Repository pattern in `:data:*`, use cases in `:logic`
+- Constructor injection (no DI framework)
+- Mappers in `:data:data-mappers` for model transformations
 
-# Single module Android tests
-./gradlew :logic:testDebugUnitTest
+## Database
 
-# Single test class (example)
-./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest"
-```
+Two SQLDelight databases:
+- **UserDatabase** (`db_user/`) - User-specific data (messages, conversations)
+- **GlobalDatabase** (`db_global/`) - Shared data (accounts, server configuration)
 
-## Code Style & Guidelines
+Schema files: `data/persistence/src/commonMain/db_*/com/wire/kalium/persistence/*.sq`
+Migrations: `data/persistence/src/commonMain/db_*/migrations/`
 
-### Detekt Configuration
-- Config: `detekt/detekt.yml`
-- Baseline: `detekt/baseline.xml`
-- Custom Wire rules via `com.wire:detekt-rules:1.0.0-1.23.6`
+## Detekt Setup
 
-**IDE Setup:**
-1. Install Detekt plugin in IntelliJ
-2. Settings → Tools → Detekt:
-   - Configuration Files: `$PROJECT_ROOT/detekt/detekt.yml`
-   - Baseline File: `$PROJECT_ROOT/detekt/baseline.yml`
-   - Plugin Jars: `$PROJECT_ROOT/detekt-rules/build/libs/detekt-rules.jar`
+Config: `detekt/detekt.yml`, Baseline: `detekt/baseline.xml`
 
-### Conventions
-- Use Kotlin coroutines with `suspend` functions for async operations
-- Prefer `Flow` over `Channel` for reactive streams
-- Use `Either<Failure, Success>` pattern for error handling (from `:util`)
-- Database queries return `Flow` for reactive updates
-- Network calls use Ktor's suspend-based API
-- All dates/times use `kotlinx-datetime` types (`Instant`, `LocalDateTime`)
-- Serialization uses `kotlinx.serialization` with `@Serializable` annotation
-
-### Architecture Patterns
-- Repository pattern: `:data` layer provides repositories, `:logic` contains use cases
-- Dependency injection: Constructor injection, no DI framework in library (consumers provide DI)
-- Use cases: Single-responsibility classes in `:logic` that orchestrate business logic
-- Mappers: Dedicated mapper objects in `:data-mappers` for model transformations
-- Event-driven: Key events flow through `EventGatherer` and `EventProcessor`
-
-## Important Notes
-
-### Native Library Requirements
-Many tests and features require native cryptography libraries. Always include `-Djava.library.path=./native/libs` when running JVM tests or CLI commands that involve encryption, calling, or protocol buffer operations.
-
-### Database Migrations
-When modifying SQLDelight schemas:
-1. Add migration SQL in `persistence/src/commonMain/sqldelight/migrations/`
-2. Verify migration: `./gradlew :persistence:verifySqlDelightMigration`
-3. Update schema version in `.sq` files
-
-### Protocol Buffers
-Protobuf definitions are in `:protobuf/src/commonMain/proto/`. After modifying:
-1. Rebuild: `./gradlew :protobuf:generateProto`
-2. Regenerated Kotlin code appears in `build/generated/source/proto/`
-
-### CI/CD
-GitHub Actions workflows run on PR and push to `develop`:
-- `gradle-jvm-tests.yml` - Main test pipeline (JVM + JS)
-- `gradle-android-unit-tests.yml` - Android tests
-- `codestyle.yml` - Detekt validation
-
-Tests run in Docker container `kubazwire/cryptobox:1.0.0` which includes native dependencies.
-
-### Multiplatform Considerations
-- When adding new dependencies, check compatibility with all platforms (especially iOS/JS)
-- Platform-specific code goes in `*Main/*Test` source sets
-- Use `expect/actual` mechanism for platform-specific implementations
-- Not all modules support all platforms - check `build.gradle.kts` for target configuration
-
-### AVS Calling Library
-The `:calling` module wraps the proprietary AVS (Audio Video Signaling) library v10.1.32. This is a native library for voice/video calling. Updates require coordination with AVS team.
-
-### CoreCrypto
-E2E encryption uses CoreCrypto library v9.1.1 (Rust-based, exposed via JNI/C interop). This handles MLS (Messaging Layer Security) protocol operations.
+IDE Setup: Settings → Tools → Detekt:
+- Configuration Files: `$PROJECT_ROOT/detekt/detekt.yml`
+- Plugin Jars: `$PROJECT_ROOT/detekt-rules/build/libs/detekt-rules.jar`
