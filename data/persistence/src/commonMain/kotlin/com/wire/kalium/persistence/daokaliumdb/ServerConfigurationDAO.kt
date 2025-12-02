@@ -166,31 +166,35 @@ internal class ServerConfigurationDAOImpl internal constructor(
 ) :
     ServerConfigurationDAO {
 
-    override suspend fun deleteById(id: String) = withContext(queriesContext) {
-        queries.deleteById(id)
+    override suspend fun deleteById(id: String) {
+        withContext(queriesContext) {
+            queries.deleteById(id)
+        }
     }
 
     override suspend fun insert(
         insertData: ServerConfigurationDAO.InsertData
-    ) = withContext(queriesContext) {
-        with(insertData) {
-            queries.insert(
-                id,
-                apiBaseUrl,
-                accountBaseUrl,
-                webSocketBaseUrl,
-                blackListUrl,
-                teamsUrl,
-                websiteUrl,
-                title,
-                isOnPremises,
-                federation,
-                domain,
-                commonApiVersion,
-                apiProxyHost,
-                apiProxyNeedsAuthentication,
-                apiProxyPort
-            )
+    ) {
+        withContext(queriesContext) {
+            with(insertData) {
+                queries.insert(
+                    id,
+                    apiBaseUrl,
+                    accountBaseUrl,
+                    webSocketBaseUrl,
+                    blackListUrl,
+                    teamsUrl,
+                    websiteUrl,
+                    title,
+                    isOnPremises,
+                    federation,
+                    domain,
+                    commonApiVersion,
+                    apiProxyHost,
+                    apiProxyNeedsAuthentication,
+                    apiProxyPort
+                )
+            }
         }
     }
 
@@ -227,25 +231,30 @@ internal class ServerConfigurationDAOImpl internal constructor(
         queries.getCommonApiVersionByDomain(domain).executeAsOne()
     }
 
-    override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
+    override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) {
         withContext(queriesContext) {
             queries.updateApiVersionAndDomain(commonApiVersion, domain, id)
         }
+    }
 
     override suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity? = withContext(queriesContext) {
         queries.getByUser(userId, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
     }
 
-    override suspend fun setFederationToTrue(id: String) = withContext(queriesContext) {
-        queries.setFederationToTrue(id)
+    override suspend fun setFederationToTrue(id: String) {
+        withContext(queriesContext) {
+            queries.setFederationToTrue(id)
+        }
     }
 
     override suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
         queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().flowOn(queriesContext)
             .mapToList()
 
-    override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
-        queries.updateLastBlackListCheckByIds(date, configIds)
+    override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) {
+        withContext(queriesContext) {
+            queries.updateLastBlackListCheckByIds(date, configIds)
+        }
     }
 
     override suspend fun teamUrlForUser(userId: UserIDEntity): String? = withContext(queriesContext) {

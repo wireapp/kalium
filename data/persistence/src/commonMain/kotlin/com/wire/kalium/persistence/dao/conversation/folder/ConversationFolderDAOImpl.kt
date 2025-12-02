@@ -48,12 +48,16 @@ class ConversationFolderDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun removeFolder(folderId: String) = withContext(writeDispatcher.value) {
-        conversationFoldersQueries.deleteFolder(folderId)
+    override suspend fun removeFolder(folderId: String) {
+        withContext(writeDispatcher.value) {
+            conversationFoldersQueries.deleteFolder(folderId)
+        }
     }
 
-    override suspend fun addFolder(folder: ConversationFolderEntity) = withContext(writeDispatcher.value) {
-        conversationFoldersQueries.upsertFolder(folder.id, folder.name, folder.type)
+    override suspend fun addFolder(folder: ConversationFolderEntity) {
+        withContext(writeDispatcher.value) {
+            conversationFoldersQueries.upsertFolder(folder.id, folder.name, folder.type)
+        }
     }
 
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(readDispatcher.value) {
@@ -132,14 +136,18 @@ class ConversationFolderDAOImpl internal constructor(
     override suspend fun addConversationToFolder(
         conversationId: QualifiedIDEntity,
         folderId: String
-    ) = withContext(writeDispatcher.value) {
-        conversationFoldersQueries.insertLabeledConversation(conversationId, folderId)
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationFoldersQueries.insertLabeledConversation(conversationId, folderId)
+        }
     }
 
     override suspend fun removeConversationFromFolder(
         conversationId: QualifiedIDEntity,
         folderId: String
-    ) = withContext(writeDispatcher.value) {
-        conversationFoldersQueries.deleteLabeledConversation(conversationId, folderId)
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationFoldersQueries.deleteLabeledConversation(conversationId, folderId)
+        }
     }
 }
