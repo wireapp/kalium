@@ -20,10 +20,10 @@ package com.wire.kalium.persistence.migrations
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.migrations.dump.SchemaDump
 import com.wire.kalium.persistence.migrations.dump.SqliteSchemaDumper
 import dev.andrewbailey.diff.differenceOf
 import java.io.File
-import kotlin.io.path.readLines
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -47,12 +47,11 @@ class VerifyDatabaseMigrationsTest {
         val derivedDBSqlDump = derivedDbDumper.dumpToJson()
 
         // when
-        val result = differenceOf(
-            original = freshDBSqlDump.readLines(),
-            updated = derivedDBSqlDump.readLines(),
-        )
-        // then
+        val result = differenceOf(original = freshDBSqlDump.allComponents, updated = derivedDBSqlDump.allComponents)
 
+        // then
+        assertValidUserSchemaDump(freshDBSqlDump)
+        assertValidUserSchemaDump(derivedDBSqlDump)
         assertEquals(
             expected = true,
             actual = result.operations.isEmpty(),
@@ -79,18 +78,36 @@ class VerifyDatabaseMigrationsTest {
         val derivedDBSqlDump = derivedDbDumper.dumpToJson()
 
         // when
-        val result = differenceOf(
-            original = freshDBSqlDump.readLines(),
-            updated = derivedDBSqlDump.readLines(),
-        )
+        val result = differenceOf(original = freshDBSqlDump.allComponents, updated = derivedDBSqlDump.allComponents)
 
         // then
+        assertValidGlobalSchemaDump(freshDBSqlDump)
+        assertValidGlobalSchemaDump(derivedDBSqlDump)
         assertEquals(
             expected = true,
             actual = result.operations.isEmpty(),
             message = "Database schema migration is not up to date." +
                     "Differences found:\n${result.operations.joinToString("\n")}"
         )
+    }
+
+    /**
+     * Asserts that the global schema dump is valid (not empty) for tables.
+     * Since as of today 2025, global database only has tables.
+     */
+    private fun assertValidGlobalSchemaDump(schemaDump: SchemaDump) {
+        assertEquals(true, schemaDump.tables.isNotEmpty(), "Invalid schema dump: tables are empty")
+    }
+
+    /**
+     * Asserts that the user schema dump is valid (not empty) for all components.
+     * Since as of today 2025, user database has tables, views, indexes and triggers.
+     */
+    private fun assertValidUserSchemaDump(schemaDump: SchemaDump) {
+        assertEquals(true, schemaDump.tables.isNotEmpty(), "Invalid schema dump: tables are empty")
+        assertEquals(true, schemaDump.views.isNotEmpty(), "Invalid schema dump: views are empty")
+        assertEquals(true, schemaDump.indexes.isNotEmpty(), "Invalid schema dump: indexes are empty")
+        assertEquals(true, schemaDump.triggers.isNotEmpty(), "Invalid schema dump: triggers are empty")
     }
 
     private class Arrangement(private val databaseSchemaSource: DatabaseSchemaSource) {
