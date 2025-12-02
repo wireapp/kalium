@@ -401,6 +401,18 @@ internal class CellsApiImpl(
         collection.versions?.map { it.toDto() } ?: emptyList()
     }
 
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.promoteVersion(
+            uuid = uuid,
+            versionId = versionId,
+            parameters = restPromoteParameters
+        )
+    }.mapSuccess {}
+
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
 }
