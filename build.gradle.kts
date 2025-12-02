@@ -73,7 +73,7 @@ subprojects {
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
         testLogging {
-            events("passed","failed")
+            events("started", "passed","failed")
             showStandardStreams = true
             }
     }

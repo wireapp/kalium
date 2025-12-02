@@ -68,6 +68,7 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
+import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -1416,7 +1417,7 @@ class CallRepositoryTest {
 
         // then
         verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
         }
 
     }
@@ -1862,7 +1863,7 @@ class CallRepositoryTest {
         val subconversationRepository = mock<SubconversationRepository>()
         val mlsConversationRepository = mock<MLSConversationRepository>()
         val epochChangesObserver = mock<EpochChangesObserver>()
-        val callDAO = mock<CallDAO>()
+        val callDAO = mock<CallDAO>(mode = MockMode.autoUnit)
         val serverTimeApi: ServerTimeApi = mock<ServerTimeApi>()
 
         private val callMapper = CallMapperImpl(qualifiedIdMapper)
