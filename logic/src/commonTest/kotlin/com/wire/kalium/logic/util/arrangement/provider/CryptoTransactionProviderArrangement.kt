@@ -23,7 +23,12 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.MLSClientProvider
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every as mokkeryEvery
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock as mokkeryMock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -91,6 +96,60 @@ internal class CryptoTransactionProviderArrangementImpl : CryptoTransactionProvi
         }.invokes { args ->
             @Suppress("UNCHECKED_CAST")
             val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
+            block(mlsContext)
+        }
+    }
+}
+
+internal class CryptoTransactionProviderArrangementMokkeryImpl : CryptoTransactionProviderArrangement {
+
+    override val proteusContext: ProteusCoreCryptoContext = mokkeryMock()
+    override val mlsContext: MlsCoreCryptoContext = mokkeryMock()
+    override val transactionContext: CryptoTransactionContext = mokkeryMock()
+
+    override val cryptoTransactionProvider: CryptoTransactionProvider = mokkeryMock()
+
+    init {
+        mokkeryEvery { transactionContext.proteus } returns proteusContext
+        mokkeryEvery { transactionContext.mls } returns mlsContext
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
+        everySuspend {
+            cryptoTransactionProvider.transaction<R>(mokkeryAny(), mokkeryAny())
+        } calls {
+            val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
+            block(transactionContext)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun <R> withProteusTransactionReturning(
+        result: Either<CoreFailure, R>
+    ): CryptoTransactionProviderArrangement = apply {
+        everySuspend {
+            cryptoTransactionProvider.proteusTransaction<R>(mokkeryAny(), mokkeryAny())
+        } calls {
+            val block = it.args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
+            block(proteusContext)
+        }
+    }
+
+    override suspend fun <R> withProteusTransactionResultOnly(
+        result: Either<CoreFailure, R>
+    ): CryptoTransactionProviderArrangement = apply {
+        everySuspend {
+            cryptoTransactionProvider.proteusTransaction<R>(mokkeryAny(), mokkeryAny())
+        } returns result
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
+        everySuspend {
+            cryptoTransactionProvider.mlsTransaction<R>(mokkeryAny(), mokkeryAny())
+        } calls {
+            val block = it.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
             block(mlsContext)
         }
     }
