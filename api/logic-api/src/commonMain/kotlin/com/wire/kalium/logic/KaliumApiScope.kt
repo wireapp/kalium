@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.CoreLogic
-
 /**
  * Main entry point for Kalium API.
  * This provides a stable, versioned public API for external consumers.
