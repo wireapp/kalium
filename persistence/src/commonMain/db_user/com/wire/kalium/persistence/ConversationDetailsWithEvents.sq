@@ -167,6 +167,63 @@ ORDER BY
 LIMIT :limit
 OFFSET :offset;
 
+-- Lightweight COUNT used as a performance-optimized replacement for
+-- `countConversationDetailsWithEvents` when searchQuery is empty.
+--
+-- What it matches:
+-- - same core filters as ConversationDetailsWithEvents:
+--   - exclude SELF conversations
+--   - apply conversationFilter (ALL / GROUPS / ONE_ON_ONE / CHANNELS)
+--   - respect `archived`
+--   - respect `deleted_locally`
+--   - respect protocol + MLS state (`strict_mls`, ESTABLISHED / PENDING_AFTER_RESET)
+--
+-- What it does NOT check (present in ConversationDetails):
+-- - extra visibility rules for ONE_ON_ONE:
+--   - missing metadata (name IS NULL, otherUserId IS NULL)
+--   - userDeleted / defederated user logic
+-- - CONNECTION_PENDING visibility rules
+-- - isActive flag computed from Member/User
+-- - interactionEnabled (onlyInteractionsEnabled)
+-- - favorites / folders
+--
+-- Consequence:
+-- - This COUNT may be a SUPerset of rows that the full
+--   ConversationDetailsWithEvents SELECT will actually return.
+-- - That is acceptable for Paging, which only needs an upper bound;
+--   the real rows still come from the full SELECT query.
+--
+-- Why we use it:
+-- - COUNT on Conversation is much cheaper than COUNT on the
+--   ConversationDetails view (no heavy joins, no temp B-tree).
+-- - This significantly reduces TTI spikes caused by the COUNT phase
+--   for the main conversation list when searchQuery is empty.
+
+countConversation:
+SELECT COUNT(*)
+FROM Conversation
+WHERE
+    type IS NOT 'SELF'
+    AND CASE
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
+        ELSE 1 = 0
+    END
+    AND archived = :fromArchive
+    AND deleted_locally = 0
+    AND (
+        protocol IN ('PROTEUS','MIXED')
+        OR (
+            protocol = 'MLS'
+            AND (
+                :strict_mls = 0
+                OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET')
+            )
+        )
+    );
+
 countConversationDetailsWithEvents:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE

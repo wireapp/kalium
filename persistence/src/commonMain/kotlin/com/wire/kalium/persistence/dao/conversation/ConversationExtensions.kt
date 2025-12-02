@@ -44,7 +44,7 @@ interface ConversationExtensions {
     )
 }
 
-    internal class ConversationExtensionsImpl internal constructor(
+internal class ConversationExtensionsImpl internal constructor(
     private val queries: ConversationDetailsWithEventsQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
     private val readDispatcher: ReadDispatcher,
@@ -67,11 +67,10 @@ interface ConversationExtensions {
         QueryPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
-                    queries.countConversationDetailsWithEvents(
+                    queries.countConversation(
                         fromArchive = fromArchive,
-                        onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
-                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
+                        strict_mls = if (strictMlsFilter) 1 else 0,
                     )
                 } else {
                     queries.countConversationDetailsWithEventsFromSearch(
@@ -79,7 +78,7 @@ interface ConversationExtensions {
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
                         searchQuery = searchQuery,
-                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
+                        strict_mls = if (strictMlsFilter) 1 else 0,
                     )
                 },
             transacter = queries,
