@@ -15,9 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.cells.data.model
 
-public data class NodeIdAndVersion(
-    val uuid: String,
-    val versionId: String
+import com.wire.kalium.cells.domain.model.FilePreview
+import com.wire.kalium.cells.domain.model.PreSignedUrl
+
+internal data class NodeVersionDTO(
+    val id: String,
+    val hash: String?,
+    val description: String?,
+    val isDraft: Boolean?,
+    val etag: String?,
+    val editorUrls: Map<String, PreSignedUrl>?,
+    val filePreviews: List<FilePreview>?,
+    val isHead: Boolean?,
+    val modifiedTime: String?,
+    val ownerName: String?,
+    val ownerUuid: String?,
+    val getUrl: PreSignedUrl?,
+    val size: String?
 )

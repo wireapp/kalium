@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.Pagination
 import com.wire.kalium.cells.domain.model.PreCheckResult
@@ -295,5 +296,11 @@ internal class CellsDataSource internal constructor(
 
     override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?) = wrapApiRequest {
         cellsApi.setPublicLinkExpiration(linkUuid, expiresAt)
+    }
+
+    override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection -> collection.map { it.toModel() } }
+        }
     }
 }

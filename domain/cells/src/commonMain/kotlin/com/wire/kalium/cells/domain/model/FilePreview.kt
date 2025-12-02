@@ -17,7 +17,24 @@
  */
 package com.wire.kalium.cells.domain.model
 
-public data class NodeIdAndVersion(
-    val uuid: String,
-    val versionId: String
+import com.wire.kalium.cells.sdk.kmp.model.RestFilePreview
+
+public data class FilePreview(
+    val bucket: String?,
+    val contentType: String?,
+    val dimension: Int?,
+    val error: Boolean?,
+    val key: String?,
+    val getUrl: PreSignedUrl?,
+    val processing: Boolean?
+)
+
+internal fun RestFilePreview.toDto() = FilePreview(
+    bucket = bucket,
+    contentType = contentType,
+    dimension = dimension,
+    error = error,
+    key = key,
+    getUrl = preSignedGET?.toDto(),
+    processing = processing
 )

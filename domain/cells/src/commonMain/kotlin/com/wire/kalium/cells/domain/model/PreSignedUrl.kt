@@ -17,7 +17,14 @@
  */
 package com.wire.kalium.cells.domain.model
 
-public data class NodeIdAndVersion(
-    val uuid: String,
-    val versionId: String
+import com.wire.kalium.cells.sdk.kmp.model.RestPreSignedURL
+
+public data class PreSignedUrl(
+    val expiresAt: String?,
+    val url: String?
+)
+
+public fun RestPreSignedURL.toDto(): PreSignedUrl = PreSignedUrl(
+    expiresAt = expiresAt,
+    url = url
 )
