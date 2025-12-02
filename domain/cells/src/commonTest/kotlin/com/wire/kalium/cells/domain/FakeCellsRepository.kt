@@ -192,6 +192,13 @@ class FakeCellsRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun setPublicLinkExpiration(
+        linkUuid: String,
+        expiresAt: Long?
+    ): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> {
         requestedUuid = uuid
         invocationCount++
