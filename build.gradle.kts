@@ -66,6 +66,30 @@ tasks.withType<Test> {
     }
 }
 
+// Workaround for Kotlin Native test report writing issue
+// For some reason xml and html generation is failing, looks like tests running in parallel
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+        reports.junitXml.required.set(false)
+        reports.html.required.set(false)
+    }
+
+    // Configure GC for iOS Simulator ARM64 tests only
+    pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>()
+                .matching { it.name == "iosSimulatorArm64" }
+                .configureEach {
+                    binaries.all {
+                        if (this is org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable) {
+                            binaryOptions["gc"] = "stwms"
+                        }
+                    }
+                }
+        }
+    }
+}
+
 allprojects {
     repositories {
         google()
