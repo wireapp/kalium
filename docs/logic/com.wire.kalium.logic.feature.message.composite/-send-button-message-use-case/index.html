@@ -94,43 +94,7 @@
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.message.composite</a><span class="delimiter">/</span><span class="current">SendButtonMessageUseCase</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Send</span><wbr><span>Button</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">SendButtonMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">provideClientId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.message/-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl<span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div><h4 class="">Samples</h4><div class="sample-container"><pre><code class="runnablesample monospace block lang-kotlin" theme="idea">import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.mention.MessageMention
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.SendEditTextMessageUseCase
-import com.wire.kalium.logic.feature.message.SendTextMessageUseCase
-
-fun main() { 
-   //sampleStart 
-   // Sending a simple text message
-sendTextMessageUseCase.invoke(
-    conversationId = conversationId,
-    text = "Hello"
-) 
-   //sampleEnd
-}</code></pre></div><div class="sample-container"><pre><code class="runnablesample monospace block lang-kotlin" theme="idea">import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.mention.MessageMention
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.SendEditTextMessageUseCase
-import com.wire.kalium.logic.feature.message.SendTextMessageUseCase
-
-fun main() { 
-   //sampleStart 
-   // Sending a text message with mention
-val text = "Hello, @John"
-val johnMention = MessageMention(
-    start = 8, // The index of the @ in the text above
-    length = 5, // The length of the mention (including the @)
-    userId = johnUserId, // ID of the user being mentioned
-    isSelfMention = selfUserId == johnUserId // Whether the mention is for the current user
-)
-sendTextMessageUseCase.invoke(
-    conversationId = conversationId,
-    text = text,
-    mentions = listOf(johnMention)
-) 
-   //sampleEnd
-}</code></pre></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">SendButtonMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">provideClientId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.message/-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl<span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div><h4 class="">Samples</h4>samples.logic.MessageUseCases.sendingBasicTextMessagesamples.logic.MessageUseCases.sendingTextMessageWithMentions</div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>

@@ -1,0 +1,479 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.kalium.cryptography.externals</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector js-like" data-active="" data-filter=":core:cryptography:dokkaHtmlPartial/jsMain">js</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option js-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":core:cryptography:dokkaHtmlPartial/jsMain" data-filter=":core:cryptography:dokkaHtmlPartial/jsMain">
+                                <span class="checkbox--icon"></span>
+                                js
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="package" id="content" pageids="cryptography::com.wire.kalium.cryptography.externals////PointingToDeclaration//1193073728">
+  <div class="breadcrumbs"><a href="../index.html">cryptography</a><span class="delimiter">/</span><span class="current">com.wire.kalium.cryptography.externals</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-2043656305%2FClasslikes%2F1193073728" anchor-label="CRUDEngine" id="-2043656305%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-r-u-d-engine/index.html"><span><span>CRUDEngine</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2043656305%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">interface </span><a href="-c-r-u-d-engine/index.html">CRUDEngine</a> : <a href="-c-r-u-d-engine-base-collection/index.html">CRUDEngineBaseCollection</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2064552258%2FClasslikes%2F1193073728" anchor-label="CRUDEngineBase" id="-2064552258%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-r-u-d-engine-base/index.html"><span>CRUDEngine</span><wbr><span><span>Base</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2064552258%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">interface </span><a href="-c-r-u-d-engine-base/index.html">CRUDEngineBase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1210234496%2FClasslikes%2F1193073728" anchor-label="CRUDEngineBaseCollection" id="-1210234496%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-r-u-d-engine-base-collection/index.html"><span>CRUDEngine</span><wbr><span>Base</span><wbr><span><span>Collection</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1210234496%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">interface </span><a href="-c-r-u-d-engine-base-collection/index.html">CRUDEngineBaseCollection</a> : <a href="-c-r-u-d-engine-base/index.html">CRUDEngineBase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1150823401%2FClasslikes%2F1193073728" anchor-label="Cryptobox" id="1150823401%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-cryptobox/index.html"><span><span>Cryptobox</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1150823401%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-cryptobox/index.html">Cryptobox</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">engine<span class="token operator">: </span><a href="-c-r-u-d-engine-base-collection/index.html">CRUDEngineBaseCollection</a><span class="token punctuation">, </span></span><span class="parameter ">minimumAmountOfPreKeys<span class="token operator">: </span><span data-unresolved-link="kotlin/Number///PointingToDeclaration/">Number</span><span class="token operator"> = </span>definedExternally</span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="833815702%2FClasslikes%2F1193073728" anchor-label="CryptoboxCRUDStore" id="833815702%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-cryptobox-c-r-u-d-store/index.html"><span>Cryptobox</span><wbr><span><span>CRUDStore</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="833815702%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-cryptobox-c-r-u-d-store/index.html">CryptoboxCRUDStore</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">engine<span class="token operator">: </span><a href="-c-r-u-d-engine-base-collection/index.html">CRUDEngineBaseCollection</a></span></span><span class="token punctuation">)</span> : <a href="-pre-key-store/index.html">PreKeyStore</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-436234301%2FClasslikes%2F1193073728" anchor-label="CryptoboxSession" id="-436234301%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-cryptobox-session/index.html"><span>Cryptobox</span><wbr><span><span>Session</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-436234301%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-cryptobox-session/index.html">CryptoboxSession</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-857251121%2FClasslikes%2F1193073728" anchor-label="Decoder" id="-857251121%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-decoder/index.html"><span><span>Decoder</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-857251121%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-decoder/index.html">Decoder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">buffer<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">config<span class="token operator">: </span><a href="-decoder-config/index.html">DecoderConfig</a><span class="token operator"> = </span>definedExternally</span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="69154605%2FClasslikes%2F1193073728" anchor-label="DecoderConfig" id="69154605%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-decoder-config/index.html"><span>Decoder</span><wbr><span><span>Config</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="69154605%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">interface </span><a href="-decoder-config/index.html">DecoderConfig</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="289844471%2FClasslikes%2F1193073728" anchor-label="Encoder" id="289844471%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-encoder/index.html"><span><span>Encoder</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="289844471%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-encoder/index.html">Encoder</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-72118286%2FClasslikes%2F1193073728" anchor-label="IdentityKey" id="-72118286%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-identity-key/index.html"><span>Identity</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-72118286%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-identity-key/index.html">IdentityKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">publicKey<span class="token operator">: </span><a href="-public-key/index.html">PublicKey</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1707024968%2FClasslikes%2F1193073728" anchor-label="IdentityKeyPair" id="-1707024968%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-identity-key-pair/index.html"><span>Identity</span><wbr><span>Key</span><wbr><span><span>Pair</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1707024968%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-identity-key-pair/index.html">IdentityKeyPair</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">publicKey<span class="token operator">: </span><a href="-identity-key/index.html">IdentityKey</a><span class="token operator"> = </span>definedExternally<span class="token punctuation">, </span></span><span class="parameter ">secretKey<span class="token operator">: </span><a href="-secret-key/index.html">SecretKey</a><span class="token operator"> = </span>definedExternally<span class="token punctuation">, </span></span><span class="parameter ">version<span class="token operator">: </span><span data-unresolved-link="kotlin/Number///PointingToDeclaration/">Number</span><span class="token operator"> = </span>definedExternally</span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1489739046%2FClasslikes%2F1193073728" anchor-label="KeyPair" id="-1489739046%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-key-pair/index.html"><span>Key</span><wbr><span><span>Pair</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1489739046%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-key-pair/index.html">KeyPair</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="226241996%2FClasslikes%2F1193073728" anchor-label="MemoryEngine" id="226241996%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-memory-engine/index.html"><span>Memory</span><wbr><span><span>Engine</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="226241996%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-memory-engine/index.html">MemoryEngine</a> : <a href="-c-r-u-d-engine/index.html">CRUDEngine</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="815553619%2FClasslikes%2F1193073728" anchor-label="PreKey" id="815553619%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pre-key/index.html"><span>Pre</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="815553619%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-pre-key/index.html">PreKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">keyId<span class="token operator">: </span><span data-unresolved-link="kotlin/Number///PointingToDeclaration/">Number</span><span class="token operator"> = </span>definedExternally<span class="token punctuation">, </span></span><span class="parameter ">keyPair<span class="token operator">: </span><a href="-key-pair/index.html">KeyPair</a><span class="token operator"> = </span>definedExternally<span class="token punctuation">, </span></span><span class="parameter ">version<span class="token operator">: </span><span data-unresolved-link="kotlin/Number///PointingToDeclaration/">Number</span><span class="token operator"> = </span>definedExternally</span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1125271439%2FClasslikes%2F1193073728" anchor-label="PreKeyBundle" id="-1125271439%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pre-key-bundle/index.html"><span>Pre</span><wbr><span>Key</span><wbr><span><span>Bundle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1125271439%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-pre-key-bundle/index.html">PreKeyBundle</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1522960466%2FClasslikes%2F1193073728" anchor-label="PreKeyStore" id="-1522960466%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pre-key-store/index.html"><span>Pre</span><wbr><span>Key</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1522960466%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-pre-key-store/index.html">PreKeyStore</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1937793949%2FClasslikes%2F1193073728" anchor-label="PublicKey" id="1937793949%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-public-key/index.html"><span>Public</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1937793949%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-public-key/index.html">PublicKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pubEdward<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">pubCurve<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="245653348%2FClasslikes%2F1193073728" anchor-label="SecretKey" id="245653348%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-secret-key/index.html"><span>Secret</span><wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="245653348%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">external </span><span class="token keyword">class </span><a href="-secret-key/index.html">SecretKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">secEdward<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">secCurve<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1869071990%2FClasslikes%2F1193073728" anchor-label="SerialisedJSON" id="-1869071990%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-serialised-j-s-o-n/index.html"><span>Serialised</span><wbr><span><span>JSON</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1869071990%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">interface </span><a href="-serialised-j-s-o-n/index.html">SerialisedJSON</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1068909459%2FClasslikes%2F1193073728" anchor-label="T$0" id="1068909459%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t$0/index.html"><span><span>T$0</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1068909459%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">interface </span><a href="-t$0/index.html">T$0</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-621066044%2FClasslikes%2F1193073728" anchor-label="TOPIC" id="-621066044%2FClasslikes%2F1193073728" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain"></a>
+          <div class="table-row" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-t-o-p-i-c/index.html"><span><span>TOPIC</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-621066044%2FClasslikes%2F1193073728"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":core:cryptography:dokkaHtmlPartial/jsMain" data-filterable-set=":core:cryptography:dokkaHtmlPartial/jsMain" data-active="" data-toggle=":core:cryptography:dokkaHtmlPartial/jsMain">js</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":core:cryptography:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">external </span><span class="token keyword">enum </span><a href="-t-o-p-i-c/index.html">TOPIC</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-t-o-p-i-c/index.html">TOPIC</a><span class="token operator">&gt; </span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

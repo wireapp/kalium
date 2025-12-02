@@ -19,7 +19,6 @@ $dokka.location:com.wire.backup.dump/BackupExportResult.Success/pathToOutputFile
 $dokka.location:com.wire.backup.dump/BackupExportResult///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/index.html
 $dokka.location:com.wire.backup.dump/MPBackupExporter/finalize/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]finalize.html
 $dokka.location:com.wire.backup.dump/MPBackupExporter/storage/#/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]storage.html
-$dokka.location:com.wire.backup.dump/MPBackupExporter/zipEntries/#kotlin.collections.List[com.wire.backup.filesystem.BackupPage]/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]zip-entries.html
 $dokka.location:com.wire.backup.ingest/MPBackupImporter/getUnencryptedArchiveSink/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]get-unencrypted-archive-sink.html
 $dokka.location:com.wire.backup.ingest/MPBackupImporter/unzipAllEntries/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]unzip-all-entries.html
 $dokka.location:com.wire.kalium.calling.callbacks/ActiveSpeakersHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-active-speakers-handler/index.html
@@ -162,28 +161,28 @@ $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/E2EIClientImpl/#/Poi
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/E2EIClientImpl/#[Error type: Unresolved type for E2eiEnrollment]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/-e2-e-i-client-impl.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/certificateRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/certificate-request.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/check-order-request.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/check-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/check-order-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/check-order-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/createDpopToken/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/create-dpop-token.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/directory-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/directory-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/directory-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/finalize-request.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/finalize-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/finalize-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/finalize-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewAccountRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-account-request.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewAuthzRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-authz-request.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewDpopChallengeRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-dpop-challenge-request.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewOidcChallengeRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-oidc-challenge-request.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewOrderRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-order-request.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAccountResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/set-account-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAccountResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-account-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAccountResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-account-response.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAuthzResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/set-authz-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAuthzResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-authz-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAuthzResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-authz-response.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setDPoPChallengeResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/set-d-po-p-challenge-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setDPoPChallengeResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-d-po-p-challenge-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setDPoPChallengeResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-d-po-p-challenge-response.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOIDCChallengeResponse/#[Error type: Unresolved type for CoreCryptoCentral]#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/set-o-i-d-c-challenge-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOIDCChallengeResponse/#[Error type: Unresolved type for CoreCryptoCentral]#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-o-i-d-c-challenge-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOIDCChallengeResponse/#com.wire.kalium.cryptography.CoreCryptoCentral#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-o-i-d-c-challenge-response.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/set-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-order-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-order-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/wireE2eIdentity/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/wire-e2e-identity.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/index.html
@@ -193,7 +192,7 @@ $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/MLSClientImpl/#[Error
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/close/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/close.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getDefaultCipherSuite/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/get-default-cipher-suite.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getPublicKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/get-public-key.html
-$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for MlsCoreCryptoContext],TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-m-l-s-client-impl/transaction.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for MlsCoreCryptoContext],TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-m-l-s-client-impl/transaction.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[com.wire.kalium.cryptography.MlsCoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/transaction.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/-companion/index.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl.Companion/CRYPTO_BOX_FILES/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/-companion/-c-r-y-p-t-o_-b-o-x_-f-i-l-e-s.html
@@ -364,30 +363,6 @@ $dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/file/#/Poi
 $dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/storePath/#/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[apple]-storage-data/-file-backed/store-path.html
 $dokka.location:com.wire.kalium.persistence.db/StorageData.InMemory///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-in-memory/index.html
 $dokka.location:com.wire.kalium.persistence.db/StorageData///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/index.html
-module:backup
-com.wire.backup.data
-com.wire.backup.dump
-com.wire.backup.encryption
-com.wire.backup.envelope
-com.wire.backup.filesystem
-com.wire.backup.hash
-com.wire.backup.ingest
-com.wire.backup.logger
-module:calling
-com.wire.kalium.calling
-com.wire.kalium.calling.callbacks
-com.wire.kalium.calling.types
-module:cli
-com.wire.kalium.cli
-com.wire.kalium.cli.commands
-module:cryptography
-com.wire.kalium.cryptography
-com.wire.kalium.cryptography.backup
-com.wire.kalium.cryptography.exceptions
-com.wire.kalium.cryptography.externals
-com.wire.kalium.cryptography.utils
-module:logger
-com.wire.kalium.logger
 module:logic
 com.wire.kalium.logic
 com.wire.kalium.logic.cache
@@ -525,6 +500,14 @@ com.wire.kalium.logic.sync.slow
 com.wire.kalium.logic.sync.slow.migration
 com.wire.kalium.logic.sync.slow.migration.steps
 com.wire.kalium.logic.util
+module:cryptography
+com.wire.kalium.cryptography
+com.wire.kalium.cryptography.backup
+com.wire.kalium.cryptography.exceptions
+com.wire.kalium.cryptography.externals
+com.wire.kalium.cryptography.utils
+module:logger
+com.wire.kalium.logger
 module:network
 com.wire.kalium.network
 com.wire.kalium.network.api.base.authenticated
@@ -635,6 +618,7 @@ com.wire.kalium.persistence.dao.receipt
 com.wire.kalium.persistence.dao.unread
 com.wire.kalium.persistence.daokaliumdb
 com.wire.kalium.persistence.db
+com.wire.kalium.persistence.db.feeders
 com.wire.kalium.persistence.db.support
 com.wire.kalium.persistence.dbPassphrase
 com.wire.kalium.persistence.kmmSettings
@@ -646,3 +630,19 @@ com.wire.kalium.protobuf.backup
 com.wire.kalium.protobuf.messages
 com.wire.kalium.protobuf.mls
 com.wire.kalium.protobuf.otr
+module:backup
+com.wire.backup.data
+com.wire.backup.dump
+com.wire.backup.encryption
+com.wire.backup.envelope
+com.wire.backup.filesystem
+com.wire.backup.hash
+com.wire.backup.ingest
+com.wire.backup.logger
+module:calling
+com.wire.kalium.calling
+com.wire.kalium.calling.callbacks
+com.wire.kalium.calling.types
+module:cli
+com.wire.kalium.cli
+com.wire.kalium.cli.commands
