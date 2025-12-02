@@ -34,17 +34,41 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import okio.Path.Companion.toPath
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddAttachmentDraftUseCaseTest {
+
+    private lateinit var testDispatcher: TestDispatcher
+    private lateinit var testScope: TestScope
+
+    @BeforeTest
+    fun setup() { 
+        testDispatcher = StandardTestDispatcher()
+        testScope = TestScope(testDispatcher)
+        Dispatchers.setMain(testDispatcher) 
+    }
+
+        @AfterTest
+        fun breakDown() {
+            Dispatchers.resetMain()
+            testScope.cancel()
+        }
 
     private companion object {
         val conversationId = ConversationId("1", "test")
@@ -57,8 +81,8 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun given_valid_request_upload_manager_is_called() = runTest {
-        val (arrangement, useCase) = Arrangement()
+    fun given_valid_request_upload_manager_is_called() = testScope.runTest {
+        val (arrangement, useCase) = Arrangement(testScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
             .arrange()
@@ -75,7 +99,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun given_success_pre_check_attachment_is_persisted() = runTest {
+    fun given_success_pre_check_attachment_is_persisted() = testScope.runTest {
         val (arrangement, useCase) = Arrangement()
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -96,7 +120,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun given_success_attachment_persist_upload_events_observer_is_started() = runTest {
+    fun given_success_attachment_persist_upload_events_observer_is_started() = testScope.runTest {
         val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -113,7 +137,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun given_upload_complete_event_upload_status_is_updated() = runTest {
+    fun given_upload_complete_event_upload_status_is_updated() = testScope.runTest {
         val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -131,7 +155,7 @@ class AddAttachmentDraftUseCaseTest {
     }
 
     @Test
-    fun given_upload_error_event_upload_status_is_updated() = runTest {
+    fun given_upload_error_event_upload_status_is_updated() = testScope.runTest {
         val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
@@ -148,7 +172,7 @@ class AddAttachmentDraftUseCaseTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement(val useCaseScope: CoroutineScope = TestScope()) {
+    private class Arrangement(val useCaseScope: CoroutineScope) {
 
         val uploadManager = mock(CellUploadManager::class)
         val conversationRepository = mock(CellConversationRepository::class)

@@ -72,6 +72,10 @@ subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
+        testLogging {
+            events("passed","failed")
+            showStandardStreams = true
+            }
     }
 }
 

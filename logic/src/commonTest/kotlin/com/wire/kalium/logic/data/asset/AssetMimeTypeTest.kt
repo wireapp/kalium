@@ -23,7 +23,6 @@ import kotlin.test.assertEquals
 
 class AssetMimeTypeTest {
 
-    @Test
     fun givenImageMimeTypes_whenCheckingAgainstSupportedAudioMimeTypes_thenTheyAreEquals() {
         val values = setOf(
             "image/jpg",

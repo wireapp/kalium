@@ -46,7 +46,6 @@ class BackupDataSourceTest {
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
-        testDispatcher.cancel()
     }
 
     @Test
