@@ -29,12 +29,16 @@ internal class PublicLinkDaoImpl(
     private val writeDispatcher: WriteDispatcher,
 ) : PublicLinkDao {
 
-    override suspend fun insert(id: String, password: String) = withContext(writeDispatcher.value) {
-        queries.insertLink(id, password)
+    override suspend fun insert(id: String, password: String) {
+        withContext(writeDispatcher.value) {
+            queries.insertLink(id, password)
+        }
     }
 
-    override suspend fun update(id: String, password: String) = withContext(writeDispatcher.value) {
-        queries.updateLink(password, id)
+    override suspend fun update(id: String, password: String) {
+        withContext(writeDispatcher.value) {
+            queries.updateLink(password, id)
+        }
     }
 
     override suspend fun get(id: String): PublicLinkEntity? = withContext(readDispatcher.value) {
@@ -42,7 +46,9 @@ internal class PublicLinkDaoImpl(
             .executeAsOneOrNull()
     }
 
-    override suspend fun delete(id: String) = withContext(writeDispatcher.value) {
-        queries.deleteLink(id)
+    override suspend fun delete(id: String) {
+        withContext(writeDispatcher.value) {
+            queries.deleteLink(id)
+        }
     }
 }

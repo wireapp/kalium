@@ -100,10 +100,11 @@ internal class MemberDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateMemberRole(userId: UserIDEntity, conversationID: QualifiedIDEntity, newRole: MemberEntity.Role) =
+    override suspend fun updateMemberRole(userId: UserIDEntity, conversationID: QualifiedIDEntity, newRole: MemberEntity.Role) {
         withContext(writeDispatcher.value) {
             memberQueries.updateMemberRole(newRole, userId, conversationID)
         }
+    }
 
     override suspend fun insertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         withContext(writeDispatcher.value) {
@@ -134,10 +135,11 @@ internal class MemberDAOImpl internal constructor(
         }
     }
 
-    override suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity) =
+    override suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             memberQueries.deleteMember(conversationID, userID)
         }
+    }
 
     override suspend fun deleteMembersByQualifiedID(
         userIDList: List<QualifiedIDEntity>,
@@ -160,10 +162,11 @@ internal class MemberDAOImpl internal constructor(
             .map { it.map(memberMapper::toModel) }
     }
 
-    override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role) =
+    override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role) {
         withContext(writeDispatcher.value) {
             memberQueries.updateMemberRole(role, userId, conversationId)
         }
+    }
 
     override suspend fun updateOrInsertOneOnOneMember(
         member: MemberEntity,
