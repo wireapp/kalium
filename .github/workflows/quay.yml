@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./monkeys/docker/Dockerfile
+          file: ./tools/monkeys/docker/Dockerfile
           platforms: linux/amd64
           tags: quay.io/wire/infinitemonkeys
           push: true
