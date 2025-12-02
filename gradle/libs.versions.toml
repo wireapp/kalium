@@ -66,7 +66,7 @@ jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.51.0.0"
 kotlinx-io = "0.5.3"
-cells-sdk = "0.1.1-alpha16"
+cells-sdk = "0.1.1-alpha17"
 difference = "1.1.1"
 
 [plugins]
