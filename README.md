@@ -10,9 +10,6 @@
 ### Dependencies
 
 - JDK 21 (ex: openjdk-21-jdk on Ubuntu)
-- [libsodium](https://github.com/jedisct1/libsodium)
-- [cryptobox-c](https://github.com/wireapp/cryptobox-c)
-- [cryptobox4j](https://github.com/wireapp/cryptobox4j)
 
 ### Supported Platforms
 
