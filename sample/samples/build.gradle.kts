@@ -32,6 +32,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(projects.domain.backup)
+                implementation(projects.core.cryptography)
                 implementation(projects.data.protobuf)
                 implementation(projects.core.logger)
 
@@ -43,7 +44,6 @@ kotlin {
         val nonJsMain by creating {
             dependsOn(commonMain)
             dependencies {
-                implementation(projects.core.cryptography)
                 implementation(projects.data.network)
                 implementation(projects.data.persistence)
             }
