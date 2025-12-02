@@ -43,11 +43,15 @@ internal class CompositeMessageDAOImpl internal constructor(
         messageId: String,
         conversationId: QualifiedIDEntity,
         buttonId: String
-    ) = withContext(writeDispatcher.value) {
-        buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId)
+    ) {
+        withContext(writeDispatcher.value) {
+            buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId)
+        }
     }
 
-    override suspend fun resetSelection(messageId: String, conversationId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        buttonContentQueries.removeAllSelection(conversation_id = conversationId, message_id = messageId)
+    override suspend fun resetSelection(messageId: String, conversationId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            buttonContentQueries.removeAllSelection(conversation_id = conversationId, message_id = messageId)
+        }
     }
 }
