@@ -180,7 +180,6 @@ class FeatureConfigMapperTest {
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.ENABLED),
         )
