@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
+import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -77,8 +78,13 @@ internal class CellsApiImpl(
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
         wrapCellsResponse {
-            nodeServiceApi.getByUuid(uuid)
+            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
         }.mapSuccess { response -> response.toDto() }
+
+    override suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String> =
+        wrapCellsResponse {
+            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
+        }.mapSuccess { response -> response.editorUrl(urlKey) ?: "" }
 
     override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
