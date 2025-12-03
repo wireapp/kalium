@@ -1,0 +1,4 @@
+Scenario,Before (ms),After (ms)
+2000 messages from 1 conversation,10218,6046
+1000 messages across 5 conversations,5025,2920
+5000 messages across 6 conversations,24768,13717
