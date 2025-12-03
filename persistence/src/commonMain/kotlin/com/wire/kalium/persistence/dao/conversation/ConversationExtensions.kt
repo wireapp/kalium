@@ -67,7 +67,7 @@ internal class ConversationExtensionsImpl internal constructor(
         QueryPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
-                    queries.countConversation(
+                    queries.countConversations(
                         fromArchive = fromArchive,
                         conversationFilter = conversationFilter.name,
                         strict_mls = if (strictMlsFilter) 1 else 0,

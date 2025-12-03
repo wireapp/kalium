@@ -199,7 +199,7 @@ OFFSET :offset;
 -- - This significantly reduces TTI spikes caused by the COUNT phase
 --   for the main conversation list when searchQuery is empty.
 
-countConversation:
+countConversations:
 SELECT COUNT(*)
 FROM Conversation
 WHERE
