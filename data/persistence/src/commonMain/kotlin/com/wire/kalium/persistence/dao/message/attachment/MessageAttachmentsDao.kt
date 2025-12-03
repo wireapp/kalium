@@ -80,7 +80,8 @@ internal class MessageAttachmentsDaoImpl(
         hash: String?,
         remotePath: String,
         isEditSupported: Boolean,
-    ) = withContext(writeDispatcher.value) {
+    ) {
+        withContext(writeDispatcher.value) {
             queries.updateAttachment(url, urlExpiresAt, hash, remotePath, isEditSupported, assetId)
         }
     }
