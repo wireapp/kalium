@@ -1,0 +1,806 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>UserDAOImpl</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/commonMain" data-filter=":data:persistence:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="persistence::com.wire.kalium.persistence.dao/UserDAOImpl///PointingToDeclaration//-794769692">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.dao</a><span class="delimiter">/</span><span class="current">UserDAOImpl</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>User</span><wbr><span><span>DAOImpl</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserDAOImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userQueries<span class="token operator">: </span><a href="../../../../data/persistence/com.wire.kalium.persistence/-users-queries/index.html">UsersQueries</a><span class="token punctuation">, </span></span><span class="parameter ">userCache<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.cache/-flow-cache/index.html">FlowCache</a><span class="token operator">&lt;</span><a href="../-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">?</span><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">readDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-read-dispatcher/index.html">ReadDispatcher</a><span class="token punctuation">, </span></span><span class="parameter ">writeDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-write-dispatcher/index.html">WriteDispatcher</a></span></span><span class="token punctuation">)</span> : <a href="../-user-d-a-o/index.html">UserDAO</a></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="1386725888%2FConstructors%2F-794769692" anchor-label="UserDAOImpl" id="1386725888%2FConstructors%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-user-d-a-o-impl.html"><span>User</span><wbr><span><span>DAOImpl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1386725888%2FConstructors%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userQueries<span class="token operator">: </span><a href="../../../../data/persistence/com.wire.kalium.persistence/-users-queries/index.html">UsersQueries</a><span class="token punctuation">, </span></span><span class="parameter ">userCache<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.cache/-flow-cache/index.html">FlowCache</a><span class="token operator">&lt;</span><a href="../-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">?</span><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">readDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-read-dispatcher/index.html">ReadDispatcher</a><span class="token punctuation">, </span></span><span class="parameter ">writeDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-write-dispatcher/index.html">WriteDispatcher</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="773874433%2FProperties%2F-794769692" anchor-label="mapper" id="773874433%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mapper.html"><span><span>mapper</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="773874433%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mapper.html">mapper</a><span class="token operator">: </span><a href="../-user-mapper/index.html">UserMapper</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1925674716%2FFunctions%2F-794769692" anchor-label="allOtherUsersId" id="-1925674716%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="all-other-users-id.html"><span>all</span><wbr><span>Other</span><wbr><span>Users</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1925674716%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="all-other-users-id.html"><span class="token function">allOtherUsersId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-i-d-entity/index.html">UserIDEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1638885884%2FFunctions%2F-794769692" anchor-label="countContactsAmount" id="1638885884%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="count-contacts-amount.html"><span>count</span><wbr><span>Contacts</span><wbr><span><span>Amount</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1638885884%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="count-contacts-amount.html"><span class="token function">countContactsAmount</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-450854265%2FFunctions%2F-794769692" anchor-label="countTeamMembersAmount" id="-450854265%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="count-team-members-amount.html"><span>count</span><wbr><span>Team</span><wbr><span>Members</span><wbr><span><span>Amount</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-450854265%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="count-team-members-amount.html"><span class="token function">countTeamMembersAmount</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1826818196%2FFunctions%2F-794769692" anchor-label="deleteUserByQualifiedID" id="-1826818196%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="delete-user-by-qualified-i-d.html"><span>delete</span><wbr><span>User</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>ID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1826818196%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="delete-user-by-qualified-i-d.html"><span class="token function">deleteUserByQualifiedID</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2057756387%2FFunctions%2F-794769692" anchor-label="getAllUsersDetails" id="-2057756387%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-all-users-details.html"><span>get</span><wbr><span>All</span><wbr><span>Users</span><wbr><span><span>Details</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2057756387%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-all-users-details.html"><span class="token function">getAllUsersDetails</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="621241211%2FFunctions%2F-794769692" anchor-label="getAllUsersDetailsByTeam" id="621241211%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-all-users-details-by-team.html"><span>get</span><wbr><span>All</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>By</span><wbr><span><span>Team</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="621241211%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-all-users-details-by-team.html"><span class="token function">getAllUsersDetailsByTeam</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-306715850%2FFunctions%2F-794769692" anchor-label="getNameAndHandle" id="-306715850%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-name-and-handle.html"><span>get</span><wbr><span>Name</span><wbr><span>And</span><wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-306715850%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-name-and-handle.html"><span class="token function">getNameAndHandle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../-user-i-d-entity/index.html">UserIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.conversation/-name-and-handle-entity/index.html">NameAndHandleEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1442177564%2FFunctions%2F-794769692" anchor-label="getOneOnOnConversationId" id="-1442177564%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-one-on-on-conversation-id.html"><span>get</span><wbr><span>One</span><wbr><span>On</span><wbr><span>On</span><wbr><span>Conversation</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1442177564%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-one-on-on-conversation-id.html"><span class="token function">getOneOnOnConversationId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../-user-i-d-entity/index.html">UserIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1646770870%2FFunctions%2F-794769692" anchor-label="getUserDetailsByHandleAndConnectionStates" id="1646770870%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-details-by-handle-and-connection-states.html"><span>get</span><wbr><span>User</span><wbr><span>Details</span><wbr><span>By</span><wbr><span>Handle</span><wbr><span>And</span><wbr><span>Connection</span><wbr><span><span>States</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1646770870%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-user-details-by-handle-and-connection-states.html"><span class="token function">getUserDetailsByHandleAndConnectionStates</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">connectionStates<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-connection-entity/-state/index.html">ConnectionEntity.State</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1157625151%2FFunctions%2F-794769692" anchor-label="getUserDetailsByNameOrHandleOrEmailAndConnectionStates" id="-1157625151%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-details-by-name-or-handle-or-email-and-connection-states.html"><span>get</span><wbr><span>User</span><wbr><span>Details</span><wbr><span>By</span><wbr><span>Name</span><wbr><span>Or</span><wbr><span>Handle</span><wbr><span>Or</span><wbr><span>Email</span><wbr><span>And</span><wbr><span>Connection</span><wbr><span><span>States</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1157625151%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-user-details-by-name-or-handle-or-email-and-connection-states.html"><span class="token function">getUserDetailsByNameOrHandleOrEmailAndConnectionStates</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">searchQuery<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">connectionStates<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-connection-entity/-state/index.html">ConnectionEntity.State</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1330045409%2FFunctions%2F-794769692" anchor-label="getUserDetailsByQualifiedID" id="1330045409%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-details-by-qualified-i-d.html"><span>get</span><wbr><span>User</span><wbr><span>Details</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>ID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1330045409%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-user-details-by-qualified-i-d.html"><span class="token function">getUserDetailsByQualifiedID</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="868793886%2FFunctions%2F-794769692" anchor-label="getUserDetailsWithTeamByQualifiedID" id="868793886%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-details-with-team-by-qualified-i-d.html"><span>get</span><wbr><span>User</span><wbr><span>Details</span><wbr><span>With</span><wbr><span>Team</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>ID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="868793886%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-user-details-with-team-by-qualified-i-d.html"><span class="token function">getUserDetailsWithTeamByQualifiedID</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token punctuation">, </span><a href="../-team-entity/index.html">TeamEntity</a><span class="token operator">?</span><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="275464349%2FFunctions%2F-794769692" anchor-label="getUserMinimizedByQualifiedID" id="275464349%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-minimized-by-qualified-i-d.html"><span>get</span><wbr><span>User</span><wbr><span>Minimized</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>ID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="275464349%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-user-minimized-by-qualified-i-d.html"><span class="token function">getUserMinimizedByQualifiedID</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-user-entity-minimized/index.html">UserEntityMinimized</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="664834376%2FFunctions%2F-794769692" anchor-label="getUsersDetailsByQualifiedIDList" id="664834376%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-users-details-by-qualified-i-d-list.html"><span>get</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>IDList</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="664834376%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-users-details-by-qualified-i-d-list.html"><span class="token function">getUsersDetailsByQualifiedIDList</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedIDList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1455461753%2FFunctions%2F-794769692" anchor-label="getUsersDetailsNotInConversationByHandle" id="-1455461753%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-users-details-not-in-conversation-by-handle.html"><span>get</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>Not</span><wbr><span>In</span><wbr><span>Conversation</span><wbr><span>By</span><wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1455461753%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-users-details-not-in-conversation-by-handle.html"><span class="token function">getUsersDetailsNotInConversationByHandle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-480366136%2FFunctions%2F-794769692" anchor-label="getUsersDetailsNotInConversationByNameOrHandleOrEmail" id="-480366136%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-users-details-not-in-conversation-by-name-or-handle-or-email.html"><span>get</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>Not</span><wbr><span>In</span><wbr><span>Conversation</span><wbr><span>By</span><wbr><span>Name</span><wbr><span>Or</span><wbr><span>Handle</span><wbr><span>Or</span><wbr><span><span>Email</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-480366136%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-users-details-not-in-conversation-by-name-or-handle-or-email.html"><span class="token function">getUsersDetailsNotInConversationByNameOrHandleOrEmail</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">searchQuery<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="874369179%2FFunctions%2F-794769692" anchor-label="getUsersDetailsWithoutMetadata" id="874369179%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-users-details-without-metadata.html"><span>get</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>Without</span><wbr><span><span>Metadata</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="874369179%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-users-details-without-metadata.html"><span class="token function">getUsersDetailsWithoutMetadata</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-382137307%2FFunctions%2F-794769692" anchor-label="getUsersMinimizedByQualifiedIDs" id="-382137307%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-users-minimized-by-qualified-i-ds.html"><span>get</span><wbr><span>Users</span><wbr><span>Minimized</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>IDs</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-382137307%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-users-minimized-by-qualified-i-ds.html"><span class="token function">getUsersMinimizedByQualifiedIDs</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedIDs<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-entity-minimized/index.html">UserEntityMinimized</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="261715110%2FFunctions%2F-794769692" anchor-label="getUsersWithOneOnOneConversation" id="261715110%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-users-with-one-on-one-conversation.html"><span>get</span><wbr><span>Users</span><wbr><span>With</span><wbr><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span><span>Conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="261715110%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-users-with-one-on-one-conversation.html"><span class="token function">getUsersWithOneOnOneConversation</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-entity/index.html">UserEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1610709552%2FFunctions%2F-794769692" anchor-label="insertOrIgnoreIncompleteUsers" id="-1610709552%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="insert-or-ignore-incomplete-users.html"><span>insert</span><wbr><span>Or</span><wbr><span>Ignore</span><wbr><span>Incomplete</span><wbr><span><span>Users</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1610709552%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="insert-or-ignore-incomplete-users.html"><span class="token function">insertOrIgnoreIncompleteUsers</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userIds<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1251583814%2FFunctions%2F-794769692" anchor-label="insertOrIgnoreIncompleteUserWithOnlyEmail" id="-1251583814%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="insert-or-ignore-incomplete-user-with-only-email.html"><span>insert</span><wbr><span>Or</span><wbr><span>Ignore</span><wbr><span>Incomplete</span><wbr><span>User</span><wbr><span>With</span><wbr><span>Only</span><wbr><span><span>Email</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1251583814%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="insert-or-ignore-incomplete-user-with-only-email.html"><span class="token function">insertOrIgnoreIncompleteUserWithOnlyEmail</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">email<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1572835870%2FFunctions%2F-794769692" anchor-label="insertOrIgnoreUsers" id="1572835870%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="insert-or-ignore-users.html"><span>insert</span><wbr><span>Or</span><wbr><span>Ignore</span><wbr><span><span>Users</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1572835870%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="insert-or-ignore-users.html"><span class="token function">insertOrIgnoreUsers</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">users<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-entity/index.html">UserEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">Inserts each user into the local storage or ignores if already exists</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1685909698%2FFunctions%2F-794769692" anchor-label="isAtLeastOneUserATeamMember" id="-1685909698%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-at-least-one-user-a-team-member.html"><span>is</span><wbr><span>At</span><wbr><span>Least</span><wbr><span>One</span><wbr><span>User</span><wbr><span>ATeam</span><wbr><span><span>Member</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1685909698%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="is-at-least-one-user-a-team-member.html"><span class="token function">isAtLeastOneUserATeamMember</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-i-d-entity/index.html">UserIDEntity</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1684442670%2FFunctions%2F-794769692" anchor-label="markAsDeleted" id="-1684442670%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mark-as-deleted.html"><span>mark</span><wbr><span>As</span><wbr><span><span>Deleted</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1684442670%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="mark-as-deleted.html"><span class="token function">markAsDeleted</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-i-d-entity/index.html">UserIDEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1382155717%2FFunctions%2F-794769692" anchor-label="markUserAsDefederated" id="-1382155717%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mark-user-as-defederated.html"><span>mark</span><wbr><span>User</span><wbr><span>As</span><wbr><span><span>Defederated</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1382155717%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="mark-user-as-defederated.html"><span class="token function">markUserAsDefederated</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1669695903%2FFunctions%2F-794769692" anchor-label="markUserAsDeletedAndRemoveFromGroupConv" id="1669695903%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mark-user-as-deleted-and-remove-from-group-conv.html"><span>mark</span><wbr><span>User</span><wbr><span>As</span><wbr><span>Deleted</span><wbr><span>And</span><wbr><span>Remove</span><wbr><span>From</span><wbr><span>Group</span><wbr><span><span>Conv</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1669695903%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="mark-user-as-deleted-and-remove-from-group-conv.html"><span class="token function">markUserAsDeletedAndRemoveFromGroupConv</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-conversation-i-d-entity/index.html">ConversationIDEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1443642726%2FFunctions%2F-794769692" anchor-label="observeAllUsersDetailsByConnectionStatus" id="1443642726%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-all-users-details-by-connection-status.html"><span>observe</span><wbr><span>All</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>By</span><wbr><span>Connection</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1443642726%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="observe-all-users-details-by-connection-status.html"><span class="token function">observeAllUsersDetailsByConnectionStatus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">connectionState<span class="token operator">: </span><a href="../-connection-entity/-state/index.html">ConnectionEntity.State</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="903817127%2FFunctions%2F-794769692" anchor-label="observeUserDetailsByQualifiedID" id="903817127%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-user-details-by-qualified-i-d.html"><span>observe</span><wbr><span>User</span><wbr><span>Details</span><wbr><span>By</span><wbr><span>Qualified</span><wbr><span><span>ID</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="903817127%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="observe-user-details-by-qualified-i-d.html"><span class="token function">observeUserDetailsByQualifiedID</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">?</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-506096035%2FFunctions%2F-794769692" anchor-label="observeUsersDetailsNotInConversation" id="-506096035%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-users-details-not-in-conversation.html"><span>observe</span><wbr><span>Users</span><wbr><span>Details</span><wbr><span>Not</span><wbr><span>In</span><wbr><span><span>Conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-506096035%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="observe-users-details-not-in-conversation.html"><span class="token function">observeUsersDetailsNotInConversation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-details-entity/index.html">UserDetailsEntity</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1614784515%2FFunctions%2F-794769692" anchor-label="removeUserAsset" id="1614784515%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="remove-user-asset.html"><span>remove</span><wbr><span>User</span><wbr><span><span>Asset</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1614784515%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="remove-user-asset.html"><span class="token function">removeUserAsset</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">assetId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="96687206%2FFunctions%2F-794769692" anchor-label="updateActiveOneOnOneConversation" id="96687206%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-active-one-on-one-conversation.html"><span>update</span><wbr><span>Active</span><wbr><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span><span>Conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="96687206%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-active-one-on-one-conversation.html"><span class="token function">updateActiveOneOnOneConversation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Update which 1-1 conversation is the currently active one. If multiple encryption protocols are enabled there can be multiple co-existing 1-1 conversations.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1591487342%2FFunctions%2F-794769692" anchor-label="updateActiveOneOnOneConversationIfNotSet" id="-1591487342%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-active-one-on-one-conversation-if-not-set.html"><span>update</span><wbr><span>Active</span><wbr><span>One</span><wbr><span>On</span><wbr><span>One</span><wbr><span>Conversation</span><wbr><span>If</span><wbr><span>Not</span><wbr><span><span>Set</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1591487342%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-active-one-on-one-conversation-if-not-set.html"><span class="token function">updateActiveOneOnOneConversationIfNotSet</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Update which 1-1 conversation iff it was not set before.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="177446846%2FFunctions%2F-794769692" anchor-label="updateTeamId" id="177446846%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-team-id.html"><span>update</span><wbr><span>Team</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="177446846%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-team-id.html"><span class="token function">updateTeamId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-230928148%2FFunctions%2F-794769692" anchor-label="updateUser" id="-230928148%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-user.html"><span>update</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-230928148%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user.html"><span class="token function">updateUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">update<span class="token operator">: </span><a href="../-partial-user-entity/index.html">PartialUserEntity</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Perform a partial update of an existing user. Only non-null values will be updated otherwise the existing value is kept.</p></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user.html"><span class="token function">updateUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">users<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-partial-user-entity/index.html">PartialUserEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2058989162%2FFunctions%2F-794769692" anchor-label="updateUserAccentColor" id="-2058989162%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-user-accent-color.html"><span>update</span><wbr><span>User</span><wbr><span>Accent</span><wbr><span><span>Color</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2058989162%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user-accent-color.html"><span class="token function">updateUserAccentColor</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">accentId<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1263380313%2FFunctions%2F-794769692" anchor-label="updateUserAvailabilityStatus" id="1263380313%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-user-availability-status.html"><span>update</span><wbr><span>User</span><wbr><span>Availability</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1263380313%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user-availability-status.html"><span class="token function">updateUserAvailabilityStatus</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">status<span class="token operator">: </span><a href="../-user-availability-status-entity/index.html">UserAvailabilityStatusEntity</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1988917184%2FFunctions%2F-794769692" anchor-label="updateUserDisplayName" id="1988917184%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-user-display-name.html"><span>update</span><wbr><span>User</span><wbr><span>Display</span><wbr><span><span>Name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1988917184%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user-display-name.html"><span class="token function">updateUserDisplayName</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">displayName<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1602981433%2FFunctions%2F-794769692" anchor-label="updateUserHandle" id="1602981433%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-user-handle.html"><span>update</span><wbr><span>User</span><wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1602981433%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user-handle.html"><span class="token function">updateUserHandle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2120770903%2FFunctions%2F-794769692" anchor-label="updateUserSupportedProtocols" id="2120770903%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-user-supported-protocols.html"><span>update</span><wbr><span>User</span><wbr><span>Supported</span><wbr><span><span>Protocols</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2120770903%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="update-user-supported-protocols.html"><span class="token function">updateUserSupportedProtocols</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">supportedProtocols<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><a href="../-supported-protocol-entity/index.html">SupportedProtocolEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="857375351%2FFunctions%2F-794769692" anchor-label="upsertConnectionStatuses" id="857375351%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upsert-connection-statuses.html"><span>upsert</span><wbr><span>Connection</span><wbr><span><span>Statuses</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="857375351%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="upsert-connection-statuses.html"><span class="token function">upsertConnectionStatuses</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userStatuses<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span><a href="../-connection-entity/-state/index.html">ConnectionEntity.State</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1619734774%2FFunctions%2F-794769692" anchor-label="upsertTeamMemberUserTypes" id="1619734774%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upsert-team-member-user-types.html"><span>upsert</span><wbr><span>Team</span><wbr><span>Member</span><wbr><span>User</span><wbr><span><span>Types</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1619734774%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="upsert-team-member-user-types.html"><span class="token function">upsertTeamMemberUserTypes</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">users<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><a href="../-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span><a href="../-user-type-entity/index.html">UserTypeEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">This will update <a href="../-user-entity/team.html">UserEntity.team</a>, <a href="../-user-entity/user-type.html">UserEntity.userType</a>, <a href="../-user-entity/connection-status.html">UserEntity.connectionStatus</a> to <a href="../-connection-entity/-state/-a-c-c-e-p-t-e-d/index.html">ConnectionEntity.State.ACCEPTED</a> or insert a new record.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="942493000%2FFunctions%2F-794769692" anchor-label="upsertUser" id="942493000%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upsert-user.html"><span>upsert</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="942493000%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="upsert-user.html"><span class="token function">upsertUser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">user<span class="token operator">: </span><a href="../-user-entity/index.html">UserEntity</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">This will update all columns (or insert a new record), except:</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1755819651%2FFunctions%2F-794769692" anchor-label="upsertUsers" id="-1755819651%2FFunctions%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upsert-users.html"><span>upsert</span><wbr><span><span>Users</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1755819651%2FFunctions%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="upsert-users.html"><span class="token function">upsertUsers</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">users<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-user-entity/index.html">UserEntity</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">This will update all columns (or insert a new record), except:</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

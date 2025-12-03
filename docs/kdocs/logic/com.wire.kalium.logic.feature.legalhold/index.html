@@ -1,0 +1,392 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.kalium.logic.feature.legalhold</title>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../styles/style.css" rel="Stylesheet">
+<link href="../../styles/main.css" rel="Stylesheet">
+<link href="../../styles/prism.css" rel="Stylesheet">
+<link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.feature.legalhold////PointingToDeclaration//867774983">
+  <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.feature.legalhold</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="685727928%2FClasslikes%2F867774983" anchor-label="ApproveLegalHoldRequestUseCase" id="685727928%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-approve-legal-hold-request-use-case/index.html"><span>Approve</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Request</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="685727928%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-approve-legal-hold-request-use-case/index.html">ApproveLegalHoldRequestUseCase</a></div><div class="brief "><p class="paragraph">Use Case that allows the user to accept a requested legal hold.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1722251000%2FClasslikes%2F867774983" anchor-label="ApproveLegalHoldRequestUseCaseImpl" id="1722251000%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-approve-legal-hold-request-use-case-impl/index.html"><span>Approve</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Request</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1722251000%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-approve-legal-hold-request-use-case-impl/index.html">ApproveLegalHoldRequestUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfTeamIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-self-team-id-provider/index.html">SelfTeamIdProvider</a></span></span><span class="token punctuation">)</span> : <a href="-approve-legal-hold-request-use-case/index.html">ApproveLegalHoldRequestUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="884567782%2FClasslikes%2F867774983" anchor-label="FetchLegalHoldForSelfUserFromRemoteUseCase" id="884567782%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-fetch-legal-hold-for-self-user-from-remote-use-case/index.html"><span>Fetch</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>User</span><wbr><span>From</span><wbr><span>Remote</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="884567782%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-fetch-legal-hold-for-self-user-from-remote-use-case/index.html">FetchLegalHoldForSelfUserFromRemoteUseCase</a></div><div class="brief "><p class="paragraph">Use case that allows to fetch and persist the legal hold state for the self user.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1118650842%2FClasslikes%2F867774983" anchor-label="FetchLegalHoldForSelfUserFromRemoteUseCaseImpl" id="-1118650842%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-fetch-legal-hold-for-self-user-from-remote-use-case-impl/index.html"><span>Fetch</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>User</span><wbr><span>From</span><wbr><span>Remote</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1118650842%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-fetch-legal-hold-for-self-user-from-remote-use-case-impl/index.html">FetchLegalHoldForSelfUserFromRemoteUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfTeamIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-self-team-id-provider/index.html">SelfTeamIdProvider</a></span></span><span class="token punctuation">)</span> : <a href="-fetch-legal-hold-for-self-user-from-remote-use-case/index.html">FetchLegalHoldForSelfUserFromRemoteUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1747754514%2FClasslikes%2F867774983" anchor-label="LegalHoldState" id="1747754514%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-legal-hold-state/index.html"><span>Legal</span><wbr><span>Hold</span><wbr><span><span>State</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1747754514%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-legal-hold-state/index.html">LegalHoldState</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1946009264%2FClasslikes%2F867774983" anchor-label="LegalHoldStateForSelfUser" id="1946009264%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-legal-hold-state-for-self-user/index.html"><span>Legal</span><wbr><span>Hold</span><wbr><span>State</span><wbr><span>For</span><wbr><span>Self</span><wbr><span><span>User</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1946009264%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-legal-hold-state-for-self-user/index.html">LegalHoldStateForSelfUser</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-123877296%2FClasslikes%2F867774983" anchor-label="MarkLegalHoldChangeAsNotifiedForSelfUseCase" id="-123877296%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mark-legal-hold-change-as-notified-for-self-use-case/index.html"><span>Mark</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Change</span><wbr><span>As</span><wbr><span>Notified</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-123877296%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-mark-legal-hold-change-as-notified-for-self-use-case/index.html">MarkLegalHoldChangeAsNotifiedForSelfUseCase</a></div><div class="brief "><p class="paragraph">Use case that marks the recent legal hold change as already notified to the user.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-617065840%2FClasslikes%2F867774983" anchor-label="MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl" id="-617065840%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mark-legal-hold-change-as-notified-for-self-use-case-impl/index.html"><span>Mark</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Change</span><wbr><span>As</span><wbr><span>Notified</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-617065840%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-mark-legal-hold-change-as-notified-for-self-use-case-impl/index.html">MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-mark-legal-hold-change-as-notified-for-self-use-case/index.html">MarkLegalHoldChangeAsNotifiedForSelfUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-754229883%2FClasslikes%2F867774983" anchor-label="MembersHavingLegalHoldClientUseCase" id="-754229883%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-members-having-legal-hold-client-use-case/index.html"><span>Members</span><wbr><span>Having</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Client</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-754229883%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-members-having-legal-hold-client-use-case/index.html">MembersHavingLegalHoldClientUseCase</a></div><div class="brief "><p class="paragraph">Returns list of ids of conversation members having a legal hold client.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-306297531%2FClasslikes%2F867774983" anchor-label="MembersHavingLegalHoldClientUseCaseImpl" id="-306297531%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-members-having-legal-hold-client-use-case-impl/index.html"><span>Members</span><wbr><span>Having</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Client</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-306297531%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-members-having-legal-hold-client-use-case-impl/index.html">MembersHavingLegalHoldClientUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clientRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a></span></span><span class="token punctuation">)</span> : <a href="-members-having-legal-hold-client-use-case/index.html">MembersHavingLegalHoldClientUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1795486373%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldChangeNotifiedForSelfUseCase" id="1795486373%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-change-notified-for-self-use-case/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Change</span><wbr><span>Notified</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1795486373%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-legal-hold-change-notified-for-self-use-case/index.html">ObserveLegalHoldChangeNotifiedForSelfUseCase</a></div><div class="brief "><p class="paragraph">Use case that observes if the legal hold change should be notified to the user or if it has been already notified.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="380127845%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl" id="380127845%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-change-notified-for-self-use-case-impl/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Change</span><wbr><span>Notified</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="380127845%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-legal-hold-change-notified-for-self-use-case-impl/index.html">ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>observeLegalHoldForUserUseCase<span class="token operator">: </span><a href="-observe-legal-hold-state-for-user-use-case/index.html">ObserveLegalHoldStateForUserUseCase</a></span></span><span class="token punctuation">)</span> : <a href="-observe-legal-hold-change-notified-for-self-use-case/index.html">ObserveLegalHoldChangeNotifiedForSelfUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="474788999%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldRequestUseCase" id="474788999%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-request-use-case/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Request</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="474788999%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-legal-hold-request-use-case/index.html">ObserveLegalHoldRequestUseCase</a></div><div class="brief "><p class="paragraph">Use case that observes the legal hold request.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2023246663%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldRequestUseCaseImpl" id="2023246663%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-request-use-case-impl/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>Request</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2023246663%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-legal-hold-request-use-case-impl/index.html">ObserveLegalHoldRequestUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a></span></span><span class="token punctuation">)</span> : <a href="-observe-legal-hold-request-use-case/index.html">ObserveLegalHoldRequestUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-347260597%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldStateForSelfUserUseCase" id="-347260597%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-state-for-self-user-use-case/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>State</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>User</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-347260597%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-legal-hold-state-for-self-user-use-case/index.html">ObserveLegalHoldStateForSelfUserUseCase</a></div><div class="brief "><p class="paragraph">Use case that allows to observe the legal hold state for the self user.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="377540107%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldStateForSelfUserUseCaseImpl" id="377540107%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-state-for-self-user-use-case-impl/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>State</span><wbr><span>For</span><wbr><span>Self</span><wbr><span>User</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="377540107%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-legal-hold-state-for-self-user-use-case-impl/index.html">ObserveLegalHoldStateForSelfUserUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">observeLegalHoldStateForUser<span class="token operator">: </span><a href="-observe-legal-hold-state-for-user-use-case/index.html">ObserveLegalHoldStateForUserUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">observeLegalHoldRequestUseCase<span class="token operator">: </span><a href="-observe-legal-hold-request-use-case/index.html">ObserveLegalHoldRequestUseCase</a></span></span><span class="token punctuation">)</span> : <a href="-observe-legal-hold-state-for-self-user-use-case/index.html">ObserveLegalHoldStateForSelfUserUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="311548127%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldStateForUserUseCase" id="311548127%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-state-for-user-use-case/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>State</span><wbr><span>For</span><wbr><span>User</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="311548127%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-legal-hold-state-for-user-use-case/index.html">ObserveLegalHoldStateForUserUseCase</a></div><div class="brief "><p class="paragraph">Use case that allows to observe the legal hold state for a given user.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-998014049%2FClasslikes%2F867774983" anchor-label="ObserveLegalHoldStateForUserUseCaseImpl" id="-998014049%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-legal-hold-state-for-user-use-case-impl/index.html"><span>Observe</span><wbr><span>Legal</span><wbr><span>Hold</span><wbr><span>State</span><wbr><span>For</span><wbr><span>User</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-998014049%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-legal-hold-state-for-user-use-case-impl/index.html">ObserveLegalHoldStateForUserUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">clientRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a></span></span><span class="token punctuation">)</span> : <a href="-observe-legal-hold-state-for-user-use-case/index.html">ObserveLegalHoldStateForUserUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

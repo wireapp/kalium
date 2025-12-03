@@ -1,0 +1,724 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>[android]Calling</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":domain:calling:dokkaHtmlPartial/androidMain">android</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":domain:calling:dokkaHtmlPartial/androidMain" data-filter=":domain:calling:dokkaHtmlPartial/androidMain">
+                                <span class="checkbox--icon"></span>
+                                android
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="calling::com.wire.kalium.calling/Calling///PointingToDeclaration//1802312053">
+  <div class="breadcrumbs"><a href="../../index.html">calling</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.calling</a><span class="delimiter">/</span><span class="current">[android]Calling</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Calling</span></span></h1>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">Calling</a></div></div>    </div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-873754111%2FClasslikes%2F1802312053" anchor-label="Companion" id="-873754111%2FClasslikes%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-873754111%2FClasslikes%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">object </span><a href="-companion/index.html">Companion</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1570154440%2FFunctions%2F1802312053" anchor-label="kcall_close" id="-1570154440%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_close.html"><span>kcall_</span><wbr><span>close</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1570154440%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_close.html"><span class="token function">kcall_close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1136630776%2FFunctions%2F1802312053" anchor-label="kcall_init" id="1136630776%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_init.html"><span>kcall_</span><wbr><span>init</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1136630776%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_init.html"><span class="token function">kcall_init</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">env<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="981560677%2FFunctions%2F1802312053" anchor-label="kcall_preview_start" id="981560677%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_preview_start.html"><span>kcall_</span><wbr><span>preview_</span><wbr><span>start</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="981560677%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_preview_start.html"><span class="token function">kcall_preview_start</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="911434993%2FFunctions%2F1802312053" anchor-label="kcall_preview_stop" id="911434993%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_preview_stop.html"><span>kcall_</span><wbr><span>preview_</span><wbr><span>stop</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="911434993%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_preview_stop.html"><span class="token function">kcall_preview_stop</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1220983067%2FFunctions%2F1802312053" anchor-label="kcall_set_local_user" id="1220983067%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_set_local_user.html"><span>kcall_</span><wbr><span>set_</span><wbr><span>local_</span><wbr><span>user</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1220983067%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_set_local_user.html"><span class="token function">kcall_set_local_user</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userid<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">clientid<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1842026328%2FFunctions%2F1802312053" anchor-label="kcall_set_user_vidstate" id="-1842026328%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_set_user_vidstate.html"><span>kcall_</span><wbr><span>set_</span><wbr><span>user_</span><wbr><span>vidstate</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1842026328%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_set_user_vidstate.html"><span class="token function">kcall_set_user_vidstate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">convid<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">userid<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">clientid<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">state<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1817812649%2FFunctions%2F1802312053" anchor-label="kcall_set_wuser" id="-1817812649%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kcall_set_wuser.html"><span>kcall_</span><wbr><span>set_</span><wbr><span>wuser</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1817812649%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="kcall_set_wuser.html"><span class="token function">kcall_set_wuser</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1772806352%2FFunctions%2F1802312053" anchor-label="wcall_answer" id="1772806352%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_answer.html"><span>wcall_</span><wbr><span>answer</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1772806352%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_answer.html"><span class="token function">wcall_answer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">callType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">cbrEnabled<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1717416%2FFunctions%2F1802312053" anchor-label="wcall_config_update" id="-1717416%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_config_update.html"><span>wcall_</span><wbr><span>config_</span><wbr><span>update</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1717416%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_config_update.html"><span class="token function">wcall_config_update</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">jsonString<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="789101178%2FFunctions%2F1802312053" anchor-label="wcall_create" id="789101178%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_create.html"><span>wcall_</span><wbr><span>create</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="789101178%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_create.html"><span class="token function">wcall_create</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">readyHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-ready-handler/index.html">ReadyHandler</a><span class="token punctuation">, </span></span><span class="parameter ">sendHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-send-handler/index.html">SendHandler</a><span class="token punctuation">, </span></span><span class="parameter ">sftRequestHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-s-f-t-request-handler/index.html">SFTRequestHandler</a><span class="token punctuation">, </span></span><span class="parameter ">incomingCallHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-incoming-call-handler/index.html">IncomingCallHandler</a><span class="token punctuation">, </span></span><span class="parameter ">missedCallHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-missed-call-handler/index.html">MissedCallHandler</a><span class="token punctuation">, </span></span><span class="parameter ">answeredCallHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-answered-call-handler/index.html">AnsweredCallHandler</a><span class="token punctuation">, </span></span><span class="parameter ">establishedCallHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-established-call-handler/index.html">EstablishedCallHandler</a><span class="token punctuation">, </span></span><span class="parameter ">closeCallHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-close-call-handler/index.html">CloseCallHandler</a><span class="token punctuation">, </span></span><span class="parameter ">metricsHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-metrics-handler/index.html">MetricsHandler</a><span class="token punctuation">, </span></span><span class="parameter ">callConfigRequestHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-call-config-request-handler/index.html">CallConfigRequestHandler</a><span class="token punctuation">, </span></span><span class="parameter ">constantBitRateStateChangeHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-constant-bit-rate-state-change-handler/index.html">ConstantBitRateStateChangeHandler</a><span class="token punctuation">, </span></span><span class="parameter ">videoReceiveStateHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-video-receive-state-handler/index.html">VideoReceiveStateHandler</a><span class="token punctuation">, </span></span><span class="parameter ">arg<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1278909126%2FFunctions%2F1802312053" anchor-label="wcall_end" id="-1278909126%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_end.html"><span>wcall_</span><wbr><span>end</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1278909126%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_end.html"><span class="token function">wcall_end</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2092385788%2FFunctions%2F1802312053" anchor-label="wcall_init" id="-2092385788%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_init.html"><span>wcall_</span><wbr><span>init</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2092385788%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_init.html"><span class="token function">wcall_init</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">env<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2051090448%2FFunctions%2F1802312053" anchor-label="wcall_library_version" id="2051090448%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_library_version.html"><span>wcall_</span><wbr><span>library_</span><wbr><span>version</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2051090448%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_library_version.html"><span class="token function">wcall_library_version</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="873641228%2FFunctions%2F1802312053" anchor-label="wcall_process_notifications" id="873641228%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_process_notifications.html"><span>wcall_</span><wbr><span>process_</span><wbr><span><span>notifications</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="873641228%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_process_notifications.html"><span class="token function">wcall_process_notifications</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">isStarted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1588826798%2FFunctions%2F1802312053" anchor-label="wcall_recv_msg" id="-1588826798%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_recv_msg.html"><span>wcall_</span><wbr><span>recv_</span><wbr><span>msg</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1588826798%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_recv_msg.html"><span class="token function">wcall_recv_msg</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">msg<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">len<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">curr_time<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/[android]-uint32_t/index.html">Uint32_t</a><span class="token punctuation">, </span></span><span class="parameter ">msg_time<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/[android]-uint32_t/index.html">Uint32_t</a><span class="token punctuation">, </span></span><span class="parameter ">convId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">userId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">convType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1485480776%2FFunctions%2F1802312053" anchor-label="wcall_reject" id="1485480776%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_reject.html"><span>wcall_</span><wbr><span>reject</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1485480776%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_reject.html"><span class="token function">wcall_reject</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-738273556%2FFunctions%2F1802312053" anchor-label="wcall_request_video_streams" id="-738273556%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_request_video_streams.html"><span>wcall_</span><wbr><span>request_</span><wbr><span>video_</span><wbr><span>streams</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-738273556%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_request_video_streams.html"><span class="token function">wcall_request_video_streams</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">mode<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">json<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1821818639%2FFunctions%2F1802312053" anchor-label="wcall_resp" id="-1821818639%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_resp.html"><span>wcall_</span><wbr><span>resp</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1821818639%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_resp.html"><span class="token function">wcall_resp</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">status<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">reason<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">arg<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1675679431%2FFunctions%2F1802312053" anchor-label="wcall_run" id="-1675679431%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_run.html"><span>wcall_</span><wbr><span>run</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1675679431%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_run.html"><span class="token function">wcall_run</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="962185912%2FFunctions%2F1802312053" anchor-label="wcall_set_active_speaker_handler" id="962185912%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_active_speaker_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>active_</span><wbr><span>speaker_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="962185912%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_active_speaker_handler.html"><span class="token function">wcall_set_active_speaker_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">activeSpeakersHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-active-speakers-handler/index.html">ActiveSpeakersHandler</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="339856174%2FFunctions%2F1802312053" anchor-label="wcall_set_clients_for_conv" id="339856174%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_clients_for_conv.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>clients_</span><wbr><span>for_</span><wbr><span>conv</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="339856174%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_clients_for_conv.html"><span class="token function">wcall_set_clients_for_conv</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">convId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">clientsJson<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="103455855%2FFunctions%2F1802312053" anchor-label="wcall_set_epoch_info" id="103455855%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_epoch_info.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>epoch_</span><wbr><span>info</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="103455855%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_epoch_info.html"><span class="token function">wcall_set_epoch_info</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">epoch<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/[android]-uint32_t/index.html">Uint32_t</a><span class="token punctuation">, </span></span><span class="parameter ">clientsJson<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">keyData<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1119409722%2FFunctions%2F1802312053" anchor-label="wcall_set_log_handler" id="-1119409722%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_log_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>log_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1119409722%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_log_handler.html"><span class="token function">wcall_set_log_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">logHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-log-handler/index.html">LogHandler</a><span class="token punctuation">, </span></span><span class="parameter ">arg<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1265551471%2FFunctions%2F1802312053" anchor-label="wcall_set_mute" id="-1265551471%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_mute.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>mute</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1265551471%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_mute.html"><span class="token function">wcall_set_mute</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">muted<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1288443322%2FFunctions%2F1802312053" anchor-label="wcall_set_mute_handler" id="-1288443322%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_mute_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>mute_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1288443322%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_mute_handler.html"><span class="token function">wcall_set_mute_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserMuteHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-self-user-mute-handler/index.html">SelfUserMuteHandler</a><span class="token punctuation">, </span></span><span class="parameter ">arg<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-583499209%2FFunctions%2F1802312053" anchor-label="wcall_set_network_quality_handler" id="-583499209%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_network_quality_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>network_</span><wbr><span>quality_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-583499209%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_network_quality_handler.html"><span class="token function">wcall_set_network_quality_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">wcall_network_quality_h<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-network-quality-changed-handler/index.html">NetworkQualityChangedHandler</a><span class="token punctuation">, </span></span><span class="parameter ">intervalInSeconds<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">arg<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="648681820%2FFunctions%2F1802312053" anchor-label="wcall_set_participant_changed_handler" id="648681820%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_participant_changed_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>participant_</span><wbr><span>changed_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="648681820%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_participant_changed_handler.html"><span class="token function">wcall_set_participant_changed_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">wcall_participant_changed_h<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-participant-changed-handler/index.html">ParticipantChangedHandler</a><span class="token punctuation">, </span></span><span class="parameter ">arg<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="817697388%2FFunctions%2F1802312053" anchor-label="wcall_set_req_clients_handler" id="817697388%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_req_clients_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>req_</span><wbr><span>clients_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="817697388%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_req_clients_handler.html"><span class="token function">wcall_set_req_clients_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">wcall_req_clients_h<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-clients-request-handler/index.html">ClientsRequestHandler</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2083063459%2FFunctions%2F1802312053" anchor-label="wcall_set_req_new_epoch_handler" id="2083063459%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_req_new_epoch_handler.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>req_</span><wbr><span>new_</span><wbr><span>epoch_</span><wbr><span>handler</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2083063459%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_req_new_epoch_handler.html"><span class="token function">wcall_set_req_new_epoch_handler</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">requestNewEpochHandler<span class="token operator">: </span><a href="../../com.wire.kalium.calling.callbacks/[android]-request-new-epoch-handler/index.html">RequestNewEpochHandler</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="753914577%2FFunctions%2F1802312053" anchor-label="wcall_set_video_send_state" id="753914577%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_set_video_send_state.html"><span>wcall_</span><wbr><span>set_</span><wbr><span>video_</span><wbr><span>send_</span><wbr><span>state</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="753914577%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_set_video_send_state.html"><span class="token function">wcall_set_video_send_state</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">state<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="973688775%2FFunctions%2F1802312053" anchor-label="wcall_setup" id="973688775%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_setup.html"><span>wcall_</span><wbr><span>setup</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="973688775%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_setup.html"><span class="token function">wcall_setup</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2096531135%2FFunctions%2F1802312053" anchor-label="wcall_setup_ex" id="2096531135%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_setup_ex.html"><span>wcall_</span><wbr><span>setup_</span><wbr><span>ex</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2096531135%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_setup_ex.html"><span class="token function">wcall_setup_ex</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">flags<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-805141162%2FFunctions%2F1802312053" anchor-label="wcall_sft_resp" id="-805141162%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_sft_resp.html"><span>wcall_</span><wbr><span>sft_</span><wbr><span>resp</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-805141162%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_sft_resp.html"><span class="token function">wcall_sft_resp</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">length<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">ctx<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="530271370%2FFunctions%2F1802312053" anchor-label="wcall_start" id="530271370%2FFunctions%2F1802312053" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wcall_start.html"><span>wcall_</span><wbr><span>start</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="530271370%2FFunctions%2F1802312053"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":domain:calling:dokkaHtmlPartial/androidMain" data-filterable-set=":domain:calling:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":domain:calling:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":domain:calling:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="wcall_start.html"><span class="token function">wcall_start</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">inst<span class="token operator">: </span><a href="../../com.wire.kalium.calling.types/-handle/index.html">Handle</a><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">callType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">convType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">audioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

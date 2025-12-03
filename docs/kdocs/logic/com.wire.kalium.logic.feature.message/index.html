@@ -1,0 +1,885 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.kalium.logic.feature.message</title>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../styles/style.css" rel="Stylesheet">
+<link href="../../styles/main.css" rel="Stylesheet">
+<link href="../../styles/prism.css" rel="Stylesheet">
+<link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/androidMain">android</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/androidMain" data-filter=":logic:dokkaHtmlPartial/androidMain">
+                                <span class="checkbox--icon"></span>
+                                android
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.feature.message////PointingToDeclaration//-757061202">
+  <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.feature.message</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button><button class="section-tab" data-togglable="PROPERTY,EXTENSION_PROPERTY">Properties</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-1277260878%2FClasslikes%2F867774983" anchor-label="AddSystemMessageToAllConversationsUseCase" id="-1277260878%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-add-system-message-to-all-conversations-use-case/index.html"><span>Add</span><wbr><span>System</span><wbr><span>Message</span><wbr><span>To</span><wbr><span>All</span><wbr><span>Conversations</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1277260878%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-add-system-message-to-all-conversations-use-case/index.html">AddSystemMessageToAllConversationsUseCase</a></div><div class="brief "><p class="paragraph">persist a local system message to all conversations</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1211853582%2FClasslikes%2F867774983" anchor-label="AddSystemMessageToAllConversationsUseCaseImpl" id="-1211853582%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-add-system-message-to-all-conversations-use-case-impl/index.html"><span>Add</span><wbr><span>System</span><wbr><span>Message</span><wbr><span>To</span><wbr><span>All</span><wbr><span>Conversations</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1211853582%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-add-system-message-to-all-conversations-use-case-impl/index.html">AddSystemMessageToAllConversationsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span> : <a href="-add-system-message-to-all-conversations-use-case/index.html">AddSystemMessageToAllConversationsUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2024367521%2FClasslikes%2F867774983" anchor-label="DeleteMessageUseCase" id="-2024367521%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-delete-message-use-case/index.html"><span>Delete</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2024367521%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-delete-message-use-case/index.html">DeleteMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">currentClientIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">selfConversationIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.cache/-self-conversation-id-provider/index.html">SelfConversationIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">deleteAttachments<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Deletes a message from the conversation</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-305969260%2FClasslikes%2F867774983" anchor-label="GetMessageByIdUseCase" id="-305969260%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-message-by-id-use-case/index.html"><span>Get</span><wbr><span>Message</span><wbr><span>By</span><wbr><span>Id</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-305969260%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-get-message-by-id-use-case/index.html">GetMessageByIdUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Provides a way to get a full message using its ConversationId and message ID coordinates.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1969311301%2FClasslikes%2F867774983" anchor-label="GetNextAudioMessageInConversationUseCase" id="1969311301%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-next-audio-message-in-conversation-use-case/index.html"><span>Get</span><wbr><span>Next</span><wbr><span>Audio</span><wbr><span>Message</span><wbr><span>In</span><wbr><span>Conversation</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1969311301%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-get-next-audio-message-in-conversation-use-case/index.html">GetNextAudioMessageInConversationUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Provides a way to get a messageId of next AudioMessage after messageId in ConversationId conversation.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1088790589%2FClasslikes%2F867774983" anchor-label="GetNotificationsUseCase" id="-1088790589%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-notifications-use-case/index.html"><span>Get</span><wbr><span>Notifications</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1088790589%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-get-notifications-use-case/index.html">GetNotificationsUseCase</a></div><div class="brief "><p class="paragraph">Get notifications for the current user</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1508243587%2FClasslikes%2F867774983" anchor-label="GetNotificationsUseCaseImpl" id="1508243587%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-notifications-use-case-impl/index.html"><span>Get</span><wbr><span>Notifications</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1508243587%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-get-notifications-use-case-impl/index.html">GetNotificationsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">connectionRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.connection/-connection-repository/index.html">ConnectionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">notificationEventsManager<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.notification/-notification-events-manager/index.html">NotificationEventsManager</a><span class="token punctuation">, </span></span><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">localNotificationMessageMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.notification/-local-notification-message-mapper/index.html">LocalNotificationMessageMapper</a><span class="token operator"> = </span>MapperProvider.localNotificationMessageMapper()</span></span><span class="token punctuation">)</span> : <a href="-get-notifications-use-case/index.html">GetNotificationsUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="462769715%2FClasslikes%2F-99527949" anchor-label="GetPaginatedFlowOfMessagesByConversationUseCase" id="462769715%2FClasslikes%2F-99527949" data-filterable-set=":logic:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-paginated-flow-of-messages-by-conversation-use-case/index.html"><span>Get</span><wbr><span>Paginated</span><wbr><span>Flow</span><wbr><span>Of</span><wbr><span>Messages</span><wbr><span>By</span><wbr><span>Conversation</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="462769715%2FClasslikes%2F-99527949"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-get-paginated-flow-of-messages-by-conversation-use-case/index.html">GetPaginatedFlowOfMessagesByConversationUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">This use case will observe and return a flow of paginated messages for a given conversation.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-787971003%2FClasslikes%2F-99527949" anchor-label="GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase" id="-787971003%2FClasslikes%2F-99527949" data-filterable-set=":logic:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-paginated-flow-of-messages-by-search-query-and-conversation-id-use-case/index.html"><span>Get</span><wbr><span>Paginated</span><wbr><span>Flow</span><wbr><span>Of</span><wbr><span>Messages</span><wbr><span>By</span><wbr><span>Search</span><wbr><span>Query</span><wbr><span>And</span><wbr><span>Conversation</span><wbr><span>Id</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-787971003%2FClasslikes%2F-99527949"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-get-paginated-flow-of-messages-by-search-query-and-conversation-id-use-case/index.html">GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">This use case will observe and return a flow of paginated searched messages for a given conversation.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1986372672%2FClasslikes%2F867774983" anchor-label="GetRecentMessagesUseCase" id="-1986372672%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-recent-messages-use-case/index.html"><span>Get</span><wbr><span>Recent</span><wbr><span>Messages</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1986372672%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-get-recent-messages-use-case/index.html">GetRecentMessagesUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Gets the recent messages from the conversation</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="244785825%2FClasslikes%2F867774983" anchor-label="GetSearchedConversationMessagePositionUseCase" id="244785825%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-searched-conversation-message-position-use-case/index.html"><span>Get</span><wbr><span>Searched</span><wbr><span>Conversation</span><wbr><span>Message</span><wbr><span>Position</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="244785825%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-get-searched-conversation-message-position-use-case/index.html">GetSearchedConversationMessagePositionUseCase</a></div><div class="brief "><p class="paragraph">Gets the Selected Message Position from Search</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1164581985%2FClasslikes%2F867774983" anchor-label="GetSearchedConversationMessagePositionUseCaseImpl" id="1164581985%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-searched-conversation-message-position-use-case-impl/index.html"><span>Get</span><wbr><span>Searched</span><wbr><span>Conversation</span><wbr><span>Message</span><wbr><span>Position</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1164581985%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-get-searched-conversation-message-position-use-case-impl/index.html">GetSearchedConversationMessagePositionUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span> : <a href="-get-searched-conversation-message-position-use-case/index.html">GetSearchedConversationMessagePositionUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2094490554%2FClasslikes%2F867774983" anchor-label="GetSenderNameByMessageIdUseCase" id="-2094490554%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-get-sender-name-by-message-id-use-case/index.html"><span>Get</span><wbr><span>Sender</span><wbr><span>Name</span><wbr><span>By</span><wbr><span>Message</span><wbr><span>Id</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2094490554%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-get-sender-name-by-message-id-use-case/index.html">GetSenderNameByMessageIdUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Provides a way to get a name of user that sent a message using its ConversationId and message ID coordinates.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="27276628%2FClasslikes%2F867774983" anchor-label="MarkMessagesAsNotifiedUseCase" id="27276628%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mark-messages-as-notified-use-case/index.html"><span>Mark</span><wbr><span>Messages</span><wbr><span>As</span><wbr><span>Notified</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="27276628%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-mark-messages-as-notified-use-case/index.html">MarkMessagesAsNotifiedUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1016249349%2FClasslikes%2F867774983" anchor-label="MessageEnvelopeCreator" id="1016249349%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-envelope-creator/index.html"><span>Message</span><wbr><span>Envelope</span><wbr><span><span>Creator</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1016249349%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-message-envelope-creator/index.html">MessageEnvelopeCreator</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1869767621%2FClasslikes%2F867774983" anchor-label="MessageEnvelopeCreatorImpl" id="1869767621%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-envelope-creator-impl/index.html"><span>Message</span><wbr><span>Envelope</span><wbr><span>Creator</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1869767621%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-message-envelope-creator-impl/index.html">MessageEnvelopeCreatorImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">legalHoldStatusMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-legal-hold-status-mapper/index.html">LegalHoldStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">protoContentMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-proto-content-mapper/index.html">ProtoContentMapper</a><span class="token operator"> = </span>MapperProvider.protoContentMapper(selfUserId = selfUserId)<span class="token punctuation">, </span></span><span class="parameter ">idMapper<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>MapperProvider.idMapper()</span></span><span class="token punctuation">)</span> : <a href="-message-envelope-creator/index.html">MessageEnvelopeCreator</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-388736275%2FClasslikes%2F867774983" anchor-label="MessageScope" id="-388736275%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-scope/index.html"><span>Message</span><wbr><span><span>Scope</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-388736275%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-message-scope/index.html">MessageScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">connectionRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.connection/-connection-repository/index.html">ConnectionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageDraftRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message.draft/-message-draft-repository/index.html">MessageDraftRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">currentClientIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">selfConversationIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.cache/-self-conversation-id-provider/index.html">SelfConversationIdProvider</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">attachmentsRepository<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">clientRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a><span class="token punctuation">, </span></span><span class="parameter ">clientRemoteRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client.remote/-client-remote-repository/index.html">ClientRemoteRepository</a><span class="token punctuation">, </span></span><span class="parameter ">preKeyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.prekey/-pre-key-repository/index.html">PreKeyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">reactionRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message.reaction/-reaction-repository/index.html">ReactionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">receiptRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message.receipt/-receipt-repository/index.html">ReceiptRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncManager<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSendingScheduler<span class="token operator">: </span><a href="-message-sending-scheduler/index.html">MessageSendingScheduler</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">protoContentMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-proto-content-mapper/index.html">ProtoContentMapper</a><span class="token punctuation">, </span></span><span class="parameter ">observeSelfDeletingMessages<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">messageMetadataRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-metadata-repository/index.html">MessageMetadataRepository</a><span class="token punctuation">, </span></span><span class="parameter ">staleEpochVerifier<span class="token operator">: </span><a href="-stale-epoch-verifier/index.html">StaleEpochVerifier</a><span class="token punctuation">, </span></span><span class="parameter ">legalHoldHandler<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync.receiver.handler.legalhold/-legal-hold-handler/index.html">LegalHoldHandler</a><span class="token punctuation">, </span></span><span class="parameter ">observeFileSharingStatusUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.user/-observe-file-sharing-status-use-case/index.html">ObserveFileSharingStatusUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">publishAttachmentsUseCase<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">removeAttachmentDraftsUseCase<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">deleteMessageAttachmentsUseCase<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">getMessageAttachment<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">fetchConversationUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-fetch-conversation-use-case/index.html">FetchConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">compositeMessageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-composite-message-repository/index.html">CompositeMessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">isWireCellsEnabledForConversationUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.client/-is-wire-cells-enabled-for-conversation-use-case/index.html">IsWireCellsEnabledForConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingConversationUseCaseProvider<span class="token operator">: </span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">audioNormalizedLoudnessBuilder<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset/-audio-normalized-loudness-builder/index.html">AudioNormalizedLoudnessBuilder</a><span class="token punctuation">, </span></span><span class="parameter ">mlsMissingUsersMessageRejectionHandlerProvider<span class="token operator">: </span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../com.wire.kalium.logic.data.mls/-m-l-s-missing-users-message-rejection-handler/index.html">MLSMissingUsersMessageRejectionHandler</a><span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">kaliumLogger<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl<span class="token punctuation">, </span></span><span class="parameter ">legalHoldStatusMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-legal-hold-status-mapper/index.html">LegalHoldStatusMapper</a><span class="token operator"> = </span>LegalHoldStatusMapperImpl</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1684656972%2FClasslikes%2F867774983" anchor-label="MessageSenderImpl" id="1684656972%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-sender-impl/index.html"><span>Message</span><wbr><span>Sender</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1684656972%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-message-sender-impl/index.html">MessageSenderImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncManager<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">legalHoldHandler<span class="token operator">: </span><a href="../com.wire.kalium.logic.sync.receiver.handler.legalhold/-legal-hold-handler/index.html">LegalHoldHandler</a><span class="token punctuation">, </span></span><span class="parameter ">sessionEstablisher<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-session-establisher/index.html">SessionEstablisher</a><span class="token punctuation">, </span></span><span class="parameter ">messageEnvelopeCreator<span class="token operator">: </span><a href="-message-envelope-creator/index.html">MessageEnvelopeCreator</a><span class="token punctuation">, </span></span><span class="parameter ">mlsMessageCreator<span class="token operator">: </span><a href="-m-l-s-message-creator/index.html">MLSMessageCreator</a><span class="token punctuation">, </span></span><span class="parameter ">messageSendingInterceptor<span class="token operator">: </span><a href="-message-sending-interceptor/index.html">MessageSendingInterceptor</a><span class="token punctuation">, </span></span><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">staleEpochVerifier<span class="token operator">: </span><a href="-stale-epoch-verifier/index.html">StaleEpochVerifier</a><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">mlsMissingUsersMessageRejectionHandler<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.mls/-m-l-s-missing-users-message-rejection-handler/index.html">MLSMissingUsersMessageRejectionHandler</a><span class="token punctuation">, </span></span><span class="parameter ">enqueueSelfDeletion<span class="token operator">: </span><span class="token punctuation">(</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2083225753%2FClasslikes%2F867774983" anchor-label="MessageSendFailureHandler" id="2083225753%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-send-failure-handler/index.html"><span>Message</span><wbr><span>Send</span><wbr><span>Failure</span><wbr><span><span>Handler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2083225753%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-181485991%2FClasslikes%2F867774983" anchor-label="MessageSendFailureHandlerImpl" id="-181485991%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-send-failure-handler-impl/index.html"><span>Message</span><wbr><span>Send</span><wbr><span>Failure</span><wbr><span>Handler</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-181485991%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-message-send-failure-handler-impl/index.html">MessageSendFailureHandlerImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">clientRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-client-repository/index.html">ClientRepository</a><span class="token punctuation">, </span></span><span class="parameter ">clientRemoteRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client.remote/-client-remote-repository/index.html">ClientRemoteRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSendingScheduler<span class="token operator">: </span><a href="-message-sending-scheduler/index.html">MessageSendingScheduler</a><span class="token punctuation">, </span></span><span class="parameter ">fetchConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-fetch-conversation-use-case/index.html">FetchConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">clientMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-client-mapper/index.html">ClientMapper</a><span class="token operator"> = </span>MapperProvider.clientMapper()</span></span><span class="token punctuation">)</span> : <a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1241986154%2FClasslikes%2F867774983" anchor-label="MessageSendingInterceptor" id="-1241986154%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-sending-interceptor/index.html"><span>Message</span><wbr><span>Sending</span><wbr><span><span>Interceptor</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1241986154%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-message-sending-interceptor/index.html">MessageSendingInterceptor</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1590410538%2FClasslikes%2F867774983" anchor-label="MessageSendingInterceptorImpl" id="-1590410538%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-sending-interceptor-impl/index.html"><span>Message</span><wbr><span>Sending</span><wbr><span>Interceptor</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1590410538%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-message-sending-interceptor-impl/index.html">MessageSendingInterceptorImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageContentEncoder<span class="token operator">: </span><a href="../com.wire.kalium.logic.util/-message-content-encoder/index.html">MessageContentEncoder</a><span class="token punctuation">, </span></span><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a></span></span><span class="token punctuation">)</span> : <a href="-message-sending-interceptor/index.html">MessageSendingInterceptor</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2043086784%2FClasslikes%2F867774983" anchor-label="MessageSendingScheduler" id="-2043086784%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-sending-scheduler/index.html"><span>Message</span><wbr><span>Sending</span><wbr><span><span>Scheduler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2043086784%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-message-sending-scheduler/index.html">MessageSendingScheduler</a></div><div class="brief "><p class="paragraph">Responsible for <a href="-message-sending-scheduler/schedule-sending-of-pending-messages.html">scheduleSendingOfPendingMessages</a>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="685073743%2FClasslikes%2F867774983" anchor-label="MLSMessageCreator" id="685073743%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-message-creator/index.html"><span>MLSMessage</span><wbr><span><span>Creator</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="685073743%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-m-l-s-message-creator/index.html">MLSMessageCreator</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1135912945%2FClasslikes%2F867774983" anchor-label="MLSMessageCreatorImpl" id="-1135912945%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-message-creator-impl/index.html"><span>MLSMessage</span><wbr><span>Creator</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1135912945%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-m-l-s-message-creator-impl/index.html">MLSMessageCreatorImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">legalHoldStatusMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-legal-hold-status-mapper/index.html">LegalHoldStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingConversationUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">protoContentMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-proto-content-mapper/index.html">ProtoContentMapper</a><span class="token operator"> = </span>MapperProvider.protoContentMapper(selfUserId = selfUserId)<span class="token punctuation">, </span></span><span class="parameter ">idMapper<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>MapperProvider.idMapper()</span></span><span class="token punctuation">)</span> : <a href="-m-l-s-message-creator/index.html">MLSMessageCreator</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-146386290%2FClasslikes%2F867774983" anchor-label="ObserveMessageByIdUseCase" id="-146386290%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-message-by-id-use-case/index.html"><span>Observe</span><wbr><span>Message</span><wbr><span>By</span><wbr><span>Id</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-146386290%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-observe-message-by-id-use-case/index.html">ObserveMessageByIdUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">This use case will observe and return the Flow of Message for a specific ConversationId and messageId.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1726340190%2FClasslikes%2F867774983" anchor-label="ObserveMessageReactionsUseCase" id="-1726340190%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-message-reactions-use-case/index.html"><span>Observe</span><wbr><span>Message</span><wbr><span>Reactions</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1726340190%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-message-reactions-use-case/index.html">ObserveMessageReactionsUseCase</a></div><div class="brief "><p class="paragraph">Use case to observe the reactions on a message</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-460147486%2FClasslikes%2F867774983" anchor-label="ObserveMessageReactionsUseCaseImpl" id="-460147486%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-message-reactions-use-case-impl/index.html"><span>Observe</span><wbr><span>Message</span><wbr><span>Reactions</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-460147486%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-message-reactions-use-case-impl/index.html">ObserveMessageReactionsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">reactionRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message.reaction/-reaction-repository/index.html">ReactionRepository</a></span></span><span class="token punctuation">)</span> : <a href="-observe-message-reactions-use-case/index.html">ObserveMessageReactionsUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1634326793%2FClasslikes%2F867774983" anchor-label="ObserveMessageReceiptsUseCase" id="-1634326793%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-message-receipts-use-case/index.html"><span>Observe</span><wbr><span>Message</span><wbr><span>Receipts</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1634326793%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-message-receipts-use-case/index.html">ObserveMessageReceiptsUseCase</a></div><div class="brief "><p class="paragraph">Use case to observe the receipts on a message</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-83688009%2FClasslikes%2F867774983" anchor-label="ObserveMessageReceiptsUseCaseImpl" id="-83688009%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-message-receipts-use-case-impl/index.html"><span>Observe</span><wbr><span>Message</span><wbr><span>Receipts</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-83688009%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-message-receipts-use-case-impl/index.html">ObserveMessageReceiptsUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">receiptRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message.receipt/-receipt-repository/index.html">ReceiptRepository</a></span></span><span class="token punctuation">)</span> : <a href="-observe-message-receipts-use-case/index.html">ObserveMessageReceiptsUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1269396104%2FClasslikes%2F867774983" anchor-label="PendingProposalScheduler" id="1269396104%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pending-proposal-scheduler/index.html"><span>Pending</span><wbr><span>Proposal</span><wbr><span><span>Scheduler</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1269396104%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-pending-proposal-scheduler/index.html">PendingProposalScheduler</a></div><div class="brief "><p class="paragraph">Schedule pending MLS proposals in a conversation to be committed at a given date. The scheduling persisted and resumes automatically.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="259268808%2FClasslikes%2F867774983" anchor-label="PendingProposalSchedulerImpl" id="259268808%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pending-proposal-scheduler-impl/index.html"><span>Pending</span><wbr><span>Proposal</span><wbr><span>Scheduler</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="259268808%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-pending-proposal-scheduler-impl/index.html">PendingProposalSchedulerImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">subconversationRepository<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><a href="../com.wire.kalium.logic.data.conversation/-subconversation-repository/index.html">SubconversationRepository</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">transactionProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.client/-crypto-transaction-provider/index.html">CryptoTransactionProvider</a><span class="token punctuation">, </span></span><span class="parameter ">kaliumDispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span> : <a href="-pending-proposal-scheduler/index.html">PendingProposalScheduler</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-517365219%2FClasslikes%2F867774983" anchor-label="Result" id="-517365219%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-result/index.html"><span><span>Result</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-517365219%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-result/index.html">Result</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1602490387%2FClasslikes%2F867774983" anchor-label="RetryFailedMessageUseCase" id="1602490387%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-retry-failed-message-use-case/index.html"><span>Retry</span><wbr><span>Failed</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1602490387%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-retry-failed-message-use-case/index.html">RetryFailedMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">attachmentsRepository<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">publishAttachments<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">updateAssetMessageTransferStatus<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset/-update-asset-message-transfer-status-use-case/index.html">UpdateAssetMessageTransferStatusUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">getAssetMessageTransferStatusUseCase<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset/-get-asset-message-transfer-status-use-case/index.html">GetAssetMessageTransferStatusUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-88913717%2FClasslikes%2F867774983" anchor-label="SendEditTextMessageUseCase" id="-88913717%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-edit-text-message-use-case/index.html"><span>Send</span><wbr><span>Edit</span><wbr><span>Text</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-88913717%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-send-edit-text-message-use-case/index.html">SendEditTextMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-message-repository/index.html">MessageRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">provideClientId<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Edits a text message</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2029428433%2FClasslikes%2F867774983" anchor-label="SendKnockUseCase" id="-2029428433%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-knock-use-case/index.html"><span>Send</span><wbr><span>Knock</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2029428433%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-send-knock-use-case/index.html">SendKnockUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">currentClientIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">selfDeleteTimer<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sending a ping/knock message to a conversation</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="413786478%2FClasslikes%2F867774983" anchor-label="SendLocationUseCase" id="413786478%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-location-use-case/index.html"><span>Send</span><wbr><span>Location</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="413786478%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-send-location-use-case/index.html">SendLocationUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">currentClientIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">selfDeleteTimer<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Sending a location message to a conversation</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-249518988%2FClasslikes%2F867774983" anchor-label="SendMultipartMessageUseCase" id="-249518988%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-multipart-message-use-case/index.html"><span>Send</span><wbr><span>Multipart</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-249518988%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-send-multipart-message-use-case/index.html">SendMultipartMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">provideClientId<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">assetDataSource<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">attachmentsRepository<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">selfDeleteTimer<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">publishAttachments<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">removeAttachmentDrafts<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">sendAssetMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset.upload/-schedule-new-asset-message-use-case/index.html">ScheduleNewAssetMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl<span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Use case to send a multipart message. Sends Multipart message with multiple attachments in conversations with Cell Feature enabled. For regular conversations, each attachment is sent as a separate Asset message.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="565344693%2FClasslikes%2F867774983" anchor-label="SendTextMessageUseCase" id="565344693%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-send-text-message-use-case/index.html"><span>Send</span><wbr><span>Text</span><wbr><span>Message</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="565344693%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-send-text-message-use-case/index.html">SendTextMessageUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">persistMessage<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">provideClientId<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">assetDataSource<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageSendFailureHandler<span class="token operator">: </span><a href="-message-send-failure-handler/index.html">MessageSendFailureHandler</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfDeleteTimer<span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.selfDeletingMessages/-observe-self-deletion-timer-settings-for-conversation-use-case/index.html">ObserveSelfDeletionTimerSettingsForConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl<span class="token punctuation">, </span></span><span class="parameter ">scope<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1808344596%2FClasslikes%2F867774983" anchor-label="SessionResetSender" id="-1808344596%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-session-reset-sender/index.html"><span>Session</span><wbr><span>Reset</span><wbr><span><span>Sender</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1808344596%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-session-reset-sender/index.html">SessionResetSender</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-92850644%2FClasslikes%2F867774983" anchor-label="SessionResetSenderImpl" id="-92850644%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-session-reset-sender-impl/index.html"><span>Session</span><wbr><span>Reset</span><wbr><span>Sender</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-92850644%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-session-reset-sender-impl/index.html">SessionResetSenderImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">provideClientId<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">dispatchers<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span> : <a href="-session-reset-sender/index.html">SessionResetSender</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="552211828%2FClasslikes%2F867774983" anchor-label="StaleEpochVerifier" id="552211828%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-stale-epoch-verifier/index.html"><span>Stale</span><wbr><span>Epoch</span><wbr><span><span>Verifier</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="552211828%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-stale-epoch-verifier/index.html">StaleEpochVerifier</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1016163764%2FClasslikes%2F867774983" anchor-label="StaleEpochVerifierImpl" id="1016163764%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-stale-epoch-verifier-impl/index.html"><span>Stale</span><wbr><span>Epoch</span><wbr><span>Verifier</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1016163764%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-stale-epoch-verifier-impl/index.html">StaleEpochVerifierImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">systemMessageInserter<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-system-message-inserter/index.html">SystemMessageInserter</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">subconversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-subconversation-repository/index.html">SubconversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">mlsConversationRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-m-l-s-conversation-repository/index.html">MLSConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">joinExistingMLSConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-join-existing-m-l-s-conversation-use-case/index.html">JoinExistingMLSConversationUseCase</a><span class="token punctuation">, </span></span><span class="parameter ">fetchConversation<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.conversation/-fetch-conversation-use-case/index.html">FetchConversationUseCase</a></span></span><span class="token punctuation">)</span> : <a href="-stale-epoch-verifier/index.html">StaleEpochVerifier</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="110954990%2FClasslikes%2F867774983" anchor-label="ToggleReactionUseCase" id="110954990%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-toggle-reaction-use-case/index.html"><span>Toggle</span><wbr><span>Reaction</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="110954990%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-toggle-reaction-use-case/index.html">ToggleReactionUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">currentClientIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">userId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">reactionRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message.reaction/-reaction-repository/index.html">ReactionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>KaliumDispatcherImpl</span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Toggles a reaction on a message. If the reaction already exists it will be removed, if not it will be added.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="EXTENSION_PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="684146112%2FProperties%2F-99527949" anchor-label="getPaginatedFlowOfAssetMessageByConversationId" id="684146112%2FProperties%2F-99527949" data-filterable-set=":logic:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-paginated-flow-of-asset-message-by-conversation-id.html"><span>get</span><wbr><span>Paginated</span><wbr><span>Flow</span><wbr><span>Of</span><wbr><span>Asset</span><wbr><span>Message</span><wbr><span>By</span><wbr><span>Conversation</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="684146112%2FProperties%2F-99527949"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="-message-scope/index.html">MessageScope</a><span class="token punctuation">.</span><a href="get-paginated-flow-of-asset-message-by-conversation-id.html">getPaginatedFlowOfAssetMessageByConversationId</a><span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset/-get-paginated-flow-of-asset-message-by-conversation-id-use-case/index.html">GetPaginatedFlowOfAssetMessageByConversationIdUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1814962662%2FProperties%2F-99527949" anchor-label="getPaginatedFlowOfMessagesByConversation" id="1814962662%2FProperties%2F-99527949" data-filterable-set=":logic:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-paginated-flow-of-messages-by-conversation.html"><span>get</span><wbr><span>Paginated</span><wbr><span>Flow</span><wbr><span>Of</span><wbr><span>Messages</span><wbr><span>By</span><wbr><span><span>Conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1814962662%2FProperties%2F-99527949"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="-message-scope/index.html">MessageScope</a><span class="token punctuation">.</span><a href="get-paginated-flow-of-messages-by-conversation.html">getPaginatedFlowOfMessagesByConversation</a><span class="token operator">: </span><a href="-get-paginated-flow-of-messages-by-conversation-use-case/index.html">GetPaginatedFlowOfMessagesByConversationUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1583285649%2FProperties%2F-99527949" anchor-label="getPaginatedFlowOfMessagesBySearchQueryAndConversation" id="-1583285649%2FProperties%2F-99527949" data-filterable-set=":logic:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-paginated-flow-of-messages-by-search-query-and-conversation.html"><span>get</span><wbr><span>Paginated</span><wbr><span>Flow</span><wbr><span>Of</span><wbr><span>Messages</span><wbr><span>By</span><wbr><span>Search</span><wbr><span>Query</span><wbr><span>And</span><wbr><span><span>Conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1583285649%2FProperties%2F-99527949"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="-message-scope/index.html">MessageScope</a><span class="token punctuation">.</span><a href="get-paginated-flow-of-messages-by-search-query-and-conversation.html">getPaginatedFlowOfMessagesBySearchQueryAndConversation</a><span class="token operator">: </span><a href="-get-paginated-flow-of-messages-by-search-query-and-conversation-id-use-case/index.html">GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="861981122%2FProperties%2F-99527949" anchor-label="observePaginatedImageAssetMessageByConversationId" id="861981122%2FProperties%2F-99527949" data-filterable-set=":logic:dokkaHtmlPartial/androidMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-paginated-image-asset-message-by-conversation-id.html"><span>observe</span><wbr><span>Paginated</span><wbr><span>Image</span><wbr><span>Asset</span><wbr><span>Message</span><wbr><span>By</span><wbr><span>Conversation</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="861981122%2FProperties%2F-99527949"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="-message-scope/index.html">MessageScope</a><span class="token punctuation">.</span><a href="observe-paginated-image-asset-message-by-conversation-id.html">observePaginatedImageAssetMessageByConversationId</a><span class="token operator">: </span><a href="../com.wire.kalium.logic.feature.asset/-observe-paginated-asset-image-messages/index.html">ObservePaginatedAssetImageMessages</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="EXTENSION_FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-2137781626%2FFunctions%2F867774983" anchor-label="metadata" id="-2137781626%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="metadata.html"><span><span>metadata</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2137781626%2FFunctions%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="metadata.html"><span class="token function">metadata</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

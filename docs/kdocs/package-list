@@ -1,0 +1,648 @@
+$dokka.format:html-v1
+$dokka.linkExtension:html
+$dokka.location:////PointingToDeclaration/cli/[root]/index.html
+$dokka.location://main/#kotlin.Array[kotlin.String]/PointingToDeclaration/cli/[root]/main.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure.IOError///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/-i-o-error/index.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure.IOError/IOError/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/-i-o-error/-i-o-error.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure.IOError/message/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/-i-o-error/message.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure.ZipError///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/-zip-error/index.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure.ZipError/ZipError/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/-zip-error/-zip-error.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure.ZipError/message/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/-zip-error/message.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/index.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Failure/message/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-failure/message.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/index.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#[Error type: Unresolved type for Uint8Array]#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/-success.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/Success/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/-success.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/bytes/#/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/bytes.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/fileName/#/PointingToDeclaration/backup/com.wire.backup.dump/[js]-backup-export-result/-success/file-name.html
+$dokka.location:com.wire.backup.dump/BackupExportResult.Success/pathToOutputFile/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/path-to-output-file.html
+$dokka.location:com.wire.backup.dump/BackupExportResult///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/index.html
+$dokka.location:com.wire.backup.dump/MPBackupExporter/finalize/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]finalize.html
+$dokka.location:com.wire.backup.dump/MPBackupExporter/storage/#/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]storage.html
+$dokka.location:com.wire.backup.ingest/MPBackupImporter/getUnencryptedArchiveSink/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]get-unencrypted-archive-sink.html
+$dokka.location:com.wire.backup.ingest/MPBackupImporter/unzipAllEntries/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]unzip-all-entries.html
+$dokka.location:com.wire.kalium.calling.callbacks/ActiveSpeakersHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-active-speakers-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/ActiveSpeakersHandler/onActiveSpeakersChanged/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-active-speakers-handler/on-active-speakers-changed.html
+$dokka.location:com.wire.kalium.calling.callbacks/AnsweredCallHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-answered-call-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/AnsweredCallHandler/onAnsweredCall/#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-answered-call-handler/on-answered-call.html
+$dokka.location:com.wire.kalium.calling.callbacks/CallConfigRequestHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-call-config-request-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/CallConfigRequestHandler/onConfigRequest/#com.wire.kalium.calling.types.Uint32_t#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-call-config-request-handler/on-config-request.html
+$dokka.location:com.wire.kalium.calling.callbacks/CallStateChangeHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-call-state-change-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/CallStateChangeHandler/onCallStateChanged/#kotlin.String#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-call-state-change-handler/on-call-state-changed.html
+$dokka.location:com.wire.kalium.calling.callbacks/ClientsRequestHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-clients-request-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/ClientsRequestHandler/onClientsRequest/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-clients-request-handler/on-clients-request.html
+$dokka.location:com.wire.kalium.calling.callbacks/CloseCallHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-close-call-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/CloseCallHandler/onClosedCall/#kotlin.Int#kotlin.String#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String?#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-close-call-handler/on-closed-call.html
+$dokka.location:com.wire.kalium.calling.callbacks/ConstantBitRateStateChangeHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-constant-bit-rate-state-change-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/ConstantBitRateStateChangeHandler/onBitRateStateChanged/#kotlin.String#kotlin.String#kotlin.Boolean#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-constant-bit-rate-state-change-handler/on-bit-rate-state-changed.html
+$dokka.location:com.wire.kalium.calling.callbacks/EstablishedCallHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-established-call-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/EstablishedCallHandler/onEstablishedCall/#kotlin.String#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-established-call-handler/on-established-call.html
+$dokka.location:com.wire.kalium.calling.callbacks/IncomingCallHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-incoming-call-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/IncomingCallHandler/onIncomingCall/#kotlin.String#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String#kotlin.Boolean#kotlin.Boolean#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-incoming-call-handler/on-incoming-call.html
+$dokka.location:com.wire.kalium.calling.callbacks/LogHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-log-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/LogHandler/onLog/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-log-handler/on-log.html
+$dokka.location:com.wire.kalium.calling.callbacks/MetricsHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-metrics-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/MetricsHandler/onMetricsReady/#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-metrics-handler/on-metrics-ready.html
+$dokka.location:com.wire.kalium.calling.callbacks/MissedCallHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-missed-call-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/MissedCallHandler/onMissedCall/#kotlin.String#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.Boolean#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-missed-call-handler/on-missed-call.html
+$dokka.location:com.wire.kalium.calling.callbacks/NetworkQualityChangedHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-network-quality-changed-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/NetworkQualityChangedHandler/onNetworkQualityChanged/#kotlin.String#kotlin.String?#kotlin.String?#kotlin.Int#kotlin.Int#kotlin.Int#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-network-quality-changed-handler/on-network-quality-changed.html
+$dokka.location:com.wire.kalium.calling.callbacks/ParticipantChangedHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-participant-changed-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/ParticipantChangedHandler/onParticipantChanged/#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-participant-changed-handler/on-participant-changed.html
+$dokka.location:com.wire.kalium.calling.callbacks/ReadyHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-ready-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/ReadyHandler/onReady/#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-ready-handler/on-ready.html
+$dokka.location:com.wire.kalium.calling.callbacks/RequestNewEpochHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-request-new-epoch-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/RequestNewEpochHandler/onRequestNewEpoch/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-request-new-epoch-handler/on-request-new-epoch.html
+$dokka.location:com.wire.kalium.calling.callbacks/SFTRequestHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-s-f-t-request-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/SFTRequestHandler/onSFTRequest/#[Error type: Unresolved type for Pointer]?#kotlin.String#[Error type: Unresolved type for Pointer]?#com.wire.kalium.calling.types.Size_t#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-s-f-t-request-handler/on-s-f-t-request.html
+$dokka.location:com.wire.kalium.calling.callbacks/SelfUserMuteHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-self-user-mute-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/SelfUserMuteHandler/onMuteStateChanged/#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-self-user-mute-handler/on-mute-state-changed.html
+$dokka.location:com.wire.kalium.calling.callbacks/SendHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-send-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/SendHandler/onSend/#[Error type: Unresolved type for Pointer]?#kotlin.String#kotlin.String#kotlin.String#kotlin.String?#kotlin.String?#[Error type: Unresolved type for Pointer]?#com.wire.kalium.calling.types.Size_t#kotlin.Boolean#kotlin.Boolean#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-send-handler/on-send.html
+$dokka.location:com.wire.kalium.calling.callbacks/VideoReceiveStateHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-video-receive-state-handler/index.html
+$dokka.location:com.wire.kalium.calling.callbacks/VideoReceiveStateHandler/onVideoReceiveStateChanged/#kotlin.String#kotlin.String#kotlin.String#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-video-receive-state-handler/on-video-receive-state-changed.html
+$dokka.location:com.wire.kalium.calling.types/Size_t///PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-size_t/index.html
+$dokka.location:com.wire.kalium.calling.types/Size_t/Size_t/#kotlin.Long/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-size_t/-size_t.html
+$dokka.location:com.wire.kalium.calling.types/Size_t/toByte/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-size_t/to-byte.html
+$dokka.location:com.wire.kalium.calling.types/Size_t/toChar/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-size_t/to-char.html
+$dokka.location:com.wire.kalium.calling.types/Size_t/toShort/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-size_t/to-short.html
+$dokka.location:com.wire.kalium.calling.types/Size_t/value/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-size_t/value.html
+$dokka.location:com.wire.kalium.calling.types/Uint32_t///PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-uint32_t/index.html
+$dokka.location:com.wire.kalium.calling.types/Uint32_t/Uint32_t/#kotlin.Long/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-uint32_t/-uint32_t.html
+$dokka.location:com.wire.kalium.calling.types/Uint32_t/toByte/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-uint32_t/to-byte.html
+$dokka.location:com.wire.kalium.calling.types/Uint32_t/toChar/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-uint32_t/to-char.html
+$dokka.location:com.wire.kalium.calling.types/Uint32_t/toShort/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-uint32_t/to-short.html
+$dokka.location:com.wire.kalium.calling.types/Uint32_t/value/#/PointingToDeclaration/calling/com.wire.kalium.calling.types/[jvm]-uint32_t/value.html
+$dokka.location:com.wire.kalium.calling/Calling.Companion///PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/-companion/index.html
+$dokka.location:com.wire.kalium.calling/Calling.Companion/INSTANCE/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/-companion/-i-n-s-t-a-n-c-e.html
+$dokka.location:com.wire.kalium.calling/Calling///PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/index.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_close/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_close.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_init/#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_init.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_preview_start/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_preview_start.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_preview_stop/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_preview_stop.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_set_local_user/#kotlin.String#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_set_local_user.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_set_user_vidstate/#kotlin.String#kotlin.String#kotlin.String#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_set_user_vidstate.html
+$dokka.location:com.wire.kalium.calling/Calling/kcall_set_wuser/#com.wire.kalium.calling.types.Uint32_t/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/kcall_set_wuser.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_answer/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.Int#kotlin.Boolean/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_answer.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_config_update/#com.wire.kalium.calling.types.Uint32_t#kotlin.Int#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_config_update.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_create/#kotlin.String#kotlin.String#com.wire.kalium.calling.callbacks.ReadyHandler#com.wire.kalium.calling.callbacks.SendHandler#com.wire.kalium.calling.callbacks.SFTRequestHandler#com.wire.kalium.calling.callbacks.IncomingCallHandler#com.wire.kalium.calling.callbacks.MissedCallHandler#com.wire.kalium.calling.callbacks.AnsweredCallHandler#com.wire.kalium.calling.callbacks.EstablishedCallHandler#com.wire.kalium.calling.callbacks.CloseCallHandler#com.wire.kalium.calling.callbacks.MetricsHandler#com.wire.kalium.calling.callbacks.CallConfigRequestHandler#com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler#com.wire.kalium.calling.callbacks.VideoReceiveStateHandler#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_create.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_end/#com.wire.kalium.calling.types.Uint32_t#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_end.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_init/#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_init.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_library_version/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_library_version.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_process_notifications/#com.wire.kalium.calling.types.Uint32_t#kotlin.Boolean/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_process_notifications.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_recv_msg/#com.wire.kalium.calling.types.Uint32_t#kotlin.ByteArray#kotlin.Int#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String#kotlin.String#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_recv_msg.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_reject/#com.wire.kalium.calling.types.Uint32_t#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_reject.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_request_video_streams/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.Int#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_request_video_streams.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_resp/#com.wire.kalium.calling.types.Uint32_t#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_resp.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_run/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_run.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_active_speaker_handler/#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.callbacks.ActiveSpeakersHandler/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_active_speaker_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_clients_for_conv/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_clients_for_conv.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_epoch_info/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_epoch_info.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_log_handler/#com.wire.kalium.calling.callbacks.LogHandler#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_log_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_mute/#com.wire.kalium.calling.types.Uint32_t#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_mute.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_mute_handler/#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.callbacks.SelfUserMuteHandler#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_mute_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_network_quality_handler/#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_network_quality_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_participant_changed_handler/#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.callbacks.ParticipantChangedHandler#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_participant_changed_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_req_clients_handler/#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.callbacks.ClientsRequestHandler/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_req_clients_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_req_new_epoch_handler/#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.callbacks.RequestNewEpochHandler/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_req_new_epoch_handler.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_set_video_send_state/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_set_video_send_state.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_setup/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_setup.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_setup_ex/#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_setup_ex.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_sft_resp/#com.wire.kalium.calling.types.Uint32_t#kotlin.Int#kotlin.ByteArray#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_sft_resp.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_start/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.Int#kotlin.Int#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_start.html
+$dokka.location:com.wire.kalium.cryptography.utils//toBundle/[Error type: Unresolved type for BufferedDecryptedMessage]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-bundle.html
+$dokka.location:com.wire.kalium.cryptography.utils//toBundle/[Error type: Unresolved type for DecryptedMessage]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-bundle.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCrypto/[Error type: Unresolved type for com.wire.crypto.GroupInfoBundle]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-crypto.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCrypto/com.wire.kalium.cryptography.CredentialType#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-crypto.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCrypto/com.wire.kalium.cryptography.MLSCiphersuite#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-crypto.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCrypto/com.wire.kalium.cryptography.MlsTransportResponse#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-crypto.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCrypto/com.wire.kalium.cryptography.PreKeyCrypto#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-crypto.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCrypto/kotlin.String#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-crypto.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for Ciphersuite]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for CommitBundle]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for E2eiConversationState]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for MlsGroupInfoEncryptionType]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for MlsRatchetTreeType]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for ProteusAutoPrekeyBundle]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for com.wire.crypto.CredentialType]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for com.wire.crypto.CrlRegistration]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for com.wire.crypto.WelcomeBundle]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for com.wire.crypto.WireIdentity]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toCryptography/[Error type: Unresolved type for com.wire.crypto.X509Identity]#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-cryptography.html
+$dokka.location:com.wire.kalium.cryptography.utils//toExternalSenderKey/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]to-external-sender-key.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt///PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/index.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/AESDecrypt/#com.wire.kalium.cryptography.utils.AES256Key/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/-a-e-s-decrypt.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/decryptData/#com.wire.kalium.cryptography.utils.EncryptedData/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/decrypt-data.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/decryptFile/#[Error type: Unresolved type for Source]#[Error type: Unresolved type for Sink]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/decrypt-file.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt///PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/index.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/AESEncrypt/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/-a-e-s-encrypt.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/encryptData/#com.wire.kalium.cryptography.utils.PlainData#com.wire.kalium.cryptography.utils.AES256Key/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/encrypt-data.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/encryptFile/#[Error type: Unresolved type for Source]#com.wire.kalium.cryptography.utils.AES256Key#[Error type: Unresolved type for Sink]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/encrypt-file.html
+$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/generateRandomAES256Key/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/generate-random-a-e-s256-key.html
+$dokka.location:com.wire.kalium.cryptography//transaction/[Error type: Unresolved type for CoreCryptoClient]#kotlin.String#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for CoreCryptoContext],TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]transaction.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/-companion/index.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl.Companion/KEYSTORE_NAME/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/-companion/-k-e-y-s-t-o-r-e_-n-a-m-e.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/index.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/CoreCryptoCentralImpl/#[Error type: Unresolved type for CoreCryptoClient]#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/-core-crypto-central-impl.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/mlsClient/#com.wire.kalium.cryptography.CryptoQualifiedClientId#kotlin.collections.List[com.wire.kalium.cryptography.MLSCiphersuite]#com.wire.kalium.cryptography.MLSCiphersuite#com.wire.kalium.cryptography.MLSTransporter#com.wire.kalium.cryptography.MLSEpochObserver#[Error type: Unresolved type for CoroutineScope]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/mls-client.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/mlsClient/#com.wire.kalium.cryptography.E2EIClient#kotlin.String#[Error type: Unresolved type for UInt]#com.wire.kalium.cryptography.MLSCiphersuite#com.wire.kalium.cryptography.MLSTransporter#com.wire.kalium.cryptography.MLSEpochObserver#[Error type: Unresolved type for CoroutineScope]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/mls-client.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/newAcmeEnrollment/#com.wire.kalium.cryptography.CryptoQualifiedClientId#kotlin.String#kotlin.String#kotlin.String?#[Error type: Unresolved type for Duration]#com.wire.kalium.cryptography.MLSCiphersuite/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/new-acme-enrollment.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/proteusClient/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/proteus-client.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/registerCrl/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/register-crl.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/registerIntermediateCa/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/register-intermediate-ca.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/registerTrustAnchors/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/register-trust-anchors.html
+$dokka.location:com.wire.kalium.cryptography/CoreCryptoCentralImpl/transaction/#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for CoreCryptoContext],kotlin.Unit]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-core-crypto-central-impl/transaction.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/-companion/index.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl.Companion/toAcmeDirectory/#[Error type: Unresolved type for com.wire.crypto.AcmeDirectory]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/-companion/to-acme-directory.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl.Companion/toNewAcmeAuthz/#[Error type: Unresolved type for com.wire.crypto.NewAcmeAuthz]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/-companion/to-new-acme-authz.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl.Companion/toNewAcmeOrder/#[Error type: Unresolved type for com.wire.crypto.NewAcmeOrder]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/-companion/to-new-acme-order.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/index.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/E2EIClientImpl/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/-e2-e-i-client-impl.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/E2EIClientImpl/#[Error type: Unresolved type for E2eiEnrollment]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/-e2-e-i-client-impl.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/certificateRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/certificate-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/check-order-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/check-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/check-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/createDpopToken/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/create-dpop-token.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/directory-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/directory-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/finalize-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/finalize-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/finalize-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewAccountRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-account-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewAuthzRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-authz-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewDpopChallengeRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-dpop-challenge-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewOidcChallengeRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-oidc-challenge-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/getNewOrderRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/get-new-order-request.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAccountResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-account-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAccountResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-account-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAuthzResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-authz-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setAuthzResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-authz-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setDPoPChallengeResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-d-po-p-challenge-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setDPoPChallengeResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-d-po-p-challenge-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOIDCChallengeResponse/#[Error type: Unresolved type for CoreCryptoCentral]#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-o-i-d-c-challenge-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOIDCChallengeResponse/#com.wire.kalium.cryptography.CoreCryptoCentral#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-o-i-d-c-challenge-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-e2-e-i-client-impl/set-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/wireE2eIdentity/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/wire-e2e-identity.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/index.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/MLSClientImpl/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-m-l-s-client-impl/-m-l-s-client-impl.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/MLSClientImpl/#[Error type: Unresolved type for CoreCryptoClient]#[Error type: Unresolved type for Ciphersuite]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/-m-l-s-client-impl.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/MLSClientImpl/#[Error type: Unresolved type for MLSCiphersuite]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-m-l-s-client-impl/-m-l-s-client-impl.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/close/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/close.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getDefaultCipherSuite/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/get-default-cipher-suite.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getPublicKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/get-public-key.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for MlsCoreCryptoContext],TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[js]-m-l-s-client-impl/transaction.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[com.wire.kalium.cryptography.MlsCoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-m-l-s-client-impl/transaction.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/-companion/index.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl.Companion/CRYPTO_BOX_FILES/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/-companion/-c-r-y-p-t-o_-b-o-x_-f-i-l-e-s.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl.Companion/invoke/#[Error type: Unresolved type for CoreCryptoClient]#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/-companion/invoke.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/index.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/close/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/close.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/newLastResortPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/new-last-resort-pre-key.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/new-pre-keys.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for ProteusCoreCryptoContext],TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-proteus-client-core-crypto-impl/transaction.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/transaction/#kotlin.String#kotlin.coroutines.SuspendFunction1[com.wire.kalium.cryptography.ProteusCoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/transaction.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/copy/#[Error type: Unresolved type for Path]#[Error type: Unresolved type for Path]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]copy.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/createDirectories/#[Error type: Unresolved type for Path]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]create-directories.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/createDirectory/#[Error type: Unresolved type for Path]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]create-directory.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/delete/#[Error type: Unresolved type for Path]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]delete.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/deleteContents/#[Error type: Unresolved type for Path]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]delete-contents.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/exists/#[Error type: Unresolved type for Path]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]exists.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/listDirectories/#[Error type: Unresolved type for Path]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]list-directories.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/providePersistentAssetPath/#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]provide-persistent-asset-path.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/readByteArray/#[Error type: Unresolved type for Path]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]read-byte-array.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/rootCachePath/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]root-cache-path.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/rootDBPath/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]root-d-b-path.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/selfUserAvatarPath/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]self-user-avatar-path.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/sink/#[Error type: Unresolved type for Path]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]sink.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/source/#[Error type: Unresolved type for Path]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]source.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/tempFilePath/#kotlin.String?/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]temp-file-path.html
+$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/writeData/#[Error type: Unresolved type for Sink]#[Error type: Unresolved type for Source]/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]write-data.html
+$dokka.location:com.wire.kalium.logic.di/PlatformRootPathsProvider/rootAccountPath/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic.di/-platform-root-paths-provider/[jvm]root-account-path.html
+$dokka.location:com.wire.kalium.logic.di/PlatformRootPathsProvider/rootMLSPath/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic.di/-platform-root-paths-provider/[jvm]root-m-l-s-path.html
+$dokka.location:com.wire.kalium.logic.di/PlatformRootPathsProvider/rootProteusPath/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic.di/-platform-root-paths-provider/[jvm]root-proteus-path.html
+$dokka.location:com.wire.kalium.logic.di/PlatformUserStorageProperties/rootPath/#/PointingToDeclaration/logic/com.wire.kalium.logic.di/-platform-user-storage-properties/[jvm]root-path.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario//CallingMessageSender/#[Error type: Unresolved type for Deferred<Handle>][[Error type: Unresolved type for Handle]]#[Error type: Unresolved type for Calling]#[Error type: Unresolved type for MessageSender]#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.cache.SelfConversationIdProvider/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-sender.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/CallingMessageInstructions/#[Error type: Unresolved type for Pointer]?#[Error type: Unresolved type for ConversationId]#kotlin.String#[Error type: Unresolved type for UserId]#[Error type: Unresolved type for ClientId]#com.wire.kalium.logic.feature.call.scenario.CallingMessageTarget/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/-calling-message-instructions.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/avsSelfClientId/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/avs-self-client-id.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/avsSelfUserId/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/avs-self-user-id.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/callHostConversationId/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/call-host-conversation-id.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/context/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/context.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/messageString/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/message-string.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageInstructions/messageTarget/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-instructions/message-target.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageSender///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-sender/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageSender/enqueueSendingOfCallingMessage/#[Error type: Unresolved type for Pointer]?#[Error type: Unresolved type for ConversationId]#kotlin.String?#[Error type: Unresolved type for UserId]#[Error type: Unresolved type for ClientId]#com.wire.kalium.logic.feature.call.scenario.CallingMessageTarget/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-sender/enqueue-sending-of-calling-message.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageSender/processQueue/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-sender/process-queue.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget.HostConversation///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/-host-conversation/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget.HostConversation/HostConversation/#[Error type: Unresolved type for MessageTarget]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/-host-conversation/-host-conversation.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget.HostConversation/specificTarget/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/-host-conversation/specific-target.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget.Self///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/-self/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget.Self/specificTarget/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/-self/specific-target.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/CallingMessageTarget/specificTarget/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-calling-message-target/specific-target.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/EpochInfoUpdater///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-epoch-info-updater/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/EpochInfoUpdater/updateEpochInfo/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for EpochInfo]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-epoch-info-updater/update-epoch-info.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnActiveSpeakers///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-active-speakers/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnActiveSpeakers/OnActiveSpeakers/#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.QualifiedIdMapper/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-active-speakers/-on-active-speakers.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnActiveSpeakers/onActiveSpeakersChanged/#[Error type: Unresolved type for Handle]#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-active-speakers/on-active-speakers-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnAnsweredCall///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-answered-call/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnAnsweredCall/OnAnsweredCall/#com.wire.kalium.logic.data.call.CallRepository#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.data.id.QualifiedIdMapper/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-answered-call/-on-answered-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnAnsweredCall/onAnsweredCall/#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-answered-call/on-answered-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnClientsRequest///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-clients-request/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnClientsRequest/OnClientsRequest/#com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater#com.wire.kalium.logic.feature.call.scenario.EpochInfoUpdater#com.wire.kalium.logic.data.id.QualifiedIdMapper#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.data.call.CallRepository/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-clients-request/-on-clients-request.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnClientsRequest/onClientsRequest/#[Error type: Unresolved type for Handle]#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-clients-request/on-clients-request.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnCloseCall///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-close-call/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnCloseCall/OnCloseCall/#com.wire.kalium.logic.data.call.CallRepository#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.data.id.QualifiedIdMapper#[Error type: Unresolved type for NetworkStateObserver]#com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-close-call/-on-close-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnCloseCall/onClosedCall/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Uint32_t]#kotlin.String#kotlin.String?#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-close-call/on-closed-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnConfigRequest///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-config-request/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnConfigRequest/OnConfigRequest/#[Error type: Unresolved type for Calling]#com.wire.kalium.logic.data.call.CallRepository#[Error type: Unresolved type for CoroutineScope]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-config-request/-on-config-request.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnConfigRequest/onConfigRequest/#[Error type: Unresolved type for Handle]#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-config-request/on-config-request.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnEstablishedCall///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-established-call/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnEstablishedCall/OnEstablishedCall/#com.wire.kalium.logic.data.call.CallRepository#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.data.id.QualifiedIdMapper/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-established-call/-on-established-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnEstablishedCall/onEstablishedCall/#kotlin.String#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-established-call/on-established-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnIncomingCall///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-incoming-call/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnIncomingCall/OnIncomingCall/#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.call.mapper.CallMapper#com.wire.kalium.logic.data.id.QualifiedIdMapper#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.featureFlags.KaliumConfigs/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-incoming-call/-on-incoming-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnIncomingCall/onIncomingCall/#kotlin.String#[Error type: Unresolved type for Uint32_t]#kotlin.String#kotlin.String#kotlin.Boolean#kotlin.Boolean#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-incoming-call/on-incoming-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnMissedCall///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-missed-call/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnMissedCall/onMissedCall/#kotlin.String#[Error type: Unresolved type for Uint32_t]#kotlin.String#kotlin.Boolean#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-missed-call/on-missed-call.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnMuteStateForSelfUserChanged///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-mute-state-for-self-user-changed/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnMuteStateForSelfUserChanged/OnMuteStateForSelfUserChanged/#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.data.call.CallRepository/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-mute-state-for-self-user-changed/-on-mute-state-for-self-user-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnMuteStateForSelfUserChanged/onMuteStateChanged/#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-mute-state-for-self-user-changed/on-mute-state-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnNetworkQualityChanged///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-network-quality-changed/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnNetworkQualityChanged/OnNetworkQualityChanged/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-network-quality-changed/-on-network-quality-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnNetworkQualityChanged/onNetworkQualityChanged/#kotlin.String#kotlin.String?#kotlin.String?#kotlin.Int#kotlin.Int#kotlin.Int#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-network-quality-changed/on-network-quality-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnParticipantListChanged///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-participant-list-changed/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnParticipantListChanged/OnParticipantListChanged/#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.QualifiedIdMapper#com.wire.kalium.logic.data.call.mapper.ParticipantMapper#com.wire.kalium.logic.configuration.UserConfigRepository#com.wire.kalium.logic.data.call.CallHelper#kotlin.coroutines.SuspendFunction1[[Error type: Unresolved type for ConversationId],kotlin.Unit]#[Error type: Unresolved type for CoroutineScope]#[Error type: Unresolved type for Json]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-participant-list-changed/-on-participant-list-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnParticipantListChanged/onParticipantChanged/#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-participant-list-changed/on-participant-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnParticipantsVideoStateChanged///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-participants-video-state-changed/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnParticipantsVideoStateChanged/OnParticipantsVideoStateChanged/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-participants-video-state-changed/-on-participants-video-state-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnParticipantsVideoStateChanged/onVideoReceiveStateChanged/#kotlin.String#kotlin.String#kotlin.String#kotlin.Int#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-participants-video-state-changed/on-video-receive-state-changed.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnRequestNewEpoch///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-request-new-epoch/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnRequestNewEpoch/OnRequestNewEpoch/#[Error type: Unresolved type for CoroutineScope]#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.QualifiedIdMapper/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-request-new-epoch/-on-request-new-epoch.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnRequestNewEpoch/onRequestNewEpoch/#[Error type: Unresolved type for Handle]#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-request-new-epoch/on-request-new-epoch.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSFTRequest.Companion///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-s-f-t-request/-companion/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSFTRequest///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-s-f-t-request/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSFTRequest/OnSFTRequest/#[Error type: Unresolved type for Deferred<Handle>][[Error type: Unresolved type for Handle]]#[Error type: Unresolved type for Calling]#com.wire.kalium.logic.data.call.CallRepository#[Error type: Unresolved type for CoroutineScope]#[Error type: Unresolved type for NetworkStateObserver]#[Error type: Unresolved type for Duration]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-s-f-t-request/-on-s-f-t-request.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSFTRequest/onSFTRequest/#[Error type: Unresolved type for Pointer]?#kotlin.String#[Error type: Unresolved type for Pointer]?#[Error type: Unresolved type for Size_t]#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-s-f-t-request/on-s-f-t-request.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSendOTR///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-send-o-t-r/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSendOTR/OnSendOTR/#com.wire.kalium.logic.data.id.QualifiedIdMapper#kotlin.String#kotlin.String#com.wire.kalium.logic.data.call.mapper.CallMapper#com.wire.kalium.logic.feature.call.scenario.CallingMessageSender/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-send-o-t-r/-on-send-o-t-r.html
+$dokka.location:com.wire.kalium.logic.feature.call.scenario/OnSendOTR/onSend/#[Error type: Unresolved type for Pointer]?#kotlin.String#kotlin.String#kotlin.String#kotlin.String?#kotlin.String?#[Error type: Unresolved type for Pointer]?#[Error type: Unresolved type for Size_t]#kotlin.Boolean#kotlin.Boolean#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call.scenario/[jvm]-on-send-o-t-r/on-send.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/-companion/index.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/NETWORK_QUALITY_INTERVAL_SECONDS/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/-companion/-n-e-t-w-o-r-k_-q-u-a-l-i-t-y_-i-n-t-e-r-v-a-l_-s-e-c-o-n-d-s.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/REMOTE_MUTE_TYPE/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/-companion/-r-e-m-o-t-e_-m-u-t-e_-t-y-p-e.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/TAG/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/-companion/-t-a-g.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/UTF8_ENCODING/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/-companion/-u-t-f8_-e-n-c-o-d-i-n-g.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/index.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/CallManagerImpl/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/-call-manager-impl.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/CallManagerImpl/#[Error type: Unresolved type for Calling]#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.CurrentClientIdProvider#com.wire.kalium.logic.cache.SelfConversationIdProvider#com.wire.kalium.logic.data.conversation.ConversationRepository#[Error type: Unresolved type for MessageSender]#com.wire.kalium.logic.data.call.mapper.CallMapper#com.wire.kalium.logic.data.id.FederatedIdMapper#com.wire.kalium.logic.data.id.QualifiedIdMapper#com.wire.kalium.logic.data.call.VideoStateChecker#com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater#[Error type: Unresolved type for NetworkStateObserver]#com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider#com.wire.kalium.logic.configuration.UserConfigRepository#com.wire.kalium.logic.featureFlags.KaliumConfigs#com.wire.kalium.logic.feature.call.MediaManagerService#com.wire.kalium.logic.feature.call.FlowManagerService#com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase#[Error type: Unresolved type for UserId]#[Error type: Unresolved type for Json]#com.wire.kalium.logic.feature.call.ShouldRemoteMuteChecker#com.wire.kalium.logic.util.ServerTimeHandler#[Error type: Unresolved type for KaliumDispatcher]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/-call-manager-impl.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/answerCall/#[Error type: Unresolved type for ConversationId]#kotlin.Boolean#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/answer-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/cancelJobs/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/cancel-jobs.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/endCall/#[Error type: Unresolved type for ConversationId]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/end-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/muteCall/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/mute-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/onCallingMessageReceived/#[Error type: Unresolved type for Message.Signaling]#[Error type: Unresolved type for MessageContent.Calling]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/on-calling-message-received.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/rejectCall/#[Error type: Unresolved type for ConversationId]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/reject-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/reportProcessNotifications/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/report-process-notifications.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/requestVideoStreams/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for CallClientList]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/request-video-streams.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestPreviewActive/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-test-preview-active.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestRemoteVideoStates/#[Error type: Unresolved type for ConversationId]#kotlin.collections.List[[Error type: Unresolved type for Participant]]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-test-remote-video-states.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestVideoType/#[Error type: Unresolved type for TestVideoType]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-test-video-type.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setVideoSendState/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for VideoState]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-video-send-state.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/startCall/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for CallType]#[Error type: Unresolved type for ConversationTypeCalling]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/start-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateConversationClients/#[Error type: Unresolved type for ConversationId]#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/update-conversation-clients.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateEpochInfo/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for EpochInfo]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/update-epoch-info.html
+$dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/index.html
+$dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl/onLog/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/on-log.html
+$dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/create/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]create.html
+$dokka.location:com.wire.kalium.logic.network/NetworkStateObserverImpl/observeNetworkState/#/PointingToDeclaration/logic/com.wire.kalium.logic.network/-network-state-observer-impl/[jvm]observe-network-state.html
+$dokka.location:com.wire.kalium.logic.util/CurrentPlatform/type/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-current-platform/[jvm]type.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager///PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/index.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/DummyCallManager/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/-dummy-call-manager.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/answerCall/#[Error type: Unresolved type for ConversationId]#kotlin.Boolean#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/answer-call.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/cancelJobs/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/cancel-jobs.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/endCall/#[Error type: Unresolved type for ConversationId]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/end-call.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/muteCall/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/mute-call.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/onCallingMessageReceived/#[Error type: Unresolved type for Message.Signaling]#[Error type: Unresolved type for MessageContent.Calling]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/on-calling-message-received.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/rejectCall/#[Error type: Unresolved type for ConversationId]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/reject-call.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/reportProcessNotifications/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/report-process-notifications.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/requestVideoStreams/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for CallClientList]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/request-video-streams.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/setTestPreviewActive/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/set-test-preview-active.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/setTestRemoteVideoStates/#[Error type: Unresolved type for ConversationId]#kotlin.collections.List[[Error type: Unresolved type for Participant]]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/set-test-remote-video-states.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/setTestVideoType/#[Error type: Unresolved type for TestVideoType]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/set-test-video-type.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/setVideoSendState/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for VideoState]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/set-video-send-state.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/startCall/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for CallType]#[Error type: Unresolved type for ConversationTypeCalling]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/start-call.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/updateConversationClients/#[Error type: Unresolved type for ConversationId]#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/update-conversation-clients.html
+$dokka.location:com.wire.kalium.logic.util/DummyCallManager/updateEpochInfo/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for EpochInfo]/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/update-epoch-info.html
+$dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[jvm]view.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/audioNormalizedLoudnessBuilder/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]audio-normalized-loudness-builder.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/deleteSessionScope/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]delete-session-scope.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/networkStateObserver/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]network-state-observer.html
+$dokka.location:com.wire.kalium.network.api.base.unauthenticated.appVersioning/AppVersionBlackListResponse/blacklisted/#/PointingToDeclaration/network/com.wire.kalium.network.api.base.unauthenticated.appVersioning/-app-version-black-list-response/[jvm]blacklisted.html
+$dokka.location:com.wire.kalium.network.api.base.unauthenticated.appVersioning/AppVersionBlackListResponse/oldestAccepted/#/PointingToDeclaration/network/com.wire.kalium.network.api.base.unauthenticated.appVersioning/-app-version-black-list-response/[jvm]oldest-accepted.html
+$dokka.location:com.wire.kalium.network//buildClearTextTrafficOkhttpClient/#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]build-clear-text-traffic-okhttp-client.html
+$dokka.location:com.wire.kalium.network//buildOkhttpClient/#kotlin.Function1[[Error type: Unresolved type for OkHttpClient.Builder],kotlin.Unit]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]build-okhttp-client.html
+$dokka.location:com.wire.kalium.network//supportedConnectionSpecs/#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]supported-connection-specs.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/index.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/WrapperListener/#[Error type: Unresolved type for WebSocketListener]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/-wrapper-listener.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onClosed/#[Error type: Unresolved type for WebSocket]#kotlin.Int#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-closed.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onClosing/#[Error type: Unresolved type for WebSocket]#kotlin.Int#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-closing.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onFailure/#[Error type: Unresolved type for WebSocket]#kotlin.Throwable#[Error type: Unresolved type for Response]?/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-failure.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onMessage/#[Error type: Unresolved type for WebSocket]#[Error type: Unresolved type for ByteString]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-message.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onMessage/#[Error type: Unresolved type for WebSocket]#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-message.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onOpen/#[Error type: Unresolved type for WebSocket]#[Error type: Unresolved type for Response]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-open.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/index.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory/KaliumWebSocketFactory/#[Error type: Unresolved type for OkHttpClient]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-kalium-web-socket-factory.html
+$dokka.location:com.wire.kalium.network/KaliumWebSocketFactory/newWebSocket/#[Error type: Unresolved type for Request]#[Error type: Unresolved type for WebSocketListener]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/new-web-socket.html
+$dokka.location:com.wire.kalium.persistence.db/PlatformDatabaseData/storageData/#/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/-platform-database-data/[jvm]storage-data.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-file-backed/index.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/FileBacked/#java.io.File/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-file-backed/-file-backed.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/FileBacked/#kotlin.String/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[apple]-storage-data/-file-backed/-file-backed.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/file/#/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-file-backed/file.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/storePath/#/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[apple]-storage-data/-file-backed/store-path.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.InMemory///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-in-memory/index.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/index.html
+module:logic
+com.wire.kalium.logic
+com.wire.kalium.logic.cache
+com.wire.kalium.logic.configuration
+com.wire.kalium.logic.configuration.appVersioning
+com.wire.kalium.logic.configuration.notification
+com.wire.kalium.logic.configuration.server
+com.wire.kalium.logic.data.analytics
+com.wire.kalium.logic.data.asset
+com.wire.kalium.logic.data.auth
+com.wire.kalium.logic.data.auth.login
+com.wire.kalium.logic.data.auth.verification
+com.wire.kalium.logic.data.backup
+com.wire.kalium.logic.data.call
+com.wire.kalium.logic.data.call.mapper
+com.wire.kalium.logic.data.client
+com.wire.kalium.logic.data.client.remote
+com.wire.kalium.logic.data.connection
+com.wire.kalium.logic.data.conversation
+com.wire.kalium.logic.data.conversation.folders
+com.wire.kalium.logic.data.conversation.mls
+com.wire.kalium.logic.data.e2ei
+com.wire.kalium.logic.data.event
+com.wire.kalium.logic.data.featureConfig
+com.wire.kalium.logic.data.id
+com.wire.kalium.logic.data.keypackage
+com.wire.kalium.logic.data.logout
+com.wire.kalium.logic.data.message
+com.wire.kalium.logic.data.message.attachment
+com.wire.kalium.logic.data.message.draft
+com.wire.kalium.logic.data.message.linkpreview
+com.wire.kalium.logic.data.message.mention
+com.wire.kalium.logic.data.message.reaction
+com.wire.kalium.logic.data.message.receipt
+com.wire.kalium.logic.data.mls
+com.wire.kalium.logic.data.mlspublickeys
+com.wire.kalium.logic.data.notification
+com.wire.kalium.logic.data.prekey
+com.wire.kalium.logic.data.properties
+com.wire.kalium.logic.data.publicuser
+com.wire.kalium.logic.data.publicuser.model
+com.wire.kalium.logic.data.register
+com.wire.kalium.logic.data.service
+com.wire.kalium.logic.data.session
+com.wire.kalium.logic.data.session.token
+com.wire.kalium.logic.data.sso
+com.wire.kalium.logic.data.sync
+com.wire.kalium.logic.data.team
+com.wire.kalium.logic.data.user
+com.wire.kalium.logic.data.user.type
+com.wire.kalium.logic.di
+com.wire.kalium.logic.failure
+com.wire.kalium.logic.feature
+com.wire.kalium.logic.feature.analytics
+com.wire.kalium.logic.feature.appVersioning
+com.wire.kalium.logic.feature.applock
+com.wire.kalium.logic.feature.asset
+com.wire.kalium.logic.feature.asset.upload
+com.wire.kalium.logic.feature.auth
+com.wire.kalium.logic.feature.auth.autoVersioningAuth
+com.wire.kalium.logic.feature.auth.sso
+com.wire.kalium.logic.feature.auth.verification
+com.wire.kalium.logic.feature.backup
+com.wire.kalium.logic.feature.backup.mapper
+com.wire.kalium.logic.feature.backup.provider
+com.wire.kalium.logic.feature.call
+com.wire.kalium.logic.feature.call.scenario
+com.wire.kalium.logic.feature.call.usecase
+com.wire.kalium.logic.feature.call.usecase.video
+com.wire.kalium.logic.feature.channels
+com.wire.kalium.logic.feature.client
+com.wire.kalium.logic.feature.connection
+com.wire.kalium.logic.feature.conversation
+com.wire.kalium.logic.feature.conversation.apps
+com.wire.kalium.logic.feature.conversation.channel
+com.wire.kalium.logic.feature.conversation.createconversation
+com.wire.kalium.logic.feature.conversation.delete
+com.wire.kalium.logic.feature.conversation.folder
+com.wire.kalium.logic.feature.conversation.guestroomlink
+com.wire.kalium.logic.feature.conversation.keyingmaterials
+com.wire.kalium.logic.feature.conversation.messagetimer
+com.wire.kalium.logic.feature.conversation.mls
+com.wire.kalium.logic.feature.debug
+com.wire.kalium.logic.feature.e2ei
+com.wire.kalium.logic.feature.e2ei.usecase
+com.wire.kalium.logic.feature.featureConfig
+com.wire.kalium.logic.feature.featureConfig.handler
+com.wire.kalium.logic.feature.incallreaction
+com.wire.kalium.logic.feature.keypackage
+com.wire.kalium.logic.feature.legalhold
+com.wire.kalium.logic.feature.message
+com.wire.kalium.logic.feature.message.composite
+com.wire.kalium.logic.feature.message.confirmation
+com.wire.kalium.logic.feature.message.draft
+com.wire.kalium.logic.feature.message.ephemeral
+com.wire.kalium.logic.feature.message.receipt
+com.wire.kalium.logic.feature.mlsmigration
+com.wire.kalium.logic.feature.notificationToken
+com.wire.kalium.logic.feature.personaltoteamaccount
+com.wire.kalium.logic.feature.proteus
+com.wire.kalium.logic.feature.protocol
+com.wire.kalium.logic.feature.publicuser
+com.wire.kalium.logic.feature.publicuser.search
+com.wire.kalium.logic.feature.register
+com.wire.kalium.logic.feature.rootDetection
+com.wire.kalium.logic.feature.search
+com.wire.kalium.logic.feature.selfDeletingMessages
+com.wire.kalium.logic.feature.server
+com.wire.kalium.logic.feature.service
+com.wire.kalium.logic.feature.session
+com.wire.kalium.logic.feature.session.token
+com.wire.kalium.logic.feature.sessionreset
+com.wire.kalium.logic.feature.team
+com.wire.kalium.logic.feature.user
+com.wire.kalium.logic.feature.user.e2ei
+com.wire.kalium.logic.feature.user.guestroomlink
+com.wire.kalium.logic.feature.user.migration
+com.wire.kalium.logic.feature.user.readReceipts
+com.wire.kalium.logic.feature.user.screenshotCensoring
+com.wire.kalium.logic.feature.user.typingIndicator
+com.wire.kalium.logic.feature.user.webSocketStatus
+com.wire.kalium.logic.featureFlags
+com.wire.kalium.logic.network
+com.wire.kalium.logic.sync
+com.wire.kalium.logic.sync.incremental
+com.wire.kalium.logic.sync.local
+com.wire.kalium.logic.sync.periodic
+com.wire.kalium.logic.sync.receiver
+com.wire.kalium.logic.sync.receiver.asset
+com.wire.kalium.logic.sync.receiver.conversation
+com.wire.kalium.logic.sync.receiver.conversation.message
+com.wire.kalium.logic.sync.receiver.handler
+com.wire.kalium.logic.sync.receiver.handler.legalhold
+com.wire.kalium.logic.sync.slow
+com.wire.kalium.logic.sync.slow.migration
+com.wire.kalium.logic.sync.slow.migration.steps
+com.wire.kalium.logic.util
+module:cryptography
+com.wire.kalium.cryptography
+com.wire.kalium.cryptography.backup
+com.wire.kalium.cryptography.exceptions
+com.wire.kalium.cryptography.externals
+com.wire.kalium.cryptography.utils
+module:logger
+com.wire.kalium.logger
+module:network
+com.wire.kalium.network
+com.wire.kalium.network.api.base.authenticated
+com.wire.kalium.network.api.base.authenticated.asset
+com.wire.kalium.network.api.base.authenticated.client
+com.wire.kalium.network.api.base.authenticated.connection
+com.wire.kalium.network.api.base.authenticated.conversation
+com.wire.kalium.network.api.base.authenticated.conversation.history
+com.wire.kalium.network.api.base.authenticated.e2ei
+com.wire.kalium.network.api.base.authenticated.featureConfigs
+com.wire.kalium.network.api.base.authenticated.keypackage
+com.wire.kalium.network.api.base.authenticated.logout
+com.wire.kalium.network.api.base.authenticated.message
+com.wire.kalium.network.api.base.authenticated.notification
+com.wire.kalium.network.api.base.authenticated.prekey
+com.wire.kalium.network.api.base.authenticated.properties
+com.wire.kalium.network.api.base.authenticated.search
+com.wire.kalium.network.api.base.authenticated.self
+com.wire.kalium.network.api.base.authenticated.serverpublickey
+com.wire.kalium.network.api.base.authenticated.userDetails
+com.wire.kalium.network.api.base.unauthenticated.appVersioning
+com.wire.kalium.network.api.base.unauthenticated.domainLookup
+com.wire.kalium.network.api.base.unauthenticated.domainregistration
+com.wire.kalium.network.api.base.unauthenticated.login
+com.wire.kalium.network.api.base.unauthenticated.register
+com.wire.kalium.network.api.base.unauthenticated.sso
+com.wire.kalium.network.api.base.unauthenticated.verification
+com.wire.kalium.network.api.base.unbound.acme
+com.wire.kalium.network.api.base.unbound.configuration
+com.wire.kalium.network.api.base.unbound.versioning
+com.wire.kalium.network.api.v0.authenticated
+com.wire.kalium.network.api.v0.authenticated.networkContainer
+com.wire.kalium.network.api.v0.unauthenticated
+com.wire.kalium.network.api.v0.unauthenticated.networkContainer
+com.wire.kalium.network.api.v10.authenticated
+com.wire.kalium.network.api.v10.authenticated.networkContainer
+com.wire.kalium.network.api.v10.unauthenticated
+com.wire.kalium.network.api.v10.unauthenticated.networkContainer
+com.wire.kalium.network.api.v11.authenticated
+com.wire.kalium.network.api.v11.authenticated.networkContainer
+com.wire.kalium.network.api.v11.unauthenticated
+com.wire.kalium.network.api.v11.unauthenticated.networkContainer
+com.wire.kalium.network.api.v12.authenticated
+com.wire.kalium.network.api.v12.authenticated.networkContainer
+com.wire.kalium.network.api.v12.unauthenticated
+com.wire.kalium.network.api.v12.unauthenticated.networkContainer
+com.wire.kalium.network.api.v2.authenticated
+com.wire.kalium.network.api.v2.authenticated.networkContainer
+com.wire.kalium.network.api.v2.unauthenticated
+com.wire.kalium.network.api.v2.unauthenticated.networkContainer
+com.wire.kalium.network.api.v3.authenticated
+com.wire.kalium.network.api.v3.authenticated.networkContainer
+com.wire.kalium.network.api.v3.unauthenticated
+com.wire.kalium.network.api.v3.unauthenticated.networkContainer
+com.wire.kalium.network.api.v4.authenticated
+com.wire.kalium.network.api.v4.authenticated.networkContainer
+com.wire.kalium.network.api.v4.unauthenticated
+com.wire.kalium.network.api.v4.unauthenticated.networkContainer
+com.wire.kalium.network.api.v5.authenticated
+com.wire.kalium.network.api.v5.authenticated.networkContainer
+com.wire.kalium.network.api.v5.unauthenticated
+com.wire.kalium.network.api.v5.unauthenticated.networkContainer
+com.wire.kalium.network.api.v6.authenticated
+com.wire.kalium.network.api.v6.authenticated.networkContainer
+com.wire.kalium.network.api.v6.unauthenticated
+com.wire.kalium.network.api.v6.unauthenticated.networkContainer
+com.wire.kalium.network.api.v7.authenticated
+com.wire.kalium.network.api.v7.authenticated.networkContainer
+com.wire.kalium.network.api.v7.unauthenticated
+com.wire.kalium.network.api.v7.unauthenticated.networkContainer
+com.wire.kalium.network.api.v8.authenticated
+com.wire.kalium.network.api.v8.authenticated.networkContainer
+com.wire.kalium.network.api.v8.unauthenticated
+com.wire.kalium.network.api.v8.unauthenticated.networkContainer
+com.wire.kalium.network.api.v9.authenticated
+com.wire.kalium.network.api.v9.authenticated.networkContainer
+com.wire.kalium.network.api.v9.unauthenticated
+com.wire.kalium.network.api.v9.unauthenticated.networkContainer
+com.wire.kalium.network.api.vcommon
+com.wire.kalium.network.exceptions
+com.wire.kalium.network.networkContainer
+com.wire.kalium.network.serialization
+com.wire.kalium.network.session
+com.wire.kalium.network.utils
+module:persistence
+com.wire.kalium.persistence
+com.wire.kalium.persistence.adapter
+com.wire.kalium.persistence.backup
+com.wire.kalium.persistence.cache
+com.wire.kalium.persistence.client
+com.wire.kalium.persistence.config
+com.wire.kalium.persistence.dao
+com.wire.kalium.persistence.dao.asset
+com.wire.kalium.persistence.dao.call
+com.wire.kalium.persistence.dao.client
+com.wire.kalium.persistence.dao.conversation
+com.wire.kalium.persistence.dao.conversation.folder
+com.wire.kalium.persistence.dao.event
+com.wire.kalium.persistence.dao.member
+com.wire.kalium.persistence.dao.message
+com.wire.kalium.persistence.dao.message.attachment
+com.wire.kalium.persistence.dao.message.draft
+com.wire.kalium.persistence.dao.messageattachment
+com.wire.kalium.persistence.dao.newclient
+com.wire.kalium.persistence.dao.publiclink
+com.wire.kalium.persistence.dao.reaction
+com.wire.kalium.persistence.dao.receipt
+com.wire.kalium.persistence.dao.unread
+com.wire.kalium.persistence.daokaliumdb
+com.wire.kalium.persistence.db
+com.wire.kalium.persistence.db.feeders
+com.wire.kalium.persistence.db.support
+com.wire.kalium.persistence.dbPassphrase
+com.wire.kalium.persistence.kmmSettings
+com.wire.kalium.persistence.model
+com.wire.kalium.persistence.util
+module:protobuf
+com.wire.kalium.protobuf
+com.wire.kalium.protobuf.backup
+com.wire.kalium.protobuf.messages
+com.wire.kalium.protobuf.mls
+com.wire.kalium.protobuf.otr
+module:backup
+com.wire.backup.data
+com.wire.backup.dump
+com.wire.backup.encryption
+com.wire.backup.envelope
+com.wire.backup.filesystem
+com.wire.backup.hash
+com.wire.backup.ingest
+com.wire.backup.logger
+module:calling
+com.wire.kalium.calling
+com.wire.kalium.calling.callbacks
+com.wire.kalium.calling.types
+module:cli
+com.wire.kalium.cli
+com.wire.kalium.cli.commands

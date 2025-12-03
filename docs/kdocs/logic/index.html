@@ -1,0 +1,2626 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>logic</title>
+<link href="../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../scripts/sourceset_dependencies.js" async></script>
+<link href="../styles/style.css" rel="Stylesheet">
+<link href="../styles/main.css" rel="Stylesheet">
+<link href="../styles/prism.css" rel="Stylesheet">
+<link href="../styles/logo-styles.css" rel="Stylesheet">
+<link href="../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../scripts/main.js" defer></script>
+<script type="text/javascript" src="../scripts/prism.js" async></script>
+<script type="text/javascript" src="../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/androidMain">android</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/appleMain">apple</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/jvmMain">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/androidMain" data-filter=":logic:dokkaHtmlPartial/androidMain">
+                                <span class="checkbox--icon"></span>
+                                android
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/appleMain" data-filter=":logic:dokkaHtmlPartial/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/jvmMain" data-filter=":logic:dokkaHtmlPartial/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" id="content" pageids="logic::////PointingToDeclaration//1228878352">
+  <div class="breadcrumbs"></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>logic</span></span></h1>
+    <div class="platform-hinted UnderCoverText with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/androidMain"><p class="paragraph">Higher level business logic operations, tying up single operations from other modules.</p></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><p class="paragraph">Higher level business logic operations, tying up single operations from other modules.</p></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/commonMain"><p class="paragraph">Higher level business logic operations, tying up single operations from other modules.</p></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><p class="paragraph">Higher level business logic operations, tying up single operations from other modules.</p></div>    </div>
+  </div>
+  <h2 class="">Packages</h2>
+  <div class="table"><a data-name="-132647783%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic" id="-132647783%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic/index.html">com.wire.kalium.logic</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-132647783%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="174455405%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.cache" id="174455405%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.cache/index.html">com.wire.kalium.logic.cache</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="174455405%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-356024863%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.configuration" id="-356024863%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.configuration/index.html">com.wire.kalium.logic.configuration</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-356024863%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1102389502%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.configuration.appVersioning" id="1102389502%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.configuration.appVersioning/index.html">com.wire.kalium.logic.configuration.appVersioning</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1102389502%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="898588956%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.configuration.notification" id="898588956%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.configuration.notification/index.html">com.wire.kalium.logic.configuration.notification</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="898588956%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="367886516%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.configuration.server" id="367886516%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.configuration.server/index.html">com.wire.kalium.logic.configuration.server</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="367886516%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="573625915%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.analytics" id="573625915%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.analytics/index.html">com.wire.kalium.logic.data.analytics</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="573625915%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1013647707%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.data.asset" id="-1013647707%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.asset/index.html">com.wire.kalium.logic.data.asset</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1013647707%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1411231913%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.auth" id="-1411231913%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.auth/index.html">com.wire.kalium.logic.data.auth</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1411231913%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-772838446%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.auth.login" id="-772838446%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.auth.login/index.html">com.wire.kalium.logic.data.auth.login</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-772838446%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="437473430%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.auth.verification" id="437473430%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.auth.verification/index.html">com.wire.kalium.logic.data.auth.verification</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="437473430%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1480123471%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.backup" id="-1480123471%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.backup/index.html">com.wire.kalium.logic.data.backup</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1480123471%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-776350579%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.call" id="-776350579%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.call/index.html">com.wire.kalium.logic.data.call</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-776350579%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-853852666%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.call.mapper" id="-853852666%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.call.mapper/index.html">com.wire.kalium.logic.data.call.mapper</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-853852666%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1907470458%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.client" id="1907470458%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.client/index.html">com.wire.kalium.logic.data.client</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1907470458%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1786616638%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.client.remote" id="1786616638%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.client.remote/index.html">com.wire.kalium.logic.data.client.remote</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1786616638%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1455237965%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.connection" id="1455237965%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.connection/index.html">com.wire.kalium.logic.data.connection</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1455237965%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="891094386%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.conversation" id="891094386%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.conversation/index.html">com.wire.kalium.logic.data.conversation</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="891094386%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-105789303%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.conversation.folders" id="-105789303%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.conversation.folders/index.html">com.wire.kalium.logic.data.conversation.folders</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-105789303%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="915997112%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.conversation.mls" id="915997112%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.conversation.mls/index.html">com.wire.kalium.logic.data.conversation.mls</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="915997112%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-71445952%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.e2ei" id="-71445952%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.e2ei/index.html">com.wire.kalium.logic.data.e2ei</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-71445952%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1312349647%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.event" id="1312349647%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.event/index.html">com.wire.kalium.logic.data.event</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1312349647%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="612077709%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.featureConfig" id="612077709%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.featureConfig/index.html">com.wire.kalium.logic.data.featureConfig</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="612077709%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="543462474%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.id" id="543462474%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.id/index.html">com.wire.kalium.logic.data.id</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="543462474%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1801955274%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.keypackage" id="-1801955274%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.keypackage/index.html">com.wire.kalium.logic.data.keypackage</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1801955274%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1415900807%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.logout" id="-1415900807%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.logout/index.html">com.wire.kalium.logic.data.logout</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1415900807%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="285664316%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message" id="285664316%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message/index.html">com.wire.kalium.logic.data.message</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="285664316%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1678308825%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message.attachment" id="1678308825%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message.attachment/index.html">com.wire.kalium.logic.data.message.attachment</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1678308825%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="547075375%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message.draft" id="547075375%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message.draft/index.html">com.wire.kalium.logic.data.message.draft</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="547075375%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1137458468%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message.linkpreview" id="-1137458468%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message.linkpreview/index.html">com.wire.kalium.logic.data.message.linkpreview</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1137458468%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="984896824%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message.mention" id="984896824%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message.mention/index.html">com.wire.kalium.logic.data.message.mention</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="984896824%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1739788193%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message.reaction" id="-1739788193%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message.reaction/index.html">com.wire.kalium.logic.data.message.reaction</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1739788193%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="142853126%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.message.receipt" id="142853126%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.message.receipt/index.html">com.wire.kalium.logic.data.message.receipt</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="142853126%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-823239127%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.mls" id="-823239127%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.mls/index.html">com.wire.kalium.logic.data.mls</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-823239127%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1246096134%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.mlspublickeys" id="1246096134%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.mlspublickeys/index.html">com.wire.kalium.logic.data.mlspublickeys</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1246096134%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="833191898%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.notification" id="833191898%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.notification/index.html">com.wire.kalium.logic.data.notification</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="833191898%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1979866699%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.prekey" id="1979866699%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.prekey/index.html">com.wire.kalium.logic.data.prekey</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1979866699%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1688516254%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.properties" id="-1688516254%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.properties/index.html">com.wire.kalium.logic.data.properties</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1688516254%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="159477411%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.publicuser" id="159477411%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.publicuser/index.html">com.wire.kalium.logic.data.publicuser</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="159477411%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="887602654%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.publicuser.model" id="887602654%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.publicuser.model/index.html">com.wire.kalium.logic.data.publicuser.model</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="887602654%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1326195182%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.register" id="-1326195182%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.register/index.html">com.wire.kalium.logic.data.register</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1326195182%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="2020445546%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.service" id="2020445546%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.service/index.html">com.wire.kalium.logic.data.service</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2020445546%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-654949877%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.session" id="-654949877%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.session/index.html">com.wire.kalium.logic.data.session</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-654949877%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="65617430%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.session.token" id="65617430%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.session.token/index.html">com.wire.kalium.logic.data.session.token</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="65617430%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="2000726468%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.sso" id="2000726468%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.sso/index.html">com.wire.kalium.logic.data.sso</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2000726468%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1714785654%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.sync" id="-1714785654%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.sync/index.html">com.wire.kalium.logic.data.sync</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1714785654%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1657179084%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.team" id="1657179084%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.team/index.html">com.wire.kalium.logic.data.team</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1657179084%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-2018826310%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.user" id="-2018826310%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.user/index.html">com.wire.kalium.logic.data.user</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2018826310%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="305735538%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.data.user.type" id="305735538%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.data.user.type/index.html">com.wire.kalium.logic.data.user.type</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="305735538%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="706501950%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.di" id="706501950%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.di/index.html">com.wire.kalium.logic.di</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="706501950%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1666286645%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.failure" id="1666286645%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.failure/index.html">com.wire.kalium.logic.failure</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1666286645%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-500064607%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.feature" id="-500064607%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature/index.html">com.wire.kalium.logic.feature</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-500064607%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="798391545%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.analytics" id="798391545%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.analytics/index.html">com.wire.kalium.logic.feature.analytics</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="798391545%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1811493633%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.applock" id="-1811493633%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.applock/index.html">com.wire.kalium.logic.feature.applock</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1811493633%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-914951746%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.appVersioning" id="-914951746%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.appVersioning/index.html">com.wire.kalium.logic.feature.appVersioning</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-914951746%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-924341149%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.feature.asset" id="-924341149%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.asset/index.html">com.wire.kalium.logic.feature.asset</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-924341149%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="900278576%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.asset.upload" id="900278576%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.asset.upload/index.html">com.wire.kalium.logic.feature.asset.upload</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="900278576%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-22877735%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.auth" id="-22877735%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.auth/index.html">com.wire.kalium.logic.feature.auth</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-22877735%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-476160294%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.auth.autoVersioningAuth" id="-476160294%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.auth.autoVersioningAuth/index.html">com.wire.kalium.logic.feature.auth.autoVersioningAuth</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-476160294%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-259348934%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.auth.sso" id="-259348934%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.auth.sso/index.html">com.wire.kalium.logic.feature.auth.sso</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-259348934%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1564301652%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.auth.verification" id="1564301652%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.auth.verification/index.html">com.wire.kalium.logic.feature.auth.verification</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1564301652%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1288379827%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.backup" id="1288379827%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.backup/index.html">com.wire.kalium.logic.feature.backup</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1288379827%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1910342112%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.backup.mapper" id="-1910342112%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.backup.mapper/index.html">com.wire.kalium.logic.feature.backup.mapper</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1910342112%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-769986928%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.backup.provider" id="-769986928%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.backup.provider/index.html">com.wire.kalium.logic.feature.backup.provider</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-769986928%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="612003599%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.feature.call" id="612003599%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.call/index.html">com.wire.kalium.logic.feature.call</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="612003599%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-380110445%2FPackages%2F2075915656" anchor-label="com.wire.kalium.logic.feature.call.scenario" id="-380110445%2FPackages%2F2075915656" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.call.scenario/index.html">com.wire.kalium.logic.feature.call.scenario</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-380110445%2FPackages%2F2075915656"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1376497176%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.call.usecase" id="1376497176%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.call.usecase/index.html">com.wire.kalium.logic.feature.call.usecase</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1376497176%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1479145371%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.call.usecase.video" id="-1479145371%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.call.usecase.video/index.html">com.wire.kalium.logic.feature.call.usecase.video</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1479145371%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1592848767%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.channels" id="-1592848767%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.channels/index.html">com.wire.kalium.logic.feature.channels</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1592848767%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="381006460%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.client" id="381006460%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.client/index.html">com.wire.kalium.logic.feature.client</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="381006460%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-166962097%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.connection" id="-166962097%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.connection/index.html">com.wire.kalium.logic.feature.connection</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-166962097%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1029963252%2FPackages%2F-757061202" anchor-label="com.wire.kalium.logic.feature.conversation" id="1029963252%2FPackages%2F-757061202" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation/index.html">com.wire.kalium.logic.feature.conversation</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1029963252%2FPackages%2F-757061202"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1633569456%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.apps" id="1633569456%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.apps/index.html">com.wire.kalium.logic.feature.conversation.apps</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1633569456%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-2011137847%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.channel" id="-2011137847%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.channel/index.html">com.wire.kalium.logic.feature.conversation.channel</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2011137847%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-585855875%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.createconversation" id="-585855875%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.createconversation/index.html">com.wire.kalium.logic.feature.conversation.createconversation</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-585855875%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1645545047%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.delete" id="-1645545047%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.delete/index.html">com.wire.kalium.logic.feature.conversation.delete</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1645545047%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="586273452%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.folder" id="586273452%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.folder/index.html">com.wire.kalium.logic.feature.conversation.folder</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="586273452%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="501207411%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.guestroomlink" id="501207411%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.guestroomlink/index.html">com.wire.kalium.logic.feature.conversation.guestroomlink</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="501207411%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1329132207%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.keyingmaterials" id="1329132207%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.keyingmaterials/index.html">com.wire.kalium.logic.feature.conversation.keyingmaterials</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1329132207%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1638434596%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.messagetimer" id="-1638434596%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.messagetimer/index.html">com.wire.kalium.logic.feature.conversation.messagetimer</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1638434596%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1506535738%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.conversation.mls" id="1506535738%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.conversation.mls/index.html">com.wire.kalium.logic.feature.conversation.mls</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1506535738%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1674908166%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.debug" id="1674908166%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.debug/index.html">com.wire.kalium.logic.feature.debug</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1674908166%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1316908226%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.e2ei" id="1316908226%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.e2ei/index.html">com.wire.kalium.logic.feature.e2ei</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1316908226%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="379341003%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.e2ei.usecase" id="379341003%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.e2ei.usecase/index.html">com.wire.kalium.logic.feature.e2ei.usecase</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="379341003%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="622045259%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.featureConfig" id="622045259%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.featureConfig/index.html">com.wire.kalium.logic.feature.featureConfig</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="622045259%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-267986009%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.featureConfig.handler" id="-267986009%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.featureConfig.handler/index.html">com.wire.kalium.logic.feature.featureConfig.handler</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-267986009%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="44280989%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.incallreaction" id="44280989%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.incallreaction/index.html">com.wire.kalium.logic.feature.incallreaction</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="44280989%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="870811960%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.keypackage" id="870811960%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.keypackage/index.html">com.wire.kalium.logic.feature.keypackage</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="870811960%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1991054869%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.legalhold" id="-1991054869%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.legalhold/index.html">com.wire.kalium.logic.feature.legalhold</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1991054869%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="209920634%2FPackages%2F-757061202" anchor-label="com.wire.kalium.logic.feature.message" id="209920634%2FPackages%2F-757061202" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.message/index.html">com.wire.kalium.logic.feature.message</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="209920634%2FPackages%2F-757061202"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1051136685%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.message.composite" id="-1051136685%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.message.composite/index.html">com.wire.kalium.logic.feature.message.composite</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1051136685%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1739642861%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.message.confirmation" id="1739642861%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.message.confirmation/index.html">com.wire.kalium.logic.feature.message.confirmation</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1739642861%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="557042925%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.message.draft" id="557042925%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.message.draft/index.html">com.wire.kalium.logic.feature.message.draft</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="557042925%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1864418537%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.message.ephemeral" id="1864418537%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.message.ephemeral/index.html">com.wire.kalium.logic.feature.message.ephemeral</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1864418537%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1131734084%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.message.receipt" id="1131734084%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.message.receipt/index.html">com.wire.kalium.logic.feature.message.receipt</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1131734084%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="2068691531%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.mlsmigration" id="2068691531%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.mlsmigration/index.html">com.wire.kalium.logic.feature.mlsmigration</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2068691531%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="451220033%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.notificationToken" id="451220033%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.notificationToken/index.html">com.wire.kalium.logic.feature.notificationToken</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="451220033%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1649489720%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.personaltoteamaccount" id="-1649489720%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.personaltoteamaccount/index.html">com.wire.kalium.logic.feature.personaltoteamaccount</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1649489720%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="279184175%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.proteus" id="279184175%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.proteus/index.html">com.wire.kalium.logic.feature.proteus</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="279184175%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-2055598263%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.protocol" id="-2055598263%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.protocol/index.html">com.wire.kalium.logic.feature.protocol</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2055598263%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1462722651%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.publicuser" id="-1462722651%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.publicuser/index.html">com.wire.kalium.logic.feature.publicuser</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1462722651%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-344986475%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.publicuser.search" id="-344986475%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.publicuser.search/index.html">com.wire.kalium.logic.feature.publicuser.search</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-344986475%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="620717972%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.register" id="620717972%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.register/index.html">com.wire.kalium.logic.feature.register</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="620717972%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-659966346%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.feature.rootDetection" id="-659966346%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.rootDetection/index.html">com.wire.kalium.logic.feature.rootDetection</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-659966346%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="306010649%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.search" id="306010649%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.search/index.html">com.wire.kalium.logic.feature.search</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="306010649%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1116320591%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.selfDeletingMessages" id="-1116320591%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.selfDeletingMessages/index.html">com.wire.kalium.logic.feature.selfDeletingMessages</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1116320591%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-507443212%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.server" id="-507443212%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.server/index.html">com.wire.kalium.logic.feature.server</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-507443212%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1944701864%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.service" id="1944701864%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.service/index.html">com.wire.kalium.logic.feature.service</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1944701864%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-730693559%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.session" id="-730693559%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.session/index.html">com.wire.kalium.logic.feature.session</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-730693559%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="75584980%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.session.token" id="75584980%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.session.token/index.html">com.wire.kalium.logic.feature.session.token</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="75584980%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1458193002%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.sessionreset" id="1458193002%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.sessionreset/index.html">com.wire.kalium.logic.feature.sessionreset</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1458193002%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1249434034%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.team" id="-1249434034%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.team/index.html">com.wire.kalium.logic.feature.team</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1249434034%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-630472132%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user" id="-630472132%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user/index.html">com.wire.kalium.logic.feature.user</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-630472132%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="748769799%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.e2ei" id="748769799%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.e2ei/index.html">com.wire.kalium.logic.feature.user.e2ei</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="748769799%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="632715195%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.guestroomlink" id="632715195%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.guestroomlink/index.html">com.wire.kalium.logic.feature.user.guestroomlink</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="632715195%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="207055132%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.migration" id="207055132%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.migration/index.html">com.wire.kalium.logic.feature.user.migration</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="207055132%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1546206937%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.readReceipts" id="-1546206937%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.readReceipts/index.html">com.wire.kalium.logic.feature.user.readReceipts</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1546206937%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="743751776%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.screenshotCensoring" id="743751776%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.screenshotCensoring/index.html">com.wire.kalium.logic.feature.user.screenshotCensoring</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="743751776%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1117984218%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.typingIndicator" id="-1117984218%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.typingIndicator/index.html">com.wire.kalium.logic.feature.user.typingIndicator</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1117984218%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1780019015%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.feature.user.webSocketStatus" id="1780019015%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.feature.user.webSocketStatus/index.html">com.wire.kalium.logic.feature.user.webSocketStatus</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1780019015%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-41841110%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.featureFlags" id="-41841110%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.featureFlags/index.html">com.wire.kalium.logic.featureFlags</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-41841110%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-1069324327%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.network" id="-1069324327%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.network/index.html">com.wire.kalium.logic.network</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1069324327%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1233367572%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.sync" id="1233367572%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync/index.html">com.wire.kalium.logic.sync</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1233367572%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="106469120%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.incremental" id="106469120%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.incremental/index.html">com.wire.kalium.logic.sync.incremental</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="106469120%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-2062606767%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.local" id="-2062606767%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.local/index.html">com.wire.kalium.logic.sync.local</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2062606767%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="972482425%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.periodic" id="972482425%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.periodic/index.html">com.wire.kalium.logic.sync.periodic</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="972482425%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-506627635%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.receiver" id="-506627635%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.receiver/index.html">com.wire.kalium.logic.sync.receiver</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-506627635%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1954903695%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.receiver.asset" id="1954903695%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.receiver.asset/index.html">com.wire.kalium.logic.sync.receiver.asset</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1954903695%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1061333576%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.receiver.conversation" id="1061333576%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.receiver.conversation/index.html">com.wire.kalium.logic.sync.receiver.conversation</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1061333576%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1912444705%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.receiver.conversation.message" id="1912444705%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.receiver.conversation.message/index.html">com.wire.kalium.logic.sync.receiver.conversation.message</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1912444705%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="220203817%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.receiver.handler" id="220203817%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.receiver.handler/index.html">com.wire.kalium.logic.sync.receiver.handler</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="220203817%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-139899789%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.receiver.handler.legalhold" id="-139899789%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.receiver.handler.legalhold/index.html">com.wire.kalium.logic.sync.receiver.handler.legalhold</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-139899789%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-891165345%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.slow" id="-891165345%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.slow/index.html">com.wire.kalium.logic.sync.slow</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-891165345%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="16923775%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.slow.migration" id="16923775%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.slow.migration/index.html">com.wire.kalium.logic.sync.slow.migration</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="16923775%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-200512200%2FPackages%2F867774983" anchor-label="com.wire.kalium.logic.sync.slow.migration.steps" id="-200512200%2FPackages%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.sync.slow.migration.steps/index.html">com.wire.kalium.logic.sync.slow.migration.steps</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-200512200%2FPackages%2F867774983"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag common-like">common</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="-871234373%2FPackages%2F1228878352" anchor-label="com.wire.kalium.logic.util" id="-871234373%2FPackages%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+    <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/jvmMain">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="com.wire.kalium.logic.util/index.html">com.wire.kalium.logic.util</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-871234373%2FPackages%2F1228878352"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">android</div>
+              <div class="platform-tag common-like">apple</div>
+              <div class="platform-tag common-like">common</div>
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

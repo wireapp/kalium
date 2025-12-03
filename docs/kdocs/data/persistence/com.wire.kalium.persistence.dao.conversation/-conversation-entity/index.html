@@ -1,0 +1,776 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>ConversationEntity</title>
+<link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../../styles/style.css" rel="Stylesheet">
+<link href="../../../../styles/main.css" rel="Stylesheet">
+<link href="../../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/commonMain" data-filter=":data:persistence:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="persistence::com.wire.kalium.persistence.dao.conversation/ConversationEntity///PointingToDeclaration//-794769692">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.dao.conversation</a><span class="delimiter">/</span><span class="current">ConversationEntity</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Conversation</span><wbr><span><span>Entity</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">ConversationEntity</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>id<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>name<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>type<span class="token operator">: </span><a href="-type/index.html">ConversationEntity.Type</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>protocolInfo<span class="token operator">: </span><a href="-protocol-info/index.html">ConversationEntity.ProtocolInfo</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>mutedStatus<span class="token operator">: </span><a href="-muted-status/index.html">ConversationEntity.MutedStatus</a><span class="token operator"> = </span>MutedStatus.ALL_ALLOWED<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>mutedTime<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator"> = </span><span class="token constant">0</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>removedBy<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>creatorId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>lastNotificationDate<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>lastModifiedDate<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>lastReadDate<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>access<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="-access/index.html">ConversationEntity.Access</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>accessRole<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="-access-role/index.html">ConversationEntity.AccessRole</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>receiptMode<span class="token operator">: </span><a href="-receipt-mode/index.html">ConversationEntity.ReceiptMode</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>guestRoomLink<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>messageTimer<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>userMessageTimer<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>hasIncompleteMetadata<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>archived<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>archivedInstant<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>mlsVerificationStatus<span class="token operator">: </span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>proteusVerificationStatus<span class="token operator">: </span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>legalHoldStatus<span class="token operator">: </span><a href="-legal-hold-status/index.html">ConversationEntity.LegalHoldStatus</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>isChannel<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>channelAccess<span class="token operator">: </span><a href="-channel-access/index.html">ConversationEntity.ChannelAccess</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>channelAddPermission<span class="token operator">: </span><a href="-channel-add-permission/index.html">ConversationEntity.ChannelAddPermission</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>wireCell<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>historySharingRetentionSeconds<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></span></span><span class="token punctuation">)</span></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="2099058479%2FConstructors%2F-794769692" anchor-label="ConversationEntity" id="2099058479%2FConstructors%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-conversation-entity.html"><span>Conversation</span><wbr><span><span>Entity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2099058479%2FConstructors%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">id<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">type<span class="token operator">: </span><a href="-type/index.html">ConversationEntity.Type</a><span class="token punctuation">, </span></span><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">protocolInfo<span class="token operator">: </span><a href="-protocol-info/index.html">ConversationEntity.ProtocolInfo</a><span class="token punctuation">, </span></span><span class="parameter ">mutedStatus<span class="token operator">: </span><a href="-muted-status/index.html">ConversationEntity.MutedStatus</a><span class="token operator"> = </span>MutedStatus.ALL_ALLOWED<span class="token punctuation">, </span></span><span class="parameter ">mutedTime<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator"> = </span><span class="token constant">0</span><span class="token punctuation">, </span></span><span class="parameter ">removedBy<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">creatorId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">lastNotificationDate<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">lastModifiedDate<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">lastReadDate<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">access<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="-access/index.html">ConversationEntity.Access</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">accessRole<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="-access-role/index.html">ConversationEntity.AccessRole</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">receiptMode<span class="token operator">: </span><a href="-receipt-mode/index.html">ConversationEntity.ReceiptMode</a><span class="token punctuation">, </span></span><span class="parameter ">guestRoomLink<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">messageTimer<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">userMessageTimer<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">hasIncompleteMetadata<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter ">archived<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter ">archivedInstant<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">mlsVerificationStatus<span class="token operator">: </span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a><span class="token punctuation">, </span></span><span class="parameter ">proteusVerificationStatus<span class="token operator">: </span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a><span class="token punctuation">, </span></span><span class="parameter ">legalHoldStatus<span class="token operator">: </span><a href="-legal-hold-status/index.html">ConversationEntity.LegalHoldStatus</a><span class="token punctuation">, </span></span><span class="parameter ">isChannel<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">channelAccess<span class="token operator">: </span><a href="-channel-access/index.html">ConversationEntity.ChannelAccess</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">channelAddPermission<span class="token operator">: </span><a href="-channel-add-permission/index.html">ConversationEntity.ChannelAddPermission</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">wireCell<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">historySharingRetentionSeconds<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-1810573217%2FClasslikes%2F-794769692" anchor-label="Access" id="-1810573217%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-access/index.html"><span><span>Access</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1810573217%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-access/index.html">Access</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-access/index.html">ConversationEntity.Access</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="683037065%2FClasslikes%2F-794769692" anchor-label="AccessRole" id="683037065%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-access-role/index.html"><span>Access</span><wbr><span><span>Role</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="683037065%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-access-role/index.html">AccessRole</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-access-role/index.html">ConversationEntity.AccessRole</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1292205176%2FClasslikes%2F-794769692" anchor-label="ChannelAccess" id="1292205176%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-channel-access/index.html"><span>Channel</span><wbr><span><span>Access</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1292205176%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-channel-access/index.html">ChannelAccess</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-channel-access/index.html">ConversationEntity.ChannelAccess</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-925576874%2FClasslikes%2F-794769692" anchor-label="ChannelAddPermission" id="-925576874%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-channel-add-permission/index.html"><span>Channel</span><wbr><span>Add</span><wbr><span><span>Permission</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-925576874%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-channel-add-permission/index.html">ChannelAddPermission</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-channel-add-permission/index.html">ConversationEntity.ChannelAddPermission</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1352708270%2FClasslikes%2F-794769692" anchor-label="CipherSuite" id="-1352708270%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-cipher-suite/index.html"><span>Cipher</span><wbr><span><span>Suite</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1352708270%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-cipher-suite/index.html">CipherSuite</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-cipher-suite/index.html">ConversationEntity.CipherSuite</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1462683441%2FClasslikes%2F-794769692" anchor-label="GroupState" id="1462683441%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-group-state/index.html"><span>Group</span><wbr><span><span>State</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1462683441%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-group-state/index.html">GroupState</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-group-state/index.html">ConversationEntity.GroupState</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1887765131%2FClasslikes%2F-794769692" anchor-label="LegalHoldStatus" id="-1887765131%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-legal-hold-status/index.html"><span>Legal</span><wbr><span>Hold</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1887765131%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-legal-hold-status/index.html">LegalHoldStatus</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-legal-hold-status/index.html">ConversationEntity.LegalHoldStatus</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-20246590%2FClasslikes%2F-794769692" anchor-label="MutedStatus" id="-20246590%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-muted-status/index.html"><span>Muted</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-20246590%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-muted-status/index.html">MutedStatus</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-muted-status/index.html">ConversationEntity.MutedStatus</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="42042667%2FClasslikes%2F-794769692" anchor-label="Protocol" id="42042667%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-protocol/index.html"><span><span>Protocol</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="42042667%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-protocol/index.html">Protocol</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-protocol/index.html">ConversationEntity.Protocol</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1511949085%2FClasslikes%2F-794769692" anchor-label="ProtocolInfo" id="1511949085%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-protocol-info/index.html"><span>Protocol</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1511949085%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">interface </span><a href="-protocol-info/index.html">ProtocolInfo</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-132682044%2FClasslikes%2F-794769692" anchor-label="ReceiptMode" id="-132682044%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-receipt-mode/index.html"><span>Receipt</span><wbr><span><span>Mode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-132682044%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-receipt-mode/index.html">ReceiptMode</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-receipt-mode/index.html">ConversationEntity.ReceiptMode</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1926744119%2FClasslikes%2F-794769692" anchor-label="Type" id="-1926744119%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-type/index.html"><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1926744119%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-type/index.html">Type</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-type/index.html">ConversationEntity.Type</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-932631306%2FClasslikes%2F-794769692" anchor-label="VerificationStatus" id="-932631306%2FClasslikes%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-verification-status/index.html"><span>Verification</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-932631306%2FClasslikes%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-verification-status/index.html">VerificationStatus</a> : <span data-unresolved-link="kotlin/Enum///PointingToDeclaration/">Enum</span><span class="token operator">&lt;</span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-380932630%2FProperties%2F-794769692" anchor-label="access" id="-380932630%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="access.html"><span><span>access</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-380932630%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="access.html">access</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="-access/index.html">ConversationEntity.Access</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1476735084%2FProperties%2F-794769692" anchor-label="accessRole" id="-1476735084%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="access-role.html"><span>access</span><wbr><span><span>Role</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1476735084%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="access-role.html">accessRole</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="-access-role/index.html">ConversationEntity.AccessRole</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1670354156%2FProperties%2F-794769692" anchor-label="archived" id="1670354156%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="archived.html"><span><span>archived</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1670354156%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="archived.html">archived</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-270181107%2FProperties%2F-794769692" anchor-label="archivedInstant" id="-270181107%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="archived-instant.html"><span>archived</span><wbr><span><span>Instant</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-270181107%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="archived-instant.html">archivedInstant</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1883723045%2FProperties%2F-794769692" anchor-label="channelAccess" id="1883723045%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="channel-access.html"><span>channel</span><wbr><span><span>Access</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1883723045%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="channel-access.html">channelAccess</a><span class="token operator">: </span><a href="-channel-access/index.html">ConversationEntity.ChannelAccess</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="106036385%2FProperties%2F-794769692" anchor-label="channelAddPermission" id="106036385%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="channel-add-permission.html"><span>channel</span><wbr><span>Add</span><wbr><span><span>Permission</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="106036385%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="channel-add-permission.html">channelAddPermission</a><span class="token operator">: </span><a href="-channel-add-permission/index.html">ConversationEntity.ChannelAddPermission</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1569823365%2FProperties%2F-794769692" anchor-label="creatorId" id="1569823365%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="creator-id.html"><span>creator</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1569823365%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="creator-id.html">creatorId</a><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="551936703%2FProperties%2F-794769692" anchor-label="guestRoomLink" id="551936703%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="guest-room-link.html"><span>guest</span><wbr><span>Room</span><wbr><span><span>Link</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="551936703%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="guest-room-link.html">guestRoomLink</a><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1665641595%2FProperties%2F-794769692" anchor-label="hasIncompleteMetadata" id="-1665641595%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="has-incomplete-metadata.html"><span>has</span><wbr><span>Incomplete</span><wbr><span><span>Metadata</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1665641595%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="has-incomplete-metadata.html">hasIncompleteMetadata</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-178631515%2FProperties%2F-794769692" anchor-label="historySharingRetentionSeconds" id="-178631515%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="history-sharing-retention-seconds.html"><span>history</span><wbr><span>Sharing</span><wbr><span>Retention</span><wbr><span><span>Seconds</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-178631515%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="history-sharing-retention-seconds.html">historySharingRetentionSeconds</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="297112211%2FProperties%2F-794769692" anchor-label="id" id="297112211%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="id.html"><span><span>id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="297112211%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="id.html">id</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="543202483%2FProperties%2F-794769692" anchor-label="isChannel" id="543202483%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-channel.html"><span>is</span><wbr><span><span>Channel</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="543202483%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="is-channel.html">isChannel</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1458435487%2FProperties%2F-794769692" anchor-label="lastModifiedDate" id="-1458435487%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="last-modified-date.html"><span>last</span><wbr><span>Modified</span><wbr><span><span>Date</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1458435487%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="last-modified-date.html">lastModifiedDate</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="494283263%2FProperties%2F-794769692" anchor-label="lastNotificationDate" id="494283263%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="last-notification-date.html"><span>last</span><wbr><span>Notification</span><wbr><span><span>Date</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="494283263%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="last-notification-date.html">lastNotificationDate</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1602320332%2FProperties%2F-794769692" anchor-label="lastReadDate" id="-1602320332%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="last-read-date.html"><span>last</span><wbr><span>Read</span><wbr><span><span>Date</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1602320332%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="last-read-date.html">lastReadDate</a><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="801542626%2FProperties%2F-794769692" anchor-label="legalHoldStatus" id="801542626%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="legal-hold-status.html"><span>legal</span><wbr><span>Hold</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="801542626%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="legal-hold-status.html">legalHoldStatus</a><span class="token operator">: </span><a href="-legal-hold-status/index.html">ConversationEntity.LegalHoldStatus</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-8257456%2FProperties%2F-794769692" anchor-label="messageTimer" id="-8257456%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="message-timer.html"><span>message</span><wbr><span><span>Timer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-8257456%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="message-timer.html">messageTimer</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1494266859%2FProperties%2F-794769692" anchor-label="mlsVerificationStatus" id="1494266859%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mls-verification-status.html"><span>mls</span><wbr><span>Verification</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1494266859%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mls-verification-status.html">mlsVerificationStatus</a><span class="token operator">: </span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-901301073%2FProperties%2F-794769692" anchor-label="mutedStatus" id="-901301073%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="muted-status.html"><span>muted</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-901301073%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="muted-status.html">mutedStatus</a><span class="token operator">: </span><a href="-muted-status/index.html">ConversationEntity.MutedStatus</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1132728524%2FProperties%2F-794769692" anchor-label="mutedTime" id="-1132728524%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="muted-time.html"><span>muted</span><wbr><span><span>Time</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1132728524%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="muted-time.html">mutedTime</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator"> = </span><span class="token constant">0</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1336704285%2FProperties%2F-794769692" anchor-label="name" id="-1336704285%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="name.html"><span><span>name</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1336704285%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="name.html">name</a><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="557507875%2FProperties%2F-794769692" anchor-label="proteusVerificationStatus" id="557507875%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="proteus-verification-status.html"><span>proteus</span><wbr><span>Verification</span><wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="557507875%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="proteus-verification-status.html">proteusVerificationStatus</a><span class="token operator">: </span><a href="-verification-status/index.html">ConversationEntity.VerificationStatus</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1616436584%2FProperties%2F-794769692" anchor-label="protocolInfo" id="1616436584%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="protocol-info.html"><span>protocol</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1616436584%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="protocol-info.html">protocolInfo</a><span class="token operator">: </span><a href="-protocol-info/index.html">ConversationEntity.ProtocolInfo</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1013736527%2FProperties%2F-794769692" anchor-label="receiptMode" id="-1013736527%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="receipt-mode.html"><span>receipt</span><wbr><span><span>Mode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1013736527%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="receipt-mode.html">receiptMode</a><span class="token operator">: </span><a href="-receipt-mode/index.html">ConversationEntity.ReceiptMode</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1021387243%2FProperties%2F-794769692" anchor-label="removedBy" id="-1021387243%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="removed-by.html"><span>removed</span><wbr><span><span>By</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1021387243%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="removed-by.html">removedBy</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token operator">?</span><span class="token operator"> = </span>null</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="684422518%2FProperties%2F-794769692" anchor-label="teamId" id="684422518%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="team-id.html"><span>team</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="684422518%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="team-id.html">teamId</a><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-406929132%2FProperties%2F-794769692" anchor-label="type" id="-406929132%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="type.html"><span><span>type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-406929132%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="type.html">type</a><span class="token operator">: </span><a href="-type/index.html">ConversationEntity.Type</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1205085893%2FProperties%2F-794769692" anchor-label="userMessageTimer" id="1205085893%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="user-message-timer.html"><span>user</span><wbr><span>Message</span><wbr><span><span>Timer</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1205085893%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="user-message-timer.html">userMessageTimer</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="575266023%2FProperties%2F-794769692" anchor-label="wireCell" id="575266023%2FProperties%2F-794769692" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="wire-cell.html"><span>wire</span><wbr><span><span>Cell</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="575266023%2FProperties%2F-794769692"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="wire-cell.html">wireCell</a><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
