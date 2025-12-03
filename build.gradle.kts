@@ -16,6 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
@@ -48,7 +51,6 @@ plugins {
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
-    alias(libs.plugins.completeKotlin)
     alias(libs.plugins.dagCommand)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.jetbrains) apply false
@@ -68,9 +70,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 is uploaded
-        // until mockative releases a new version with a proper fix
-        maven(url = "https://raw.githubusercontent.com/saleniuk/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
     }
 }
 
@@ -127,8 +126,10 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
         YarnLockMismatchReport.WARNING
 }
 
-rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
+rootProject.plugins.withType<NodeJsPlugin> {
+    rootProject.the<NodeJsEnvSpec>().version = "18.18.0"
+    // If we want to use the downloaded Node instead of system Node:
+    // rootProject.the<NodeJsEnvSpec>().download.set(true)
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
@@ -138,6 +139,8 @@ moduleGraphConfig {
     heading.set("#### Dependency Graph")
     nestingEnabled.set(true)
     rootModulesRegex.set(":logic")
+    setStyleByModuleType.set(true)
+    showFullPath.set(true)
 }
 
 tasks.register("runAllUnitTests") {

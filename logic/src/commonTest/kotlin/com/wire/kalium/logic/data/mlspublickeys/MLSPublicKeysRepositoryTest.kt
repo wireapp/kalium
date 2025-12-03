@@ -26,13 +26,13 @@ import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicK
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -100,7 +100,7 @@ class MLSPublicKeysRepositoryTest {
         // given
         val cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val keySignature = MLSPublicKeyType.ED25519
-        val key = "some-key"
+        val key = Base64.encode("some-key".encodeToByteArray())
         val response = NetworkResponse.Success(MLSPublicKeysDTO(mapOf(keySignature.value to key)), mapOf(), 200)
         val (arrangement, repository) = Arrangement(initialPublicKeys = null)
             .withGetMLSPublicKeysApiReturning(response)
@@ -113,7 +113,7 @@ class MLSPublicKeysRepositoryTest {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
         }.wasInvoked(exactly = 1)
         assertIs<Either.Right<ByteArray>>(result).let {
-            assertContentEquals(key.decodeBase64Bytes(), it.value)
+            assertContentEquals(Base64.decode(key), it.value)
         }
     }
 
@@ -122,7 +122,7 @@ class MLSPublicKeysRepositoryTest {
         // given
         val cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val keySignature = MLSPublicKeyType.ED25519
-        val key = "some-key"
+        val key = Base64.encode("some-key".encodeToByteArray())
         val mlsPublicKeys = MLSPublicKeys(mapOf(keySignature.value to key))
         val (arrangement, repository) = Arrangement(initialPublicKeys = mlsPublicKeys)
             .withMapperFromCipherSuiteReturning(keySignature)
@@ -135,7 +135,7 @@ class MLSPublicKeysRepositoryTest {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
         }.wasNotInvoked()
         assertIs<Either.Right<ByteArray>>(result).let {
-            assertContentEquals(key.decodeBase64Bytes(), it.value)
+            assertContentEquals(Base64.decode(key), it.value)
         }
     }
 
@@ -144,7 +144,7 @@ class MLSPublicKeysRepositoryTest {
         // given
         val cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val keySignature = MLSPublicKeyType.ED25519
-        val key = "some-key"
+        val key = Base64.encode("some-key".encodeToByteArray())
         val mlsPublicKeysWithoutKey = MLSPublicKeys(mapOf())
         val mlsPublicKeysWithKey = MLSPublicKeys(mapOf(keySignature.value to key))
         val response = NetworkResponse.Success(MLSPublicKeysDTO(mlsPublicKeysWithKey.removal), mapOf(), 200)
@@ -159,7 +159,7 @@ class MLSPublicKeysRepositoryTest {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
         }.wasInvoked(exactly = 1)
         assertIs<Either.Right<ByteArray>>(result).let {
-            assertContentEquals(key.decodeBase64Bytes(), it.value)
+            assertContentEquals(Base64.decode(key), it.value)
         }
     }
 

@@ -1,0 +1,63 @@
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.network.session
+
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.mockative.Mockable
+
+@Mockable
+interface SessionManager {
+    suspend fun session(): SessionDTO?
+    fun serverConfig(): ServerConfigDTO
+
+    /**
+     * Updates the access token and (possibly) the refresh token for the session.
+     *
+     * In case of failure to refresh the access token, an exception can be thrown.
+     *
+     * @param accessTokenApi The AccessTokenApi interface used to retrieve the new access token.
+     * @param oldRefreshToken The old refresh token to be replaced.
+     * @return The updated SessionDTO object.
+     * @see FailureToRefreshTokenException
+     */
+    suspend fun updateToken(
+        accessTokenApi: AccessTokenApi,
+        oldRefreshToken: String?
+    ): SessionDTO
+
+    fun proxyCredentials(): ProxyCredentialsDTO?
+}
+
+fun HttpClientConfig<*>.installAuth(bearerAuthProvider: BearerAuthProvider) {
+
+    install(Auth) {
+        providers.add(bearerAuthProvider)
+    }
+}
+
+typealias CertificateKey = String
+typealias CertificateUrls = List<String>
+
+typealias CertificatePinning = Map<CertificateKey, CertificateUrls>

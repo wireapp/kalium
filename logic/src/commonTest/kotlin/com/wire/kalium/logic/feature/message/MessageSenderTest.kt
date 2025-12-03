@@ -67,7 +67,6 @@ import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1270,7 +1269,7 @@ class MessageSenderTest {
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
             val MESSAGE_SENT_TIME = Instant.UNIX_FIRST_DATE
-            val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
+            val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".encodeToByteArray())
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
             val TEST_PROTOCOL_INFO_FAILURE = StorageFailure.DataNotFound
             val GROUP_ID = GroupID("groupId")

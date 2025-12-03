@@ -28,7 +28,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.of
 import io.mockative.coEvery
@@ -202,7 +201,7 @@ class CertificateRevocationListRepositoryTest {
 
         suspend fun withClientDomainCRL() = apply {
             coEvery { acmeApi.getClientDomainCRL(any(), any<String?>()) }
-                .returns(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
+                .returns(NetworkResponse.Success("some_response".encodeToByteArray(), mapOf(), 200))
         }
     }
 
