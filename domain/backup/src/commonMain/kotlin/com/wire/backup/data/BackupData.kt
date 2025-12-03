@@ -24,6 +24,7 @@ import kotlinx.serialization.Serializable
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
+import kotlin.js.JsName
 import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
@@ -139,6 +140,7 @@ public sealed class BackupMessageContent {
         }
 
         @Deprecated("Use constructor with mentions")
+        @JsName("withoutMentions")
         public constructor(text: String) : this(text, emptyList())
 
         /**
