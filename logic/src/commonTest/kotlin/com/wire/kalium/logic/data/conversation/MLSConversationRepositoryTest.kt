@@ -85,7 +85,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.any
 import io.mockative.coEvery
@@ -103,6 +102,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -1822,12 +1822,12 @@ class MLSConversationRepositoryTest {
                 )
             )
 
-            val CRYPTO_MLS_PUBLIC_KEY: ByteArray = MLS_PUBLIC_KEY.removal?.get("ed25519")!!.decodeBase64Bytes()
+            val CRYPTO_MLS_PUBLIC_KEY: ByteArray = Base64.decode(MLS_PUBLIC_KEY.removal?.get("ed25519")!!)
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
                 "wire.com",
-                "keyPackage",
-                "keyPackageRef",
+                Base64.encode("keyPackage".encodeToByteArray()),
+                Base64.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL).encode("keyPackageRef".encodeToByteArray()),
                 "user1"
             )
             val WELCOME = "welcome".encodeToByteArray()

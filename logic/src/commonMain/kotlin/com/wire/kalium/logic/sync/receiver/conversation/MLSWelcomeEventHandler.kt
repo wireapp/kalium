@@ -47,9 +47,9 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
+import kotlin.io.encoding.Base64
 
 @Mockable
 interface MLSWelcomeEventHandler {
@@ -81,7 +81,7 @@ internal class MLSWelcomeEventHandlerImpl(
             .flatMap {
                 kaliumLogger.d("$TAG: Processing MLS welcome message")
                 wrapMLSRequest {
-                    mlsContext.processWelcomeMessage(event.message.decodeBase64Bytes())
+                    mlsContext.processWelcomeMessage(Base64.decode(event.message))
                 }
             }
             .flatMap { welcomeBundle ->
