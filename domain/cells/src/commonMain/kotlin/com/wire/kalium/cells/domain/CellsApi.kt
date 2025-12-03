@@ -76,7 +76,6 @@ internal interface CellsApi {
         versionId: String,
         restPromoteParameters: RestPromoteParameters = RestPromoteParameters()
     ): NetworkResponse<Unit>
-
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
     suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>
