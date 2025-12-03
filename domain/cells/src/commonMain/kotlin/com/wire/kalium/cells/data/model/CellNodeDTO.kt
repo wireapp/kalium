@@ -41,6 +41,7 @@ internal data class CellNodeDTO(
     val conversationId: String?,
     val publicLinkId: String?,
     val tags: List<String> = emptyList(),
+    val supportedEditors: List<String> = emptyList(),
 )
 
 internal fun CellNodeDTO.toModel() = CellNode(
@@ -61,7 +62,8 @@ internal fun CellNodeDTO.toModel() = CellNode(
     ownerUserId = ownerUserId,
     conversationId = conversationId,
     publicLinkId = publicLinkId,
-    tags = tags
+    tags = tags,
+    supportedEditors = supportedEditors,
 )
 
 internal fun CellNode.toDto() = CellNodeDTO(
@@ -81,7 +83,8 @@ internal fun CellNode.toDto() = CellNodeDTO(
     ownerUserId = ownerUserId,
     conversationId = conversationId,
     publicLinkId = publicLinkId,
-    tags = tags
+    tags = tags,
+    supportedEditors = supportedEditors,
 )
 
 @Suppress("MagicNumber")
@@ -111,6 +114,7 @@ internal fun RestNode.toDto() = CellNodeDTO(
         ?: emptyList(),
     conversationId = contextWorkspace?.uuid,
     publicLinkId = shares?.firstOrNull()?.uuid,
+    supportedEditors = editorURLsKeys?.map { it } ?: emptyList()
 )
 
 internal fun RestNode.editorUrl(urlKey: String): String? = this.editorURLs?.get(urlKey)?.url
@@ -118,10 +122,13 @@ internal fun RestNode.editorUrl(urlKey: String): String? = this.editorURLs?.get(
 private fun List<RestFilePreview>?.toDto() = when {
     isNullOrEmpty() -> null
     all { it.error == true } -> null
-    else -> mapNotNull {
-        it.preSignedGET?.url?.let { url ->
-            PreviewDto(url, it.dimension ?: 0)
-        }
+    else -> {
+        filter { it.contentType?.endsWith("jpg") == true }
+            .mapNotNull {
+                it.preSignedGET?.url?.let { url ->
+                    PreviewDto(url, it.dimension ?: 0)
+                }
+            }
     }
 }
 
