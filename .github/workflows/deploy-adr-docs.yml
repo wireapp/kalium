@@ -31,15 +31,6 @@ jobs:
         run: |
           adr-viewer --adr-path docs/adr --output docs/adr/index.html
 
-      - name: Deploy docs 🚀
-        if: github.event_name == 'push' && github.ref_name == 'develop'
-        uses: JamesIves/github-pages-deploy-action@v4.7.4
-        with:
-          branch: gh-pages
-          clean: false
-          folder: docs
-          target-folder: docs
-
       - name: Deploy ADRs 🚀
         uses: peaceiris/actions-gh-pages@v4
         with:
