@@ -18,9 +18,6 @@
 
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.withContext
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
@@ -31,7 +28,6 @@ import okio.use
 
 class FakeKaliumFileSystem(
     private val fakeFileSystem: FakeFileSystem = FakeFileSystem(),
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KaliumFileSystem {
 
     private val userHomePath = "/Users/me/testApp".toPath()
@@ -47,7 +43,7 @@ class FakeKaliumFileSystem(
     init {
         fakeFileSystem.allowDeletingOpenFiles = true
         fakeFileSystem.allowReadsWhileWriting = true
-        fakeFileSystem.allowWritesWhileWriting = true
+//         fakeFileSystem.allowWritesWhileWriting = true
         fakeFileSystem.createDirectories(userHomePath)
         fakeFileSystem.createDirectory(dataStoragePaths.cachePath.value.toPath())
         fakeFileSystem.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
@@ -82,20 +78,16 @@ class FakeKaliumFileSystem(
     override fun providePersistentAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
 
     override suspend fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
-        withContext(dispatcher.io) {
             it.buffer().use { bufferedFileSource ->
                 bufferedFileSource.readByteArray()
-            }
         }
     }
 
     override suspend fun writeData(outputSink: Sink, dataSource: Source): Long {
         var byteCount = 0L
-        withContext(dispatcher.io) {
             outputSink.buffer().use { bufferedFileSink ->
                 byteCount = bufferedFileSink.writeAll(dataSource)
             }
-        }
         return byteCount
     }
 

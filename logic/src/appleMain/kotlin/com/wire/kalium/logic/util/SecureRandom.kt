@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.util
 
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.usePinned
 import platform.Security.SecRandomCopyBytes
 import platform.Security.kSecRandomDefault
@@ -27,10 +26,8 @@ import platform.posix.arc4random_uniform
 
 internal actual class SecureRandom actual constructor() {
     actual fun nextBytes(length: Int): ByteArray {
-        var bytes = ByteArray(length)
-
+        val bytes = ByteArray(length)
         // TODO handle failure case
-        memScoped {
             bytes.usePinned {
                 SecRandomCopyBytes(
                     kSecRandomDefault,
@@ -38,7 +35,6 @@ internal actual class SecureRandom actual constructor() {
                     it.addressOf(0)
                 )
             }
-        }
 
         return bytes
     }

@@ -72,6 +72,10 @@ subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
+        testLogging {
+            events("started", "passed","failed")
+            showStandardStreams = true
+            }
     }
 
     // Configure GC for iOS Simulator ARM64 tests only
@@ -244,3 +248,42 @@ tasks.register("aggregateTestResults") {
 tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
+
+/*
+SelfConversationIdProviderTest
+E2EIClientProviderTest
+IsAllowedToUseAsyncNotificationsUseCaseTest
+IsWireCellsEnabledForConversationUseCaseTest
+CustomServerConfigRepositoryTest
+ServerConfigMapperTest
+ServerConfigRepositoryTest
+ServerConfigTest
+WrapApiRequestTest
+WrapMLSRequestTest
+WrapProteusRequestTest
+AnalyticsRepositoryTest
+AssetMapperTest
+AssetMimeTypeTest
+AssetRepositoryTest
+DomainRegistrationMapperTest
+LoginRepositoryTest
+SSOLoginRepositoryTest
+SecondFactorVerificationRepositoryTest
+BackupDataSourceTest
+CallHelperTest
+CallMapperTest
+CallRepositoryTest
+CallingParticipantsOrderTest
+InCallReactionsRepositoryTest
+ParticipantMapperTest
+ParticipantsFilterTest
+ParticipantsOrderByNameTest
+VideoStateCheckerTest
+ClientRemoteRepositoryTest
+ClientRepositoryTest
+ClientTest
+CryptoTransactionProviderCrashTest
+MLSClientProviderTest
+ConnectionMapperTest
+ConnectionRepositoryTest
+ */

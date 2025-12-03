@@ -21,16 +21,38 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
-import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.mock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AssetMapperTest {
+
+    private lateinit var testDispatcher: TestDispatcher
+
+    @BeforeTest
+    fun setup() {
+        testDispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun breakDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun givenAudioAssetContent_whenMappingToProtoAssetMessage_thenReturnCorrectProtoAudioMetadata() = runTest {
@@ -55,7 +77,7 @@ class AssetMapperTest {
                 )
             )
         )
-        val (_, mapper) = Arrangement()
+        val (_, mapper) = Arrangement(testDispatcher)
             .arrange()
 
         // when
@@ -75,13 +97,12 @@ class AssetMapperTest {
         )
     }
 
-    private class Arrangement {
-
-        val dispatcher = mock(KaliumDispatcher::class)
-
+    private class Arrangement(
+        testDispatcher: TestDispatcher
+    ) {
         val mapper = AssetMapperImpl(
             encryptionAlgorithmMapper = EncryptionAlgorithmMapper(),
-            dispatcher = dispatcher
+            dispatcher = testDispatcher.testKaliumDispatcher()
         )
 
         fun arrange() = this to mapper
