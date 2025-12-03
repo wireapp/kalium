@@ -301,6 +301,7 @@ internal class CellsApiImpl(
                         link = link.copy(
                             accessEnd = expireAt?.toServerTime()?.toString()
                         ),
+                        passwordEnabled = link.passwordRequired,
                     )
                 )
             }
