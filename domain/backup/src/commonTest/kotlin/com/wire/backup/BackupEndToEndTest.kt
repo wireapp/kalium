@@ -48,12 +48,15 @@ class BackupEndToEndTest {
 
     @Test
     fun givenBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION)))
+        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION), "quoted!"))
     }
 
     @Test
     fun givenEncryptedBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION)), "somePassword")
+        shouldBackupAndRestoreSameContent(
+            BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION), "quoted!"),
+            "somePassword"
+        )
     }
 
     @Test
@@ -98,7 +101,7 @@ class BackupEndToEndTest {
                     senderUserId = BackupQualifiedId("senderId", "domain"),
                     senderClientId = "clientId",
                     creationDate = BackupDateTime(0L),
-                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION))
+                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION), quotedMessageId = "321")
                 )
             )
         }
@@ -116,7 +119,7 @@ class BackupEndToEndTest {
                     senderUserId = BackupQualifiedId("senderId", "domain"),
                     senderClientId = "clientId",
                     creationDate = BackupDateTime(0L),
-                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION))
+                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION), quotedMessageId = "123")
                 )
             )
         }

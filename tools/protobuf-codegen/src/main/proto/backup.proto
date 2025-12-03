@@ -71,6 +71,7 @@ message ExportedMessage {
 message ExportedText {
     required string content = 1;
     repeated ExportedMention mentions = 2;
+    optional string quoted_message_id = 3;
 }
 
 message ExportedMention {

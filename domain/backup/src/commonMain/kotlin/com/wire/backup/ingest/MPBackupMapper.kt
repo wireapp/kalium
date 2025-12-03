@@ -119,7 +119,8 @@ internal class MPBackupMapper {
                     Content.Text(
                         ExportedText(
                             content = content.text,
-                            mentions = content.mentions.map(::mapMention)
+                            mentions = content.mentions.map(::mapMention),
+                            quotedMessageId = content.quotedMessageId
                         )
                     )
                 }
@@ -180,7 +181,8 @@ internal class MPBackupMapper {
 
                 BackupMessageContent.Text(
                     text = protoContent.value.content,
-                    mentions = protoContent.value.mentions.map(::mapMention)
+                    mentions = protoContent.value.mentions.map(::mapMention),
+                    quotedMessageId = protoContent.value.quotedMessageId
                 )
             }
 
