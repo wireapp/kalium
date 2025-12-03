@@ -126,16 +126,18 @@
     </footer>
   </div>
   <script>
-    document.addEventListener('mousemove', e => {
-      const banana = document.createElement('div');
-      banana.textContent = '🍌';
-      banana.classList.add('trail');
-      banana.style.left = e.clientX + 'px';
-      banana.style.top  = e.clientY + 'px';
-      document.body.appendChild(banana);
+    document.addEventListener('click', e => {
+      for (let i = 0; i < 5; i++) {  // Create 5 bananas per click
+        const banana = document.createElement('div');
+        banana.textContent = '🍌';
+        banana.classList.add('trail');
+        banana.style.left = (e.clientX + (Math.random() - 0.5) * 100) + 'px';  // Random offset
+        banana.style.top = (e.clientY + (Math.random() - 0.5) * 100) + 'px';
+        document.body.appendChild(banana);
 
-      // Remove after animation
-      banana.addEventListener('animationend', () => banana.remove());
+        // Remove after animation
+        banana.addEventListener('animationend', () => banana.remove());
+      }
     });
     const toggle = document.getElementById('theme-toggle');
     const root = document.documentElement;
