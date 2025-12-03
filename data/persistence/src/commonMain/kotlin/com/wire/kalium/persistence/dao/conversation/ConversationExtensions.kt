@@ -63,6 +63,17 @@ internal class ConversationExtensionsImpl internal constructor(
             readDispatcher = readDispatcher,
         )
 
+    /**
+     * Uses lightweight COUNT when `searchQuery` is empty.
+     *
+     * Architectural decision explained in ADR-003:
+     * https://github.com/wireapp/kalium/tree/develop/docs/adr/0003-lightweight-count-for-faster-conversation-list-loading.md
+     *
+     * Summary:
+     * - COUNT on Conversation is significantly faster than COUNT on ConversationDetails
+     * - Only used when search is empty
+     * - SELECT still uses full ConversationDetails rules (COUNT can be a superset)
+     */
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
         QueryPagingSource(
             countQuery =
