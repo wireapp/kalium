@@ -129,8 +129,8 @@ fun com.wire.crypto.X509Identity.toCryptography() = WireIdentity.X509Identity(
     domain = domain,
     certificate = certificate,
     serialNumber = serialNumber,
-    notBefore = notBefore.epochSecond,
-    notAfter = notAfter.epochSecond
+    notBefore = notBefore.epochSeconds,
+    notAfter = notAfter.epochSeconds
 )
 
 private fun DeviceStatus.toCryptography(): CryptoCertificateStatus = when (this) {

@@ -68,6 +68,7 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
     }

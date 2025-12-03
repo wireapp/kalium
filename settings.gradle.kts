@@ -36,6 +36,7 @@ rootDir
 
 pluginManagement {
     repositories {
+        mavenLocal()
         gradlePluginPortal()
         google()
         mavenCentral()
@@ -48,6 +49,7 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     versionCatalogs {
