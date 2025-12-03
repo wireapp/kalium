@@ -15,24 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-plugins {
-    alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.kalium.library.get().pluginId)
-}
+package com.wire.kalium.logic
 
-kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
-}
+import android.content.Context
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-kotlin {
-    explicitApi()
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                api(projects.logic) // fixme: change to implementation once Kalium Public Logic API is extracted.
-            }
-        }
+public actual class KaliumApiScopeFactory(private val context: Context) {
+    public actual fun create(
+        rootPath: String,
+        userAgent: String,
+        kaliumConfigs: KaliumConfigs
+    ): KaliumApiScope {
+        val coreLogic = CoreLogic(
+            rootPath = rootPath,
+            userAgent = userAgent,
+            kaliumConfigs = kaliumConfigs,
+            appContext = context
+        )
+        return KaliumApiScope(coreLogic)
     }
 }

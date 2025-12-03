@@ -17,23 +17,14 @@
  */
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-
 /**
  * Main entry point for Kalium API.
  * This provides a stable, versioned public API for external consumers.
  */
 public class KaliumApiScope internal constructor(
-    private val rootPath: String,
-    private val userAgent: String,
-    private val kaliumConfigs: KaliumConfigs,
+    private val coreLogic: CoreLogic
 ) {
-//     internal val coreLogic: CoreLogic by lazy {
-//         CoreLogic(
-//             rootPath = rootPath,
-//             userAgent = userAgent,
-//             kaliumConfigs = kaliumConfigs
-//         )
-//     }
-
+    // TODO: Add delegating use cases here, e.g.,
+//     public val registerAccount: RegisterAccountUseCase = RegisterAccountUseCaseImpl(coreLogic)
 }
+
