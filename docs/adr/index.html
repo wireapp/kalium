@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css">
+        <title>ADR Viewer - kalium</title>
+
+        <style type="text/css">
+            body {
+                display: grid;
+                width: auto;
+                height: auto;
+                align-items: center;
+                justify-items: center;
+                grid-template-rows: 2fr minmax(80%, auto) 2fr;
+            }
+
+            @media only screen and (min-width: 1025px) {
+                body {
+                    grid-template-columns: 1fr 3fr 1fr;
+                }
+
+                header, .panel-group, footer {
+                    grid-column: 2;
+                }
+            }
+
+            .panel-group {
+                width: 100%
+            }
+
+            .panel-heading.adr-accepted {
+                background-color: lightgreen;
+            }
+
+            .panel-heading.adr-superseded {
+                background-color: lightgrey;
+            }
+
+            .panel-heading.adr-amended {
+                background-color: yellow;
+            }
+
+            .panel-heading.adr-unknown {
+                background-color: white;
+            }
+
+            .panel-heading.adr-pending {
+                background-color: lightblue;
+            }
+
+            .adr-superseded > .panel-title > a {
+                text-decoration: line-through;
+            }
+
+            .adr-icon {
+                float: right;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>ADR Viewer - kalium</h1>
+        </header>
+        <div class="panel-group">
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-unknown">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse0">Decision record template by Michael Nygard</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-question"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse0" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>Decision record template by Michael Nygard</h1>
+<p>This is the template in <a href="http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions">Documenting architecture decisions - Michael Nygard</a>.
+You can use <a href="https://github.com/npryce/adr-tools">adr-tools</a> for managing the ADR files.</p>
+<p>In each ADR file, write these sections:</p>
+<h1>Title</h1>
+<h2>Status</h2>
+<p>What is the status, such as proposed, accepted, rejected, deprecated, superseded, etc.?</p>
+<h2>Context</h2>
+<p>What is the issue that we're seeing that is motivating this decision or change?</p>
+<h2>Decision</h2>
+<p>What is the change that we're proposing and/or doing?</p>
+<h2>Consequences</h2>
+<p>What becomes easier or more difficult to do because of this change?</p>
+</div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse1">1. Record architecture decisions</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse1" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>1. Record architecture decisions</h1>
+<p>Date: 2025-12-03</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>We need to document architectural decisions made during the development of the project in Kalium.
+This will help us keep track of the reasoning behind our decisions and provide context for future
+developers working on the project.</p>
+<h2>Decision</h2>
+<p>We will use Architecture Decision Records in the code and as part of the review process.
+We will use the <a href="0000-template-lightway-adr.md">Lightway ADR template</a> to keep the ADRs simple and
+easy to maintain.</p>
+<h2>Consequences</h2>
+<ul>
+<li>We need to add a new folder to the repository, <code>docs/adr</code>, to keep the architecture decision
+records.</li>
+<li>Whenever a significant architecture decision is made, we need to create a new ADR file in that folder.</li>
+<li>We need to review the ADRs periodically to ensure they are still relevant and up-to-date.</li>
+<li>This will help us maintain a clear record of our architecture decisions and the reasoning behind them,
+which will be useful for future reference and onboarding new team members.</li>
+</ul>
+</div>
+                </div>
+            </div>
+            
+        </div>
+        <footer>
+            Generated with &lt;3 using ADR Viewer
+        </footer>
+        
+    </body>
+</html>
