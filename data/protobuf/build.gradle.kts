@@ -51,11 +51,6 @@ kotlin {
                 implementation(libs.androidtest.rules)
             }
         }
-        val iosX64Main by getting {
-            dependencies {
-                api(libs.pbandk.runtime.iosX64)
-            }
-        }
         val iosArm64Main by getting {
             dependencies {
                 api(libs.pbandk.runtime.iosArm64)
@@ -66,11 +61,7 @@ kotlin {
                 api(libs.pbandk.runtime.iosSimulatorArm64)
             }
         }
-        val macosX64Main by getting {
-            dependencies {
-                api(libs.pbandk.runtime.macX64)
-            }
-        }
+
         val macosArm64Main by getting {
             dependencies {
                 api(libs.pbandk.runtime.macArm64)
