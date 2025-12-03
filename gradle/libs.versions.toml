@@ -148,6 +148,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 androidCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "android-security" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
+coreCryptoKmp = { module = "com.wire:core-crypto-kmp", version.ref = "core-crypto" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
 
 # Compose Desktop / Multiplatform

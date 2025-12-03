@@ -33,6 +33,8 @@ kaliumLibrary {
     }
 }
 
+val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean() ?: false
+
 kotlin {
     iosArm64 {
         binaries.all {
@@ -66,6 +68,10 @@ kotlin {
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
+
+                if (useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoKmp)
+                }
             }
         }
         val commonTest by getting {
@@ -87,7 +93,9 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.coreCryptoJvm)
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoJvm)
+                }
             }
         }
         val jsTest by getting
@@ -97,9 +105,11 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.androidCrypto)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                        exclude("androidx.core")
+                        exclude("androidx.appcompat")
+                    }
                 }
             }
         }
