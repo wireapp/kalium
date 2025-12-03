@@ -91,12 +91,24 @@
     .theme-toggle:hover {
       background: var(--button-hover);
     }
+    .trail {
+      position: fixed;
+      pointer-events: none;
+      font-size: 24px;
+      opacity: 0;
+      animation: fade 0.6s ease-out forwards;
+      transform: translate(-50%, -50%);
+    }
+    @keyframes fade {
+      0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    }
   </style>
 </head>
 <body>
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
   <div class="container">
-    <h1>Kalium Documentation</h1>
+    <h1>Kalium Documentation 🍌</h1>
     <p>Select which section you want to visit:</p>
 
     <div class="doc-section">
@@ -114,6 +126,17 @@
     </footer>
   </div>
   <script>
+    document.addEventListener('mousemove', e => {
+      const banana = document.createElement('div');
+      banana.textContent = '🍌';
+      banana.classList.add('trail');
+      banana.style.left = e.clientX + 'px';
+      banana.style.top  = e.clientY + 'px';
+      document.body.appendChild(banana);
+
+      // Remove after animation
+      banana.addEventListener('animationend', () => banana.remove());
+    });
     const toggle = document.getElementById('theme-toggle');
     const root = document.documentElement;
     let currentTheme = 'dark';
