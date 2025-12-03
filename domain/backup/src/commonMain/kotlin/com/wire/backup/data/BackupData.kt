@@ -35,7 +35,9 @@ public class BackupData(
     @ShouldRefineInSwift
     public val conversations: Array<BackupConversation>,
     @ShouldRefineInSwift
-    public val messages: Array<BackupMessage>
+    public val messages: Array<BackupMessage>,
+    @ShouldRefineInSwift
+    public val reactions: Array<BackupReaction> = emptyArray()
 ) {
     @ObjCName("users")
     public val userList: List<BackupUser> get() = users.toList()
@@ -45,6 +47,9 @@ public class BackupData(
 
     @ObjCName("messages")
     public val messageList: List<BackupMessage> get() = messages.toList()
+
+    @ObjCName("reactions")
+    public val reactionList: List<BackupReaction> get() = reactions.toList()
 }
 
 @JsExport
@@ -110,6 +115,32 @@ public data class BackupMessage(
     val webPrimaryKey: Int? = null,
     @SerialName("lastEditTime")
     val lastEditTime: BackupDateTime? = null,
+)
+
+/**
+ * Represents a backup of message reactions for a single message.
+ * Each reaction is represented as an emoji plus the list of users
+ * who reacted with it. This list-based representation improves JS interop.
+ *
+ * @property messageId The unique identifier of the message associated with these reactions.
+ * @property emojiReactions The list of emoji reactions with their respective users.
+ */
+@JsExport
+@Serializable
+public data class BackupReaction(
+    @SerialName("messageId")
+    val messageId: String,
+    @SerialName("reactions")
+    val emojiReactions: List<BackupEmojiReaction>
+)
+
+@JsExport
+@Serializable
+public data class BackupEmojiReaction(
+    @SerialName("emoji")
+    val emoji: String,
+    @SerialName("users")
+    val users: List<BackupQualifiedId>
 )
 
 @Serializable(BackupDateTimeSerializer::class)

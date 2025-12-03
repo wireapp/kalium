@@ -50,6 +50,10 @@ object BackupSamplesNonJS : BackupSamples() {
             mpBackupExporter.add(conversation)
         }
 
+        getReactionsFromDatabase().forEach { reaction ->
+            mpBackupExporter.add(reaction)
+        }
+
         // When all data is exported, you can call finalize, saving the result into a file.
         val pathToBackupFile = mpBackupExporter.finalize(backupPassword)
         println("Backup created at $pathToBackupFile")

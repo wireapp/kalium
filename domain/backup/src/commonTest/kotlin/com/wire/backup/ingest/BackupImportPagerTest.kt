@@ -22,6 +22,8 @@ import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
+import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
 import com.wire.kalium.protobuf.backup.BackupData
@@ -94,6 +96,36 @@ class BackupImportPagerTest {
         assertFalse { pager.usersPager.hasMorePages() }
         assertFalse { pager.messagesPager.hasMorePages() }
         assertFalse { pager.conversationsPager.hasMorePages() }
+        assertFalse { pager.reactionsPager.hasMorePages() }
+    }
+
+    @Test
+    fun givenMultipleReactionPages_whenConsuming_thenShouldReadInNumericOrder() {
+        val reaction0 = BackupReaction(
+            messageId = "message0",
+            emojiReactions = listOf(
+                BackupEmojiReaction("👍", listOf(fakeId(0), fakeId(1))),
+                BackupEmojiReaction("🔥", listOf(fakeId(2)))
+            )
+        )
+        val reaction1 = BackupReaction(
+            messageId = "message1",
+            emojiReactions = listOf(
+                BackupEmojiReaction("❤️", listOf(fakeId(3)))
+            )
+        )
+        val pages = listOf(
+            fakeBackupPage(BackupPage.REACTIONS_PREFIX + "10", reaction = reaction1),
+            fakeBackupPage(BackupPage.REACTIONS_PREFIX + "2", reaction = reaction0),
+        )
+
+        val pager = BackupImportPager(pages)
+        assertTrue { pager.reactionsPager.hasMorePages() }
+        assertEquals(2, pager.reactionsPager.totalPages)
+        // Should sort by numeric part: "2" then "10"
+        assertEquals(reaction0, pager.reactionsPager.nextPage().first())
+        assertEquals(reaction1, pager.reactionsPager.nextPage().first())
+        assertFalse { pager.reactionsPager.hasMorePages() }
     }
 
     private fun fakeConversation(id: Int) = BackupConversation(BackupQualifiedId("conv$id", "domain"), "$id")
@@ -114,6 +146,7 @@ class BackupImportPagerTest {
         conversation: BackupConversation? = null,
         message: BackupMessage? = null,
         user: BackupUser? = null,
+        reaction: BackupReaction? = null,
     ): BackupPage {
         val mapper = MPBackupMapper()
         val data = BackupData(
@@ -126,7 +159,8 @@ class BackupImportPagerTest {
             ),
             conversations = conversation?.let { listOf(mapper.mapConversationToProtobuf(it)) } ?: listOf(),
             users = user?.let { listOf(mapper.mapUserToProtobuf(it)) } ?: listOf(),
-            messages = message?.let { listOf(mapper.mapMessageToProtobuf(it)) } ?: listOf()
+            messages = message?.let { listOf(mapper.mapMessageToProtobuf(it)) } ?: listOf(),
+            reactions = reaction?.let { listOf(mapper.mapReactionToProtobuf(it)) } ?: listOf(),
         )
         val buffer = Buffer()
         buffer.write(data.encodeToByteArray())
