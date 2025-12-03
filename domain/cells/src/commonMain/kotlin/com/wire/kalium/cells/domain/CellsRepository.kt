@@ -74,4 +74,5 @@ internal interface CellsRepository {
     suspend fun clearPublicLinkPassword(linkUuid: String)
     suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?): Either<NetworkFailure, Unit>
     suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>>
+    suspend fun getEditorUrl(nodeUuid: String, urlKey: String): Either<NetworkFailure, String>
 }

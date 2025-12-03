@@ -51,6 +51,7 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
                 assetHeight = attachment.metadata?.height(),
                 assetDuration = attachment.metadata?.durationMs(),
                 assetTransferStatus = attachment.transferStatus.name,
+                isEditSupported = false,
             )
 
             is AssetContent -> {
@@ -93,6 +94,7 @@ fun MessageAttachmentEntity.toModel() =
             contentHash = contentHash?.takeIf { it.isNotEmpty() },
             contentUrl = contentUrl?.takeIf { it.isNotEmpty() },
             contentUrlExpiresAt = contentExpiresAt,
+            isEditSupported = isEditSupported,
         )
     } else {
         // TODO: implement support for regular assets WPB-16590

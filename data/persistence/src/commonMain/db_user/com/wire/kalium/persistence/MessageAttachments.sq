@@ -30,6 +30,7 @@ CREATE TABLE MessageAttachments (
       asset_index INTEGER AS Int,
 
       content_url_expires_at INTEGER DEFAULT(NULL),
+      edit_supported INTEGER AS Boolean NOT NULL DEFAULT 0,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (conversation_id, message_id, asset_id)
@@ -72,7 +73,7 @@ setTransferStatus:
 UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;
 
 updateAttachment:
-UPDATE MessageAttachments SET content_url = ?, content_url_expires_at = ?, content_hash = ?, asset_path = ? WHERE asset_id = ?;
+UPDATE MessageAttachments SET content_url = ?, content_url_expires_at = ?, content_hash = ?, asset_path = ?, edit_supported = ? WHERE asset_id = ?;
 
 getAttachments:
 SELECT * FROM MessageAttachments WHERE message_id = ? AND conversation_id = ?;

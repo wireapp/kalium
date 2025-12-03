@@ -204,4 +204,11 @@ class FakeCellsRepository : CellsRepository {
         invocationCount++
         return result
     }
+
+    override suspend fun getEditorUrl(
+        nodeUuid: String,
+        urlKey: String
+    ): Either<NetworkFailure, String> {
+        TODO("Not yet implemented")
+    }
 }

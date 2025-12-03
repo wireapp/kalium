@@ -80,9 +80,10 @@ internal class CellAttachmentsDataSource(
         contentUrlExpiresAt: Long?,
         hash: String?,
         remotePath: String,
+        isEditSupported: Boolean,
     ) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            messageAttachments.updateAttachment(assetId, contentUrl, contentUrlExpiresAt, hash, remotePath)
+            messageAttachments.updateAttachment(assetId, contentUrl, contentUrlExpiresAt, hash, remotePath, isEditSupported)
         }
     }
 
@@ -152,6 +153,7 @@ private fun MessageAttachmentEntity.toModel(): MessageAttachment? =
             transferStatus = AssetTransferStatus.valueOf(assetTransferStatus),
             metadata = null,
             contentHash = contentHash,
+            isEditSupported = isEditSupported,
         )
     } else {
         // TODO: implement support for regular assets WPB-16590
