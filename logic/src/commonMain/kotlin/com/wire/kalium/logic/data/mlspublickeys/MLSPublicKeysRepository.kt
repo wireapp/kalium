@@ -34,10 +34,10 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
-import io.ktor.util.decodeBase64Bytes
+import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import io.mockative.Mockable
+import kotlin.io.encoding.Base64
 
 fun MLSPublicKeys?.getRemovalKey(
     cipherSuite: CipherSuite,
@@ -47,7 +47,7 @@ fun MLSPublicKeys?.getRemovalKey(
         val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
         removalKeys[keySignature.value]
     } ?: return Either.Left(MLSFailure.Generic(NoKeyFoundException(cipherSuite.toString())))
-    return key.decodeBase64Bytes().right()
+    return Base64.decode(key).right()
 }
 
 class NoKeyFoundException(cipherSuite: String) : IllegalStateException("No key found for cipher suite $cipherSuite")

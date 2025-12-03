@@ -10,15 +10,12 @@
 ### Dependencies
 
 - JDK 21 (ex: openjdk-21-jdk on Ubuntu)
-- [libsodium](https://github.com/jedisct1/libsodium)
-- [cryptobox-c](https://github.com/wireapp/cryptobox-c)
-- [cryptobox4j](https://github.com/wireapp/cryptobox4j)
 
 ### Supported Platforms
 
 - Android (see the [Android](https://github.com/wireapp/wire-android) module)
 - JVM (see the [cli](https://github.com/wireapp/kalium/tree/develop/cli) module)
-- iOS (partially)
+- iOS (see the [iOS Build Guide](docs/IOS_BUILD.md))
 - JavaScript (just a tiny bit)
 
 The `cli` can be executed on the terminal of any machine that 
