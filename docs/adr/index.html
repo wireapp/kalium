@@ -135,6 +135,104 @@ which will be useful for future reference and onboarding new team members.</li>
                 </div>
             </div>
             
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse2">2. Module Boundary Restructuring</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse2" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>2. Module Boundary Restructuring</h1>
+<p>Date: 2025-11-27</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>The Kalium codebase had grown organically with modules at the root level (e.g., <code>:common</code>, <code>:data</code>, <code>:persistence</code>, <code>:network</code>, <code>:backup</code>, <code>:calling</code>, <code>:cells</code>). This flat structure made it difficult to understand module relationships, enforce architectural boundaries, and maintain clear separation of concerns. As the codebase scaled, we needed a more organized module hierarchy that would:</p>
+<ul>
+<li>Clearly define architectural layers and their responsibilities</li>
+<li>Make module dependencies more explicit and easier to reason about</li>
+<li>Improve discoverability by grouping related modules together</li>
+<li>Enforce better separation between core infrastructure, data access, domain logic, and testing utilities</li>
+</ul>
+<h2>Decision</h2>
+<p>We reorganized modules into a hierarchical structure with clear architectural boundaries:</p>
+<p><strong>Core Layer</strong> (<code>:core:*</code>) - Foundation modules:</p>
+<ul>
+<li><code>:core:common</code> (was <code>:common</code>)</li>
+<li><code>:core:data</code> (was <code>:data</code>)</li>
+<li><code>:core:cryptography</code> (was <code>:cryptography</code>)</li>
+<li><code>:core:logger</code> (was <code>:logger</code>)</li>
+<li><code>:core:util</code> (was <code>:util</code>)</li>
+</ul>
+<p><strong>Data Layer</strong> (<code>:data:*</code>) - Data access and infrastructure:</p>
+<ul>
+<li><code>:data:network</code> (was <code>:network</code>)</li>
+<li><code>:data:network-model</code> (was <code>:network-model</code>)</li>
+<li><code>:data:network-util</code> (was <code>:network-util</code>)</li>
+<li><code>:data:persistence</code> (was <code>:persistence</code>)</li>
+<li><code>:data:persistence-test</code> (was <code>:persistence-test</code>)</li>
+<li><code>:data:protobuf</code> (was <code>:protobuf</code>)</li>
+<li><code>:data:data-mappers</code> (new module for transformations)</li>
+</ul>
+<p><strong>Domain Layer</strong> (<code>:domain:*</code>) - Business logic boundaries:</p>
+<ul>
+<li><code>:domain:backup</code> (was <code>:backup</code>)</li>
+<li><code>:domain:calling</code> (was <code>:calling</code>)</li>
+<li><code>:domain:cells</code> (was <code>:cells</code>)</li>
+<li><code>:domain:conversation-history</code> (new)</li>
+<li><code>:domain:messaging:sending</code> (new, extracted from logic)</li>
+<li><code>:domain:messaging:receiving</code> (new, extracted from logic)</li>
+</ul>
+<p><strong>Test Layer</strong> (<code>:test:*</code>) - Testing utilities:</p>
+<ul>
+<li><code>:test:mocks</code> (was <code>:mocks</code>)</li>
+<li><code>:test:data-mocks</code> (new)</li>
+<li><code>:test:benchmarks</code> (was <code>:benchmarks</code>)</li>
+<li><code>:test:tango-tests</code> (was <code>:tango-tests</code>)</li>
+</ul>
+<p><strong>Sample/Tools Layer</strong> (<code>:sample:*</code>, <code>:tools:*</code>):</p>
+<ul>
+<li><code>:sample:cli</code> (was <code>:cli</code>)</li>
+<li><code>:sample:samples</code> (was <code>:samples</code>)</li>
+<li><code>:tools:testservice</code> (was <code>:testservice</code>)</li>
+<li><code>:tools:monkeys</code> (was <code>:monkeys</code>)</li>
+<li><code>:tools:backup-verification</code> (new)</li>
+<li><code>:tools:protobuf-codegen</code> (was <code>:protobuf-codegen</code>)</li>
+</ul>
+<p>All module references were updated throughout the codebase including build files, CI workflows, documentation, and the dependency graph visualization.</p>
+<h2>Consequences</h2>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li><strong>Clearer Architecture</strong>: The layer-based structure makes the architecture immediately visible from the project structure</li>
+<li><strong>Better Discoverability</strong>: Developers can quickly locate modules by their architectural purpose</li>
+<li><strong>Enforced Boundaries</strong>: The naming scheme makes it obvious when a module is reaching across layers inappropriately</li>
+<li><strong>Improved Documentation</strong>: Module paths now self-document their architectural role (e.g., <code>:data:network</code> vs just <code>:network</code>)</li>
+<li><strong>Scalability</strong>: New modules can be added to appropriate layers without cluttering the root</li>
+<li><strong>Easier Onboarding</strong>: New team members can understand the system organization more quickly</li>
+</ul>
+<p><strong>Trade-offs:</strong></p>
+<ul>
+<li><strong>Migration Effort</strong>: All module references needed updating across build files, CI workflows, and documentation</li>
+<li><strong>Longer Module Paths</strong>: Module references are now more verbose (e.g., <code>projects.core.common</code> instead of <code>projects.common</code>)</li>
+<li><strong>Breaking Change</strong>: External consumers referencing modules directly will need to update their references</li>
+</ul>
+<p><strong>Technical Changes:</strong></p>
+<ul>
+<li>Updated all <code>implementation(projects.*)</code> references in build files</li>
+<li>Updated CI workflow gradle task paths (e.g., <code>:cli:assemble</code> → <code>:sample:cli:assemble</code>)</li>
+<li>Updated module graph configuration to show full paths and nest by module type</li>
+<li>Updated detekt baseline and project structure documentation</li>
+<li>Added README files to layer directories explaining their purpose and guidelines</li>
+</ul>
+</div>
+                </div>
+            </div>
+            
         </div>
         <footer>
             Generated with &lt;3 using ADR Viewer
