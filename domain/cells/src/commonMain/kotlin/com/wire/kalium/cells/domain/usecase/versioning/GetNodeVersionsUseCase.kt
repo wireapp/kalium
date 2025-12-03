@@ -15,9 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.model
+package com.wire.kalium.cells.domain.usecase.versioning
 
-public data class NodeIdAndVersion(
-    val uuid: String,
-    val versionId: String
-)
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.model.NodeVersion
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+
+public interface GetNodeVersionsUseCase {
+    public suspend operator fun invoke(uuid: String): Either<CoreFailure, List<NodeVersion>>
+}
+
+internal class GetNodeVersionsUseCaseImpl(
+    private val cellsRepository: CellsRepository
+) : GetNodeVersionsUseCase {
+    override suspend fun invoke(uuid: String): Either<CoreFailure, List<NodeVersion>> =
+        cellsRepository.getNodeVersions(uuid)
+}

@@ -17,7 +17,18 @@
  */
 package com.wire.kalium.cells.domain.model
 
-public data class NodeIdAndVersion(
-    val uuid: String,
-    val versionId: String
+public data class NodeVersion(
+    val id: String,
+    val hash: String?,
+    val description: String?,
+    val isDraft: Boolean?,
+    val etag: String?,
+    val editorUrls: Map<String, PreSignedUrl>?,
+    val filePreviews: List<FilePreview>?,
+    val isHead: Boolean?,
+    val modifiedTime: String?,
+    val ownerName: String?,
+    val ownerUuid: String?,
+    val getUrl: PreSignedUrl?,
+    val size: String?
 )
