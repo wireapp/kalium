@@ -49,7 +49,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         block: suspend (context: ProteusCoreCryptoContext) -> R
     ): R {
         return wrapException {
-            coreCrypto.transaction { coreContext ->
+            coreCrypto.transaction(name) { coreContext ->
                 block(proteusCoreCryptoContext(coreContext))
             }
         }
@@ -133,7 +133,7 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto> {
         return wrapException {
-            coreCrypto.transaction { crypto ->
+            coreCrypto.transaction("newPreKeys") { crypto ->
                 from.until(from + count).map {
                     val pkb = crypto.proteusNewPrekey(it.toUShort())
                     ProteusAutoPrekeyBundle(it.toUShort(), pkb).toCryptography()
@@ -144,7 +144,7 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException {
-            coreCrypto.transaction { context ->
+            coreCrypto.transaction("newLastResortPreKey") { context ->
                 val id = context.proteusLastResortPrekeyId()
                 val pkb = context.proteusLastResortPrekey()
                 ProteusAutoPrekeyBundle(id, pkb).toCryptography()
@@ -193,7 +193,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         suspend operator fun invoke(coreCrypto: CoreCryptoClient, rootDir: String): ProteusClientCoreCryptoImpl {
             try {
                 deleteCryptoBoxIfNecessary(rootDir)
-                coreCrypto.transaction {
+                coreCrypto.transaction("proteusInit") {
                     it.proteusInit()
                 }
                 return ProteusClientCoreCryptoImpl(coreCrypto)

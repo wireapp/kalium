@@ -54,14 +54,14 @@ class MLSClientImpl(
     }
 
     override suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite> {
-        return coreCrypto.transaction { cc ->
+        return coreCrypto.transaction("getPublicKey") { cc ->
             val mlsCredentialType = if (cc.e2eiIsEnabled(defaultCipherSuite)) CredentialType.X509 else CredentialType.DEFAULT
             cc.clientPublicKey(defaultCipherSuite, mlsCredentialType.toCrypto()) to defaultCipherSuite.toCryptography()
         }
     }
 
     override suspend fun <R> transaction(name: String, block: suspend (context: MlsCoreCryptoContext) -> R): R {
-        return coreCrypto.transaction { context ->
+        return coreCrypto.transaction(name) { context ->
             block(mlsCoreCryptoContext(context))
         }
     }

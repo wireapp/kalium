@@ -57,7 +57,7 @@ class CoreCryptoCentralImpl(
     private val rootDir: String
 ) : CoreCryptoCentral {
 
-    suspend fun transaction(block: suspend (context: CoreCryptoContext) -> Unit) = cc.transaction {
+    suspend fun transaction(name: String, block: suspend (context: CoreCryptoContext) -> Unit) = cc.transaction(name) {
         block(it)
     }
 
@@ -85,7 +85,7 @@ class CoreCryptoCentralImpl(
                 }
             })
 
-            cc.transaction { context ->
+            cc.transaction("mlsInit") { context ->
                 context.mlsInit(
                     clientId.toString().toClientId(),
                     allowedCipherSuites.map { it.toCrypto() },
@@ -134,7 +134,7 @@ class CoreCryptoCentralImpl(
             }
         })
 
-        cc.transaction {
+        cc.transaction("e2eiMlsInitOnly") {
             it.e2eiMlsInitOnly(
                 (enrollment as E2EIClientImpl).wireE2eIdentity,
                 certificateChain,
@@ -166,7 +166,7 @@ class CoreCryptoCentralImpl(
         expiry: Duration,
         defaultCipherSuite: MLSCiphersuite
     ): E2EIClient {
-        return cc.transaction {
+        return cc.transaction("newAcmeEnrollment") {
             E2EIClientImpl(
                 it.e2eiNewEnrollment(
                     clientId = clientId.toString(),
@@ -182,7 +182,7 @@ class CoreCryptoCentralImpl(
 
     override suspend fun registerTrustAnchors(pem: CertificateChain) {
         try {
-            cc.transaction {
+            cc.transaction("registerTrustAnchors") {
                 it.e2eiRegisterAcmeCa(pem)
             }
         } catch (e: CryptographyException) {
@@ -192,7 +192,7 @@ class CoreCryptoCentralImpl(
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
-        cc.transaction {
+        cc.transaction("registerCrl") {
             it.e2eiRegisterCrl(crlDp = url, crlDer = crl).toCryptography()
         }
     } catch (exception: Exception) {
@@ -206,7 +206,7 @@ class CoreCryptoCentralImpl(
     @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
         try {
-            cc.transaction {
+            cc.transaction("registerIntermediateCa") {
                 it.e2eiRegisterIntermediateCa(pem)
             }
         } catch (exception: Exception) {
