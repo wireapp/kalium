@@ -166,6 +166,7 @@ interface ConversationDAO {
 
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
     suspend fun hasConversationWithCell(): Boolean
+    suspend fun hasUnreadEvents(conversationId: QualifiedIDEntity): Boolean
 }
 
 data class NameAndHandleEntity(

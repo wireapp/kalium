@@ -352,6 +352,7 @@ interface ConversationRepository {
     suspend fun getConversationIdsWithoutMetadata(): Either<CoreFailure, List<QualifiedID>>
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
+    suspend fun hasUnreadEvents(conversationId: ConversationId): Either<StorageFailure, Boolean>
 }
 
 @OptIn(ConversationPersistenceApi::class)
@@ -838,6 +839,9 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
         wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
+
+    override suspend fun hasUnreadEvents(conversationId: ConversationId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { conversationDAO.hasUnreadEvents(conversationId.toDao()) }
 
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,

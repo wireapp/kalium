@@ -620,4 +620,8 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun hasConversationWithCell() = withContext(readDispatcher.value) {
         conversationQueries.hasConversationWithCell().executeAsOne()
     }
+
+    override suspend fun hasUnreadEvents(conversationId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
+        unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).executeAsOneOrNull() ?: false
+    }
 }

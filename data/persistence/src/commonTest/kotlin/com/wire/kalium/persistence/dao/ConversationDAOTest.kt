@@ -2838,6 +2838,74 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
     }
 
+    @Test
+    fun givenConversationWithoutUnreadEvents_whenCheckingHasUnreadEvents_thenReturnsFalse() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+
+        // when
+        val hasUnread = conversationDAO.hasUnreadEvents(conversationEntity1.id)
+
+        // then
+        assertFalse(hasUnread)
+    }
+
+    @Test
+    fun givenConversationWithUnreadEvents_whenCheckingHasUnreadEvents_thenReturnsTrue() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val conversation = conversationEntity1
+
+        val messages = buildList {
+            repeat(10) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(),
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                    )
+                )
+            }
+            add(
+                newRegularMessageEntity(
+                    content = MessageEntityContent.Asset(
+                        assetSizeInBytes = 123L,
+                        assetName = "assetName",
+                        assetMimeType = "assetMimeType",
+                        assetOtrKey = ByteArray(32),
+                        assetSha256Key = ByteArray(32),
+                        assetId = "assetId",
+                        assetEncryptionAlgorithm = "assetEncryptionAlgorithm"
+                    ),
+                    id = "11",
+                    conversationId = conversation.id,
+                    senderUserId = user1.id,
+                    visibility = MessageEntity.Visibility.VISIBLE
+                )
+            )
+        }
+
+        assertDAO.insertAsset(
+            AssetEntity(
+                key = "assetId",
+                dataSize = 123,
+                dataPath = "dataPath",
+                domain = "domain",
+                downloadedDate = null
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+
+        // when
+        val hasUnread = conversationDAO.hasUnreadEvents(conversationEntity1.id)
+
+        // then
+        assertTrue(hasUnread)
+    }
+
     private companion object {
         const val teamId = "teamId"
         val messageTimer = 5000L
