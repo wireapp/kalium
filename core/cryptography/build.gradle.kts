@@ -34,7 +34,7 @@ kaliumLibrary {
     }
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean() ?: false
+val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean() ?: error("USE_UNIFIED_CORE_CRYPTO not set")
 
 kotlin {
     iosArm64 {
@@ -108,7 +108,11 @@ kotlin {
                 }
             }
         }
-        val appleMain by getting
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCryptoKmp)
+            }
+        }
     }
 }
 
