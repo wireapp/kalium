@@ -17,8 +17,13 @@
  */
 package com.wire.kalium.cryptography
 
-import kotlinx.coroutines.CoroutineScope
+import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoLogLevel
+import com.wire.crypto.DatabaseKey
+import com.wire.crypto.invoke
+import com.wire.crypto.setLogger
 import io.mockative.Mockable
+import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -80,7 +85,24 @@ interface CoreCryptoCentral {
     suspend fun registerIntermediateCa(pem: CertificateChain)
 }
 
-expect suspend fun coreCryptoCentral(
+suspend fun coreCryptoCentral(
     rootDir: String,
     passphrase: ByteArray,
-): CoreCryptoCentral
+): CoreCryptoCentral {
+    val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
+    createDirectory(rootDir)
+
+    val databaseKey = DatabaseKey(passphrase)
+
+    val coreCrypto = CoreCrypto(
+        keystore = path,
+        databaseKey = databaseKey
+    )
+
+    setLogger(CoreCryptoLoggerImpl, CoreCryptoLogLevel.WARN)
+
+    return CoreCryptoCentralImpl(
+        cc = coreCrypto,
+        rootDir = rootDir
+    )
+}

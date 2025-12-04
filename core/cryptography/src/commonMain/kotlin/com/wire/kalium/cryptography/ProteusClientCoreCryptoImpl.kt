@@ -28,7 +28,6 @@ import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import platform.Foundation.NSFileManager
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.io.encoding.Base64
 import com.wire.crypto.ProteusException as ProteusExceptionNative
@@ -175,24 +174,20 @@ class ProteusClientCoreCryptoImpl private constructor(
 
         val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
 
-        private fun cryptoBoxFilesExists(rootDir: String): Boolean {
-            val fileManager = NSFileManager.defaultManager
-            return CRYPTO_BOX_FILES.any { file ->
-                fileManager.fileExistsAtPath("$rootDir/$file")
+        private fun cryptoBoxFilesExists(rootDir: String): Boolean =
+            CRYPTO_BOX_FILES.any { file ->
+                fileExists("$rootDir/$file")
             }
-        }
 
-        private fun deleteCryptoBoxFiles(rootDir: String): Boolean {
-            val fileManager = NSFileManager.defaultManager
-            return CRYPTO_BOX_FILES.fold(true) { acc, file ->
+        private fun deleteCryptoBoxFiles(rootDir: String): Boolean =
+            CRYPTO_BOX_FILES.fold(true) { acc, file ->
                 val path = "$rootDir/$file"
-                if (fileManager.fileExistsAtPath(path)) {
-                    acc && fileManager.removeItemAtPath(path, null)
+                if (fileExists(path)) {
+                    acc && deleteFile(path)
                 } else {
                     acc
                 }
             }
-        }
 
         @Suppress("TooGenericExceptionCaught", "ThrowsCount")
         suspend operator fun invoke(coreCrypto: CoreCryptoClient, rootDir: String): ProteusClientCoreCryptoImpl {

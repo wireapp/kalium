@@ -19,52 +19,25 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.CommitBundle
 import com.wire.crypto.ConversationId
-import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoClient
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
-import com.wire.crypto.DatabaseKey
 import com.wire.crypto.EpochObserver
 import com.wire.crypto.HistorySecret
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
-import com.wire.crypto.invoke
-import com.wire.crypto.setLogger
 import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
-import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
-actual suspend fun coreCryptoCentral(
-    rootDir: String,
-    passphrase: ByteArray
-): CoreCryptoCentral {
-    val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
-    NSFileManager.defaultManager.createDirectoryAtPath(rootDir, true, null, null)
-
-    val databaseKey = DatabaseKey(passphrase)
-
-    val coreCrypto = CoreCrypto(
-        keystore = path,
-        databaseKey = databaseKey
-    )
-
-    setLogger(CoreCryptoLoggerImpl, CoreCryptoLogLevel.WARN)
-
-    return CoreCryptoCentralImpl(
-        cc = coreCrypto,
-        rootDir = rootDir
-    )
-}
-
-private object CoreCryptoLoggerImpl : CoreCryptoLogger {
+internal object CoreCryptoLoggerImpl : CoreCryptoLogger {
     override fun log(level: CoreCryptoLogLevel, message: String, context: String?) {
         when (level) {
             CoreCryptoLogLevel.TRACE -> kaliumLogger.v("$message. $context")
