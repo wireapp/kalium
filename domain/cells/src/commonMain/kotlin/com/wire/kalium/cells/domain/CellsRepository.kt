@@ -28,6 +28,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import io.mockative.Mockable
+import okio.BufferedSink
 import okio.Path
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -35,6 +36,12 @@ import okio.Path
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
+    suspend fun downloadFile(
+        bufferedSink: BufferedSink,
+        cellPath: String,
+        onProgressUpdate: (Long) -> Unit,
+        onCompleted: () -> Unit = {},
+    ): Either<NetworkFailure, Unit>
     suspend fun uploadFile(path: Path, node: CellNode, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>
     suspend fun getPaginatedNodes(
         path: String?,

@@ -35,6 +35,14 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRedirect
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.onDownload
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.isSuccess
+import io.ktor.utils.io.copyTo
 import okio.Path
 import okio.Sink
 import okio.buffer
@@ -89,6 +97,36 @@ private class CellsAwsClientJvm(
                 }
             }
         }
+    }
+
+    override suspend fun downloadViaPresignedUrl(
+        objectKey: String,
+        outFileSink: Sink,
+        onProgressUpdate: (Long) -> Unit,
+        onCompleted: () -> Unit,
+    ) {
+        val client = HttpClient {
+            followRedirects = true
+            install(HttpTimeout)
+            install(HttpRedirect)
+        }
+
+        val response = client.get(objectKey) {
+            onDownload { bytesSentTotal, contentLength ->
+                onProgressUpdate(bytesSentTotal)
+            }
+        }
+
+        if (!response.status.isSuccess()) {
+            throw kotlinx.io.IOException("Download failed: ${response.status}")
+        }
+
+        outFileSink.buffer().use { bufferedSink ->
+            response.bodyAsChannel().copyTo(bufferedSink)
+            bufferedSink.flush()
+        }
+
+        onCompleted()
     }
 
     override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {

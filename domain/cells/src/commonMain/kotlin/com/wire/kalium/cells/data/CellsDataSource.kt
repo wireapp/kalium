@@ -45,6 +45,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import okio.BufferedSink
 import okio.FileSystem
 import okio.Path
 import okio.use
@@ -164,10 +165,16 @@ internal class CellsDataSource internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) =
+    override suspend fun downloadFile(
+        out: Path,
+        cellPath: String,
+        onProgressUpdate: (Long) -> Unit,
+    ) =
         try {
             fileSystem.sink(out, true).use { sink ->
-                awsClient.download(cellPath, sink, onProgressUpdate)
+                awsClient.download(
+                    cellPath, sink, onProgressUpdate = onProgressUpdate
+                )
                 Either.Right(Unit)
             }
         } catch (e: CancellationException) {
@@ -175,6 +182,18 @@ internal class CellsDataSource internal constructor(
         } catch (e: Exception) {
             Either.Left(NetworkFailure.ServerMiscommunication(e))
         }
+
+    override suspend fun downloadFile(
+        bufferedSink: BufferedSink,
+        cellPath: String,
+        onProgressUpdate: (Long) -> Unit,
+        onCompleted: () -> Unit,
+    ) = try {
+        awsClient.downloadViaPresignedUrl(cellPath, bufferedSink, onProgressUpdate, onCompleted)
+        Either.Right(Unit)
+    } catch (e: Exception) {
+        Either.Left(NetworkFailure.ServerMiscommunication(e))
+    }
 
     override suspend fun getPreviews(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {
@@ -300,7 +319,11 @@ internal class CellsDataSource internal constructor(
 
     override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection -> collection.map { it.toModel() } }
+            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection ->
+                collection.map { node ->
+                    node.toModel()
+                }
+            }
         }
     }
 
