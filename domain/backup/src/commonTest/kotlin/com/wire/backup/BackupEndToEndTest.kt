@@ -48,12 +48,12 @@ class BackupEndToEndTest {
 
     @Test
     fun givenBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!"))
+        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION)))
     }
 
     @Test
     fun givenEncryptedBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!"), "somePassword")
+        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION)), "somePassword")
     }
 
     @Test
@@ -98,7 +98,7 @@ class BackupEndToEndTest {
                     senderUserId = BackupQualifiedId("senderId", "domain"),
                     senderClientId = "clientId",
                     creationDate = BackupDateTime(0L),
-                    content = BackupMessageContent.Text("test")
+                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION))
                 )
             )
         }
@@ -116,7 +116,7 @@ class BackupEndToEndTest {
                     senderUserId = BackupQualifiedId("senderId", "domain"),
                     senderClientId = "clientId",
                     creationDate = BackupDateTime(0L),
-                    content = BackupMessageContent.Text("test")
+                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION))
                 )
             )
         }
@@ -152,6 +152,10 @@ class BackupEndToEndTest {
         assertEquals(expectedMessage.creationDate, firstMessage.creationDate)
         assertEquals(expectedMessage.content, firstMessage.content)
         assertContentEquals(arrayOf(expectedMessage), allMessages.toTypedArray())
+    }
+
+    private companion object {
+        val TEST_MENTION = BackupMessageContent.Text.Mention(BackupQualifiedId("id", "domain"), 1, 1)
     }
 }
 

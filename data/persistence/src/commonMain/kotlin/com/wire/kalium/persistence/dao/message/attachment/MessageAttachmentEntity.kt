@@ -40,4 +40,6 @@ data class MessageAttachmentEntity(
     @SerialName("content_hash") val contentHash: String? = null,
     @SerialName("asset_index") val assetIndex: Int? = null,
     @SerialName("content_url_expires_at") val contentExpiresAt: Long? = null,
+    @Serializable(with = BooleanIntSerializer::class)
+    @SerialName("edit_supported") val isEditSupported: Boolean,
 )

@@ -36,6 +36,7 @@ import com.wire.kalium.protobuf.backup.ExportedEncryptionAlgorithm
 import com.wire.kalium.protobuf.backup.ExportedGenericMetaData
 import com.wire.kalium.protobuf.backup.ExportedImageMetaData
 import com.wire.kalium.protobuf.backup.ExportedLocation
+import com.wire.kalium.protobuf.backup.ExportedMention
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.protobuf.backup.ExportedMessage.Content
 import com.wire.kalium.protobuf.backup.ExportedText
@@ -112,8 +113,16 @@ internal class MPBackupMapper {
                     )
                 }
 
-                is BackupMessageContent.Text ->
-                    Content.Text(ExportedText(content.text))
+                is BackupMessageContent.Text -> {
+                    fun mapMention(mention: BackupMessageContent.Text.Mention): ExportedMention =
+                        ExportedMention(mention.start, mention.length, mention.userId.toProtoModel())
+                    Content.Text(
+                        ExportedText(
+                            content = content.text,
+                            mentions = content.mentions.map(::mapMention)
+                        )
+                    )
+                }
 
                 is BackupMessageContent.Location -> Content.Location(
                     ExportedLocation(
@@ -161,7 +170,18 @@ internal class MPBackupMapper {
     private fun fromMessageProtoToBackupModel(message: ExportedMessage): BackupMessage {
         val content = when (val protoContent = message.content) {
             is Content.Text -> {
-                BackupMessageContent.Text(protoContent.value.content)
+                fun mapMention(
+                    mention: ExportedMention
+                ): BackupMessageContent.Text.Mention = BackupMessageContent.Text.Mention(
+                    userId = mention.userId.toModel(),
+                    start = mention.start,
+                    length = mention.length
+                )
+
+                BackupMessageContent.Text(
+                    text = protoContent.value.content,
+                    mentions = protoContent.value.mentions.map(::mapMention)
+                )
             }
 
             is Content.Asset -> BackupMessageContent.Asset(

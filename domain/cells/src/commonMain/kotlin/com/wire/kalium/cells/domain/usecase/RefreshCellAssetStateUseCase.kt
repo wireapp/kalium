@@ -49,8 +49,8 @@ import okio.SYSTEM
  * - Remove local data if the asset is updated (based on contentHash).
  * - Fetch preview URL with retries.
  */
-public interface RefreshCellAssetStateUseCase {
-    public suspend operator fun invoke(assetId: String): Either<CoreFailure, Unit>
+public fun interface RefreshCellAssetStateUseCase {
+    public suspend operator fun invoke(assetId: String): Either<CoreFailure, CellNode>
 }
 
 internal class RefreshCellAssetStateUseCaseImpl internal constructor(
@@ -64,7 +64,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         private const val DELAY = 500L
     }
 
-    override suspend fun invoke(assetId: String): Either<CoreFailure, Unit> {
+    override suspend fun invoke(assetId: String): Either<CoreFailure, CellNode> {
         return cellsRepository.getNode(assetId)
             .onSuccess { node ->
                 if (node.isRecycled) {
@@ -77,7 +77,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
                 if (error.isAssetNotFound()) {
                     removeLocalAssetData(assetId)
                 }
-            }.map { node ->
+            }.onSuccess { node ->
                 if (node.isPreviewSupported() && node.isRecycled.not()) {
                     getNodePreviews(node)
                         .onSuccess { previews ->
@@ -146,7 +146,8 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
             contentUrl = node.contentUrl,
             contentUrlExpiresAt = node.contentUrlExpiresAt,
             hash = node.contentHash,
-            remotePath = node.path
+            remotePath = node.path,
+            isEditSupported = node.supportedEditors.isNotEmpty(),
         )
 
         // Update transfer status for attachments previously marked as NOT_FOUND
@@ -172,5 +173,6 @@ public fun CellNode.isPreviewSupported(): Boolean = when {
     previews == null -> false
     mimeType == null -> false
     mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType == "application/pdf" -> true
+    supportedEditors.isNotEmpty() -> true
     else -> false
 }

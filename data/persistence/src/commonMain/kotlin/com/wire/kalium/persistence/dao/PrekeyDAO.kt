@@ -45,8 +45,10 @@ internal class PrekeyDAOImpl internal constructor(
         }
     }
 
-    override suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int) = withContext(writeDispatcher.value) {
-        metadataQueries.insertValue(MOST_RECENT_PREKEY_ID, newKeyId.toString())
+    override suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int) {
+        withContext(writeDispatcher.value) {
+            metadataQueries.insertValue(MOST_RECENT_PREKEY_ID, newKeyId.toString())
+        }
     }
 
     override suspend fun mostRecentPreKeyId(): Int? = withContext(readDispatcher.value) {
