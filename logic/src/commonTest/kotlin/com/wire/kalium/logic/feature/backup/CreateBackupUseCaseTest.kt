@@ -37,7 +37,6 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -53,6 +52,7 @@ import kotlinx.coroutines.test.setMain
 import okio.Path.Companion.toPath
 import okio.buffer
 import okio.use
+import kotlin.io.encoding.Base64
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -83,7 +83,7 @@ class CreateBackupUseCaseTest {
         val plainDB = "some-dummy-plain.db"
         val password = ""
         val selfUser = SELF.copy(handle = "self.handle")
-        val currentDBData = "some-dummy.db".decodeBase64Bytes()
+        val currentDBData: ByteArray = Base64.decode("c29tZS1kdW1teS5kYg==")
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))
             .withExportedDB(plainDB, currentDBData)
@@ -150,7 +150,7 @@ class CreateBackupUseCaseTest {
 
         val plainDBFileLocation = "backup-encrypted.db"
         val password = "S0m3T0pS3CR3tP4\$\$w0rd"
-        val dummyDBData = "some-dummy.db".decodeBase64Bytes()
+        val dummyDBData: ByteArray = Base64.decode("c29tZS1kdW1teS5kYg==")
         val selfUser = SELF.copy(handle = "self.handle")
         val (arrangement, createBackupUseCase) = Arrangement()
             .withObservedClientId(ClientId("client-id"))

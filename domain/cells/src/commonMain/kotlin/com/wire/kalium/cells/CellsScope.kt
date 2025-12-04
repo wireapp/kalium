@@ -51,6 +51,8 @@ import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
+import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
@@ -271,6 +273,10 @@ public class CellsScope(
 
     public val setPublicLinkExpiration: SetPublicLinkExpirationUseCase by lazy {
         SetPublicLinkExpirationUseCaseImpl(cellsRepository)
+    }
+
+    public val getEditorUrl: GetEditorUrlUseCase by lazy {
+        GetEditorUrlUseCaseImpl(cellsRepository)
     }
 
     public val getNodeVersions: GetNodeVersionsUseCase by lazy {

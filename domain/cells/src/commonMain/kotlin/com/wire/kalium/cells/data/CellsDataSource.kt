@@ -304,6 +304,10 @@ internal class CellsDataSource internal constructor(
         }
     }
 
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
+        cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
+    }
+
     override suspend fun restoreNodeVersion(
         uuid: String,
         versionId: String

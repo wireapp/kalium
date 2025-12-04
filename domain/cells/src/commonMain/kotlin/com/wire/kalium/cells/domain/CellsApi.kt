@@ -79,4 +79,5 @@ internal interface CellsApi {
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
     suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>
+    suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String>
 }
