@@ -17,73 +17,90 @@
  */
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.E2eiEnrollment
+
 @Suppress("TooManyFunctions")
-class E2EIClientImpl : E2EIClient {
-    override suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory {
-        TODO("Not yet implemented")
-    }
+@OptIn(ExperimentalUnsignedTypes::class)
+class E2EIClientImpl(
+    val wireE2eIdentity: E2eiEnrollment
+) : E2EIClient {
 
-    override suspend fun getNewAccountRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    private val defaultDPoPTokenExpiry: UInt = 30U
 
-    override suspend fun setAccountResponse(account: JsonRawData) {
-        TODO("Not yet implemented")
-    }
+    override suspend fun directoryResponse(directory: JsonRawData) =
+        toAcmeDirectory(wireE2eIdentity.directoryResponse(directory))
 
-    override suspend fun getNewOrderRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewAccountRequest(previousNonce: String) =
+        wireE2eIdentity.newAccountRequest(previousNonce)
 
-    override suspend fun setOrderResponse(order: JsonRawData): NewAcmeOrder {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setAccountResponse(account: JsonRawData) =
+        wireE2eIdentity.newAccountResponse(account)
 
-    override suspend fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewOrderRequest(previousNonce: String) =
+        wireE2eIdentity.newOrderRequest(previousNonce)
 
-    override suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setOrderResponse(order: JsonRawData) =
+        toNewAcmeOrder(wireE2eIdentity.newOrderResponse(order))
 
-    override suspend fun createDpopToken(backendNonce: String): DpopToken {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewAuthzRequest(url: String, previousNonce: String) =
+        wireE2eIdentity.newAuthzRequest(url, previousNonce)
 
-    override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun setAuthzResponse(authz: JsonRawData) =
+        toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(authz))
 
-    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun createDpopToken(backendNonce: String) =
+        wireE2eIdentity.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
 
-    override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
+        wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce)
+
+    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String) =
+        wireE2eIdentity.newOidcChallengeRequest(idToken, previousNonce)
+
+    override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) =
+        wireE2eIdentity.newOidcChallengeResponse(challenge)
 
     override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) {
-        TODO("Not yet implemented")
+        wireE2eIdentity.newDpopChallengeResponse(challenge)
     }
 
-    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String) =
+        wireE2eIdentity.checkOrderRequest(orderUrl, previousNonce)
 
-    override suspend fun checkOrderResponse(order: JsonRawData): String {
-        TODO("Not yet implemented")
-    }
+    override suspend fun checkOrderResponse(order: JsonRawData) =
+        wireE2eIdentity.checkOrderResponse(order)
 
-    override suspend fun finalizeRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
-    }
+    override suspend fun finalizeRequest(previousNonce: String) =
+        wireE2eIdentity.finalizeRequest(previousNonce)
 
-    override suspend fun finalizeResponse(finalize: JsonRawData): String {
-        TODO("Not yet implemented")
-    }
+    override suspend fun finalizeResponse(finalize: JsonRawData) =
+        wireE2eIdentity.finalizeResponse(finalize)
 
-    override suspend fun certificateRequest(previousNonce: String): JsonRawData {
-        TODO("Not yet implemented")
+    override suspend fun certificateRequest(previousNonce: String) =
+        wireE2eIdentity.certificateRequest(previousNonce)
+
+    companion object {
+        fun toAcmeDirectory(value: com.wire.crypto.AcmeDirectory) = AcmeDirectory(
+            value.newNonce,
+            value.newAccount,
+            value.newOrder
+        )
+
+        fun toNewAcmeOrder(value: com.wire.crypto.NewAcmeOrder) = NewAcmeOrder(
+            value.delegate,
+            value.authorizations
+        )
+
+        private fun toAcmeChallenge(value: com.wire.crypto.AcmeChallenge) = AcmeChallenge(
+            value.delegate,
+            value.url,
+            value.target
+        )
+
+        fun toNewAcmeAuthz(value: com.wire.crypto.NewAcmeAuthz) = NewAcmeAuthz(
+            value.identifier,
+            keyAuth = value.keyauth,
+            toAcmeChallenge(value.challenge)
+        )
     }
 }
