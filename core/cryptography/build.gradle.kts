@@ -85,6 +85,11 @@ kotlin {
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("@wireapp/store-engine", "4.9.9"))
+            }
+        }
 
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
@@ -94,6 +99,8 @@ kotlin {
                 }
             }
         }
+
+        val jsTest by getting
 
         val jvmTest by getting
         val androidMain by getting {
