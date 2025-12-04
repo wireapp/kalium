@@ -46,7 +46,6 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
-import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -58,6 +57,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 
 class ApplicationMessageHandlerTest {
@@ -86,8 +86,8 @@ class ApplicationMessageHandlerTest {
             .withErrorGetMessageById(coreFailure)
             .arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -124,8 +124,8 @@ class ApplicationMessageHandlerTest {
             .withButtonAction()
             .arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -162,8 +162,8 @@ class ApplicationMessageHandlerTest {
             .withMessageCompositeEditHandler()
             .arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -196,8 +196,8 @@ class ApplicationMessageHandlerTest {
             .withButtonActionConfirmation(Either.Right(Unit))
             .arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -232,8 +232,8 @@ class ApplicationMessageHandlerTest {
             .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
 
         // when
         messageHandler.handleContent(
@@ -268,8 +268,8 @@ class ApplicationMessageHandlerTest {
         val (arrangement, messageHandler) = Arrangement()
             .arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
 
         // when
         messageHandler.handleContent(

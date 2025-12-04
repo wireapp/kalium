@@ -22,10 +22,11 @@ import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
-import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
-import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.cells.sdk.kmp.model.RestFlag
+import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
+
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
@@ -77,8 +78,8 @@ internal interface CellsApi {
         versionId: String,
         restPromoteParameters: RestPromoteParameters = RestPromoteParameters()
     ): NetworkResponse<Unit>
-
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
     suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>
+    suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String>
 }

@@ -28,7 +28,7 @@ import kotlin.test.assertEquals
 class GetNodeVersionsUseCaseTest {
 
     @Test
-    fun `GIVEN repository returns versions WHEN invoking use case THEN it returns expected list`() = runTest {
+    fun given_repository_returns_versions_WHEN_invoking_use_case_THEN_it_returns_expected_list() = runTest {
         val expectedVersions = listOf<NodeVersion>()
         fakeRepository.result = Either.Right(expectedVersions)
         val useCase = GetNodeVersionsUseCaseImpl(fakeRepository)
@@ -39,14 +39,14 @@ class GetNodeVersionsUseCaseTest {
     }
 
     @Test
-    fun `GIVEN repository returns failure WHEN invoking use case THEN it returns failure`() = runTest {
-        fakeRepository.result = Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException()))
+    fun given_repository_returns_failure_WHEN_invoking_use_case_THEN_it_returns_failure() = runTest {
+        val failure = Either.Left(NetworkFailure.ServerMiscommunication(IllegalStateException()))
+        fakeRepository.result = failure
         val useCase = GetNodeVersionsUseCaseImpl(fakeRepository)
 
         val result = useCase(UUID)
 
-        val expectedFailure = NetworkFailure.ServerMiscommunication(IllegalStateException())
-        assertEquals(Either.Left(expectedFailure), result)
+        assertEquals(failure, result)
     }
 
     companion object {

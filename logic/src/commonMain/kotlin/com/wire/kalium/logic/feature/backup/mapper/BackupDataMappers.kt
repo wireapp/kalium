@@ -63,7 +63,10 @@ internal fun Message.toBackupMessage() =
 
 private fun Message.backupMessageContent(): BackupMessageContent? = when (this) {
     is Message.Regular -> when (content) {
-        is MessageContent.Text -> BackupMessageContent.Text((content as MessageContent.Text).value)
+        is MessageContent.Text -> BackupMessageContent.Text(
+            text = (content as MessageContent.Text).value,
+            mentions = emptyList()
+        )
         is MessageContent.Asset -> with((content as MessageContent.Asset).value) {
             BackupMessageContent.Asset(
                 mimeType = mimeType,

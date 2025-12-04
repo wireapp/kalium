@@ -317,6 +317,10 @@ internal class CellsDataSource internal constructor(
         cellsApi.setPublicLinkExpiration(linkUuid, expiresAt)
     }
 
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
+        cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
+    }
+
     override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
         wrapApiRequest {
             cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection ->
