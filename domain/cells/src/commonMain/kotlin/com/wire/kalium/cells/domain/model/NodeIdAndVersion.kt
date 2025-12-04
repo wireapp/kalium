@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.domain.model
 
-internal data class NodeIdAndVersion(
+public data class NodeIdAndVersion(
     val uuid: String,
     val versionId: String
 )

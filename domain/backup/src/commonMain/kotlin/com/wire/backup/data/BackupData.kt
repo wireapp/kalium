@@ -24,6 +24,7 @@ import kotlinx.serialization.Serializable
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
+import kotlin.js.JsName
 import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
@@ -122,8 +123,47 @@ public expect fun BackupDateTime.toLongMilliseconds(): Long
 @Serializable
 public sealed class BackupMessageContent {
 
+    /**
+     * Represents a text message with possible user mentions and serves as a part of the backup message content.
+     *
+     * @property text The content of the text message.
+     * @property mentions A list of mentions within the text. Each mention identifies a specific user and its position in the text.
+     *
+     * @throws IllegalArgumentException if any mention's range exceeds the length of the text.
+     */
     @Serializable
-    public data class Text(val text: String) : BackupMessageContent()
+    public data class Text(val text: String, val mentions: List<Mention>) : BackupMessageContent() {
+        init {
+            mentions.forEach { mention ->
+                require(mention.start + mention.length <= text.length) { "Mention range exceeds text length" }
+            }
+        }
+
+        @Deprecated("Use constructor with mentions")
+        @JsName("withoutMentions")
+        public constructor(text: String) : this(text, emptyList())
+
+        /**
+         * Represents a mention of a user in a text.
+         *
+         * @property userId The identifier of the user being mentioned.
+         * @property start The starting position of the mention in the text. Must be non-negative.
+         * @property length The length of the mention. Must be a positive value.
+         *
+         * @throws IllegalArgumentException if `length` is not positive or `start` is negative.
+         */
+        @Serializable
+        public data class Mention(
+            @SerialName("userId") val userId: BackupQualifiedId,
+            @SerialName("start") val start: Int,
+            @SerialName("length") val length: Int
+        ) {
+            init {
+                require(length > 0) { "Mention length must be positive" }
+                require(start >= 0) { "Mention start must be non-negative" }
+            }
+        }
+    }
 
     @Serializable
     public data class Asset(

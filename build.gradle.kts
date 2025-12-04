@@ -77,6 +77,21 @@ subprojects {
             showStandardStreams = true
             }
     }
+
+    // Configure GC for iOS Simulator ARM64 tests only
+    pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>()
+                .matching { it.name == "iosSimulatorArm64" }
+                .configureEach {
+                    binaries.all {
+                        if (this is org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable) {
+                            binaryOptions["gc"] = "stwms"
+                        }
+                    }
+                }
+        }
+    }
 }
 
 allprojects {

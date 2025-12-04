@@ -123,6 +123,7 @@ data class CellAssetContent(
     val previewUrl: String? = null,
     val metadata: AssetMetadata?,
     val transferStatus: AssetTransferStatus,
+    val isEditSupported: Boolean = false,
 ) : MessageAttachment
 
 fun AssetContent.hasValidRemoteData() = remoteData.hasValidData()

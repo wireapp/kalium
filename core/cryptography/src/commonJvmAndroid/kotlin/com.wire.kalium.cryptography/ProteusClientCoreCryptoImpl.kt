@@ -26,11 +26,11 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
-import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.io.encoding.Base64
 import com.wire.crypto.ProteusException as ProteusExceptionNative
 
 @Suppress("TooManyFunctions")
@@ -66,7 +66,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
 
         override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): String {
-            return coreContext.proteusFingerprintPrekeybundle(preKey.pkb.decodeBase64Bytes())
+            return coreContext.proteusFingerprintPrekeybundle(Base64.decode(preKey.pkb))
         }
 
         override suspend fun newLastResortPreKey(): PreKeyCrypto {

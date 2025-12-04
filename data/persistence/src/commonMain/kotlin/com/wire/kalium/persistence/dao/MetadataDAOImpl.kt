@@ -41,12 +41,16 @@ class MetadataDAOImpl internal constructor(
     private val writeDispatcher: WriteDispatcher,
 ) : MetadataDAO {
 
-    override suspend fun insertValue(value: String, key: String) = withContext(writeDispatcher.value) {
-        metadataQueries.insertValue(key, value)
+    override suspend fun insertValue(value: String, key: String) {
+        withContext(writeDispatcher.value) {
+            metadataQueries.insertValue(key, value)
+        }
     }
 
-    override suspend fun deleteValue(key: String) = withContext(writeDispatcher.value) {
-        metadataQueries.deleteValue(key)
+    override suspend fun deleteValue(key: String) {
+        withContext(writeDispatcher.value) {
+            metadataQueries.deleteValue(key)
+        }
     }
 
     override suspend fun valueByKeyFlow(
@@ -59,11 +63,13 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
 
-    override suspend fun clear(keysToKeep: List<String>?) = withContext(writeDispatcher.value) {
-        if (keysToKeep == null) {
-            metadataQueries.deleteAll()
-        } else {
-            metadataQueries.deleteAllExcept(keysToKeep)
+    override suspend fun clear(keysToKeep: List<String>?) {
+        withContext(writeDispatcher.value) {
+            if (keysToKeep == null) {
+                metadataQueries.deleteAll()
+            } else {
+                metadataQueries.deleteAllExcept(keysToKeep)
+            }
         }
     }
 
