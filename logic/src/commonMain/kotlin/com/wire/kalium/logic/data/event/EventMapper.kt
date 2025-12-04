@@ -43,7 +43,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
@@ -58,6 +57,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.serializer
+import kotlin.io.encoding.Base64
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class EventMapper(
@@ -333,7 +333,7 @@ class EventMapper(
         eventContentDTO.time,
         eventContentDTO.data.text,
         eventContentDTO.data.encryptedExternalData?.let {
-            EncryptedData(Base64.decodeFromBase64(it))
+            EncryptedData(Base64.decode(it))
         }
     )
 

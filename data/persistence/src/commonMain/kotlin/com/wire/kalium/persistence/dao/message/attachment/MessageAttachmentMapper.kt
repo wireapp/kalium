@@ -40,6 +40,7 @@ data object MessageAttachmentMapper {
         assetTransferStatus: String,
         assetIndex: Int?,
         contentUrlExpiresAt: Long?,
+        editSupported: Boolean,
     ): MessageAttachmentEntity =
         MessageAttachmentEntity(
             assetId = assetId,
@@ -58,5 +59,6 @@ data object MessageAttachmentMapper {
             contentExpiresAt = contentUrlExpiresAt,
             contentHash = contentHash,
             assetIndex = assetIndex,
+            isEditSupported = editSupported,
         )
 }

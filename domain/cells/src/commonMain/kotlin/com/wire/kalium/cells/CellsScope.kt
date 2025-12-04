@@ -47,10 +47,10 @@ import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
-import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
+import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
@@ -97,6 +97,8 @@ import com.wire.kalium.cells.domain.usecase.publiclink.SetPublicLinkExpirationUs
 import com.wire.kalium.cells.domain.usecase.publiclink.SetPublicLinkExpirationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCase
+import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
@@ -269,6 +271,9 @@ public class CellsScope(
 
     public val setPublicLinkExpiration: SetPublicLinkExpirationUseCase by lazy {
         SetPublicLinkExpirationUseCaseImpl(cellsRepository)
+    }
+    public val getNodeVersions: GetNodeVersionsUseCase by lazy {
+        GetNodeVersionsUseCaseImpl(cellsRepository)
     }
 
     public val getEditorUrl: GetEditorUrlUseCase by lazy {

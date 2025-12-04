@@ -20,6 +20,7 @@ package com.wire.kalium.cells.domain
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -72,5 +73,6 @@ internal interface CellsRepository {
     suspend fun savePublicLinkPassword(linkUuid: String, password: String)
     suspend fun clearPublicLinkPassword(linkUuid: String)
     suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?): Either<NetworkFailure, Unit>
+    suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>>
     suspend fun getEditorUrl(nodeUuid: String, urlKey: String): Either<NetworkFailure, String>
 }

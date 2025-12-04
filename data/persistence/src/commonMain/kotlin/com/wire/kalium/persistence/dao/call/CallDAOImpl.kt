@@ -69,18 +69,20 @@ internal class CallDAOImpl(
     private val mapper: CallMapper = CallMapper,
 ) : CallDAO {
 
-    override suspend fun insertCall(call: CallEntity) = withContext(writeDispatcher.value) {
-        val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
+    override suspend fun insertCall(call: CallEntity) {
+        withContext(writeDispatcher.value) {
+            val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
 
-        callsQueries.insertCall(
-            conversation_id = call.conversationId,
-            id = call.id,
-            status = call.status,
-            caller_id = call.callerId,
-            conversation_type = call.conversationType,
-            created_at = createdTime.toString(),
-            type = call.type
-        )
+            callsQueries.insertCall(
+                conversation_id = call.conversationId,
+                id = call.id,
+                status = call.status,
+                caller_id = call.callerId,
+                conversation_type = call.conversationType,
+                created_at = createdTime.toString(),
+                type = call.type
+            )
+        }
     }
 
     override suspend fun observeCalls(): Flow<List<CallEntity>> =
@@ -117,13 +119,14 @@ internal class CallDAOImpl(
             .flowOn(readDispatcher.value)
             .mapToList()
 
-    override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) =
+    override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             callsQueries.updateLastCallStatusByConversationId(
                 status,
                 conversationId
             )
         }
+    }
 
     override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
         callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOneOrNull()
@@ -147,8 +150,10 @@ internal class CallDAOImpl(
             .executeAsOneOrNull()
     }
 
-    override suspend fun updateOpenCallsToClosedStatus() = withContext(writeDispatcher.value) {
-        callsQueries.updateOpenCallsToClosedStatus()
+    override suspend fun updateOpenCallsToClosedStatus() {
+        withContext(writeDispatcher.value) {
+            callsQueries.updateOpenCallsToClosedStatus()
+        }
     }
 
     override fun observeLastActiveCallByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?> =

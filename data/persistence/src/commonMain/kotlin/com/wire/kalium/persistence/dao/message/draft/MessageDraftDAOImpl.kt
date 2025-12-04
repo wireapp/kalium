@@ -85,8 +85,10 @@ class MessageDraftDAOImpl internal constructor(
             queries.getDraft(conversationIDEntity, ::toDao).executeAsOneOrNull()
         }
 
-    override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) = withContext(writeDispatcher.value) {
-        queries.deleteDraft(conversationIDEntity)
+    override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) {
+        withContext(writeDispatcher.value) {
+            queries.deleteDraft(conversationIDEntity)
+        }
     }
 
     override suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>> = queries.getDrafts(::toDao)
