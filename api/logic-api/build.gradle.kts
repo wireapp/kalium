@@ -18,6 +18,7 @@
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.skie)
 }
 
 kaliumLibrary {
@@ -32,6 +33,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(projects.logic) // fixme: change to implementation once Kalium Public Logic API is extracted.
+                implementation(libs.coroutines.core)
             }
         }
     }

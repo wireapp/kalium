@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic
+package com.wire.kalium.logic.api
 
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.feature.UserSessionScope
 
-public expect class KaliumApiScopeFactory {
-    public fun create(
-        rootPath: String,
-        userAgent: String,
-        kaliumConfigs: KaliumConfigs,
-    ): KaliumApiScope
+public class SessionScope internal constructor(
+    private val userSessionScope: UserSessionScope
+) {
+
 }

@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic
+package com.wire.kalium.logic.api
 
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 public actual class KaliumApiScopeFactory {

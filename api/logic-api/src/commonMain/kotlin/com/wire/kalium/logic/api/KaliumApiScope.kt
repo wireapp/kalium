@@ -15,7 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic
+package com.wire.kalium.logic.api
+
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.api.feature.user.ObserveSelfUserUseCaseImpl
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.session.CurrentSessionResult
+import kotlinx.coroutines.runBlocking
 
 /**
  * Main entry point for Kalium API.
@@ -24,7 +30,21 @@ package com.wire.kalium.logic
 public class KaliumApiScope internal constructor(
     private val coreLogic: CoreLogic
 ) {
+
+    internal lateinit var userId: UserId
+
+    init {
+        runBlocking {
+            userId = when (val result = coreLogic.getGlobalScope().session.currentSession()) {
+                is CurrentSessionResult.Success -> result.accountInfo.userId
+                else -> {
+                    throw IllegalStateException("no current session was found")
+                }
+            }
+        }
+    }
+
     // TODO: Add delegating use cases here, e.g.,
-//     public val registerAccount: RegisterAccountUseCase = RegisterAccountUseCaseImpl(coreLogic)
+    private val observeSelfUser = ObserveSelfUserUseCaseImpl(coreLogic.getSessionScope(userId).users.observeSelfUser)
 }
 

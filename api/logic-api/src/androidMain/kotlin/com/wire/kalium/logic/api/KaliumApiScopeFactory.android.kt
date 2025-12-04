@@ -15,29 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.register
+package com.wire.kalium.logic.api
 
+import android.content.Context
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-// fixme: add documentation and rules for docs required.
-public interface RegisterAccountUseCase {
-    public suspend operator fun invoke(
-        param: RegisterParam
-    ): RegisterResult
-}
-
-public class RegisterAccountUseCaseImpl(
-    coreLogic: CoreLogic,
-    serverConfig: ServerConfig,
-    proxyCredentials: ProxyCredentials?
-
-) {
-
-//     public override suspend fun invoke(
-//         param: RegisterParam
-//     ): RegisterResult {
-//         return registerAccountFeature.registerAccount(param)
-//     }
+public actual class KaliumApiScopeFactory(private val context: Context) {
+    public actual fun create(
+        rootPath: String,
+        userAgent: String,
+        kaliumConfigs: KaliumConfigs
+    ): KaliumApiScope {
+        val coreLogic = CoreLogic(
+            rootPath = rootPath,
+            userAgent = userAgent,
+            kaliumConfigs = kaliumConfigs,
+            appContext = context
+        )
+        return KaliumApiScope(coreLogic)
+    }
 }
