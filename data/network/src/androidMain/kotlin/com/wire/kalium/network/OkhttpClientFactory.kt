@@ -34,17 +34,15 @@ private object OkHttpSingleton {
     private val sharedClient by lazy {
         OkHttpClient.Builder()
             .apply {
-                followRedirects(true)
-                followSslRedirects(true)
 
                 // OkHttp doesn't support configuring ping intervals dynamically,
-            // so they must be set when creating the Engine
-            // See https://youtrack.jetbrains.com/issue/KTOR-4752
-            pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
-                .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-                .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-                .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-        }.build()
+                // so they must be set when creating the Engine
+                // See https://youtrack.jetbrains.com/issue/KTOR-4752
+                pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+                    .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+                    .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+                    .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+            }.build()
     }
 
     fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {

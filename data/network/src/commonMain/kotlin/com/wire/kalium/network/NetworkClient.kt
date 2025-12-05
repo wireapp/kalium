@@ -65,12 +65,6 @@ internal class AuthenticatedNetworkClient(
         kaliumLogger,
         installCompression
     ) {
-        followRedirects = true
-
-        install(HttpRedirect) {
-            checkHttpMethod = false   // allow redirects on GET, POST, etc.
-            allowHttpsDowngrade = false
-        }
         installWireDefaultRequest(serverConfigDTO)
         installAuth(bearerAuthProvider)
         install(ContentNegotiation) {
