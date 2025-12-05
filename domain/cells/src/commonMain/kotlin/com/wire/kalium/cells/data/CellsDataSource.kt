@@ -165,16 +165,10 @@ internal class CellsDataSource internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun downloadFile(
-        out: Path,
-        cellPath: String,
-        onProgressUpdate: (Long) -> Unit,
-    ) =
+    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) =
         try {
             fileSystem.sink(out, true).use { sink ->
-                awsClient.download(
-                    cellPath, sink, onProgressUpdate = onProgressUpdate
-                )
+                awsClient.download(cellPath, sink, onProgressUpdate)
                 Either.Right(Unit)
             }
         } catch (e: CancellationException) {

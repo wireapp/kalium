@@ -47,6 +47,7 @@ internal data class BackupPage(
         const val CONVERSATIONS_PREFIX = "conversations_"
         const val MESSAGES_PREFIX = "messages_"
         const val USERS_PREFIX = "users_"
+        const val REACTIONS_PREFIX = "reactions_"
         const val PAGE_SUFFIX = ".binpb"
     }
 }
