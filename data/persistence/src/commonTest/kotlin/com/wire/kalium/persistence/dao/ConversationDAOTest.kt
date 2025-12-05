@@ -2839,71 +2839,74 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationWithoutUnreadEvents_whenCheckingHasUnreadEvents_thenReturnsFalse() = runTest(dispatcher) {
-        // given
-        conversationDAO.insertConversation(conversationEntity1)
-        insertTeamUserAndMember(team, user1, conversationEntity1.id)
-
-        // when
-        val hasUnread = conversationDAO.hasUnreadEvents(conversationEntity1.id)
-
-        // then
-        assertFalse(hasUnread)
-    }
-
-    @Test
-    fun givenConversationWithUnreadEvents_whenCheckingHasUnreadEvents_thenReturnsTrue() = runTest(dispatcher) {
+    fun givenUnreadMessagesAndReadDateBeforeMessages_whenUpdateReadDateAndGetHasUnreadEvents_thenReturnsTrue() = runTest(dispatcher) {
         // given
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val conversation = conversationEntity1
 
+        val messageDate = Clock.System.now()
+
         val messages = buildList {
-            repeat(10) {
+            repeat(5) {
                 add(
                     newRegularMessageEntity(
                         id = it.toString(),
                         conversationId = conversation.id,
                         senderUserId = user1.id,
+                        date = messageDate
                     )
                 )
             }
-            add(
-                newRegularMessageEntity(
-                    content = MessageEntityContent.Asset(
-                        assetSizeInBytes = 123L,
-                        assetName = "assetName",
-                        assetMimeType = "assetMimeType",
-                        assetOtrKey = ByteArray(32),
-                        assetSha256Key = ByteArray(32),
-                        assetId = "assetId",
-                        assetEncryptionAlgorithm = "assetEncryptionAlgorithm"
-                    ),
-                    id = "11",
-                    conversationId = conversation.id,
-                    senderUserId = user1.id,
-                    visibility = MessageEntity.Visibility.VISIBLE
-                )
-            )
         }
-
-        assertDAO.insertAsset(
-            AssetEntity(
-                key = "assetId",
-                dataSize = 123,
-                dataPath = "dataPath",
-                domain = "domain",
-                downloadedDate = null
-            )
-        )
 
         messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
 
+        val readDate = messageDate - 1.days
+
         // when
-        val hasUnread = conversationDAO.hasUnreadEvents(conversationEntity1.id)
+        val hasUnread = conversationDAO.updateReadDateAndGetHasUnreadEvents(
+            conversationID = conversation.id,
+            date = readDate
+        )
 
         // then
         assertTrue(hasUnread)
+    }
+
+    @Test
+    fun givenUnreadMessagesAndReadDateAfterMessages_whenUpdateReadDateAndGetHasUnreadEvents_thenReturnsFalse() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val conversation = conversationEntity1
+
+        val messageDate = Clock.System.now()
+
+        val messages = buildList {
+            repeat(5) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(),
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        date = messageDate
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+        val readDate = messageDate + 1.days
+
+        // when
+        val hasUnread = conversationDAO.updateReadDateAndGetHasUnreadEvents(
+            conversationID = conversation.id,
+            date = readDate
+        )
+
+        // then
+        assertFalse(hasUnread)
     }
 
     private companion object {

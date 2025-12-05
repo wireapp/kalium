@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -55,8 +54,11 @@ internal class LastReadContentHandlerImpl internal constructor(
             // If the message is coming from other client, it means that the user has read
             // the conversation on the other device, and we can update the read date locally
             // to synchronize the state across the clients.
-            conversationRepository.updateConversationReadDate(qualifiedID = messageContent.conversationId, date = messageContent.time)
-                .flatMap { conversationRepository.hasUnreadEvents(messageContent.conversationId) }
+            conversationRepository
+                .updateReadDateAndGetHasUnreadEvents(
+                    qualifiedID = messageContent.conversationId,
+                    date = messageContent.time
+                )
                 .onSuccess { hasUnreadEvents ->
                     if (!hasUnreadEvents) {
                         notificationEventsManager.scheduleConversationSeenNotification(messageContent.conversationId)

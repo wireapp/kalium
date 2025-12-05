@@ -440,8 +440,10 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) {
         withContext(writeDispatcher.value) {
-            unreadEventsQueries.deleteUnreadEvents(date, conversationID)
-            conversationQueries.updateConversationReadDate(date, conversationID)
+            conversationQueries.transaction {
+                unreadEventsQueries.deleteUnreadEvents(date, conversationID)
+                conversationQueries.updateConversationReadDate(date, conversationID)
+            }
         }
     }
 
@@ -666,7 +668,14 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.hasConversationWithCell().executeAsOne()
     }
 
-    override suspend fun hasUnreadEvents(conversationId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
-        unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).executeAsOneOrNull() ?: false
+    override suspend fun updateReadDateAndGetHasUnreadEvents(
+        conversationID: QualifiedIDEntity,
+        date: Instant
+    ): Boolean = withContext(writeDispatcher.value) {
+        conversationQueries.transactionWithResult {
+            unreadEventsQueries.deleteUnreadEvents(date, conversationID)
+            conversationQueries.updateConversationReadDate(date, conversationID)
+            unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).executeAsOneOrNull() ?: false
+        }
     }
 }
