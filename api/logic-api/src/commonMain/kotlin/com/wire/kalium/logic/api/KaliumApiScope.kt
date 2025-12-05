@@ -18,33 +18,20 @@
 package com.wire.kalium.logic.api
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.api.feature.user.ObserveSelfUserUseCase
 import com.wire.kalium.logic.api.feature.user.ObserveSelfUserUseCaseImpl
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.session.CurrentSessionResult
-import kotlinx.coroutines.runBlocking
 
 /**
  * Main entry point for Kalium API.
  * This provides a stable, versioned public API for external consumers.
  */
 public class KaliumApiScope internal constructor(
-    private val coreLogic: CoreLogic
+    private val coreLogic: CoreLogic,
+    internal val userId: UserId
 ) {
-
-    internal lateinit var userId: UserId
-
-    init {
-        runBlocking {
-            userId = when (val result = coreLogic.getGlobalScope().session.currentSession()) {
-                is CurrentSessionResult.Success -> result.accountInfo.userId
-                else -> {
-                    throw IllegalStateException("no current session was found")
-                }
-            }
-        }
-    }
-
     // TODO: Add delegating use cases here, e.g.,
-    private val observeSelfUser = ObserveSelfUserUseCaseImpl(coreLogic.getSessionScope(userId).users.observeSelfUser)
+    public val observeSelfUser: ObserveSelfUserUseCase by lazy {
+        ObserveSelfUserUseCaseImpl(coreLogic.getSessionScope(userId).users.observeSelfUser)
+    }
 }
-

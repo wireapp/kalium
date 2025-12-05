@@ -19,7 +19,9 @@ package com.wire.kalium.logic.api
 
 import android.content.Context
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import kotlinx.coroutines.runBlocking
 
 public actual class KaliumApiScopeFactory(private val context: Context) {
     public actual fun create(
@@ -33,6 +35,14 @@ public actual class KaliumApiScopeFactory(private val context: Context) {
             kaliumConfigs = kaliumConfigs,
             appContext = context
         )
-        return KaliumApiScope(coreLogic)
+        val userId = runBlocking {
+            when (val result = coreLogic.getGlobalScope().session.currentSession()) {
+                is CurrentSessionResult.Success -> result.accountInfo.userId
+                else -> {
+                    throw IllegalStateException("no current session was found")
+                }
+            }
+        }
+        return KaliumApiScope(coreLogic, userId)
     }
 }
