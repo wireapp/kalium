@@ -46,6 +46,10 @@ object BackupSamplesJs : BackupSamples() {
             mpBackupExporter.add(conversation)
         }
 
+        getReactionsFromDatabase().forEach { reaction ->
+            mpBackupExporter.add(reaction)
+        }
+
         // When all data is exported, you can call finalize, getting the binary data of the file in a Promise
         val fileData = mpBackupExporter.finalize(backupPassword).await() // Equivalent to await mpBackupExporter.finalize(...)
         println("Backup created file. Raw binary data: $fileData")
