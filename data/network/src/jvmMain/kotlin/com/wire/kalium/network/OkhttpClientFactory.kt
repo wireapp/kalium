@@ -35,7 +35,6 @@ fun buildOkhttpClient(
             .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
     }.connectionSpecs(supportedConnectionSpecs()).build()
 
-fun buildClearTextTrafficOkhttpClient(): OkHttpClient = OkHttpClient.Builder()
-    .apply {
-        connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
-    }.build()
+fun buildClearTextTrafficOkhttpClient(): OkHttpClient = OkHttpClient.Builder().apply {
+    connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+}.build()
