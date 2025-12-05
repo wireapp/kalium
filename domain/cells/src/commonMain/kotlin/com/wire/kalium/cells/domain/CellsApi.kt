@@ -23,9 +23,9 @@ import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
+import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
-import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 
 
 @Suppress("TooManyFunctions", "LongParameterList")
