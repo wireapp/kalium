@@ -181,6 +181,8 @@ import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
+import com.wire.kalium.logic.data.sync.SyncOutboxRepository
+import com.wire.kalium.logic.data.sync.SyncOutboxRepositoryImpl
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
@@ -395,6 +397,10 @@ import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocket
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatusImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
+import com.wire.kalium.logic.feature.sync.EnableSyncReplicationUseCase
+import com.wire.kalium.logic.feature.sync.EnableSyncReplicationUseCaseImpl
+import com.wire.kalium.logic.feature.sync.ObserveSyncOutboxStatsUseCase
+import com.wire.kalium.logic.feature.sync.ObserveSyncOutboxStatsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -406,6 +412,7 @@ import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
+import com.wire.kalium.logic.sync.SyncOutboxWorker
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -1995,6 +2002,29 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val syncOutboxRepository: SyncOutboxRepository
+        get() = SyncOutboxRepositoryImpl(
+            syncOutboxDAO = userStorage.database.syncOutboxDAO,
+            syncStateDAO = userStorage.database.syncStateDAO,
+            syncApi = authenticatedNetworkContainer.syncApi,
+            userId = userId,
+            clientIdProvider = clientIdProvider
+        )
+
+    internal val syncOutboxWorker: SyncOutboxWorker by lazy {
+        SyncOutboxWorker(
+            syncOutboxRepository = syncOutboxRepository,
+            networkStateObserver = networkStateObserver,
+            userId = userId
+        )
+    }
+
+    val enableSyncReplication: EnableSyncReplicationUseCase
+        get() = EnableSyncReplicationUseCaseImpl(syncOutboxRepository)
+
+    val observeSyncOutboxStats: ObserveSyncOutboxStatsUseCase
+        get() = ObserveSyncOutboxStatsUseCaseImpl(syncOutboxRepository)
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider,
@@ -2618,6 +2648,19 @@ class UserSessionScope internal constructor(
 
         launch {
             typingIndicatorSyncManager.execute()
+        }
+
+        // Schedule periodic sync outbox processing
+        userSessionWorkScheduler.schedulePeriodicSyncOutboxProcessing()
+
+        // Check for pending operations and schedule immediate processing if needed
+        launch {
+            syncOutboxRepository.getPendingOperationCount()
+                .onSuccess { count ->
+                    if (count > 0) {
+                        userSessionWorkScheduler.scheduleImmediateSyncOutboxProcessing()
+                    }
+                }
         }
 
         launch {
