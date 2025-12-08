@@ -1,0 +1,72 @@
+import kotlinx.datetime.Instant;
+
+CREATE TABLE SyncOutbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    table_name TEXT NOT NULL,
+    operation_type TEXT NOT NULL,
+    row_key TEXT NOT NULL,
+    row_data TEXT,
+    created_at INTEGER AS Instant NOT NULL,
+    sync_status TEXT NOT NULL DEFAULT 'PENDING',
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at INTEGER AS Instant,
+    error_message TEXT
+);
+
+CREATE INDEX sync_outbox_status_created ON SyncOutbox(sync_status, created_at);
+CREATE INDEX sync_outbox_table_key ON SyncOutbox(table_name, row_key);
+
+CREATE TABLE SyncState (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    updated_at INTEGER AS Instant NOT NULL
+);
+
+insertOperation:
+INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at, sync_status)
+VALUES (?, ?, ?, ?, ?, 'PENDING');
+
+selectPendingOperations:
+SELECT * FROM SyncOutbox
+WHERE sync_status = 'PENDING'
+ORDER BY created_at ASC
+LIMIT ?;
+
+markAsInProgress:
+UPDATE SyncOutbox
+SET sync_status = 'IN_PROGRESS', last_attempt_at = ?
+WHERE id IN ?;
+
+markAsSent:
+DELETE FROM SyncOutbox WHERE id IN ?;
+
+markAsFailed:
+UPDATE SyncOutbox
+SET sync_status = 'FAILED',
+    attempt_count = attempt_count + 1,
+    last_attempt_at = ?,
+    error_message = ?
+WHERE id IN ?;
+
+resetFailedToPending:
+UPDATE SyncOutbox
+SET sync_status = 'PENDING'
+WHERE sync_status = 'FAILED' AND attempt_count < ?;
+
+selectStats:
+SELECT sync_status, COUNT(*)
+FROM SyncOutbox
+GROUP BY sync_status;
+
+selectPendingCount:
+SELECT COUNT(*) FROM SyncOutbox WHERE sync_status = 'PENDING';
+
+upsertState:
+INSERT INTO SyncState(key, value, updated_at)
+VALUES (?, ?, ?)
+ON CONFLICT(key) DO UPDATE SET
+    value = excluded.value,
+    updated_at = excluded.updated_at;
+
+selectState:
+SELECT value FROM SyncState WHERE key = ?;

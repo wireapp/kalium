@@ -5,6 +5,7 @@ CREATE TABLE Member (
     user TEXT AS QualifiedIDEntity NOT NULL,
     conversation TEXT AS QualifiedIDEntity NOT NULL,
     role TEXT AS Role NOT NULL,
+    row_version INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT member_conv PRIMARY KEY (user, conversation) ON CONFLICT IGNORE,
     FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id)  ON DELETE CASCADE,
     FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
@@ -55,7 +56,7 @@ WHERE Member.user = ?;
 
 updateMemberRole:
 UPDATE Member
-SET role = ?
+SET role = ?, row_version = row_version + 1
 WHERE user = ? AND conversation = ?;
 
 isUserMember:

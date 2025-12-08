@@ -1,8 +1,8 @@
 
 dumpAllTables{
 INSERT INTO User SELECT * FROM local_db.User;
-INSERT INTO Conversation SELECT * FROM local_db.Conversation;
-INSERT INTO Message SELECT * FROM local_db.Message WHERE local_db.Message.expire_after_millis IS NULL;
+INSERT INTO Conversation (qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, guest_room_link, message_timer, user_message_timer, incomplete_metadata, mls_degraded_notified, is_guest_password_protected, archived, archived_date_time, verification_status, proteus_verification_status, degraded_conversation_notified, legal_hold_status, is_channel, channel_access, channel_add_permission, wire_cell, deleted_locally, history_sharing_retention_seconds) SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, guest_room_link, message_timer, user_message_timer, incomplete_metadata, mls_degraded_notified, is_guest_password_protected, archived, archived_date_time, verification_status, proteus_verification_status, degraded_conversation_notified, legal_hold_status, is_channel, channel_access, channel_add_permission, wire_cell, deleted_locally, history_sharing_retention_seconds FROM local_db.Conversation;
+INSERT INTO Message (id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date) SELECT id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date FROM local_db.Message WHERE local_db.Message.expire_after_millis IS NULL;
 INSERT INTO Call SELECT * FROM local_db.Call;
 
 WITH selfdelete_message_id AS (
@@ -202,7 +202,8 @@ INSERT INTO Reaction
            local_db.Reaction.conversation_id,
            local_db.Reaction.sender_id,
            local_db.Reaction.emoji,
-           local_db.Reaction.date
+           local_db.Reaction.date,
+           1 AS row_version
     FROM local_db.Reaction
          LEFT JOIN selfdelete_message_id
             ON  local_db.Reaction.message_id = selfdelete_message_id.id

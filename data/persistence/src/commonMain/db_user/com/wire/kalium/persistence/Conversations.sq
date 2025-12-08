@@ -50,7 +50,8 @@ CREATE TABLE Conversation (
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
     wire_cell TEXT,
     deleted_locally INTEGER AS Boolean NOT NULL DEFAULT 0,
-    history_sharing_retention_seconds INTEGER NOT NULL DEFAULT 0 CHECK (history_sharing_retention_seconds >= 0)
+    history_sharing_retention_seconds INTEGER NOT NULL DEFAULT 0 CHECK (history_sharing_retention_seconds >= 0),
+    row_version INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
@@ -83,7 +84,7 @@ DELETE FROM Conversation WHERE qualified_id = ?;
 
 markAsDeletedLocally:
 UPDATE Conversation
-SET deleted_locally = 1
+SET deleted_locally = 1, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 insertConversation:
@@ -125,7 +126,7 @@ history_sharing_retention_seconds = excluded.history_sharing_retention_seconds;
 
 updateConversation:
 UPDATE Conversation
-SET name = ?, type = ?, team_id = ?
+SET name = ?, type = ?, team_id = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 updateConversationGroupState:
@@ -134,7 +135,7 @@ SET mls_group_state = CASE
     WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
     WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
     ELSE mls_group_state
-END
+END, row_version = row_version + 1
 WHERE mls_group_id = ?;
 
 updateMlsGroupStateAndCipherSuite:
@@ -144,7 +145,7 @@ SET mls_group_state = CASE
     WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
     ELSE mls_group_state
 END,
-mls_cipher_suite = :mls_cipher_suite
+mls_cipher_suite = :mls_cipher_suite, row_version = row_version + 1
 WHERE mls_group_id = :mls_group_id;
 
 updateMLSGroupIdAndState:
@@ -155,7 +156,7 @@ SET mls_group_id = :new_group_id,
         WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
         ELSE mls_group_state
     END,
-    mls_epoch = :new_epoch
+    mls_epoch = :new_epoch, row_version = row_version + 1
 WHERE qualified_id = :conversation_id;
 
 updateConversationNotificationsDateWithTheLastMessage:
@@ -166,13 +167,13 @@ SET last_notified_date = (
     WHERE
         Message.conversation_id = :conversationId
     ORDER BY Message.creation_date DESC LIMIT 1
-)
+), row_version = row_version + 1
 WHERE qualified_id = :conversationId;
 
 
 updateConversationNotificationsDate:
 UPDATE Conversation
-SET last_notified_date = :last_notified_date
+SET last_notified_date = :last_notified_date, row_version = row_version + 1
 WHERE qualified_id = :conversationId;
 
 updateAllNotifiedConversationsNotificationsDate:
@@ -185,7 +186,7 @@ SET last_notified_date = (
 
 updateConversationModifiedDate:
 UPDATE Conversation
-SET last_modified_date = ?
+SET last_modified_date = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 getConversationLastReadDate:
@@ -193,17 +194,17 @@ SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
 
 updateConversationReadDate:
 UPDATE Conversation
-SET last_read_date = :last_read_date
+SET last_read_date = :last_read_date, row_version = row_version + 1
 WHERE qualified_id = :qualified_id;
 
 updateDegradedConversationNotifiedFlag:
 UPDATE Conversation
-SET degraded_conversation_notified = ?
+SET degraded_conversation_notified = ?, row_version = row_version + 1
 WHERE qualified_id = :qualified_id;
 
 updateChannelAddPermission:
 UPDATE Conversation
-SET channel_add_permission = ?
+SET channel_add_permission = ?, row_version = row_version + 1
 WHERE qualified_id = :qualified_id;
 
 selectAllConversations:
@@ -255,28 +256,28 @@ SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :typ
 
 updateConversationMutingStatus:
 UPDATE Conversation
-SET muted_status = ?, muted_time = ?
+SET muted_status = ?, muted_time = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 updateConversationArchivingStatus:
 UPDATE Conversation
-SET archived = ?, archived_date_time = ?
+SET archived = ?, archived_date_time = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 updateAccess:
-UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
+UPDATE Conversation SET access_list= ?, access_role_list = ?, row_version = row_version + 1 WHERE qualified_id = ?;
 
 updateKeyingMaterialDate:
-UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
+UPDATE Conversation SET mls_last_keying_material_update_date= ?, row_version = row_version + 1 WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
 SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
 
 updateProposalTimer:
-UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
+UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?), row_version = row_version + 1 WHERE mls_group_id = ?;
 
 clearProposalTimer:
-UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
+UPDATE Conversation SET mls_proposal_timer = NULL, row_version = row_version + 1 WHERE mls_group_id = ?;
 
 selectProposalTimers:
 SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
@@ -286,17 +287,17 @@ SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMe
 
 updateConversationName:
 UPDATE Conversation
-SET name = ?, last_modified_date = ?
+SET name = ?, last_modified_date = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 updateConversationType:
 UPDATE Conversation
-SET type = ?
+SET type = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 updateConversationGroupIdAndProtocolInfo {
 UPDATE Conversation
-SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
+SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite, row_version = row_version + 1
 WHERE qualified_id = :qualified_id AND
  protocol != :protocol;
 SELECT changes();
@@ -338,12 +339,12 @@ AND Conversation.mls_group_state IS 'ESTABLISHED';
 
 updateConversationReceiptMode:
 UPDATE Conversation
-SET receipt_mode = ?
+SET receipt_mode = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 updateGuestRoomLink:
 UPDATE Conversation
-SET guest_room_link = :link, is_guest_password_protected = :isPasswordProtected
+SET guest_room_link = :link, is_guest_password_protected = :isPasswordProtected, row_version = row_version + 1
 WHERE qualified_id = :conversationId;
 
 getGuestRoomLinkByConversationId:
@@ -351,7 +352,7 @@ SELECT guest_room_link, is_guest_password_protected FROM Conversation WHERE qual
 
 updateMessageTimer:
 UPDATE Conversation
-SET message_timer = ?
+SET message_timer = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 getMessageTimer:
@@ -359,7 +360,7 @@ SELECT message_timer FROM Conversation WHERE qualified_id = ?;
 
 updateUserMessageTimer:
 UPDATE Conversation
-SET user_message_timer = ?
+SET user_message_timer = ?, row_version = row_version + 1
 WHERE qualified_id = ?;
 
 selectConversationIdsWithoutMetadata:
@@ -372,12 +373,12 @@ SELECT is_channel FROM Conversation WHERE qualified_id = ?;
 
 updateMlsVerificationStatus:
 UPDATE Conversation
-SET verification_status = :status
+SET verification_status = :status, row_version = row_version + 1
 WHERE qualified_id = :conversationId;
 
 updateLegalHoldStatus {
 UPDATE Conversation
-SET legal_hold_status = :legal_hold_status
+SET legal_hold_status = :legal_hold_status, row_version = row_version + 1
 WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
 }
 
@@ -433,7 +434,7 @@ BEGIN
     );
 
     UPDATE Conversation
-    SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED')
+    SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED'), row_version = row_version + 1
     WHERE qualified_id = new.qualified_id;
 END;
 

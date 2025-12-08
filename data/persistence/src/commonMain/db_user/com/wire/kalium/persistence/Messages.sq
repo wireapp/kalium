@@ -26,6 +26,7 @@ CREATE TABLE Message (
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
       self_deletion_end_date INTEGER AS Instant DEFAULT(NULL),
+      row_version INTEGER NOT NULL DEFAULT 1,
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -344,7 +345,7 @@ DELETE FROM Message WHERE id = ?;
 
 markMessageAsDeleted {
    UPDATE Message
-   SET visibility = 'DELETED'
+   SET visibility = 'DELETED', row_version = row_version + 1
    WHERE id = :message_id AND conversation_id = :conversation_id;
 
    DELETE FROM MessageTextContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
@@ -358,7 +359,7 @@ markMessageAsDeleted {
 
 markMessageAsEdited:
 UPDATE Message
-SET last_edit_date = ?
+SET last_edit_date = ?, row_version = row_version + 1
 WHERE id = ? AND conversation_id = ?;
 
 getMessageSenderId:
@@ -466,12 +467,12 @@ VALUES(?, ?, ?, ?);
 
 updateMessageStatus:
 UPDATE Message
-SET status = ?
+SET status = ?, row_version = row_version + 1
 WHERE id = ? AND conversation_id = ?;
 
 updateMessagesStatusIfNotRead:
 UPDATE Message
-SET status = ?
+SET status = ?, row_version = row_version + 1
 WHERE id IN ?
 AND conversation_id = ?
 AND status != 'READ';
@@ -486,7 +487,7 @@ SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
 
 updateAssetContent {
     UPDATE OR ROLLBACK Message
-    SET visibility = :visibility
+    SET visibility = :visibility, row_version = row_version + 1
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
@@ -506,7 +507,7 @@ WHERE message_id = :message_id AND conversation_id = :conversation_id;
 
 updateMessageId:
 UPDATE Message
-SET id = :newId
+SET id = :newId, row_version = row_version + 1
 WHERE id = :oldId AND conversation_id = :conversationId;
 
 getMessage:
@@ -581,11 +582,12 @@ promoteMessageToSentUpdatingServerTime {
 UPDATE Message
 SET
     creation_date = CASE WHEN :server_creation_date IS NULL THEN creation_date ELSE :server_creation_date END,
-    status = 'SENT'
+    status = 'SENT',
+    row_version = row_version + 1
 WHERE id = :message_id AND conversation_id = :conversation_id;
 
 UPDATE OR IGNORE Message
-SET creation_date = creation_date + :delivery_duration
+SET creation_date = creation_date + :delivery_duration, row_version = row_version + 1
 WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }
 
@@ -605,7 +607,7 @@ AND selfDeletionEndDate <= STRFTIME('%s', 'now') * 1000; -- Checks if message en
 
 markSelfDeletionEndDate:
 UPDATE Message
-SET self_deletion_end_date = ?
+SET self_deletion_end_date = ?, row_version = row_version + 1
 WHERE conversation_id = ? AND id = ?;
 
 insertMessageRecipientsFailure:
@@ -614,7 +616,7 @@ VALUES(?, ?, ?, ?);
 
 moveMessages:
 UPDATE OR REPLACE Message
-SET conversation_id = :to
+SET conversation_id = :to, row_version = row_version + 1
 WHERE conversation_id = :from;
 
 selectConversationMessagesFromSearch:

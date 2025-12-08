@@ -1,0 +1,320 @@
+-- Migration 124: Add sync replication support with outbox pattern
+-- Adds row_version tracking and triggers for Message, Conversation, Member, Reaction tables
+
+-- Step 1: Add row_version column to tracked tables
+ALTER TABLE Message ADD COLUMN row_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE Conversation ADD COLUMN row_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE Member ADD COLUMN row_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE Reaction ADD COLUMN row_version INTEGER NOT NULL DEFAULT 1;
+
+-- Step 2: Create SyncOutbox table for change tracking
+CREATE TABLE SyncOutbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    table_name TEXT NOT NULL,
+    operation_type TEXT NOT NULL,
+    row_key TEXT NOT NULL,
+    row_data TEXT,
+    created_at INTEGER NOT NULL,
+    sync_status TEXT NOT NULL DEFAULT 'PENDING',
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at INTEGER,
+    error_message TEXT
+);
+
+CREATE INDEX sync_outbox_status_created ON SyncOutbox(sync_status, created_at);
+CREATE INDEX sync_outbox_table_key ON SyncOutbox(table_name, row_key);
+
+-- Step 3: Create SyncState table for configuration
+CREATE TABLE SyncState (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Step 4: Insert initial sync state (sync disabled by default)
+INSERT INTO SyncState(key, value, updated_at)
+VALUES ('sync_enabled', 'false', CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER));
+
+INSERT INTO SyncState(key, value, updated_at)
+VALUES ('batch_size', '100', CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER));
+
+-- Step 5: Create triggers for Message table
+CREATE TRIGGER sync_message_insert
+AFTER INSERT ON Message
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Message',
+        'INSERT',
+        json_object('id', NEW.id, 'conversation_id', NEW.conversation_id),
+        json_object(
+            'id', NEW.id,
+            'content_type', NEW.content_type,
+            'conversation_id', NEW.conversation_id,
+            'creation_date', NEW.creation_date,
+            'sender_user_id', NEW.sender_user_id,
+            'sender_client_id', NEW.sender_client_id,
+            'status', NEW.status,
+            'last_edit_date', NEW.last_edit_date,
+            'visibility', NEW.visibility,
+            'expects_read_confirmation', NEW.expects_read_confirmation,
+            'expire_after_millis', NEW.expire_after_millis,
+            'self_deletion_end_date', NEW.self_deletion_end_date,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_message_update
+AFTER UPDATE ON Message
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+AND NEW.row_version != OLD.row_version
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Message',
+        'UPDATE',
+        json_object('id', NEW.id, 'conversation_id', NEW.conversation_id),
+        json_object(
+            'id', NEW.id,
+            'content_type', NEW.content_type,
+            'conversation_id', NEW.conversation_id,
+            'creation_date', NEW.creation_date,
+            'sender_user_id', NEW.sender_user_id,
+            'sender_client_id', NEW.sender_client_id,
+            'status', NEW.status,
+            'last_edit_date', NEW.last_edit_date,
+            'visibility', NEW.visibility,
+            'expects_read_confirmation', NEW.expects_read_confirmation,
+            'expire_after_millis', NEW.expire_after_millis,
+            'self_deletion_end_date', NEW.self_deletion_end_date,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_message_delete
+AFTER DELETE ON Message
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Message',
+        'DELETE',
+        json_object('id', OLD.id, 'conversation_id', OLD.conversation_id),
+        NULL,
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+-- Step 6: Create triggers for Conversation table
+CREATE TRIGGER sync_conversation_insert
+AFTER INSERT ON Conversation
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Conversation',
+        'INSERT',
+        json_object('qualified_id', NEW.qualified_id),
+        json_object(
+            'qualified_id', NEW.qualified_id,
+            'name', NEW.name,
+            'type', NEW.type,
+            'team_id', NEW.team_id,
+            'mls_group_id', NEW.mls_group_id,
+            'mls_group_state', NEW.mls_group_state,
+            'mls_epoch', NEW.mls_epoch,
+            'protocol', NEW.protocol,
+            'muted_status', NEW.muted_status,
+            'muted_time', NEW.muted_time,
+            'creator_id', NEW.creator_id,
+            'last_modified_date', NEW.last_modified_date,
+            'last_read_date', NEW.last_read_date,
+            'receipt_mode', NEW.receipt_mode,
+            'archived', NEW.archived,
+            'verification_status', NEW.verification_status,
+            'legal_hold_status', NEW.legal_hold_status,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_conversation_update
+AFTER UPDATE ON Conversation
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+AND NEW.row_version != OLD.row_version
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Conversation',
+        'UPDATE',
+        json_object('qualified_id', NEW.qualified_id),
+        json_object(
+            'qualified_id', NEW.qualified_id,
+            'name', NEW.name,
+            'type', NEW.type,
+            'team_id', NEW.team_id,
+            'mls_group_id', NEW.mls_group_id,
+            'mls_group_state', NEW.mls_group_state,
+            'mls_epoch', NEW.mls_epoch,
+            'protocol', NEW.protocol,
+            'muted_status', NEW.muted_status,
+            'muted_time', NEW.muted_time,
+            'creator_id', NEW.creator_id,
+            'last_modified_date', NEW.last_modified_date,
+            'last_read_date', NEW.last_read_date,
+            'receipt_mode', NEW.receipt_mode,
+            'archived', NEW.archived,
+            'verification_status', NEW.verification_status,
+            'legal_hold_status', NEW.legal_hold_status,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_conversation_delete
+AFTER DELETE ON Conversation
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Conversation',
+        'DELETE',
+        json_object('qualified_id', OLD.qualified_id),
+        NULL,
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+-- Step 7: Create triggers for Member table
+CREATE TRIGGER sync_member_insert
+AFTER INSERT ON Member
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Member',
+        'INSERT',
+        json_object('user', NEW.user, 'conversation', NEW.conversation),
+        json_object(
+            'user', NEW.user,
+            'conversation', NEW.conversation,
+            'role', NEW.role,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_member_update
+AFTER UPDATE ON Member
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+AND NEW.row_version != OLD.row_version
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Member',
+        'UPDATE',
+        json_object('user', NEW.user, 'conversation', NEW.conversation),
+        json_object(
+            'user', NEW.user,
+            'conversation', NEW.conversation,
+            'role', NEW.role,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_member_delete
+AFTER DELETE ON Member
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Member',
+        'DELETE',
+        json_object('user', OLD.user, 'conversation', OLD.conversation),
+        NULL,
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+-- Step 8: Create triggers for Reaction table
+CREATE TRIGGER sync_reaction_insert
+AFTER INSERT ON Reaction
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Reaction',
+        'INSERT',
+        json_object(
+            'message_id', NEW.message_id,
+            'conversation_id', NEW.conversation_id,
+            'sender_id', NEW.sender_id,
+            'emoji', NEW.emoji
+        ),
+        json_object(
+            'message_id', NEW.message_id,
+            'conversation_id', NEW.conversation_id,
+            'sender_id', NEW.sender_id,
+            'emoji', NEW.emoji,
+            'date', NEW.date,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_reaction_update
+AFTER UPDATE ON Reaction
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+AND NEW.row_version != OLD.row_version
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Reaction',
+        'UPDATE',
+        json_object(
+            'message_id', NEW.message_id,
+            'conversation_id', NEW.conversation_id,
+            'sender_id', NEW.sender_id,
+            'emoji', NEW.emoji
+        ),
+        json_object(
+            'message_id', NEW.message_id,
+            'conversation_id', NEW.conversation_id,
+            'sender_id', NEW.sender_id,
+            'emoji', NEW.emoji,
+            'date', NEW.date,
+            'row_version', NEW.row_version
+        ),
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
+
+CREATE TRIGGER sync_reaction_delete
+AFTER DELETE ON Reaction
+WHEN (SELECT value FROM SyncState WHERE key = 'sync_enabled') = 'true'
+BEGIN
+    INSERT INTO SyncOutbox(table_name, operation_type, row_key, row_data, created_at)
+    VALUES (
+        'Reaction',
+        'DELETE',
+        json_object(
+            'message_id', OLD.message_id,
+            'conversation_id', OLD.conversation_id,
+            'sender_id', OLD.sender_id,
+            'emoji', OLD.emoji
+        ),
+        NULL,
+        CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)
+    );
+END;
