@@ -55,8 +55,11 @@ internal fun UserSessionScope(
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
 ): UserSessionScope {
-    val platformUserStorageProperties =
-        PlatformUserStorageProperties(applicationContext, SecurityHelperImpl(globalPreferences.passphraseStorage))
+    val platformUserStorageProperties = PlatformUserStorageProperties(
+        applicationContext = applicationContext,
+        securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage),
+        liteSyncConfig = kaliumConfigs.liteSyncConfig
+    )
 
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
 

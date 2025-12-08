@@ -25,4 +25,11 @@ package com.wire.kalium.persistence.db
 class DriverConfigurationBuilder {
     var isWALEnabled = false
     var areForeignKeyConstraintsEnforced = true
+
+    /**
+     * LiteSync configuration for database synchronization.
+     * When set, the database will act as a LiteSync node that synchronizes with other nodes.
+     * If null, standard SQLite will be used without synchronization.
+     */
+    var liteSyncConnectionParams: String? = null
 }

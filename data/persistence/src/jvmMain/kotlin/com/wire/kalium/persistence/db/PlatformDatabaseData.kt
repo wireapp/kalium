@@ -37,5 +37,12 @@ fun databaseDriver(uri: String, config: DriverConfigurationBuilder.() -> Unit = 
     val journalMode = if (driverConfiguration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE
     sqliteConfig.setJournalMode(journalMode)
     sqliteConfig.enforceForeignKeys(driverConfiguration.areForeignKeyConstraintsEnforced)
-    return JdbcSqliteDriver(uri, sqliteConfig.toProperties())
+
+    // Append LiteSync parameters to URI if configured
+    val finalUri = driverConfiguration.liteSyncConnectionParams?.let { liteSyncParams ->
+        val separator = if (uri.contains("?")) "&" else "?"
+        "$uri$separator$liteSyncParams"
+    } ?: uri
+
+    return JdbcSqliteDriver(finalUri, sqliteConfig.toProperties())
 }

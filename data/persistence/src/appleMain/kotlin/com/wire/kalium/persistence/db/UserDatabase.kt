@@ -39,7 +39,8 @@ actual fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    liteSyncConnectionParams: String?
 ): UserDatabaseBuilder {
     val driver = when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
@@ -51,12 +52,14 @@ actual fun userDatabaseBuilder(
             )
             databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
                 isWALEnabled = enableWAL
+                this.liteSyncConnectionParams = liteSyncConnectionParams
             }
         }
 
         StorageData.InMemory ->
             databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
                 isWALEnabled = false
+                this.liteSyncConnectionParams = liteSyncConnectionParams
             }
     }
 

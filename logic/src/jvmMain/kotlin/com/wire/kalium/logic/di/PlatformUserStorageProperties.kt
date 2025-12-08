@@ -18,11 +18,13 @@
 
 package com.wire.kalium.logic.di
 
+import com.wire.kalium.logic.featureFlags.LiteSyncConfig
 import java.io.File
 
 actual class PlatformUserStorageProperties internal constructor(
     val rootPath: String,
-    val databaseInfo: DatabaseStorageType
+    val databaseInfo: DatabaseStorageType,
+    val liteSyncConfig: LiteSyncConfig? = null
 )
 
 sealed interface DatabaseStorageType {

@@ -26,7 +26,8 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 
 internal class SqliteCallback(
     schema: SqlSchema<QueryResult.Value<Unit>>,
-    private val enableWAL: Boolean
+    private val enableWAL: Boolean,
+    private val liteSyncConnectionParams: String? = null
 ) : SupportSQLiteOpenHelper.Callback(schema.version.toInt()) {
     private val baseCallback = AndroidSqliteDriver.Callback(schema)
     override fun onCreate(db: SupportSQLiteDatabase) = baseCallback.onCreate(db)
@@ -43,5 +44,7 @@ internal class SqliteCallback(
         if (enableWAL) {
             db.enableWriteAheadLogging()
         }
+        // LiteSync connection parameters are passed via the database name in AndroidSqliteDriver
+        // The LiteSync native library interprets the parameters when opening the database
     }
 }

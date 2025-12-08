@@ -69,7 +69,11 @@ internal actual class UserSessionScopeProviderImpl(
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         return UserSessionScope(
-            PlatformUserStorageProperties(rootPathsProvider.rootPath, databaseInfo),
+            PlatformUserStorageProperties(
+                rootPath = rootPathsProvider.rootPath,
+                databaseInfo = databaseInfo,
+                liteSyncConfig = kaliumConfigs.liteSyncConfig
+            ),
             userId,
             globalScope,
             globalCallManager,

@@ -40,7 +40,8 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
             userId = userIdEntity,
             passphrase = databasePassphrase,
             dispatcher = KaliumDispatcherImpl.io,
-            enableWAL = true
+            enableWAL = true,
+            liteSyncConnectionParams = platformProperties.liteSyncConfig?.toUriParameters()
         )
         return UserStorage(database, pref)
     }

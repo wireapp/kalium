@@ -43,6 +43,20 @@ fun databaseDriver(
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val inMemory = driverUri == null
+
+    // TODO: LiteSync integration on iOS/macOS requires:
+    // 1. Replace standard SQLite library with LiteSync native framework
+    // 2. Pass litesync connection parameters through DatabaseConfiguration
+    // 3. For now, liteSyncConnectionParams is ignored on iOS
+    // See: https://litesync.io/en/download.html for iOS/macOS binaries
+    if (driverConfiguration.liteSyncConnectionParams != null) {
+        throw NotImplementedError(
+            "LiteSync is not yet implemented on iOS/macOS. " +
+            "LiteSync requires replacing the native SQLite library with LiteSync binaries. " +
+            "See https://litesync.io/en/download.html for iOS/macOS support."
+        )
+    }
+
     val configuration = DatabaseConfiguration(
         name = dbName,
         version = schema.version.toInt(),

@@ -54,6 +54,9 @@ data class KaliumConfigs(
     val isMlsResetEnabled: Boolean = false,
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
+    // LiteSync database synchronization configuration. When set, SQLite will synchronize with a LiteSync primary node.
+    // If null, standard SQLite will be used without synchronization.
+    val liteSyncConfig: LiteSyncConfig? = null,
 )
 
 sealed interface BuildFileRestrictionState {

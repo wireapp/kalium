@@ -123,13 +123,15 @@ value class WriteDispatcher(val value: CoroutineDispatcher)
  * @param passphrase The passphrase used to encrypt the database
  * @param dispatcher The dispatcher used to perform database operations
  * @param enableWAL Whether to enable WAL mode for the database https://www.sqlite.org/wal.html
+ * @param liteSyncConnectionParams Optional LiteSync connection parameters (e.g., "node=secondary&connect=tcp://server:1234")
  **/
 expect fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean = true
+    enableWAL: Boolean = true,
+    liteSyncConnectionParams: String? = null
 ): UserDatabaseBuilder
 
 internal expect fun userDatabaseDriverByPath(

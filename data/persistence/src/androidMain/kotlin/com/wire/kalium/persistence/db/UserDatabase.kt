@@ -39,7 +39,8 @@ actual fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    liteSyncConnectionParams: String?
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
     val isEncryptionEnabled = passphrase != null
@@ -50,6 +51,7 @@ actual fun userDatabaseBuilder(
         schema = UserDatabase.Schema
     ) {
         isWALEnabled = enableWAL
+        this.liteSyncConnectionParams = liteSyncConnectionParams
     }
     return UserDatabaseBuilder(
         userId = userId,

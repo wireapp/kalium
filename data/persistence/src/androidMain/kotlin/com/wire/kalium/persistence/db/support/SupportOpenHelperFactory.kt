@@ -9,7 +9,8 @@ class SupportOpenHelperFactory(
     private val password: ByteArray?,
     private val enableWriteAheadLogging: Boolean = false,
     private val hook: SQLiteDatabaseHook? = null,
-    private val minimumSupportedDatabaseVersion: Int = 1
+    private val minimumSupportedDatabaseVersion: Int = 1,
+    private val liteSyncConnectionParams: String? = null
 ) : SupportSQLiteOpenHelper.Factory {
     override fun create(configuration: SupportSQLiteOpenHelper.Configuration): SupportSQLiteOpenHelper =
         object : SQLiteOpenHelper(

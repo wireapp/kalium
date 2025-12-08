@@ -15,15 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.featureFlags
 
-package com.wire.kalium.logic.di
-
-import android.content.Context
-import com.wire.kalium.logic.featureFlags.LiteSyncConfig
-import com.wire.kalium.logic.util.SecurityHelper
-
-actual class PlatformUserStorageProperties internal constructor(
-    val applicationContext: Context,
-    internal val securityHelper: SecurityHelper,
-    val liteSyncConfig: LiteSyncConfig? = null
-)
+/**
+ * Android implementation of LiteSyncConfig.fromEnvironment()
+ * Android typically doesn't use environment variables for app configuration.
+ * Use KaliumConfigs.liteSyncConfig to configure LiteSync on Android instead.
+ */
+actual fun liteSyncConfigFromEnvironment(): LiteSyncConfig? {
+    // Android apps don't typically use environment variables
+    // Configuration should be done via KaliumConfigs
+    return null
+}

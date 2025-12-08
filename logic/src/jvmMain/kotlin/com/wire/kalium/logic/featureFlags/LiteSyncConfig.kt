@@ -15,15 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.featureFlags
 
-package com.wire.kalium.logic.di
-
-import android.content.Context
-import com.wire.kalium.logic.featureFlags.LiteSyncConfig
-import com.wire.kalium.logic.util.SecurityHelper
-
-actual class PlatformUserStorageProperties internal constructor(
-    val applicationContext: Context,
-    internal val securityHelper: SecurityHelper,
-    val liteSyncConfig: LiteSyncConfig? = null
-)
+/**
+ * JVM implementation of LiteSyncConfig.fromEnvironment()
+ * Reads the KALIUM_LITESYNC_PRIMARY environment variable
+ */
+actual fun liteSyncConfigFromEnvironment(): LiteSyncConfig? {
+    val primaryAddress = System.getenv(LiteSyncConfig.ENV_LITESYNC_PRIMARY)
+    return if (primaryAddress != null && primaryAddress.isNotBlank()) {
+        LiteSyncConfig(
+            primaryAddress = primaryAddress,
+            nodeType = LiteSyncConfig.NodeType.SECONDARY
+        )
+    } else {
+        null
+    }
+}

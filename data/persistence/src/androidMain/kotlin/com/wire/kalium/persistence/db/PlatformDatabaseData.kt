@@ -44,20 +44,49 @@ fun databaseDriver(
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val enableWAL = driverConfiguration.isWALEnabled
+    val liteSyncParams = driverConfiguration.liteSyncConnectionParams
+
+    // Construct database name with LiteSync parameters if configured
+    // LiteSync on Android works by appending connection parameters to the database path
+    // Format: "dbname.db?node=secondary&connect=tcp://server:port"
+    val finalDbName = if (liteSyncParams != null) {
+        "$dbName?$liteSyncParams"
+    } else {
+        dbName
+    }
+
     return if (passphrase != null) {
-        System.loadLibrary("sqlcipher")
+        // For encrypted databases with LiteSync
+        if (liteSyncParams != null) {
+            // Load LiteSync library instead of standard sqlcipher
+            // Note: You must replace "sqlcipher" with "litesync" if using LiteSync with encryption
+            // The LiteSync library must be built with encryption support
+            System.loadLibrary("sqlcipher") // Replace with "litesync" if using LiteSync build
+        } else {
+            System.loadLibrary("sqlcipher")
+        }
         AndroidSqliteDriver(
             schema = schema,
             context = context,
-            name = dbName,
-            factory = SupportOpenHelperFactory(passphrase, enableWAL),
+            name = finalDbName,
+            factory = SupportOpenHelperFactory(
+                password = passphrase,
+                enableWriteAheadLogging = enableWAL,
+                liteSyncConnectionParams = liteSyncParams
+            ),
         )
     } else {
+        // For non-encrypted databases with LiteSync
+        if (liteSyncParams != null) {
+            // Load LiteSync library instead of standard SQLite
+            // Note: You must include the LiteSync native library (.so files) in your app
+            System.loadLibrary("sqlite3") // This should be the LiteSync-enabled sqlite3 library
+        }
         AndroidSqliteDriver(
             schema = schema,
             context = context,
-            name = dbName,
-            callback = SqliteCallback(schema, enableWAL),
+            name = finalDbName,
+            callback = SqliteCallback(schema, enableWAL, liteSyncParams),
         )
     }
 }

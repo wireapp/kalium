@@ -34,7 +34,8 @@ actual fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    liteSyncConnectionParams: String?
 ): UserDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
@@ -56,6 +57,7 @@ actual fun userDatabaseBuilder(
     val driver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
+        this.liteSyncConnectionParams = liteSyncConnectionParams
     }
 
     if (!databaseExists) {
