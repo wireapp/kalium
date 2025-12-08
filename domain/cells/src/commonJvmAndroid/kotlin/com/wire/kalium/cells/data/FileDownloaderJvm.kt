@@ -32,7 +32,6 @@ internal actual fun fileDownloader(
     httpClient: HttpClient
 ): FileDownloader = FileDownloaderJvm(httpClient)
 
-
 public class FileDownloaderJvm(
     private val httpClient: HttpClient
 ) : FileDownloader {
