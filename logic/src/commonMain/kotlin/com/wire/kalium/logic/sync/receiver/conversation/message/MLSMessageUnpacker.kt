@@ -42,9 +42,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
 
 @Mockable
@@ -141,7 +141,7 @@ internal class MLSMessageUnpackerImpl(
                         "groupID" to groupID.toLogString()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, messageEvent.content.decodeBase64Bytes(), groupID)
+                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
@@ -153,7 +153,7 @@ internal class MLSMessageUnpackerImpl(
                         "protocolInfo" to protocolInfo.toLogMap()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
+                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), protocolInfo.groupId)
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }

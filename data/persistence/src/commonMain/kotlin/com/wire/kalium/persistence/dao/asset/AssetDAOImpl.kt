@@ -54,14 +54,16 @@ class AssetDAOImpl internal constructor(
 ) : AssetDAO {
 
     // TODO(federation): support the case where domain is null
-    override suspend fun insertAsset(assetEntity: AssetEntity) = withContext(writeDispatcher.value) {
-        queries.insertAsset(
-            assetEntity.key,
-            assetEntity.domain.orEmpty(),
-            assetEntity.dataPath,
-            assetEntity.dataSize,
-            assetEntity.downloadedDate
-        )
+    override suspend fun insertAsset(assetEntity: AssetEntity) {
+        withContext(writeDispatcher.value) {
+            queries.insertAsset(
+                assetEntity.key,
+                assetEntity.domain.orEmpty(),
+                assetEntity.dataPath,
+                assetEntity.dataSize,
+                assetEntity.downloadedDate
+            )
+        }
     }
 
     override suspend fun insertAssets(assetsEntity: List<AssetEntity>) = withContext(writeDispatcher.value) {
@@ -85,17 +87,21 @@ class AssetDAOImpl internal constructor(
             .mapToOneOrNull()
     }
 
-    override suspend fun updateAsset(assetEntity: AssetEntity) = withContext(writeDispatcher.value) {
-        queries.updateAsset(
-            assetEntity.downloadedDate,
-            assetEntity.dataPath,
-            assetEntity.dataSize,
-            assetEntity.key
-        )
+    override suspend fun updateAsset(assetEntity: AssetEntity) {
+        withContext(writeDispatcher.value) {
+            queries.updateAsset(
+                assetEntity.downloadedDate,
+                assetEntity.dataPath,
+                assetEntity.dataSize,
+                assetEntity.key
+            )
+        }
     }
 
-    override suspend fun deleteAsset(key: String) = withContext(writeDispatcher.value) {
-        queries.deleteAsset(key)
+    override suspend fun deleteAsset(key: String) {
+        withContext(writeDispatcher.value) {
+            queries.deleteAsset(key)
+        }
     }
 
     override suspend fun getAssets(): List<AssetEntity> = withContext(readDispatcher.value) {

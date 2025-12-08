@@ -26,7 +26,7 @@ import com.wire.kalium.common.functional.onSuccess
  * Creates password for public link with given UUID.
  * Also saves password in local database.
  */
-public interface CreatePublicLinkPasswordUseCase {
+public fun interface CreatePublicLinkPasswordUseCase {
     public suspend operator fun invoke(linkUuid: String, password: String): Either<CoreFailure, Unit>
 }
 

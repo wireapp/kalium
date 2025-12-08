@@ -34,7 +34,16 @@ interface MessageAttachmentsDao {
     suspend fun setPreviewUrl(assetId: String, previewUrl: String?)
     suspend fun setTransferStatus(assetId: String, status: String)
     suspend fun getAttachment(assetId: String): MessageAttachmentEntity
-    suspend fun updateAttachment(assetId: String, url: String?, urlExpiresAt: Long?, hash: String?, remotePath: String)
+
+    @Suppress("LongParameterList")
+    suspend fun updateAttachment(
+        assetId: String,
+        url: String?,
+        urlExpiresAt: Long?,
+        hash: String?,
+        remotePath: String,
+        isEditSupported: Boolean,
+    )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
     suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
@@ -64,37 +73,53 @@ internal class MessageAttachmentsDaoImpl(
         queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
     }
 
-    override suspend fun updateAttachment(assetId: String, url: String?, urlExpiresAt: Long?, hash: String?, remotePath: String) =
+    override suspend fun updateAttachment(
+        assetId: String,
+        url: String?,
+        urlExpiresAt: Long?,
+        hash: String?,
+        remotePath: String,
+        isEditSupported: Boolean,
+    ) {
         withContext(writeDispatcher.value) {
-            queries.updateAttachment(url, urlExpiresAt, hash, remotePath, assetId)
+            queries.updateAttachment(url, urlExpiresAt, hash, remotePath, isEditSupported, assetId)
         }
+    }
 
     override suspend fun getAssetPath(assetId: String): String? = withContext(readDispatcher.value) {
         queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
     }
 
-    override suspend fun setAssetPath(assetId: String, path: String) = withContext(writeDispatcher.value) {
-        queries.setAssetPath(asset_id = assetId, asset_path = path)
+    override suspend fun setAssetPath(assetId: String, path: String) {
+        withContext(writeDispatcher.value) {
+            queries.setAssetPath(asset_id = assetId, asset_path = path)
+        }
     }
 
-    override suspend fun setLocalPath(assetId: String, path: String?) = withContext(writeDispatcher.value) {
-        queries.setLocalPath(
-            local_path = path,
-            asset_id = assetId
-        )
+    override suspend fun setLocalPath(assetId: String, path: String?) {
+        withContext(writeDispatcher.value) {
+            queries.setLocalPath(
+                local_path = path,
+                asset_id = assetId
+            )
+        }
     }
 
-    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) = withContext(writeDispatcher.value) {
-        queries.setPreviewUrl(
-            preview_url = previewUrl,
-            asset_id = assetId
-        )
+    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) {
+        withContext(writeDispatcher.value) {
+            queries.setPreviewUrl(
+                preview_url = previewUrl,
+                asset_id = assetId
+            )
+        }
     }
 
-    override suspend fun setTransferStatus(assetId: String, status: String) = withContext(writeDispatcher.value) {
-        queries.setTransferStatus(
-            asset_transfer_status = status,
-            asset_id = assetId
-        )
+    override suspend fun setTransferStatus(assetId: String, status: String) {
+        withContext(writeDispatcher.value) {
+            queries.setTransferStatus(
+                asset_transfer_status = status,
+                asset_id = assetId
+            )
+        }
     }
 }

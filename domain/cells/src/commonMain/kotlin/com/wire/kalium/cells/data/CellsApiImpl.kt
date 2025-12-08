@@ -19,7 +19,9 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
+import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
+import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -44,6 +46,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdate
 import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdateOp
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeUpdates
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
@@ -64,15 +67,24 @@ internal class CellsApiImpl(
     private val nodeServiceApi: NodeServiceApi,
 ) : CellsApi {
 
+    @Suppress("MagicNumber")
     private companion object {
         private const val AWAIT_TIMEOUT = "5s"
         const val TAGS_METADATA = "usermeta-tags"
+
+        private fun Long.toClientTime() = this * 1000
+        private fun Long.toServerTime() = this / 1000
     }
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
         wrapCellsResponse {
             nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
+
+    override suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String> =
+        wrapCellsResponse {
+            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
+        }.mapSuccess { response -> response.editorUrl(urlKey) ?: "" }
 
     override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
@@ -197,7 +209,7 @@ internal class CellsApiImpl(
             PublicLink(
                 uuid = response.uuid ?: return networkError("UUID is null"),
                 url = response.linkUrl ?: return networkError("Link URL not found"),
-                expiresAt = response.accessEnd,
+                expiresAt = response.accessEnd?.toLongOrNull()?.toClientTime(),
                 passwordRequired = response.passwordRequired ?: false,
             )
         }
@@ -275,6 +287,21 @@ internal class CellsApiImpl(
                             passwordRequired = false
                         ),
                         passwordEnabled = false,
+                    )
+                )
+            }
+        }
+
+    override suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit> =
+        withPublicLink(linkUuid) { link ->
+            wrapCellsResponse {
+                nodeServiceApi.updatePublicLink(
+                    linkUuid = linkUuid,
+                    publicLinkRequest = RestPublicLinkRequest(
+                        link = link.copy(
+                            accessEnd = expireAt?.toServerTime()?.toString()
+                        ),
+                        passwordEnabled = link.passwordRequired,
                     )
                 )
             }
@@ -386,6 +413,30 @@ internal class CellsApiImpl(
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
         nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA)
     }.mapSuccess { it.propertyValues ?: emptyList() }
+
+    override suspend fun getNodeVersions(
+        uuid: String,
+        query: RestNodeVersionsFilter
+    ): NetworkResponse<List<NodeVersionDTO>> = wrapCellsResponse {
+        nodeServiceApi.nodeVersions(
+            uuid = uuid,
+            query = query
+        )
+    }.mapSuccess { collection ->
+        collection.versions?.map { it.toDto() } ?: emptyList()
+    }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.promoteVersion(
+            uuid = uuid,
+            versionId = versionId,
+            parameters = restPromoteParameters
+        )
+    }.mapSuccess {}
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))

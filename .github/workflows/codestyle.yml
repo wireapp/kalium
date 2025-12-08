@@ -1,13 +1,13 @@
 name: "Check Codestyle"
 
-on: [workflow_call]
+on: [ workflow_call ]
 
 jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -16,7 +16,7 @@ jobs:
 
       - name: Run Detekt
         run: |
-            make detekt/run-verify
+          ./gradlew clean detekt
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.

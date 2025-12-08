@@ -41,8 +41,8 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.util.Base64
 import io.mockative.Mockable
+import kotlin.io.encoding.Base64
 
 @Mockable
 internal interface ProteusMessageUnpacker {
@@ -68,7 +68,7 @@ internal class ProteusMessageUnpackerImpl(
         event: Event.Conversation.NewMessage,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
     ): Either<CoreFailure, T> {
-        val decodedContentBytes = Base64.decodeFromBase64(event.content)
+        val decodedContentBytes = Base64.decode(event.content)
         val cryptoSessionId = CryptoSessionId(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),
             CryptoClientId(event.senderClientId.value)
