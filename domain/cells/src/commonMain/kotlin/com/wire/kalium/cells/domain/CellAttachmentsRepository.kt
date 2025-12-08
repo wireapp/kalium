@@ -31,12 +31,15 @@ internal interface CellAttachmentsRepository {
     suspend fun getAttachment(assetId: String): Either<StorageFailure, MessageAttachment>
     suspend fun savePreviewUrl(assetId: String, url: String?): Either<StorageFailure, Unit>
     suspend fun saveLocalPath(assetId: String, path: String?): Either<StorageFailure, Unit>
+
+    @Suppress("LongParameterList")
     suspend fun updateAttachment(
         assetId: String,
         contentUrl: String?,
         contentUrlExpiresAt: Long?,
         hash: String?,
-        remotePath: String
+        remotePath: String,
+        isEditSupported: Boolean,
     ): Either<StorageFailure, Unit>
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
     suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>

@@ -167,6 +167,31 @@ ORDER BY
 LIMIT :limit
 OFFSET :offset;
 
+countConversations:
+SELECT COUNT(*)
+FROM Conversation
+WHERE
+    type IS NOT 'SELF'
+    AND CASE
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
+        ELSE 1 = 0
+    END
+    AND archived = :fromArchive
+    AND deleted_locally = 0
+    AND (
+        protocol IN ('PROTEUS','MIXED')
+        OR (
+            protocol = 'MLS'
+            AND (
+                :strict_mls = 0
+                OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET')
+            )
+        )
+    );
+
 countConversationDetailsWithEvents:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE

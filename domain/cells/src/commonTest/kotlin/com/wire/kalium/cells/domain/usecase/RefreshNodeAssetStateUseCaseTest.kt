@@ -159,7 +159,8 @@ class RefreshNodeAssetStateUseCaseTest {
                 testNode.contentUrl,
                 testNode.contentUrlExpiresAt,
                 testNode.contentHash,
-                testNode.path
+                testNode.path,
+                testNode.supportedEditors.isNotEmpty()
             )
         }.wasInvoked(once)
     }
@@ -507,7 +508,7 @@ class RefreshNodeAssetStateUseCaseTest {
             coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
             coEvery { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
             coEvery { attachmentsRepository.savePreviewUrl(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any()) }.returns(Unit.right())
+            coEvery { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to RefreshCellAssetStateUseCaseImpl(
                 cellsRepository = cellsRepository,

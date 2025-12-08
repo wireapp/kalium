@@ -34,7 +34,16 @@ interface MessageAttachmentsDao {
     suspend fun setPreviewUrl(assetId: String, previewUrl: String?)
     suspend fun setTransferStatus(assetId: String, status: String)
     suspend fun getAttachment(assetId: String): MessageAttachmentEntity
-    suspend fun updateAttachment(assetId: String, url: String?, urlExpiresAt: Long?, hash: String?, remotePath: String)
+
+    @Suppress("LongParameterList")
+    suspend fun updateAttachment(
+        assetId: String,
+        url: String?,
+        urlExpiresAt: Long?,
+        hash: String?,
+        remotePath: String,
+        isEditSupported: Boolean,
+    )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
     suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
@@ -64,9 +73,16 @@ internal class MessageAttachmentsDaoImpl(
         queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
     }
 
-    override suspend fun updateAttachment(assetId: String, url: String?, urlExpiresAt: Long?, hash: String?, remotePath: String) {
+    override suspend fun updateAttachment(
+        assetId: String,
+        url: String?,
+        urlExpiresAt: Long?,
+        hash: String?,
+        remotePath: String,
+        isEditSupported: Boolean,
+    ) {
         withContext(writeDispatcher.value) {
-            queries.updateAttachment(url, urlExpiresAt, hash, remotePath, assetId)
+            queries.updateAttachment(url, urlExpiresAt, hash, remotePath, isEditSupported, assetId)
         }
     }
 

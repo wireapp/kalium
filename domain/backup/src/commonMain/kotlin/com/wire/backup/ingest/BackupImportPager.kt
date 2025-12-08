@@ -19,6 +19,7 @@ package com.wire.backup.ingest
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
 import com.wire.kalium.protobuf.backup.BackupData
@@ -33,6 +34,7 @@ public interface ImportResultPager : Closeable {
     public val conversationsPager: ImportDataPager<BackupConversation>
     public val messagesPager: ImportDataPager<BackupMessage>
     public val usersPager: ImportDataPager<BackupUser>
+    public val reactionsPager: ImportDataPager<BackupReaction>
 }
 
 @JsExport
@@ -50,6 +52,10 @@ public class BackupImportPager internal constructor(private val entries: List<Ba
 
     public override val usersPager: UserPager by lazy {
         UserPager(entries.filter { it.name.startsWith(BackupPage.USERS_PREFIX) })
+    }
+
+    public override val reactionsPager: ReactionPager by lazy {
+        ReactionPager(entries.filter { it.name.startsWith(BackupPage.REACTIONS_PREFIX) })
     }
 
     override fun close() {
@@ -123,6 +129,13 @@ public class UserPager internal constructor(entries: List<BackupPage>) : BackupI
 public class MessagePager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupMessage>(entries) {
     override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupMessage> {
         return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).messages
+    }
+}
+
+@JsExport
+public class ReactionPager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupReaction>(entries) {
+    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupReaction> {
+        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).reactions
     }
 }
 

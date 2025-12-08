@@ -91,22 +91,12 @@ internal class GetPaginatedNodesUseCaseImpl(
                                     metadata = attachment?.metadata,
                                     userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
                                     conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                                    isEditSupported = isEditSupported(node.path)
+                                    isEditSupported = node.supportedEditors.isNotEmpty(),
                                 )
                             }
                         }.toList(),
                     pagination = nodes.pagination
                 )
             }
-    }
-
-    // TODO: remove when server returns the flag
-    // Temporary hardcoding the supported file types
-    private fun isEditSupported(path: String): Boolean {
-        val extension = path.substringAfterLast('.', "").lowercase()
-        return when {
-            extension in listOf("odf", "docx", "xlsx", "pptx") -> true
-            else -> false
-        }
     }
 }

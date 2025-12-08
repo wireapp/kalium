@@ -199,9 +199,23 @@ class FakeCellsRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String
+    ): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> {
         requestedUuid = uuid
         invocationCount++
         return result
+    }
+
+    override suspend fun getEditorUrl(
+        nodeUuid: String,
+        urlKey: String
+    ): Either<NetworkFailure, String> {
+        TODO("Not yet implemented")
     }
 }

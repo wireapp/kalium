@@ -303,4 +303,17 @@ internal class CellsDataSource internal constructor(
             cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection -> collection.map { it.toModel() } }
         }
     }
+
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
+        cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
+    }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String
+    ): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.restoreNodeVersion(uuid, versionId)
+        }
+    }
 }

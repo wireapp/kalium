@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
+import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -79,6 +80,11 @@ internal class CellsApiImpl(
         wrapCellsResponse {
             nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
+
+    override suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String> =
+        wrapCellsResponse {
+            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
+        }.mapSuccess { response -> response.editorUrl(urlKey) ?: "" }
 
     override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
@@ -295,6 +301,7 @@ internal class CellsApiImpl(
                         link = link.copy(
                             accessEnd = expireAt?.toServerTime()?.toString()
                         ),
+                        passwordEnabled = link.passwordRequired,
                     )
                 )
             }
@@ -418,6 +425,18 @@ internal class CellsApiImpl(
     }.mapSuccess { collection ->
         collection.versions?.map { it.toDto() } ?: emptyList()
     }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.promoteVersion(
+            uuid = uuid,
+            versionId = versionId,
+            parameters = restPromoteParameters
+        )
+    }.mapSuccess {}
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
