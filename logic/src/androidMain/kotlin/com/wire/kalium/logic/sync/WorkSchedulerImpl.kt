@@ -121,6 +121,39 @@ internal actual class UserSessionWorkSchedulerImpl(
                 }
         }
     }
+
+    actual override fun schedulePeriodicSyncOutboxProcessing() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val workRequest = PeriodicWorkRequest.Builder(
+            workerClass,
+            SYNC_OUTBOX_REPEAT_INTERVAL, TimeUnit.MINUTES,
+            SYNC_OUTBOX_FLEX_INTERVAL, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .setInputData(WrapperWorkerFactory.workData(SyncOutboxWorker::class, userId))
+            .build()
+
+        WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+            SyncOutboxWorker.NAME_PREFIX + userId.value,
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
+    }
+
+    actual override fun scheduleImmediateSyncOutboxProcessing() {
+        WorkManager.getInstance(appContext).enqueueUniqueWork(
+            SyncOutboxWorker.NAME_PREFIX + userId.value + "-immediate",
+            ExistingWorkPolicy.APPEND,
+            buildConnectedOneTimeWorkRequest(SyncOutboxWorker::class, userId)
+        )
+    }
+
+    actual override fun cancelScheduledSyncOutboxProcessing() {
+        WorkManager.getInstance(appContext).cancelUniqueWork(SyncOutboxWorker.NAME_PREFIX + userId.value)
+    }
 }
 
 private fun buildConnectedPeriodicWorkRequest(
@@ -181,4 +214,6 @@ private fun generateExecutionTime() =
 private const val HOUR_OF_EXECUTION = 4 // schedule at 4AM
 private const val EXECUTION_DEVIATION_IN_MINUTES = 60 // allow +/- 60 minutes deviation from the scheduled time
 private const val REPEAT_INTERVAL: Long = 24 // execute every 24 hours
+private const val SYNC_OUTBOX_REPEAT_INTERVAL: Long = 15 // execute every 15 minutes
+private const val SYNC_OUTBOX_FLEX_INTERVAL: Long = 5 // 5-minute flex interval for battery optimization
 private val workerClass = WrapperWorker::class.java

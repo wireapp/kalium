@@ -35,7 +35,7 @@ interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
 }
 
 @Mockable
-interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler {
+interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler, SyncOutboxScheduler {
     val scope: UserSessionScope
 }
 
@@ -54,4 +54,7 @@ internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
     override fun cancelScheduledSendingOfPendingMessages()
     override fun schedulePeriodicUserConfigSync()
     override fun resetBackoffForPeriodicUserConfigSync()
+    override fun schedulePeriodicSyncOutboxProcessing()
+    override fun scheduleImmediateSyncOutboxProcessing()
+    override fun cancelScheduledSyncOutboxProcessing()
 }

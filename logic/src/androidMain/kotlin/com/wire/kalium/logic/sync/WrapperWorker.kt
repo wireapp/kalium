@@ -108,6 +108,8 @@ class WrapperWorkerFactory(
 
             UserConfigSyncWorker::class.java.canonicalName -> withSessionScope(userId) { it.userConfigSyncWorker }
 
+            SyncOutboxWorker::class.java.canonicalName -> withSessionScope(userId) { it.syncOutboxWorker }
+
             UpdateApiVersionsWorker::class.java.canonicalName -> coreLogic.getGlobalScope().updateApiVersionsWorker
 
             else -> {
