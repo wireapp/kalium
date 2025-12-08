@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.api
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.api.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.api.feature.user.GetSelfUserUseCaseImpl
 import com.wire.kalium.logic.api.feature.user.ObserveSelfUserUseCase
 import com.wire.kalium.logic.api.feature.user.ObserveSelfUserUseCaseImpl
 import com.wire.kalium.logic.data.user.UserId
@@ -30,8 +32,12 @@ public class KaliumApiScope internal constructor(
     private val coreLogic: CoreLogic,
     internal val userId: UserId
 ) {
-    // TODO: Add delegating use cases here, e.g.,
+    // TODO: Add delegating use cases here
     public val observeSelfUser: ObserveSelfUserUseCase by lazy {
         ObserveSelfUserUseCaseImpl(coreLogic.getSessionScope(userId).users.observeSelfUser)
+    }
+
+    public val getSelfUser: GetSelfUserUseCase by lazy {
+        GetSelfUserUseCaseImpl(coreLogic.getSessionScope(userId).users.getSelfUser)
     }
 }
