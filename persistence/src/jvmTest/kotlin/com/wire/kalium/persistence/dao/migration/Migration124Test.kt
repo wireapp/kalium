@@ -33,15 +33,15 @@ import kotlin.test.assertTrue
  * This migration consolidates 10 separate system message content tables into a single table
  * with generic typed columns.
  */
-class Migration120Test : SchemaMigrationTest() {
+class Migration124Test : SchemaMigrationTest() {
 
-    companion object {
+    companion object Companion {
         // Test data constants
         private const val MESSAGE_ID = "test-message-id"
         private const val CONVERSATION_ID = "test-conversation-id"
         private const val USER_ID = "user-id@domain.com"
         private const val USER_ID_2 = "user-id-2@domain.com"
-        private const val MIGRATION_NAME = 120
+        private const val MIGRATION_NAME = 124
     }
 
     /**

@@ -36,10 +36,10 @@ import kotlin.test.AfterTest
  *
  * Usage:
  * ```kotlin
- * class Migration119Test : SchemaMigrationTest() {
+ * class Migration124Test : SchemaMigrationTest() {
  *     @Test
  *     fun testMemberChangeMigration() = runMigrationTest(
- *         schemaVersion = 119,
+ *         schemaVersion = 124,
  *         setupOldSchema = { driver ->
  *             // Insert data into old tables (MessageMemberChangeContent, etc.)
  *             driver.execute(...)
@@ -69,7 +69,7 @@ abstract class SchemaMigrationTest {
     /**
      * Runs a migration test with the specified schema version and test steps.
      *
-     * @param schemaVersion The schema version to test (e.g., 119)
+     * @param schemaVersion The schema version to test (e.g., 124)
      * @param setupOldSchema Lambda to insert test data into the old schema
      * @param migrationSql Lambda that returns the migration SQL to execute
      * @param verifyNewSchema Lambda to verify the migrated data

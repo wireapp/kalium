@@ -612,4 +612,4 @@ Potential enhancements to the framework:
 - **Example Test**: `persistence/src/jvmTest/kotlin/com/wire/kalium/persistence/dao/migration/Migration120Test.kt` - Reference implementation with 19+ test cases
 - **Base Class**: `persistence/src/jvmTest/kotlin/com/wire/kalium/persistence/dao/migration/SchemaMigrationTest.kt` - Framework implementation
 - **Related ADR**: ADR 0002 - Consolidate System Message Content Tables
-- **Migration File**: `persistence/src/commonMain/db_user/migrations/120.sqm` - Actual migration SQL
+- **Migration File**: `persistence/src/commonMain/db_user/migrations/124.sqm` - Actual migration SQL
