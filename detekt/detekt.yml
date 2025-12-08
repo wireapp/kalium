@@ -648,3 +648,8 @@ WireRuleSet:
     DocumentedPublicUseCases:
         active: true # TODO: applied as now incrementally, document retroactively
         excludes: [ '**/build/**', '**/*Test/**' ]
+
+KaliumRuleSet:
+    DaoFlowOnRule:
+        active: true
+        excludes: [ '**/build/**', '**/*Test/**' ]
