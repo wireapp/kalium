@@ -62,9 +62,14 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.HttpRedirect
+import io.ktor.client.plugins.api.ClientPlugin
+import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
+import io.ktor.client.request.header
 import io.ktor.websocket.WebSocketSession
 
 @Suppress("MagicNumber")

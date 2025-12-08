@@ -24,8 +24,10 @@ import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
+import com.wire.kalium.cells.data.FileDownloader
 import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
+import com.wire.kalium.cells.data.fileDownloader
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadManager
@@ -55,8 +57,6 @@ import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
-import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
@@ -115,6 +115,7 @@ import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import okio.FileSystem
@@ -136,6 +137,17 @@ public class CellsScope(
         val userDao: UserDAO,
         val publicLinkDao: PublicLinkDao,
     )
+
+    /**
+     * A dedicated minimalist HttpClient for downloads
+     */
+    public val downloadHttpClient: HttpClient = HttpClient {
+        followRedirects = true
+        install(HttpRedirect) {
+            checkHttpMethod = false
+            allowHttpsDowngrade = false
+        }
+    }
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -202,8 +214,11 @@ public class CellsScope(
     public val observePagedFiles: GetCellFilesPagedUseCase
         get() = GetCellFilesPagedUseCaseImpl(observeFiles)
 
-    public val downloadFile: DownloadCellFileUseCase
+    public val downloadCellFile: DownloadCellFileUseCase
         get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+
+    public val fileDownloader: FileDownloader
+        get() = fileDownloader(httpClient = downloadHttpClient)
 
     public val refreshAsset: RefreshCellAssetStateUseCase
         get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
@@ -291,6 +306,6 @@ public class CellsScope(
         RestoreNodeVersionUseCaseImpl(cellsRepository)
     }
     public val downloadCellVersion: DownloadCellVersionUseCase by lazy {
-        DownloadCellVersionUseCaseImpl(cellsRepository)
+        DownloadCellVersionUseCaseImpl(fileDownloader)
     }
 }

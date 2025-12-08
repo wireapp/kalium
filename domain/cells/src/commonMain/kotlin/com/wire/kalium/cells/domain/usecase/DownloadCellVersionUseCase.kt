@@ -17,17 +17,16 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.data.FileDownloader
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.BufferedSink
-import okio.Path
 
 /**
- * Download a cell version from the wire cell server.
+ * Download a cell version from the wire cell server via presigned url.
  */
 public interface DownloadCellVersionUseCase {
     public suspend operator fun invoke(
@@ -35,19 +34,25 @@ public interface DownloadCellVersionUseCase {
         preSignedUrl: String,
         onProgressUpdate: (Long) -> Unit,
         onCompleted: () -> Unit,
-        ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Unit>
 }
 
 internal class DownloadCellVersionUseCaseImpl internal constructor(
-    private val cellsRepository: CellsRepository,
+    private val fileDownloader: FileDownloader,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : DownloadCellVersionUseCase {
+
     override suspend fun invoke(
         bufferedSink: BufferedSink,
         preSignedUrl: String,
         onProgressUpdate: (Long) -> Unit,
         onCompleted: () -> Unit,
     ) = withContext(dispatchers.io) {
-        cellsRepository.downloadFile(bufferedSink, preSignedUrl, onProgressUpdate, onCompleted)
+        fileDownloader.downloadViaPresignedUrl(
+            presignedUrl = preSignedUrl,
+            outFileSink = bufferedSink,
+            onProgressUpdate = onProgressUpdate,
+            onCompleted = onCompleted
+        )
     }
 }

@@ -45,7 +45,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import okio.BufferedSink
 import okio.FileSystem
 import okio.Path
 import okio.use
@@ -176,18 +175,6 @@ internal class CellsDataSource internal constructor(
         } catch (e: Exception) {
             Either.Left(NetworkFailure.ServerMiscommunication(e))
         }
-
-    override suspend fun downloadFile(
-        bufferedSink: BufferedSink,
-        cellPath: String,
-        onProgressUpdate: (Long) -> Unit,
-        onCompleted: () -> Unit,
-    ) = try {
-        awsClient.downloadViaPresignedUrl(cellPath, bufferedSink, onProgressUpdate, onCompleted)
-        Either.Right(Unit)
-    } catch (e: Exception) {
-        Either.Left(NetworkFailure.ServerMiscommunication(e))
-    }
 
     override suspend fun getPreviews(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {

@@ -17,26 +17,20 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.domain.model.CellsCredentials
-import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.session.SessionManager
-import okio.Path
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import io.ktor.client.HttpClient
 import okio.Sink
 
-internal interface CellsAwsClient {
-    suspend fun download(
-        objectKey: String,
+public interface FileDownloader {
+    public suspend fun downloadViaPresignedUrl(
+        presignedUrl: String,
         outFileSink: Sink,
-        onProgressUpdate: (Long) -> Unit,
-    )
-
-    suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
-    suspend fun getPreSignedUrl(objectKey: String): String
+        onProgressUpdate: (Long) -> Unit = {},
+        onCompleted: () -> Unit = {}
+    ): Either<NetworkFailure, Unit>
 }
 
-internal expect fun cellsAwsClient(
-    credentials: CellsCredentials?,
-    sessionManager: SessionManager,
-    accessTokenApi: AccessTokenApi
-): CellsAwsClient
+internal expect fun fileDownloader(
+    httpClient: HttpClient
+): FileDownloader
