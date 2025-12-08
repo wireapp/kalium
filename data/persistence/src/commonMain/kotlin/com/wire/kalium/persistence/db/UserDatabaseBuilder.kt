@@ -84,6 +84,10 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
+import com.wire.kalium.persistence.dao.sync.SyncOutboxDAO
+import com.wire.kalium.persistence.dao.sync.SyncOutboxDAOImpl
+import com.wire.kalium.persistence.dao.sync.SyncStateDAO
+import com.wire.kalium.persistence.dao.sync.SyncStateDAOImpl
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAOImpl
 import com.wire.kalium.persistence.db.feeders.MentionsFeeder
@@ -384,6 +388,12 @@ class UserDatabaseBuilder internal constructor(
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
+
+    val syncOutboxDAO: SyncOutboxDAO
+        get() = SyncOutboxDAOImpl(database.syncOutboxQueries, readDispatcher, writeDispatcher)
+
+    val syncStateDAO: SyncStateDAO
+        get() = SyncStateDAOImpl(database.syncOutboxQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(
