@@ -40,11 +40,10 @@ public class FileDownloaderJvm(
         presignedUrl: String,
         outFileSink: Sink,
         onProgressUpdate: (Long) -> Unit,
-        onCompleted: () -> Unit,
     ): Either<NetworkFailure, Unit> {
 
         val response = httpClient.get(presignedUrl) {
-            onDownload { bytesSentTotal, contentLength ->
+            onDownload { bytesSentTotal, _ ->
                 onProgressUpdate(bytesSentTotal)
             }
         }
@@ -59,7 +58,6 @@ public class FileDownloaderJvm(
             bufferedSink.flush()
         }
 
-        onCompleted()
         return Either.Right(Unit)
     }
 }

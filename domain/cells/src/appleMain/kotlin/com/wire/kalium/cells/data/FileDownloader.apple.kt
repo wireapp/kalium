@@ -35,6 +35,5 @@ public class FileDownloaderApple(
         presignedUrl: String,
         outFileSink: Sink,
         onProgressUpdate: (Long) -> Unit,
-        onCompleted: () -> Unit,
     ): Either<NetworkFailure, Unit> = Unit.right()
 }

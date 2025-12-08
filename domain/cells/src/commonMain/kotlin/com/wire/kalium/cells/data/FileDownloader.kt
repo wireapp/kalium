@@ -27,7 +27,6 @@ public interface FileDownloader {
         presignedUrl: String,
         outFileSink: Sink,
         onProgressUpdate: (Long) -> Unit = {},
-        onCompleted: () -> Unit = {}
     ): Either<NetworkFailure, Unit>
 }
 

@@ -33,7 +33,6 @@ public interface DownloadCellVersionUseCase {
         bufferedSink: BufferedSink,
         preSignedUrl: String,
         onProgressUpdate: (Long) -> Unit,
-        onCompleted: () -> Unit,
     ): Either<CoreFailure, Unit>
 }
 
@@ -46,13 +45,11 @@ internal class DownloadCellVersionUseCaseImpl internal constructor(
         bufferedSink: BufferedSink,
         preSignedUrl: String,
         onProgressUpdate: (Long) -> Unit,
-        onCompleted: () -> Unit,
     ) = withContext(dispatchers.io) {
         fileDownloader.downloadViaPresignedUrl(
             presignedUrl = preSignedUrl,
             outFileSink = bufferedSink,
             onProgressUpdate = onProgressUpdate,
-            onCompleted = onCompleted
         )
     }
 }
