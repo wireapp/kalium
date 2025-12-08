@@ -41,15 +41,6 @@ private class CellsAwsClientApple(
         // Not implemented for iOS
     }
 
-    override suspend fun downloadViaPresignedUrl(
-        objectKey: String,
-        outFileSink: Sink,
-        onProgressUpdate: (Long) -> Unit,
-        onCompleted: () -> Unit,
-    ) {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
         // Not implemented for iOS
     }
