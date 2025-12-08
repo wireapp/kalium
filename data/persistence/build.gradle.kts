@@ -90,7 +90,11 @@ kotlin {
                 implementation(libs.sqlite.xerialDriver)
             }
         }
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.difference.jvm)
+            }
+        }
         val jsMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jsDriver)

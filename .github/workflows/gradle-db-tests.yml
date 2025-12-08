@@ -13,20 +13,31 @@ jobs:
   detekt:
     uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
-    needs: [detekt]
-    runs-on: ubuntu-22.04
-    # When new version of sqldelight will be available
-    # try to use a latest Ubuntu machine with JDK 17 and caching
-    container: wirebot/cryptobox:1.4.0
+    needs: [ detekt ]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      # Probably redundant since this is part of the test suite, leaving as a separate step for clarity and artifacting purposes.
       - name: Verify DB Migrations
+        env:
+          GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g"
         run: |
-          make db/verify-all-migrations
+          ./gradlew :data:persistence:jvmTest --tests com.wire.kalium.persistence.migrations.VerifyDatabaseMigrationsTest
+
+      - name: Archive DB test artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: db-test-artifacts
+          path: |
+            ./**/build/*schema-dumps/**/*.json
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.

@@ -196,17 +196,19 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateUser(update: PartialUserEntity) = withContext(writeDispatcher.value) {
-        userQueries.updateUser(
-            name = update.name,
-            handle = update.handle,
-            email = update.email,
-            accent_id = update.accentId?.toLong(),
-            preview_asset_id = update.previewAssetId,
-            complete_asset_id = update.completeAssetId,
-            supported_protocols = update.supportedProtocols,
-            update.id
-        )
+    override suspend fun updateUser(update: PartialUserEntity) {
+        withContext(writeDispatcher.value) {
+            userQueries.updateUser(
+                name = update.name,
+                handle = update.handle,
+                email = update.email,
+                accent_id = update.accentId?.toLong(),
+                preview_asset_id = update.previewAssetId,
+                complete_asset_id = update.completeAssetId,
+                supported_protocols = update.supportedProtocols,
+                update.id
+            )
+        }
     }
 
     override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(writeDispatcher.value) {
@@ -343,8 +345,10 @@ class UserDAOImpl internal constructor(
         userQueries.selectUsersWithOneOnOne().executeAsList().map(mapper::toModel)
     }
 
-    override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        userQueries.deleteUser(qualifiedID)
+    override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            userQueries.deleteUser(qualifiedID)
+        }
     }
 
     override suspend fun markUserAsDeletedAndRemoveFromGroupConv(
@@ -387,14 +391,17 @@ class UserDAOImpl internal constructor(
         userQueries.markUserAsDefederated(qualifiedID)
     }
 
-    override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) = withContext(writeDispatcher.value) {
-        userQueries.updateUserhandle(handle, qualifiedID)
+    override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
+        withContext(writeDispatcher.value) {
+            userQueries.updateUserhandle(handle, qualifiedID)
+        }
     }
 
-    override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) =
+    override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) {
         withContext(writeDispatcher.value) {
             userQueries.updateUserAvailabilityStatus(status, qualifiedID)
         }
+    }
 
     override fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
@@ -432,10 +439,11 @@ class UserDAOImpl internal constructor(
             }
         }
 
-    override suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String) =
+    override suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String) {
         withContext(writeDispatcher.value) {
             userQueries.insertOrIgnoreUserIdWithEmail(userId, email)
         }
+    }
 
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
@@ -450,8 +458,10 @@ class UserDAOImpl internal constructor(
             .map(mapper::toDetailsModel)
     }
 
-    override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(writeDispatcher.value) {
-        userQueries.updateUserDisplayName(displayName, selfUserId)
+    override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) {
+        withContext(writeDispatcher.value) {
+            userQueries.updateUserDisplayName(displayName, selfUserId)
+        }
     }
 
     override suspend fun updateUserAccentColor(selfUserId: QualifiedIDEntity, accentId: Int) {
@@ -472,21 +482,25 @@ class UserDAOImpl internal constructor(
         userQueries.userIdsWithoutSelf().executeAsList()
     }
 
-    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
+    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) {
         withContext(writeDispatcher.value) {
             userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
         }
+    }
 
-    override suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) =
+    override suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
+    }
 
     override suspend fun updateActiveOneOnOneConversationIfNotSet(
         userId: QualifiedIDEntity,
         conversationId: QualifiedIDEntity,
-    ) = withContext(writeDispatcher.value) {
-        userQueries.setOneOnOneConversationIdIfNotSet(conversationId, userId)
+    ) {
+        withContext(writeDispatcher.value) {
+            userQueries.setOneOnOneConversationIdIfNotSet(conversationId, userId)
+        }
     }
 
     override suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>) {

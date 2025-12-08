@@ -20,6 +20,7 @@ package samples.backup
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.ingest.BackupImportResult
 
@@ -28,6 +29,7 @@ abstract class BackupSamples {
     fun getMessagesFromDatabase(): List<BackupMessage> = TODO()
     fun getUsersFromDatabase(): List<BackupUser> = TODO()
     fun getConversationsFromDatabase(): List<BackupConversation> = TODO()
+    fun getReactionsFromDatabase(): List<BackupReaction> = TODO()
     fun updateProgress(totalPages: Int, currentPage: Int): Unit = TODO()
 
     fun commonImport(importResult: BackupImportResult) {
@@ -65,6 +67,14 @@ abstract class BackupSamples {
                     val messages = importPager.messagesPager.nextPage()
                     messages.forEach { message ->
                         TODO("Map each message and insert into local Database")
+                    }
+                }
+
+                while (importPager.reactionsPager.hasMorePages()) {
+                    updateProgress(totalPages, ++processedPages)
+                    val reactions = importPager.reactionsPager.nextPage()
+                    reactions.forEach { reaction ->
+                        TODO("Map each reaction and insert into local Database")
                     }
                 }
 

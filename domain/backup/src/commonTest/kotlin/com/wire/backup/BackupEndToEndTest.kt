@@ -20,6 +20,8 @@ package com.wire.backup
 import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupReaction
+import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
@@ -48,12 +50,12 @@ class BackupEndToEndTest {
 
     @Test
     fun givenBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!"))
+        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION)))
     }
 
     @Test
     fun givenEncryptedBackedUpTextMessages_whenRestoring_thenShouldReadTheSameContent() = runTest {
-        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!"), "somePassword")
+        shouldBackupAndRestoreSameContent(BackupMessageContent.Text("Hello from the backup!", listOf(TEST_MENTION)), "somePassword")
     }
 
     @Test
@@ -98,7 +100,7 @@ class BackupEndToEndTest {
                     senderUserId = BackupQualifiedId("senderId", "domain"),
                     senderClientId = "clientId",
                     creationDate = BackupDateTime(0L),
-                    content = BackupMessageContent.Text("test")
+                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION))
                 )
             )
         }
@@ -116,12 +118,43 @@ class BackupEndToEndTest {
                     senderUserId = BackupQualifiedId("senderId", "domain"),
                     senderClientId = "clientId",
                     creationDate = BackupDateTime(0L),
-                    content = BackupMessageContent.Text("test")
+                    content = BackupMessageContent.Text("test", listOf(TEST_MENTION))
                 )
             )
         }
         assertIs<BackupPeekResult.Success>(result)
         assertEquals(false, result.isEncrypted)
+    }
+
+    @Test
+    fun givenBackedUpReactions_whenRestoring_thenShouldReadTheSameContent() = runTest {
+        val reaction0 = BackupReaction(
+            messageId = "message-id-0",
+            emojiReactions = listOf(
+                BackupEmojiReaction("👍", listOf(BackupQualifiedId("u0", "d"), BackupQualifiedId("u1", "d"))),
+                BackupEmojiReaction("🔥", listOf(BackupQualifiedId("u2", "d")))
+            )
+        )
+        val reaction1 = BackupReaction(
+            messageId = "message-id-1",
+            emojiReactions = listOf(
+                BackupEmojiReaction("❤️", listOf(BackupQualifiedId("u3", "d")))
+            )
+        )
+
+        val result = subject.exportImportDataTest(BackupQualifiedId("self", "domain"), "") {
+            add(reaction0)
+            add(reaction1)
+        }
+
+        assertIs<BackupImportResult.Success>(result)
+        val pager = result.pager
+        val imported = mutableListOf<BackupReaction>()
+        while (pager.reactionsPager.hasMorePages()) {
+            imported.addAll(pager.reactionsPager.nextPage())
+        }
+
+        assertContentEquals(arrayOf(reaction0, reaction1), imported.toTypedArray())
     }
 
     private suspend fun shouldBackupAndRestoreSameContent(content: BackupMessageContent, password: String = "") {
@@ -152,6 +185,10 @@ class BackupEndToEndTest {
         assertEquals(expectedMessage.creationDate, firstMessage.creationDate)
         assertEquals(expectedMessage.content, firstMessage.content)
         assertContentEquals(arrayOf(expectedMessage), allMessages.toTypedArray())
+    }
+
+    private companion object {
+        val TEST_MENTION = BackupMessageContent.Text.Mention(BackupQualifiedId("id", "domain"), 1, 1)
     }
 }
 

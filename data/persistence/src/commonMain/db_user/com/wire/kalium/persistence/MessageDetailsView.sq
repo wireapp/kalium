@@ -127,7 +127,8 @@ IFNULL(
         "content_hash":"' || IFNULL(content_hash,'') || '",
         "content_url":"' || IFNULL(content_url,'') || '",
         "preview_url":"' || IFNULL(preview_url,'') || '",
-        "content_url_expires_at":"' || IFNULL(content_url_expires_at,0) || '"}') || ']'
+        "content_url_expires_at":"' || IFNULL(content_url_expires_at,0) || '",
+        "edit_supported":"' || edit_supported || '"}') || ']'
     FROM MessageAttachments
     WHERE (MessageAttachments.message_id = Message.id
         AND MessageAttachments.conversation_id = Message.conversation_id)
