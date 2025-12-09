@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(find:*)",
+      "Bash(xargs basename:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(./gradlew :data:persistence:verifySqlDelightMigration:*)",
+      "Bash(./gradlew:*)",
+      "Bash(paste:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
