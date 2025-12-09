@@ -65,8 +65,7 @@ Pre-migration database schemas stored as SQLite `.db` files:
 
 ```
 persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/
-├── 119.db
-├── 120.db
+├── 124.db
 └── ...
 ```
 
@@ -74,8 +73,8 @@ These files are **snapshots of the actual schema** before a migration runs, gene
 
 ```bash
 ./gradlew :persistence:generateCommonMainUserDatabaseInterface
-cp persistence/src/commonMain/db_user/schemas/119.db \
-   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/119.db
+cp persistence/src/commonMain/db_user/schemas/124.db \
+   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db
 ```
 
 #### 3. Migration Tests
@@ -258,8 +257,8 @@ When writing migration tests:
 1. **Export schema files BEFORE running the migration**
    ```bash
    ./gradlew :persistence:generateCommonMainUserDatabaseInterface
-   cp persistence/src/commonMain/db_user/schemas/119.db \
-      persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/119.db
+   cp persistence/src/commonMain/db_user/schemas/124.db \
+      persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db
    ```
 
 2. **Read migration SQL from actual `.sqm` files**
@@ -545,13 +544,13 @@ Error: Schema file not found: /com/wire/kalium/persistence/schemas/119.db
 ```
 
 **Solution**: Make sure the schema file exists at:
-`persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/119.db`
+`persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db`
 
 Generate it with:
 ```bash
 ./gradlew :persistence:generateCommonMainUserDatabaseInterface
-cp persistence/src/commonMain/db_user/schemas/119.db \
-   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/119.db
+cp persistence/src/commonMain/db_user/schemas/124.db \
+   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db
 ```
 
 #### Migration SQL fails
