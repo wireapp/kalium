@@ -19,20 +19,22 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
-import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseTest
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
@@ -40,15 +42,12 @@ import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.any
-
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -420,7 +419,7 @@ class RetryFailedMessageUseCaseTest {
         suspend fun withFetchPrivateDecodedAsset(result: Either<CoreFailure, Path>): Arrangement = apply {
             coEvery {
                 assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
-            }.returns(result)
+            }.returns(result.map { it to true })
         }
 
         suspend fun withUploadAndPersistPrivateAsset(result: Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>): Arrangement = apply {

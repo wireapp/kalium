@@ -111,9 +111,10 @@ interface AssetRepository {
     /**
      * Method used to download and persist to local memory a public asset
      * @param assetId the asset identifier
-     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] of the decoded asset
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [Pair] of [Path] to the decoded asset with a [Boolean]
+     *   indicating whether the asset has just been downloaded (true) or was already present locally (false)
      */
-    suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path>
+    suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Pair<Path, Boolean>>
 
     /**
      * Method used to fetch the [Path] of a decoded private asset
@@ -122,7 +123,8 @@ interface AssetRepository {
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @param encryptionKey the asset encryption key used to decrypt an extra layer of asset/user authentication
      * @param downloadIfNeeded flag determining whether it should make a request do download an asset if it's not available locally
-     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the decoded asset
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [Pair] of [Path] to the decoded asset with a [Boolean]
+     *   indicating whether the asset has just been downloaded (true) or was already present locally (false)
      */
     @Suppress("LongParameterList")
     suspend fun fetchPrivateDecodedAsset(
@@ -134,7 +136,7 @@ interface AssetRepository {
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key,
         downloadIfNeeded: Boolean = true
-    ): Either<CoreFailure, Path>
+    ): Either<CoreFailure, Pair<Path, Boolean>>
 
     /**
      * Method used to delete asset locally and externally
@@ -296,7 +298,7 @@ internal class AssetDataSource(
         }
     }
 
-    override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path> =
+    override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Pair<Path, Boolean>> =
         fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId, assetToken = null, mimeType = null)
 
     override suspend fun fetchPrivateDecodedAsset(
@@ -308,8 +310,8 @@ internal class AssetDataSource(
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key,
         downloadIfNeeded: Boolean
-    ): Either<CoreFailure, Path> =
-        if (!downloadIfNeeded) fetchDecodedAsset(assetId = assetId)
+    ): Either<CoreFailure, Pair<Path, Boolean>> =
+        if (!downloadIfNeeded) fetchDecodedAsset(assetId = assetId).map { it to false }
         else fetchOrDownloadDecodedAsset(
             assetId = assetId,
             assetDomain = assetDomain,
@@ -333,8 +335,9 @@ internal class AssetDataSource(
         mimeType: String?,
         encryptionKey: AES256Key? = null,
         assetSHA256: SHA256Key? = null
-    ): Either<CoreFailure, Path> =
-        fetchDecodedAsset(assetId).flatMapLeft {
+    ): Either<CoreFailure, Pair<Path, Boolean>> = fetchDecodedAsset(assetId)
+    .map { it to false } // Asset found locally, no need to download, return the local path with 'false' flag
+    .flatMapLeft {
             val tempFile = kaliumFileSystem.tempFilePath("temp_$assetId")
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
@@ -378,7 +381,7 @@ internal class AssetDataSource(
                         // Everything went fine, we persist the asset to the DB
                         else -> {
                             saveAssetInDB(assetId, assetDomain, decodedAssetPath, assetDataSize)
-                            Either.Right(decodedAssetPath)
+                            Either.Right(decodedAssetPath to true)
                         }
                     }
                 } catch (e: IOException) {

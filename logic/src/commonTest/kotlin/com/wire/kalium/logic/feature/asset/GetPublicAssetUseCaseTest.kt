@@ -58,7 +58,7 @@ class GetPublicAssetUseCaseTest {
 
         coEvery {
             assetRepository.downloadPublicAsset(eq(assetKey.value), eq(assetKey.domain))
-        }.returns(Either.Right(expectedPath))
+        }.returns(Either.Right(expectedPath to true))
 
         val publicAsset = getPublicAsset(assetKey)
 
