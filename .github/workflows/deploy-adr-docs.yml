@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install pip for adr-viewer
         run: |
@@ -29,16 +29,17 @@ jobs:
 
       - name: Generate ADR docs
         run: |
-          adr-viewer --adr-path docs/adr --output docs/index.html
+          adr-viewer --adr-path docs/adr --output docs/adr/index.html
 
-      - name: Deploy docs 🚀
+      - name: Deploy ADRs 🚀
         if: github.event_name == 'push' && github.ref_name == 'develop'
-        uses: JamesIves/github-pages-deploy-action@v4.7.3
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          branch: gh-pages
-          clean: false
-          folder: docs
-          target-folder: docs
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/adr
+          publish_branch: gh-pages
+          destination_dir: docs/adr
+          keep_files: true
 
       - name: Comment new ADR(s) in PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'

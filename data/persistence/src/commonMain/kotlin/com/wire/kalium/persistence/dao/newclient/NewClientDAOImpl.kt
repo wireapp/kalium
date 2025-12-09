@@ -51,7 +51,7 @@ internal class NewClientDAOImpl(
     private val mapper: NewClientMapper = NewClientMapper
 ) : NewClientDAO {
 
-    override suspend fun insertNewClient(client: InsertClientParam) =
+    override suspend fun insertNewClient(client: InsertClientParam) {
         withContext(writeDispatcher.value) {
             with(client) {
                 newClientsQueries.insertNewClient(
@@ -69,6 +69,7 @@ internal class NewClientDAOImpl(
                 )
             }
         }
+    }
 
     override suspend fun observeNewClients(): Flow<List<NewClientEntity>> =
         newClientsQueries.selectNewClientsForUser(mapper::fromClient)
@@ -76,7 +77,9 @@ internal class NewClientDAOImpl(
             .flowOn(readDispatcher.value)
             .mapToList()
 
-    override suspend fun clearNewClients() = withContext(writeDispatcher.value) {
-        newClientsQueries.clearNewClients()
+    override suspend fun clearNewClients() {
+        withContext(writeDispatcher.value) {
+            newClientsQueries.clearNewClients()
+        }
     }
 }

@@ -155,10 +155,11 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) =
+    override suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) {
         withContext(writeDispatcher.value) {
             clientsQueries.updateClientProteusVerificationStatus(verified, userId, clientId)
         }
+    }
 
     override suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?> =
         clientsQueries.selectByUserAndClientId(userId, clientId, mapper::fromClient)
@@ -220,8 +221,10 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun deleteClient(
         userId: QualifiedIDEntity,
         clientId: String
-    ) = withContext(writeDispatcher.value) {
-        clientsQueries.deleteClient(userId, clientId)
+    ) {
+        withContext(writeDispatcher.value) {
+            clientsQueries.deleteClient(userId, clientId)
+        }
     }
 
     override suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =

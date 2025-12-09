@@ -37,6 +37,7 @@ import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAttachmentDraft
 import com.wire.kalium.persistence.MessageAttachments
 import com.wire.kalium.persistence.MessageConversationLocationContent
+import com.wire.kalium.persistence.MessageConversationProtocolChangedDuringACallContent
 import com.wire.kalium.persistence.MessageDraft
 import com.wire.kalium.persistence.MessageLinkPreview
 import com.wire.kalium.persistence.MessageMention

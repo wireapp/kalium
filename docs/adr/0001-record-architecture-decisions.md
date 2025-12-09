@@ -1,6 +1,6 @@
 # 1. Record architecture decisions
 
-Date: 2025-11-18
+Date: 2025-12-03
 
 ## Status
 
@@ -8,9 +8,9 @@ Accepted
 
 ## Context
 
-We need to document architectural decisions made in Kalium to maintain a clear record of why
-certain technical choices were made. This will help current and future team members understand
-the reasoning behind important decisions and provide context for future changes.
+We need to document architectural decisions made during the development of the project in Kalium.
+This will help us keep track of the reasoning behind our decisions and provide context for future
+developers working on the project.
 
 ## Decision
 
@@ -22,8 +22,7 @@ easy to maintain.
 
 - We need to add a new folder to the repository, `docs/adr`, to keep the architecture decision
   records.
-- Whenever a new refactoring, library, or significant architectural change is introduced, a new ADR
-  should be created.
-- You can always request in the Pull request review process to add a new ADR, if you think it's
-  necessary.
-- This provides better documentation and knowledge sharing across the team.
+- Whenever a significant architecture decision is made, we need to create a new ADR file in that folder.
+- We need to review the ADRs periodically to ensure they are still relevant and up-to-date.
+- This will help us maintain a clear record of our architecture decisions and the reasoning behind them,
+  which will be useful for future reference and onboarding new team members.

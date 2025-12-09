@@ -84,11 +84,13 @@ internal class MessageDAOImpl internal constructor(
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
 
-    override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        queries.deleteMessage(id, conversationsId)
+    override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            queries.deleteMessage(id, conversationsId)
+        }
     }
 
-    override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
+    override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             queries.markMessageAsDeleted(
                 message_id = id,
@@ -96,9 +98,12 @@ internal class MessageDAOImpl internal constructor(
             )
             unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
         }
+    }
 
-    override suspend fun deleteAllMessages() = withContext(writeDispatcher.value) {
-        queries.deleteAllMessages()
+    override suspend fun deleteAllMessages() {
+        withContext(writeDispatcher.value) {
+            queries.deleteAllMessages()
+        }
     }
 
     override suspend fun insertOrIgnoreMessage(
@@ -248,18 +253,21 @@ internal class MessageDAOImpl internal constructor(
         transferStatus: AssetTransferStatusEntity,
         id: String,
         conversationId: QualifiedIDEntity
-    ) = withContext(writeDispatcher.value) {
-        assetStatusQueries.upsertMessageAssetStatus(
-            id,
-            conversationId,
-            transferStatus
-        )
+    ) {
+        withContext(writeDispatcher.value) {
+            assetStatusQueries.upsertMessageAssetStatus(
+                id,
+                conversationId,
+                transferStatus
+            )
+        }
     }
 
-    override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
+    override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             queries.updateMessageStatus(status, id, conversationId)
         }
+    }
 
     override suspend fun updateMessagesStatus(
         status: MessageEntity.Status,
@@ -304,8 +312,10 @@ internal class MessageDAOImpl internal constructor(
         status: MessageEntity.Status,
         conversationId: QualifiedIDEntity,
         messageIds: List<String>
-    ) = withContext(writeDispatcher.value) {
-        queries.updateMessagesStatusIfNotRead(status, messageIds, conversationId)
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.updateMessagesStatusIfNotRead(status, messageIds, conversationId)
+        }
     }
 
     override suspend fun getMessagesByConversationAndVisibility(
@@ -461,16 +471,20 @@ internal class MessageDAOImpl internal constructor(
             conversationId to count.toInt()
         }.asFlow().flowOn(readDispatcher.value).mapToList().map { it.toMap() }
 
-    override suspend fun resetAssetTransferStatus() = withContext(writeDispatcher.value) {
-        assetStatusQueries.resetAssetTransferStatus()
+    override suspend fun resetAssetTransferStatus() {
+        withContext(writeDispatcher.value) {
+            assetStatusQueries.resetAssetTransferStatus()
+        }
     }
 
     override suspend fun markMessagesAsDecryptionResolved(
         conversationId: QualifiedIDEntity,
         userId: QualifiedIDEntity,
         clientId: String,
-    ) = withContext(writeDispatcher.value) {
-        queries.updateSystemMessageDecryptionResolved(userId, clientId)
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.updateSystemMessageDecryptionResolved(userId, clientId)
+        }
     }
 
     override suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(
@@ -498,13 +512,15 @@ internal class MessageDAOImpl internal constructor(
         messageUuid: String,
         serverDate: Instant?,
         millis: Long
-    ) = withContext(writeDispatcher.value) {
-        queries.promoteMessageToSentUpdatingServerTime(
-            server_creation_date = serverDate,
-            conversation_id = conversationId,
-            message_id = messageUuid,
-            delivery_duration = Instant.fromEpochMilliseconds(millis)
-        )
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.promoteMessageToSentUpdatingServerTime(
+                server_creation_date = serverDate,
+                conversation_id = conversationId,
+                message_id = messageUuid,
+                delivery_duration = Instant.fromEpochMilliseconds(millis)
+            )
+        }
     }
 
     override suspend fun getAllPendingEphemeralMessages(): List<MessageEntity> {
@@ -534,14 +550,17 @@ internal class MessageDAOImpl internal constructor(
         conversationsId: QualifiedIDEntity,
         recipientsFailed: List<QualifiedIDEntity>,
         recipientFailureTypeEntity: RecipientFailureTypeEntity
-    ) = withContext(writeDispatcher.value) {
-        queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
+        }
     }
 
-    override suspend fun moveMessages(from: ConversationIDEntity, to: ConversationIDEntity) =
+    override suspend fun moveMessages(from: ConversationIDEntity, to: ConversationIDEntity) {
         withContext(writeDispatcher.value) {
             queries.moveMessages(to, from)
         }
+    }
 
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(readDispatcher.value) {
         unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
@@ -679,12 +698,14 @@ internal class MessageDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         messageId: String,
         normalizedLoudness: ByteArray
-    ) = withContext(writeDispatcher.value) {
-        queries.updateAudioMessageNormalizedLoudness(
-            asset_normalized_loudness = normalizedLoudness,
-            conversation_id = conversationId,
-            message_id = messageId
-        )
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.updateAudioMessageNormalizedLoudness(
+                asset_normalized_loudness = normalizedLoudness,
+                conversation_id = conversationId,
+                message_id = messageId
+            )
+        }
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(

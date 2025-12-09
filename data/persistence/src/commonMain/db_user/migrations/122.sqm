@@ -1,163 +1,5 @@
--- Migration 119: Consolidate system message content tables into MessageSystemContent
--- This migration consolidates 10 separate system message content tables into a single table
--- with generic typed columns, reducing JOIN complexity in MessageDetailsView.
---
--- Tables being consolidated:
--- 1. MessageMemberChangeContent
--- 2. MessageFailedToDecryptContent
--- 3. MessageConversationChangedContent
--- 4. MessageNewConversationReceiptModeContent
--- 5. MessageConversationReceiptModeChangedContent
--- 6. MessageConversationTimerChangedContent
--- 7. MessageFederationTerminatedContent
--- 8. MessageConversationProtocolChangedContent
--- 9. MessageLegalHoldContent
--- 10. MessageConversationAppsEnabledChangedContent
---
+ALTER TABLE MessageAttachments ADD COLUMN edit_supported INTEGER AS Boolean NOT NULL DEFAULT 0;
 
--- Step 1: Create the new consolidated table
-CREATE TABLE IF NOT EXISTS MessageSystemContent (
-    message_id TEXT NOT NULL,
-    conversation_id TEXT NOT NULL,
-    content_type TEXT NOT NULL, -- Discriminator column
-
-    -- Generic typed fields for flexible storage
-    text_1 TEXT,      -- conversation_name, protocol, etc.
-    integer_1 INTEGER, -- message_timer, error_code, etc.
-    boolean_1 INTEGER, -- receipt_mode, is_apps_enabled, is_decryption_resolved
-    list_1 TEXT,      -- member lists, domain lists
-    enum_1 TEXT,      -- member_change_type, federation_type, legal_hold_type
-    blob_1 BLOB,      -- unknown_encoded_data for failed decryption
-
-    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    PRIMARY KEY (message_id, conversation_id)
-);
-
--- Step 2: Create index for efficient querying by content type
-CREATE INDEX IF NOT EXISTS idx_system_content_type ON MessageSystemContent(content_type);
-
--- Step 3: Migrate data from old tables to new consolidated table
-
--- 3.1: Migrate MessageMemberChangeContent
--- Field mapping: list_1 = member_change_list, enum_1 = member_change_type
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, list_1, enum_1)
-SELECT
-    message_id,
-    conversation_id,
-    'MEMBER_CHANGE' AS content_type,
-    member_change_list AS list_1,
-    member_change_type AS enum_1
-FROM MessageMemberChangeContent;
-
--- 3.2: Migrate MessageFailedToDecryptContent
--- Field mapping: blob_1 = unknown_encoded_data, boolean_1 = is_decryption_resolved, integer_1 = error_code
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, blob_1, boolean_1, integer_1)
-SELECT
-    message_id,
-    conversation_id,
-    'FAILED_DECRYPT' AS content_type,
-    unknown_encoded_data AS blob_1,
-    is_decryption_resolved AS boolean_1,
-    error_code AS integer_1
-FROM MessageFailedToDecryptContent;
-
--- 3.3: Migrate MessageConversationChangedContent
--- Field mapping: text_1 = conversation_name
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, text_1)
-SELECT
-    message_id,
-    conversation_id,
-    'CONVERSATION_RENAMED' AS content_type,
-    conversation_name AS text_1
-FROM MessageConversationChangedContent;
-
--- 3.4: Migrate MessageNewConversationReceiptModeContent
--- Field mapping: boolean_1 = receipt_mode
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, boolean_1)
-SELECT
-    message_id,
-    conversation_id,
-    'NEW_CONVERSATION_RECEIPT_MODE' AS content_type,
-    receipt_mode AS boolean_1
-FROM MessageNewConversationReceiptModeContent;
-
--- 3.5: Migrate MessageConversationReceiptModeChangedContent
--- Field mapping: boolean_1 = receipt_mode
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, boolean_1)
-SELECT
-    message_id,
-    conversation_id,
-    'CONVERSATION_RECEIPT_MODE_CHANGED' AS content_type,
-    receipt_mode AS boolean_1
-FROM MessageConversationReceiptModeChangedContent;
-
--- 3.6: Migrate MessageConversationTimerChangedContent
--- Field mapping: integer_1 = message_timer
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, integer_1)
-SELECT
-    message_id,
-    conversation_id,
-    'CONVERSATION_TIMER_CHANGED' AS content_type,
-    message_timer AS integer_1
-FROM MessageConversationTimerChangedContent;
-
--- 3.7: Migrate MessageFederationTerminatedContent
--- Field mapping: list_1 = domain_list, enum_1 = federation_type
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, list_1, enum_1)
-SELECT
-    message_id,
-    conversation_id,
-    'FEDERATION_TERMINATED' AS content_type,
-    domain_list AS list_1,
-    federation_type AS enum_1
-FROM MessageFederationTerminatedContent;
-
--- 3.8: Migrate MessageConversationProtocolChangedContent
--- Field mapping: enum_1 = protocol
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, enum_1)
-SELECT
-    message_id,
-    conversation_id,
-    'CONVERSATION_PROTOCOL_CHANGED' AS content_type,
-    protocol AS enum_1
-FROM MessageConversationProtocolChangedContent;
-
--- 3.9: Migrate MessageLegalHoldContent
--- Field mapping: list_1 = legal_hold_member_list, enum_1 = legal_hold_type
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, list_1, enum_1)
-SELECT
-    message_id,
-    conversation_id,
-    'LEGAL_HOLD' AS content_type,
-    legal_hold_member_list AS list_1,
-    legal_hold_type AS enum_1
-FROM MessageLegalHoldContent;
-
--- 3.10: Migrate MessageConversationAppsEnabledChangedContent
--- Field mapping: boolean_1 = is_apps_enabled
-INSERT INTO MessageSystemContent (message_id, conversation_id, content_type, boolean_1)
-SELECT
-    message_id,
-    conversation_id,
-    'CONVERSATION_APPS_ENABLED_CHANGED' AS content_type,
-    is_apps_enabled AS boolean_1
-FROM MessageConversationAppsEnabledChangedContent;
-
--- Step 4: Drop old tables (in reverse dependency order)
-DROP TABLE IF EXISTS MessageConversationAppsEnabledChangedContent;
-DROP TABLE IF EXISTS MessageLegalHoldContent;
-DROP TABLE IF EXISTS MessageConversationProtocolChangedContent;
-DROP TABLE IF EXISTS MessageFederationTerminatedContent;
-DROP TABLE IF EXISTS MessageConversationTimerChangedContent;
-DROP TABLE IF EXISTS MessageConversationReceiptModeChangedContent;
-DROP TABLE IF EXISTS MessageNewConversationReceiptModeContent;
-DROP TABLE IF EXISTS MessageConversationChangedContent;
-DROP TABLE IF EXISTS MessageFailedToDecryptContent;
-DROP TABLE IF EXISTS MessageMemberChangeContent;
-
--- Step 5: Recreate views with the new consolidated table
-DROP VIEW IF EXISTS ConversationDetailsWithEvents;
-DROP VIEW IF EXISTS MessagePreview;
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -212,22 +54,17 @@ AssetContent.asset_duration_ms AS assetDuration,
 AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
 AssetData.data_path AS assetDataPath,
 MissedCallContent.caller_id AS callerId,
-
--- System message content from consolidated table
-CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
-CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
-
+MemberChangeContent.member_change_list AS memberChangeList,
+MemberChangeContent.member_change_type AS memberChangeType,
 UnknownContent.unknown_type_name AS unknownContentTypeName,
 UnknownContent.unknown_encoded_data AS unknownContentData,
 RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
-
-CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.blob_1 END AS failedToDecryptData,
-CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.integer_1 END AS decryptionErrorCode,
-CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.boolean_1 END AS isDecryptionResolved,
-
-CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS conversationName,
+FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.error_code AS decryptionErrorCode,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
+ConversationNameChangedContent.conversation_name AS conversationName,
 IFNULL(
     (SELECT '[' ||
         GROUP_CONCAT(
@@ -277,7 +114,9 @@ IFNULL(
         "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
         "content_hash":"' || IFNULL(content_hash,'') || '",
         "content_url":"' || IFNULL(content_url,'') || '",
-        "preview_url":"' || IFNULL(preview_url,'') || '"}') || ']'
+        "preview_url":"' || IFNULL(preview_url,'') || '",
+        "content_url_expires_at":"' || IFNULL(content_url_expires_at,0) || '",
+        "edit_supported":"' || edit_supported || '"}') || ']'
     FROM MessageAttachments
     WHERE (MessageAttachments.message_id = Message.id
         AND MessageAttachments.conversation_id = Message.conversation_id)
@@ -298,11 +137,11 @@ QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 QuotedLocationContent.name AS quotedLocationName,
 
-CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN SystemContent.boolean_1 END AS isConversationAppsEnabled,
-CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
+ConversationAppsEnabledChanged.is_apps_enabled AS isConversationAppsEnabled,
+NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 
-CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
-CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
+ConversationTimerChangedContent.message_timer AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
 FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
 
@@ -316,15 +155,15 @@ IFNULL(
     ),
     '[]'
 ) AS buttonsJson,
-CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.list_1 END AS federationDomainList,
-CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.enum_1 END AS federationType,
-CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.enum_1 END AS conversationProtocolChanged,
+FederationTerminatedContent.domain_list AS federationDomainList,
+FederationTerminatedContent.federation_type AS federationType,
+ConversationProtocolChangedContent.protocol AS conversationProtocolChanged,
 ConversationLocationContent.latitude AS latitude,
 ConversationLocationContent.longitude AS longitude,
 ConversationLocationContent.name AS locationName,
 ConversationLocationContent.zoom AS locationZoom,
-CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.list_1 END AS legalHoldMemberList,
-CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.enum_1 END AS legalHoldType
+LegalHoldContent.legal_hold_member_list AS legalHoldMemberList,
+LegalHoldContent.legal_hold_type AS legalHoldType
 
 FROM Message
 JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id
@@ -332,11 +171,11 @@ LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN Asset AS AssetData ON AssetContent.asset_id = AssetData.key
 LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
-
-LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
-
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
@@ -347,121 +186,13 @@ LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_i
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 -- end joins for quoted messages
+LEFT JOIN MessageConversationAppsEnabledChangedContent AS ConversationAppsEnabledChanged ON Message.id = ConversationAppsEnabledChanged.message_id AND Message.conversation_id = ConversationAppsEnabledChanged.conversation_id
+LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
+LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
+LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
+LEFT JOIN MessageFederationTerminatedContent AS FederationTerminatedContent ON Message.id = FederationTerminatedContent.message_id AND Message.conversation_id = FederationTerminatedContent.conversation_id
+LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChangedContent ON Message.id = ConversationProtocolChangedContent.message_id AND Message.conversation_id = ConversationProtocolChangedContent.conversation_id
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
+LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
-
--- Recreate ConversationDetailsWithEvents view
-CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
-SELECT
-    ConversationDetails.*,
-    -- unread events
-    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
-    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
-    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
-    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
-    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
-    CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
-        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
-           CASE
-                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
-                ELSE 0
-            END
-        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
-            CASE
-                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
-                ELSE 0
-            END
-        ELSE 0
-    END AS hasNewActivitiesToShow,
-    -- draft message
-    MessageDraft.text AS messageDraftText,
-    MessageDraft.edit_message_id AS messageDraftEditMessageId,
-    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
-    MessageDraft.mention_list AS messageDraftMentionList,
-    -- last message
-    Message.id AS lastMessageId,
-    Message.content_type AS lastMessageContentType,
-    Message.creation_date AS lastMessageDate,
-    Message.visibility AS lastMessageVisibility,
-    Message.sender_user_id AS lastMessageSenderUserId,
-    (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
-    User.name AS lastMessageSenderName,
-    User.connection_status AS lastMessageSenderConnectionStatus,
-    User.deleted AS lastMessageSenderIsDeleted,
-    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
-    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS lastMessageMemberChangeList,
-    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS lastMessageMemberChangeType,
-    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
-    COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
-    TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
-    TextContent.text_body AS lastMessageText,
-    AssetContent.asset_mime_type AS lastMessageAssetMimeType
-FROM ConversationDetails
-LEFT JOIN UnreadEventCountsGrouped
-    ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
-LEFT JOIN MessageDraft
-    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
-LEFT JOIN LastMessage
-    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
-LEFT JOIN Message
-    ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
-LEFT JOIN User
-    ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageSystemContent AS SystemContent
-    ON LastMessage.message_id = SystemContent.message_id AND LastMessage.conversation_id = SystemContent.conversation_id
-LEFT JOIN MessageMention AS Mention
-    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
-LEFT JOIN MessageAssetContent AS AssetContent
-    ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent
-    ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
-WHERE
-    ConversationDetails.type IS NOT 'SELF'
-    AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
-    )
-    AND ConversationDetails.isActive
-    AND ConversationDetails.deletedLocally = 0
-GROUP BY ConversationDetails.qualifiedId;
-
--- Recreate MessagePreview view
-CREATE VIEW IF NOT EXISTS MessagePreview
-AS SELECT
-    Message.id AS id,
-    Message.conversation_id AS conversationId,
-    Message.content_type AS contentType,
-    Message.creation_date AS date,
-    Message.visibility AS visibility,
-    Message.sender_user_id AS senderUserId,
-    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
-    User.name AS senderName,
-    User.connection_status AS senderConnectionStatus,
-    User.deleted AS senderIsDeleted,
-    SelfUser.id AS selfUserId,
-    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
-    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
-    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
-    Conversation.name AS conversationName,
-    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
-    TextContent.is_quoting_self AS isQuotingSelfUser,
-    TextContent.text_body AS text,
-    AssetContent.asset_mime_type AS assetMimeType,
-    (Message.creation_date > Conversation.last_read_date) AS isUnread,
-    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
-    Conversation.muted_status AS mutedStatus,
-    Conversation.type AS conversationType
-FROM Message
-LEFT JOIN SelfUser
-LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
-LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
-LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
-LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+-- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
