@@ -50,7 +50,6 @@ protobufCodegen = "0.9.4"
 annotation = "1.9.1"
 mordant = "3.0.1"
 apache-tika = "3.1.0"
-mockk = "1.13.13"
 faker = "1.16.0"
 robolectric = "4.12.1"
 skie = "0.10.8"
@@ -205,7 +204,6 @@ sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial
 # mocks and testing
 mockative-runtime = { module = "io.github.mohamadjaara:mockative", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 
 # detekt
