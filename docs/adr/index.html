@@ -138,7 +138,7 @@ which will be useful for future reference and onboarding new team members.</li>
             <div class="panel panel-default">
                 <div class="panel-heading adr-accepted">
                     <h4 class="panel-title">
-                        <a data-toggle="collapse" href="#collapse2">2. Module Boundary Restructuring</a>
+                        <a data-toggle="collapse" href="#collapse2">2. Consolidate System Message Content Tables</a>
 
                         
                         <i class="adr-icon fas fa-fw fa-check"></i>
@@ -147,6 +147,150 @@ which will be useful for future reference and onboarding new team members.</li>
                     </h4>
                 </div>
                 <div id="collapse2" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>2. Consolidate System Message Content Tables</h1>
+<p>Date: 2025-11-18</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>The Kalium persistence layer previously used 10 separate tables to store different types of system message content:</p>
+<ol>
+<li>MessageMemberChangeContent</li>
+<li>MessageFailedToDecryptContent</li>
+<li>MessageConversationChangedContent</li>
+<li>MessageNewConversationReceiptModeContent</li>
+<li>MessageConversationReceiptModeChangedContent</li>
+<li>MessageConversationTimerChangedContent</li>
+<li>MessageFederationTerminatedContent</li>
+<li>MessageConversationProtocolChangedContent</li>
+<li>MessageLegalHoldContent</li>
+<li>MessageConversationAppsEnabledChangedContent</li>
+</ol>
+<p>This design led to several issues:</p>
+<ul>
+<li><strong>Query complexity</strong>: The <code>MessageDetailsView</code> required a ton LEFT JOINs to fetch message data, causing performance overhead</li>
+<li><strong>Schema rigidity</strong>: Adding new system message types required schema migrations, adding new tables, and updating the view</li>
+<li><strong>Unbounded view growth</strong>: Every new system message type required adding another LEFT JOIN to <code>MessageDetailsView</code>, making the view progressively larger and slower with each addition</li>
+<li><strong>Maintenance burden</strong>: Each new message type needed its own table definition, insert queries, update queries, and view integration</li>
+<li><strong>Query performance</strong>: Multiple JOINs across 10+ tables for every message query degraded performance, especially for large message lists</li>
+</ul>
+<h2>Decision</h2>
+<p>We consolidated all 10 system message content tables into a single <code>MessageSystemContent</code> table using a discriminator pattern with generic typed columns.</p>
+<h3>New Schema (Migration 120)</h3>
+<pre><code class="language-sql">CREATE TABLE MessageSystemContent (
+    message_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    content_type TEXT NOT NULL,  -- Discriminator: 'MEMBER_CHANGE', 'FAILED_DECRYPT', etc.
+
+    -- Generic typed fields for flexible storage
+    text_1 TEXT,        -- conversation_name, protocol, etc.
+    integer_1 INTEGER,  -- message_timer, error_code, etc.
+    boolean_1 INTEGER,  -- receipt_mode, is_apps_enabled, is_decryption_resolved
+    list_1 TEXT,        -- member lists, domain lists
+    enum_1 TEXT,        -- member_change_type, federation_type, legal_hold_type
+    blob_1 BLOB,        -- unknown_encoded_data for failed decryption
+
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id),
+    PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE INDEX idx_system_content_type ON MessageSystemContent(content_type);
+</code></pre>
+<h3>Field Mapping Pattern</h3>
+<p>Each content type maps its specific fields to the generic columns:</p>
+<p>| Content Type | Field Mapping |
+|--------------|---------------|
+| MEMBER_CHANGE | list_1=members, enum_1=type |
+| FAILED_DECRYPT | blob_1=data, boolean_1=resolved, integer_1=error_code |
+| CONVERSATION_RENAMED | text_1=name |
+| RECEIPT_MODE | boolean_1=enabled |
+| TIMER_CHANGED | integer_1=duration_ms |
+| FEDERATION_TERMINATED | list_1=domains, enum_1=type |
+| PROTOCOL_CHANGED | text_1=protocol |
+| LEGAL_HOLD | list_1=members, enum_1=type |
+| APPS_ENABLED | boolean_1=enabled |</p>
+<h3>View Layer Abstraction</h3>
+<p>The <code>MessageDetailsView</code> uses CASE statements to maintain semantic column names, ensuring no breaking changes to application code:</p>
+<pre><code class="language-sql">CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE'
+     THEN SystemContent.list_1 END AS memberChangeList,
+CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE'
+     THEN SystemContent.enum_1 END AS memberChangeType,
+</code></pre>
+<p>This allows existing Kotlin code to continue working without modifications:</p>
+<pre><code class="language-kotlin">val message = messagesQueries.selectById(messageId, conversationId).executeAsOne()
+val members = message.memberChangeList  // Still works!
+val changeType = message.memberChangeType  // Still works!
+</code></pre>
+<h3>Migration Strategy</h3>
+<p>The migration (120.sqm) performs these steps:</p>
+<ol>
+<li>Creates the new <code>MessageSystemContent</code> table</li>
+<li>Migrates all data from the 10 old tables with proper field mapping</li>
+<li>Drops the old tables</li>
+<li>Recreates views to use the new consolidated table</li>
+</ol>
+<h2>Consequences</h2>
+<h3>Positive</h3>
+<ul>
+<li><strong>Query performance</strong>: 20-40% improvement expected due to JOIN reduction (12+ JOINs → 2 JOINs)</li>
+<li><strong>Schema flexibility</strong>: New system message types can be added without schema migrations</li>
+<li><strong>Simplified maintenance</strong>: Single table to manage instead of 10 separate tables</li>
+<li><strong>Index efficiency</strong>: Single composite primary key and one content_type index instead of 10 primary keys</li>
+<li><strong>Code compatibility</strong>: No breaking changes to application code thanks to view abstraction</li>
+<li><strong>Testing framework</strong>: Established <code>SchemaMigrationTest</code> pattern for future migrations</li>
+</ul>
+<h3>Negative</h3>
+<ul>
+<li><strong>Reduced type safety</strong>: Generic column names (text_1, integer_1) are less self-documenting than specific columns (conversation_name, message_timer)</li>
+<li><strong>Documentation dependency</strong>: Developers must consult field mapping documentation to understand which generic column maps to which semantic field</li>
+<li><strong>NULL overhead</strong>: Each row contains 6 generic columns, most of which will be NULL for any given message type</li>
+<li><strong>Database-level validation</strong>: Cannot enforce NOT NULL constraints on specific fields per content type</li>
+</ul>
+<h3>Mitigation Strategies</h3>
+<ol>
+<li><strong>Documentation</strong>: Comprehensive field mapping documentation for all content types</li>
+<li><strong>Convenience queries</strong>: Type-specific insert queries (e.g., <code>insertSystemMemberChange</code>) hide generic field names from developers</li>
+<li><strong>View abstraction</strong>: <code>MessageDetailsView</code> provides semantic column names, maintaining code readability</li>
+<li><strong>Migration guide</strong>: Detailed guide for updating Kotlin code</li>
+</ol>
+<h3>Usage Guidelines</h3>
+<h4>Adding New System Message Types</h4>
+<p>When adding a new system message type:</p>
+<ol>
+<li>Choose a <code>content_type</code> discriminator value (e.g., 'NEW_MESSAGE_TYPE')</li>
+<li>Map semantic fields to generic columns</li>
+<li>Add convenience insert query in <code>Messages.sq</code></li>
+<li>Update <code>MessageDetailsView</code> with CASE statements for the new type (requires migration)</li>
+<li>Update <code>MessageInsertExtensionImpl.kt</code> to use the new query</li>
+</ol>
+<h4>Querying System Messages</h4>
+<p>Always query through <code>MessageDetailsView</code> to get semantic column names:</p>
+<pre><code class="language-kotlin">// Good - uses view with semantic names
+val message = messagesQueries.selectById(messageId, conversationId).executeAsOne()
+val name = message.conversationName
+
+// Avoid - direct table access with generic names
+// This makes code harder to understand
+</code></pre>
+<h3>Related Documentation</h3>
+<ul>
+<li><strong>Migration SQL</strong>: <code>persistence/src/commonMain/db_user/migrations/120.sqm</code></li>
+</ul>
+</div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse3">2. Module Boundary Restructuring</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse3" class="panel-collapse collapse">
                     <div class="panel-body"><h1>2. Module Boundary Restructuring</h1>
 <p>Date: 2025-11-27</p>
 <h2>Status</h2>
@@ -236,7 +380,7 @@ which will be useful for future reference and onboarding new team members.</li>
             <div class="panel panel-default">
                 <div class="panel-heading adr-accepted">
                     <h4 class="panel-title">
-                        <a data-toggle="collapse" href="#collapse3">3. Lightweight COUNT for Faster Conversation List Loading</a>
+                        <a data-toggle="collapse" href="#collapse4">3. Lightweight COUNT for Faster Conversation List Loading</a>
 
                         
                         <i class="adr-icon fas fa-fw fa-check"></i>
@@ -244,7 +388,7 @@ which will be useful for future reference and onboarding new team members.</li>
 
                     </h4>
                 </div>
-                <div id="collapse3" class="panel-collapse collapse">
+                <div id="collapse4" class="panel-collapse collapse">
                     <div class="panel-body"><h1>3. Lightweight COUNT for Faster Conversation List Loading</h1>
 <p>Date: 2025-12-03</p>
 <h2>Status</h2>
@@ -334,6 +478,558 @@ WHERE
         )
     );
 </code></pre>
+</div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse5">3. Database Migration Testing Framework</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse5" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>3. Database Migration Testing Framework</h1>
+<p>Date: 2025-11-18</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>Database migrations in Kalium are critical operations that modify both schema structure and transform existing user data. Previously, migration testing was inconsistent and ad-hoc, with most migrations only tested through integration tests that ran the entire migration chain. This approach had several problems:</p>
+<ul>
+<li><strong>Insufficient coverage</strong>: Migrations were not tested individually with realistic data scenarios</li>
+<li><strong>Late failure detection</strong>: Migration bugs were only discovered after the migration ran on production databases</li>
+<li><strong>Data loss risk</strong>: No systematic verification that all data was correctly transformed during migrations</li>
+<li><strong>Debugging difficulty</strong>: When a migration failed, it was hard to pinpoint which specific data transformation was incorrect</li>
+<li><strong>No regression testing</strong>: Once a migration was released, we had no automated way to verify it continued working correctly</li>
+</ul>
+<p>The consolidation of 10 system message content tables into a single table (Migration 120) highlighted the need for a robust testing framework that could:</p>
+<ol>
+<li>Load pre-migration database schemas from actual schema files</li>
+<li>Insert realistic test data into old schema structures</li>
+<li>Execute migration SQL in isolation</li>
+<li>Verify data integrity and completeness after migration</li>
+<li>Test edge cases like NULL values, complex data types, and large datasets</li>
+</ol>
+<h2>Decision</h2>
+<p>We created the <code>SchemaMigrationTest</code> framework, a comprehensive testing infrastructure for database migrations that involve both schema changes and data transformations.</p>
+<h3>Architecture</h3>
+<p>The framework consists of three main components:</p>
+<h4>1. Base Test Class: <code>SchemaMigrationTest.kt</code></h4>
+<p>A base class that provides:</p>
+<pre><code class="language-kotlin">abstract class SchemaMigrationTest {
+    protected fun runMigrationTest(
+        schemaVersion: Int,
+        setupOldSchema: (SqlDriver) -&gt; Unit,
+        migrationSql: () -&gt; String,
+        verifyNewSchema: (SqlDriver) -&gt; Unit
+    )
+}
+</code></pre>
+<p><strong>Key capabilities:</strong></p>
+<ul>
+<li>Loads pre-migration schema from <code>.db</code> files stored in <code>src/commonTest/kotlin/com/wire/kalium/persistence/schemas/</code></li>
+<li>Creates temporary test databases using JDBC SQLite driver</li>
+<li>Executes multi-statement migration SQL</li>
+<li>Provides helper methods for common database operations</li>
+</ul>
+<p><strong>Helper methods:</strong></p>
+<ul>
+<li><code>executeInsert(sql)</code> - Insert data with simple SQL</li>
+<li><code>countRows(tableName)</code> - Get row count from a table</li>
+<li><code>querySingleValue(sql, mapper)</code> - Query and extract a single value</li>
+<li><code>executeQuery(sql, mapper)</code> - General-purpose query execution</li>
+</ul>
+<h4>2. Schema Files</h4>
+<p>Pre-migration database schemas stored as SQLite <code>.db</code> files:</p>
+<pre><code>persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/
+├── 124.db
+└── ...
+</code></pre>
+<p>These files are <strong>snapshots of the actual schema</strong> before a migration runs, generated using:</p>
+<pre><code class="language-bash">./gradlew :persistence:generateCommonMainUserDatabaseInterface
+cp persistence/src/commonMain/db_user/schemas/124.db \
+   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db
+</code></pre>
+<h4>3. Migration Tests</h4>
+<p>Individual test classes that extend <code>SchemaMigrationTest</code> and test specific migrations:</p>
+<pre><code class="language-kotlin">class Migration120Test : SchemaMigrationTest() {
+    @Test
+    fun testMemberChangeContentMigration() = runTest(dispatcher) {
+        runMigrationTest(
+            schemaVersion = 120,
+            setupOldSchema = { driver -&gt;
+                // Insert test data into old schema
+                driver.executeInsert(&quot;&quot;&quot;
+                    INSERT INTO MessageMemberChangeContent
+                    (message_id, conversation_id, member_change_list, member_change_type)
+                    VALUES ('msg-1', 'conv-1', '[&quot;user1&quot;, &quot;user2&quot;]', 'ADDED')
+                &quot;&quot;&quot;)
+            },
+            migrationSql = {
+                // Read actual migration SQL from file
+                File(&quot;src/commonMain/db_user/migrations/120.sqm&quot;).readText()
+            },
+            verifyNewSchema = { driver -&gt;
+                // Verify the migrated data
+                val count = driver.countRows(&quot;MessageSystemContent&quot;)
+                assertEquals(1, count)
+
+                var contentType: String? = null
+                var list1: String? = null
+
+                driver.executeQuery(null, &quot;&quot;&quot;
+                    SELECT content_type, list_1
+                    FROM MessageSystemContent
+                    WHERE message_id = 'msg-1'
+                &quot;&quot;&quot;.trimIndent(), { cursor -&gt;
+                    if (cursor.next().value) {
+                        contentType = cursor.getString(0)
+                        list1 = cursor.getString(1)
+                    }
+                    QueryResult.Unit
+                }, 0)
+
+                assertEquals(&quot;MEMBER_CHANGE&quot;, contentType)
+                assertEquals(&quot;&quot;&quot;[&quot;user1&quot;, &quot;user2&quot;]&quot;&quot;&quot;, list1)
+
+                // Verify old table was dropped
+                assertTableDoesNotExist(driver, &quot;MessageMemberChangeContent&quot;)
+            }
+        )
+    }
+}
+</code></pre>
+<h3>Testing Strategy</h3>
+<p>We categorize migrations into two types, each with different testing approaches:</p>
+<h4>Type 1: Schema-only Migrations</h4>
+<p>Migrations that only modify database structure without transforming existing data.</p>
+<p><strong>Example</strong>: Adding a new column with a default value</p>
+<p><strong>Testing approach</strong>: Use simpler unit tests (like <code>EventMigration109Test</code> style)</p>
+<p><strong>When to use</strong>:</p>
+<ul>
+<li>Adding new tables</li>
+<li>Adding columns with default values</li>
+<li>Creating indexes</li>
+<li>Adding constraints</li>
+</ul>
+<h4>Type 2: Schema + Content Migrations</h4>
+<p>Migrations that both modify database structure AND transform existing data.</p>
+<p><strong>Example</strong>: Consolidating multiple tables into one (Migration 120)</p>
+<p><strong>Testing approach</strong>: Use <code>SchemaMigrationTest</code> framework (this ADR)</p>
+<p><strong>When to use</strong>:</p>
+<ul>
+<li>Consolidating tables</li>
+<li>Transforming data formats</li>
+<li>Moving data between tables</li>
+<li>Complex multi-step migrations</li>
+</ul>
+<h3>Test Coverage Requirements</h3>
+<p>For Schema + Content migrations, each test class should include:</p>
+<ol>
+<li><strong>Individual content type tests</strong>: One test per data type being migrated</li>
+<li><strong>Data integrity tests</strong>: Verify ALL fields are correctly migrated, including NULL values</li>
+<li><strong>Multiple messages test</strong>: Test migrating several different message types simultaneously</li>
+<li><strong>Index creation tests</strong>: Verify indexes are created correctly</li>
+<li><strong>Old table cleanup tests</strong>: Verify old tables are dropped</li>
+<li><strong>Edge case tests</strong>: Empty strings, NULL values, special characters, large datasets</li>
+</ol>
+<p><strong>Example from Migration120Test:</strong></p>
+<ul>
+<li>11 individual content type tests</li>
+<li>6 comprehensive data integrity tests</li>
+<li>1 multi-message migration test</li>
+<li>1 index creation test</li>
+<li>Total: 19+ test cases</li>
+</ul>
+<h3>Working with Different Data Types</h3>
+<p>The framework supports all SQLite data types:</p>
+<p><strong>TEXT</strong>:</p>
+<pre><code class="language-kotlin">driver.executeInsert(&quot;&quot;&quot;
+    INSERT INTO Table (id, name)
+    VALUES ('id-1', 'Test Name')
+&quot;&quot;&quot;)
+</code></pre>
+<p><strong>INTEGER</strong> (including booleans as 0/1):</p>
+<pre><code class="language-kotlin">driver.executeInsert(&quot;&quot;&quot;
+    INSERT INTO Table (id, is_enabled)
+    VALUES ('id-1', 1)  -- true
+&quot;&quot;&quot;)
+</code></pre>
+<p><strong>BLOB</strong>:</p>
+<pre><code class="language-kotlin">val testData = byteArrayOf(0x01, 0x02, 0x03)
+driver.execute(null, &quot;&quot;&quot;
+    INSERT INTO Table (id, data) VALUES (?, ?)
+&quot;&quot;&quot;.trimIndent(), 2) {
+    bindString(0, &quot;id-1&quot;)
+    bindBytes(1, testData)
+}
+</code></pre>
+<p><strong>Reading BLOB data</strong>:</p>
+<pre><code class="language-kotlin">var blob: ByteArray? = null
+driver.executeQuery(null, &quot;SELECT data FROM Table WHERE id = 'id-1'&quot;, { cursor -&gt;
+    if (cursor.next().value == true) {
+        blob = cursor.getBytes(0)
+    }
+}, 0)
+</code></pre>
+<h2>Consequences</h2>
+<h3>Positive</h3>
+<ul>
+<li><strong>Early bug detection</strong>: Migration bugs are caught during development, not in production</li>
+<li><strong>Data integrity guarantee</strong>: Systematic verification ensures no data loss during migrations</li>
+<li><strong>Regression prevention</strong>: Migrations remain tested even after release</li>
+<li><strong>Realistic testing</strong>: Uses actual schema files and migration SQL, not mocks</li>
+<li><strong>Fast feedback</strong>: Tests run in milliseconds using in-memory SQLite databases</li>
+<li><strong>Documentation</strong>: Tests serve as executable documentation of migration behavior</li>
+<li><strong>Confidence</strong>: Developers can refactor migrations knowing tests will catch breaks</li>
+<li><strong>Reusable infrastructure</strong>: Base class and helpers make writing new tests straightforward</li>
+</ul>
+<h3>Negative</h3>
+<ul>
+<li><strong>Manual schema management</strong>: Developers must remember to copy schema files before running migrations</li>
+<li><strong>Storage overhead</strong>: Schema <code>.db</code> files must be committed to the repository (typically 50-100 KB each)</li>
+<li><strong>JVM-only</strong>: Tests only run on JVM target, not on Android or iOS</li>
+<li><strong>Maintenance burden</strong>: Each migration requires significant test code (Migration120Test is ~1000 lines)</li>
+<li><strong>Slower CI builds</strong>: More comprehensive tests increase CI build time</li>
+<li><strong>Learning curve</strong>: Developers need to understand SQLite JDBC API and framework patterns</li>
+</ul>
+<h3>Mitigation Strategies</h3>
+<ol>
+<li><strong>Helper methods</strong>: Base class provides common operations to reduce boilerplate</li>
+<li><strong>Template tests</strong>: Migration120Test serves as a template for future migration tests</li>
+<li><strong>CI integration</strong>: Automated checks verify schema files exist before allowing PR merge</li>
+<li><strong>Code review checklist</strong>: Ensure all migration PRs include corresponding tests</li>
+</ol>
+<h3>Best Practices</h3>
+<p>When writing migration tests:</p>
+<ol>
+<li><p><strong>Export schema files BEFORE running the migration</strong></p>
+<pre><code class="language-bash">./gradlew :persistence:generateCommonMainUserDatabaseInterface
+cp persistence/src/commonMain/db_user/schemas/124.db \
+   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db
+</code></pre>
+</li>
+<li><p><strong>Read migration SQL from actual <code>.sqm</code> files</strong></p>
+<pre><code class="language-kotlin">private fun getMigration120Sql(): String {
+    return File(&quot;src/commonMain/db_user/migrations/120.sqm&quot;).readText()
+}
+</code></pre>
+<p>This ensures tests always use the real migration SQL</p>
+</li>
+<li><p><strong>Test each content type separately</strong></p>
+<pre><code class="language-kotlin">@Test fun testMemberChangeContentMigration()
+@Test fun testFailedToDecryptContentMigration()
+@Test fun testConversationRenamedContentMigration()
+</code></pre>
+</li>
+<li><p><strong>Verify ALL fields, not just the happy path</strong></p>
+<pre><code class="language-kotlin">// Verify used fields have correct values
+assertEquals(&quot;MEMBER_CHANGE&quot;, contentType)
+assertEquals(&quot;&quot;&quot;[&quot;user1&quot;, &quot;user2&quot;]&quot;&quot;&quot;, list1)
+
+// Verify unused fields are NULL
+assertNull(text1)
+assertNull(integer1)
+assertNull(blob1)
+</code></pre>
+</li>
+<li><p><strong>Always verify old tables are dropped</strong></p>
+<pre><code class="language-kotlin">assertTableDoesNotExist(driver, &quot;MessageMemberChangeContent&quot;)
+</code></pre>
+</li>
+<li><p><strong>Test with realistic data</strong></p>
+<ul>
+<li>Use actual user IDs, conversation IDs</li>
+<li>Include special characters, emojis</li>
+<li>Test edge cases: empty strings, NULL values, large datasets</li>
+</ul>
+</li>
+<li><p><strong>Use descriptive test names</strong></p>
+<pre><code class="language-kotlin">@Test fun testMemberChangeDataIntegrity_AllFieldsPreserved()
+@Test fun testAllSystemMessageTypesNoDataLoss()
+</code></pre>
+</li>
+</ol>
+<h3>Running the Tests</h3>
+<pre><code class="language-bash"># Run all migration tests for migration 120
+./gradlew :persistence:jvmTest --tests &quot;*Migration120Test&quot;
+
+# Run a specific test
+./gradlew :persistence:jvmTest --tests &quot;*Migration120Test.testMemberChangeContentMigration&quot;
+
+# Run all schema migration tests
+./gradlew :persistence:jvmTest --tests &quot;*migration*&quot;
+</code></pre>
+<h3>Example: Creating a New Migration Test</h3>
+<p><strong>Step 1</strong>: Export the schema file BEFORE applying the migration</p>
+<pre><code class="language-bash">./gradlew :persistence:generateCommonMainUserDatabaseInterface
+cp persistence/src/commonMain/db_user/schemas/121.db \
+   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/121.db
+</code></pre>
+<p><strong>Step 2</strong>: Create the test class</p>
+<pre><code class="language-kotlin">package com.wire.kalium.persistence.dao.migration
+
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class Migration121Test : SchemaMigrationTest() {
+
+    companion object {
+        private const val MESSAGE_ID = &quot;test-message-id&quot;
+        private const val CONVERSATION_ID = &quot;test-conversation-id&quot;
+        private const val MIGRATION_NAME = 121
+    }
+
+    private fun getMigration121Sql(): String {
+        val migrationFile = File(&quot;src/commonMain/db_user/migrations/$MIGRATION_NAME.sqm&quot;)
+        if (!migrationFile.exists()) {
+            error(&quot;Migration file not found: ${migrationFile.absolutePath}&quot;)
+        }
+        return migrationFile.readText()
+    }
+
+    @Test
+    fun testMyDataMigration() = runTest(dispatcher) {
+        runMigrationTest(
+            schemaVersion = MIGRATION_NAME,
+            setupOldSchema = { driver -&gt;
+                // Insert test data into old schema
+                driver.executeInsert(&quot;&quot;&quot;
+                    INSERT INTO OldTable (id, value)
+                    VALUES ('$MESSAGE_ID', 'test-value')
+                &quot;&quot;&quot;)
+            },
+            migrationSql = { getMigration121Sql() },
+            verifyNewSchema = { driver -&gt;
+                // Verify the migrated data
+                val count = driver.countRows(&quot;NewTable&quot;)
+                assertEquals(1, count)
+
+                var migratedValue: String? = null
+                driver.executeQuery(null, &quot;&quot;&quot;
+                    SELECT value FROM NewTable WHERE id = '$MESSAGE_ID'
+                &quot;&quot;&quot;.trimIndent(), { cursor -&gt;
+                    if (cursor.next().value) {
+                        migratedValue = cursor.getString(0)
+                    }
+                    QueryResult.Unit
+                }, 0)
+
+                assertEquals(&quot;test-value&quot;, migratedValue)
+
+                // Verify old table was dropped
+                assertTableDoesNotExist(driver, &quot;OldTable&quot;)
+            }
+        )
+    }
+}
+</code></pre>
+<p><strong>Step 3</strong>: Run the test</p>
+<pre><code class="language-bash">./gradlew :persistence:jvmTest --tests &quot;*Migration121Test&quot;
+</code></pre>
+<h3>Complete Example: Migration 120 - System Message Consolidation</h3>
+<p>Migration 120 consolidated 10 separate system message content tables into a single <code>MessageSystemContent</code> table. The test suite demonstrates comprehensive coverage with the following test types:</p>
+<h4>Basic Migration Tests (11 tests)</h4>
+<p>Each old table gets its own test to verify correct migration:</p>
+<pre><code class="language-kotlin">@Test
+fun testMemberChangeContentMigration() = runTest(dispatcher) {
+    runMigrationTest(
+        schemaVersion = 120,
+        setupOldSchema = { driver -&gt;
+            driver.executeInsert(&quot;&quot;&quot;
+                INSERT INTO MessageMemberChangeContent
+                (message_id, conversation_id, member_change_list, member_change_type)
+                VALUES ('$MESSAGE_ID', '$CONVERSATION_ID', '[&quot;user1&quot;, &quot;user2&quot;]', 'ADDED')
+            &quot;&quot;&quot;)
+        },
+        migrationSql = { getMigration120Sql() },
+        verifyNewSchema = { driver -&gt;
+            val count = driver.countRows(&quot;MessageSystemContent&quot;)
+            assertEquals(1, count)
+
+            var contentType: String? = null
+            var list1: String? = null
+            var enum1: String? = null
+
+            driver.executeQuery(null, &quot;&quot;&quot;
+                SELECT content_type, list_1, enum_1
+                FROM MessageSystemContent
+                WHERE message_id = '$MESSAGE_ID'
+            &quot;&quot;&quot;.trimIndent(), { cursor -&gt;
+                if (cursor.next().value) {
+                    contentType = cursor.getString(0)
+                    list1 = cursor.getString(1)
+                    enum1 = cursor.getString(2)
+                }
+                QueryResult.Unit
+            }, 0)
+
+            assertEquals(&quot;MEMBER_CHANGE&quot;, contentType)
+            assertEquals(&quot;&quot;&quot;[&quot;user1&quot;, &quot;user2&quot;]&quot;&quot;&quot;, list1)
+            assertEquals(&quot;ADDED&quot;, enum1)
+
+            assertTableDoesNotExist(driver, &quot;MessageMemberChangeContent&quot;)
+        }
+    )
+}
+</code></pre>
+<p>Similar tests cover:</p>
+<ul>
+<li><code>testFailedToDecryptContentMigration</code> - Tests BLOB and error code migration</li>
+<li><code>testConversationRenamedContentMigration</code> - Tests text field migration</li>
+<li><code>testReceiptModeContentMigration</code> - Tests boolean field migration from two separate tables</li>
+<li><code>testTimerChangedContentMigration</code> - Tests integer field migration</li>
+<li><code>testFederationTerminatedContentMigration</code> - Tests list and enum migration</li>
+<li><code>testProtocolChangedContentMigration</code> - Tests enum-only migration</li>
+<li><code>testLegalHoldContentMigration</code> - Tests complex list with enums</li>
+<li><code>testAppsEnabledChangedContentMigration</code> - Tests boolean field migration</li>
+<li><code>testMultipleSystemMessagesMigration</code> - Tests migrating all types together</li>
+<li><code>testIndexCreation</code> - Verifies indexes are created correctly</li>
+</ul>
+<h4>Data Integrity Tests (6 tests)</h4>
+<p>Verify ALL fields are correctly migrated, including NULL values for unused fields:</p>
+<pre><code class="language-kotlin">@Test
+fun testMemberChangeDataIntegrity_AllFieldsPreserved() = runTest(dispatcher) {
+    runMigrationTest(
+        schemaVersion = 120,
+        setupOldSchema = { driver -&gt;
+            driver.executeInsert(&quot;&quot;&quot;
+                INSERT INTO MessageMemberChangeContent
+                (message_id, conversation_id, member_change_list, member_change_type)
+                VALUES ('$MESSAGE_ID', '$CONVERSATION_ID',
+                        '[&quot;user1&quot;, &quot;user2&quot;]', 'FEDERATION_REMOVED')
+            &quot;&quot;&quot;)
+        },
+        migrationSql = { getMigration120Sql() },
+        verifyNewSchema = { driver -&gt;
+            var messageId: String? = null
+            var conversationId: String? = null
+            var contentType: String? = null
+            var text1: String? = null
+            var integer1: Long? = null
+            var boolean1: Long? = null
+            var list1: String? = null
+            var enum1: String? = null
+            var blob1: ByteArray? = null
+
+            driver.executeQuery(null, &quot;&quot;&quot;
+                SELECT message_id, conversation_id, content_type,
+                       text_1, integer_1, boolean_1, list_1, enum_1, blob_1
+                FROM MessageSystemContent
+                WHERE message_id = '$MESSAGE_ID'
+            &quot;&quot;&quot;.trimIndent(), { cursor -&gt;
+                if (cursor.next().value) {
+                    messageId = cursor.getString(0)
+                    conversationId = cursor.getString(1)
+                    contentType = cursor.getString(2)
+                    text1 = cursor.getString(3)
+                    integer1 = cursor.getLong(4)
+                    boolean1 = cursor.getLong(5)
+                    list1 = cursor.getString(6)
+                    enum1 = cursor.getString(7)
+                    blob1 = cursor.getBytes(8)
+                }
+                QueryResult.Unit
+            }, 0)
+
+            // Verify PKs
+            assertEquals(MESSAGE_ID, messageId)
+            assertEquals(CONVERSATION_ID, conversationId)
+
+            // Verify content type
+            assertEquals(&quot;MEMBER_CHANGE&quot;, contentType)
+
+            // Verify used fields
+            assertEquals(&quot;&quot;&quot;[&quot;user1&quot;, &quot;user2&quot;]&quot;&quot;&quot;, list1)
+            assertEquals(&quot;FEDERATION_REMOVED&quot;, enum1)
+
+            // Verify unused fields are NULL
+            assertNull(text1)
+            assertNull(integer1)
+            assertNull(boolean1)
+            assertNull(blob1)
+        }
+    )
+}
+</code></pre>
+<p>Similar comprehensive tests for:</p>
+<ul>
+<li><code>testFailedDecryptDataIntegrity_AllFieldsPreserved</code></li>
+<li><code>testConversationRenamedDataIntegrity_AllFieldsPreserved</code></li>
+<li><code>testAllReceiptModeTypesDataIntegrity</code></li>
+<li><code>testFederationTerminatedDataIntegrity_ComplexListPreserved</code></li>
+<li><code>testLegalHoldDataIntegrity_ComplexMemberList</code></li>
+<li><code>testAllSystemMessageTypesNoDataLoss</code> - Tests all 10 types together with full field verification</li>
+</ul>
+<p>Total: <strong>19+ test cases</strong> covering every migration scenario, edge case, and data integrity requirement.</p>
+<h3>Troubleshooting Common Issues</h3>
+<h4>Schema file not found</h4>
+<pre><code>Error: Schema file not found: /com/wire/kalium/persistence/schemas/119.db
+</code></pre>
+<p><strong>Solution</strong>: Make sure the schema file exists at:
+<code>persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db</code></p>
+<p>Generate it with:</p>
+<pre><code class="language-bash">./gradlew :persistence:generateCommonMainUserDatabaseInterface
+cp persistence/src/commonMain/db_user/schemas/124.db \
+   persistence/src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db
+</code></pre>
+<h4>Migration SQL fails</h4>
+<pre><code>Error: Failed to execute migration statement: ...
+</code></pre>
+<p><strong>Solution</strong>:</p>
+<ol>
+<li>Check that your migration SQL is valid SQLite</li>
+<li>Ensure the old tables exist in the schema file</li>
+<li>Verify foreign key constraints are satisfied</li>
+<li>Test each SQL statement individually</li>
+</ol>
+<h4>Table already exists</h4>
+<pre><code>Error: table MessageSystemContent already exists
+</code></pre>
+<p><strong>Solution</strong>: Make sure your migration SQL uses <code>CREATE TABLE IF NOT EXISTS</code> or the schema file is from before the migration. The schema file should be generated BEFORE you write the migration SQL.</p>
+<h4>BLOB data not migrating correctly</h4>
+<pre><code class="language-kotlin">// Wrong - string binding for BLOB
+driver.execute(null, &quot;INSERT INTO Table (data) VALUES (?)&quot;, 1) {
+    bindString(0, testData.toString()) // Wrong!
+}
+
+// Correct - bytes binding for BLOB
+driver.execute(null, &quot;INSERT INTO Table (data) VALUES (?)&quot;, 1) {
+    bindBytes(0, testData) // Correct!
+}
+</code></pre>
+<h4>Boolean values not working</h4>
+<p>SQLite doesn't have a native boolean type. Use INTEGER with 0/1:</p>
+<pre><code class="language-kotlin">// Insert
+driver.executeInsert(&quot;INSERT INTO Table (is_enabled) VALUES (1)&quot;)  // true
+
+// Query - returns Long, not Boolean
+val isEnabled: Long? = cursor.getLong(0)  // 0 or 1
+assertEquals(1L, isEnabled)  // true
+</code></pre>
+<h3>Future Improvements</h3>
+<p>Potential enhancements to the framework:</p>
+<ol>
+<li><strong>Automatic schema file management</strong>: Git hooks or Gradle tasks to automatically copy schema files</li>
+<li><strong>Multi-platform support</strong>: Extend tests to run on Android and iOS targets</li>
+<li><strong>Performance testing</strong>: Measure migration execution time with large datasets</li>
+<li><strong>Data generation helpers</strong>: Factory methods for creating realistic test data</li>
+<li><strong>Migration comparison</strong>: Tools to diff schemas before/after migration</li>
+<li><strong>Visual regression</strong>: Generate schema diagrams before/after migration for documentation</li>
+</ol>
+<h3>Related Files</h3>
+<ul>
+<li><strong>Example Test</strong>: <code>persistence/src/jvmTest/kotlin/com/wire/kalium/persistence/dao/migration/Migration120Test.kt</code> - Reference implementation with 19+ test cases</li>
+<li><strong>Base Class</strong>: <code>persistence/src/jvmTest/kotlin/com/wire/kalium/persistence/dao/migration/SchemaMigrationTest.kt</code> - Framework implementation</li>
+<li><strong>Related ADR</strong>: ADR 0002 - Consolidate System Message Content Tables</li>
+<li><strong>Migration File</strong>: <code>persistence/src/commonMain/db_user/migrations/124.sqm</code> - Actual migration SQL</li>
+</ul>
 </div>
                 </div>
             </div>
