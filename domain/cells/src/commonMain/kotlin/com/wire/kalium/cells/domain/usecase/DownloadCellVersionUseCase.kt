@@ -23,14 +23,14 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import okio.BufferedSink
+import okio.Sink
 
 /**
  * Download a cell version from the wire cell server via presigned url.
  */
 public interface DownloadCellVersionUseCase {
     public suspend operator fun invoke(
-        bufferedSink: BufferedSink,
+        bufferedSink: Sink,
         preSignedUrl: String,
         onProgressUpdate: (Long, Long) -> Unit,
     ): Either<CoreFailure, Unit>
@@ -42,7 +42,7 @@ internal class DownloadCellVersionUseCaseImpl internal constructor(
 ) : DownloadCellVersionUseCase {
 
     override suspend fun invoke(
-        bufferedSink: BufferedSink,
+        bufferedSink: Sink,
         preSignedUrl: String,
         onProgressUpdate: (Long, Long) -> Unit,
     ) = withContext(dispatchers.io) {
