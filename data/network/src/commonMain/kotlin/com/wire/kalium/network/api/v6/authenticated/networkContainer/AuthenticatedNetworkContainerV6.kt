@@ -43,6 +43,7 @@ import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
+import com.wire.kalium.network.api.base.authenticated.sync.SyncApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v6.authenticated.AccessTokenApiV6
@@ -65,6 +66,7 @@ import com.wire.kalium.network.api.v6.authenticated.SelfApiV6
 import com.wire.kalium.network.api.v6.authenticated.ServerTimeApiV6
 import com.wire.kalium.network.api.v6.authenticated.ConversationHistoryApiV6
 import com.wire.kalium.network.api.v6.authenticated.TeamsApiV6
+import com.wire.kalium.network.api.v6.authenticated.sync.SyncApiV6
 import com.wire.kalium.network.api.v6.authenticated.UpgradePersonalToTeamApiV6
 import com.wire.kalium.network.api.v6.authenticated.UserDetailsApiV6
 import com.wire.kalium.network.api.v6.authenticated.UserSearchApiV6
@@ -86,6 +88,7 @@ internal class AuthenticatedNetworkContainerV6 internal constructor(
     mockEngine: HttpClientEngine?,
     mockWebSocketSession: WebSocketSession?,
     kaliumLogger: KaliumLogger,
+    private val syncApiBaseUrl: String? = null,
     engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
@@ -156,4 +159,5 @@ internal class AuthenticatedNetworkContainerV6 internal constructor(
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV6(networkClient)
 
+    override val syncApi: SyncApi get() = SyncApiV6(networkClient, syncApiBaseUrl)
 }

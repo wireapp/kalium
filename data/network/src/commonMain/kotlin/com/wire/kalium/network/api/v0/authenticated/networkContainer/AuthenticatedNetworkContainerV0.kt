@@ -84,6 +84,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
     mockEngine: HttpClientEngine?,
     mockWebSocketSession: WebSocketSession?,
     kaliumLogger: KaliumLogger,
+    private val syncApiBaseUrl: String? = null,
     engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
@@ -154,5 +155,5 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV0(networkClient)
 
-    override val syncApi get() = SyncApiV0(networkClient)
+    override val syncApi get() = SyncApiV0(networkClient, syncApiBaseUrl)
 }

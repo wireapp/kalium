@@ -54,6 +54,7 @@ data class KaliumConfigs(
     val isMlsResetEnabled: Boolean = false,
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
+    val syncApiUrl: String? = null,
 )
 
 sealed interface BuildFileRestrictionState {

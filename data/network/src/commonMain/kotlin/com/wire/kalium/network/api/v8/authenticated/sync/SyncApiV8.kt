@@ -22,5 +22,6 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v7.authenticated.sync.SyncApiV7
 
 internal open class SyncApiV8 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : SyncApiV7(authenticatedNetworkClient)
+    authenticatedNetworkClient: AuthenticatedNetworkClient,
+    syncApiBaseUrl: String? = null
+) : SyncApiV7(authenticatedNetworkClient, syncApiBaseUrl)

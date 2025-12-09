@@ -28,14 +28,22 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
 internal open class SyncApiV0 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val syncApiBaseUrl: String? = null
 ) : SyncApi {
 
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun uploadOperations(request: SyncOperationRequest): NetworkResponse<SyncOperationResponse> =
         wrapKaliumResponse {
-            httpClient.post("$PATH_SYNC/$PATH_OPERATIONS") {
+            val url = if (syncApiBaseUrl != null) {
+                // Use custom sync API base URL
+                "$syncApiBaseUrl/$PATH_SYNC/$PATH_OPERATIONS"
+            } else {
+                // Use default backend URL
+                "$PATH_SYNC/$PATH_OPERATIONS"
+            }
+            httpClient.post(url) {
                 setBody(request)
             }
         }

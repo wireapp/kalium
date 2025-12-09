@@ -141,6 +141,7 @@ interface AuthenticatedNetworkContainer {
             mockEngine: HttpClientEngine?,
             mockWebSocketSession: WebSocketSession?,
             kaliumLogger: KaliumLogger,
+            syncApiBaseUrl: String? = null,
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -151,7 +152,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
@@ -159,7 +161,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
@@ -168,7 +171,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 // this is intentional since we should drop support for api v3
@@ -179,7 +183,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
@@ -188,7 +193,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
@@ -197,7 +203,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 6 -> AuthenticatedNetworkContainerV6(
@@ -206,7 +213,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 7 -> AuthenticatedNetworkContainerV7(
@@ -215,7 +223,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 8 -> AuthenticatedNetworkContainerV8(
@@ -224,7 +233,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 9 -> AuthenticatedNetworkContainerV9(
@@ -233,7 +243,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 10 -> AuthenticatedNetworkContainerV10(
@@ -242,7 +253,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 11 -> AuthenticatedNetworkContainerV11(
@@ -251,7 +263,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 12 -> AuthenticatedNetworkContainerV12(
@@ -260,7 +273,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    syncApiBaseUrl
                 )
 
                 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to

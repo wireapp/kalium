@@ -676,7 +676,8 @@ class UserSessionScope internal constructor(
         certificatePinning = kaliumConfigs.certPinningConfig,
         mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
         mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
-        kaliumLogger = userScopedLogger
+        kaliumLogger = userScopedLogger,
+        syncApiBaseUrl = kaliumConfigs.syncApiUrl
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version

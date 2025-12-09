@@ -50,6 +50,9 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val mlsMigrationInterval by option(
         help = "interval at which mls migration is updated"
     ).default("24h")
+    private val syncApiUrl by option(
+        help = "URL of the sync API service (independent from backend API)"
+    )
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
     override fun run() = runBlocking {
@@ -59,7 +62,8 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
                 kaliumConfigs = KaliumConfigs(
                     developmentApiEnabled = developmentApiEnabled,
                     encryptProteusStorage = encryptProteusStorage,
-                    mlsMigrationInterval = Duration.parse(mlsMigrationInterval)
+                    mlsMigrationInterval = Duration.parse(mlsMigrationInterval),
+                    syncApiUrl = syncApiUrl
                 )
             )
         }
