@@ -70,3 +70,6 @@ ON CONFLICT(key) DO UPDATE SET
 
 selectState:
 SELECT value FROM SyncState WHERE key = ?;
+
+selectChanges:
+SELECT changes();

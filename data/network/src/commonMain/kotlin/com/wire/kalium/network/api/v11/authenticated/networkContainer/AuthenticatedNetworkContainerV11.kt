@@ -66,8 +66,8 @@ import com.wire.kalium.network.api.v11.authenticated.SelfApiV11
 import com.wire.kalium.network.api.v11.authenticated.ServerTimeApiV11
 import com.wire.kalium.network.api.v11.authenticated.ConversationHistoryApiV11
 import com.wire.kalium.network.api.v11.authenticated.TeamsApiV11
-import com.wire.kalium.network.api.v11.authenticated.sync.SyncApiV11
 import com.wire.kalium.network.api.v11.authenticated.UpgradePersonalToTeamApiV11
+import com.wire.kalium.network.api.v9.authenticated.sync.SyncApiV9
 import com.wire.kalium.network.api.v11.authenticated.UserDetailsApiV11
 import com.wire.kalium.network.api.v11.authenticated.UserSearchApiV11
 import com.wire.kalium.network.api.vcommon.WildCardApiImpl
@@ -171,7 +171,7 @@ internal class AuthenticatedNetworkContainerV11 internal constructor(
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV11(networkClient)
 
-    override val syncApi: SyncApi get() = SyncApiV11(networkClient, syncApiBaseUrl)
+    override val syncApi: SyncApi get() = SyncApiV9(networkClient, syncApiBaseUrl)
 
     override val cellsHttpClient: HttpClient = networkClient.httpClient
 }

@@ -60,8 +60,7 @@ internal class SyncOutboxDAOImpl internal constructor(
 
     override suspend fun resetFailedToPending(maxAttempts: Int): Int = withContext(writeDispatcher.value) {
         syncOutboxQueries.resetFailedToPending(maxAttempts.toLong())
-            .executeAsOne()
-            .toInt()
+        syncOutboxQueries.selectChanges().executeAsOne().toInt()
     }
 
     override fun observeStats(): Flow<Map<String, Int>> {

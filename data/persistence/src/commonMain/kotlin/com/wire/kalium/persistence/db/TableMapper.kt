@@ -309,4 +309,13 @@ internal object TableMapper {
     val conversationAppsAccessChangedAdapter = MessageConversationAppsEnabledChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
     )
+
+    val syncOutboxAdapter = SyncOutbox.Adapter(
+        created_atAdapter = InstantTypeAdapter,
+        last_attempt_atAdapter = InstantTypeAdapter
+    )
+
+    val syncStateAdapter = SyncState.Adapter(
+        updated_atAdapter = InstantTypeAdapter
+    )
 }

@@ -197,7 +197,9 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageConversationAppsEnabledChangedContentAdapter = TableMapper.conversationAppsAccessChangedAdapter
+        MessageConversationAppsEnabledChangedContentAdapter = TableMapper.conversationAppsAccessChangedAdapter,
+        SyncOutboxAdapter = TableMapper.syncOutboxAdapter,
+        SyncStateAdapter = TableMapper.syncStateAdapter
     )
 
     init {
