@@ -44,7 +44,7 @@ interface ConversationExtensions {
     )
 }
 
-    internal class ConversationExtensionsImpl internal constructor(
+internal class ConversationExtensionsImpl internal constructor(
     private val queries: ConversationDetailsWithEventsQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
     private val readDispatcher: ReadDispatcher,
@@ -63,15 +63,25 @@ interface ConversationExtensions {
             readDispatcher = readDispatcher,
         )
 
+    /**
+     * Uses lightweight COUNT when `searchQuery` is empty.
+     *
+     * Architectural decision explained in ADR-003:
+     * https://github.com/wireapp/kalium/tree/develop/docs/adr/0003-lightweight-count-for-faster-conversation-list-loading.md
+     *
+     * Summary:
+     * - COUNT on Conversation is significantly faster than COUNT on ConversationDetails
+     * - Only used when search is empty
+     * - SELECT still uses full ConversationDetails rules (COUNT can be a superset)
+     */
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
         QueryPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
-                    queries.countConversationDetailsWithEvents(
+                    queries.countConversations(
                         fromArchive = fromArchive,
-                        onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
-                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
+                        strict_mls = if (strictMlsFilter) 1 else 0,
                     )
                 } else {
                     queries.countConversationDetailsWithEventsFromSearch(
@@ -79,7 +89,7 @@ interface ConversationExtensions {
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
                         searchQuery = searchQuery,
-                        strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
+                        strict_mls = if (strictMlsFilter) 1 else 0,
                     )
                 },
             transacter = queries,

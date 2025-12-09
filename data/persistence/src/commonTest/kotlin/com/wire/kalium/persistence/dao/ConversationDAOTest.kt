@@ -2838,6 +2838,77 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
     }
 
+    @Test
+    fun givenUnreadMessagesAndReadDateBeforeMessages_whenUpdateReadDateAndGetHasUnreadEvents_thenReturnsTrue() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val conversation = conversationEntity1
+
+        val messageDate = Clock.System.now()
+
+        val messages = buildList {
+            repeat(5) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(),
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        date = messageDate
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+
+        val readDate = messageDate - 1.days
+
+        // when
+        val hasUnread = conversationDAO.updateReadDateAndGetHasUnreadEvents(
+            conversationID = conversation.id,
+            date = readDate
+        )
+
+        // then
+        assertTrue(hasUnread)
+    }
+
+    @Test
+    fun givenUnreadMessagesAndReadDateAfterMessages_whenUpdateReadDateAndGetHasUnreadEvents_thenReturnsFalse() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val conversation = conversationEntity1
+
+        val messageDate = Clock.System.now()
+
+        val messages = buildList {
+            repeat(5) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(),
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        date = messageDate
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+        val readDate = messageDate + 1.days
+
+        // when
+        val hasUnread = conversationDAO.updateReadDateAndGetHasUnreadEvents(
+            conversationID = conversation.id,
+            date = readDate
+        )
+
+        // then
+        assertFalse(hasUnread)
+    }
+
     private companion object {
         const val teamId = "teamId"
         val messageTimer = 5000L

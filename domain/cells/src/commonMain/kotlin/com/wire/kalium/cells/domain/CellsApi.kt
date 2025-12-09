@@ -23,6 +23,7 @@ import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
+import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.network.utils.NetworkResponse
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -70,6 +71,11 @@ internal interface CellsApi {
     ): NetworkResponse<Unit>
 
     suspend fun restoreNode(uuid: String): NetworkResponse<Unit>
+    suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters = RestPromoteParameters()
+    ): NetworkResponse<Unit>
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
     suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>
