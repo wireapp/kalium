@@ -24,7 +24,6 @@ import kotlinx.serialization.Serializable
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
-import kotlin.js.JsName
 import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
@@ -159,20 +158,21 @@ public sealed class BackupMessageContent {
      *
      * @property text The content of the text message.
      * @property mentions A list of mentions within the text. Each mention identifies a specific user and its position in the text.
+     * @property quotedMessageId The ID of a message that is being quoted by this one, if any.
      *
      * @throws IllegalArgumentException if any mention's range exceeds the length of the text.
      */
     @Serializable
-    public data class Text(val text: String, val mentions: List<Mention>) : BackupMessageContent() {
+    public data class Text(
+        @SerialName("text") val text: String,
+        @SerialName("mentions") val mentions: List<Mention> = emptyList(),
+        @SerialName("quotedMessageId") val quotedMessageId: String? = null
+    ) : BackupMessageContent() {
         init {
             mentions.forEach { mention ->
                 require(mention.start + mention.length <= text.length) { "Mention range exceeds text length" }
             }
         }
-
-        @Deprecated("Use constructor with mentions")
-        @JsName("withoutMentions")
-        public constructor(text: String) : this(text, emptyList())
 
         /**
          * Represents a mention of a user in a text.
