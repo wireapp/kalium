@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Kalium CLI application
+  kalium-cli:
+    build:
+      context: .
+      target: runtime
+      dockerfile: Dockerfile
+    image: kalium:latest
+    container_name: kalium-cli
+    volumes:
+      # Mount a volume for persistent data if needed
+      - kalium-data:/app/data
+    environment:
+      - JAVA_OPTS=-Xmx512m
+    command: java -Djava.library.path=/app/native/libs -jar /app/cli.jar --help
+    restart: unless-stopped
+
+  # Development environment
+  kalium-dev:
+    build:
+      context: .
+      target: development
+      dockerfile: Dockerfile
+    image: kalium:dev
+    container_name: kalium-dev
+    volumes:
+      # Mount source code for live development
+      - .:/app
+      # Cache Gradle dependencies
+      - gradle-cache:/root/.gradle
+    environment:
+      - JAVA_OPTS=-Xmx2g
+    working_dir: /app
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+
+  # Optional: PostgreSQL database for sync outbox backend (if implementing server-side)
+  postgres:
+    image: postgres:16-alpine
+    container_name: kalium-postgres
+    environment:
+      - POSTGRES_USER=kalium
+      - POSTGRES_PASSWORD=kalium_secret
+      - POSTGRES_DB=kalium_sync
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kalium"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Redis for caching/sessions (if needed)
+  redis:
+    image: redis:7-alpine
+    container_name: kalium-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  kalium-data:
+    driver: local
+  gradle-cache:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  default:
+    name: kalium-network
