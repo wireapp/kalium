@@ -32,7 +32,7 @@ public interface DownloadCellVersionUseCase {
     public suspend operator fun invoke(
         bufferedSink: BufferedSink,
         preSignedUrl: String,
-        onProgressUpdate: (Long) -> Unit,
+        onProgressUpdate: (Long, Long) -> Unit,
     ): Either<CoreFailure, Unit>
 }
 
@@ -44,7 +44,7 @@ internal class DownloadCellVersionUseCaseImpl internal constructor(
     override suspend fun invoke(
         bufferedSink: BufferedSink,
         preSignedUrl: String,
-        onProgressUpdate: (Long) -> Unit,
+        onProgressUpdate: (Long, Long) -> Unit,
     ) = withContext(dispatchers.io) {
         fileDownloader.downloadViaPresignedUrl(
             presignedUrl = preSignedUrl,

@@ -26,7 +26,7 @@ public interface FileDownloader {
     public suspend fun downloadViaPresignedUrl(
         presignedUrl: String,
         outFileSink: Sink,
-        onProgressUpdate: (Long) -> Unit = {},
+        onProgressUpdate: (Long, Long) -> Unit = { _, _ -> },
     ): Either<NetworkFailure, Unit>
 }
 

@@ -34,6 +34,6 @@ public class FileDownloaderApple(
     override suspend fun downloadViaPresignedUrl(
         presignedUrl: String,
         outFileSink: Sink,
-        onProgressUpdate: (Long) -> Unit,
+        onProgressUpdate: (Long, Long) -> Unit,
     ): Either<NetworkFailure, Unit> = Unit.right()
 }

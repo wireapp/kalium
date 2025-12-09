@@ -39,12 +39,14 @@ public class FileDownloaderJvm(
     override suspend fun downloadViaPresignedUrl(
         presignedUrl: String,
         outFileSink: Sink,
-        onProgressUpdate: (Long) -> Unit,
+        onProgressUpdate: (Long, Long) -> Unit,
     ): Either<NetworkFailure, Unit> {
 
         val response = httpClient.get(presignedUrl) {
-            onDownload { bytesSentTotal, _ ->
-                onProgressUpdate(bytesSentTotal)
+            onDownload { bytesSentTotal, contentLength ->
+                contentLength?.let {
+                    onProgressUpdate(bytesSentTotal, it)
+                }
             }
         }
 

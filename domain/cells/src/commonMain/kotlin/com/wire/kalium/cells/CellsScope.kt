@@ -217,7 +217,7 @@ public class CellsScope(
     public val downloadCellFile: DownloadCellFileUseCase
         get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
 
-    public val fileDownloader: FileDownloader
+    private val fileDownloader: FileDownloader
         get() = fileDownloader(httpClient = downloadHttpClient)
 
     public val refreshAsset: RefreshCellAssetStateUseCase
