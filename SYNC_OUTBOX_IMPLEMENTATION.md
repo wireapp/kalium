@@ -4,11 +4,6 @@
 
 This document summarizes the complete implementation of the database sync outbox system for Kalium. The system enables automatic replication of local database changes to a remote server, allowing users to restore their data when logging in on new devices.
 
-**Implementation Date**: December 2025
-**Branch**: `experiment/sync-pg`
-**Total Commits**: 6 phases
-**Files Changed**: 52 files (32 new, 20 modified)
-
 ## Architecture
 
 ### Design Pattern: Trigger-Based Transactional Outbox
@@ -132,6 +127,7 @@ END;
    ```kotlin
    @Serializable
    data class SyncOperationRequest(
+       @SerialName("user_id") val userId: String,
        @SerialName("batch_id") val batchId: String,
        @SerialName("device_id") val deviceId: String,
        @SerialName("operations") val operations: List<OperationDTO>
@@ -451,6 +447,7 @@ INSERT INTO SyncOutbox (
 ```json
 // Request
 {
+  "user_id": "user-123@domain.com",
   "batch_id": "user-123-1733688000000",
   "device_id": "device-abc",
   "operations": [
@@ -647,6 +644,7 @@ fun `end to end - worker uploads operations`() {
 **Request Schema**:
 ```json
 {
+  "user_id": "string (qualified user ID, e.g., user@domain.com)",
   "batch_id": "string (uuid format)",
   "device_id": "string",
   "operations": [
@@ -829,46 +827,6 @@ scope.enableSyncReplication(false)
 // DELETE FROM SyncOutbox WHERE sync_status IN ('PENDING', 'FAILED');
 ```
 
----
-
-## Git Commit History
-
-```bash
-# Phase 1: Database infrastructure
-87c5cbfe4d feat(persistence): add database replication infrastructure (Phase 1)
-
-# Phase 2: DAO layer
-1c3415601a feat(persistence): implement sync outbox DAO layer (Phase 2)
-
-# Phase 3: Network API
-449ff02a37 feat(network): implement sync operations API (Phase 3)
-
-# Phase 4: Business logic
-a1303a1c0f feat(logic): implement sync outbox business logic (Phase 4)
-
-# Phase 5: Background worker
-88f81a25dc feat(logic): implement sync outbox background worker (Phase 5)
-
-# Phase 6: Integration
-29a030d154 feat(logic): wire sync outbox into UserSessionScope (Phase 6)
-```
-
----
-
-## Summary Statistics
-
-| Metric | Value |
-|--------|-------|
-| **Total Lines Added** | 1,681 |
-| **Total Lines Removed** | 43 |
-| **Files Created** | 32 |
-| **Files Modified** | 20 |
-| **Commits** | 6 |
-| **Implementation Time** | 1 session |
-| **Estimated Backend Effort** | 2-3 weeks |
-
----
-
 ## Conclusion
 
 The sync outbox system is **fully implemented and operational**. All client-side components are in place:
@@ -889,8 +847,3 @@ The sync outbox system is **fully implemented and operational**. All client-side
 
 **Status**: Ready for backend integration and production testing.
 
----
-
-*Generated: December 2025*
-*Branch: `experiment/sync-pg`*
-*Implementation: Claude Sonnet 4.5*

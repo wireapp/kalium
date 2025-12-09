@@ -27,6 +27,7 @@ import kotlinx.serialization.json.JsonElement
  */
 @Serializable
 data class SyncOperationRequest(
+    @SerialName("user_id") val userId: String,
     @SerialName("batch_id") val batchId: String,
     @SerialName("device_id") val deviceId: String,
     @SerialName("operations") val operations: List<OperationDTO>

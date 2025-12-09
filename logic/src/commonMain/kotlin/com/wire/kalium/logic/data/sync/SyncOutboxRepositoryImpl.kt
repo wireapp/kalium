@@ -88,6 +88,7 @@ internal class SyncOutboxRepositoryImpl(
                 val batchId = "${userId.value}-${timestamp.toEpochMilliseconds()}"
 
                 val request = SyncOperationRequest(
+                    userId = userId.value,
                     batchId = batchId,
                     deviceId = clientId,
                     operations = operations.map { entity ->
