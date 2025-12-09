@@ -30,10 +30,18 @@ actual fun globalDatabaseProvider(
 ): GlobalDatabaseBuilder {
     val schema = GlobalDatabase.Schema
     val dbName = FileNameUtil.globalDBName()
+
+    // Determine storage mode based on passphrase
+    val storageMode = if (passphrase != null) {
+        DatabaseStorageMode.Encrypted(passphrase.value)
+    } else {
+        DatabaseStorageMode.Unencrypted
+    }
+
     val driver = databaseDriver(
         platformDatabaseData.context,
         dbName,
-        passphrase?.value,
+        storageMode,
         schema
     ) {
         isWALEnabled = enableWAL

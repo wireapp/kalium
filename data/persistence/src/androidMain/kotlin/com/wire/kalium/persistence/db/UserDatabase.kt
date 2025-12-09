@@ -42,21 +42,65 @@ actual fun userDatabaseBuilder(
     enableWAL: Boolean
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
-    val isEncryptionEnabled = passphrase != null
+
+    // Determine storage mode based on passphrase
+    val storageMode = if (passphrase != null) {
+        DatabaseStorageMode.Encrypted(passphrase.value)
+    } else {
+        DatabaseStorageMode.Unencrypted
+    }
+
     val driver = databaseDriver(
         context = platformDatabaseData.context,
         dbName = dbName,
-        passphrase = passphrase?.value,
+        storageMode = storageMode,
         schema = UserDatabase.Schema
     ) {
         isWALEnabled = enableWAL
     }
+
     return UserDatabaseBuilder(
         userId = userId,
         sqlDriver = driver,
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
-        isEncrypted = isEncryptionEnabled,
+        isEncrypted = storageMode is DatabaseStorageMode.Encrypted,
+    )
+}
+
+/**
+ * Creates a UserDatabaseBuilder with the specified storage mode.
+ *
+ * @param platformDatabaseData Platform-specific data (Android context)
+ * @param userId The user ID for this database
+ * @param storageMode The storage mode (Encrypted, Unencrypted, or LiteSync)
+ * @param dispatcher Coroutine dispatcher for database operations
+ * @param enableWAL Whether to enable Write-Ahead Logging
+ */
+fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    storageMode: DatabaseStorageMode,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean
+): UserDatabaseBuilder {
+    val dbName = FileNameUtil.userDBName(userId)
+
+    val driver = databaseDriver(
+        context = platformDatabaseData.context,
+        dbName = dbName,
+        storageMode = storageMode,
+        schema = UserDatabase.Schema
+    ) {
+        isWALEnabled = enableWAL
+    }
+
+    return UserDatabaseBuilder(
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = storageMode is DatabaseStorageMode.Encrypted,
     )
 }
 

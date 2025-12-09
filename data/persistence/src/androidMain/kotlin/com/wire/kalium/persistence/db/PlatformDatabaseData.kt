@@ -22,6 +22,7 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.db.support.LiteSyncOpenHelperFactory
 import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 
@@ -34,30 +35,61 @@ actual class PlatformDatabaseData(
     val context: Context
 )
 
+/**
+ * Creates a SQLDelight driver based on the specified storage mode.
+ *
+ * @param context Android context
+ * @param dbName Database file name
+ * @param storageMode The storage mode determining encryption and sync behavior
+ * @param schema SQLDelight schema for database creation/migration
+ * @param config Additional driver configuration (WAL mode, etc.)
+ * @return SqlDriver configured according to the storage mode
+ */
 @Suppress("LongParameterList")
 fun databaseDriver(
     context: Context,
     dbName: String,
-    passphrase: ByteArray? = null,
+    storageMode: DatabaseStorageMode,
     schema: SqlSchema<QueryResult.Value<Unit>>,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val enableWAL = driverConfiguration.isWALEnabled
-    return if (passphrase != null) {
-        System.loadLibrary("sqlcipher")
-        AndroidSqliteDriver(
-            schema = schema,
-            context = context,
-            name = dbName,
-            factory = SupportOpenHelperFactory(passphrase, enableWAL),
-        )
-    } else {
-        AndroidSqliteDriver(
-            schema = schema,
-            context = context,
-            name = dbName,
-            callback = SqliteCallback(schema, enableWAL),
-        )
+
+    return when (storageMode) {
+        is DatabaseStorageMode.Encrypted -> {
+            System.loadLibrary("sqlcipher")
+            AndroidSqliteDriver(
+                schema = schema,
+                context = context,
+                name = dbName,
+                factory = SupportOpenHelperFactory(storageMode.passphrase, enableWAL),
+            )
+        }
+
+        is DatabaseStorageMode.Unencrypted -> {
+            AndroidSqliteDriver(
+                schema = schema,
+                context = context,
+                name = dbName,
+                callback = SqliteCallback(schema, enableWAL),
+            )
+        }
+
+        is DatabaseStorageMode.LiteSync -> {
+            System.loadLibrary("litesync")
+            AndroidSqliteDriver(
+                schema = schema,
+                context = context,
+                name = dbName,
+                factory = LiteSyncOpenHelperFactory(
+                    syncUri = storageMode.syncUri,
+                    nodeType = storageMode.nodeType,
+                    enableWriteAheadLogging = enableWAL,
+                    onDatabaseReady = storageMode.onReady,
+                    onDatabaseSync = storageMode.onSync
+                ),
+            )
+        }
     }
 }

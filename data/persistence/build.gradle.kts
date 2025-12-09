@@ -109,6 +109,9 @@ kotlin {
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
+                // LiteSync AAR for database replication
+                // Download from https://litesync.io and place in libs/ folder
+                implementation(files("libs/litesync.aar"))
             }
         }
         val appleMain by getting {
