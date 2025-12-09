@@ -38,7 +38,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
@@ -86,11 +86,6 @@ actual class CoreLogic(
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
-        userSessionScopeProvider.value.delete(userId)
-    }
-
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
     override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
     override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
@@ -98,4 +93,4 @@ actual class CoreLogic(
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "ios"
+internal actual val clientPlatform: String = "ios"

@@ -44,7 +44,7 @@ import java.io.File
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
@@ -76,11 +76,6 @@ actual class CoreLogic(
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
-        userSessionScopeProvider.value.delete(userId)
-    }
-
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
         PlatformContext(),
         CoroutineScope(KaliumDispatcherImpl.io)
@@ -108,4 +103,4 @@ actual class CoreLogic(
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "jvm"
+internal actual val clientPlatform: String = "jvm"

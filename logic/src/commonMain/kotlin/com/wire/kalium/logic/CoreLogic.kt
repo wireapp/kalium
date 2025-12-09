@@ -41,9 +41,9 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-expect class CoreLogic : CoreLogicCommon
+public expect class CoreLogic : CoreLogicCommon
 
-abstract class CoreLogicCommon internal constructor(
+public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
     protected val kaliumConfigs: KaliumConfigs,
@@ -54,7 +54,7 @@ abstract class CoreLogicCommon internal constructor(
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
-    val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
+    internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
@@ -71,10 +71,10 @@ abstract class CoreLogicCommon internal constructor(
             audioNormalizedLoudnessBuilder
         )
     }
-    fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
+    public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(
+    public fun getAuthenticationScope(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?
     ): AuthenticationScope =
@@ -86,21 +86,19 @@ abstract class CoreLogicCommon internal constructor(
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    abstract fun getSessionScope(userId: UserId): UserSessionScope
-
-    abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
+    public abstract fun getSessionScope(userId: UserId): UserSessionScope
 
     // TODO: make globalScope a singleton
-    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
+    public inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(
+    public inline fun <T> authenticationScope(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         action: AuthenticationScope.() -> T
     ): T =
         getAuthenticationScope(serverConfig, proxyCredentials).action()
 
-    inline fun <T> sessionScope(
+    public inline fun <T> sessionScope(
         userId: UserId,
         action: UserSessionScope.() -> T
     ): T = getSessionScope(userId).action()
@@ -109,14 +107,14 @@ abstract class CoreLogicCommon internal constructor(
 
     protected abstract val workSchedulerProvider: WorkSchedulerProvider
 
-    fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
+    public fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
-    abstract val networkStateObserver: NetworkStateObserver
+    public abstract val networkStateObserver: NetworkStateObserver
 
     internal val logoutCallbackManager = LogoutCallbackManagerImpl()
 
-    abstract val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+    public abstract val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 }
 
-expect val clientPlatform: String
+internal expect val clientPlatform: String
