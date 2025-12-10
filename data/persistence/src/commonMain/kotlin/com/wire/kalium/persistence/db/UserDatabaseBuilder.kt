@@ -157,9 +157,6 @@ class UserDatabaseBuilder internal constructor(
         MemberAdapter = TableMapper.memberAdapter,
         MessageAdapter = TableMapper.messageAdapter,
         MessageAssetContentAdapter = TableMapper.messageAssetContentAdapter,
-        MessageConversationChangedContentAdapter = TableMapper.messageConversationChangedContentAdapter,
-        MessageFailedToDecryptContentAdapter = TableMapper.messageFailedToDecryptContentAdapter,
-        MessageMemberChangeContentAdapter = TableMapper.messageMemberChangeContentAdapter,
         MessageLinkPreviewAdapter = TableMapper.messageLinkPreviewAdapter,
         MessageMentionAdapter = TableMapper.messageMentionAdapter,
         MessageMissedCallContentAdapter = TableMapper.messageMissedCallContentAdapter,
@@ -170,18 +167,12 @@ class UserDatabaseBuilder internal constructor(
         ReceiptAdapter = TableMapper.receiptAdapter,
         SelfUserAdapter = TableMapper.selfUserAdapter,
         UserAdapter = TableMapper.userAdapter,
-        MessageConversationReceiptModeChangedContentAdapter = TableMapper.messageConversationReceiptModeChangedContentAdapter,
-        MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
         UnreadEventAdapter = TableMapper.unreadEventAdapter,
-        MessageConversationTimerChangedContentAdapter = TableMapper.messageConversationTimerChangedContentAdapter,
         ServiceAdapter = TableMapper.serviceAdapter,
         NewClientAdapter = TableMapper.newClientAdapter,
         MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
         ButtonContentAdapter = TableMapper.buttonContentAdapter,
-        MessageFederationTerminatedContentAdapter = TableMapper.messageFederationTerminatedContentAdapter,
-        MessageConversationProtocolChangedContentAdapter = TableMapper.messageConversationProtocolChangedContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
-        MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
         MessageConversationProtocolChangedDuringACallContentAdapter =
             TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
@@ -193,7 +184,7 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageConversationAppsEnabledChangedContentAdapter = TableMapper.conversationAppsAccessChangedAdapter
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter
     )
 
     init {

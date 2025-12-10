@@ -28,13 +28,14 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.any
-import io.mockative.of
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -48,13 +49,13 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP)
 
-        coVerify {
+        verifySuspend {
             arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))),
                 CRLUrlExpirationList.serializer()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -65,13 +66,13 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP)
 
-        coVerify {
+        verifySuspend {
             arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))),
                 CRLUrlExpirationList.serializer()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -82,13 +83,13 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP2)
 
-        coVerify {
+        verifySuspend {
             arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP2))),
                 CRLUrlExpirationList.serializer()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -99,7 +100,7 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL2, TIMESTAMP)
 
-        coVerify {
+        verifySuspend {
             arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(
@@ -110,7 +111,7 @@ class CertificateRevocationListRepositoryTest {
                 ),
                 CRLUrlExpirationList.serializer()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -122,9 +123,9 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        coVerify { arrangement.userConfigRepository.getE2EISettings() }.wasInvoked(once)
+        verify { arrangement.userConfigRepository.getE2EISettings() }
 
-        coVerify { arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, DUMMY_URL) }.wasInvoked(once)
+        verifySuspend { arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, DUMMY_URL) }
     }
 
     @Test
@@ -136,11 +137,11 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        coVerify { arrangement.userConfigRepository.getE2EISettings() }.wasInvoked(once)
+        verify { arrangement.userConfigRepository.getE2EISettings() }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, null)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -152,56 +153,54 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        coVerify { arrangement.userConfigRepository.getE2EISettings() }.wasInvoked(once)
+        verify { arrangement.userConfigRepository.getE2EISettings() }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, null)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
 
-        val acmeApi = mock(ACMEApi::class)
-        val metadataDAO = mock(MetadataDAO::class)
-        val userConfigRepository = mock(of<UserConfigRepository>())
+        val acmeApi = mock<ACMEApi>()
+        val metadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
+        val userConfigRepository = mock<UserConfigRepository>()
 
         fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
 
-        suspend fun withEmptyList() = apply {
-            coEvery {
+        fun withEmptyList() = apply {
+            everySuspend {
                 metadataDAO.getSerializable(
                     CRL_LIST_KEY,
                     CRLUrlExpirationList.serializer()
                 )
-            }.returns(CRLUrlExpirationList(listOf()))
+            } returns CRLUrlExpirationList(listOf())
         }
 
-        suspend fun withNullCRLResult() = apply {
-            coEvery {
+        fun withNullCRLResult() = apply {
+            everySuspend {
                 metadataDAO.getSerializable(
                     CRL_LIST_KEY,
                     CRLUrlExpirationList.serializer()
                 )
-            }.returns(null)
+            } returns null
         }
 
-        suspend fun withCRLs() = apply {
-            coEvery {
+        fun withCRLs() = apply {
+            everySuspend {
                 metadataDAO.getSerializable(
                     CRL_LIST_KEY,
                     CRLUrlExpirationList.serializer()
                 )
-            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
+            } returns CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP)))
         }
 
-        suspend fun withE2EISettings(result: Either<StorageFailure, E2EISettings> = E2EI_SETTINGS.right()) = apply {
-            every { userConfigRepository.getE2EISettings() }
-                .returns(result)
+        fun withE2EISettings(result: Either<StorageFailure, E2EISettings> = E2EI_SETTINGS.right()) = apply {
+            every { userConfigRepository.getE2EISettings() } returns result
         }
 
-        suspend fun withClientDomainCRL() = apply {
-            coEvery { acmeApi.getClientDomainCRL(any(), any<String?>()) }
-                .returns(NetworkResponse.Success("some_response".encodeToByteArray(), mapOf(), 200))
+        fun withClientDomainCRL() = apply {
+            everySuspend { acmeApi.getClientDomainCRL(any(), any<String?>()) } returns NetworkResponse.Success("some_response".encodeToByteArray(), mapOf(), 200)
         }
     }
 
