@@ -142,7 +142,7 @@ internal class ConversationMapperImpl(
             creatorId = apiModel.creator ?: selfUserId.value, // NOTE mls 1-1 does not have the creator field set.
             lastReadDate = Instant.UNIX_FIRST_DATE,
             lastNotificationDate = null,
-            lastModifiedDate = apiModel.lastEventTime.toInstant(),
+            lastModifiedDate = Instant.parse(apiModel.lastEventTime),
             access = apiModel.access.map { it.toDAO() },
             accessRole = (apiModel.accessRole ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL)
                 .map { it.toDAO() },
@@ -151,7 +151,7 @@ internal class ConversationMapperImpl(
             userMessageTimer = null, // user picked self deletion timer is only persisted locally
             hasIncompleteMetadata = false,
             archived = apiModel.members.self?.otrArchived ?: false,
-            archivedInstant = apiModel.members.self?.otrArchivedRef?.toInstant(),
+            archivedInstant = apiModel.members.self?.otrArchivedRef?.let { Instant.parse(it) },
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
@@ -519,9 +519,9 @@ internal class ConversationMapperImpl(
         mutedTime = 0,
         removedBy = null,
         creatorId = "",
-        lastNotificationDate = "1970-01-01T00:00:00.000Z".toInstant(),
-        lastModifiedDate = "1970-01-01T00:00:00.000Z".toInstant(),
-        lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastNotificationDate = Instant.parse("1970-01-01T00:00:00.000Z"),
+        lastModifiedDate = Instant.parse("1970-01-01T00:00:00.000Z"),
+        lastReadDate = Instant.parse("1970-01-01T00:00:00.000Z"),
         access = emptyList(),
         accessRole = emptyList(),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,

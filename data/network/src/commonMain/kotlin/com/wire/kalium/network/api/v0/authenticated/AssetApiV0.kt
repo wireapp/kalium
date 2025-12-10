@@ -189,8 +189,7 @@ internal class StreamAssetContent internal constructor(
             }
         }
         channel.writeStringUtf8(closingArray)
-        channel.flush()
-        channel.close()
+        channel.flushAndClose()
     }
 }
 

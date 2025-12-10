@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isHandleExists
 import com.wire.kalium.network.exceptions.isInvalidHandle
@@ -44,7 +44,7 @@ sealed class SetUserHandleResult {
 class SetUserHandleUseCase internal constructor(
     private val accountRepository: AccountRepository,
     private val validateUserHandle: ValidateUserHandleUseCase,
-    private val syncManager: SyncManager
+    private val syncManager: SyncStateObserver
 ) {
     /**
      * @param handle the handle to set for the user

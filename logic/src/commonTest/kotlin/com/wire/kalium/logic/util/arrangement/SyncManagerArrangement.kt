@@ -19,18 +19,18 @@ package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.coEvery
 import io.mockative.mock
 
 interface SyncManagerArrangement {
-        val syncManager: SyncManager
+        val syncManager: SyncStateObserver
 
     suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>)
 }
 
 class SyncManagerArrangementImpl : SyncManagerArrangement {
-        override val syncManager: SyncManager = mock(SyncManager::class)
+        override val syncManager: SyncStateObserver = mock(SyncStateObserver::class)
     override suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) {
         coEvery {
             syncManager.waitUntilLiveOrFailure()

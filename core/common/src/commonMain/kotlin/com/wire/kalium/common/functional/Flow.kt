@@ -18,6 +18,7 @@
 
 package com.wire.kalium.common.functional
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -41,6 +42,7 @@ inline fun <A, B> Collection<A>.flatMapFromIterable(
 
 fun <T1, T2> Flow<T1>.combine(flow: Flow<T2>): Flow<Pair<T1, T2>> = combine(flow) { t1, t2 -> t1 to t2 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<List<T>>.flatten() = flatMapConcat { it.asFlow() }
 
 fun <T> Flow<T>.distinct(): Flow<T> {

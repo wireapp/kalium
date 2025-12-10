@@ -54,7 +54,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestShareLinkAccessType
 import com.wire.kalium.cells.sdk.kmp.model.RestUserMeta
 import com.wire.kalium.cells.sdk.kmp.model.StatusFilterDeletedStatus
 import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
@@ -454,7 +454,7 @@ private suspend inline fun <reified BodyType : Any> wrapCellsResponse(
         if (status.isSuccess()) {
             NetworkResponse.Success(response.body(), emptyMap(), response.status)
         } else {
-            NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(response.status, "", "")))
+            NetworkResponse.Error(KaliumException.ServerError(GenericAPIErrorResponse(response.status, "", "")))
         }
 
     } catch (e: CancellationException) {

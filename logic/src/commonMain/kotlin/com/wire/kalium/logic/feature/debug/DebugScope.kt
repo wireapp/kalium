@@ -63,7 +63,7 @@ import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -89,7 +89,7 @@ class DebugScope internal constructor(
     private val userId: UserId,
     private val assetRepository: AssetRepository,
     private val eventRepository: EventRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val selfConversationIdProvider: SelfConversationIdProvider,

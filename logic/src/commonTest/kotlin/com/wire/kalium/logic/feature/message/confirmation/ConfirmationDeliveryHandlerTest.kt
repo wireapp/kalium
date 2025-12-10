@@ -29,7 +29,7 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -236,7 +236,7 @@ class ConfirmationDeliveryHandlerTest {
 
     private class Arrangement {
 
-        val syncManager: SyncManager = mock(SyncManager::class)
+        val syncManager: SyncStateObserver = mock(SyncStateObserver::class)
         val sendDeliverSignal: SendDeliverSignalUseCase = mock(SendDeliverSignalUseCase::class)
         val conversationRepository = mock(ConversationRepository::class)
 

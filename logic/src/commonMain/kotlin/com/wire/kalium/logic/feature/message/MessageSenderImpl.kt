@@ -56,7 +56,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
@@ -76,7 +76,7 @@ import kotlinx.datetime.Instant
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val legalHoldHandler: LegalHoldHandler,
     private val sessionEstablisher: SessionEstablisher,

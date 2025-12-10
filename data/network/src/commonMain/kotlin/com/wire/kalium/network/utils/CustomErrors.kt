@@ -18,7 +18,7 @@
 
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.NetworkErrorLabel
 
@@ -31,7 +31,7 @@ object CustomErrors {
     val MISSING_REFRESH_TOKEN =
         NetworkResponse.Error(
             KaliumException.ServerError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     MISSING_REFRESH_TOKEN_CODE,
                     "no cookie was found",
                     NetworkErrorLabel.KaliumCustom.MISSING_REFRESH_TOKEN
@@ -42,7 +42,7 @@ object CustomErrors {
     val MISSING_NONCE =
         NetworkResponse.Error(
             KaliumException.ServerError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     MISSING_NONCE_CODE,
                     "no nonce found",
                     NetworkErrorLabel.KaliumCustom.MISSING_NONCE
@@ -53,7 +53,7 @@ object CustomErrors {
     val MISSING_CHALLENGE =
         NetworkResponse.Error(
             KaliumException.ServerError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     MISSING_CHALLENGE_TYPE,
                     "no challenge type found",
                     NetworkErrorLabel.KaliumCustom.MISSING_CHALLENGE_TYPE

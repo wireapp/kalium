@@ -19,14 +19,12 @@
 package com.wire.kalium.network.api.model
 
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse.Companion.ERROR_DISCRIMINATOR_FIELD_NAME
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 sealed interface APIErrorResponseBody
-
-@Deprecated("Use GenericErrorResponse instead")
-typealias ErrorResponse = GenericAPIErrorResponse
 
 @Serializable
 data class GenericAPIErrorResponse(
@@ -77,6 +75,7 @@ data class Cause(
     @SerialName("path") val path: String,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator(ERROR_DISCRIMINATOR_FIELD_NAME)
 sealed interface MLSErrorResponse : APIErrorResponseBody {

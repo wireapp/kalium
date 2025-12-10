@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
@@ -44,7 +43,7 @@ class ProtoContentMapperTest {
 
     private lateinit var protoContentMapper: ProtoContentMapper
     val selfUserId = UserId("user-id", "domain")
-    val idMapper: IdMapper = IdMapperImpl()
+    val idMapper: IdMapper = IdMapper()
 
     @BeforeTest
     fun setup() {

@@ -28,7 +28,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
@@ -96,7 +96,7 @@ class SendConfirmationUseCaseTest {
 
     private class Arrangement {
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        private val syncManager = mock(SyncManager::class)
+        private val syncManager = mock(SyncStateObserver::class)
         val messageSender = mock(MessageSender::class)
         private val conversationRepository = mock(ConversationRepository::class)
         val messageRepository = mock(MessageRepository::class)

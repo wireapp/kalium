@@ -53,6 +53,6 @@ enum class MutedStatus {
     ALL_MUTED;
 
     companion object {
-        fun fromOrdinal(ordinal: Int): MutedStatus? = values().firstOrNull { ordinal == it.ordinal }
+        fun fromOrdinal(ordinal: Int): MutedStatus? = entries.firstOrNull { ordinal == it.ordinal }
     }
 }

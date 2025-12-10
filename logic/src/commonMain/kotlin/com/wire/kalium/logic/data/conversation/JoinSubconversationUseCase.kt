@@ -164,4 +164,4 @@ private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
 
 private fun SubconversationResponse.timeElapsedSinceLastEpochChange(): Duration =
-    epochTimestamp?.toInstant()?.timeElapsedUntilNow() ?: Duration.ZERO
+    epochTimestamp?.let { Instant.parse(it) }?.timeElapsedUntilNow() ?: Duration.ZERO

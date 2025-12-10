@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -243,7 +244,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         private fun connectionEntity(id: String = "0") = ConnectionEntity(
             conversationId = id,
             from = "from_string",
-            lastUpdateDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastUpdateDate = Instant.parse("2022-03-30T15:36:00.000Z"),
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
             qualifiedToId = OTHER_USER_ID,
             status = ConnectionEntity.State.PENDING,
@@ -254,7 +255,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         private fun connectionEntityWithUser(id: String, user: UserEntity) = ConnectionEntity(
             conversationId = id,
             from = "from_string",
-            lastUpdateDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastUpdateDate = Instant.parse("2022-03-30T15:36:00.000Z"),
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
             qualifiedToId = user.id,
             status = ConnectionEntity.State.PENDING,

@@ -29,7 +29,6 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
@@ -65,7 +64,7 @@ internal class PersistConversationsUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val idMapper: IdMapper = IdMapperImpl(),
+    private val idMapper: IdMapper = IdMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
 ) : PersistConversationsUseCase {
 

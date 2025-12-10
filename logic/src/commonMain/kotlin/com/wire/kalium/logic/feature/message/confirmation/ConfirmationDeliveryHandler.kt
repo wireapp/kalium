@@ -29,7 +29,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.logStructuredJson
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.Mockable
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
@@ -48,7 +48,7 @@ internal interface ConfirmationDeliveryHandler {
 }
 
 internal class ConfirmationDeliveryHandlerImpl(
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val conversationRepository: ConversationRepository,
     private val sendDeliverSignalUseCase: SendDeliverSignalUseCase,
     private val pendingConfirmationMessages: ConcurrentMutableMap<ConversationId, MutableSet<String>> =

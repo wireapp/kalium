@@ -93,7 +93,7 @@ internal class ConversationHistoryApiV11Test : ApiTest() {
             responseBody = """{"type":"private"}""",
             assertion = {
                 val expectedPathSegments = listOf("history", conversationId.domain, conversationId.value, historyClientId.value)
-                val actualPathSegments = url.pathSegments.filter { it.isNotBlank() && it != "v1" }
+                val actualPathSegments = url.rawSegments.filter { it.isNotBlank() && it != "v1" }
                 assertContentEquals(expectedPathSegments, actualPathSegments)
                 assertEquals(offset.toString(), url.parameters["offset"], "Offset was not set correctly.")
                 assertEquals(size.toString(), url.parameters["size"], "Size was not set correctly.")

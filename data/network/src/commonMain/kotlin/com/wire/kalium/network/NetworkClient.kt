@@ -122,7 +122,7 @@ internal class AuthenticatedWebSocketClient(
             host = baseUrl.host,
             port = URLProtocol.WSS.defaultPort,
         )
-            .appendPathSegments(baseUrl.pathSegments)
+            .appendPathSegments(baseUrl.rawSegments)
             .appendPathSegments(
                 if (shouldAddApiVersion) "v${serverConfigDTO.metaData.commonApiVersion.version}" else ""
             ).appendPathSegments(path.toList())

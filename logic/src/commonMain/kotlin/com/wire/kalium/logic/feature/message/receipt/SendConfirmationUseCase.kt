@@ -40,12 +40,11 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.serialization.toJsonElement
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
@@ -66,7 +65,7 @@ internal interface SendConfirmationUseCase {
 @Suppress("LongParameterList", "FunctionNaming")
 internal fun SendConfirmationUseCase(
     currentClientIdProvider: CurrentClientIdProvider,
-    syncManager: SyncManager,
+    syncManager: SyncStateObserver,
     messageSender: MessageSender,
     selfUserId: UserId,
     conversationRepository: ConversationRepository,

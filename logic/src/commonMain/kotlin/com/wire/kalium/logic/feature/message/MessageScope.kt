@@ -109,7 +109,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
@@ -135,7 +135,7 @@ class MessageScope internal constructor(
     private val assetRepository: AssetRepository,
     private val reactionRepository: ReactionRepository,
     private val receiptRepository: ReceiptRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val userPropertyRepository: UserPropertyRepository,

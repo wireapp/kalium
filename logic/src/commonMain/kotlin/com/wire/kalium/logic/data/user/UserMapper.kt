@@ -50,6 +50,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions")
@@ -289,7 +290,7 @@ internal class UserMapperImpl(
             userType = userTypeEntity,
             botService = null,
             deleted = userDTO.deleted ?: false,
-            expiresAt = expiresAt?.toInstant(),
+            expiresAt = expiresAt?.let { Instant.parse(it) },
             defederated = false,
             supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
             activeOneOnOneConversationId = null,
@@ -347,7 +348,7 @@ internal class UserMapperImpl(
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
-        expiresAt = userProfile.expiresAt?.toInstant(),
+        expiresAt = userProfile.expiresAt?.let { Instant.parse(it) },
         defederated = false,
         supportedProtocols = userProfile.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
         activeOneOnOneConversationId = null
@@ -384,7 +385,7 @@ internal class UserMapperImpl(
             ),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,
-            expiresAt = userProfile.expiresAt?.toInstant(),
+            expiresAt = userProfile.expiresAt?.let { Instant.parse(it) },
             defederated = false,
             isProteusVerified = false,
             supportedProtocols = userProfile.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS),

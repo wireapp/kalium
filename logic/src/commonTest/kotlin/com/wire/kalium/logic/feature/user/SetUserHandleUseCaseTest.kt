@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
@@ -44,7 +44,7 @@ class SetUserHandleUseCaseTest {
 
         private val accountRepository = mock(AccountRepository::class)
 
-        private val syncManager = mock(SyncManager::class)
+        private val syncManager = mock(SyncStateObserver::class)
 
     private lateinit var setUserHandleUseCase: SetUserHandleUseCase
 

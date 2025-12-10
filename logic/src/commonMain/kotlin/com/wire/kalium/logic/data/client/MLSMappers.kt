@@ -40,7 +40,6 @@ fun MLSCiphersuite.toModel(): CipherSuite = when (this) {
     MLSCiphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     MLSCiphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> CipherSuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
     MLSCiphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> CipherSuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
-    else -> CipherSuite.UNKNOWN(0)
 }
 
 fun MLSCiphersuite.toDao(): ConversationEntity.CipherSuite = when (this) {

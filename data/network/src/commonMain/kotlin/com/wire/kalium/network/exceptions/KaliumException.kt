@@ -23,8 +23,8 @@ package com.wire.kalium.network.exceptions
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.authenticated.message.SendMessageResponse
-import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCOUNT_PENDING_ACTIVATION
@@ -65,17 +65,17 @@ sealed class KaliumException : Exception() {
     /**
      * http error 300 .. 399
      */
-    data class RedirectError(val errorResponse: ErrorResponse) : KaliumException()
+    data class RedirectError(val errorResponse: GenericAPIErrorResponse) : KaliumException()
 
     /**
      * http error 400 .. 499
      */
-    data class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException()
+    data class InvalidRequestError(val errorResponse: GenericAPIErrorResponse) : KaliumException()
 
     /**
      * http error 500 .. 599
      */
-    data class ServerError(val errorResponse: ErrorResponse) : KaliumException()
+    data class ServerError(val errorResponse: GenericAPIErrorResponse) : KaliumException()
 
     /**
      * Generic errors e.g. Serialization errors

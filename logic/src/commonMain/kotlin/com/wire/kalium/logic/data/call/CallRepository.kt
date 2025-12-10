@@ -670,6 +670,7 @@ internal class CallDataSource(
             epochInfo
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
@@ -730,7 +731,7 @@ internal class CallDataSource(
     }
 }
 
-private inline operator fun MutableStateFlow<CallMetadataProfile>.get(conversationId: ConversationId) = value[conversationId]?.value
+private operator fun MutableStateFlow<CallMetadataProfile>.get(conversationId: ConversationId) = value[conversationId]?.value
 
 private inline fun MutableStateFlow<CallMetadataProfile>.update(conversationId: ConversationId, function: (CallMetadata) -> CallMetadata) =
     value[conversationId]?.updateAndGet(function)

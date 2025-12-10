@@ -92,7 +92,7 @@ import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.user.UpdateNextTimeCallFeedbackUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 
@@ -104,7 +104,7 @@ class CallsScope internal constructor(
     private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
-    private val syncManager: Lazy<SyncManager>,
+    private val syncManager: Lazy<SyncStateObserver>,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,

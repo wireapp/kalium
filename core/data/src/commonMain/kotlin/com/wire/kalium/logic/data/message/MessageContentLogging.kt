@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.message
 
 @Suppress("CyclomaticComplexMethod")
-inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
+fun MessageContent.FromProto.typeDescription(): String = when (this) {
     is MessageContent.Asset -> "Asset"
     is MessageContent.Composite -> "Composite"
     is MessageContent.FailedDecryption -> "FailedDecryption"

@@ -34,9 +34,9 @@ import com.wire.kalium.logic.feature.conversation.createconversation.GroupConver
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.coEvery
@@ -216,7 +216,7 @@ class GroupConversationCreatorTest {
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
         val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val syncManager = mock(SyncManager::class)
+        val syncManager = mock(SyncStateObserver::class)
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         private val createGroupConversation = GroupConversationCreatorImpl(
@@ -235,7 +235,7 @@ class GroupConversationCreatorTest {
             Either.Left(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(
+                        GenericAPIErrorResponse(
                             code = 403,
                             label = "operation-denied",
                             message = "Invalid-permission"

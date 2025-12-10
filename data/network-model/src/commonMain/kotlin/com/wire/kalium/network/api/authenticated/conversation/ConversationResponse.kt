@@ -422,18 +422,5 @@ data class SubconversationMemberDTO(
     @SerialName("domain") val domain: String
 )
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializer(ConversationResponse.Type::class)
-class ConversationTypeSerializer : KSerializer<ConversationResponse.Type> {
-    override val descriptor = PrimitiveSerialDescriptor("type", PrimitiveKind.INT)
-
-    override fun serialize(encoder: Encoder, value: ConversationResponse.Type) = encoder.encodeInt(value.id)
-
-    override fun deserialize(decoder: Decoder): ConversationResponse.Type {
-        val rawValue = decoder.decodeInt()
-        return ConversationResponse.Type.fromId(rawValue)
-    }
-}
-
 fun ConversationResponse.cellEnabled(): Boolean =
     this.cellsState == "ready" || this.cellsState == "pending"

@@ -30,7 +30,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.datetime.Clock
 
 interface AnalyticsIdentifierManager {
@@ -58,7 +58,7 @@ internal fun AnalyticsIdentifierManager(
     selfUserId: UserId,
     selfClientIdProvider: CurrentClientIdProvider,
     selfConversationIdProvider: SelfConversationIdProvider,
-    syncManager: SyncManager,
+    syncManager: SyncStateObserver,
     defaultLogger: KaliumLogger = kaliumLogger
 ) = object : AnalyticsIdentifierManager {
 

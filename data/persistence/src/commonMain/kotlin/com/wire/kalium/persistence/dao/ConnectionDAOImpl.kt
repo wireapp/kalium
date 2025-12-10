@@ -168,7 +168,7 @@ class ConnectionDAOImpl(
 
     override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) {
         withContext(writeDispatcher.value) {
-            connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
+            connectionsQueries.updateConnectionLastUpdated(Instant.parse(lastUpdate), id)
         }
     }
 

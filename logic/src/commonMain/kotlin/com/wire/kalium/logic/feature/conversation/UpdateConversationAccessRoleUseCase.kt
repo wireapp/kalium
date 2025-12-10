@@ -26,9 +26,10 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * This use case will update the access and access role configuration of a conversation.
@@ -71,7 +72,7 @@ interface UpdateConversationAccessRoleUseCase {
 internal class UpdateConversationAccessRoleUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncStateObserver
 ) : UpdateConversationAccessRoleUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,
@@ -81,7 +82,7 @@ internal class UpdateConversationAccessRoleUseCaseImpl internal constructor(
 
         syncManager.waitUntilLiveOrFailure().flatMap {
             if (!accessRoles.contains(Conversation.AccessRole.GUEST)
-                && conversationGroupRepository.observeGuestRoomLink(conversationId).first() != null
+                && conversationGroupRepository.observeGuestRoomLink(conversationId).firstOrNull() != null
             ) {
                 conversationGroupRepository.revokeGuestRoomLink(conversationId)
             } else {

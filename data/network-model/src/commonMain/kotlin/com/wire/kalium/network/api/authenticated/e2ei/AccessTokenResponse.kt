@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.network.api.authenticated.e2ei
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
 
-@Suppress("EnforceSerializableFields")
 @Serializable
 data class AccessTokenResponse(
-    @JsonNames("expires_in")
+    @SerialName("expires_in")
     val expiresIn: String,
     val token: String,
     val type: String

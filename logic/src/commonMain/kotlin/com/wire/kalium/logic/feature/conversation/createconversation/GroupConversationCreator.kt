@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isOperationDenied
 import com.wire.kalium.util.DateTimeUtil
@@ -64,7 +64,7 @@ interface GroupConversationCreator {
 internal class GroupConversationCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,

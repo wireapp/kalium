@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
 import io.mockative.coEvery
@@ -417,7 +417,7 @@ class UpdateConversationAccessUseCaseTest {
     private class Arrangement {
         val conversationRepository = mock(ConversationRepository::class)
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
-        val syncManager = mock(SyncManager::class)
+        val syncManager = mock(SyncStateObserver::class)
 
         val updateConversationAccess: UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCaseImpl(
             conversationRepository,

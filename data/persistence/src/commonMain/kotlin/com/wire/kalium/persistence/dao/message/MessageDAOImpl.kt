@@ -356,7 +356,7 @@ internal class MessageDAOImpl internal constructor(
         queries.selectMessagesByConversationIdAndVisibilityAfterDate(
             conversationId,
             visibility,
-            date.toInstant(),
+            Instant.parse(date),
             mapper::toEntityMessageFromView
         )
             .asFlow()

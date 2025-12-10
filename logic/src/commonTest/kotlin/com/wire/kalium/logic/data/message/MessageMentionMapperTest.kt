@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
@@ -37,7 +36,7 @@ import kotlin.test.assertTrue
 class MessageMentionMapperTest {
 
     val selfUserId = UserId("user-id", "domain")
-    val idMapper: IdMapper = IdMapperImpl()
+    val idMapper: IdMapper = IdMapper()
     private val messageMentionMapper: MessageMentionMapper = MessageMentionMapperImpl(idMapper, selfUserId)
 
     @Test

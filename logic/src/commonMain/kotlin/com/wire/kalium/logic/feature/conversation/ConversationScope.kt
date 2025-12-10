@@ -99,7 +99,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSender
@@ -114,7 +114,7 @@ class ConversationScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,

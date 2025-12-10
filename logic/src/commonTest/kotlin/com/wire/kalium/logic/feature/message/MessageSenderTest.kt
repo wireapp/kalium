@@ -53,7 +53,6 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.feature.mls.FakeMLSMissingUsersRejectionHandler
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangementImpl

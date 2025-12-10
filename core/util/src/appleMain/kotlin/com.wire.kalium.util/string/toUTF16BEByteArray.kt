@@ -18,6 +18,7 @@
 
 package com.wire.kalium.util.string
 
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.memScoped
@@ -32,6 +33,7 @@ import platform.Foundation.getBytes
 actual fun String.toUTF16BEByteArray(): ByteArray =
     (this as NSString).dataUsingEncoding(NSUTF16BigEndianStringEncoding)!!.toByteArray()
 
+@OptIn(BetaInteropApi::class)
 actual fun ByteArray.toStringFromUtf16BE(): String = memScoped {
     val data = NSData.create(
         bytes = allocArrayOf(this@toStringFromUtf16BE),

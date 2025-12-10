@@ -440,7 +440,7 @@ sealed interface MessageContent {
  * @return A string representing the type of content.
  * Useful for logging. Plain strings must be used, otherwise it may be affected by code minification.
  */
-@Suppress("ComplexMethod", "LongMethod")
+@Suppress("ComplexMethod", "LongMethod", "DEPRECATION")
 fun MessageContent?.getType() = when (this) {
     is MessageContent.Asset -> "Asset"
     is MessageContent.FailedDecryption -> "FailedDecryption"

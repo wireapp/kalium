@@ -37,7 +37,7 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
@@ -64,7 +64,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =

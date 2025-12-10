@@ -73,7 +73,7 @@ class ProtocolInfoMapperImpl(
             )
         }
 
-    private inline fun Conversation.ProtocolInfo.MLSCapable.GroupState.toEntity() = when (this) {
+    private fun Conversation.ProtocolInfo.MLSCapable.GroupState.toEntity() = when (this) {
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> ConversationEntity.GroupState.PENDING_CREATION
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> ConversationEntity.GroupState.PENDING_JOIN
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
@@ -81,7 +81,7 @@ class ProtocolInfoMapperImpl(
         Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> ConversationEntity.GroupState.PENDING_AFTER_RESET
     }
 
-    private inline fun ConversationEntity.GroupState.toDomain() = when (this) {
+    private fun ConversationEntity.GroupState.toDomain() = when (this) {
         ConversationEntity.GroupState.PENDING_CREATION -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
         ConversationEntity.GroupState.PENDING_JOIN -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
         ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE -> Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE

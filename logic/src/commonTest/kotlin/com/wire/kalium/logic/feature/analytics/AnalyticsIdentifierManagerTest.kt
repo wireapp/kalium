@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
@@ -112,7 +112,7 @@ class AnalyticsIdentifierManagerTest {
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
         SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl() {
 
-        val syncManager = mock(SyncManager::class)
+        val syncManager = mock(SyncStateObserver::class)
 
         private val useCase: AnalyticsIdentifierManager = AnalyticsIdentifierManager(
             messageSender = messageSender,

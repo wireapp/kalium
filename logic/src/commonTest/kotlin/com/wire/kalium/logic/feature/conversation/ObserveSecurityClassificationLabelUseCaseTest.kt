@@ -129,7 +129,9 @@ class ObserveSecurityClassificationLabelUseCaseTest {
             val (_, getConversationClassifiedType) = Arrangement()
                 .withObserveConversationSuccess("wire.com")
                 .withGettingClassifiedDomains(classifiedDomains)
-                .withParticipantsResponseDomains(memberDomains, "2050-01-01T00:00:00.000Z".toInstant())
+                .withParticipantsResponseDomains(memberDomains,
+                    Instant.parse("2050-01-01T00:00:00.000Z")
+                )
                 .arrange()
 
             val result = getConversationClassifiedType(TestConversation.ID)

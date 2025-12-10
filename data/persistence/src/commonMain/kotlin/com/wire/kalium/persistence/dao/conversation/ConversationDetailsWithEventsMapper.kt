@@ -183,8 +183,7 @@ data object ConversationDetailsWithEventsMapper {
             @Suppress("ComplexCondition") // we need to check all these fields
             if (
                 lastMessageId != null && lastMessageContentType != null && lastMessageDate != null
-                && lastMessageVisibility != null && lastMessageSenderUserId != null && lastMessageIsEphemeral != null
-                && lastMessageIsSelfMessage != null && lastMessageIsMentioningSelfUser != null
+                && lastMessageVisibility != null && lastMessageSenderUserId != null
             ) {
                 MessageMapper.toPreviewEntity(
                     id = lastMessageId,

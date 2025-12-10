@@ -49,7 +49,7 @@ internal class CellUploadManagerImpl internal constructor(
     private val uploads = mutableMapOf<String, UploadInfo>()
 
     override suspend fun upload(
-        localPath: Path,
+        assetPath: Path,
         assetSize: Long,
         destNodePath: String,
     ): Either<NetworkFailure, CellNode> =
@@ -67,7 +67,7 @@ internal class CellUploadManagerImpl internal constructor(
                 size = assetSize,
                 isDraft = true,
             ).also {
-                startUpload(localPath, it)
+                startUpload(assetPath, it)
             }
         }
 

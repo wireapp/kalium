@@ -523,10 +523,10 @@ sealed class ConversationRepository {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
 
                             log.info("Instance ${instance.instanceId}: Wait until alive")
-                            if (syncManager.isSlowSyncOngoing()) {
+                            if (syncStateObserver.isSlowSyncOngoing()) {
                                 log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
                             }
-                            syncManager.waitUntilLiveOrFailure().onFailure {
+                            syncStateObserver.waitUntilLiveOrFailure().onFailure {
                                 log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
                             setMessageTimer(instance, conversationId, messageTimer)
@@ -626,10 +626,10 @@ sealed class ConversationRepository {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
                             log.info("Instance ${instance.instanceId}: Send file")
                             log.info("Instance ${instance.instanceId}: Wait until alive")
-                            if (syncManager.isSlowSyncOngoing()) {
+                            if (syncStateObserver.isSlowSyncOngoing()) {
                                 log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
                             }
-                            syncManager.waitUntilLiveOrFailure().onFailure {
+                            syncStateObserver.waitUntilLiveOrFailure().onFailure {
                                 log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
                             setMessageTimer(instance, conversationId, messageTimer)

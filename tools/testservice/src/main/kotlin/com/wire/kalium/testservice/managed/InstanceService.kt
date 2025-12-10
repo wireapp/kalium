@@ -414,10 +414,10 @@ class InstanceService(
                 if (result is CurrentSessionResult.Success) {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Wait until alive")
-                        if (syncManager.isSlowSyncOngoing()) {
+                        if (syncStateObserver.isSlowSyncOngoing()) {
                             log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
                         }
-                        syncManager.waitUntilLiveOrFailure().onFailure {
+                        syncStateObserver.waitUntilLiveOrFailure().onFailure {
                             log.warn("Instance ${instance.instanceId}: Sync failed with $it")
                         }
                         log.info(

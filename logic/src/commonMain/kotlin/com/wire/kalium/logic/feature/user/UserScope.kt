@@ -99,7 +99,7 @@ import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicator
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.ForegroundActionsUseCase
 import com.wire.kalium.logic.sync.ForegroundActionsUseCaseImpl
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -110,7 +110,7 @@ class UserScope internal constructor(
     private val userRepository: UserRepository,
     private val userConfigRepository: UserConfigRepository,
     private val accountRepository: AccountRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val assetRepository: AssetRepository,
     private val teamRepository: TeamRepository,
     private val sessionRepository: SessionRepository,

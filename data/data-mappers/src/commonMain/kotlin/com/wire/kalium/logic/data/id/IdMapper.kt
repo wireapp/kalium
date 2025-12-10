@@ -64,8 +64,7 @@ interface IdMapper {
 fun IdMapper(): IdMapper = IdMapperImpl()
 
 @Suppress("TooManyFunctions")
-@Deprecated("Use IdMapper() instead", ReplaceWith("IdMapper()"))
-class IdMapperImpl : IdMapper {
+private class IdMapperImpl : IdMapper {
     override fun fromSimpleClientResponse(clientResponse: SimpleClientResponse) = ClientId(clientResponse.id)
 
     override fun fromClient(client: Client) = ClientId(client.id)

@@ -43,9 +43,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 
-@Deprecated("Use SyncStateObserver instead", ReplaceWith("SyncStateObserver"))
-typealias SyncManager = SyncStateObserver
-
 @Mockable
 interface SyncStateObserver {
 
@@ -83,9 +80,6 @@ interface SyncStateObserver {
     suspend fun isSlowSyncCompleted(): Boolean
     suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
 }
-
-@Deprecated("Use SyncStateObserverImpl instead", ReplaceWith("SyncStateObserverImpl"))
-internal typealias SyncManagerImpl = SyncStateObserverImpl
 
 @Suppress("LongParameterList")
 internal class SyncStateObserverImpl(

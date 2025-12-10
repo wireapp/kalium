@@ -28,7 +28,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -157,7 +157,7 @@ class StartCallUseCaseTest {
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         val callManager = mock(CallManager::class)
-        val syncManager = mock(SyncManager::class)
+        val syncManager = mock(SyncStateObserver::class)
         val answerCall = mock(AnswerCallUseCase::class)
         val getCallConversationType = mock(GetCallConversationTypeProvider::class)
         val callRepository = mock(CallRepository::class)

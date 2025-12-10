@@ -121,7 +121,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
     }
 
     private suspend fun UserSessionScope.selectConversation(): Conversation {
-        syncManager.waitUntilLive()
+        syncStateObserver.waitUntilLive()
         val conversations = listConversations()
         val selectedConversationIndex =
             terminal.prompt("Enter conversation index", promptSuffix = ": ")

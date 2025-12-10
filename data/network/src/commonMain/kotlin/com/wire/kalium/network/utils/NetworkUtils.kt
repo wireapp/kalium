@@ -19,7 +19,7 @@
 
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
@@ -35,7 +35,7 @@ import io.ktor.http.Url
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
         host = baseUrl.host
-        pathSegments = baseUrl.pathSegments + path
+        pathSegments = baseUrl.rawSegments + path
         protocol = URLProtocol.WSS
         port = URLProtocol.WSS.defaultPort
     }
@@ -53,7 +53,7 @@ internal fun HttpRequestBuilder.setUrl(baseUrl: String, vararg path: String) {
 private fun HttpRequestBuilder.setHttpsUrl(baseUrl: Url, path: List<String>) {
     url {
         host = baseUrl.host
-        pathSegments = baseUrl.pathSegments + path
+        pathSegments = baseUrl.rawSegments + path
         protocol = URLProtocol.HTTPS
     }
 }
@@ -189,10 +189,10 @@ internal suspend fun handleUnsuccessfulResponse(
     }
 
     val errorResponse = try {
-        KtxSerializer.json.decodeFromString<ErrorResponse>(bodyText)
+        KtxSerializer.json.decodeFromString<GenericAPIErrorResponse>(bodyText)
     } catch (_: IllegalArgumentException) {
         // When the backend returns something that is not a JSON for whatever reason.
-        ErrorResponse(code = status.value, label = status.description, message = bodyText)
+        GenericAPIErrorResponse(code = status.value, label = status.description, message = bodyText)
     }
 
     val kException = toStatusCodeBasedKaliumException(status, result, errorResponse)
@@ -202,7 +202,7 @@ internal suspend fun handleUnsuccessfulResponse(
 private fun toStatusCodeBasedKaliumException(
     status: HttpStatusCode,
     result: HttpResponse,
-    errorResponse: ErrorResponse
+    errorResponse: GenericAPIErrorResponse
 ): KaliumException {
     val kException = when (status.value) {
         HttpStatusCode.Unauthorized.value -> {

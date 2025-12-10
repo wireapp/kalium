@@ -29,14 +29,14 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.datetime.Clock
 
 class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val compositeMessageRepository: CompositeMessageRepository,
     private val messageMetadataRepository: MessageMetadataRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: SyncStateObserver,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId
 ) {

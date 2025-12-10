@@ -41,7 +41,6 @@ class MockWebSocketSession(
 
     override suspend fun flush() {}
 
-    @Suppress("DEPRECATION")
     override fun terminate() {}
 
     suspend fun emit(message: FakeWebSocketMessage) {
