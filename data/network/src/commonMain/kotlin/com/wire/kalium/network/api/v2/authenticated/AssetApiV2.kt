@@ -25,7 +25,7 @@ import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.api.v0.authenticated.StreamAssetContent
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -52,7 +52,7 @@ internal open class AssetApiV2 internal constructor(
         encryptedDataSource: () -> Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post(PATH_ASSETS) {
                 contentType(ContentType.MultiPart.Mixed)
                 setBody(

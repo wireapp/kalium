@@ -35,7 +35,7 @@ import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -50,7 +50,7 @@ internal open class ConversationApiV3 internal constructor(
     override suspend fun fetchConversationsListDetails(
         conversationsIds: List<ConversationId>
     ): NetworkResponse<ConversationResponseDTO> =
-        wrapKaliumResponse<ConversationResponseDTOV3> {
+        wrapRequest<ConversationResponseDTOV3> {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
             }
@@ -69,7 +69,7 @@ internal open class ConversationApiV3 internal constructor(
      */
     override suspend fun createNewConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV3> {
+    ): NetworkResponse<ConversationResponse> = wrapRequest<ConversationResponseV3> {
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(apiModelMapper.toApiV3(createConversationRequest))
         }
@@ -89,7 +89,7 @@ internal open class ConversationApiV3 internal constructor(
                     UpdateConversationAccessResponse.AccessUnchanged,
                     httpResponse
                 )
-                else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
+                else -> wrapRequest<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationAccessResponse.AccessUpdated(it)
                     }

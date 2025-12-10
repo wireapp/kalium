@@ -31,7 +31,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -47,17 +47,17 @@ internal open class SelfApiV0 internal constructor(
 
     internal val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO> = wrapKaliumResponse {
+    override suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO> = wrapRequest {
         httpClient.get(PATH_SELF)
     }
 
-    override suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit> = wrapRequest {
         httpClient.put(PATH_SELF) {
             setBody(userUpdateRequest)
         }
     }
 
-    override suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit> = wrapRequest {
         httpClient.put("$PATH_SELF/$PATH_HANDLE") {
             setBody(request)
         }
@@ -65,7 +65,7 @@ internal open class SelfApiV0 internal constructor(
 
     override suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean> =
         sessionManager.session()?.refreshToken?.let { cookie ->
-            wrapKaliumResponse<Unit> {
+            wrapRequest<Unit> {
                 httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
                     header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
                     setBody(UpdateEmailRequest(email))
@@ -80,7 +80,7 @@ internal open class SelfApiV0 internal constructor(
             }
         } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
 
-    override suspend fun deleteAccount(password: String?): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun deleteAccount(password: String?): NetworkResponse<Unit> = wrapRequest {
         httpClient.delete(PATH_SELF) {
             setBody(DeleteAccountRequest(password))
         }

@@ -35,7 +35,7 @@ import com.wire.kalium.network.api.v7.authenticated.ConversationApiV7
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -51,7 +51,7 @@ internal open class ConversationApiV8 internal constructor(
     override suspend fun fetchConversationDetails(
         conversationId: ConversationId
     ): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse<ConversationResponseV8> {
+        wrapRequest<ConversationResponseV8> {
             httpClient.get(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
             )
@@ -62,7 +62,7 @@ internal open class ConversationApiV8 internal constructor(
     override suspend fun fetchConversationsListDetails(
         conversationsIds: List<ConversationId>
     ): NetworkResponse<ConversationResponseDTO> =
-        wrapKaliumResponse<ConversationResponseDTOV8> {
+        wrapRequest<ConversationResponseDTOV8> {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
             }
@@ -81,7 +81,7 @@ internal open class ConversationApiV8 internal constructor(
      */
     override suspend fun createNewConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV8> {
+    ): NetworkResponse<ConversationResponse> = wrapRequest<ConversationResponseV8> {
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(apiModelMapper.toApiV8(createConversationRequest))
         }
@@ -102,7 +102,7 @@ internal open class ConversationApiV8 internal constructor(
                     httpResponse
                 )
 
-                else -> wrapKaliumResponse<EventContentDTO.Conversation.ChannelAddPermissionUpdate> { httpResponse }
+                else -> wrapRequest<EventContentDTO.Conversation.ChannelAddPermissionUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateChannelAddPermissionResponse.PermissionUpdated(it)
                     }

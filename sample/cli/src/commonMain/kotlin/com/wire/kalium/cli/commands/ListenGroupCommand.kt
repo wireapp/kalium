@@ -23,6 +23,7 @@ import com.github.ajalt.clikt.core.requireObject
 import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.UserSessionScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -32,6 +33,7 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
 
     private val userSession by requireObject<UserSessionScope>()
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun run() = runBlocking {
         val conversationID = userSession.selectConversation().id
 

@@ -46,7 +46,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpStatusCode
@@ -71,7 +71,7 @@ internal open class NotificationApiV0 internal constructor(
 
     override suspend fun mostRecentNotification(
         queryClient: String
-    ): NetworkResponse<EventResponse> = wrapKaliumResponse {
+    ): NetworkResponse<EventResponse> = wrapRequest {
         httpClient.get("$PATH_NOTIFICATIONS/$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
@@ -99,7 +99,7 @@ internal open class NotificationApiV0 internal constructor(
         queryClient: String?,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
-        return wrapKaliumResponse({
+        return wrapRequest({
             if (it.status.value != HttpStatusCode.NotFound.value) null
             else {
                 // In case of 404, we ignore the content completely and fallback to a 404 response to match API V3

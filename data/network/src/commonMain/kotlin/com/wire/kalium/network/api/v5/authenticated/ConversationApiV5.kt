@@ -34,7 +34,7 @@ import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.put
@@ -47,7 +47,7 @@ internal open class ConversationApiV5 internal constructor(
 ) : ConversationApiV4(authenticatedNetworkClient) {
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_GROUP_INFO"
             )
@@ -57,7 +57,7 @@ internal open class ConversationApiV5 internal constructor(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/" +
                         "$PATH_SUBCONVERSATIONS/$subconversationId/$PATH_GROUP_INFO"
@@ -68,7 +68,7 @@ internal open class ConversationApiV5 internal constructor(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
                         "/$PATH_SUBCONVERSATIONS/$subconversationId"
@@ -80,7 +80,7 @@ internal open class ConversationApiV5 internal constructor(
         subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.delete(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId"
             ) {
@@ -92,7 +92,7 @@ internal open class ConversationApiV5 internal constructor(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.delete(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId/self"
             )
@@ -111,7 +111,7 @@ internal open class ConversationApiV5 internal constructor(
                     httpResponse
                 )
                 else -> {
-                    wrapKaliumResponse<EventContentDTO.Conversation.ProtocolUpdate> { httpResponse }
+                    wrapRequest<EventContentDTO.Conversation.ProtocolUpdate> { httpResponse }
                         .mapSuccess {
                             UpdateConversationProtocolResponse.ProtocolUpdated(it)
                         }
@@ -123,7 +123,7 @@ internal open class ConversationApiV5 internal constructor(
     }
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_ONE_TO_ONE/${userId.domain}/${userId.value}")
         }
 

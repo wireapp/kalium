@@ -29,7 +29,7 @@ import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -68,7 +68,7 @@ internal open class MessageApiV0 internal constructor(
     override suspend fun qualifiedSendMessage(
         parameters: Parameters.QualifiedDefaultParameters,
         conversationId: ConversationId
-    ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
+    ): NetworkResponse<QualifiedSendMessageResponse> = wrapRequest<QualifiedSendMessageResponse.MessageSent>({
         if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
         else NetworkResponse.Error(
             kException = ProteusClientsChangedError(
@@ -84,7 +84,7 @@ internal open class MessageApiV0 internal constructor(
 
     override suspend fun qualifiedBroadcastMessage(
         parameters: Parameters.QualifiedDefaultParameters
-    ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
+    ): NetworkResponse<QualifiedSendMessageResponse> = wrapRequest<QualifiedSendMessageResponse.MessageSent>({
         if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
         else NetworkResponse.Error(kException = ProteusClientsChangedError(errorBody = it.parseBody()))
     }) {

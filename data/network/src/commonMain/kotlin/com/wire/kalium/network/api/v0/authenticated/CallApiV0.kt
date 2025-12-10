@@ -22,7 +22,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
@@ -38,14 +38,14 @@ internal open class CallApiV0 internal constructor(private val authenticatedNetw
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getCallConfig(limit: Int?): NetworkResponse<String> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_CALLS/$PATH_CONFIG") {
                 limit?.let { parameter(QUERY_KEY_LIMIT, it) }
             }
         }
 
     override suspend fun connectToSFT(url: String, data: String): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
+        wrapRequest {
             url.let {
                 URLBuilder(it).apply {
                     protocol = URLProtocol.HTTPS

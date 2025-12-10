@@ -139,39 +139,6 @@ internal inline fun <T : Any> NetworkResponse<T>.onSuccess(
 ): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
-/**
- * Wraps a producer of [HttpResponse] and attempts to parse the server response based on the [BodyType].
- * @return - Successful response (HTTP Status Codes from 200 to 299):
- * a [NetworkResponse.Success] with the expected [BodyType] will be returned.
- *
- * - Unsuccessful response (any other HTTP Status Code):
- * a [NetworkResponse.Error] with a [KaliumException]. Will try to read it the body as an [ErrorResponse].
- * It's possible to intercept this and do the mapping to a [NetworkResponse] through [unsuccessfulResponseOverride].
- *
- * - Exceptions failure to reach server or parse response:
- * a [NetworkResponse.Error] containing a [KaliumException.GenericError]
- *
- * @param unsuccessfulResponseOverride Allows to intercept any unsuccessful response
- * and map it to a [NetworkResponse] as needed. This block can return null in order don't override.
- * Useful when handling custom ErrorBody, for example.
- * @param performRequest the block that will result into the [HttpResponse]
- * @see KaliumException
- * @see ErrorResponse
- */
-@Deprecated(
-    message = "This is being renamed to wrapRequest! Use it instead",
-    replaceWith = ReplaceWith("wrapRequest(unsuccessfulResponseOverride, performRequest)")
-)
-internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(
-    crossinline unsuccessfulResponseOverride: (HttpResponseData) -> NetworkResponse<BodyType>? = { null },
-    performRequest: () -> HttpResponse
-): NetworkResponse<BodyType> = wrapRequest(
-    {
-        unsuccessfulResponseOverride(it)
-    },
-    performRequest = performRequest
-)
-
 // TODO(refactor): Remove this function completely. Currently being used in ACME, E2EI and Asset downloads.
 @Deprecated("This should not be called directly. Either wrapRequest, or use the desired ErrorResponseInterceptors as needed")
 internal suspend fun handleUnsuccessfulResponse(

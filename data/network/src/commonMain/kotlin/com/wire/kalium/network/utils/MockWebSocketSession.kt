@@ -41,6 +41,7 @@ class MockWebSocketSession(
 
     override suspend fun flush() {}
 
+    @Deprecated("Use cancel() instead.", replaceWith = ReplaceWith("cancel()", "kotlinx.coroutines.cancel"), level = DeprecationLevel.ERROR)
     override fun terminate() {}
 
     suspend fun emit(message: FakeWebSocketMessage) {

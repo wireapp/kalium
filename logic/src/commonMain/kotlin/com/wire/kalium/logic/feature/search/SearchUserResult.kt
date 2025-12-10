@@ -26,7 +26,7 @@ data class SearchUserResult(
     val notConnected: List<UserSearchDetails>
 ) {
     internal companion object {
-        inline fun resolveLocalAndRemoteResult(
+        fun resolveLocalAndRemoteResult(
             localResult: MutableMap<UserId, UserSearchDetails>,
             remoteSearch: MutableMap<UserId, UserSearchDetails>
         ): SearchUserResult {

@@ -108,6 +108,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
 
     private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun Flow<Instant>.delayUntilNotifyTime(): Flow<Instant> = flatMapLatest { instant ->
         val delayMillis = instant
             .minus(DateTimeUtil.currentInstant())

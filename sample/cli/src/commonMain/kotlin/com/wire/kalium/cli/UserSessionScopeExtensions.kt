@@ -48,7 +48,7 @@ suspend fun UserSessionScope.listConversations(): List<Conversation> {
     val conversations = getConversations(this)
 
     conversations.forEachIndexed { index, conversation ->
-        TermUi.echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
+        println("$index) ${conversation.id.value}  Name: ${conversation.name}")
     }
 
     return conversations
@@ -72,7 +72,7 @@ suspend fun UserSessionScope.selectMember(conversationId: ConversationId): User 
     val members = conversations.observeConversationMembers(conversationId).first()
 
     members.forEachIndexed { index, member ->
-        TermUi.echo("$index) ${member.user.id.value} Name: ${member.user.name}")
+        println("$index) ${member.user.id.value} Name: ${member.user.name}")
     }
 
     val selectedMemberIndex =
@@ -93,7 +93,7 @@ suspend fun UserSessionScope.selectConnection(): OtherUser {
     }
 
     connections.forEachIndexed { index, connection ->
-        TermUi.echo("$index) ${connection.id.value}  Name: ${connection.name}")
+        println("$index) ${connection.id.value}  Name: ${connection.name}")
     }
     val selectedConnectionIndex =
         TermUi.prompt("Enter connection index", promptSuffix = ": ")?.toInt()

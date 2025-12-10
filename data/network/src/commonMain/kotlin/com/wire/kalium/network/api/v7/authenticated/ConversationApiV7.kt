@@ -31,7 +31,7 @@ import com.wire.kalium.network.api.v6.authenticated.ConversationApiV6
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -43,7 +43,7 @@ internal open class ConversationApiV7 internal constructor(
 ) : ConversationApiV6(authenticatedNetworkClient) {
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse<ConversationResponseV6> {
+        wrapRequest<ConversationResponseV6> {
             httpClient.get("$PATH_ONE_2_ONE_CONVERSATIONS/${userId.domain}/${userId.value}")
         }.mapSuccess {
             apiModelMapper.fromApiV6(it)

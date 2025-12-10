@@ -374,7 +374,6 @@ fun Int?.toCommonApiVersionType() = when {
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-@Serializer(CommonApiVersionType::class)
 class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
     override val descriptor = PrimitiveSerialDescriptor("common_api_version", PrimitiveKind.INT)
     override fun serialize(encoder: Encoder, value: CommonApiVersionType) {

@@ -21,13 +21,13 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.v8.authenticated.ServerTimeApiV8
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 
 internal open class ServerTimeApiV9(authenticatedNetworkClient: AuthenticatedNetworkClient) :
     ServerTimeApiV8(authenticatedNetworkClient) {
 
-    override suspend fun getServerTime(): NetworkResponse<ServerTimeDTO> = wrapKaliumResponse {
+    override suspend fun getServerTime(): NetworkResponse<ServerTimeDTO> = wrapRequest {
         httpClient.get(PATH_SERVER_TIME)
     }
 

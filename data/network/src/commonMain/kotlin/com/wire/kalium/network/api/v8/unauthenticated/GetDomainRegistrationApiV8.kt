@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegi
 import com.wire.kalium.network.api.v7.unauthenticated.GetDomainRegistrationApiV7
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setUrl
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -37,7 +37,7 @@ internal open class GetDomainRegistrationApiV8 internal constructor(
 ) : GetDomainRegistrationApiV7(unauthenticatedNetworkClient) {
 
     override suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO> {
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.post(PATH_DOMAIN_REGISTRATION) {
                 setBody(DomainRegistrationRequest(email))
             }
@@ -45,7 +45,7 @@ internal open class GetDomainRegistrationApiV8 internal constructor(
     }
 
     override suspend fun customBackendConfig(backendUrl: String): NetworkResponse<DomainLookupResponse> {
-        return wrapKaliumResponse<DomainLookupResponse> {
+        return wrapRequest<DomainLookupResponse> {
             httpClient.get {
                 accept(ContentType.Text.Plain)
                 setUrl(Url(backendUrl))

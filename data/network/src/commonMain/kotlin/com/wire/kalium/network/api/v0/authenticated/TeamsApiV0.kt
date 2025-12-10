@@ -32,7 +32,7 @@ import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -47,16 +47,16 @@ internal open class TeamsApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.delete("$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId")
         }
 
     override suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_TEAMS/$teamId")
         }
 
-    override suspend fun whiteListedServices(teamId: TeamId, size: Int): NetworkResponse<ServiceDetailResponse> = wrapKaliumResponse {
+    override suspend fun whiteListedServices(teamId: TeamId, size: Int): NetworkResponse<ServiceDetailResponse> = wrapRequest {
         httpClient.get("$PATH_TEAMS/$teamId/$PATH_SERVICES/$PATH_WHITELISTED") {
             parameter("size", size)
         }
@@ -67,7 +67,7 @@ internal open class TeamsApiV0 internal constructor(
         limitTo: Int?,
         pagingState: String?
     ): NetworkResponse<TeamMemberListPaginated> =
-        wrapKaliumResponse<TeamMemberListPaginated> {
+        wrapRequest<TeamMemberListPaginated> {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
                 pagingState?.let { parameter("pagingState", it) }
@@ -77,26 +77,26 @@ internal open class TeamsApiV0 internal constructor(
     override suspend fun getTeamMembersByIds(
         teamId: TeamId,
         teamMemberIdList: TeamMemberIdList
-    ): NetworkResponse<TeamMemberListNonPaginated> = wrapKaliumResponse {
+    ): NetworkResponse<TeamMemberListNonPaginated> = wrapRequest {
         httpClient.post("$PATH_TEAMS/$teamId/$PATH_MEMBERS_BY_IDS") {
             setBody(teamMemberIdList)
         }
     }
 
     override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }
 
     override suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.put("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId/$PATH_APPROVE") {
                 setBody(PasswordRequest(password))
             }
         }
 
     override suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId")
         }
 

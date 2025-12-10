@@ -21,7 +21,7 @@ package com.wire.kalium.network.api.v4.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.v3.authenticated.PreKeyApiV3
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -29,7 +29,7 @@ internal open class PreKeyApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : PreKeyApiV3(authenticatedNetworkClient) {
     override suspend fun getUsersPreKey(users: Map<String, Map<String, List<String>>>) =
-        wrapKaliumResponse<ListPrekeysResponse> {
+        wrapRequest<ListPrekeysResponse> {
             httpClient.post("$PATH_USERS/$PATH_List_PREKEYS") {
                 setBody(users)
             }

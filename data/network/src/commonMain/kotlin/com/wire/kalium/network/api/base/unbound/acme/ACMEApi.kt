@@ -33,7 +33,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
@@ -92,7 +92,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.get("$protocolWithAuthority/$PATH_ACME_ROOTS_PEM")
         }
 
@@ -103,7 +103,7 @@ class ACMEApiImpl internal constructor(
             return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("getACMEDirectories: Url cannot be empty")))
         }
 
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.get(discoveryUrl)
         }
     }
@@ -161,7 +161,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse<String> {
+        return wrapRequest<String> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
                 setBody(body)
@@ -224,7 +224,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse<ChallengeResponse> {
+        return wrapRequest<ChallengeResponse> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
                 setBody(body)
@@ -262,7 +262,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse<FederationCertificateChainResponse> {
+        return wrapRequest<FederationCertificateChainResponse> {
             httpClient.get("$protocolWithAuthority/$PATH_ACME_FEDERATION")
         }.mapSuccess { it.certificates }
     }
@@ -276,7 +276,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse {
+        return wrapRequest {
             val crlUrlBuilder: URLBuilder = URLBuilder(url)
             val proxyUrlBuilder: URLBuilder? = if (proxyUrl.isNullOrEmpty()) null else URLBuilder(proxyUrl)
 

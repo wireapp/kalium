@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -35,7 +35,7 @@ internal open class AccessTokenApiV3 internal constructor(
     private val httpClient: HttpClient
 ) : AccessTokenApiV2(httpClient) {
     override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
-        wrapKaliumResponse<AccessTokenDTO> {
+        wrapRequest<AccessTokenDTO> {
             httpClient.post(PATH_ACCESS) {
                 header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
                 parameter(CLIENT_ID_QUERY_KEY, clientId)

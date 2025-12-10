@@ -25,7 +25,7 @@ import com.wire.kalium.network.api.authenticated.conversation.HistoryClientId
 import com.wire.kalium.network.api.base.authenticated.conversation.history.ConversationHistoryApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -38,7 +38,7 @@ internal open class ConversationHistoryApiV11 internal constructor(private val n
     override suspend fun updateHistorySettingsForConversation(
         conversationId: ConversationId,
         settings: ConversationHistorySettingsDTO
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapRequest {
         httpClient.put {
             url {
                 appendPathSegments(CONVERSATIONS_PATH, conversationId.domain, conversationId.value, HISTORY_PATH)
@@ -52,7 +52,7 @@ internal open class ConversationHistoryApiV11 internal constructor(private val n
         historyClientId: HistoryClientId,
         offset: ULong,
         size: UInt
-    ): NetworkResponse<ConversationHistoryResponse> = wrapKaliumResponse {
+    ): NetworkResponse<ConversationHistoryResponse> = wrapRequest {
         httpClient.get {
             url {
                 appendPathSegments(HISTORY_PATH, conversationId.domain, conversationId.value, historyClientId.value)

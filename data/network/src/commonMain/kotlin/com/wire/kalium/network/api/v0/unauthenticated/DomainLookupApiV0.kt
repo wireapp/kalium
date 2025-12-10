@@ -21,7 +21,7 @@ import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
 import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 
 internal open class DomainLookupApiV0 internal constructor(
@@ -29,7 +29,7 @@ internal open class DomainLookupApiV0 internal constructor(
 ) : DomainLookupApi {
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    override suspend fun lookup(domain: String): NetworkResponse<DomainLookupResponse> = wrapKaliumResponse {
+    override suspend fun lookup(domain: String): NetworkResponse<DomainLookupResponse> = wrapRequest {
         httpClient.get("$CUSTOM_BACKEND_PATH/$BY_DOMAIN_PATH/$domain")
     }
 

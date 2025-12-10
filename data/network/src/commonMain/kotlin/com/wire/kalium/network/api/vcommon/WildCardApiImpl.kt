@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.vcommon
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.parameter
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -36,7 +36,7 @@ internal class WildCardApiImpl(
         body: String?,
         queryParam: Map<String, String>,
         customHeader: Map<String, String>
-    ): NetworkResponse<String> = wrapKaliumResponse {
+    ): NetworkResponse<String> = wrapRequest {
         authenticatedNetworkClient.httpClient.request {
             method = httpMethod
             url(requestPath.joinToString("/"))

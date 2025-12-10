@@ -26,7 +26,7 @@ import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -38,7 +38,7 @@ internal open class UserDetailsApiV0 internal constructor(
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<ListUsersDTO> {
-        return wrapKaliumResponse<List<UserProfileDTO>> {
+        return wrapRequest<List<UserProfileDTO>> {
             httpClient.post(PATH_LIST_USERS) {
                 setBody(users)
             }
@@ -48,7 +48,7 @@ internal open class UserDetailsApiV0 internal constructor(
     }
 
     override suspend fun getUserInfo(userId: UserId): NetworkResponse<UserProfileDTO> {
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.get("$PATH_USERS/${userId.domain}/${userId.value}")
         }
     }

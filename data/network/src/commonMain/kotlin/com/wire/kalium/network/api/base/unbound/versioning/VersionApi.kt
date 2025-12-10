@@ -27,7 +27,7 @@ import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setUrl
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
@@ -55,18 +55,20 @@ class VersionApiImpl internal constructor(
         developmentApiEnabled = developmentApiEnabled
     )
 
-    override suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<ServerConfigDTO.MetaData> = wrapKaliumResponse({
-        if (it.status != HttpStatusCode.NotFound) null
-        else {
-            NetworkResponse.Success(VersionInfoDTO(), it)
+    override suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<ServerConfigDTO.MetaData> =
+        wrapRequest({
+            if (it.status != HttpStatusCode.NotFound) null
+            else {
+                NetworkResponse.Success(VersionInfoDTO(), it)
+            }
+        }, performRequest = {
+            httpClient.get {
+                setUrl(baseApiUrl, API_VERSION_PATH)
+            }
+        }).mapSuccess {
+            util.calculateApiVersion(it, developmentApiEnabled = developmentApiEnabled)
         }
-    }, {
-        httpClient.get {
-            setUrl(baseApiUrl, API_VERSION_PATH)
-        }
-    }).mapSuccess {
-        util.calculateApiVersion(it, developmentApiEnabled = developmentApiEnabled)
-    }
+
 
     private companion object {
         const val API_VERSION_PATH = "api-version"

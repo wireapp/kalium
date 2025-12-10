@@ -56,7 +56,7 @@ internal class MPBackupMapper {
         handle = it.handle
     )
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "DEPRECATED")
     fun mapMessageToProtobuf(it: BackupMessage): ExportedMessage {
         return ExportedMessage(
             id = it.id.lowercase(),

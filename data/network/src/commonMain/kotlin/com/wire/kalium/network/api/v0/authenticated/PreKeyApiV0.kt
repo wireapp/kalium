@@ -26,7 +26,7 @@ import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.authenticated.prekey.UploadPreKeysRequest
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -41,7 +41,7 @@ internal open class PreKeyApiV0 internal constructor(
     override suspend fun getUsersPreKey(
         users: Map<String, Map<String, List<String>>>
     ): NetworkResponse<ListPrekeysResponse> =
-        wrapKaliumResponse<DomainToUserIdToClientsToPreKeyMap> {
+        wrapRequest<DomainToUserIdToClientsToPreKeyMap> {
             httpClient.post("$PATH_USERS/$PATH_List_PREKEYS") {
                 setBody(users)
             }
@@ -49,12 +49,12 @@ internal open class PreKeyApiV0 internal constructor(
             ListPrekeysResponse(failedToList = emptyList(), qualifiedUserClientPrekeys = it)
         }
 
-    override suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>> = wrapKaliumResponse {
+    override suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>> = wrapRequest {
         httpClient.get("$PATH_CLIENTS/$clientId/$PATH_PRE_KEY")
     }
 
     override suspend fun uploadNewPrekeys(clientId: String, preKeys: List<PreKeyDTO>): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.put("$PATH_CLIENTS/$clientId") {
                 setBody(UploadPreKeysRequest(preKeys))
             }

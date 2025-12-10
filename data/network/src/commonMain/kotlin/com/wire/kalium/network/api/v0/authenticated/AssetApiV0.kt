@@ -26,7 +26,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.header
@@ -42,7 +42,6 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.close
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeStringUtf8
@@ -126,7 +125,7 @@ internal open class AssetApiV0 internal constructor(
         encryptedDataSource: () -> Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post(PATH_PUBLIC_ASSETS_V3) {
                 contentType(ContentType.MultiPart.Mixed)
                 setBody(
@@ -141,7 +140,7 @@ internal open class AssetApiV0 internal constructor(
         }
 
     override suspend fun deleteAsset(assetId: String, assetDomain: String?, assetToken: String?): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.delete(buildAssetsPath(assetId, assetDomain)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }

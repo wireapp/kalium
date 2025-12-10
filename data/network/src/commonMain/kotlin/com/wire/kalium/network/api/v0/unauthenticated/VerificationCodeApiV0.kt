@@ -21,7 +21,7 @@ import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi.ActionToBeVerified
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import kotlinx.serialization.SerialName
@@ -37,7 +37,7 @@ internal open class VerificationCodeApiV0 internal constructor(
         email: String,
         action: ActionToBeVerified
     ): NetworkResponse<Unit> {
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.post(PATH_VERIFICATION_CODE_SEND) {
                 setBody(createSendVerificationCodeBody(action, email))
             }
