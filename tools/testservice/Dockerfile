@@ -17,7 +17,6 @@ WORKDIR /app
 
 COPY . .
 
-# RUN ./gradlew clean
 RUN ./gradlew :tools:testservice:shadowJar
 
 FROM eclipse-temurin:17-jdk
