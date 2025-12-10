@@ -86,7 +86,7 @@ data class EventResponse(
     @SerialName("transient") val transient: Boolean = false
 )
 
-@Serializer(forClass = String::class)
+@OptIn(ExperimentalSerializationApi::class)
 object RawJsonStringSerializer : KSerializer<String> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("RawJsonString", PrimitiveKind.STRING)

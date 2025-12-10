@@ -137,6 +137,7 @@ class ApiModelMapperImpl : ApiModelMapper {
             response.receiptMode
         )
 
+    @Suppress("DEPRECATION")
     override fun fromApiV6(response: ConversationResponseV6): ConversationResponse =
         ConversationResponse(
             creator = response.conversation.creator,

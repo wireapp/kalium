@@ -1797,7 +1797,7 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             selfConversationIdProvider,
-            syncManager,
+            syncStateObserver,
             userScopedLogger
         )
 
@@ -2011,7 +2011,7 @@ class UserSessionScope internal constructor(
         )
 
     val observeSyncState: ObserveSyncStateUseCase
-        get() = ObserveSyncStateUseCaseImpl(syncManager)
+        get() = ObserveSyncStateUseCaseImpl(syncStateObserver)
 
     private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
         AvsSyncStateReporterImpl(

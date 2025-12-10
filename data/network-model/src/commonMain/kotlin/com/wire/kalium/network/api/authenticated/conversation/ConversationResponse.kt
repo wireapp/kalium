@@ -355,7 +355,7 @@ sealed class ConversationMemberDTO {
         @SerialName("otr_archived") val otrArchived: Boolean? = null,
         @SerialName("otr_archived_ref") val otrArchivedRef: String? = null,
         @SerialName("otr_muted_ref") val otrMutedRef: String? = null,
-        @SerialName("otr_muted_status") val otrMutedStatus: MutedStatus? = null
+        @SerialName("otr_muted_status") @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
     ) : ConversationMemberDTO()
 
     @Serializable
@@ -422,7 +422,6 @@ data class SubconversationMemberDTO(
 )
 
 @OptIn(ExperimentalSerializationApi::class)
-@Serializer(ConversationResponse.Type::class)
 class ConversationTypeSerializer : KSerializer<ConversationResponse.Type> {
     override val descriptor = PrimitiveSerialDescriptor("type", PrimitiveKind.INT)
 

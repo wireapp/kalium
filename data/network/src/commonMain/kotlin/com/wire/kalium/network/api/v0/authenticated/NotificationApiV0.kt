@@ -28,7 +28,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponseToSto
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
@@ -206,7 +206,7 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     internal object Hardcoded {
-        val NOTIFICATIONS_4O4_ERROR = ErrorResponse(
+        val NOTIFICATIONS_4O4_ERROR = GenericAPIErrorResponse(
             code = HttpStatusCode.NotFound.value,
             message = "Event or client not found",
             label = "missing_events_or_client_(hardcoded_v0_response)"
