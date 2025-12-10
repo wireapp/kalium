@@ -2,7 +2,7 @@ name: Build and publish image of Testservice to quay.io
 
 on:
   push:
-    branches: ["main"]
+    branches: ["develop"]
 
 jobs:
   quay_publish:
