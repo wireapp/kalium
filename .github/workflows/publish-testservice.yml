@@ -1,9 +1,6 @@
 name: Build and publish image of Testservice to quay.io
 
 on:
-  # ToDo: This trigger should be removed before merging, it's just to test the Workflow
-  pull_request:
-    branches: ["develop"]
   push:
     branches: ["main"]
 
