@@ -38,13 +38,14 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -66,7 +67,7 @@ class ConversationFolderRepositoryTest {
         result.shouldSucceed {
             assertEquals(folder.toModel(), it)
         }
-        coVerify { arrangement.conversationFolderDAO.getFavoriteConversationFolder() }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.getFavoriteConversationFolder() }
     }
 
     @Test
@@ -107,7 +108,7 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.conversationFolderDAO.updateConversationFolders(any()) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
     }
 
     @Test
@@ -129,6 +130,7 @@ class ConversationFolderRepositoryTest {
         // given
         val arrangement = Arrangement()
             .withSetProperty(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
+            .withSuccessfulFolderUpdate()
             .withFetchConversationLabels(
                 NetworkResponse.Error(
                     KaliumException.InvalidRequestError(
@@ -146,14 +148,14 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify {
+        verifySuspend {
             arrangement.userPropertiesApi.setProperty(
-                eq(PropertyKey.WIRE_LABELS),
+                PropertyKey.WIRE_LABELS,
                 any()
             )
-        }.wasInvoked()
+        }
 
-        coVerify { arrangement.conversationFolderDAO.updateConversationFolders(any()) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
     }
 
     @Test
@@ -171,7 +173,7 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.conversationFolderDAO.addConversationToFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.addConversationToFolder(conversationId.toDao(), folderId) }
     }
 
     @Test
@@ -182,6 +184,7 @@ class ConversationFolderRepositoryTest {
         val arrangement = Arrangement()
             .withRemoveConversationFromFolder()
             .withGetFoldersWithConversations()
+            .withSuccessfulFolderRemoval()
             .withConversationsFromFolder(folderId, listOf())
             .withUpdateLabels(NetworkResponse.Success(Unit, mapOf(), 200))
 
@@ -190,7 +193,7 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId) }
     }
 
     @Test
@@ -213,8 +216,8 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.userPropertiesApi.updateLabels(any()) }.wasInvoked()
-        coVerify { arrangement.conversationFolderDAO.getFoldersWithConversations() }.wasInvoked()
+        verifySuspend { arrangement.userPropertiesApi.updateLabels(any()) }
+        verifySuspend { arrangement.conversationFolderDAO.getFoldersWithConversations() }
     }
 
     @Test
@@ -228,7 +231,7 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.removeFolder(folderId) }
     }
 
     @Test
@@ -242,7 +245,7 @@ class ConversationFolderRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify { arrangement.conversationFolderDAO.addFolder(eq(folder.toDao())) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.addFolder(folder.toDao()) }
     }
 
     @Test
@@ -253,6 +256,7 @@ class ConversationFolderRepositoryTest {
 
         val arrangement = Arrangement()
             .withRemoveConversationFromFolder()
+            .withSuccessfulFolderRemoval()
             .withConversationsFromFolder(folderId, emptyList())
 
         // when
@@ -261,8 +265,8 @@ class ConversationFolderRepositoryTest {
         // then
         result.shouldSucceed()
 
-        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
-        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId) }
+        verifySuspend { arrangement.conversationFolderDAO.removeFolder(folderId) }
     }
 
     @Test
@@ -273,6 +277,7 @@ class ConversationFolderRepositoryTest {
 
         val arrangement = Arrangement()
             .withRemoveConversationFromFolder()
+            .withSuccessfulFolderRemoval()
             .withConversationsFromFolder(folderId, emptyList())
 
         // when
@@ -281,8 +286,8 @@ class ConversationFolderRepositoryTest {
         // then
         result.shouldSucceed()
 
-        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
-        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasNotInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.removeFolder(folderId) }
     }
 
     @Test
@@ -299,6 +304,7 @@ class ConversationFolderRepositoryTest {
 
         val arrangement = Arrangement()
             .withRemoveConversationFromFolder()
+            .withSuccessfulFolderRemoval()
             .withConversationsFromFolder(folderId, listOf(remainingConversation))
 
         // when
@@ -307,15 +313,15 @@ class ConversationFolderRepositoryTest {
         // then
         result.shouldSucceed()
 
-        coVerify { arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId)) }.wasInvoked()
-        coVerify { arrangement.conversationFolderDAO.removeFolder(eq(folderId)) }.wasNotInvoked()
+        verifySuspend { arrangement.conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.removeFolder(folderId) }
     }
 
 
     private class Arrangement {
-        
-        val conversationFolderDAO = mock(ConversationFolderDAO::class)
-        val userPropertiesApi = mock(PropertiesApi::class)
+
+        val conversationFolderDAO = mock<ConversationFolderDAO>()
+        val userPropertiesApi = mock<PropertiesApi>()
 
         private val selfUserId = TestUser.SELF.id
 
@@ -327,59 +333,48 @@ class ConversationFolderRepositoryTest {
             selfUserId = selfUserId
         )
 
-        suspend fun withFavoriteConversationFolder(folder: ConversationFolderEntity): Arrangement {
-            coEvery { conversationFolderDAO.getFavoriteConversationFolder() }.returns(folder)
-            return this
+        fun withFavoriteConversationFolder(folder: ConversationFolderEntity) = apply {
+            everySuspend { conversationFolderDAO.getFavoriteConversationFolder() } returns folder
         }
 
-        suspend fun withConversationsFromFolder(folderId: String, conversations: List<ConversationDetailsWithEventsEntity>): Arrangement {
-            coEvery { conversationFolderDAO.observeConversationListFromFolder(folderId) }.returns(flowOf(conversations))
-            return this
+        fun withConversationsFromFolder(folderId: String, conversations: List<ConversationDetailsWithEventsEntity>) = apply {
+            everySuspend { conversationFolderDAO.observeConversationListFromFolder(folderId) } returns flowOf(conversations)
         }
 
-        suspend fun withSuccessfulFolderUpdate(): Arrangement {
-            coEvery { conversationFolderDAO.updateConversationFolders(any()) }.returns(Unit)
-            return this
+        fun withSuccessfulFolderUpdate() = apply {
+            everySuspend { conversationFolderDAO.updateConversationFolders(any()) } returns Unit
         }
 
-        suspend fun withFetchConversationLabels(response: NetworkResponse<LabelListResponseDTO>): Arrangement {
-            coEvery { userPropertiesApi.getLabels() }.returns(response)
-            return this
+        fun withFetchConversationLabels(response: NetworkResponse<LabelListResponseDTO>) = apply {
+            everySuspend { userPropertiesApi.getLabels() } returns response
         }
 
-        suspend fun withSetProperty(response: NetworkResponse<Unit>): Arrangement {
-            coEvery { userPropertiesApi.setProperty(any(), any()) }.returns(response)
-            return this
+        fun withSetProperty(response: NetworkResponse<Unit>) = apply {
+            everySuspend { userPropertiesApi.setProperty(any(), any()) } returns response
         }
 
-        suspend fun withUpdateLabels(response: NetworkResponse<Unit>): Arrangement {
-            coEvery { userPropertiesApi.updateLabels(any()) }.returns(response)
-            return this
+        fun withUpdateLabels(response: NetworkResponse<Unit>) = apply {
+            everySuspend { userPropertiesApi.updateLabels(any()) } returns response
         }
 
-        suspend fun withGetFoldersWithConversations(folders: List<FolderWithConversations> = emptyList()): Arrangement {
-            coEvery { conversationFolderDAO.getFoldersWithConversations() }.returns(folders.map { it.toDao() })
-            return this
+        fun withGetFoldersWithConversations(folders: List<FolderWithConversations> = emptyList()) = apply {
+            everySuspend { conversationFolderDAO.getFoldersWithConversations() } returns folders.map { it.toDao() }
         }
 
-        suspend fun withAddConversationToFolder(): Arrangement {
-            coEvery { conversationFolderDAO.addConversationToFolder(any(), any()) }.returns(Unit)
-            return this
+        fun withAddConversationToFolder() = apply {
+            everySuspend { conversationFolderDAO.addConversationToFolder(any(), any()) } returns Unit
         }
 
-        suspend fun withRemoveConversationFromFolder(): Arrangement {
-            coEvery { conversationFolderDAO.removeConversationFromFolder(any(), any()) }.returns(Unit)
-            return this
+        fun withRemoveConversationFromFolder() = apply {
+            everySuspend { conversationFolderDAO.removeConversationFromFolder(any(), any()) } returns Unit
         }
 
-        suspend fun withSuccessfulFolderRemoval(): Arrangement {
-            coEvery { conversationFolderDAO.removeFolder(any()) }.returns(Unit)
-            return this
+        fun withSuccessfulFolderRemoval() = apply {
+            everySuspend { conversationFolderDAO.removeFolder(any()) } returns Unit
         }
 
-        suspend fun withSuccessfulFolderAddition(): Arrangement {
-            coEvery { conversationFolderDAO.addFolder(any()) }.returns(Unit)
-            return this
+        fun withSuccessfulFolderAddition() = apply {
+            everySuspend { conversationFolderDAO.addFolder(any()) } returns Unit
         }
     }
 }

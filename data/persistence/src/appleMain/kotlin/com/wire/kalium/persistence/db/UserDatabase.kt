@@ -81,15 +81,23 @@ actual fun userDatabaseDriverByPath(
     )
 }
 
+/**
+ * Creates an in-memory user database,
+ * or returns an existing one if it already exists.
+ *
+ * @param userId The ID of the user for whom the database is created.
+ * @param dispatcher The coroutine dispatcher to be used for executing database operations.
+ * @return The user database builder.
+ */
 fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
-): UserDatabaseBuilder {
+): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
     val driver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
         isWALEnabled = false
     }
 
-    return UserDatabaseBuilder(
+    UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
@@ -98,13 +106,25 @@ fun inMemoryDatabase(
     )
 }
 
+/**
+ * Clears the in-memory database for the given user.
+ * This closes the database connection and removes it from the cache,
+ * causing SQLite to delete the shared in-memory database.
+ *
+ * @param userId The ID of the user whose database should be cleared.
+ * @return `true` if the database was cleared, `false` if it didn't exist.
+ */
+fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
+    return InMemoryDatabaseCache.clearEntry(userId)
+}
+
 internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
     return when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData.storePath, null)
-        is StorageData.InMemory -> false
+        is StorageData.InMemory -> clearInMemoryDatabase(userId)
     }
 }
 

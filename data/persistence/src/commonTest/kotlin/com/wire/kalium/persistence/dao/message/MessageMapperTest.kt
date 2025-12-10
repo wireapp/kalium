@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
+import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -248,8 +250,8 @@ class MessageMapperTest {
                 assetNormalizedLoudness,
                 assetDataPath,
                 callerId,
-                memberChangeList,
-                memberChangeType,
+                memberChangeList?.let { QualifiedIDListAdapter.encode(it) },
+                memberChangeType?.name,
                 unknownContentTypeName,
                 unknownContentData,
                 restrictedAssetMimeType,
@@ -282,15 +284,15 @@ class MessageMapperTest {
                 recipientsFailedWithNoClientsList,
                 recipientsFailedDeliveryList,
                 buttonsJson,
-                federationDomainList,
-                federationType,
-                conversationProtocolChanged,
+                federationDomainList?.let { StringListAdapter.encode(it) },
+                federationType?.name,
+                conversationProtocolChanged?.name,
                 latitude,
                 longitude,
                 locationName,
                 locationZoom,
-                legalHoldMemberList,
-                legalHoldType,
+                legalHoldMemberList?.let { QualifiedIDListAdapter.encode(it) },
+                legalHoldType?.name,
             )
         }
 
@@ -308,16 +310,16 @@ class MessageMapperTest {
                 senderIsDeleted = null,
                 selfUserId = null,
                 isSelfMessage = false,
-                memberChangeList = listOf(),
+                memberChangeList = null,
                 memberChangeType = null,
-                updatedConversationName = null,
+                updateConversationName = null,
                 conversationName = null,
                 isMentioningSelfUser = false,
                 isQuotingSelfUser = null,
                 text = null,
                 assetMimeType = null,
                 isUnread = false,
-                isNotified = 0,
+                shouldNotify = 0,
                 mutedStatus = null,
                 conversationType = conversationType
             )
