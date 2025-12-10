@@ -15,8 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
-
+@file:Suppress(
+    "konsist.useCasesShouldNotAccessDaoLayerDirectly",
+    "konsist.useCasesShouldNotAccessNetworkLayerDirectly",
+    "EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.GlobalKaliumScope

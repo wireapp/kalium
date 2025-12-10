@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.ExperimentalSettingsImplementation
