@@ -18,6 +18,7 @@
 package com.wire.kalium.cli.commands
 
 import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -41,12 +42,13 @@ fun inputFlow(): Flow<Input> = flow {
     }
 }.flowOn(Dispatchers.Default)
 
+@OptIn(ExperimentalForeignApi::class)
 @Suppress("ComplexMethod", "TooGenericExceptionThrown", "MagicNumber")
 fun readChar(): Input =
     memScoped {
         val byte = alloc<ByteVar>()
         var numBytesRead: ssize_t
-        while (read(STDIN_FILENO, byte.ptr, 1).also { numBytesRead = it } != 1L) {
+        while (read(STDIN_FILENO, byte.ptr, 1UL).also { numBytesRead = it } != 1L) {
             if (numBytesRead == -1L) { throw RuntimeException("Failed to read input") }
         }
 
@@ -54,15 +56,15 @@ fun readChar(): Input =
         if (char == '\u001b') {
             val sequence = ByteArray(3)
             sequence.usePinned {
-                if (read(STDIN_FILENO, it.addressOf(0), 1) != 1L) { return Input.Character('\u001b') }
-                if (read(STDIN_FILENO, it.addressOf(1), 1) != 1L) { return Input.Character('\u001b') }
+                if (read(STDIN_FILENO, it.addressOf(0), 1UL) != 1L) { return Input.Character('\u001b') }
+                if (read(STDIN_FILENO, it.addressOf(1), 1UL) != 1L) { return Input.Character('\u001b') }
             }
 
             if (sequence[0].toInt().toChar() == '[') {
                 when (sequence[1].toInt().toChar()) {
                     in '0'..'9' -> {
                         sequence.usePinned {
-                            if (read(STDIN_FILENO, it.addressOf(2), 1) != 1L) { return Input.Character('\u001b') }
+                            if (read(STDIN_FILENO, it.addressOf(2), 1UL) != 1L) { return Input.Character('\u001b') }
                         }
                         if (sequence[2].toInt().toChar() == '~') {
                             when (sequence[1].toInt().toChar()) {

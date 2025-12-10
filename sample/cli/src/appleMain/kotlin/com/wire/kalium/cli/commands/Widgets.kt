@@ -123,9 +123,18 @@ private fun regularContent(message: Message.Regular) =
             message.senderUserName,
             "Decryption error (${content.clientId})"
         )
-        is MessageContent.Knock -> textMessage(message.senderUserName, "<ping>")
-        is MessageContent.RestrictedAsset -> textMessage(message.senderUserName, "Shared an asset")
-        is MessageContent.Unknown -> systemMessage(message.senderUserName, "Unknown message")
+        is MessageContent.Knock ->
+            textMessage(message.senderUserName, "<ping>")
+        is MessageContent.RestrictedAsset -> textMessage(message.senderUserName,
+            "Shared an asset. ${content.name} (${content.mimeType})")
+        is MessageContent.Unknown -> systemMessage(message.senderUserName,
+            "Unknown message")
+        is MessageContent.Composite -> textMessage(message.senderUserName,
+            "${content.textContent}. <Buttons: ${content.buttonList.map { it.text }}>")
+        is MessageContent.Location -> textMessage(message.senderUserName,
+            "Location ${content.name?.let{ "$it " }}[${content.latitude} LAT, ${content.longitude} LON]")
+        is MessageContent.Multipart -> textMessage(message.senderUserName,
+            "${content.value} <Attachments: ${content.attachments.size}>")
     }
 
 private fun systemContent(message: Message.System) =
@@ -151,6 +160,52 @@ private fun systemContent(message: Message.System) =
             systemMessage(null, "Read receipts are ${if (content.receiptMode) "enabled" else "disabled" }")
         is MessageContent.TeamMemberRemoved ->
             systemMessage(null, "${content.userName} was removed from the team")
+        is MessageContent.ConversationAppsEnabledChanged ->
+            systemMessage(message.senderUserName, "Apps allowed in the conversation: ${content.isEnabled}")
+        MessageContent.ConversationCreated ->
+            systemMessage(message.senderUserName, "Conversation created")
+        MessageContent.ConversationDegradedMLS ->
+            systemMessage(null, "Conversation security degraded")
+        MessageContent.ConversationDegradedProteus ->
+            systemMessage(null, "Conversation security degraded")
+        is MessageContent.ConversationMessageTimerChanged ->
+            systemMessage(message.senderUserName, "Conversation message timer set to: ${content.messageTimer}s")
+        is MessageContent.ConversationProtocolChanged ->
+            systemMessage(null, "Conversation protocol changed to MLS")
+        MessageContent.ConversationProtocolChangedDuringACall ->
+            systemMessage(null, "Conversation protocol changed to MLS")
+        MessageContent.ConversationStartedUnverifiedWarning ->
+            systemMessage(null, "Conversation is NOT verified")
+        MessageContent.ConversationVerifiedMLS ->
+            systemMessage(null, "Conversation is now verified")
+        MessageContent.ConversationVerifiedProteus ->
+            systemMessage(null, "Conversation is now verified")
+        is MessageContent.FederationStopped.ConnectionRemoved ->
+            systemMessage(null, "The connection was removed")
+        is MessageContent.FederationStopped.Removed ->
+            systemMessage(null, "Federation was removed")
+        MessageContent.HistoryLostProtocolChanged ->
+            systemMessage(null, "Conversation protocol changed to MLS. Some messages might have been lost.")
+        MessageContent.LegalHold.ForConversation.Disabled ->
+            systemMessage(null, "Legal hold is NOT active in this conversation")
+        MessageContent.LegalHold.ForConversation.Enabled ->
+            systemMessage(null, "Legal hold is active in this conversation")
+        is MessageContent.LegalHold.ForMembers.Disabled ->
+            systemMessage(null, "Legal hold has been deactivated for ${content.members}")
+        is MessageContent.LegalHold.ForMembers.Enabled ->
+            systemMessage(null, "Legal hold has been activated for ${content.members}")
+        MessageContent.MLSWrongEpochWarning -> systemMessage(null, "Wrong epoch error")
+        is MessageContent.MemberChange.CreationAdded ->
+            systemMessage(message.senderUserName, "Added at creation: ${content.members}")
+        is MessageContent.MemberChange.FailedToAdd ->
+            systemMessage(null, "Failed to add users: ${content.members}")
+        is MessageContent.MemberChange.FederationRemoved ->
+            systemMessage(null, "Federated members were removed: ${content.members}")
+        is MessageContent.MemberChange.RemovedFromTeam ->
+            systemMessage(null, "Users removed from team: ${content.members}")
+        MessageContent.NewConversationWithCellMessage ->
+            systemMessage(message.senderUserName, "Conversation created, with Cells support")
+        MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> TODO()
     }
 
 @Suppress("MagicNumber")

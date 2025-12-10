@@ -45,7 +45,7 @@ sealed class Command(
             }
 
         suspend fun prepare() {
-            conversations = userSession.conversations.observeConversationListDetails(includeArchived = true).first()
+            conversations = userSession.conversations.observeConversationListDetails(false).first()
             updateFilter()
         }
 
@@ -65,30 +65,12 @@ sealed class Command(
 
         override fun resultDescription(): String =
             selection?.let {
-                val unreadCount = when (it) {
-                    is ConversationDetails.Group -> it.unreadEventCount[UnreadEventType.MESSAGE]
-                    is ConversationDetails.OneOne -> it.unreadEventCount[UnreadEventType.MESSAGE]
-                    else -> null
-                }
-
-                "[${indexDescription()}] ${nameDescription()} ${unreadCountDescription()}"
+                "[${indexDescription()}] ${nameDescription()}}"
             } ?: "no result"
 
         private fun indexDescription() = "$index/${filteredConversations.size}"
 
         private fun nameDescription() = selection?.conversation?.name ?: "no name"
-
-        private fun unreadCountDescription(): String {
-            val unreadCount = selection?.let {
-                when (it) {
-                    is ConversationDetails.Group -> it.unreadEventCount[UnreadEventType.MESSAGE]
-                    is ConversationDetails.OneOne -> it.unreadEventCount[UnreadEventType.MESSAGE]
-                    else -> null
-                }
-            }
-
-            return (unreadCount?.let { " unread = ($it)" }) ?: ""
-        }
 
         companion object {
             const val NAME = "jump"

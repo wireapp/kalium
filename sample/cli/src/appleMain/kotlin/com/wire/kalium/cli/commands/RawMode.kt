@@ -18,6 +18,7 @@
 package com.wire.kalium.cli.commands
 
 import com.github.ajalt.mordant.terminal.Terminal
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.memScoped
@@ -30,6 +31,7 @@ import platform.posix.tcgetattr
 import platform.posix.tcsetattr
 import platform.posix.termios
 
+@OptIn(ExperimentalForeignApi::class)
 fun Terminal.setRawMode(enabled: Boolean) = memScoped {
     val termios = alloc<termios>()
     if (tcgetattr(STDOUT_FILENO, termios.ptr) != 0) {

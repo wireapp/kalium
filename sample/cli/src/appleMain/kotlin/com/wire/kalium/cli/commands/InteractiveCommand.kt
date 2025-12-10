@@ -20,13 +20,16 @@ package com.wire.kalium.cli.commands
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.requireObject
+import com.github.ajalt.mordant.input.interactiveSelectList
 import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.terminal.prompt
 import com.wire.kalium.cli.listConversations
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.conversation.GetConversationUseCase
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
@@ -91,7 +94,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                             viewState.inputInfo,
                             viewState.title,
                             viewState.messages,
-                            terminal.info.height
+                            terminal.size.height
                         )
                     )
                 )
@@ -105,6 +108,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         )
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override fun run() = runBlocking {
         signal(
             SIGWINCH,
@@ -124,7 +128,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         syncStateObserver.waitUntilLive()
         val conversations = listConversations()
         val selectedConversationIndex =
-            terminal.prompt("Enter conversation index", promptSuffix = ": ")
+            terminal.prompt("Enter conversation index", choices = conversations.mapIndexed() { i, _ -> i.toString() } )
                 ?.toInt() ?: throw PrintMessage("Index must be an integer")
 
         return conversations[selectedConversationIndex]
@@ -184,6 +188,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     @Suppress("UnusedPrivateMember")
     private fun enableReadTimeout() = memScoped {
         val termios = alloc<termios>()
