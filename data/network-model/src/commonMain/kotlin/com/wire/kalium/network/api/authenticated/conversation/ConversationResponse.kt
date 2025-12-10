@@ -63,7 +63,6 @@ data class ConversationResponse(
             "com.wire.kalium.logic.data.conversation.toConversationType",
         )
     )
-    @Serializable(with = ConversationTypeSerializer::class)
     val type: Type,
 
     @SerialName("message_timer")
@@ -356,7 +355,7 @@ sealed class ConversationMemberDTO {
         @SerialName("otr_archived") val otrArchived: Boolean? = null,
         @SerialName("otr_archived_ref") val otrArchivedRef: String? = null,
         @SerialName("otr_muted_ref") val otrMutedRef: String? = null,
-        @SerialName("otr_muted_status") @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
+        @SerialName("otr_muted_status") val otrMutedStatus: MutedStatus? = null
     ) : ConversationMemberDTO()
 
     @Serializable
@@ -421,6 +420,19 @@ data class SubconversationMemberDTO(
     @SerialName("user_id") val userId: String,
     @SerialName("domain") val domain: String
 )
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializer(ConversationResponse.Type::class)
+class ConversationTypeSerializer : KSerializer<ConversationResponse.Type> {
+    override val descriptor = PrimitiveSerialDescriptor("type", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: ConversationResponse.Type) = encoder.encodeInt(value.id)
+
+    override fun deserialize(decoder: Decoder): ConversationResponse.Type {
+        val rawValue = decoder.decodeInt()
+        return ConversationResponse.Type.fromId(rawValue)
+    }
+}
 
 fun ConversationResponse.cellEnabled(): Boolean =
     this.cellsState == "ready" || this.cellsState == "pending"
