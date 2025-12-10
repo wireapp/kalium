@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 eclipse-temurin:17-jdk
+FROM eclipse-temurin:17-jdk
 
 # disable prompts from the txdata
 ENV DEBIAN_FRONTEND=noninteractive
@@ -17,5 +17,17 @@ WORKDIR /app
 
 COPY . .
 
-RUN ./gradlew clean
+# RUN ./gradlew clean
 RUN ./gradlew :tools:testservice:shadowJar
+
+FROM eclipse-temurin:17-jdk
+
+WORKDIR /app
+
+COPY --from=0 /app/tools/testservice/build/libs/ /app/testservice/
+COPY --from=0 /app/tools/testservice/config.yml /app/testservice/config.yml
+
+RUN useradd -m appuser
+RUN chown -R appuser:appuser /app
+
+CMD ["java", "-jar", "/app/testservice/testservice-0.0.1-SNAPSHOT-all.jar", "server", "/app/testservice/config.yml"]
