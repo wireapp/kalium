@@ -19,7 +19,6 @@ package com.wire.backup
 
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.BackupExportResult
-import com.wire.backup.dump.CommonMPBackupExporter
 import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.BackupPeekResult
@@ -43,7 +42,7 @@ actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubj
     override suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
         passphrase: String,
-        export: CommonMPBackupExporter.() -> Unit,
+        export: MPBackupExporter.() -> Unit,
     ): BackupImportResult {
         val (artifactPath, importer) = createBackup(selfUserId, export, passphrase)
         return importer.importFromFile(artifactPath, passphrase)
@@ -52,7 +51,7 @@ actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubj
     override suspend fun exportPeekTest(
         selfUserId: BackupQualifiedId,
         passphrase: String,
-        export: CommonMPBackupExporter.() -> Unit
+        export: MPBackupExporter.() -> Unit
     ): BackupPeekResult {
         val (artifactPath, importer) = createBackup(selfUserId, export, passphrase)
         return importer.peekBackupFile(artifactPath)
@@ -60,7 +59,7 @@ actual fun endToEndTestSubjectProvider() = object : CommonBackupEndToEndTestSubj
 
     private suspend fun createBackup(
         selfUserId: BackupQualifiedId,
-        export: CommonMPBackupExporter.() -> Unit,
+        export: MPBackupExporter.() -> Unit,
         passphrase: String
     ): Pair<String, MPBackupImporter> {
         val zipper = FakeZip(zipDirectory)

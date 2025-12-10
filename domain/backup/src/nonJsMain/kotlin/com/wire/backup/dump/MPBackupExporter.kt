@@ -20,13 +20,14 @@ package com.wire.backup.dump
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.data.getBackupFileName
 import com.wire.backup.filesystem.BackupPage
-import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
 import com.wire.backup.logger.BackupLogger
 import com.wire.kalium.protobuf.backup.BackupData
+import kotlin.js.JsName
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import okio.FileSystem
@@ -41,10 +42,13 @@ import okio.use
  * into a cross-platform [BackupData] format.
  * @sample samples.backup.BackupSamplesNonJS.exportBackup
  */
-public actual class MPBackupExporter : CommonMPBackupExporter {
+public actual class MPBackupExporter {
+    private val selfUserId: BackupQualifiedId
     private val outputDirectory: String
     private val fileZipper: FileZipper
     private val fileSystem: FileSystem
+    private val workDirectoryPath: Path
+    private val delegate: BackupExporterDelegate
 
     public constructor(
         selfUserId: BackupQualifiedId,
@@ -53,15 +57,24 @@ public actual class MPBackupExporter : CommonMPBackupExporter {
         fileZipper: FileZipper,
         fileSystem: FileSystem,
         logger: BackupLogger? = null,
-    ) : super(selfUserId, logger) {
+    ) {
+        this.selfUserId = selfUserId
         this.outputDirectory = outputDirectory
         this.fileZipper = fileZipper
         this.fileSystem = fileSystem
         this.workDirectoryPath = workDirectory.toPath() / "backupDump"
-        this.storage = FileBasedBackupPageStorage(
+
+        val storage = FileBasedBackupPageStorage(
             fileSystem = fileSystem,
             workDirectory = workDirectoryPath,
             shouldBeCleared = true
+        )
+
+        this.delegate = BackupExporterDelegate(
+            selfUserId = selfUserId,
+            storage = storage,
+            zipEntries = ::zipEntries,
+            logger = logger
         )
     }
 
@@ -72,11 +85,27 @@ public actual class MPBackupExporter : CommonMPBackupExporter {
         fileZipper: FileZipper
     ) : this(selfUserId, workDirectory, outputDirectory, fileZipper, FileSystem.SYSTEM)
 
-    private val workDirectoryPath: Path
+    @JsName("addUser")
+    public actual fun add(user: BackupUser) {
+        delegate.addUser(user)
+    }
 
-    override val storage: BackupPageStorage
+    @JsName("addConversation")
+    public actual fun add(conversation: BackupConversation) {
+        delegate.addConversation(conversation)
+    }
 
-    override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
+    @JsName("addMessage")
+    public actual fun add(message: BackupMessage) {
+        delegate.addMessage(message)
+    }
+
+    @JsName("addReaction")
+    public actual fun add(reaction: BackupReaction) {
+        delegate.addReaction(reaction)
+    }
+
+    private fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
         val pathToZippedArchive = fileZipper.zip(entries, workDirectoryPath).toPath()
         return CompletableDeferred(
@@ -97,7 +126,7 @@ public actual class MPBackupExporter : CommonMPBackupExporter {
         fileSystem.delete(path)
         fileSystem.createDirectories(path.parent!!)
         fileSystem.openReadWrite(path).use { fileHandle ->
-            when (val result = finalize(password, fileHandle.sink())) {
+            when (val result = delegate.finalize(password, fileHandle.sink())) {
                 is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
                 is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
                 ExportResult.Success -> BackupExportResult.Success(path.toString())

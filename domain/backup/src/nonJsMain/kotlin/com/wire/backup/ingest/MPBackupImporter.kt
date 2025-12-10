@@ -37,23 +37,29 @@ import kotlin.native.ObjCName
  * @sample samples.backup.BackupSamples.commonImport
  */
 @OptIn(ExperimentalObjCName::class)
-public actual class MPBackupImporter : CommonMPBackupImporter {
+public actual class MPBackupImporter {
 
     private val pathToWorkDirectory: String
     private val backupFileUnzipper: BackupFileUnzipper
     private val fileSystem: FileSystem
+    private val delegate: BackupImporterDelegate
 
     public constructor(
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
         fileSystem: FileSystem
-    ) : super() {
+    ) {
         this.pathToWorkDirectory = pathToWorkDirectory
         this.backupFileUnzipper = backupFileUnzipper
         this.fileSystem = fileSystem
         pathToWorkDirectory.toPath().also {
             if (!fileSystem.exists(it)) fileSystem.createDirectories(it)
         }
+
+        this.delegate = BackupImporterDelegate(
+            getUnencryptedArchiveSink = ::getUnencryptedArchiveSink,
+            unzipAllEntries = ::unzipAllEntries
+        )
     }
 
     public constructor(
@@ -71,7 +77,7 @@ public actual class MPBackupImporter : CommonMPBackupImporter {
     @ObjCName("peek")
     public suspend fun peekBackupFile(
         pathToBackupFile: String
-    ): BackupPeekResult = withBackupFile(pathToBackupFile) { peekBackup(it) }
+    ): BackupPeekResult = withBackupFile(pathToBackupFile) { delegate.peekBackup(it) }
 
     /**
      * Imports a backup from the specified root path.
@@ -82,17 +88,17 @@ public actual class MPBackupImporter : CommonMPBackupImporter {
     public suspend fun importFromFile(
         multiplatformBackupFilePath: String,
         passphrase: String?,
-    ): BackupImportResult = withBackupFile(multiplatformBackupFilePath) { importBackup(it, passphrase) }
+    ): BackupImportResult = withBackupFile(multiplatformBackupFilePath) { delegate.importBackup(it, passphrase) }
 
     private val archiveZipPath: Path
         get() = pathToWorkDirectory.toPath() / ZIP_FILE_NAME
 
-    override fun getUnencryptedArchiveSink(): Sink {
+    private fun getUnencryptedArchiveSink(): Sink {
         fileSystem.delete(archiveZipPath, mustExist = false)
         return fileSystem.sink(archiveZipPath)
     }
 
-    override suspend fun unzipAllEntries(): BackupPageStorage {
+    private suspend fun unzipAllEntries(): BackupPageStorage {
         val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
         return FileBasedBackupPageStorage(fileSystem, unzipPath.toPath(), false)
     }

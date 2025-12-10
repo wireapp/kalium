@@ -49,6 +49,7 @@ internal fun Project.configureDefaultMultiplatform(
         compilerOptions {
             optIn.add("kotlin.RequiresOptIn")
             optIn.add("kotlin.uuid.ExperimentalUuidApi")
+            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
 
         jvmToolchain {

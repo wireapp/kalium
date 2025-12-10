@@ -21,13 +21,14 @@ import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupUser
+import com.wire.backup.logger.BackupLogger
 
 /**
  * Validates the given [BackupUser] and its content.
  *
  * @throws IllegalStateException if mandatory validation fails.
  */
-internal fun CommonMPBackupExporter.validate(user: BackupUser): Boolean =
+internal fun BackupExporterDelegate.validate(user: BackupUser): Boolean =
     if (user.id.id.isEmpty()) {
         logger?.log("User ID cannot be empty")
         false
@@ -40,7 +41,7 @@ internal fun CommonMPBackupExporter.validate(user: BackupUser): Boolean =
  *
  * @throws IllegalStateException if mandatory validation fails.
  */
-internal fun CommonMPBackupExporter.validate(conversation: BackupConversation): Boolean =
+internal fun BackupExporterDelegate.validate(conversation: BackupConversation): Boolean =
     if (conversation.id.id.isEmpty()) {
         logger?.log("Conversation ID cannot be empty")
         false
@@ -54,7 +55,7 @@ internal fun CommonMPBackupExporter.validate(conversation: BackupConversation): 
  * @return `true` if the message is valid, `false` otherwise.
  * @throws IllegalStateException if mandatory validation fails.
  */
-internal fun CommonMPBackupExporter.validate(message: BackupMessage): Boolean = with(message) {
+internal fun BackupExporterDelegate.validate(message: BackupMessage): Boolean = with(message) {
     if (id.isEmpty()) {
         logger?.log("Backup: Message ID cannot be empty")
         return@with false
@@ -77,7 +78,7 @@ internal fun CommonMPBackupExporter.validate(message: BackupMessage): Boolean = 
  * @return `true` if the content is valid, `false` otherwise.
  * @throws IllegalStateException if mandatory validation fails.
  */
-private fun CommonMPBackupExporter.validate(content: BackupMessageContent): Boolean = with(content) {
+private fun BackupExporterDelegate.validate(content: BackupMessageContent): Boolean = with(content) {
     when (this) {
         is BackupMessageContent.Text -> {
             if (text.isEmpty()) {

@@ -20,10 +20,10 @@ package com.wire.backup.dump
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.data.getBackupFileName
 import com.wire.backup.filesystem.BackupPage
-import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.InMemoryBackupPageStorage
 import com.wire.kalium.protobuf.backup.BackupData
 import ext.libsodium.com.ionspin.kotlin.crypto.toUByteArray
@@ -45,13 +45,41 @@ import kotlin.js.Promise
 @JsExport
 public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId
-) : CommonMPBackupExporter(selfUserId) {
+) {
+    private val delegate: BackupExporterDelegate
 
-    override val storage: BackupPageStorage = InMemoryBackupPageStorage()
+    init {
+        val storage = InMemoryBackupPageStorage()
+        delegate = BackupExporterDelegate(
+            selfUserId = selfUserId,
+            storage = storage,
+            zipEntries = ::zipEntries
+        )
+    }
+
+    @JsName("addUser")
+    public actual fun add(user: BackupUser) {
+        delegate.addUser(user)
+    }
+
+    @JsName("addConversation")
+    public actual fun add(conversation: BackupConversation) {
+        delegate.addConversation(conversation)
+    }
+
+    @JsName("addMessage")
+    public actual fun add(message: BackupMessage) {
+        delegate.addMessage(message)
+    }
+
+    @JsName("addReaction")
+    public actual fun add(reaction: BackupReaction) {
+        delegate.addReaction(reaction)
+    }
 
     // This shouldn't be used by clients anyway, so it's fine if we can't sport it to JS!
     @Suppress("NON_EXPORTABLE_TYPE")
-    override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
+    private fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val zip = JSZip()
         data.forEach { entry ->
             // TODO: Save memory and improve performance by avoid array duplication!
@@ -65,7 +93,7 @@ public actual class MPBackupExporter(
             val entryData = it.toUByteArray().toByteArray()
             buffer.write(entryData)
             buffer.flush()
-            return@then buffer
+            buffer
         }
         return result.asDeferred()
     }
@@ -77,7 +105,7 @@ public actual class MPBackupExporter(
      */
     public fun finalize(password: String): Promise<BackupExportResult> = GlobalScope.promise {
         val output = Buffer()
-        when (val result = finalize(password, output)) {
+        when (val result = delegate.finalize(password, output)) {
             is ExportResult.Failure.IOError -> BackupExportResult.Failure.IOError(result.message)
             is ExportResult.Failure.ZipError -> BackupExportResult.Failure.ZipError(result.message)
             ExportResult.Success -> BackupExportResult.Success(output.readByteArray().toUByteArray().toUInt8Array(), getBackupFileName())

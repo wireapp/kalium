@@ -34,15 +34,11 @@ class MPBackupExporterTest {
     @Test
     fun givenZippingError_whenFinalizing_thenZipErrorShouldBeReturned() = runTest {
         val thrownException = IllegalStateException("Zipping failed!")
-        val subject = object : CommonMPBackupExporter(
-            BackupQualifiedId("user", "domain")
-        ) {
-            override val storage: BackupPageStorage = InMemoryBackupPageStorage()
-
-            override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
-                throw thrownException
-            }
-        }
+        val subject = BackupExporterDelegate(
+            selfUserId = BackupQualifiedId("user", "domain"),
+            storage = InMemoryBackupPageStorage(),
+            zipEntries = { throw thrownException }
+        )
 
         val result = subject.finalize("", Buffer())
         assertIs<ExportResult.Failure.ZipError>(result)

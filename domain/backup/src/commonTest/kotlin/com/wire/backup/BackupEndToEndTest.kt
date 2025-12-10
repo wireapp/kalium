@@ -23,7 +23,7 @@ import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.dump.CommonMPBackupExporter
+import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.ingest.BackupImportResult
 import com.wire.backup.ingest.BackupPeekResult
 import kotlinx.coroutines.test.runTest
@@ -204,12 +204,12 @@ interface CommonBackupEndToEndTestSubjectProvider {
     suspend fun exportImportDataTest(
         selfUserId: BackupQualifiedId,
         passphrase: String,
-        export: CommonMPBackupExporter.() -> Unit,
+        export: MPBackupExporter.() -> Unit,
     ): BackupImportResult
 
     suspend fun exportPeekTest(
         selfUserId: BackupQualifiedId,
         passphrase: String,
-        export: CommonMPBackupExporter.() -> Unit,
+        export: MPBackupExporter.() -> Unit,
     ): BackupPeekResult
 }

@@ -42,11 +42,12 @@ class MPBackupImporterTest {
         unzipEntries: () -> BackupPageStorage = { InMemoryBackupPageStorage() },
         encryptedStream: EncryptedStream<XChaChaPoly1305AuthenticationData> = EncryptedStream.XChaCha20Poly1305,
         headerSerializer: BackupHeaderSerializer = BackupHeaderSerializer.Default,
-    ): CommonMPBackupImporter = object : CommonMPBackupImporter(encryptedStream, headerSerializer) {
-        override fun getUnencryptedArchiveSink(): Sink = Buffer()
-
-        override suspend fun unzipAllEntries() = unzipEntries()
-    }
+    ): BackupImporterDelegate = BackupImporterDelegate(
+        getUnencryptedArchiveSink = { Buffer() },
+        unzipAllEntries = { unzipEntries() },
+        encryptedStream = encryptedStream,
+        headerSerializer = headerSerializer
+    )
 
     @Test
     fun givenFailureToParseHeader_whenImporting_thenFailureIsReturned() = runTest {

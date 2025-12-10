@@ -39,24 +39,32 @@ import kotlin.js.Promise
  * @sample samples.backup.BackupSamples.commonImport
  */
 @JsExport
-public actual class MPBackupImporter : CommonMPBackupImporter() {
+public actual class MPBackupImporter {
     private val inMemoryUnencryptedBuffer = Buffer()
+    private val delegate: BackupImporterDelegate
+
+    init {
+        delegate = BackupImporterDelegate(
+            getUnencryptedArchiveSink = ::getUnencryptedArchiveSink,
+            unzipAllEntries = ::unzipAllEntries
+        )
+    }
 
     public fun peekFileData(data: Uint8Array): Promise<BackupPeekResult> = GlobalScope.promise {
         val buffer = Buffer()
         buffer.write(data.toUByteArray().toByteArray())
-        peekBackup(buffer)
+        delegate.peekBackup(buffer)
     }
 
     public fun importFromFileData(data: Uint8Array, passphrase: String?): Promise<BackupImportResult> = GlobalScope.promise {
         val buffer = Buffer()
         buffer.write(data.toUByteArray().toByteArray())
-        importBackup(buffer, passphrase)
+        delegate.importBackup(buffer, passphrase)
     }
 
-    override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
+    private fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
 
-    override suspend fun unzipAllEntries(): BackupPageStorage {
+    private suspend fun unzipAllEntries(): BackupPageStorage {
         // TODO: Improve performance and save memory by avoiding array conversions
         val zip = JSZip.loadAsync(inMemoryUnencryptedBuffer.readByteArray().toUByteArray().toUInt8Array()).await()
         val storage = InMemoryBackupPageStorage()
