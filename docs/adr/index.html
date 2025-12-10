@@ -282,7 +282,7 @@ val name = message.conversationName
             <div class="panel panel-default">
                 <div class="panel-heading adr-accepted">
                     <h4 class="panel-title">
-                        <a data-toggle="collapse" href="#collapse3">2. Module Boundary Restructuring</a>
+                        <a data-toggle="collapse" href="#collapse3">3. Database Migration Testing Framework</a>
 
                         
                         <i class="adr-icon fas fa-fw fa-check"></i>
@@ -291,209 +291,6 @@ val name = message.conversationName
                     </h4>
                 </div>
                 <div id="collapse3" class="panel-collapse collapse">
-                    <div class="panel-body"><h1>2. Module Boundary Restructuring</h1>
-<p>Date: 2025-11-27</p>
-<h2>Status</h2>
-<p>Accepted</p>
-<h2>Context</h2>
-<p>The Kalium codebase had grown organically with modules at the root level (e.g., <code>:common</code>, <code>:data</code>, <code>:persistence</code>, <code>:network</code>, <code>:backup</code>, <code>:calling</code>, <code>:cells</code>). This flat structure made it difficult to understand module relationships, enforce architectural boundaries, and maintain clear separation of concerns. As the codebase scaled, we needed a more organized module hierarchy that would:</p>
-<ul>
-<li>Clearly define architectural layers and their responsibilities</li>
-<li>Make module dependencies more explicit and easier to reason about</li>
-<li>Improve discoverability by grouping related modules together</li>
-<li>Enforce better separation between core infrastructure, data access, domain logic, and testing utilities</li>
-</ul>
-<h2>Decision</h2>
-<p>We reorganized modules into a hierarchical structure with clear architectural boundaries:</p>
-<p><strong>Core Layer</strong> (<code>:core:*</code>) - Foundation modules:</p>
-<ul>
-<li><code>:core:common</code> (was <code>:common</code>)</li>
-<li><code>:core:data</code> (was <code>:data</code>)</li>
-<li><code>:core:cryptography</code> (was <code>:cryptography</code>)</li>
-<li><code>:core:logger</code> (was <code>:logger</code>)</li>
-<li><code>:core:util</code> (was <code>:util</code>)</li>
-</ul>
-<p><strong>Data Layer</strong> (<code>:data:*</code>) - Data access and infrastructure:</p>
-<ul>
-<li><code>:data:network</code> (was <code>:network</code>)</li>
-<li><code>:data:network-model</code> (was <code>:network-model</code>)</li>
-<li><code>:data:network-util</code> (was <code>:network-util</code>)</li>
-<li><code>:data:persistence</code> (was <code>:persistence</code>)</li>
-<li><code>:data:persistence-test</code> (was <code>:persistence-test</code>)</li>
-<li><code>:data:protobuf</code> (was <code>:protobuf</code>)</li>
-<li><code>:data:data-mappers</code> (new module for transformations)</li>
-</ul>
-<p><strong>Domain Layer</strong> (<code>:domain:*</code>) - Business logic boundaries:</p>
-<ul>
-<li><code>:domain:backup</code> (was <code>:backup</code>)</li>
-<li><code>:domain:calling</code> (was <code>:calling</code>)</li>
-<li><code>:domain:cells</code> (was <code>:cells</code>)</li>
-<li><code>:domain:conversation-history</code> (new)</li>
-<li><code>:domain:messaging:sending</code> (new, extracted from logic)</li>
-<li><code>:domain:messaging:receiving</code> (new, extracted from logic)</li>
-</ul>
-<p><strong>Test Layer</strong> (<code>:test:*</code>) - Testing utilities:</p>
-<ul>
-<li><code>:test:mocks</code> (was <code>:mocks</code>)</li>
-<li><code>:test:data-mocks</code> (new)</li>
-<li><code>:test:benchmarks</code> (was <code>:benchmarks</code>)</li>
-<li><code>:test:tango-tests</code> (was <code>:tango-tests</code>)</li>
-</ul>
-<p><strong>Sample/Tools Layer</strong> (<code>:sample:*</code>, <code>:tools:*</code>):</p>
-<ul>
-<li><code>:sample:cli</code> (was <code>:cli</code>)</li>
-<li><code>:sample:samples</code> (was <code>:samples</code>)</li>
-<li><code>:tools:testservice</code> (was <code>:testservice</code>)</li>
-<li><code>:tools:monkeys</code> (was <code>:monkeys</code>)</li>
-<li><code>:tools:backup-verification</code> (new)</li>
-<li><code>:tools:protobuf-codegen</code> (was <code>:protobuf-codegen</code>)</li>
-</ul>
-<p>All module references were updated throughout the codebase including build files, CI workflows, documentation, and the dependency graph visualization.</p>
-<h2>Consequences</h2>
-<p><strong>Benefits:</strong></p>
-<ul>
-<li><strong>Clearer Architecture</strong>: The layer-based structure makes the architecture immediately visible from the project structure</li>
-<li><strong>Better Discoverability</strong>: Developers can quickly locate modules by their architectural purpose</li>
-<li><strong>Enforced Boundaries</strong>: The naming scheme makes it obvious when a module is reaching across layers inappropriately</li>
-<li><strong>Improved Documentation</strong>: Module paths now self-document their architectural role (e.g., <code>:data:network</code> vs just <code>:network</code>)</li>
-<li><strong>Scalability</strong>: New modules can be added to appropriate layers without cluttering the root</li>
-<li><strong>Easier Onboarding</strong>: New team members can understand the system organization more quickly</li>
-</ul>
-<p><strong>Trade-offs:</strong></p>
-<ul>
-<li><strong>Migration Effort</strong>: All module references needed updating across build files, CI workflows, and documentation</li>
-<li><strong>Longer Module Paths</strong>: Module references are now more verbose (e.g., <code>projects.core.common</code> instead of <code>projects.common</code>)</li>
-<li><strong>Breaking Change</strong>: External consumers referencing modules directly will need to update their references</li>
-</ul>
-<p><strong>Technical Changes:</strong></p>
-<ul>
-<li>Updated all <code>implementation(projects.*)</code> references in build files</li>
-<li>Updated CI workflow gradle task paths (e.g., <code>:cli:assemble</code> → <code>:sample:cli:assemble</code>)</li>
-<li>Updated module graph configuration to show full paths and nest by module type</li>
-<li>Updated detekt baseline and project structure documentation</li>
-<li>Added README files to layer directories explaining their purpose and guidelines</li>
-</ul>
-</div>
-                </div>
-            </div>
-            
-            <div class="panel panel-default">
-                <div class="panel-heading adr-accepted">
-                    <h4 class="panel-title">
-                        <a data-toggle="collapse" href="#collapse4">3. Lightweight COUNT for Faster Conversation List Loading</a>
-
-                        
-                        <i class="adr-icon fas fa-fw fa-check"></i>
-                        
-
-                    </h4>
-                </div>
-                <div id="collapse4" class="panel-collapse collapse">
-                    <div class="panel-body"><h1>3. Lightweight COUNT for Faster Conversation List Loading</h1>
-<p>Date: 2025-12-03</p>
-<h2>Status</h2>
-<p>Accepted</p>
-<h2>Context</h2>
-<p>On Android clients with a large number of conversations and heavy message history, the conversation
-list was slow to load.<br />
-Profiling showed a significant delay during the COUNT phase executed before the Paging source loads
-items.</p>
-<p>The existing COUNT query used the <code>ConversationDetails</code> view, which performs many joins, user
-metadata checks, visibility rules, and sorting-related logic.<br />
-This resulted in:</p>
-<ul>
-<li>creation of temp B-trees</li>
-<li>expensive scans over large joined structures</li>
-<li>noticeable TTI spikes on older devices and devices with large databases</li>
-</ul>
-<p>Most of this logic is needed for the conversation list itself, but <strong>not</strong> for the COUNT used by the
-Paging library. Paging only requires an <strong>upper bound</strong>, not the exact filtered set.</p>
-<h2>Decision</h2>
-<p>Use a <strong>lightweight COUNT</strong> that operates directly on the <code>Conversation</code> table, but only when:</p>
-<ul>
-<li><code>searchQuery</code> is empty (no text search filtering required)</li>
-<li>no metadata-dependent visibility logic is needed for COUNT</li>
-</ul>
-<p>The new <code>countConversations</code> query is equivalent to the core filters used by the real paging SELECT
-and matches:</p>
-<ul>
-<li>exclude conversations of type SELF</li>
-<li>apply conversationFilter (ALL, GROUPS, ONE_ON_ONE, CHANNELS)</li>
-<li>apply <code>archived</code></li>
-<li>apply <code>deleted_locally</code></li>
-<li>apply protocol and MLS state (strict MLS, ESTABLISHED, PENDING_AFTER_RESET)</li>
-</ul>
-<p>However, it intentionally does not perform the additional visibility logic from
-<code>ConversationDetails</code>, such as:</p>
-<ul>
-<li>1:1 metadata checks (missing name, missing otherUserId)</li>
-<li>userDeleted or defederated logic</li>
-<li>CONNECTION_PENDING visibility rules</li>
-<li>isActive calculation from Member/User tables</li>
-<li>interactionEnabled filtering</li>
-<li>favorites and folder membership filtering</li>
-</ul>
-<p>These rules remain enforced by the actual SELECT used for loading pages.</p>
-<p>As a result, the lightweight COUNT may return a superset of rows, but this is acceptable because the
-Paging source uses the full SELECT query for real data.<br />
-The COUNT only provides a high-level upper bound.</p>
-<h2>Consequences</h2>
-<h3>Benefits</h3>
-<ul>
-<li>Significant reduction of TTI spikes on conversation list screen</li>
-<li>COUNT no longer triggers expensive joins or temporary B-trees</li>
-<li>More stable performance on large accounts and older hardware</li>
-<li>No functional changes to conversation visibility or ordering</li>
-<li>Paging logic remains correct because only the real SELECT determines item membership</li>
-</ul>
-<h3>Trade-offs</h3>
-<ul>
-<li>COUNT may return a slightly higher number than the actual number of displayed conversations</li>
-<li>Search queries still use the full COUNT because search relies on fields only available in the
-ConversationDetails view</li>
-</ul>
-<h3>Technical Notes</h3>
-<p>Below is the lightweight COUNT query introduced:</p>
-<pre><code>SELECT COUNT(*)
-FROM Conversation
-WHERE
-    type IS NOT 'SELF'
-    AND CASE
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
-        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
-        ELSE 1 = 0
-    END
-    AND archived = :fromArchive
-    AND deleted_locally = 0
-    AND (
-        protocol IN ('PROTEUS','MIXED')
-        OR (
-            protocol = 'MLS'
-            AND (
-                :strict_mls = 0
-                OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET')
-            )
-        )
-    );
-</code></pre>
-</div>
-                </div>
-            </div>
-            
-            <div class="panel panel-default">
-                <div class="panel-heading adr-accepted">
-                    <h4 class="panel-title">
-                        <a data-toggle="collapse" href="#collapse5">3. Database Migration Testing Framework</a>
-
-                        
-                        <i class="adr-icon fas fa-fw fa-check"></i>
-                        
-
-                    </h4>
-                </div>
-                <div id="collapse5" class="panel-collapse collapse">
                     <div class="panel-body"><h1>3. Database Migration Testing Framework</h1>
 <p>Date: 2025-11-18</p>
 <h2>Status</h2>
@@ -1030,6 +827,209 @@ assertEquals(1L, isEnabled)  // true
 <li><strong>Related ADR</strong>: ADR 0002 - Consolidate System Message Content Tables</li>
 <li><strong>Migration File</strong>: <code>persistence/src/commonMain/db_user/migrations/124.sqm</code> - Actual migration SQL</li>
 </ul>
+</div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse4">4. Module Boundary Restructuring</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse4" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>4. Module Boundary Restructuring</h1>
+<p>Date: 2025-11-27</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>The Kalium codebase had grown organically with modules at the root level (e.g., <code>:common</code>, <code>:data</code>, <code>:persistence</code>, <code>:network</code>, <code>:backup</code>, <code>:calling</code>, <code>:cells</code>). This flat structure made it difficult to understand module relationships, enforce architectural boundaries, and maintain clear separation of concerns. As the codebase scaled, we needed a more organized module hierarchy that would:</p>
+<ul>
+<li>Clearly define architectural layers and their responsibilities</li>
+<li>Make module dependencies more explicit and easier to reason about</li>
+<li>Improve discoverability by grouping related modules together</li>
+<li>Enforce better separation between core infrastructure, data access, domain logic, and testing utilities</li>
+</ul>
+<h2>Decision</h2>
+<p>We reorganized modules into a hierarchical structure with clear architectural boundaries:</p>
+<p><strong>Core Layer</strong> (<code>:core:*</code>) - Foundation modules:</p>
+<ul>
+<li><code>:core:common</code> (was <code>:common</code>)</li>
+<li><code>:core:data</code> (was <code>:data</code>)</li>
+<li><code>:core:cryptography</code> (was <code>:cryptography</code>)</li>
+<li><code>:core:logger</code> (was <code>:logger</code>)</li>
+<li><code>:core:util</code> (was <code>:util</code>)</li>
+</ul>
+<p><strong>Data Layer</strong> (<code>:data:*</code>) - Data access and infrastructure:</p>
+<ul>
+<li><code>:data:network</code> (was <code>:network</code>)</li>
+<li><code>:data:network-model</code> (was <code>:network-model</code>)</li>
+<li><code>:data:network-util</code> (was <code>:network-util</code>)</li>
+<li><code>:data:persistence</code> (was <code>:persistence</code>)</li>
+<li><code>:data:persistence-test</code> (was <code>:persistence-test</code>)</li>
+<li><code>:data:protobuf</code> (was <code>:protobuf</code>)</li>
+<li><code>:data:data-mappers</code> (new module for transformations)</li>
+</ul>
+<p><strong>Domain Layer</strong> (<code>:domain:*</code>) - Business logic boundaries:</p>
+<ul>
+<li><code>:domain:backup</code> (was <code>:backup</code>)</li>
+<li><code>:domain:calling</code> (was <code>:calling</code>)</li>
+<li><code>:domain:cells</code> (was <code>:cells</code>)</li>
+<li><code>:domain:conversation-history</code> (new)</li>
+<li><code>:domain:messaging:sending</code> (new, extracted from logic)</li>
+<li><code>:domain:messaging:receiving</code> (new, extracted from logic)</li>
+</ul>
+<p><strong>Test Layer</strong> (<code>:test:*</code>) - Testing utilities:</p>
+<ul>
+<li><code>:test:mocks</code> (was <code>:mocks</code>)</li>
+<li><code>:test:data-mocks</code> (new)</li>
+<li><code>:test:benchmarks</code> (was <code>:benchmarks</code>)</li>
+<li><code>:test:tango-tests</code> (was <code>:tango-tests</code>)</li>
+</ul>
+<p><strong>Sample/Tools Layer</strong> (<code>:sample:*</code>, <code>:tools:*</code>):</p>
+<ul>
+<li><code>:sample:cli</code> (was <code>:cli</code>)</li>
+<li><code>:sample:samples</code> (was <code>:samples</code>)</li>
+<li><code>:tools:testservice</code> (was <code>:testservice</code>)</li>
+<li><code>:tools:monkeys</code> (was <code>:monkeys</code>)</li>
+<li><code>:tools:backup-verification</code> (new)</li>
+<li><code>:tools:protobuf-codegen</code> (was <code>:protobuf-codegen</code>)</li>
+</ul>
+<p>All module references were updated throughout the codebase including build files, CI workflows, documentation, and the dependency graph visualization.</p>
+<h2>Consequences</h2>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li><strong>Clearer Architecture</strong>: The layer-based structure makes the architecture immediately visible from the project structure</li>
+<li><strong>Better Discoverability</strong>: Developers can quickly locate modules by their architectural purpose</li>
+<li><strong>Enforced Boundaries</strong>: The naming scheme makes it obvious when a module is reaching across layers inappropriately</li>
+<li><strong>Improved Documentation</strong>: Module paths now self-document their architectural role (e.g., <code>:data:network</code> vs just <code>:network</code>)</li>
+<li><strong>Scalability</strong>: New modules can be added to appropriate layers without cluttering the root</li>
+<li><strong>Easier Onboarding</strong>: New team members can understand the system organization more quickly</li>
+</ul>
+<p><strong>Trade-offs:</strong></p>
+<ul>
+<li><strong>Migration Effort</strong>: All module references needed updating across build files, CI workflows, and documentation</li>
+<li><strong>Longer Module Paths</strong>: Module references are now more verbose (e.g., <code>projects.core.common</code> instead of <code>projects.common</code>)</li>
+<li><strong>Breaking Change</strong>: External consumers referencing modules directly will need to update their references</li>
+</ul>
+<p><strong>Technical Changes:</strong></p>
+<ul>
+<li>Updated all <code>implementation(projects.*)</code> references in build files</li>
+<li>Updated CI workflow gradle task paths (e.g., <code>:cli:assemble</code> → <code>:sample:cli:assemble</code>)</li>
+<li>Updated module graph configuration to show full paths and nest by module type</li>
+<li>Updated detekt baseline and project structure documentation</li>
+<li>Added README files to layer directories explaining their purpose and guidelines</li>
+</ul>
+</div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse5">5. Lightweight COUNT for Faster Conversation List Loading</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse5" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>5. Lightweight COUNT for Faster Conversation List Loading</h1>
+<p>Date: 2025-12-03</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>On Android clients with a large number of conversations and heavy message history, the conversation
+list was slow to load.<br />
+Profiling showed a significant delay during the COUNT phase executed before the Paging source loads
+items.</p>
+<p>The existing COUNT query used the <code>ConversationDetails</code> view, which performs many joins, user
+metadata checks, visibility rules, and sorting-related logic.<br />
+This resulted in:</p>
+<ul>
+<li>creation of temp B-trees</li>
+<li>expensive scans over large joined structures</li>
+<li>noticeable TTI spikes on older devices and devices with large databases</li>
+</ul>
+<p>Most of this logic is needed for the conversation list itself, but <strong>not</strong> for the COUNT used by the
+Paging library. Paging only requires an <strong>upper bound</strong>, not the exact filtered set.</p>
+<h2>Decision</h2>
+<p>Use a <strong>lightweight COUNT</strong> that operates directly on the <code>Conversation</code> table, but only when:</p>
+<ul>
+<li><code>searchQuery</code> is empty (no text search filtering required)</li>
+<li>no metadata-dependent visibility logic is needed for COUNT</li>
+</ul>
+<p>The new <code>countConversations</code> query is equivalent to the core filters used by the real paging SELECT
+and matches:</p>
+<ul>
+<li>exclude conversations of type SELF</li>
+<li>apply conversationFilter (ALL, GROUPS, ONE_ON_ONE, CHANNELS)</li>
+<li>apply <code>archived</code></li>
+<li>apply <code>deleted_locally</code></li>
+<li>apply protocol and MLS state (strict MLS, ESTABLISHED, PENDING_AFTER_RESET)</li>
+</ul>
+<p>However, it intentionally does not perform the additional visibility logic from
+<code>ConversationDetails</code>, such as:</p>
+<ul>
+<li>1:1 metadata checks (missing name, missing otherUserId)</li>
+<li>userDeleted or defederated logic</li>
+<li>CONNECTION_PENDING visibility rules</li>
+<li>isActive calculation from Member/User tables</li>
+<li>interactionEnabled filtering</li>
+<li>favorites and folder membership filtering</li>
+</ul>
+<p>These rules remain enforced by the actual SELECT used for loading pages.</p>
+<p>As a result, the lightweight COUNT may return a superset of rows, but this is acceptable because the
+Paging source uses the full SELECT query for real data.<br />
+The COUNT only provides a high-level upper bound.</p>
+<h2>Consequences</h2>
+<h3>Benefits</h3>
+<ul>
+<li>Significant reduction of TTI spikes on conversation list screen</li>
+<li>COUNT no longer triggers expensive joins or temporary B-trees</li>
+<li>More stable performance on large accounts and older hardware</li>
+<li>No functional changes to conversation visibility or ordering</li>
+<li>Paging logic remains correct because only the real SELECT determines item membership</li>
+</ul>
+<h3>Trade-offs</h3>
+<ul>
+<li>COUNT may return a slightly higher number than the actual number of displayed conversations</li>
+<li>Search queries still use the full COUNT because search relies on fields only available in the
+ConversationDetails view</li>
+</ul>
+<h3>Technical Notes</h3>
+<p>Below is the lightweight COUNT query introduced:</p>
+<pre><code>SELECT COUNT(*)
+FROM Conversation
+WHERE
+    type IS NOT 'SELF'
+    AND CASE
+        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
+        ELSE 1 = 0
+    END
+    AND archived = :fromArchive
+    AND deleted_locally = 0
+    AND (
+        protocol IN ('PROTEUS','MIXED')
+        OR (
+            protocol = 'MLS'
+            AND (
+                :strict_mls = 0
+                OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET')
+            )
+        )
+    );
+</code></pre>
 </div>
                 </div>
             </div>
