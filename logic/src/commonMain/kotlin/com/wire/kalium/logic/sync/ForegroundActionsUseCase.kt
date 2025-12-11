@@ -49,7 +49,7 @@ internal class ForegroundActionsUseCaseImpl(
     private val mlsClientManager: MLSClientManager,
     private val mlsMigrationManager: MLSMigrationManager,
     private val keyingMaterialsManager: KeyingMaterialsManager,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : ForegroundActionsUseCase {
 
     private val actions: List<suspend () -> Unit> = listOf(

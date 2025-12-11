@@ -37,7 +37,7 @@ interface IsEligibleToStartCallUseCase {
 internal class IsEligibleToStartCallUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val callRepository: CallRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : IsEligibleToStartCallUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult =

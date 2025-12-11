@@ -51,7 +51,7 @@ interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
 class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ObserveSelfDeletionTimerSettingsForConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, considerSelfUserSettings: Boolean): Flow<SelfDeletionTimer> =

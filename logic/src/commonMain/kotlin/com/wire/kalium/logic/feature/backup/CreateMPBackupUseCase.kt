@@ -66,7 +66,7 @@ internal class CreateMPBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
     private val exporterProvider: MPBackupExporterProvider = MPBackupExporterProviderImpl(),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : CreateMPBackupUseCase {
 
     @Suppress("TooGenericExceptionCaught")

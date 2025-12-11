@@ -50,7 +50,7 @@ import kotlinx.coroutines.withContext
 @DebugKaliumApi("Populates synthetic text messages for performance testing. Debug-only.")
 class MessagesFeeder(
     private val localDatabase: UserDatabaseBuilder,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) {
 
     /**

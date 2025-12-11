@@ -53,7 +53,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
     private val userRepository: UserRepository,
     private val selfUserId: UserId,
     private val selfClientIdProvider: CurrentClientIdProvider,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) {
 
     /**

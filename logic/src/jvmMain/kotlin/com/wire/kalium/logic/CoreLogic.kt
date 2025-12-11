@@ -70,7 +70,7 @@ actual class CoreLogic(
             }
         ),
         passphrase = null,
-        queriesContext = KaliumDispatcherImpl.io
+        queriesContext = KaliumDispatcherImpl.instance.io
     )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
@@ -83,7 +83,7 @@ actual class CoreLogic(
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
         PlatformContext(),
-        CoroutineScope(KaliumDispatcherImpl.io)
+        CoroutineScope(KaliumDispatcherImpl.instance.io)
     )
 
     override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()

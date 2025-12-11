@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
  */
 class RequestVideoStreamsUseCase(
     private val callManager: Lazy<CallManager>,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     /**
      * @param conversationId the id of the conversation.

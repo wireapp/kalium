@@ -31,7 +31,7 @@ interface ClearUsersTypingEventsUseCase {
 
 internal class ClearUsersTypingEventsUseCaseImpl(
     private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ClearUsersTypingEventsUseCase {
     override suspend operator fun invoke() {
         withContext(dispatcher.io) {

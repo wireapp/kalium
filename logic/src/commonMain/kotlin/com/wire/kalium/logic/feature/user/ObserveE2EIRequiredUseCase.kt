@@ -58,7 +58,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val mlsClientIdentity: GetMLSClientIdentityUseCase,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io,
+    private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.instance.io,
     private val renewCertificateRandomDelay: Duration = RENEW_RANDOM_DELAY
 ) : ObserveE2EIRequiredUseCase {
 

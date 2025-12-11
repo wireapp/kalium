@@ -61,7 +61,7 @@ class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
 ) : ProteusClientProvider {
 

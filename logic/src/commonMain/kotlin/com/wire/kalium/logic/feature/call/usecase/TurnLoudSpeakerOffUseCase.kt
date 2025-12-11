@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
  */
 class TurnLoudSpeakerOffUseCase(
     private val mediaManagerService: MediaManagerService,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     suspend operator fun invoke() {
         withContext(dispatcher.default) {

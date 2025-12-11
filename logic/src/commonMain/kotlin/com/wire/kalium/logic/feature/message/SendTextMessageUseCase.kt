@@ -65,7 +65,7 @@ class SendTextMessageUseCase internal constructor(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val scope: CoroutineScope
 ) {
 

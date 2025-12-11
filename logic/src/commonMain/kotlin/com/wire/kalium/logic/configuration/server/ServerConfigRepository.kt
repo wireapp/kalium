@@ -71,7 +71,7 @@ internal class ServerConfigDataSource(
     override val serverConfigurationDAO: ServerConfigurationDAO,
     override val versionApi: VersionApi,
     override val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ServerConfigRepository, ServerConfigRepositoryExtension(
     versionApi = versionApi,
     serverConfigurationDAO = serverConfigurationDAO,

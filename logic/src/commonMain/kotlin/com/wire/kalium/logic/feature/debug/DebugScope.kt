@@ -106,7 +106,7 @@ class DebugScope internal constructor(
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) {
 
     val establishSession: EstablishSessionUseCase

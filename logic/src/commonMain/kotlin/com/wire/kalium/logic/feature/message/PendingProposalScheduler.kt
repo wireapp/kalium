@@ -69,7 +69,7 @@ internal class PendingProposalSchedulerImpl(
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     private val subconversationRepository: Lazy<SubconversationRepository>,
     private val transactionProvider: CryptoTransactionProvider,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : PendingProposalScheduler {
 
     /**

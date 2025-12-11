@@ -43,7 +43,7 @@ class UpdateSelfAvailabilityStatusUseCase internal constructor(
     private val messageSender: MessageSender,
     private val provideClientId: CurrentClientIdProvider,
     private val selfUserId: QualifiedID,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     /**
      * @param status the new [UserAvailabilityStatus] status.

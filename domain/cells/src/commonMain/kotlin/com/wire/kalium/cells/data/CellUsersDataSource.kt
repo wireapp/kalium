@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
 
 internal class CellUsersDataSource(
     private val userDAO: UserDAO,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : CellUsersRepository {
     override suspend fun getUserNames() = withContext(dispatchers.io) {
         wrapStorageRequest {

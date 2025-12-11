@@ -159,12 +159,12 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         val pageSize = 50
         val messagesToInsert = generateRandomMessages(totalMessageCount)
         measureTime {
-            val insertingJob = launch(KaliumDispatcherImpl.io) {
+            val insertingJob = launch(KaliumDispatcherImpl.instance.io) {
                 messagesToInsert.forEach { messageEntity ->
                     messageDAO.insertOrIgnoreMessage(messageEntity)
                 }
             }
-            launch(KaliumDispatcherImpl.io) {
+            launch(KaliumDispatcherImpl.instance.io) {
                 while (insertingJob.isActive) {
                     messageDAO.getMessagesByConversationAndVisibility(
                         conversationId = conversationEntity1.id,

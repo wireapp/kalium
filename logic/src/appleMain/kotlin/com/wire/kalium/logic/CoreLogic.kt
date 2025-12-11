@@ -62,7 +62,7 @@ actual class CoreLogic(
                 StorageData.FileBacked("$rootPath/global-storage")
             }
         ),
-        queriesContext = KaliumDispatcherImpl.io,
+        queriesContext = KaliumDispatcherImpl.instance.io,
         passphrase = null
     )
 

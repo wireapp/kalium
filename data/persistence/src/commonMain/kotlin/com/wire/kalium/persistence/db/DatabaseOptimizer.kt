@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 @DelicateKaliumApi("This class is used for debugging purposes only")
 class DatabaseOptimizer(
     private val localDatabase: UserDatabaseBuilder,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     suspend fun optimize() = withContext(dispatcher.io) {
         localDatabase.sqlDriver.execute(

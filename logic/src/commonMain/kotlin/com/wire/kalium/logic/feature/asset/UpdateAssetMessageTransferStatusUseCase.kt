@@ -47,7 +47,7 @@ interface UpdateAssetMessageTransferStatusUseCase {
 
 internal class UpdateAssetMessageTransferStatusUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : UpdateAssetMessageTransferStatusUseCase {
 
     override suspend operator fun invoke(

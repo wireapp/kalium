@@ -41,7 +41,7 @@ interface GetMessageDraftUseCase {
 class GetMessageDraftUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val messageDraftRepository: MessageDraftRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : GetMessageDraftUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): MessageDraft? = withContext(dispatcher.io) {
         messageDraftRepository.getMessageDraft(conversationId)?.let { draft ->

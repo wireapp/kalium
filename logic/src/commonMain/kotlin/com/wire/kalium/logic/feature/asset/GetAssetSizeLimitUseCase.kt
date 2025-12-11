@@ -33,7 +33,7 @@ interface GetAssetSizeLimitUseCase {
 
 class GetAssetSizeLimitUseCaseImpl internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : GetAssetSizeLimitUseCase {
     override suspend operator fun invoke(isImage: Boolean): Long = withContext(dispatchers.default) {
         val hasUserTeam = isSelfATeamMember()

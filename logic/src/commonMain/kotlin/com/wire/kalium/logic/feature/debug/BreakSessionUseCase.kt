@@ -53,7 +53,7 @@ interface BreakSessionUseCase {
 internal class BreakSessionUseCaseImpl internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : BreakSessionUseCase {
     override suspend operator fun invoke(
         userId: UserId,

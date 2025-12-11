@@ -45,7 +45,7 @@ class ConversationClientsInCallUpdaterImpl(
     private val callManager: Lazy<CallManager>,
     private val conversationRepository: ConversationRepository,
     private val federatedIdMapper: FederatedIdMapper,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ConversationClientsInCallUpdater {
     override suspend fun invoke(conversationId: ConversationId) {
         conversationRepository.getConversationRecipientsForCalling(

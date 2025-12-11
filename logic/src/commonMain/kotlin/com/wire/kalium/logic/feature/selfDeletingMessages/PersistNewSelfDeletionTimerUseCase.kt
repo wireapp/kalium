@@ -39,7 +39,7 @@ interface PersistNewSelfDeletionTimerUseCase {
 
 class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : PersistNewSelfDeletionTimerUseCase {
     override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) = withContext(dispatcher.io) {
         conversationRepository.updateUserSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({

@@ -24,7 +24,7 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
+expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance) :
     KaliumFileSystem
 
 @Suppress("TooManyFunctions")

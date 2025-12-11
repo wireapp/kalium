@@ -48,7 +48,7 @@ interface RemoveConversationFromFolderUseCase {
 
 internal class RemoveConversationFromFolderUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : RemoveConversationFromFolderUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,

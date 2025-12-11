@@ -159,7 +159,7 @@ class MessageScope internal constructor(
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
 

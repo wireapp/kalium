@@ -36,7 +36,7 @@ class ObfuscatedCopyExporter internal constructor(
     user: UserIDEntity,
     private val platformDatabaseData: PlatformDatabaseData,
     private val localDatabase: UserDatabaseBuilder,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     private val emptyPlainFIleNameUserId = user.copy(value = ("obfuscated-backup-" + user.value))
 

@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
  */
 class GetSenderNameByMessageIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     suspend operator fun invoke(
         conversationId: ConversationId,

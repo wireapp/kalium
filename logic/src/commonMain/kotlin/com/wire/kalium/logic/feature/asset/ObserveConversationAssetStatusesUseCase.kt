@@ -37,7 +37,7 @@ interface ObserveAssetStatusesUseCase {
 
 internal class ObserveAssetStatusesUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ObserveAssetStatusesUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId): Flow<Map<String, MessageAssetStatus>> {

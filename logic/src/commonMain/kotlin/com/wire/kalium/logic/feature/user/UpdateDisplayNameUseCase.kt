@@ -38,7 +38,7 @@ fun interface UpdateDisplayNameUseCase {
 
 internal class UpdateDisplayNameUseCaseImpl(
     private val accountRepository: AccountRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : UpdateDisplayNameUseCase {
     override suspend fun invoke(displayName: String): DisplayNameUpdateResult = withContext(dispatchers.io) {
         accountRepository.updateSelfDisplayName(displayName)

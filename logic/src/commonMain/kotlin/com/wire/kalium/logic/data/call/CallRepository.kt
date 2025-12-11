@@ -172,7 +172,7 @@ internal class CallDataSource(
     private val transactionProvider: CryptoTransactionProvider,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     initialCallMetadataProfile: CallMetadataProfile = CallMetadataProfile(), // For testing purposes
 ) : CallRepository {
 

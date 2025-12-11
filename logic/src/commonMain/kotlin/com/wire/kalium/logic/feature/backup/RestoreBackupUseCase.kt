@@ -78,7 +78,7 @@ internal class RestoreBackupUseCaseImpl(
     private val userId: UserId,
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : RestoreBackupUseCase {
 

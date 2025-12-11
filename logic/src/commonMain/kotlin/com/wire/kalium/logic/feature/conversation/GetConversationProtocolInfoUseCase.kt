@@ -49,7 +49,7 @@ interface GetConversationProtocolInfoUseCase {
 @Suppress("FunctionNaming")
 internal fun GetConversationProtocolInfoUseCase(
     conversationRepository: ConversationRepository,
-    dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) = object : GetConversationProtocolInfoUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): GetConversationProtocolInfoUseCase.Result =
         withContext(dispatcher.io) {

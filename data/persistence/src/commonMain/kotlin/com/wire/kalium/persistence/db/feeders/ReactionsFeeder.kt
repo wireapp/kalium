@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 @DebugKaliumApi("Feeds large synthetic data into local DB for performance testing only.")
 class ReactionsFeeder(
     private val localDatabase: UserDatabaseBuilder,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     /**

@@ -60,7 +60,7 @@ class DeleteMessageUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val deleteAttachments: DeleteMessageAttachmentsUseCase,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     /**

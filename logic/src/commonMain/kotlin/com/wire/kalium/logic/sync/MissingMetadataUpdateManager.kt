@@ -49,7 +49,7 @@ internal class MissingMetadataUpdateManagerImpl(
     private val refreshUsersWithoutMetadata: Lazy<RefreshUsersWithoutMetadataUseCase>,
     private val refreshConversationsWithoutMetadata: Lazy<RefreshConversationsWithoutMetadataUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : MissingMetadataUpdateManager {
 
     @OptIn(ExperimentalCoroutinesApi::class)

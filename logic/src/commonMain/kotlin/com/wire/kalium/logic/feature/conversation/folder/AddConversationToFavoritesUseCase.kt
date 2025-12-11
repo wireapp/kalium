@@ -45,7 +45,7 @@ interface AddConversationToFavoritesUseCase {
 
 internal class AddConversationToFavoritesUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : AddConversationToFavoritesUseCase {
     override suspend fun invoke(
         conversationId: ConversationId

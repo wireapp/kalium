@@ -53,7 +53,7 @@ internal class EI2EIClientProviderImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val userRepository: UserRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : E2EIClientProvider {
 
     private var e2EIClient: E2EIClient? = null

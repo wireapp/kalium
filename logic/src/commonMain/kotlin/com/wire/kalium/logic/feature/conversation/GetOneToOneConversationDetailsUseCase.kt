@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.map
  */
 class GetOneToOneConversationDetailsUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     suspend operator fun invoke(otherUserId: UserId): Flow<Result> =

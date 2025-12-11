@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.onStart
 actual class MediaManagerServiceImpl(
     platformContext: PlatformContext,
     scope: CoroutineScope,
-    dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : MediaManagerService {
 
     private val mediaManager: Deferred<MediaManager> = scope.async(

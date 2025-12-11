@@ -38,7 +38,7 @@ fun interface UpdateAccentColorUseCase {
 
 internal class UpdateAccentColorUseCaseImpl(
     private val accountRepository: AccountRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : UpdateAccentColorUseCase {
     override suspend fun invoke(accentId: Int): UpdateAccentColorResult = withContext(dispatchers.io) {
         accountRepository.updateSelfAccentColor(accentId)

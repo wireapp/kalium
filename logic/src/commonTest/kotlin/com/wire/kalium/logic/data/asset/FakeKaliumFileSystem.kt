@@ -31,7 +31,7 @@ import okio.use
 
 class FakeKaliumFileSystem(
     private val fakeFileSystem: FakeFileSystem = FakeFileSystem(),
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : KaliumFileSystem {
 
     private val userHomePath = "/Users/me/testApp".toPath()

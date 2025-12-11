@@ -41,7 +41,7 @@ import kotlin.collections.map
 
 internal class MessageAttachmentDraftDataSource internal constructor(
     private val messageAttachmentDao: MessageAttachmentDraftDao,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : MessageAttachmentDraftRepository {
 
     override suspend fun add(

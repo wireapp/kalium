@@ -70,7 +70,7 @@ internal class UserConfigSyncWorkerImpl(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val acmeCertificatesSyncUseCase: ACMECertificatesSyncUseCase,
     kaliumLogger: KaliumLogger,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val timeout: Duration = TIMEOUT,
 ) : UserConfigSyncWorker {
     private val logger = kaliumLogger.withTextTag(NAME)

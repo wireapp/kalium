@@ -42,7 +42,7 @@ internal class AnswerCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val muteCall: MuteCallUseCase,
     private val kaliumConfigs: KaliumConfigs,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : AnswerCallUseCase {
 
     /**

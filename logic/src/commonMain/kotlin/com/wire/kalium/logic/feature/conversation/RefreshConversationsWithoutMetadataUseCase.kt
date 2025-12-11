@@ -42,7 +42,7 @@ internal class RefreshConversationsWithoutMetadataUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val persistConversations: PersistConversationsUseCase,
     private val transactionProvider: CryptoTransactionProvider,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
         conversationRepository.getConversationIdsWithoutMetadata()

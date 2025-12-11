@@ -43,7 +43,7 @@ interface UploadUserAvatarUseCase {
 internal class UploadUserAvatarUseCaseImpl(
     private val userDataSource: UserRepository,
     private val assetDataSource: AssetRepository,
-    private val dispatcher: KaliumDispatcherImpl = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcherImpl = KaliumDispatcherImpl.instance
 ) : UploadUserAvatarUseCase {
 
     override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult {

@@ -40,7 +40,7 @@ class SendInCallReactionUseCase(
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val messageSender: MessageSender,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val scope: CoroutineScope
 ) {
 

@@ -51,7 +51,7 @@ class SessionResetSenderImpl internal constructor(
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val messageSender: MessageSender,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : SessionResetSender {
     override suspend operator fun invoke(
         conversationId: ConversationId,

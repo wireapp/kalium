@@ -47,7 +47,7 @@ public interface DownloadCellFileUseCase {
 internal class DownloadCellFileUseCaseImpl internal constructor(
     private val cellsRepository: CellsRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : DownloadCellFileUseCase {
     /**
      * Download an asset file from the wire cell server.

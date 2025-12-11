@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 
 internal class CellConversationDataSource(
     private val conversation: ConversationDAO,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : CellConversationRepository {
 
     override suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?> =

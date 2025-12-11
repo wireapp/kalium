@@ -41,7 +41,7 @@ interface ObserveOtherUserSecurityClassificationLabelUseCase {
 internal class ObserveOtherUserSecurityClassificationLabelUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val selfUserId: UserId,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ObserveOtherUserSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(otherUserId: UserId): Flow<SecurityClassificationType> = withContext(dispatchers.io) {

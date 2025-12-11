@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
 actual class FlowManagerServiceImpl(
     appContext: PlatformContext,
     scope: CoroutineScope,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : FlowManagerService {
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")

@@ -36,7 +36,7 @@ interface IsReadOnlyAccountUseCase {
 internal class IsReadOnlyAccountUseCaseImpl(
     private val selfUserId: UserId,
     private val sessionRepository: SessionRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : IsReadOnlyAccountUseCase {
     override suspend operator fun invoke(): Boolean = withContext(dispatchers.io) {
         sessionRepository.isAccountReadOnly(selfUserId).fold(

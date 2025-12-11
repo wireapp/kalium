@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
 @DebugKaliumApi("Feeds synthetic unread events into local DB for performance testing only.")
 class UnreadEventsFeeder(
     private val localDatabase: UserDatabaseBuilder,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     suspend fun feed(conversationId: ConversationIDEntity) = withContext(dispatcher.io) {

@@ -124,7 +124,7 @@ class CallManagerImpl internal constructor(
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : CallManager {
 
     private val job = SupervisorJob()

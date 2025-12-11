@@ -38,7 +38,7 @@ import kotlinx.coroutines.withContext
 internal class CellAttachmentsDataSource(
     private val messageAttachments: MessageAttachmentsDao,
     private val assetsDao: AssetDAO,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : CellAttachmentsRepository {
 
     override suspend fun savePreviewUrl(assetId: String, url: String?) = withContext(dispatchers.io) {

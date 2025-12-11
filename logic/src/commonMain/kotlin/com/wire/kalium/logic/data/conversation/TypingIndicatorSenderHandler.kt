@@ -47,7 +47,7 @@ internal interface TypingIndicatorSenderHandler {
 
 internal class TypingIndicatorSenderHandlerImpl(
     private val conversationRepository: ConversationRepository,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
     userSessionCoroutineScope: CoroutineScope
 ) : TypingIndicatorSenderHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext

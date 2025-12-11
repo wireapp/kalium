@@ -75,7 +75,7 @@ internal class CreateBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val databaseExporter: DatabaseExporter,
     private val securityHelper: SecurityHelper,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : CreateBackupUseCase {
 

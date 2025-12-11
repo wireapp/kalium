@@ -52,7 +52,7 @@ internal class EndCallUseCaseImpl(
     private val callRepository: CallRepository,
     private val endCallListener: EndCallResultListener,
     private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : EndCallUseCase {
 
     /**

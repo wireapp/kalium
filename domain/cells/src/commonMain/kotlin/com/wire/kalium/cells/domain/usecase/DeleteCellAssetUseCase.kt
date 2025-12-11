@@ -46,7 +46,7 @@ internal class DeleteCellAssetUseCaseImpl(
     private val cellsRepository: CellsRepository,
     private val cellAttachmentsRepository: CellAttachmentsRepository,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : DeleteCellAssetUseCase {
 
     override suspend fun invoke(assetId: String, localPath: String?) =

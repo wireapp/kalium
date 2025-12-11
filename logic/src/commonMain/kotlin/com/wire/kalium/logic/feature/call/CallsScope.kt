@@ -113,7 +113,7 @@ class CallsScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val inCallReactionsRepository: InCallReactionsRepository,
     private val selfUserId: UserId,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     val allCallsWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
@@ -195,7 +195,7 @@ class CallsScope internal constructor(
             conversationClientsInCallUpdater
         )
 
-    val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
+    val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl.instance)
 
     val muteCall: MuteCallUseCase get() = MuteCallUseCaseImpl(callManager, callRepository)
 
@@ -229,7 +229,7 @@ class CallsScope internal constructor(
 
     val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
 
-    val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
+    val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl.instance)
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 

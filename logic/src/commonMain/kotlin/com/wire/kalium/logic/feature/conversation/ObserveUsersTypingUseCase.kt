@@ -40,7 +40,7 @@ interface ObserveUsersTypingUseCase {
 internal class ObserveUsersTypingUseCaseImpl(
     private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository,
     private val userRepository: UserRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ObserveUsersTypingUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>> = withContext(dispatcher.io) {
         typingIndicatorIncomingRepository.observeUsersTyping(conversationId).map { usersEntries ->

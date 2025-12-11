@@ -52,7 +52,7 @@ class ToggleReactionUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val reactionRepository: ReactionRepository,
     private val messageSender: MessageSender,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     /**
      * Operation to toggle a reaction on a message

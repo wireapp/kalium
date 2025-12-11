@@ -43,7 +43,7 @@ import kotlinx.coroutines.withContext
 class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val selfUserId: UserId,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     /**
      * search for members to mention in a conversation

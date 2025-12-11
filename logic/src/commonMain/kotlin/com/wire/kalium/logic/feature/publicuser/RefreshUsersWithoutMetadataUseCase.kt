@@ -35,7 +35,7 @@ interface RefreshUsersWithoutMetadataUseCase {
 
 internal class RefreshUsersWithoutMetadataUseCaseImpl(
     private val userRepository: UserRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : RefreshUsersWithoutMetadataUseCase {
 
     override suspend fun invoke() = withContext(dispatchers.io) {

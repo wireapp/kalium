@@ -56,7 +56,7 @@ internal class NotifyConversationIsOpenUseCaseImpl(
     private val slowSyncRepository: SlowSyncRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val kaliumLogger: KaliumLogger,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : NotifyConversationIsOpenUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatcher.io) {

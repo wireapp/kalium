@@ -52,7 +52,7 @@ interface MoveConversationToFolderUseCase {
 
 internal class MoveConversationToFolderUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : MoveConversationToFolderUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,

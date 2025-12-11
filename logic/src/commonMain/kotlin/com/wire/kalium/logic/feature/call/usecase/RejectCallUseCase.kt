@@ -33,7 +33,7 @@ import kotlinx.coroutines.withContext
 class RejectCallUseCase(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {

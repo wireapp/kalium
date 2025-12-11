@@ -46,7 +46,7 @@ import kotlinx.coroutines.withContext
 @DebugKaliumApi("Populates synthetic @mentions for performance testing. Debug-only and irreversible.")
 class MentionsFeeder(
     private val localDatabase: UserDatabaseBuilder,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     /**

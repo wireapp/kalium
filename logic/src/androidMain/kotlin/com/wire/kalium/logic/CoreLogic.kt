@@ -59,7 +59,7 @@ actual class CoreLogic(
 
     override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(appContext),
-        queriesContext = KaliumDispatcherImpl.io,
+        queriesContext = KaliumDispatcherImpl.instance.io,
         passphrase = if (kaliumConfigs.shouldEncryptData) {
             SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
         } else {
@@ -107,7 +107,7 @@ actual class CoreLogic(
     }
 
     override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
-        dispatcher = KaliumDispatcherImpl.io,
+        dispatcher = KaliumDispatcherImpl.instance.io,
         audioEffect = AudioEffect(appContext),
     )
 }

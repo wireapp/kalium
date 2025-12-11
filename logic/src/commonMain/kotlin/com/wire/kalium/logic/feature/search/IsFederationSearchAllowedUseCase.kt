@@ -42,7 +42,7 @@ internal fun IsFederationSearchAllowedUseCase(
     mlsPublicKeysRepository: MLSPublicKeysRepository,
     getDefaultProtocol: GetDefaultProtocolUseCase,
     getConversationProtocolInfo: GetConversationProtocolInfoUseCase,
-    dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) = object : IsFederationSearchAllowedUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId?): Boolean = withContext(dispatcher.io) {

@@ -143,7 +143,7 @@ class ConversationScope internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val systemMessageInserter: SystemMessageInserter,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) {
 
     val getConversations: GetConversationsUseCase
@@ -258,7 +258,7 @@ class ConversationScope internal constructor(
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
     private val conversationWorkQueue: ConversationWorkQueue by lazy {
-        ParallelConversationWorkQueue(scope, kaliumLogger, KaliumDispatcherImpl.default)
+        ParallelConversationWorkQueue(scope, kaliumLogger, KaliumDispatcherImpl.instance.default)
     }
 
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase

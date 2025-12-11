@@ -74,7 +74,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private val fetchConversation: FetchConversationUseCase,
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val selfUserId: UserId,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
     private val logger = kaliumLogger.withTextTag("JoinExistingMLSConversationUseCase")

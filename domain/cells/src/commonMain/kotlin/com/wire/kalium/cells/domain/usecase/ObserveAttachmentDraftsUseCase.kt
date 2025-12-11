@@ -41,7 +41,7 @@ public interface ObserveAttachmentDraftsUseCase {
 internal class ObserveAttachmentDraftsUseCaseImpl internal constructor(
     private val repository: MessageAttachmentDraftRepository,
     private val uploadManager: CellUploadManager,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ObserveAttachmentDraftsUseCase {
 
     override suspend fun invoke(conversationId: QualifiedID): Flow<List<AttachmentDraft>> {

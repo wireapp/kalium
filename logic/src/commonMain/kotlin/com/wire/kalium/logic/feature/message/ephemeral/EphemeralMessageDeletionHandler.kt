@@ -51,7 +51,7 @@ internal interface EphemeralMessageDeletionHandler {
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
     kaliumLogger: KaliumLogger,

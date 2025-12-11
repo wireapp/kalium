@@ -34,7 +34,7 @@ interface SaveMessageDraftUseCase {
 
 class SaveMessageDraftUseCaseImpl internal constructor(
     private val messageDraftRepository: MessageDraftRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : SaveMessageDraftUseCase {
     override suspend operator fun invoke(messageDraft: MessageDraft): Unit = withContext(dispatcher.io) {
         messageDraftRepository.saveMessageDraft(messageDraft)

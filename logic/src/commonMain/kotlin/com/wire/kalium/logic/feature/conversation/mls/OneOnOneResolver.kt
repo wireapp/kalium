@@ -98,7 +98,7 @@ internal class OneOnOneResolverImpl(
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val oneOnOneMigrator: OneOnOneMigrator,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : OneOnOneResolver {
 
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)

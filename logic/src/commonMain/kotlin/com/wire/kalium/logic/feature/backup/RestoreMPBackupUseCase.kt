@@ -60,7 +60,7 @@ internal class RestoreMPBackupUseCaseImpl(
     private val backupRepository: BackupRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : RestoreMPBackupUseCase {
 
     override suspend fun invoke(

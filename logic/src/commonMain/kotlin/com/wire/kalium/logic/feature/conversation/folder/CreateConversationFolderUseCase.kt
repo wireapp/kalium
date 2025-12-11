@@ -48,7 +48,7 @@ interface CreateConversationFolderUseCase {
 
 internal class CreateConversationFolderUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : CreateConversationFolderUseCase {
     override suspend fun invoke(folderName: String): CreateConversationFolderUseCase.Result = withContext(dispatchers.io) {
         val folder = ConversationFolder(

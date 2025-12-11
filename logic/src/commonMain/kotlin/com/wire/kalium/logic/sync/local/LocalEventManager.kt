@@ -42,7 +42,7 @@ internal class LocalEventManagerImpl(
     private val eventProcessor: EventProcessor,
     private val transactionProvider: CryptoTransactionProvider,
     scope: CoroutineScope,
-    dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : LocalEventManager, CoroutineScope {
 
     override val coroutineContext = scope.coroutineContext + dispatchers.io

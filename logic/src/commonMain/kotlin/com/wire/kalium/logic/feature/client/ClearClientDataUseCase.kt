@@ -45,7 +45,7 @@ interface ClearClientDataUseCase {
 internal class ClearClientDataUseCaseImpl internal constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val proteusClientProvider: ProteusClientProvider,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ClearClientDataUseCase {
 
     override suspend operator fun invoke() {

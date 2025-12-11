@@ -292,7 +292,7 @@ internal class MLSConversationDataSource(
     private val mutex: Mutex,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : MLSConversationRepository {
 
     private val logger = kaliumLogger.withTextTag("MLSConversationDataSource")

@@ -87,7 +87,7 @@ class MLSClientProviderImpl(
     private val featureConfigRepository: FeatureConfigRepository,
     private val mlsTransportProvider: MLSTransportProvider,
     private val epochObserver: MLSEpochObserver,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val processingScope: CoroutineScope,
 ) : MLSClientProvider {
 

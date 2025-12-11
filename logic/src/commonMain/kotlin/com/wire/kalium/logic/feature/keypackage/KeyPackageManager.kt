@@ -55,7 +55,7 @@ internal class KeyPackageManagerImpl(
     private val keyPackageCountUseCase: Lazy<MLSKeyPackageCountUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     private val transactionProvider: CryptoTransactionProvider,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : KeyPackageManager {
     /**
      * A dispatcher with limited parallelism of 1.

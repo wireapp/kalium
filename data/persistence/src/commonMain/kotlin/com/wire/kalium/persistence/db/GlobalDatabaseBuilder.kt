@@ -42,7 +42,7 @@ value class GlobalDatabaseSecret(val value: ByteArray)
 class GlobalDatabaseBuilder internal constructor(
     private val sqlDriver: SqlDriver,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.instance.io
 ) {
 
     internal val database: GlobalDatabase = GlobalDatabase(
@@ -91,7 +91,7 @@ expect fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean
  */
 expect fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
-    queriesContext: CoroutineDispatcher = KaliumDispatcherImpl.io,
+    queriesContext: CoroutineDispatcher = KaliumDispatcherImpl.instance.io,
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean = false,
 ): GlobalDatabaseBuilder

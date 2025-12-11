@@ -58,7 +58,7 @@ class SessionManagerImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val tokenStorage: AuthTokenStorage,
     private val logout: suspend (LogoutReason) -> Unit,
-    private val coroutineContext: CoroutineContext = KaliumDispatcherImpl.default.limitedParallelism(1),
+    private val coroutineContext: CoroutineContext = KaliumDispatcherImpl.instance.default.limitedParallelism(1),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {

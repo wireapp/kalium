@@ -92,7 +92,7 @@ class SendMultipartMessageUseCase internal constructor(
     private val publishAttachments: PublishAttachmentsUseCase,
     private val removeAttachmentDrafts: RemoveAttachmentDraftsUseCase,
     private val sendAssetMessage: ScheduleNewAssetMessageUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val scope: CoroutineScope
 ) {
 

@@ -33,7 +33,7 @@ interface RemoveMessageDraftUseCase {
 
 class RemoveMessageDraftUseCaseImpl internal constructor(
     private val messageDraftRepository: MessageDraftRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : RemoveMessageDraftUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): Unit = withContext(dispatcher.io) {
         messageDraftRepository.removeMessageDraft(conversationId)

@@ -68,7 +68,7 @@ class CreateObfuscatedCopyUseCase internal constructor(
     private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val obfuscatedCopyExporter: ObfuscatedCopyExporter,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) {
 

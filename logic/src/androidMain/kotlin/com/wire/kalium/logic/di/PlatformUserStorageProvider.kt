@@ -39,7 +39,7 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
             platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
             userId = userIdEntity,
             passphrase = databasePassphrase,
-            dispatcher = KaliumDispatcherImpl.io,
+            dispatcher = KaliumDispatcherImpl.instance.io,
             enableWAL = true
         )
         return UserStorage(database, pref)

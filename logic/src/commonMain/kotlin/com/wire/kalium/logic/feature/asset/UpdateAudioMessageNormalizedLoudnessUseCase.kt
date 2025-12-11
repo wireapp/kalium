@@ -42,7 +42,7 @@ interface UpdateAudioMessageNormalizedLoudnessUseCase {
 
 internal class UpdateAudioMessageNormalizedLoudnessUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : UpdateAudioMessageNormalizedLoudnessUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,

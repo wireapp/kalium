@@ -45,7 +45,7 @@ interface RemoveConversationFromFavoritesUseCase {
 
 internal class RemoveConversationFromFavoritesUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : RemoveConversationFromFavoritesUseCase {
     override suspend fun invoke(
         conversationId: ConversationId

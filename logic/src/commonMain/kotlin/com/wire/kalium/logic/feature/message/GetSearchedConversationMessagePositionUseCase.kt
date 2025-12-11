@@ -49,7 +49,7 @@ interface GetSearchedConversationMessagePositionUseCase {
 
 internal class GetSearchedConversationMessagePositionUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : GetSearchedConversationMessagePositionUseCase {
 
     override suspend fun invoke(

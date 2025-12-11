@@ -55,7 +55,7 @@ internal class CellsDataSource internal constructor(
     private val publicLinkDao: PublicLinkDao,
     private val awsClient: CellsAwsClient,
     private val fileSystem: FileSystem,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : CellsRepository {
 
     override suspend fun preCheck(nodePath: String) = withContext(dispatchers.io) {

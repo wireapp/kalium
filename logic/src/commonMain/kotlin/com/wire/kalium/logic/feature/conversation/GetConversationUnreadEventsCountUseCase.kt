@@ -40,7 +40,7 @@ interface GetConversationUnreadEventsCountUseCase {
 
 internal class GetConversationUnreadEventsCountUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : GetConversationUnreadEventsCountUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): GetConversationUnreadEventsCountUseCase.Result =

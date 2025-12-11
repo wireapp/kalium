@@ -50,7 +50,7 @@ internal class ResetSessionUseCaseImpl internal constructor(
     private val sessionResetSender: SessionResetSender,
     private val messageRepository: MessageRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ResetSessionUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,

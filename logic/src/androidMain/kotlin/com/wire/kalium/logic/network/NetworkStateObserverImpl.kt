@@ -42,12 +42,12 @@ import kotlinx.coroutines.flow.update
 
 internal actual class NetworkStateObserverImpl(
     connectivityManager: ConnectivityManager,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : NetworkStateObserver {
 
     constructor(
         appContext: Context,
-        kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+        kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance,
     ) : this(
         connectivityManager = appContext.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager,
         kaliumDispatcher = kaliumDispatcher

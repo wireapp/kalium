@@ -44,13 +44,13 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
                     platformDatabaseData = PlatformDatabaseData(storageData),
                     userId = userIdEntity,
                     passphrase = null,
-                    dispatcher = KaliumDispatcherImpl.io,
+                    dispatcher = KaliumDispatcherImpl.instance.io,
                     enableWAL = false
                 )
             }
 
             is DatabaseStorageType.InMemory -> {
-                inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.io)
+                inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.instance.io)
             }
         }
         return UserStorage(database, pref)

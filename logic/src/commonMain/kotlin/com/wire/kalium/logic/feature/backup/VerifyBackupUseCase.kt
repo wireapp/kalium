@@ -50,7 +50,7 @@ internal class VerifyBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
     private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(fileSystem),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : VerifyBackupUseCase {
 
     override suspend operator fun invoke(compressedBackupFilePath: Path): VerifyBackupResult = withContext(dispatchers.io) {

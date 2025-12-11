@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.map
  */
 class ObserveMessageByIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String): Flow<Result> =

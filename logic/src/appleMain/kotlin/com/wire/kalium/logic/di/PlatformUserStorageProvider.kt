@@ -34,7 +34,7 @@ internal actual class PlatformUserStorageProvider actual constructor() : UserSto
             PlatformDatabaseData(StorageData.FileBacked(platformProperties.rootStoragePath)),
             userIdEntity,
             null,
-            KaliumDispatcherImpl.io,
+            KaliumDispatcherImpl.instance.io,
             true
         )
         return UserStorage(database, pref)

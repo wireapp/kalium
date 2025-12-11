@@ -40,7 +40,7 @@ interface SendTypingEventUseCase {
 
 internal class SendTypingEventUseCaseImpl(
     private val typingIndicatorRepository: TypingIndicatorOutgoingRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : SendTypingEventUseCase {
     override suspend fun invoke(conversationId: ConversationId, typingStatus: Conversation.TypingIndicatorMode) {
         withContext(dispatcher.io) {

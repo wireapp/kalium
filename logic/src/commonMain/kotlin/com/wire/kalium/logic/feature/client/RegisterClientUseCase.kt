@@ -107,7 +107,7 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
     private val registerMLSClientUseCase: RegisterMLSClientUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance,
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)

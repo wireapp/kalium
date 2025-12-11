@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
  */
 class ObserveConversationDetailsUseCase(
     private val conversationRepository: ConversationRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
     sealed class Result {
         data class Success(val conversationDetails: ConversationDetails) : Result()

@@ -52,7 +52,7 @@ class SendLocationUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     /**

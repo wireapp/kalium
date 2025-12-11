@@ -34,7 +34,7 @@ fun interface ObserveConversationsFromFolderUseCase {
 
 internal class ObserveConversationsFromFolderUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : ObserveConversationsFromFolderUseCase {
 
     override suspend operator fun invoke(folderId: String): Flow<List<ConversationDetailsWithEvents>> =

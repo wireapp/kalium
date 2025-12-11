@@ -44,7 +44,7 @@ class StartCallUseCase internal constructor(
     private val callRepository: CallRepository,
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val answerCall: AnswerCallUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) {
 
     suspend operator fun invoke(

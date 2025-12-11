@@ -59,7 +59,7 @@ class FederationEventReceiverImpl internal constructor(
     private val memberDAO: MemberDAO,
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl.instance
 ) : FederationEventReceiver {
 
     override suspend fun onEvent(
