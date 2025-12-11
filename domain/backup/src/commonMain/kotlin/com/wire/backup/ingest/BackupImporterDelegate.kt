@@ -17,7 +17,6 @@
  */
 package com.wire.backup.ingest
 
-import com.wire.backup.data.BackupData
 import com.wire.backup.encryption.DecryptionResult
 import com.wire.backup.encryption.EncryptedStream
 import com.wire.backup.encryption.XChaChaPoly1305AuthenticationData
