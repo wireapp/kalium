@@ -21,7 +21,6 @@ import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupUser
-import com.wire.backup.logger.BackupLogger
 
 /**
  * Validates the given [BackupUser] and its content.
