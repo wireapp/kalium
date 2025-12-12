@@ -110,7 +110,9 @@ actual class KaliumFileSystemImpl actual constructor(
      * Creates a persistent path on the internal storage folder of the file system if it didn't exist before and returns it if successful
      * @param assetName the asset path string
      */
-    actual override fun providePersistentAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
+    actual override fun providePersistentAssetPath(
+        assetName: String
+    ): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
 
     /**
      * Reads the data of the given path as a byte array
