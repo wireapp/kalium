@@ -60,6 +60,14 @@ object NotificationEventsManagerImpl : NotificationEventsManager {
         ephemeralNotifications.emit(localNotification)
     }
 
+    override suspend fun scheduleEditMessageNotification(
+        message: Message,
+        messageContent: MessageContent.MultipartEdited
+    ) {
+        val localNotification = mapper.fromMessageToMessageEditedLocalNotification(message, messageContent)
+        ephemeralNotifications.emit(localNotification)
+    }
+
     override suspend fun scheduleConversationSeenNotification(conversationId: ConversationId) {
         val localNotification = mapper.toConversationSeen(conversationId)
         ephemeralNotifications.emit(localNotification)
@@ -99,6 +107,8 @@ interface NotificationEventsManager {
      * Schedule the notification that some message was edited (if the notification about that message is displayed it should be edited)
      */
     suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.TextEdited)
+
+    suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.MultipartEdited)
 
     /**
      * Schedule the notification that informs that some conversation been seen by self-user on another device.
