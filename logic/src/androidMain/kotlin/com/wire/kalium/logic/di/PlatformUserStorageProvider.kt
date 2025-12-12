@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 internal actual class PlatformUserStorageProvider : UserStorageProvider() {
-    override fun create(userId: UserId, shouldEncryptData: Boolean, platformProperties: PlatformUserStorageProperties): UserStorage {
+    actual override fun create(userId: UserId, shouldEncryptData: Boolean, platformProperties: PlatformUserStorageProperties): UserStorage {
         val userIdEntity = userId.toDao()
         val pref = UserPrefBuilder(userIdEntity, platformProperties.applicationContext, shouldEncryptData)
 
