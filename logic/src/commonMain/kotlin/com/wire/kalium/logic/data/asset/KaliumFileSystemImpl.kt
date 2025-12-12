@@ -24,6 +24,7 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
+@Suppress("TooManyFunctions")
 expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
     KaliumFileSystem {
     override val rootCachePath: Path
@@ -43,4 +44,3 @@ expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths
     override suspend fun writeData(outputSink: Sink, dataSource: Source): Long
     override suspend fun listDirectories(dir: Path): List<Path>
 }
-
