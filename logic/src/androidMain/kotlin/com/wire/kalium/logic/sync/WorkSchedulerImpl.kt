@@ -78,7 +78,7 @@ internal actual class GlobalWorkSchedulerImpl(
     }
 }
 
-internal actual class UserSessionWorkSchedulerImpl(
+internal actual open class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
     actual override val scope: UserSessionScope,
 ) : UserSessionWorkScheduler {

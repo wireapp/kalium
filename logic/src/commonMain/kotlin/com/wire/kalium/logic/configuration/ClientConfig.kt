@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.rootDetection
+package com.wire.kalium.logic.configuration
 
-actual open class RootDetectorImpl actual constructor() : RootDetector {
-    actual override fun isSystemRooted(): Boolean = false
+import com.wire.kalium.logic.data.client.ClientType
+import com.wire.kalium.logic.data.client.DeviceType
+import io.mockative.Mockable
+
+@Mockable
+interface ClientConfig {
+    fun deviceType(): DeviceType
+    fun deviceModelName(): String
+    fun deviceName(): String
+    fun clientType(): ClientType
 }
