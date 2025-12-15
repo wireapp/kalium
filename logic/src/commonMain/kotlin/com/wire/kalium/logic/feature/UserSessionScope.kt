@@ -161,6 +161,8 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandlerImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
@@ -234,8 +236,6 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
@@ -320,8 +320,6 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandlerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
@@ -2075,12 +2073,6 @@ class UserSessionScope internal constructor(
             }
         )
 
-    val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase by lazy {
-        IsWireCellsEnabledForConversationUseCaseImpl(
-            conversationRepository = conversationRepository
-        )
-    }
-
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope by lazy {
         ClientScope(
@@ -2202,7 +2194,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             messageRepository,
             conversationRepository,
-            cells.messageAttachmentsDraftRepository,
+            lazy { cells.messageAttachmentsDraftRepository },
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
@@ -2223,15 +2215,13 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
-            cells.getMessageAttachmentsUseCase,
-            cells.publishAttachments,
-            cells.removeAttachments,
-            cells.deleteAttachmentsUseCase,
-            cells.getMessageAttachmentUseCase,
+            lazy { cells.getMessageAttachmentsUseCase },
+            lazy { cells.publishAttachments },
+            lazy { cells.removeAttachments },
+            lazy { cells.deleteAttachmentsUseCase },
             fetchConversationUseCase,
             cryptoTransactionProvider,
             compositeMessageRepository,
-            isWireCellsEnabledForConversation,
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
@@ -2580,6 +2570,7 @@ class UserSessionScope internal constructor(
                     assetsDao = assetDAO,
                     userDao = userDAO,
                     publicLinkDao = publicLinks,
+                    userConfigDAO = userConfigDAO,
                 )
             },
             sessionManager = sessionManager,

@@ -271,6 +271,11 @@ data class MLSMigrationEntity(
     @Serializable val endTime: Instant?,
 )
 
+@Serializable
+data class WireCellsConfigEntity(
+    @Serializable val backendUrl: String?,
+)
+
 @Suppress("TooManyFunctions")
 class UserConfigStorageImpl(
     private val kaliumPreferences: KaliumPreferences
