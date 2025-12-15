@@ -455,4 +455,4 @@ selectAllMLSConversationsByDomain:
 SELECT * FROM Conversation
 WHERE (protocol IS 'MLS' OR protocol IS 'MIXED')
 AND type IS NOT 'SELF'
-AND qualified_id LIKE ('%' || :searchQuery || '%');
+AND qualified_id LIKE ('%@' || :domain || '');
