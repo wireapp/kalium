@@ -2252,7 +2252,6 @@ public class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
-            lazy { cells.getMessageAttachmentsUseCase },
             lazy { cells.publishAttachments },
             lazy { cells.removeAttachments },
             lazy { cells.deleteAttachmentsUseCase },
