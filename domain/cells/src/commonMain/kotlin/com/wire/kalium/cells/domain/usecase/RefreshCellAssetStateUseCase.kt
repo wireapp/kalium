@@ -37,8 +37,12 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.localPath
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.withContext
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
 import okio.SYSTEM
 
@@ -57,6 +61,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
     private val cellsRepository: CellsRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RefreshCellAssetStateUseCase {
 
     private companion object {
@@ -113,7 +118,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
         attachmentsRepository.getAttachment(assetId).map { attachment ->
             attachment.localPath()?.takeIf { it.isNotBlank() }?.let { localPath ->
-                fileSystem.delete(localPath.toPath())
+                deleteLocalFile(localPath.toPath())
             }
         }
     }
@@ -128,14 +133,14 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
 
         // Check if asset was updated
         if (attachment.contentHash != node.contentHash && attachment.contentHash != null) {
-            localPath?.let { fileSystem.delete(it.toPath()) }
+            localPath?.let { deleteLocalFile(it.toPath()) }
             attachmentsRepository.saveLocalPath(attachment.id, null)
             localPath = null
         }
 
         // Check if local file is still available
-        localPath?.toPath()?.let {
-            if (!fileSystem.exists(it)) {
+        localPath?.toPath()?.let { path ->
+            if (!localFileExists(path)) {
                 attachmentsRepository.saveLocalPath(attachment.id, null)
                 localPath = null
             }
@@ -159,6 +164,14 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
                 attachmentsRepository.setAssetTransferStatus(attachment.id, AssetTransferStatus.SAVED_INTERNALLY)
             }
         }
+    }
+
+    private suspend fun deleteLocalFile(path: Path) = withContext(dispatchers.io) {
+        fileSystem.delete(path)
+    }
+
+    private suspend fun localFileExists(path: Path) = withContext(dispatchers.io) {
+        fileSystem.exists(path)
     }
 }
 
