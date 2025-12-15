@@ -84,7 +84,7 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
             totalConversationsChecked = totalChecked,
             conversationsWithFaultyKeys = conversationsToRepair.size,
             successfullyRepairedConversations = successfulRepairs,
-            failedRepairs = failedRepairs.toList()
+            failedRepairs = failedRepairs
         ).right()
     }
 
