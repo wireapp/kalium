@@ -620,4 +620,9 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun hasConversationWithCell() = withContext(readDispatcher.value) {
         conversationQueries.hasConversationWithCell().executeAsOne()
     }
+
+    override suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity> =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectAllMLSConversationsByDomain(domain, conversationMapper::toConversationEntity).executeAsList()
+        }
 }
