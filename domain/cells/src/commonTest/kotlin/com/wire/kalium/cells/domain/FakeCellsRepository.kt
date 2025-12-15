@@ -69,6 +69,7 @@ class FakeCellsRepository : CellsRepository {
     }
 
     override suspend fun getNodesByPath(
+        query: String,
         path: String,
         onlyFolders: Boolean
     ): Either<NetworkFailure, List<CellNode>> {
