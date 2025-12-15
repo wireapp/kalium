@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.withContext
 
 /**
@@ -49,7 +50,8 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
     override suspend fun invoke(param: TargetedRepairParam): Either<CoreFailure, RepairResult> = withContext(dispatcher.io) {
         conversationRepository.getMLSConversationsByDomain(param.domain).flatMap { conversations ->
             val conversationsWithFaultyKeys = conversations.filter { convo ->
-                convo.mlsPublicKeys?.removal?.containsKey(param.faultyKey) == true
+                // check: is this equivalent to ${convo.mlsPublicKeys.removal.keys} ? instead of getting from core crypto?
+                checkConversationHasFaultyKey(convo.protocol, param.faultyKey)
             }
 
             if (conversationsWithFaultyKeys.isEmpty()) {
@@ -91,12 +93,28 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
             resetMLSConversation(conversationId, context)
         }
     }
+
+    private suspend fun checkConversationHasFaultyKey(protocolInfo: Conversation.ProtocolInfo, faultyKey: String): Boolean {
+        return when (val protocolInfo = protocolInfo) {
+            Conversation.ProtocolInfo.Proteus -> false
+            is Conversation.ProtocolInfo.MLS,
+            is Conversation.ProtocolInfo.Mixed -> {
+                transactionProvider.transaction("CheckFaultyRemovalKey") { context ->
+                    val removalKey = context.mls?.getExternalSenders(protocolInfo.groupId.value)?.value?.toHexString()
+                    (removalKey == faultyKey).right()
+                }.fold(
+                    { false }, // If transaction fails, assume no faulty key
+                    { it } // Return the boolean result
+                )
+            }
+        }
+    }
 }
 
 /**
  * Parameters for targeted repair of faulty removal keys in MLS conversations.
  * @property domain The domain to filter conversations.
- * @property faultyKey The faulty removal key to be repaired.
+ * @property faultyKey The faulty removal key to be repaired in hex string format.
  */
 data class TargetedRepairParam(
     val domain: String,
