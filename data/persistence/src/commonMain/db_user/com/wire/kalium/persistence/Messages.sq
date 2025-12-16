@@ -124,46 +124,12 @@ CREATE TABLE MessageAssetContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
-CREATE TABLE MessageMemberChangeContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      member_change_list TEXT AS List<QualifiedIDEntity> NOT NULL,
-      member_change_type TEXT AS MemberChangeType NOT NULL,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
-CREATE TABLE MessageFederationTerminatedContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      domain_list TEXT AS List<String> NOT NULL,
-      federation_type TEXT AS FederationType NOT NULL,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
 CREATE TABLE MessageUnknownContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       unknown_type_name TEXT,
       unknown_encoded_data BLOB,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
-CREATE TABLE MessageFailedToDecryptContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      unknown_encoded_data BLOB,
-      is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0),
-      error_code INTEGER,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -180,46 +146,6 @@ CREATE TABLE MessageMissedCallContent (
 );
 CREATE INDEX message_missed_call_caller_index ON MessageMissedCallContent(caller_id);
 
-CREATE TABLE MessageConversationChangedContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      conversation_name TEXT NOT NULL,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
-CREATE TABLE MessageNewConversationReceiptModeContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
-CREATE TABLE MessageConversationReceiptModeChangedContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      receipt_mode INTEGER AS Boolean  NOT NULL DEFAULT(0),
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
-CREATE TABLE MessageConversationTimerChangedContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      message_timer INTEGER DEFAULT(NULL),
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
 CREATE TABLE MessageRecipientFailure (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -229,15 +155,6 @@ CREATE TABLE MessageRecipientFailure (
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
-);
-
-CREATE TABLE MessageConversationProtocolChangedContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      protocol TEXT AS ConversationEntity.Protocol NOT NULL,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
 );
 
 CREATE TABLE MessageConversationProtocolChangedDuringACallContent (
@@ -260,26 +177,24 @@ CREATE TABLE MessageConversationLocationContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
-CREATE TABLE MessageLegalHoldContent (
+CREATE TABLE MessageSystemContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      content_type TEXT NOT NULL, -- Discriminator: MEMBER_CHANGE, FAILED_DECRYPT, CONVERSATION_RENAMED, etc.
 
-      legal_hold_member_list TEXT AS List<QualifiedIDEntity> NOT NULL,
-      legal_hold_type TEXT AS LegalHoldType NOT NULL,
+      -- Generic typed fields for flexible storage
+      text_1 TEXT,      -- conversation_name, etc.
+      integer_1 INTEGER, -- message_timer, error_code, etc.
+      boolean_1 INTEGER AS Boolean, -- receipt_mode, is_apps_enabled, is_decryption_resolved
+      list_1 TEXT,      -- member lists (List<QualifiedIDEntity>), domain lists (List<String>)
+      enum_1 TEXT,      -- member_change_type, federation_type, legal_hold_type, protocol
+      blob_1 BLOB,      -- unknown_encoded_data for failed decryption
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
 
-CREATE TABLE MessageConversationAppsEnabledChangedContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      is_apps_enabled INTEGER AS Boolean  NOT NULL DEFAULT(0),
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
+CREATE INDEX idx_system_content_type ON MessageSystemContent(content_type);
 
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
@@ -349,7 +264,7 @@ markMessageAsDeleted {
 
    DELETE FROM MessageTextContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
-   DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageSystemContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageConversationLocationContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
@@ -408,48 +323,12 @@ insertMessageAssetContent:
 INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
 VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?);
 
-insertMemberChangeMessage:
-INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
-VALUES(?, ?, ?, ?);
-
-insertFederationTerminatedMessage:
-INSERT OR IGNORE INTO MessageFederationTerminatedContent(message_id, conversation_id, domain_list, federation_type)
-VALUES(?, ?, ?, ?);
-
 insertMessageUnknownContent:
 INSERT OR IGNORE INTO MessageUnknownContent(message_id, conversation_id, unknown_type_name, unknown_encoded_data)
 VALUES(?, ?, ?, ?);
 
-insertFailedDecryptionMessageContent:
-INSERT OR IGNORE INTO MessageFailedToDecryptContent(message_id, conversation_id, unknown_encoded_data, error_code)
-VALUES(?, ?, ?, ?);
-
 insertMissedCallMessage:
 INSERT OR IGNORE INTO MessageMissedCallContent(message_id, conversation_id, caller_id)
-VALUES(?, ?, ?);
-
-insertConversationRenamedMessage:
-INSERT OR IGNORE INTO MessageConversationChangedContent(message_id, conversation_id, conversation_name)
-VALUES(?, ?, ?);
-
-insertNewConversationReceiptMode:
-INSERT OR IGNORE INTO MessageNewConversationReceiptModeContent(message_id, conversation_id, receipt_mode)
-VALUES(?, ?, ?);
-
-insertConversationReceiptModeChanged:
-INSERT OR IGNORE INTO MessageConversationReceiptModeChangedContent(message_id, conversation_id, receipt_mode)
-VALUES(?, ?, ?);
-
-insertConversationAppsEnabledChanged:
-INSERT OR IGNORE INTO MessageConversationAppsEnabledChangedContent(message_id, conversation_id, is_apps_enabled)
-VALUES(?, ?, ?);
-
-insertConversationMessageTimerChanged:
-INSERT OR IGNORE INTO MessageConversationTimerChangedContent(message_id, conversation_id, message_timer)
-VALUES(?, ?, ?);
-
-insertConversationProtocolChanged:
-INSERT OR IGNORE INTO MessageConversationProtocolChangedContent(message_id, conversation_id, protocol)
 VALUES(?, ?, ?);
 
 insertConversationProtocolChangedDuringACall:
@@ -460,9 +339,66 @@ insertLocationMessageContent:
 INSERT OR IGNORE INTO MessageConversationLocationContent(message_id, conversation_id, latitude, longitude, name, zoom)
 VALUES(?, ?, ?, ?, ?, ?);
 
-insertLegalHoldMessage:
-INSERT OR IGNORE INTO MessageLegalHoldContent(message_id, conversation_id, legal_hold_member_list, legal_hold_type)
-VALUES(?, ?, ?, ?);
+insertSystemMessageContent:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+insertSystemMemberChange:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
+VALUES(?, ?, 'MEMBER_CHANGE', :member_change_list, :member_change_type);
+
+insertSystemFailedDecryption:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, blob_1, boolean_1, integer_1)
+VALUES(?, ?, 'FAILED_DECRYPT', :unknown_encoded_data, 0, :error_code);
+
+insertSystemConversationRenamed:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1)
+VALUES(:message_id, :conversation_id, 'CONVERSATION_RENAMED', :conversation_name);
+
+insertSystemNewConversationReceiptMode:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
+VALUES(?, ?, 'NEW_CONVERSATION_RECEIPT_MODE', :receipt_mode);
+
+insertSystemConversationReceiptModeChanged:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
+VALUES(?, ?, 'CONVERSATION_RECEIPT_MODE_CHANGED', :receipt_mode);
+
+insertSystemConversationAppsEnabledChanged:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
+VALUES(?, ?, 'CONVERSATION_APPS_ENABLED_CHANGED', :is_apps_enabled);
+
+insertSystemConversationTimerChanged:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, integer_1)
+VALUES(:message_id, :conversation_id, 'CONVERSATION_TIMER_CHANGED', :message_timer);
+
+insertSystemFederationTerminated:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
+VALUES(:message_id, :conversation_id, 'FEDERATION_TERMINATED', :domain_list, :federation_type);
+
+insertSystemConversationProtocolChanged:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, enum_1)
+VALUES(:message_id, :conversation_id, 'CONVERSATION_PROTOCOL_CHANGED', :protocol);
+
+insertSystemLegalHold:
+INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
+VALUES(?, ?, 'LEGAL_HOLD', :legal_hold_member_list, :legal_hold_type);
+
+-- Update query for system content
+updateSystemMessageLegalHoldMembers:
+UPDATE MessageSystemContent
+SET list_1 = :user_id_list
+WHERE message_id = :message_id AND conversation_id = :conversation_id AND content_type = 'LEGAL_HOLD';
+
+updateSystemMessageDecryptionResolved:
+UPDATE MessageSystemContent
+SET boolean_1 = 1
+WHERE message_id IN (
+    SELECT M.id FROM Message AS M
+    JOIN MessageSystemContent AS SC ON M.id = SC.message_id AND M.conversation_id = SC.conversation_id
+    WHERE M.sender_user_id = ?
+    AND M.sender_client_id = ?
+    AND SC.content_type = 'FAILED_DECRYPT'
+);
 
 updateMessageStatus:
 UPDATE Message
@@ -498,11 +434,6 @@ updateMessageTextContent:
 UPDATE MessageTextContent
 SET text_body = ?
 WHERE message_id = ? AND conversation_id = ?;
-
-updateMessageLegalHoldContentMembers:
-UPDATE MessageLegalHoldContent
-SET legal_hold_member_list = :legal_hold_member_list
-WHERE message_id = :message_id AND conversation_id = :conversation_id;
 
 updateMessageId:
 UPDATE Message
@@ -567,16 +498,6 @@ WHERE
 ORDER BY
     Message.creation_date DESC;
 
-markMessagesAsDecryptionResolved:
-UPDATE MessageFailedToDecryptContent
-SET is_decryption_resolved = 1
-WHERE message_id IN (
-            SELECT id FROM MessageDetailsView
-            WHERE senderUserId = ?
-            AND senderClientId = ?
-            AND contentType = 'FAILED_DECRYPTION'
-            );
-
 promoteMessageToSentUpdatingServerTime {
 UPDATE Message
 SET
@@ -621,7 +542,7 @@ selectConversationMessagesFromSearch:
 SELECT * FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
-AND contentType = 'TEXT'
+AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
 AND expireAfterMillis IS NULL
 ORDER BY date DESC
 LIMIT :limit
@@ -631,7 +552,7 @@ countBySearchedMessageAndConversationId:
 SELECT COUNT(*) FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
-AND contentType = 'TEXT'
+AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
 AND expireAfterMillis IS NULL
 ORDER BY date DESC;
 

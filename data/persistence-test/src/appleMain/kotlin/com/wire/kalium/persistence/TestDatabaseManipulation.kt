@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -38,7 +39,7 @@ internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDis
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
-    DatabaseFileContext.deleteDatabase(FileNameUtil.userDBName(userId))
+    clearInMemoryDatabase(userId)
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
