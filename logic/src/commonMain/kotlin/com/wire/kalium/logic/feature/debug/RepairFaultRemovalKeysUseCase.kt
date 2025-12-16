@@ -57,7 +57,9 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
 
     override suspend fun invoke(param: TargetedRepairParam): RepairResult = withContext(dispatcher.io) {
         if (selfUserId.domain != param.domain) {
-            logger.w("Attempted to repair faulty removal keys in domain ${param.domain}, but user belongs to ${selfUserId.domain}. Aborting.")
+            logger.w(
+                "Attempted to repair faulty removal keys in domain ${param.domain}, but user belongs to ${selfUserId.domain}. Aborting."
+            )
             return@withContext RepairResult.RepairNotNeeded
         }
 
@@ -97,6 +99,7 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun delegateResetMLSConversation(conversationId: ConversationId): Either<CoreFailure, Unit> = try {
         transactionProvider.transaction("RepairFaultRemovalKeys") { context ->
             resetMLSConversation(conversationId, context)
