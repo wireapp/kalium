@@ -65,7 +65,6 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
             .flatMap { conversations ->
                 val conversationsWithFaultyKeys = conversations.filter { convo ->
                     checkConversationHasFaultyKey(convo.protocol, param.faultyKey)
-                            && convo.name?.startsWith("test") == true
                 }
 
                 when {
