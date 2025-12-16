@@ -74,9 +74,9 @@ public actual class MPBackupExporter : CommonMPBackupExporter {
 
     private val workDirectoryPath: Path
 
-    override val storage: BackupPageStorage
+    actual override val storage: BackupPageStorage
 
-    override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
+    actual override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val entries = data.map { fileSystem.canonicalize(workDirectoryPath / it.name).toString() }
         val pathToZippedArchive = fileZipper.zip(entries, workDirectoryPath).toPath()
         return CompletableDeferred(

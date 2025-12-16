@@ -282,7 +282,13 @@ selectProposalTimers:
 SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
 
 whoDeletedMeInConversation:
-SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = 'REMOVED' AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;
+SELECT sender_user_id FROM Message WHERE id IN (
+    SELECT message_id FROM MessageSystemContent
+    WHERE conversation_id = :conversation_id
+    AND content_type = 'MEMBER_CHANGE'
+    AND enum_1 = 'REMOVED'
+    AND list_1 LIKE ('%' || :self_user_id || '%')
+) ORDER BY creation_date DESC LIMIT 1;
 
 updateConversationName:
 UPDATE Conversation
