@@ -47,11 +47,11 @@ public actual class MPBackupExporter(
     selfUserId: BackupQualifiedId
 ) : CommonMPBackupExporter(selfUserId) {
 
-    override val storage: BackupPageStorage = InMemoryBackupPageStorage()
+    actual override val storage: BackupPageStorage = InMemoryBackupPageStorage()
 
     // This shouldn't be used by clients anyway, so it's fine if we can't sport it to JS!
     @Suppress("NON_EXPORTABLE_TYPE")
-    override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
+    actual override fun zipEntries(data: List<BackupPage>): Deferred<Source> {
         val zip = JSZip()
         data.forEach { entry ->
             // TODO: Save memory and improve performance by avoid array duplication!

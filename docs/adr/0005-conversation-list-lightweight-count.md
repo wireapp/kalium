@@ -1,4 +1,4 @@
-# 3. Lightweight COUNT for Faster Conversation List Loading
+# 5. Lightweight COUNT for Faster Conversation List Loading
 
 Date: 2025-12-03
 

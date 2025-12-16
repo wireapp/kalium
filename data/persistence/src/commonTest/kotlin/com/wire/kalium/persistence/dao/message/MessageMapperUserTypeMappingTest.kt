@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
+import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -389,8 +391,8 @@ class MessageMapperUserTypeMappingTest {
             assetNormalizedLoudness,
             assetDataPath,
             callerId,
-            memberChangeList,
-            memberChangeType,
+            memberChangeList?.let { QualifiedIDListAdapter.encode(it) },
+            memberChangeType?.name,
             unknownContentTypeName,
             unknownContentData,
             restrictedAssetMimeType,
@@ -423,15 +425,15 @@ class MessageMapperUserTypeMappingTest {
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList,
             buttonsJson,
-            federationDomainList,
-            federationType,
-            conversationProtocolChanged,
+            federationDomainList?.let { StringListAdapter.encode(it) },
+            federationType?.name,
+            conversationProtocolChanged?.name,
             latitude,
             longitude,
             locationName,
             locationZoom,
-            legalHoldMemberList,
-            legalHoldType,
+            legalHoldMemberList?.let { QualifiedIDListAdapter.encode(it) },
+            legalHoldType?.name,
         )
     }
 }
