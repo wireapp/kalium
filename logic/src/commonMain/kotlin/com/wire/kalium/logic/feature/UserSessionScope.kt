@@ -1320,7 +1320,7 @@ class UserSessionScope internal constructor(
             eventGatherer,
             eventProcessor,
             cryptoTransactionProvider,
-            userStorage,
+            userStorage.database,
             userScopedLogger,
         )
     }

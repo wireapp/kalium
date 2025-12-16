@@ -24,8 +24,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -49,7 +49,7 @@ internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val eventProcessor: EventProcessor,
     private val transactionProvider: CryptoTransactionProvider,
-    private val userStorage: UserStorage,
+    private val databaseBuilder: UserDatabaseBuilder,
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncWorker {
 
@@ -72,7 +72,7 @@ internal class IncrementalSyncWorkerImpl(
                 val envelopes = streamData.eventList
                 kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
                 transactionProvider.transaction("processEvents") { context ->
-                    userStorage.database.dbInvalidationController.runMuted {
+                    databaseBuilder.dbInvalidationController.runMuted {
                         envelopes.map { envelope ->
                             eventProcessor.processEvent(context, envelope)
                         }.foldToEitherWhileRight(Unit) { value, _ -> value }
