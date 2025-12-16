@@ -104,6 +104,7 @@ internal class CellsDataSource internal constructor(
                 )
             } else {
                 cellsApi.getNodesForPath(
+                    query = query,
                     path = path,
                     limit = limit,
                     offset = offset,
@@ -125,11 +126,12 @@ internal class CellsDataSource internal constructor(
     }
 
     override suspend fun getNodesByPath(
+        query: String,
         path: String,
         onlyFolders: Boolean
     ): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNodesForPath(path = path, onlyFolders = onlyFolders).mapSuccess { response ->
+            cellsApi.getNodesForPath(query = query, path = path, onlyFolders = onlyFolders).mapSuccess { response ->
                 response.nodes.map { it.toModel() }
             }
         }
