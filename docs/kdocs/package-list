@@ -18,9 +18,6 @@ $dokka.location:com.wire.backup.dump/BackupExportResult.Success/fileName/#/Point
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/pathToOutputFile/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/path-to-output-file.html
 $dokka.location:com.wire.backup.dump/BackupExportResult///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/index.html
 $dokka.location:com.wire.backup.dump/MPBackupExporter/finalize/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]finalize.html
-$dokka.location:com.wire.backup.dump/MPBackupExporter/storage/#/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]storage.html
-$dokka.location:com.wire.backup.ingest/MPBackupImporter/getUnencryptedArchiveSink/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]get-unencrypted-archive-sink.html
-$dokka.location:com.wire.backup.ingest/MPBackupImporter/unzipAllEntries/#/PointingToDeclaration/backup/com.wire.backup.ingest/-m-p-backup-importer/[non-js]unzip-all-entries.html
 $dokka.location:com.wire.kalium.calling.callbacks/ActiveSpeakersHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-active-speakers-handler/index.html
 $dokka.location:com.wire.kalium.calling.callbacks/ActiveSpeakersHandler/onActiveSpeakersChanged/#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-active-speakers-handler/on-active-speakers-changed.html
 $dokka.location:com.wire.kalium.calling.callbacks/AnsweredCallHandler///PointingToDeclaration/calling/com.wire.kalium.calling.callbacks/[jvm]-answered-call-handler/index.html
