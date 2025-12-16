@@ -110,10 +110,6 @@ expect fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
  */
 expect fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long
 
-// fun encryptFileWithAES256(assetDataPath: Path, key: AES256Key, tempEncryptedDataPath: Path): Long {
-//
-// }
-
 /**
  * Method used to decrypt some binary data using the AES256 encryption algorithm
  *

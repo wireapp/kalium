@@ -72,10 +72,13 @@ subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
+
+        // workaround for knowing which tests passed failed since HTML reporting is disabled for native tests
+        // can be removed once HTML reporting is working
         testLogging {
-            events("started", "passed","failed")
+            events("failed")
             showStandardStreams = true
-            }
+        }
     }
 
     // Configure GC for iOS Simulator ARM64 tests only
