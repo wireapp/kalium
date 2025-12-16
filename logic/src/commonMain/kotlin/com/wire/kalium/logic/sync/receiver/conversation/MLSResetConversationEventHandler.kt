@@ -34,8 +34,6 @@ internal class MLSResetConversationEventHandlerImpl(
 ) : MLSResetConversationEventHandler {
     override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
 
-        // todo(check): is this still valid, removed on #3610
-        // If the event is from same user do reset only if local group id does not match new group id.
         transaction.mls?.let { mlsContext ->
             mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
 

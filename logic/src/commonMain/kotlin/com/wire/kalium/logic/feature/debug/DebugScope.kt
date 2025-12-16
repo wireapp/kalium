@@ -260,6 +260,7 @@ class DebugScope internal constructor(
 
     val repairFaultRemovalKeysUseCase: RepairFaultRemovalKeysUseCase by lazy {
         RepairFaultRemovalKeysUseCaseImpl(
+            selfUserId = userId,
             conversationRepository = conversationRepository,
             resetMLSConversation = resetMLSConversationUseCase,
             transactionProvider = transactionProvider
