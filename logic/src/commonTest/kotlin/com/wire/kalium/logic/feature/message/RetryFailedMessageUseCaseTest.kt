@@ -28,6 +28,7 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
@@ -419,7 +420,7 @@ class RetryFailedMessageUseCaseTest {
         suspend fun withFetchPrivateDecodedAsset(result: Either<CoreFailure, Path>): Arrangement = apply {
             coEvery {
                 assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
-            }.returns(result.map { it to true })
+            }.returns(result.map { FetchedAssetData(it, true) })
         }
 
         suspend fun withUploadAndPersistPrivateAsset(result: Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>): Arrangement = apply {

@@ -26,6 +26,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -427,7 +428,7 @@ class GetMessageAssetUseCaseTest {
                     any(),
                     any()
                 )
-            }.returns(Either.Right(encodedPath to justDownloaded))
+            }.returns(Either.Right(FetchedAssetData(encodedPath, justDownloaded)))
             coEvery {
                 updateAssetMessageTransferStatus.invoke(any(), matches { it == conversationId }, matches { it == messageId })
             }.returns(UpdateTransferStatusResult.Success)
