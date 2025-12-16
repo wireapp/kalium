@@ -530,7 +530,7 @@ selectConversationMessagesFromSearch:
 SELECT * FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
-AND contentType = 'TEXT'
+AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
 AND expireAfterMillis IS NULL
 ORDER BY date DESC
 LIMIT :limit
@@ -540,7 +540,7 @@ countBySearchedMessageAndConversationId:
 SELECT COUNT(*) FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
-AND contentType = 'TEXT'
+AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
 AND expireAfterMillis IS NULL
 ORDER BY date DESC;
 

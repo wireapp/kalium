@@ -31,12 +31,13 @@ internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
     suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO>
     suspend fun getNodesForPath(
+        query: String,
         path: String,
         limit: Int? = null,
         offset: Int? = null,
         onlyDeleted: Boolean = false,
         onlyFolders: Boolean = false,
-        tags: List<String> = emptyList()
+        tags: List<String> = emptyList(),
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>
