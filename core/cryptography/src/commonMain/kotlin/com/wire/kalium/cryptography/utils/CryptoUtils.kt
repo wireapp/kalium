@@ -22,7 +22,6 @@ import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
 import okio.Buffer
 import okio.HashingSink
-import okio.Path
 import okio.Sink
 import okio.Source
 import okio.blackholeSink
