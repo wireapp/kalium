@@ -554,7 +554,8 @@ class UserSessionScope internal constructor(
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
-        kaliumConfigs.shouldEncryptData
+        kaliumConfigs.shouldEncryptData,
+        kaliumConfigs.dbInvalidationControlEnabled
     )
 
     private var _clientId: ClientId? = null
@@ -1319,6 +1320,7 @@ class UserSessionScope internal constructor(
             eventGatherer,
             eventProcessor,
             cryptoTransactionProvider,
+            userStorage,
             userScopedLogger,
         )
     }

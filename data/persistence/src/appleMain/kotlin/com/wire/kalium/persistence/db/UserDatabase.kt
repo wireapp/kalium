@@ -29,19 +29,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 
-sealed interface DatabaseCredentials {
-    data class Passphrase(val value: String) : DatabaseCredentials
-    data object NotSet : DatabaseCredentials
-}
-
+@Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder {
-    val driver = when (platformDatabaseData.storageData) {
+    val rawDriver = when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(
                 platformDatabaseData.storageData.storePath,
@@ -60,12 +57,23 @@ actual fun userDatabaseBuilder(
             }
     }
 
+    val invalidationController = DbInvalidationController(
+        enabled = dbInvalidationControlEnabled,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
     return UserDatabaseBuilder(
-        userId,
-        driver,
-        dispatcher,
-        platformDatabaseData,
-        passphrase != null
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = passphrase != null,
+        dbInvalidationController = invalidationController
     )
 }
 
@@ -85,16 +93,27 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
-    val driver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+    val rawDriver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
         isWALEnabled = false
     }
+
+    val invalidationController = DbInvalidationController(
+        enabled = false,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
 
     return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
         PlatformDatabaseData(StorageData.InMemory),
-        false
+        false,
+        invalidationController
     )
 }
 
