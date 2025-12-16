@@ -236,7 +236,7 @@ internal class AssetDataSource(
             } else {
                 this
             }
-    }
+        }
 
     @Suppress("LongParameterList")
     private suspend fun buildPublicAssetData(
@@ -336,8 +336,10 @@ internal class AssetDataSource(
         encryptionKey: AES256Key? = null,
         assetSHA256: SHA256Key? = null
     ): Either<CoreFailure, FetchedAssetData> = fetchDecodedAsset(assetId)
-    .map { FetchedAssetData(it, false) } // Asset found locally, no need to download, return the local path with 'false' flag
-    .flatMapLeft {
+        .map {
+            FetchedAssetData(it, false) // Asset found locally, no need to download, return the local path with 'false' flag
+        }
+        .flatMapLeft {
             val tempFile = kaliumFileSystem.tempFilePath("temp_$assetId")
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
@@ -359,7 +361,7 @@ internal class AssetDataSource(
                         kaliumFileSystem.providePersistentAssetPath(
                             buildFileName(
                                 assetId,
-                                    assetName.fileExtension()
+                                assetName.fileExtension()
                                     ?: getExtensionFromMimeType(mimeType)
                             )
                         )
