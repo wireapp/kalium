@@ -115,6 +115,7 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
 
     override suspend fun getNodesForPath(
+        query: String,
         path: String,
         limit: Int?,
         offset: Int?,
@@ -145,7 +146,11 @@ internal class CellsApiImpl(
                         } else {
                             TreeNodeType.UNKNOWN
                         },
-                        metadata = lookupTags
+                        metadata = lookupTags,
+                        text = LookupFilterTextSearch(
+                            searchIn = LookupFilterTextSearchIn.BaseName,
+                            term = query.ifEmpty { null }
+                        ),
                     ),
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -425,6 +430,18 @@ internal class CellsApiImpl(
     }.mapSuccess { collection ->
         collection.versions?.map { it.toDto() } ?: emptyList()
     }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.promoteVersion(
+            uuid = uuid,
+            versionId = versionId,
+            parameters = restPromoteParameters
+        )
+    }.mapSuccess {}
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))

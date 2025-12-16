@@ -50,6 +50,16 @@ import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -1035,7 +1045,7 @@ class AssetRepositoryTest {
     private fun stubAssetEntity(assetKey: String, dataPath: Path, dataSize: Long) =
         AssetEntity(assetKey, "domain", dataPath.toString(), dataSize, null, 1)
 
-    private fun encryptDataWithPath(data: ByteArray, assetEncryptionKey: AES256Key): Path = with(fakeKaliumFileSystem!!) {
+    private fun encryptDataWithPath(data: ByteArray, assetEncryptionKey: AES256Key): Path = with(fakeKaliumFileSystem) {
         val rawDataPath = tempFilePath("input")
         val encryptedDataPath = tempFilePath("output")
         sink(rawDataPath).buffer().use { it.write(data) }
