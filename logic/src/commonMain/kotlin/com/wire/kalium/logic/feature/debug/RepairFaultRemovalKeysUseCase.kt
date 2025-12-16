@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.debug
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -59,24 +59,19 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
 
     override suspend fun invoke(param: TargetedRepairParam): RepairResult = withContext(dispatcher.io) {
         if (selfUserId.domain != param.domain) {
-            logger.w(
-                "Attempted to repair faulty removal keys in domain ${param.domain}, but user belongs to ${selfUserId.domain}. Aborting."
-            )
+            logger.w("Aborting repair faulty removal keys in domain ${param.domain}, user belongs to ${selfUserId.domain}")
             return@withContext RepairResult.RepairNotNeeded
         }
         transactionProvider.transaction("RepairFaultRemovalKeys") { transactionContext ->
-            conversationRepository.getMLSConversationsByDomain(param.domain)
-                .flatMap { conversations ->
-                    val conversationsWithFaultyKeys = conversations.filter { convo ->
-                        checkConversationHasFaultyKey(convo.protocol, param.faultyKey, transactionContext)
-                    }
-
-                    when {
-                        conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair.right()
-                        else ->
-                            repairConversations(conversationsWithFaultyKeys, conversations.size, transactionContext).right()
-                    }
-                }
+            val conversations = conversationRepository.getMLSConversationsByDomain(param.domain).getOrElse { emptyList() }
+            val conversationsWithFaultyKeys = conversations.filter { convo ->
+                checkConversationHasFaultyKey(convo.protocol, param.faultyKey, transactionContext)
+            }
+            when {
+                conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair.right()
+                else ->
+                    repairConversations(conversationsWithFaultyKeys, conversations.size, transactionContext).right()
+            }
         }.fold(
             fnL = {
                 logger.e("Error occurred during repair of faulty removal keys")
@@ -90,7 +85,7 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
         conversationsToRepair: List<Conversation>,
         totalChecked: Int,
         transactionContext: CryptoTransactionContext
-    ): RepairResult {
+    ): RepairResult.RepairPerformed {
         val (successful, failed) = conversationsToRepair
             .map { convo -> convo to delegateResetMLSConversation(convo.id, transactionContext) }
             .partition { (_, result) -> result.isRight() }
@@ -108,7 +103,6 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
     ): Either<CoreFailure, Unit> = try {
-        transactionContext
         resetMLSConversation(conversationId, transactionContext)
     } catch (exception: Exception) {
         logger.e("Exception during resetting MLS conversation ${conversationId.toLogString()}", exception)
@@ -142,7 +136,7 @@ internal class RepairFaultRemovalKeysUseCaseImpl(
 /**
  * Parameters for targeted repair of faulty removal keys in MLS conversations.
  * @property faultyKey The faulty removal key to be repaired in hex string format.
- * @property domain The domain in which the user and conversations belongs.
+ * @property domain The target domain in which the repair should be performed for the user and conversations.
  */
 data class TargetedRepairParam(
     val domain: String,
