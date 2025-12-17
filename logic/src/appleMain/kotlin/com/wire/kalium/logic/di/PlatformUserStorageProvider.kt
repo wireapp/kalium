@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 internal actual class PlatformUserStorageProvider actual constructor() : UserStorageProvider() {
-    override fun create(
+    actual override fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
         platformProperties: PlatformUserStorageProperties,
