@@ -83,6 +83,8 @@ interface UserConfigDAO {
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean)
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun isMlsFaultyKeysRepairExecuted(): Boolean
+    suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean)
 }
 
 @Suppress("TooManyFunctions")
@@ -276,6 +278,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isAssetAuditLogEnabled(): Boolean =
         metadataDAO.valueByKey(ASSET_AUDIT_LOG_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun isMlsFaultyKeysRepairExecuted(): Boolean =
+        metadataDAO.valueByKey(MLS_FAULTY_CONVERSATIONS_REPAIRED)?.toBoolean() ?: false
+
+    override suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean) {
+        metadataDAO.insertValue(repaired.toString(), MLS_FAULTY_CONVERSATIONS_REPAIRED)
+    }
+
     override suspend fun setAppsEnabled(isAppsEnabled: Boolean) {
         metadataDAO.insertValue(isAppsEnabled.toString(), APPS_ENABLED_KEY)
     }
@@ -304,5 +313,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val PROFILE_QR_CODE_ENABLED = "profile_qr_code_enabled"
         private const val APPS_ENABLED_KEY = "apps_enabled"
         private const val ASSET_AUDIT_LOG_ENABLED = "asset_audit_log"
+        private const val MLS_FAULTY_CONVERSATIONS_REPAIRED = "mls_faulty_conversations_repaired"
     }
 }

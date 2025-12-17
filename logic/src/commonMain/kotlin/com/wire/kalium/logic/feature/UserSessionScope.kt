@@ -252,6 +252,7 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -1302,6 +1303,17 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             cryptoTransactionProvider,
             userScopedLogger
+        )
+    }
+
+    private val mlsFaultyKeysConversationsRepairUseCase: MLSFaultyKeysConversationsRepairUseCaseImpl by lazy {
+        MLSFaultyKeysConversationsRepairUseCaseImpl(
+            selfUserId = userId,
+            incrementalSyncRepository = incrementalSyncRepository,
+            kaliumConfigs = kaliumConfigs,
+            userConfigRepository = userConfigRepository,
+            repairFaultyRemovalKeys = debug.repairFaultyRemovalKeysUseCase,
+            kaliumLogger = userScopedLogger
         )
     }
 
@@ -2625,6 +2637,10 @@ class UserSessionScope internal constructor(
             if (isAllowedToUseAsyncNotifications()) {
                 updateSelfClientCapabilityToConsumableNotifications()
             }
+        }
+
+        launch {
+            mlsFaultyKeysConversationsRepairUseCase.invoke()
         }
 
         launch {

@@ -163,6 +163,8 @@ interface UserConfigRepository {
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
+    suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -605,5 +607,8 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
-
+    override suspend fun isMLSFaultyKeysRepairExecuted(): Boolean = userConfigDAO.isMlsFaultyKeysRepairExecuted()
+    override suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.setMlsFaultyKeysRepairExecuted(repaired)
+    }
 }

@@ -111,7 +111,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
 
     private suspend fun checkConversationHasFaultyKey(
         protocolInfo: Conversation.ProtocolInfo,
-        faultyKey: String,
+        faultyKeys: List<String>,
         transactionContext: CryptoTransactionContext
     ): Boolean =
         when (protocolInfo) {
@@ -120,7 +120,8 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
             is Conversation.ProtocolInfo.Mixed -> {
                 transactionContext.wrapInMLSContext { context ->
                     wrapMLSRequest {
-                        context.getExternalSenders(protocolInfo.groupId.value).value.toHexString() == faultyKey
+                        val externalHex = context.getExternalSenders(protocolInfo.groupId.value).value.toHexString()
+                        faultyKeys.contains(externalHex)
                     }
                 }.fold(
                     fnL = {
@@ -140,7 +141,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
  */
 data class TargetedRepairParam(
     val domain: String,
-    val faultyKey: String
+    val faultyKey: List<String>
 )
 
 /**
