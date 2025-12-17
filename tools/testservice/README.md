@@ -25,11 +25,11 @@ java -jar tools/testservice/build/libs/testservice-*-all.jar server testservice/
 ## Installation
 
 Build inside container:
+
 ```shell
 docker build --platform linux/arm64 -t testservice_build_env -f tools/testservice/Dockerfile .
 docker create --name temp_container testservice_build_env
-docker cp temp_container:/app/testservice/build/libs/testservice-0.0.1-SNAPSHOT-all.jar ./testservice/testservice-0.0.1-SNAPSHOT-all.jar
-(optional) docker cp temp_container:/app/native/libs ./native/
+docker cp temp_container:/app/testservice/testservice-0.0.1-SNAPSHOT-all.jar ./testservice/testservice-0.0.1-SNAPSHOT-all.jar
 docker rm temp_container
 ```
 

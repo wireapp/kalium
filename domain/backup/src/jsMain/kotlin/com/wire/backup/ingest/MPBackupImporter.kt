@@ -54,9 +54,9 @@ public actual class MPBackupImporter : CommonMPBackupImporter() {
         importBackup(buffer, passphrase)
     }
 
-    override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
+    actual override fun getUnencryptedArchiveSink(): Sink = inMemoryUnencryptedBuffer
 
-    override suspend fun unzipAllEntries(): BackupPageStorage {
+    actual override suspend fun unzipAllEntries(): BackupPageStorage {
         // TODO: Improve performance and save memory by avoiding array conversions
         val zip = JSZip.loadAsync(inMemoryUnencryptedBuffer.readByteArray().toUByteArray().toUInt8Array()).await()
         val storage = InMemoryBackupPageStorage()
