@@ -24,6 +24,6 @@ import kotlinx.coroutines.flow.StateFlow
 
 internal actual class NetworkStateObserverImpl : NetworkStateObserver {
 
-    override fun observeNetworkState(): StateFlow<NetworkState> =
+    actual override fun observeNetworkState(): StateFlow<NetworkState> =
         MutableStateFlow(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
 }

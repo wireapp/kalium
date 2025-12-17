@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.util.PlatformContext
 import kotlinx.coroutines.flow.Flow
 
-actual class MediaManagerServiceImpl(
+actual open class MediaManagerServiceImpl(
     platformContext: PlatformContext
 ) : MediaManagerService {
     actual override suspend fun turnLoudSpeakerOn() {

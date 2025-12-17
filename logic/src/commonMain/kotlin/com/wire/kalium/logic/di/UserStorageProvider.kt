@@ -43,5 +43,4 @@ abstract class UserStorageProvider {
     fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)
 }
 
-internal expect class PlatformUserStorageProvider constructor() : UserStorageProvider
 expect class PlatformUserStorageProperties
