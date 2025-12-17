@@ -128,6 +128,7 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -439,6 +440,9 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorkerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
@@ -1069,6 +1073,9 @@ class UserSessionScope internal constructor(
         )
 
     private val messageSendingScheduler: MessageSendingScheduler
+        get() = userSessionWorkScheduler
+
+    private val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler
         get() = userSessionWorkScheduler
 
     private val assetRepository: AssetRepository
@@ -1997,6 +2004,16 @@ class UserSessionScope internal constructor(
         )
     }
 
+    internal fun buildAudioNormalizedLoudnessWorker(
+        conversationId: ConversationId,
+        messageId: String
+    ): AudioNormalizedLoudnessWorker = AudioNormalizedLoudnessWorkerImpl(
+        conversationId = conversationId,
+        messageId = messageId,
+        messageScope = messages,
+        audioNormalizedLoudnessBuilder = globalScope.audioNormalizedLoudnessBuilder
+    )
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider,
@@ -2197,6 +2214,7 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
+            audioNormalizedLoudnessScheduler,
             userPropertyRepository,
             incrementalSyncRepository,
             protoContentMapper,
