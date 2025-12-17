@@ -20,6 +20,7 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.db.DatabaseStorageMode
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
@@ -30,18 +31,37 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
         val userIdEntity = userId.toDao()
         val pref = UserPrefBuilder(userIdEntity, platformProperties.applicationContext, shouldEncryptData)
 
-        val databasePassphrase = if (shouldEncryptData) {
-            platformProperties.securityHelper.userDBSecret(userId)
+        val liteSyncConfig = platformProperties.liteSyncConfiguration
+        val database = if (liteSyncConfig != null) {
+            // LiteSync mode - note: LiteSync does not support encryption
+            val storageMode = DatabaseStorageMode.LiteSync(
+                syncUri = liteSyncConfig.syncUri,
+                nodeType = liteSyncConfig.nodeType,
+                onReady = liteSyncConfig.onReady,
+                onSync = liteSyncConfig.onSync
+            )
+            userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
+                userId = userIdEntity,
+                storageMode = storageMode,
+                dispatcher = KaliumDispatcherImpl.io,
+                enableWAL = true
+            )
         } else {
-            null
+            // Standard encrypted or unencrypted mode
+            val databasePassphrase = if (shouldEncryptData) {
+                platformProperties.securityHelper.userDBSecret(userId)
+            } else {
+                null
+            }
+            userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
+                userId = userIdEntity,
+                passphrase = databasePassphrase,
+                dispatcher = KaliumDispatcherImpl.io,
+                enableWAL = true
+            )
         }
-        val database = userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
-            userId = userIdEntity,
-            passphrase = databasePassphrase,
-            dispatcher = KaliumDispatcherImpl.io,
-            enableWAL = true
-        )
         return UserStorage(database, pref)
     }
 }
