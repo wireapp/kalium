@@ -112,7 +112,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
                     ExternalSenderKey(key.hexToByteArray())
         }
 
-        suspend fun withResetMLSConversationResult(result: Either<CoreFailure, Unit>) = apply {c
+        suspend fun withResetMLSConversationResult(result: Either<CoreFailure, Unit>) = apply {
             coEvery { resetMLSConversationUseCase.invoke(any(), any()) } returns result
         }
 
