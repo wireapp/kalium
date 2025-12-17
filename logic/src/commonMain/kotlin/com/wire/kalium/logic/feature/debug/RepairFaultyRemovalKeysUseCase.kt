@@ -43,17 +43,17 @@ import kotlinx.coroutines.withContext
  * Use case to recover from an invalid removal key state on all MLS conversations.
  * This is an experimental feature to be trigger manually via debug options for now.
  */
-interface RepairFaultRemovalKeysUseCase {
+interface RepairFaultyRemovalKeysUseCase {
     suspend operator fun invoke(param: TargetedRepairParam): RepairResult
 }
 
-internal class RepairFaultRemovalKeysUseCaseImpl(
+internal class RepairFaultyRemovalKeysUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-) : RepairFaultRemovalKeysUseCase {
+) : RepairFaultyRemovalKeysUseCase {
 
     val logger by lazy { kaliumLogger.withTextTag("RepairFaultRemovalKeysUseCase") }
 

@@ -258,8 +258,8 @@ class DebugScope internal constructor(
     val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
 
-    val repairFaultRemovalKeysUseCase: RepairFaultRemovalKeysUseCase by lazy {
-        RepairFaultRemovalKeysUseCaseImpl(
+    val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase by lazy {
+        RepairFaultyRemovalKeysUseCaseImpl(
             selfUserId = userId,
             conversationRepository = conversationRepository,
             resetMLSConversation = resetMLSConversationUseCase,

@@ -25,7 +25,7 @@ import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
-import com.wire.kalium.logic.feature.debug.RepairFaultRemovalKeysUseCaseTest.Arrangement.Companion.FAULTY_KEY
+import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCaseTest.Arrangement.Companion.FAULTY_KEY
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -39,7 +39,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class RepairFaultRemovalKeysUseCaseTest {
+class RepairFaultyRemovalKeysUseCaseTest {
 
     @Test
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndDomainIsNotTheSameAsUser_thenRepairNotNeeded() = runTest {
@@ -112,13 +112,13 @@ class RepairFaultRemovalKeysUseCaseTest {
                     ExternalSenderKey(key.hexToByteArray())
         }
 
-        suspend fun withResetMLSConversationResult(result: Either<CoreFailure, Unit>) = apply {
+        suspend fun withResetMLSConversationResult(result: Either<CoreFailure, Unit>) = apply {c
             coEvery { resetMLSConversationUseCase.invoke(any(), any()) } returns result
         }
 
-        suspend fun arrange(): Pair<Arrangement, RepairFaultRemovalKeysUseCaseImpl> {
+        suspend fun arrange(): Pair<Arrangement, RepairFaultyRemovalKeysUseCaseImpl> {
             withTransactionReturning(Unit.right())
-            return this to RepairFaultRemovalKeysUseCaseImpl(
+            return this to RepairFaultyRemovalKeysUseCaseImpl(
                 selfUserId = TestUser.USER_ID,
                 conversationRepository = conversationRepository,
                 resetMLSConversation = resetMLSConversationUseCase,
