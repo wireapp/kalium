@@ -352,6 +352,8 @@ interface ConversationRepository {
     suspend fun getConversationIdsWithoutMetadata(): Either<CoreFailure, List<QualifiedID>>
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
+
+    suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>>
 }
 
 @OptIn(ConversationPersistenceApi::class)
@@ -950,8 +952,8 @@ internal class ConversationDataSource internal constructor(
             if (conversationsFailed.isNotEmpty()) {
                 conversationDAO.insertConversations(
                     conversationsFailed.map { conversationId ->
-                    conversationMapper.fromFailedGroupConversationToEntity(conversationId)
-                }
+                        conversationMapper.fromFailedGroupConversationToEntity(conversationId)
+                    }
                 )
             }
         }
@@ -1093,6 +1095,11 @@ internal class ConversationDataSource internal constructor(
                 updateChannelAddPermissionLocally(conversationId, channelAddPermission)
             }
         }
+    }
+
+    override suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>> = wrapStorageRequest {
+        conversationDAO.getMLSConversationsByDomain(domain)
+            .map(conversationMapper::fromDaoModel)
     }
 
     companion object {

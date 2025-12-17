@@ -450,3 +450,9 @@ hasConversationWithCell:
 SELECT EXISTS (
     SELECT 1 FROM Conversation WHERE wire_cell IS NOT NULL
 );
+
+selectAllMLSConversationsByDomain:
+SELECT * FROM Conversation
+WHERE (protocol IS 'MLS' OR protocol IS 'MIXED')
+AND type IS NOT 'SELF'
+AND qualified_id LIKE ('%@' || :domain || '');
