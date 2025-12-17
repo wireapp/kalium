@@ -129,15 +129,27 @@ internal class MessageSenderImpl internal constructor(
                     attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
                         val localDate = message.date
                         val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                        val isEditMessage = message.content is MessageContent.TextEdited
                         // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                        if (isEditMessage) {
-                            messageRepository.updateTextMessage(
-                                conversationId = processedMessage.conversationId,
-                                messageContent = processedMessage.content as MessageContent.TextEdited,
-                                newMessageId = processedMessage.id,
-                                editInstant = processedMessage.date
-                            )
+                        val isEditMessage = when (message.content) {
+                            is MessageContent.MultipartEdited -> {
+                                messageRepository.updateMultipartMessage(
+                                    conversationId = processedMessage.conversationId,
+                                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                    newMessageId = processedMessage.id,
+                                    editInstant = processedMessage.date
+                                )
+                                true
+                            }
+                            is MessageContent.TextEdited -> {
+                                messageRepository.updateTextMessage(
+                                    conversationId = processedMessage.conversationId,
+                                    messageContent = processedMessage.content as MessageContent.TextEdited,
+                                    newMessageId = processedMessage.id,
+                                    editInstant = processedMessage.date
+                                )
+                                true
+                            }
+                            else -> false
                         }
                         messageRepository.promoteMessageToSentUpdatingServerTime(
                             conversationId = processedMessage.conversationId,
