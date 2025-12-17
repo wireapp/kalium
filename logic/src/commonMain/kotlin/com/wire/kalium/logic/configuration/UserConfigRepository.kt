@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -27,6 +28,7 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.featureConfig.CollaboraEdition.Companion.fromString
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toEntity
 import com.wire.kalium.logic.data.featureConfig.toModel
@@ -616,7 +618,9 @@ internal class UserConfigDataSource internal constructor(
             config?.let {
                 userConfigDAO.setWireCellsConfig(
                     WireCellsConfigEntity(
-                        backendUrl = config.backendUrl
+                        backendUrl = config.backendUrl,
+                        collabora = config.collabora.name,
+                        teamQuotaBytes = config.teamQuotaBytes,
                     )
                 )
             } ?: run {
@@ -625,9 +629,11 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?> = wrapStorageRequest {
-        userConfigDAO.getWireCellsConfig()?.let {
+        userConfigDAO.getWireCellsConfig()?.let { config ->
             WireCellsConfig(
-                backendUrl = it.backendUrl
+                backendUrl = config.backendUrl,
+                collabora = config.collabora.fromString(),
+                teamQuotaBytes = config.teamQuotaBytes,
             )
         }
     }
