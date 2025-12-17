@@ -491,6 +491,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
@@ -1586,6 +1587,7 @@ class UserSessionScope internal constructor(
             persistMessage,
             persistReaction,
             MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
+            MessageMultipartEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
             LastReadContentHandlerImpl(
                 conversationRepository,
                 userId,
@@ -2205,6 +2207,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.getMessageAttachmentsUseCase,
             cells.publishAttachments,
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,
