@@ -53,8 +53,8 @@ internal class GetAvatarAssetUseCaseImpl(
                 it is NetworkFailure.FederatedBackendFailure -> PublicAssetResult.Failure(it, false)
                 else -> PublicAssetResult.Failure(it, true)
             }
-        }) {
-            PublicAssetResult.Success(it)
+        }) { (path, _) ->
+            PublicAssetResult.Success(path)
         }
 }
 
