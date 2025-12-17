@@ -75,7 +75,7 @@ internal class ConversationDAOImpl internal constructor(
         qualifiedID: QualifiedIDEntity
     ): Flow<ConversationEntity?> =
         conversationCache.get(qualifiedID) {
-            conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
+            conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toConversationEntity)
                 .asFlow()
                 .flowOn(readDispatcher.value)
                 .mapToOneOrNull()
@@ -288,7 +288,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
-        return conversationQueries.selectAllConversations(conversationMapper::fromViewToModel)
+        return conversationQueries.selectAllConversations(conversationMapper::toConversationEntity)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
@@ -353,7 +353,7 @@ internal class ConversationDAOImpl internal constructor(
         }
 
     override suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?> {
-        return conversationQueries.selectActiveOneOnOneConversation(userId, conversationMapper::fromViewToModel)
+        return conversationQueries.selectActiveOneOnOneConversation(userId, conversationMapper::toConversationEntity)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(readDispatcher.value)
@@ -382,7 +382,7 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity> =
         withContext(readDispatcher.value) {
-            conversationQueries.selectByGroupState(groupState, conversationMapper::fromViewToModel)
+            conversationQueries.selectByGroupState(groupState, conversationMapper::toConversationEntity)
                 .executeAsList()
         }
 
@@ -514,7 +514,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(readDispatcher.value) {
-        memberQueries.selectConversationsByMember(userId, conversationMapper::fromViewToModel).executeAsList()
+        memberQueries.selectConversationsByMember(userId, conversationMapper::toConversationEntity).executeAsList()
     }
 
     override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) {

@@ -24,8 +24,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.SyncOutboxRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.observer.NetworkStateObserver
 import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.flow.first
 
 /**

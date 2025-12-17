@@ -61,6 +61,8 @@ import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
 import com.wire.kalium.persistence.Service
+import com.wire.kalium.persistence.SyncOutbox
+import com.wire.kalium.persistence.SyncState
 import com.wire.kalium.persistence.UnreadEvent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.adapter.BotServiceAdapter

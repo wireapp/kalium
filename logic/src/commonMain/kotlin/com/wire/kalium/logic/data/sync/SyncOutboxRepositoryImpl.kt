@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
@@ -49,8 +50,8 @@ internal class SyncOutboxRepositoryImpl(
     override suspend fun isSyncEnabled(): Boolean = wrapStorageRequest {
         syncStateDAO.selectState(KEY_SYNC_ENABLED)?.toBoolean() ?: false
     }.fold(
-        { false },
-        { it }
+        { _ -> false },
+        { value -> value }
     )
 
     override suspend fun setSyncEnabled(enabled: Boolean): Either<CoreFailure, Unit> = wrapStorageRequest {
@@ -66,7 +67,7 @@ internal class SyncOutboxRepositoryImpl(
         // Get batch size from config
         val batchSize = wrapStorageRequest {
             syncStateDAO.selectState(KEY_BATCH_SIZE)?.toIntOrNull() ?: DEFAULT_BATCH_SIZE
-        }.fold({ DEFAULT_BATCH_SIZE }, { it })
+        }.fold({ _ -> DEFAULT_BATCH_SIZE }, { value -> value })
 
         // Fetch pending operations
         return wrapStorageRequest {
@@ -84,7 +85,7 @@ internal class SyncOutboxRepositoryImpl(
                 syncOutboxDAO.markAsInProgress(operationIds, timestamp)
             }.flatMap {
                 // Convert to network model
-                val clientId = clientIdProvider.invoke()?.value ?: "unknown"
+                val clientId = clientIdProvider.invoke().fold({ _ -> "unknown" }, { clientId -> clientId.value })
                 val batchId = "${userId.value}-${timestamp.toEpochMilliseconds()}"
 
                 val request = SyncOperationRequest(

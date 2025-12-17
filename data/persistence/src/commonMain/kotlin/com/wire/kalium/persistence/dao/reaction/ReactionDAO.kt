@@ -128,7 +128,7 @@ class ReactionDAOImpl(
         senderUserId: UserIDEntity
     ): UserReactionsEntity = withContext(readDispatcher.value) {
         reactionsQueries
-            .selectByMessageIdAndConversationIdAndSenderId(originalMessageId, conversationId, senderUserId) { _, _, _, emoji, _ ->
+            .selectByMessageIdAndConversationIdAndSenderId(originalMessageId, conversationId, senderUserId) { _, _, _, emoji, _, _ ->
                 emoji
             }
             .executeAsList()

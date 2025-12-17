@@ -259,6 +259,7 @@ data object ConversationMapper {
         wireCell: String?,
         deleted_locally: Boolean,
         history_sharing_retention_seconds: Long,
+        row_version: Long,
     ) = ConversationEntity(
         id = qualified_id,
         name = name,
