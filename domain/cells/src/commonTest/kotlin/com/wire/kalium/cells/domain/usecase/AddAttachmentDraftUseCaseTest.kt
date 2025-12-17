@@ -100,7 +100,7 @@ class AddAttachmentDraftUseCaseTest {
 
     @Test
     fun given_success_pre_check_attachment_is_persisted() = testScope.runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(testScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
             .arrange()
