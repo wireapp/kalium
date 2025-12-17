@@ -37,12 +37,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.util.string.toHexString
+import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 /**
  * Use case to recover from an invalid removal key state on all MLS conversations.
  * This is an experimental feature to be trigger manually via debug options for now.
  */
+@Mockable
 interface RepairFaultyRemovalKeysUseCase {
     suspend operator fun invoke(param: TargetedRepairParam): RepairResult
 }
@@ -55,7 +57,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RepairFaultyRemovalKeysUseCase {
 
-    val logger by lazy { kaliumLogger.withTextTag("RepairFaultRemovalKeysUseCase") }
+    val logger by lazy { kaliumLogger.withTextTag("RepairFaultyRemovalKeysUseCase") }
 
     override suspend fun invoke(param: TargetedRepairParam): RepairResult = withContext(dispatcher.io) {
         if (selfUserId.domain != param.domain) {

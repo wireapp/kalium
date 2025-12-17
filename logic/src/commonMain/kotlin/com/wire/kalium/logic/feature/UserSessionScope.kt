@@ -1309,7 +1309,7 @@ class UserSessionScope internal constructor(
     private val mlsFaultyKeysConversationsRepairUseCase: MLSFaultyKeysConversationsRepairUseCaseImpl by lazy {
         MLSFaultyKeysConversationsRepairUseCaseImpl(
             selfUserId = userId,
-            incrementalSyncRepository = incrementalSyncRepository,
+            syncStateObserver = syncStateObserver,
             kaliumConfigs = kaliumConfigs,
             userConfigRepository = userConfigRepository,
             repairFaultyRemovalKeys = debug.repairFaultyRemovalKeysUseCase,

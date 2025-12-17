@@ -19,14 +19,12 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCase
 import com.wire.kalium.logic.feature.debug.RepairResult
 import com.wire.kalium.logic.feature.debug.TargetedRepairParam
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import kotlinx.coroutines.flow.filter
+import com.wire.kalium.logic.sync.SyncStateObserver
 
 /**
  * Internal use case to repair conversations with faulty MLS keys based on known faulty keys per domain.
@@ -38,7 +36,7 @@ internal interface MLSFaultyKeysConversationsRepairUseCase {
 
 internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
     private val selfUserId: UserId,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val syncStateObserver: SyncStateObserver,
     private val kaliumConfigs: KaliumConfigs,
     private val userConfigRepository: UserConfigRepository,
     private val repairFaultyRemovalKeys: RepairFaultyRemovalKeysUseCase,
@@ -54,35 +52,34 @@ internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
         }
 
         logger.d("Starting MLS faulty keys repair - for current user ${selfUserId.toLogString()}")
-        incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
-            val matched = kaliumConfigs.domainWithFaultyKeysMap.filter { (domain, _) -> domain.contains(selfUserId.domain) }
-            when {
-                matched.isEmpty() -> {
-                    logger.d("Skipping MLS faulty keys repair - domain does not match current user ${selfUserId.toLogString()}")
-                }
+        syncStateObserver.waitUntilLive()
+        val matched = kaliumConfigs.domainWithFaultyKeysMap.filter { (domain, _) -> selfUserId.domain == domain }
+        when {
+            matched.isEmpty() -> {
+                logger.d("Skipping MLS faulty keys repair - domain does not match current user ${selfUserId.toLogString()}")
+            }
 
-                else -> {
-                    matched.forEach { (domain, faultyKey) ->
-                        val result = repairFaultyRemovalKeys(
-                            TargetedRepairParam(
-                                domain = domain,
-                                faultyKey = faultyKey
-                            )
+            else -> {
+                matched.forEach { (domain, faultyKey) ->
+                    val result = repairFaultyRemovalKeys(
+                        TargetedRepairParam(
+                            domain = domain,
+                            faultyKey = faultyKey
                         )
+                    )
 
-                        when (result) {
-                            RepairResult.Error ->
-                                logger.e("Error occurred during MLS faulty keys repair for user ${selfUserId.toLogString()}")
+                    when (result) {
+                        RepairResult.Error ->
+                            logger.e("Error occurred during MLS faulty keys repair for user ${selfUserId.toLogString()}")
 
-                            RepairResult.NoConversationsToRepair ->
-                                logger.d("No conversations to repair for user ${selfUserId.toLogString()}")
+                        RepairResult.NoConversationsToRepair ->
+                            logger.d("No conversations to repair for user ${selfUserId.toLogString()}")
 
-                            RepairResult.RepairNotNeeded ->
-                                logger.d("Repair not needed for user ${selfUserId.toLogString()}")
+                        RepairResult.RepairNotNeeded ->
+                            logger.d("Repair not needed for user ${selfUserId.toLogString()}")
 
-                            is RepairResult.RepairPerformed -> {
-                                mapResultOfRepairPerformed(result)
-                            }
+                        is RepairResult.RepairPerformed -> {
+                            mapResultOfRepairPerformed(result)
                         }
                     }
                 }
