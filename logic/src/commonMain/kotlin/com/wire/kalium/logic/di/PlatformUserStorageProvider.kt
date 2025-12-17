@@ -23,6 +23,7 @@ internal expect class PlatformUserStorageProvider constructor() : UserStoragePro
     override fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
-        platformProperties: PlatformUserStorageProperties
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean
     ): UserStorage
 }
