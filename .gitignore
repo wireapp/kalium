@@ -111,3 +111,4 @@ libs/
 
 # kotlin files generated from proto
 generated/
+.claude

@@ -36,14 +36,20 @@ kotlin {
             mainClass.set(mainFunctionClassName)
         }
     }
+
+    // Configure macOS targets with SQLite linking
     macosX64 {
         binaries {
-            executable()
+            executable {
+                linkerOpts("-lsqlite3")
+            }
         }
     }
     macosArm64 {
         binaries {
-            executable()
+            executable {
+                linkerOpts("-lsqlite3")
+            }
         }
     }
 
