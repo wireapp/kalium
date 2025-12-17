@@ -181,7 +181,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.CellsInternal(
                 status = FeatureFlagStatusDTO.DISABLED,
-                config = FeatureConfigData.CellsInternalConfigDTO(backend = null),
+                config = FeatureConfigData.CellsInternalConfigDTO(null, null, null),
             ),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),

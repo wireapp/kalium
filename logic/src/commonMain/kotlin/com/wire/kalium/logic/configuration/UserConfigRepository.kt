@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -165,8 +166,6 @@ interface UserConfigRepository {
     suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAssetAuditLogEnabled(): Boolean
     suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
-    suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
-
 }
 
 @Suppress("TooManyFunctions")
@@ -615,20 +614,13 @@ internal class UserConfigDataSource internal constructor(
             config?.let {
                 userConfigDAO.setWireCellsConfig(
                     WireCellsConfigEntity(
-                        backendUrl = config.backendUrl
+                        backendUrl = config.backendUrl,
+                        collabora = config.collabora.name,
+                        teamQuotaBytes = config.teamQuotaBytes,
                     )
                 )
             } ?: run {
                 userConfigDAO.removeWireCellsConfig()
             }
         }
-
-    override suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?> = wrapStorageRequest {
-        userConfigDAO.getWireCellsConfig()?.let {
-            WireCellsConfig(
-                backendUrl = it.backendUrl
-            )
-        }
-    }
-
 }

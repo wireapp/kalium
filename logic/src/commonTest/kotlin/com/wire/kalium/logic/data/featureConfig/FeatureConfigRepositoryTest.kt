@@ -103,7 +103,7 @@ class FeatureConfigRepositoryTest {
             assetAuditLogConfigModel = AssetAuditLogConfigModel(Status.DISABLED),
             cellsInternalModel = CellsInternalModel(
                 status = Status.DISABLED,
-                config = CellsInternalConfigModel(backend = null)
+                config = CellsInternalConfigModel(null, CollaboraEdition.NO, null)
             )
         )
 
@@ -197,7 +197,7 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.CellsInternal(
                 FeatureFlagStatusDTO.DISABLED,
-                FeatureConfigData.CellsInternalConfigDTO(backend = null)
+                FeatureConfigData.CellsInternalConfigDTO(null, null, null)
             ),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),

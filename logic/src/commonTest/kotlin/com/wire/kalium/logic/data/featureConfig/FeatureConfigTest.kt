@@ -66,7 +66,7 @@ object FeatureConfigTest {
         ),
         cellsInternalModel: CellsInternalModel? = CellsInternalModel(
             status = Status.ENABLED,
-            config = CellsInternalConfigModel(null),
+            config = CellsInternalConfigModel(null, CollaboraEdition.NO, null),
         ),
         appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
         enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel? = EnableUserProfileQRCodeConfigModel(
