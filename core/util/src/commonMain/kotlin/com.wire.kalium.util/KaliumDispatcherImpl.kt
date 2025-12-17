@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.util
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 
-actual object KaliumDispatcherImpl : KaliumDispatcher {
-    actual override val default: CoroutineDispatcher
-        get() = Dispatchers.Default
-    actual override val main: CoroutineDispatcher
-        get() = Dispatchers.Main
-    actual override val unconfined: CoroutineDispatcher
-        get() = Dispatchers.Unconfined
-    actual override val io: CoroutineDispatcher
-        get() = Dispatchers.IO
+expect object KaliumDispatcherImpl : KaliumDispatcher {
+    override val default: CoroutineDispatcher
+    override val main: CoroutineDispatcher
+    override val unconfined: CoroutineDispatcher
+    override val io: CoroutineDispatcher
 }

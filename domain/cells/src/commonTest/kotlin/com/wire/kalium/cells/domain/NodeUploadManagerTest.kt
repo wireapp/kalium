@@ -307,7 +307,7 @@ private class TestRepository : CellsRepository {
         pagination = null
     ).right()
 
-    override suspend fun getNodesByPath(path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
+    override suspend fun getNodesByPath(query: String, path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
         TODO("Not yet implemented")
     }
 
