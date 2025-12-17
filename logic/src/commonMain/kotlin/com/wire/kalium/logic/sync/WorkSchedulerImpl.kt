@@ -41,18 +41,18 @@ interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncSche
 }
 
 internal expect class WorkSchedulerProviderImpl : WorkSchedulerProvider {
-    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler
-    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler
+    fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler
+    fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler
 }
 internal expect class GlobalWorkSchedulerImpl : GlobalWorkScheduler {
-    override val scope: GlobalKaliumScope
-    override fun schedulePeriodicApiVersionUpdate()
-    override fun scheduleImmediateApiVersionUpdate()
+    val scope: GlobalKaliumScope
+    fun schedulePeriodicApiVersionUpdate()
+    fun scheduleImmediateApiVersionUpdate()
 }
 internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
-    override val scope: UserSessionScope
-    override fun scheduleSendingOfPendingMessages()
-    override fun cancelScheduledSendingOfPendingMessages()
-    override fun schedulePeriodicUserConfigSync()
-    override fun resetBackoffForPeriodicUserConfigSync()
+    val scope: UserSessionScope
+    fun scheduleSendingOfPendingMessages()
+    fun cancelScheduledSendingOfPendingMessages()
+    fun schedulePeriodicUserConfigSync()
+    fun resetBackoffForPeriodicUserConfigSync()
 }

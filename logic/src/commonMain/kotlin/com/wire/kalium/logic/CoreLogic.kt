@@ -41,7 +41,17 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-expect class CoreLogic : CoreLogicCommon
+expect class CoreLogic : CoreLogicCommon {
+    override val globalPreferences: GlobalPrefProvider
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder
+    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    override val globalCallManager: GlobalCallManager
+    override val workSchedulerProvider: WorkSchedulerProvider
+    override val networkStateObserver: NetworkStateObserver
+    override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+    override fun getSessionScope(userId: UserId): UserSessionScope
+    override suspend fun deleteSessionScope(userId: UserId)
+}
 
 abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,

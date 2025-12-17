@@ -257,4 +257,7 @@ public abstract class CommonMPBackupExporter(
  * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
  * into a cross-platform [BackupData] format.
  */
-public expect class MPBackupExporter : CommonMPBackupExporter
+public expect class MPBackupExporter : CommonMPBackupExporter {
+    internal override val storage: BackupPageStorage
+    internal override fun zipEntries(data: List<BackupPage>): Deferred<Source>
+}

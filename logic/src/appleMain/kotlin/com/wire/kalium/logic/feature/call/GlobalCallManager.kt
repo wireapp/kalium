@@ -39,7 +39,12 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 
-actual class GlobalCallManager {
+actual class GlobalCallManager(
+    private val appContext: com.wire.kalium.logic.util.PlatformContext
+) {
+    private val flowManager by lazy { FlowManagerServiceImpl(appContext) }
+    private val mediaManager by lazy { MediaManagerServiceImpl(appContext) }
+
     @Suppress("LongParameterList")
     internal actual fun getCallManagerForClient(
         userId: QualifiedID,
@@ -63,15 +68,11 @@ actual class GlobalCallManager {
     }
 
     actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
-        TODO("Not yet implemented")
+        // No-op for Apple platform - CallManagerImpl doesn't maintain state
     }
 
-    actual fun getFlowManager(): FlowManagerService {
-        TODO("Not yet implemented")
-    }
+    actual fun getFlowManager(): FlowManagerService = flowManager
 
-    actual fun getMediaManager(): MediaManagerService {
-        TODO("Not yet implemented")
-    }
+    actual fun getMediaManager(): MediaManagerService = mediaManager
 
 }

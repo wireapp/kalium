@@ -38,9 +38,9 @@ interface FlowManagerService {
 }
 
 expect class FlowManagerServiceImpl : FlowManagerService {
-    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
-    override suspend fun flipToFrontCamera(conversationId: ConversationId)
-    override suspend fun flipToBackCamera(conversationId: ConversationId)
-    override suspend fun setUIRotation(rotation: PlatformRotation)
-    override suspend fun startFlowManager()
+    suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
+    suspend fun flipToFrontCamera(conversationId: ConversationId)
+    suspend fun flipToBackCamera(conversationId: ConversationId)
+    suspend fun setUIRotation(rotation: PlatformRotation)
+    suspend fun startFlowManager()
 }

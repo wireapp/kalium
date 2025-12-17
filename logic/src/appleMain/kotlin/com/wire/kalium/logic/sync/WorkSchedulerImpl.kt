@@ -28,15 +28,15 @@ import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.days
 
 internal actual class WorkSchedulerProviderImpl : WorkSchedulerProvider {
-    actual override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler = GlobalWorkSchedulerImpl(scope)
-    actual override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler = UserSessionWorkSchedulerImpl(scope)
+    override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler = GlobalWorkSchedulerImpl(scope)
+    override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler = UserSessionWorkSchedulerImpl(scope)
 }
 
 internal actual class GlobalWorkSchedulerImpl(
-    actual override val scope: GlobalKaliumScope
+    override val scope: GlobalKaliumScope
 ) : GlobalWorkScheduler {
 
-    actual override fun schedulePeriodicApiVersionUpdate() {
+    override fun schedulePeriodicApiVersionUpdate() {
         scope.launch {
             intervalFlow(1.days.inWholeMilliseconds).collect {
                 scope.updateApiVersionsWorker.doWork()
@@ -44,7 +44,7 @@ internal actual class GlobalWorkSchedulerImpl(
         }
     }
 
-    actual override fun scheduleImmediateApiVersionUpdate() {
+    override fun scheduleImmediateApiVersionUpdate() {
         runBlocking {
             scope.updateApiVersionsWorker.doWork()
         }
@@ -52,22 +52,22 @@ internal actual class GlobalWorkSchedulerImpl(
 }
 
 internal actual class UserSessionWorkSchedulerImpl(
-    actual override val scope: UserSessionScope
+    override val scope: UserSessionScope
 ) : UserSessionWorkScheduler {
 
-    actual override fun scheduleSendingOfPendingMessages() {
+    override fun scheduleSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Scheduling of messages is not supported on iOS. Pending messages won't be scheduled for sending."
         )
     }
 
-    actual override fun cancelScheduledSendingOfPendingMessages() {
+    override fun cancelScheduledSendingOfPendingMessages() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Cancelling scheduling of messages is not supported on iOS. Pending messages won't be scheduled for sending."
         )
     }
 
-    actual override fun schedulePeriodicUserConfigSync() {
+    override fun schedulePeriodicUserConfigSync() {
         scope.launch {
             intervalFlow(1.days.inWholeMilliseconds).collect {
                 scope.userConfigSyncWorker.doWork()
@@ -75,7 +75,7 @@ internal actual class UserSessionWorkSchedulerImpl(
         }
     }
 
-    actual override fun resetBackoffForPeriodicUserConfigSync() {
+    override fun resetBackoffForPeriodicUserConfigSync() {
         kaliumLogger.withFeatureId(SYNC).w(
             "Resetting backoff for user config sync is not supported on iOS as it doesn't have any backoff mechanism."
         )

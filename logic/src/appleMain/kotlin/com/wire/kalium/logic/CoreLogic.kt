@@ -48,13 +48,13 @@ actual class CoreLogic(
     kaliumConfigs = kaliumConfigs,
     userAgent = userAgent
 ) {
-    override val globalPreferences: GlobalPrefProvider =
+    actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
                 StorageData.InMemory
@@ -66,8 +66,8 @@ actual class CoreLogic(
         passphrase = null
     )
 
-    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
-    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
+    actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
+    actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
             rootPathsProvider,
@@ -83,17 +83,19 @@ actual class CoreLogic(
         )
     }
 
-    override fun getSessionScope(userId: UserId): UserSessionScope =
+    actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override suspend fun deleteSessionScope(userId: UserId) {
+    actual override suspend fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager = GlobalCallManager()
-    override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    actual override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = com.wire.kalium.logic.util.PlatformContext()
+    )
+    actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
+    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 
 }
 

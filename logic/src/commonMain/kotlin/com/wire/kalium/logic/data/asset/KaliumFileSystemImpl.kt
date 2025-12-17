@@ -25,7 +25,24 @@ import okio.Sink
 import okio.Source
 
 expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
-    KaliumFileSystem
+    KaliumFileSystem {
+    override val rootCachePath: Path
+    override val rootDBPath: Path
+    override fun sink(outputPath: Path, mustCreate: Boolean): Sink
+    override fun source(inputPath: Path): Source
+    override fun createDirectories(dir: Path)
+    override fun createDirectory(dir: Path, mustCreate: Boolean)
+    override fun delete(path: Path, mustExist: Boolean)
+    override fun deleteContents(dir: Path, mustExist: Boolean)
+    override fun exists(path: Path): Boolean
+    override fun copy(sourcePath: Path, targetPath: Path)
+    override fun tempFilePath(pathString: String?): Path
+    override fun providePersistentAssetPath(assetName: String): Path
+    override fun selfUserAvatarPath(): Path
+    override suspend fun readByteArray(inputPath: Path): ByteArray
+    override suspend fun writeData(outputSink: Sink, dataSource: Source): Long
+    override suspend fun listDirectories(dir: Path): List<Path>
+}
 
 @Suppress("TooManyFunctions")
 interface KaliumFileSystem {

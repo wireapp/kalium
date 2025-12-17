@@ -46,7 +46,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
 
-class GenerateEventsCommand : CliktCommand(name = "generate-events") {
+class GenerateEventsCommand : CliktCommand(
+    name = "generate-events",
+    help = "Generate synthetic encrypted events for testing message processing"
+) {
 
     private val userSession by requireObject<UserSessionScope>()
     private val targetUserId: String by option(help = "Target User which events will be generator for.").required()

@@ -26,5 +26,5 @@ interface RootDetector {
 }
 
 expect class RootDetectorImpl() : RootDetector {
-    override fun isSystemRooted(): Boolean
+    fun isSystemRooted(): Boolean
 }

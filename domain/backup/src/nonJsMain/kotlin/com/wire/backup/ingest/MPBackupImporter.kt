@@ -88,12 +88,12 @@ public actual class MPBackupImporter : CommonMPBackupImporter {
     private val archiveZipPath: Path
         get() = pathToWorkDirectory.toPath() / ZIP_FILE_NAME
 
-    override fun getUnencryptedArchiveSink(): Sink {
+    actual override fun getUnencryptedArchiveSink(): Sink {
         fileSystem.delete(archiveZipPath, mustExist = false)
         return fileSystem.sink(archiveZipPath)
     }
 
-    override suspend fun unzipAllEntries(): BackupPageStorage {
+    actual override suspend fun unzipAllEntries(): BackupPageStorage {
         val unzipPath = backupFileUnzipper.unzipBackup(archiveZipPath.toString())
         return FileBasedBackupPageStorage(fileSystem, unzipPath.toPath(), false)
     }

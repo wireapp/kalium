@@ -26,4 +26,8 @@ abstract class RootPathsProvider(val rootPath: String) {
     abstract fun rootMLSPath(userId: UserId): String
 }
 
-expect class PlatformRootPathsProvider(rootPath: String) : RootPathsProvider
+expect class PlatformRootPathsProvider(rootPath: String) : RootPathsProvider {
+    override fun rootAccountPath(userId: UserId): String
+    override fun rootProteusPath(userId: UserId): String
+    override fun rootMLSPath(userId: UserId): String
+}

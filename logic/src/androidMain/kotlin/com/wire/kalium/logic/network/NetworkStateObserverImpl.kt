@@ -165,7 +165,7 @@ internal actual class NetworkStateObserverImpl(
         }
     }
 
-    override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
+    actual override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
 
     private sealed class DefaultNetworkData {
         data object NotConnected : DefaultNetworkData()

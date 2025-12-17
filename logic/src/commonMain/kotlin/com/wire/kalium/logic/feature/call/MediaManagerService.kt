@@ -35,8 +35,8 @@ interface MediaManagerService {
 }
 
 expect class MediaManagerServiceImpl : MediaManagerService {
-    override suspend fun turnLoudSpeakerOn()
-    override suspend fun turnLoudSpeakerOff()
-    override fun observeSpeaker(): Flow<Boolean>
-    override suspend fun startMediaManager()
+    suspend fun turnLoudSpeakerOn()
+    suspend fun turnLoudSpeakerOff()
+    fun observeSpeaker(): Flow<Boolean>
+    suspend fun startMediaManager()
 }

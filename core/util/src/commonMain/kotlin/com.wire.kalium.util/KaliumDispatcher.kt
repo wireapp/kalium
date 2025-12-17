@@ -31,4 +31,9 @@ interface KaliumDispatcher {
     val io: CoroutineDispatcher
 }
 
-expect object KaliumDispatcherImpl : KaliumDispatcher
+expect object KaliumDispatcherImpl : KaliumDispatcher {
+    override val default: CoroutineDispatcher
+    override val main: CoroutineDispatcher
+    override val unconfined: CoroutineDispatcher
+    override val io: CoroutineDispatcher
+}
