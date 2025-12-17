@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.intervalFlow
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.UserSessionScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -51,7 +52,7 @@ internal actual class GlobalWorkSchedulerImpl(
     }
 }
 
-internal actual class UserSessionWorkSchedulerImpl(
+internal actual open class UserSessionWorkSchedulerImpl(
     actual override val scope: UserSessionScope
 ) : UserSessionWorkScheduler {
 
@@ -81,4 +82,9 @@ internal actual class UserSessionWorkSchedulerImpl(
         )
     }
 
+    actual override fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String) {
+        kaliumLogger.withFeatureId(SYNC).w(
+            "Scheduling of building normalized loudness is not supported on iOS. Audio normalized loudness building won't be scheduled."
+        )
+    }
 }

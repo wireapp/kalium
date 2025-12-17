@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
+package com.wire.kalium.logic.sync.receiver.asset
 
-import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.NetworkStateObserver
-import kotlinx.coroutines.flow.StateFlow
+import com.wire.kalium.logic.data.id.ConversationId
 
-internal expect class NetworkStateObserverImpl : NetworkStateObserver {
-    override fun observeNetworkState(): StateFlow<NetworkState>
+interface AudioNormalizedLoudnessScheduler {
+
+    /**
+     *  Schedules an execution of [AudioNormalizedLoudnessWorker], which attempts to build
+     *  a normalized loudness for a given audio message.
+     *  It's session scoped so the userId is implied from the scope.
+     *
+     *  **When** it's gonna to be executed may vary depending on the platform and/or implementation.
+     */
+    fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String)
 }
