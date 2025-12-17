@@ -300,10 +300,9 @@ internal class MessageInsertExtensionImpl(
                 protocol = content.protocol.name
             )
 
-            is MessageEntityContent.ConversationProtocolChangedDuringACall -> messagesQueries.insertConversationProtocolChangedDuringACall(
-                message_id = message.id,
-                conversation_id = message.conversationId
-            )
+            is MessageEntityContent.ConversationProtocolChangedDuringACall -> {
+                // No content table needed - message exists only in Message table
+            }
 
             is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
                 /* no-op */

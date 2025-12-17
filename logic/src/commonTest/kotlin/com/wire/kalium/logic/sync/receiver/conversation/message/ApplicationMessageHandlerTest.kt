@@ -44,6 +44,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -179,6 +180,40 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
+    fun givenMessageMultipartEdited_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        val messageId = "messageId"
+        val validMultipartEditedContent = MessageContent.MultipartEdited(
+            editMessageId = messageId,
+            newTextContent = "Edited text",
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            validMultipartEditedContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withMessageMultipartEditHandler()
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        coVerify {
+            arrangement.messageMultipartEditHandler.handle(any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenButtonActionConfirmationMessage_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
         val messageId = "messageId"
         val validImageContent = MessageContent.ButtonActionConfirmation(
@@ -296,6 +331,7 @@ class ApplicationMessageHandlerTest {
         private val callManager = mock(CallManager::class)
         val persistReactionsUseCase = mock(PersistReactionUseCase::class)
         val messageTextEditHandler = mock(MessageTextEditHandler::class)
+        val messageMultipartEditHandler = mock(MessageMultipartEditHandler::class)
         val lastReadContentHandler = mock(LastReadContentHandler::class)
         val clearConversationContentHandler = mock(ClearConversationContentHandler::class)
         val deleteForMeHandler = mock(DeleteForMeHandler::class)
@@ -316,6 +352,7 @@ class ApplicationMessageHandlerTest {
             persistMessage,
             persistReactionsUseCase,
             messageTextEditHandler,
+            messageMultipartEditHandler,
             lastReadContentHandler,
             clearConversationContentHandler,
             deleteForMeHandler,
@@ -364,6 +401,12 @@ class ApplicationMessageHandlerTest {
         suspend fun withMessageCompositeEditHandler() = apply {
             coEvery {
                 messageCompositeEditHandler.handle(any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withMessageMultipartEditHandler() = apply {
+            coEvery {
+                messageMultipartEditHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 

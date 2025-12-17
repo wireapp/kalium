@@ -157,14 +157,6 @@ CREATE TABLE MessageRecipientFailure (
       PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
 );
 
-CREATE TABLE MessageConversationProtocolChangedDuringACallContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
 CREATE TABLE MessageConversationLocationContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -330,10 +322,6 @@ VALUES(?, ?, ?, ?);
 insertMissedCallMessage:
 INSERT OR IGNORE INTO MessageMissedCallContent(message_id, conversation_id, caller_id)
 VALUES(?, ?, ?);
-
-insertConversationProtocolChangedDuringACall:
-INSERT OR IGNORE INTO MessageConversationProtocolChangedDuringACallContent(message_id, conversation_id)
-VALUES(?, ?);
 
 insertLocationMessageContent:
 INSERT OR IGNORE INTO MessageConversationLocationContent(message_id, conversation_id, latitude, longitude, name, zoom)

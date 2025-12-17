@@ -73,6 +73,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 
 @Suppress("TooManyFunctions")
 @Mockable
@@ -183,6 +184,13 @@ internal interface MessageRepository {
         messageId: String,
         conversationId: ConversationId,
         newMembers: List<UserId>,
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateMultipartMessage(
+        conversationId: ConversationId,
+        messageContent: MessageContent.MultipartEdited,
+        newMessageId: String,
+        editInstant: Instant
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetTransferStatus()
@@ -602,6 +610,26 @@ internal class MessageDataSource internal constructor(
         newMembers: List<UserId>,
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.updateLegalHoldMessageMembers(conversationId.toDao(), messageId, newMembers.map { it.toDao() })
+    }
+
+    override suspend fun updateMultipartMessage(
+        conversationId: ConversationId,
+        messageContent: MessageContent.MultipartEdited,
+        newMessageId: String,
+        editInstant: Instant
+    ): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            messageDAO.updateTextMessageContent(
+                editInstant = editInstant,
+                conversationId = conversationId.toDao(),
+                currentMessageId = messageContent.editMessageId,
+                newTextContent = MessageEntityContent.Text(
+                    messageBody = messageContent.newTextContent ?: "",
+                    mentions = messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
+                ),
+                newMessageId = newMessageId
+            )
+        }
     }
 
     override suspend fun resetAssetTransferStatus() {
