@@ -2185,6 +2185,7 @@ class UserSessionScope internal constructor(
             updateSelfClientCapabilityToConsumableNotifications,
             users.serverLinks,
             fetchConversationUseCase,
+            resetMlsConversation,
             cryptoTransactionProvider,
             userScopedLogger,
         )
