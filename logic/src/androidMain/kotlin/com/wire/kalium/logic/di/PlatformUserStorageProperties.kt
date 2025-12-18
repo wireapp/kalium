@@ -20,25 +20,30 @@ package com.wire.kalium.logic.di
 
 import android.content.Context
 import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.persistence.db.DatabaseStorageMode
 import com.wire.kalium.persistence.db.LiteSyncNodeType
 
+private const val DEFAULT_LITESYNC_URI = "tcp://localhost:1234"
+
 /**
- * Configuration for LiteSync database synchronization.
- *
- * @property syncUri The LiteSync server URI (e.g., "tcp://192.168.1.100:1234")
- * @property nodeType The node type: PRIMARY for the main node, SECONDARY for replicas
- * @property onReady Optional callback invoked when the database sync is ready
- * @property onSync Optional callback invoked when a sync event occurs
+ * Default LiteSync storage mode used when no explicit storage mode is specified.
  */
-data class LiteSyncConfiguration(
-    val syncUri: String,
-    val nodeType: LiteSyncNodeType = LiteSyncNodeType.SECONDARY,
-    val onReady: (() -> Unit)? = null,
-    val onSync: (() -> Unit)? = null
+val DefaultLiteSyncStorageMode = DatabaseStorageMode.LiteSync(
+    syncUri = DEFAULT_LITESYNC_URI,
+    nodeType = LiteSyncNodeType.SECONDARY
 )
 
 actual class PlatformUserStorageProperties internal constructor(
     val applicationContext: Context,
     internal val securityHelper: SecurityHelper,
-    val liteSyncConfiguration: LiteSyncConfiguration? = null
+    /**
+     * The storage mode for the user database.
+     * Defaults to [DefaultLiteSyncStorageMode] (LiteSync with localhost and SECONDARY node).
+     *
+     * Can be overridden with:
+     * - [DatabaseStorageMode.Encrypted] for SQLCipher encryption
+     * - [DatabaseStorageMode.Unencrypted] for standard SQLite
+     * - [DatabaseStorageMode.LiteSync] with custom configuration
+     */
+    val storageMode: DatabaseStorageMode = DefaultLiteSyncStorageMode
 )
