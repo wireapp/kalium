@@ -26,7 +26,12 @@ import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 internal actual class PlatformUserStorageProvider : UserStorageProvider() {
-    actual override fun create(userId: UserId, shouldEncryptData: Boolean, platformProperties: PlatformUserStorageProperties): UserStorage {
+    actual override fun create(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean
+    ): UserStorage {
         val userIdEntity = userId.toDao()
         val pref = UserPrefBuilder(userIdEntity, platformProperties.applicationContext, shouldEncryptData)
 
@@ -40,7 +45,8 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
             userId = userIdEntity,
             passphrase = databasePassphrase,
             dispatcher = KaliumDispatcherImpl.io,
-            enableWAL = true
+            enableWAL = true,
+            dbInvalidationControlEnabled = dbInvalidationControlEnabled
         )
         return UserStorage(database, pref)
     }
