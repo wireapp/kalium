@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.model.sync.SyncOperationRequest
 import com.wire.kalium.network.api.model.sync.SyncOperationResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -35,7 +36,7 @@ internal open class SyncApiV0 internal constructor(
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun uploadOperations(request: SyncOperationRequest): NetworkResponse<SyncOperationResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             val url = if (syncApiBaseUrl != null) {
                 // Use custom sync API base URL
                 "$syncApiBaseUrl/$PATH_SYNC/$PATH_OPERATIONS"
