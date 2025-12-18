@@ -411,6 +411,7 @@ import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
@@ -1126,6 +1127,10 @@ class UserSessionScope internal constructor(
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
         get() = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
+    @Deprecated("Use syncStateObserver instead", ReplaceWith("syncStateObserver"))
+    val syncManager: SyncManager
+        get() = syncStateObserver.value
+
     val syncStateObserver: Lazy<SyncStateObserver> = lazy {
         SyncStateObserverImpl(
             slowSyncRepository = slowSyncRepository,
@@ -1825,7 +1830,7 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             selfConversationIdProvider,
-            syncStateObserver.value,
+            syncManager,
             userScopedLogger
         )
 
@@ -2049,7 +2054,7 @@ class UserSessionScope internal constructor(
         )
 
     val observeSyncState: ObserveSyncStateUseCase
-        get() = ObserveSyncStateUseCaseImpl(syncStateObserver.value)
+        get() = ObserveSyncStateUseCaseImpl(syncManager)
 
     private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
         AvsSyncStateReporterImpl(
@@ -2132,7 +2137,7 @@ class UserSessionScope internal constructor(
             connectionRepository,
             userRepository,
             conversationFolderRepository,
-            syncStateObserver.value,
+            syncManager,
             mlsConversationRepository,
             clientIdProvider,
             messages.messageSender,
@@ -2188,7 +2193,7 @@ class UserSessionScope internal constructor(
             userId,
             assetRepository,
             eventRepository,
-            syncStateObserver.value,
+            syncManager,
             slowSyncRepository,
             messageSendingScheduler,
             selfConversationIdProvider,
@@ -2225,7 +2230,7 @@ class UserSessionScope internal constructor(
             assetRepository,
             reactionRepository,
             receiptRepository,
-            syncStateObserver.value,
+            syncManager,
             slowSyncRepository,
             messageSendingScheduler,
             audioNormalizedLoudnessScheduler,
@@ -2259,7 +2264,7 @@ class UserSessionScope internal constructor(
             userRepository,
             userConfigRepository,
             accountRepository,
-            syncStateObserver.value,
+            syncManager,
             assetRepository,
             teamRepository,
             globalScope.sessionRepository,
