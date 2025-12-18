@@ -55,7 +55,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -360,19 +359,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @IgnoreIOS
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest(dispatcher) {
         val convStored = conversationEntity1.copy(
-            lastNotificationDate = "2022-04-30T15:36:00.000Z".toInstant(),
-            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastNotificationDate = Instant.parse("2022-04-30T15:36:00.000Z"),
+            lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
             name = "old name"
         )
         val convAfterSync = conversationEntity1.copy(
-            lastNotificationDate = "2023-04-30T15:36:00.000Z".toInstant(),
-            lastModifiedDate = "2023-03-30T15:36:00.000Z".toInstant(),
+            lastNotificationDate = Instant.parse("2023-04-30T15:36:00.000Z"),
+            lastModifiedDate = Instant.parse("2023-03-30T15:36:00.000Z"),
             name = "new name"
         )
 
         val expected = convAfterSync.copy(
-            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-            lastNotificationDate = "2022-04-30T15:36:00.000Z".toInstant()
+            lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+            lastNotificationDate = Instant.parse("2022-04-30T15:36:00.000Z")
         )
         conversationDAO.insertConversation(convStored)
         insertTeamUserAndMember(team, user1, convStored.id)
@@ -459,29 +458,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("1", "someDomain"),
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
-                lastModified = "2000-01-01T12:30:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
+                lastModified = Instant.parse("2000-01-01T12:30:00.000Z")
             )
         )
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("2", "someDomain"),
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
-                lastModified = "2000-01-01T12:30:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
+                lastModified = Instant.parse("2000-01-01T12:30:00.000Z")
             )
         )
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
-                lastModified = "2000-01-01T12:30:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
+                lastModified = Instant.parse("2000-01-01T12:30:00.000Z")
             )
         )
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = QualifiedIDEntity("3", "someDomain"),
-                lastReadDate = "2000-01-01T12:30:00.000Z".toInstant(),
-                lastModified = "2000-01-01T12:00:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:30:00.000Z"),
+                lastModified = Instant.parse("2000-01-01T12:00:00.000Z")
             )
         )
 
@@ -1163,7 +1162,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = null,
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
         )
 
         val conversation2 = conversationEntity2.copy(
@@ -1171,7 +1170,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = "name",
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
         )
         conversationDAO.insertConversation(conversation1)
         conversationDAO.insertConversation(conversation2)
@@ -1198,7 +1197,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = null,
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
             archived = true
         )
 
@@ -1207,7 +1206,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = "name",
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
             archived = false
         )
         conversationDAO.insertConversation(conversation1)
@@ -1236,8 +1235,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = null,
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2021-03-30T15:36:00.000Z"),
             archived = true
         )
 
@@ -1246,8 +1245,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = "name",
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2021-03-30T15:36:00.000Z"),
             archived = false
         )
 
@@ -3022,8 +3021,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -3049,8 +3048,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = mlsProtocolInfo1,
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -3077,9 +3076,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = mlsProtocolInfo2,
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
-            lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastNotificationDate = Instant.parse("2021-03-30T15:30:00.000Z"),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -3113,9 +3112,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
-            lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastNotificationDate = Instant.parse("2021-03-30T15:30:00.000Z"),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
@@ -3142,8 +3141,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -3175,9 +3174,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
-            lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
-            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastNotificationDate = Instant.parse("2021-03-30T15:30:00.000Z"),
+            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),

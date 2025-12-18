@@ -43,7 +43,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -430,7 +429,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 // date after
-                date = "2022-03-30T15:37:00.000Z".toInstant(),
+                date = Instant.parse("2022-03-30T15:37:00.000Z"),
                 senderName = userEntity1.name!!,
                 sender = userDetailsEntity1
             )
@@ -443,7 +442,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 // date before
-                date = "2022-03-30T15:35:00.000Z".toInstant(),
+                date = Instant.parse("2022-03-30T15:35:00.000Z"),
                 senderName = userEntity1.name!!,
                 sender = userDetailsEntity1
             )
@@ -462,7 +461,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -472,7 +471,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.Asset(
@@ -521,7 +520,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // only valid asset
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.Asset(
@@ -541,7 +540,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // asset with different mime type
                 newRegularMessageEntity(
                     id = messageId + "1",
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.Asset(
@@ -561,7 +560,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // ephemeral message asset
                 newRegularMessageEntity(
                     id = messageId + "2",
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     expireAfterMs = 2000,
@@ -582,7 +581,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // asset with null or 0 width/height
                 newRegularMessageEntity(
                     id = messageId + "3",
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     expireAfterMs = 2000,
@@ -629,7 +628,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -639,7 +638,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newSystemMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.MissedCall
@@ -663,7 +662,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -674,7 +673,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             repeat(9) {
                 add(
                     newRegularMessageEntity(
-                        id = it.toString(), date = "2000-01-01T11:0$it:00.000Z".toInstant(),
+                        id = it.toString(), date = Instant.parse("2000-01-01T11:0$it:00.000Z"),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -699,7 +698,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -713,7 +712,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "read$it",
-                        date = "2000-01-01T11:0$it:00.000Z".toInstant(),
+                        date = Instant.parse("2000-01-01T11:0$it:00.000Z"),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -724,7 +723,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "unread$it",
-                        date = "2000-01-01T13:0$it:00.000Z".toInstant(),
+                        date = Instant.parse("2000-01-01T13:0$it:00.000Z"),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -749,7 +748,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -763,7 +762,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "read$it",
-                        date = "2000-01-01T11:0$it:00.000Z".toInstant(),
+                        date = Instant.parse("2000-01-01T11:0$it:00.000Z"),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -774,7 +773,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "unread$it",
-                        date = "2000-01-01T13:0$it:00.000Z".toInstant(),
+                        date = Instant.parse("2000-01-01T13:0$it:00.000Z"),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -801,7 +800,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -811,7 +810,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.Text("text")
@@ -834,7 +833,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
 
@@ -847,7 +846,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 add(
                     newRegularMessageEntity(
                         id = "unread$it",
-                        date = "2000-01-01T13:0$it:00.000Z".toInstant(),
+                        date = Instant.parse("2000-01-01T13:0$it:00.000Z"),
                         conversationId = conversationId,
                         senderUserId = userEntity1.id,
                     )
@@ -857,7 +856,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             add(
                 newRegularMessageEntity(
                     id = "unreadSelf",
-                    date = "2000-01-01T14:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T14:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = selfUserId,
                 )
@@ -1023,7 +1022,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newRegularMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     senderClientId = "someClient",
@@ -1031,7 +1030,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 ),
                 newRegularMessageEntity(
                     id = messageId2,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId2,
                     senderUserId = userEntity1.id,
                     senderClientId = "someClient",
@@ -1062,7 +1061,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
         val previewAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:00.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -1079,7 +1078,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         val finalAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:05.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:05.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -1096,7 +1095,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z")
             )
         )
         userDAO.upsertUser(userEntity1)
@@ -1123,7 +1122,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
         val previewAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:00.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -1140,7 +1139,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         val finalAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:05.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:05.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -1157,7 +1156,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z")
             )
         )
         userDAO.upsertUser(userEntity1)
@@ -1183,7 +1182,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
             val previewAssetMessage = newRegularMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationId,
                 senderUserId = userEntity1.id,
                 senderClientId = senderClientId,
@@ -1200,7 +1199,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
             val finalAssetMessage = newRegularMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:05.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:05.000Z"),
                 conversationId = conversationId,
                 senderUserId = userEntity2.id,
                 senderClientId = "impostorSenderClientId",
@@ -1217,7 +1216,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(
                 newConversationEntity(
                     id = conversationId,
-                    lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+                    lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z")
                 )
             )
             userDAO.upsertUser(userEntity1)
@@ -1262,7 +1261,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val initialAssetMessage = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:00.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderClientId = senderClientId,
@@ -1299,7 +1298,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z")
             )
         )
         userDAO.upsertUser(userEntity1)
@@ -1336,14 +1335,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
         userDAO.upsertUser(userEntity1)
 
         val message1 = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:00.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
@@ -1371,7 +1370,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
-                lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+                lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             )
         )
         userDAO.upsertUser(userEntity1)
@@ -1379,7 +1378,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val messageFromUser1 = newRegularMessageEntity(
             id = messageId,
-            date = "2000-01-01T13:00:00.000Z".toInstant(),
+            date = Instant.parse("2000-01-01T13:00:00.000Z"),
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
@@ -1496,7 +1495,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             listOf(
                 newSystemMessageEntity(
                     id = messageId,
-                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    date = Instant.parse("2000-01-01T13:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
                     content = MessageEntityContent.ConversationReceiptModeChanged(
@@ -1531,7 +1530,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.persistSystemMessageToAllConversations(
             newSystemMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationId1,
                 senderUserId = userEntity1.id,
                 content = MessageEntityContent.HistoryLost
@@ -1587,7 +1586,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.persistSystemMessageToAllConversations(
             newSystemMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = selfConversation,
                 senderUserId = userEntity1.id,
                 content = MessageEntityContent.HistoryLost
@@ -1698,7 +1697,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     senderUserId = userEntity1.id,
                     status = MessageEntity.Status.PENDING,
                     // date after
-                    date = "2022-03-30T15:37:00.000Z".toInstant(),
+                    date = Instant.parse("2022-03-30T15:37:00.000Z"),
                     senderName = userEntity1.name!!,
                     expectsReadConfirmation = true
                 )
@@ -1730,7 +1729,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO.upsertUsers(listOf(userEntity1) + usersReadTheMessage)
         conversationDAO.insertConversation(
             conversationEntity1.copy(
-                lastReadDate = "2022-03-30T15:40:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2022-03-30T15:40:00.000Z")
             )
         )
 
@@ -1741,7 +1740,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 // date before
-                date = "2022-03-30T15:38:00.000Z".toInstant(),
+                date = Instant.parse("2022-03-30T15:38:00.000Z"),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = false
             )
@@ -1774,7 +1773,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO.upsertUsers(listOf(userEntity1))
         conversationDAO.insertConversation(
             conversationEntity1.copy(
-                lastReadDate = "2022-03-30T15:40:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2022-03-30T15:40:00.000Z")
             )
         )
 
@@ -1785,7 +1784,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.DELIVERED,
                 // date before
-                date = "2022-03-30T15:38:00.000Z".toInstant(),
+                date = Instant.parse("2022-03-30T15:38:00.000Z"),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = false
             )
@@ -2273,7 +2272,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val messages = listOf(
             newRegularMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id,
                 expireAfterMs = 2000,
@@ -2293,7 +2292,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             ),
             newRegularMessageEntity(
                 id = message2Id,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id,
                 expireAfterMs = 2000,
@@ -2340,7 +2339,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val messages = listOf(
             newRegularMessageEntity(
                 id = messageId,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id,
                 expireAfterMs = 2000,
@@ -2360,7 +2359,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             ),
             newRegularMessageEntity(
                 id = message2Id,
-                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                date = Instant.parse("2000-01-01T13:00:00.000Z"),
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id,
                 expireAfterMs = 2000,
@@ -2652,7 +2651,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
             conversationEntity1.copy(
-                lastReadDate = "2022-03-30T15:40:00.000Z".toInstant()
+                lastReadDate = Instant.parse("2022-03-30T15:40:00.000Z")
             )
         )
         conversationDAO.insertConversation(conversationEntity2)
