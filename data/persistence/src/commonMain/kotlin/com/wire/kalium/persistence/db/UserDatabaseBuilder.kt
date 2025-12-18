@@ -102,7 +102,7 @@ value class UserDBSecret(val value: ByteArray)
 
 /**
  * Dispatcher for database read operations.
- * Limited to [MAX_READ_PARALLELISM] (3) concurrent reads to prevent SQLCipher
+ * Limited to [MAX_READ_PARALLELISM] (32) concurrent reads to prevent SQLCipher
  * connection pool exhaustion while maintaining good throughput.
  */
 @JvmInline
@@ -124,12 +124,14 @@ value class WriteDispatcher(val value: CoroutineDispatcher)
  * @param dispatcher The dispatcher used to perform database operations
  * @param enableWAL Whether to enable WAL mode for the database https://www.sqlite.org/wal.html
  **/
+@Suppress("LongParameterList")
 expect fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean = true
+    enableWAL: Boolean = true,
+    dbInvalidationControlEnabled: Boolean = false
 ): UserDatabaseBuilder
 
 internal expect fun userDatabaseDriverByPath(
@@ -146,6 +148,7 @@ class UserDatabaseBuilder internal constructor(
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
+    val dbInvalidationController: DbInvalidationController
 ) {
 
     internal val database: UserDatabase = UserDatabase(

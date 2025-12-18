@@ -22,12 +22,15 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.persistence.TestUserDatabase
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -140,6 +143,10 @@ class IncrementalSyncWorkerTest {
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
+        val database = TestUserDatabase(
+            userId = QualifiedID("value", "domain").toDao(),
+            dispatcher = TestKaliumDispatcher.default
+        )
 
         init {
             runBlocking {
@@ -167,7 +174,7 @@ class IncrementalSyncWorkerTest {
             block()
             withTransactionReturning(Either.Right(Unit))
             this to IncrementalSyncWorkerImpl(
-                eventGatherer, eventProcessor, cryptoTransactionProvider
+                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder
             )
         }
     }

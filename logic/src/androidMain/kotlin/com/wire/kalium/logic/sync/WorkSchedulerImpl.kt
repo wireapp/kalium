@@ -28,10 +28,12 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -78,7 +80,7 @@ internal actual class GlobalWorkSchedulerImpl(
     }
 }
 
-internal actual class UserSessionWorkSchedulerImpl(
+internal actual open class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
     actual override val scope: UserSessionScope,
 ) : UserSessionWorkScheduler {
@@ -119,6 +121,26 @@ internal actual class UserSessionWorkSchedulerImpl(
                         )
                     }
                 }
+        }
+    }
+
+    actual override fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String) {
+        scope.launch {
+            WorkManager.getInstance(appContext).enqueueUniqueWork(
+                "${AudioNormalizedLoudnessWorker.NAME}_${userId}_${conversationId}_$messageId",
+                ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequest.Builder(workerClass)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                    .setInputData(
+                        WrapperWorkerFactory.workData(
+                            work = AudioNormalizedLoudnessWorker::class,
+                            userId = userId,
+                            conversationId = conversationId,
+                            messageId = messageId
+                        )
+                    )
+                    .build()
+            )
         }
     }
 }

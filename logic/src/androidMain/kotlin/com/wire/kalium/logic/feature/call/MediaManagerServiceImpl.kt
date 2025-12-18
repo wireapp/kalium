@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onStart
 
-actual class MediaManagerServiceImpl(
+actual open class MediaManagerServiceImpl(
     platformContext: PlatformContext,
     scope: CoroutineScope,
     dispatchers: KaliumDispatcher = KaliumDispatcherImpl
