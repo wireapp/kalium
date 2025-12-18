@@ -27,21 +27,9 @@ import com.wire.kalium.common.functional.fold
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
  * @see GetNotificationsUseCase
  */
-@Suppress("konsist.classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke")
 class MarkMessagesAsNotifiedUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {
-
-    /**
-     * @param conversationId the specific conversation that needs to be marked as notified,
-     * or null for marking all notifications as notified.
-     */
-    @Deprecated("This will be removed in order to use a more explicit input", ReplaceWith("invoke(UpdateTarget)"))
-    suspend operator fun invoke(conversationId: ConversationId?): Result = if (conversationId == null) {
-        invoke(UpdateTarget.AllConversations)
-    } else {
-        invoke(UpdateTarget.SingleConversation(conversationId))
-    }
 
     /**
      * @param conversationsToUpdate which conversation(s) to be marked as notified.

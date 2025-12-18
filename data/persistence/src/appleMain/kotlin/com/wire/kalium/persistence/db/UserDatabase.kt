@@ -29,19 +29,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 
-sealed interface DatabaseCredentials {
-    data class Passphrase(val value: String) : DatabaseCredentials
-    data object NotSet : DatabaseCredentials
-}
-
+@Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder {
-    val driver = when (platformDatabaseData.storageData) {
+    val rawDriver = when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(
                 platformDatabaseData.storageData.storePath,
@@ -60,12 +57,23 @@ actual fun userDatabaseBuilder(
             }
     }
 
+    val invalidationController = DbInvalidationController(
+        enabled = dbInvalidationControlEnabled,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
     return UserDatabaseBuilder(
-        userId,
-        driver,
-        dispatcher,
-        platformDatabaseData,
-        passphrase != null
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = passphrase != null,
+        dbInvalidationController = invalidationController
     )
 }
 
@@ -81,21 +89,52 @@ actual fun userDatabaseDriverByPath(
     )
 }
 
+/**
+ * Creates an in-memory user database,
+ * or returns an existing one if it already exists.
+ *
+ * @param userId The ID of the user for whom the database is created.
+ * @param dispatcher The coroutine dispatcher to be used for executing database operations.
+ * @return The user database builder.
+ */
 fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
-): UserDatabaseBuilder {
-    val driver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
+    val rawDriver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
         isWALEnabled = false
     }
 
-    return UserDatabaseBuilder(
+    val invalidationController = DbInvalidationController(
+        enabled = false,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
+    UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
         PlatformDatabaseData(StorageData.InMemory),
-        false
+        false,
+        invalidationController
     )
+}
+
+/**
+ * Clears the in-memory database for the given user.
+ * This closes the database connection and removes it from the cache,
+ * causing SQLite to delete the shared in-memory database.
+ *
+ * @param userId The ID of the user whose database should be cleared.
+ * @return `true` if the database was cleared, `false` if it didn't exist.
+ */
+fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
+    return InMemoryDatabaseCache.clearEntry(userId)
 }
 
 internal actual fun nuke(
@@ -104,7 +143,7 @@ internal actual fun nuke(
 ): Boolean {
     return when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData.storePath, null)
-        is StorageData.InMemory -> false
+        is StorageData.InMemory -> clearInMemoryDatabase(userId)
     }
 }
 

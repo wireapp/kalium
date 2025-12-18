@@ -26,6 +26,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -64,6 +66,8 @@ class GetMessageAssetUseCaseTest {
         conversationId: ConversationId = ConversationId("some-conversation-id", "some-domain.com"),
         messageId: String = "some-message-id",
         encryptedPath: Path = "output_encrypted_path".toPath(),
+        assetMetadata: AssetContent.AssetMetadata? = AssetContent.AssetMetadata.Image(width = 100, height = 100),
+        justDownloaded: Boolean = true
     ): Arrangement {
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
@@ -73,7 +77,7 @@ class GetMessageAssetUseCaseTest {
         val encryptedDataSink = fakeFileSystem.sink(encryptedPath)
         encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
         return Arrangement()
-            .withSuccessfulFlow(conversationId, messageId, encryptedPath, randomAES256Key)
+            .withSuccessfulFlow(conversationId, messageId, encryptedPath, randomAES256Key, assetMetadata, justDownloaded)
     }
 
     @Test
@@ -279,6 +283,55 @@ class GetMessageAssetUseCaseTest {
         }.wasNotInvoked()
     }
 
+    private fun testBuildingAudioNormalizedLoudness(
+        metadata: AssetContent.AssetMetadata?,
+        justDownloaded: Boolean,
+        shouldScheduleBuilding: Boolean
+    ) = runTest(testDispatcher.default) {
+        // Given
+        val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+        val someMessageId = "some-message-id"
+        val (arrangement, getMessageAsset) =
+            getSuccessfulFlowArrangement(someConversationId, someMessageId, assetMetadata = metadata, justDownloaded = justDownloaded)
+                .withFetchDecodedAsset(Either.Left(StorageFailure.DataNotFound))
+                .arrange()
+        // When
+        getMessageAsset(someConversationId, someMessageId).await()
+        // Then
+        assertEquals(if (shouldScheduleBuilding) 1 else 0, arrangement.audioNormalizedLoudnessSchedulerCount)
+    }
+
+    @Test
+    fun givenNonAudioAsset_whenGetting_thenDoNotScheduleBuildingNormalizedLoudness() = testBuildingAudioNormalizedLoudness(
+        metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),
+        justDownloaded = true,
+        shouldScheduleBuilding = false
+    )
+
+    @Test
+    fun givenNewlyDownloadedAudioAssetWithNormalizedLoudness_whenGetting_thenDoNotScheduleBuildingNormalizedLoudness() =
+        testBuildingAudioNormalizedLoudness(
+            metadata = AssetContent.AssetMetadata.Audio(durationMs = 3000, normalizedLoudness = byteArrayOf(1, 2, 3)),
+            justDownloaded = true,
+            shouldScheduleBuilding = false
+        )
+
+    @Test
+    fun givenNewlyDownloadedAudioAssetWithoutNormalizedLoudness_whenGetting_thenScheduleBuildingNormalizedLoudness() =
+        testBuildingAudioNormalizedLoudness(
+            metadata = AssetContent.AssetMetadata.Audio(durationMs = 3000, normalizedLoudness = null),
+            justDownloaded = true,
+            shouldScheduleBuilding = true
+        )
+
+    @Test
+    fun givenAlreadyDownloadedAudioAssetWithoutNormalizedLoudness_whenGetting_thenDoNotScheduleBuildingNormalizedLoudness() =
+        testBuildingAudioNormalizedLoudness(
+            metadata = AssetContent.AssetMetadata.Audio(durationMs = 3000, normalizedLoudness = null),
+            justDownloaded = false,
+            shouldScheduleBuilding = false
+        )
+
     private class Arrangement {
                 val messageRepository = mock(MessageRepository::class)
         val userRepository = mock(UserRepository::class)
@@ -287,9 +340,17 @@ class GetMessageAssetUseCaseTest {
 
         private val testScope = TestScope(testDispatcher.default)
 
+        var audioNormalizedLoudnessSchedulerCount = 0
+        val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler = object : AudioNormalizedLoudnessScheduler {
+            override fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String) {
+                audioNormalizedLoudnessSchedulerCount++
+            }
+        }
+
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
         private var encryptionKey = AES256Key(ByteArray(1))
+        private var metadata: AssetContent.AssetMetadata? = AssetContent.AssetMetadata.Image(width = 100, height = 100)
 
         val userId = UserId("some-user", "some-domain.com")
         val clientId = ClientId("some-client-id")
@@ -300,8 +361,13 @@ class GetMessageAssetUseCaseTest {
             AssetContent(
                 sizeInBytes = 1000,
                 name = "some_asset.jpg",
-                mimeType = "image/jpeg",
-                metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),
+                mimeType = when (metadata) {
+                    is AssetContent.AssetMetadata.Image -> "image/png"
+                    is AssetContent.AssetMetadata.Video -> "video/mp4"
+                    is AssetContent.AssetMetadata.Audio -> "audio/mpeg"
+                    else -> "application/octet-stream"
+                },
+                metadata = metadata,
                 remoteData = AssetContent.RemoteData(
                     otrKey = encryptionKey.data,
                     sha256 = ByteArray(16),
@@ -326,21 +392,28 @@ class GetMessageAssetUseCaseTest {
             )
         }
 
-        val getMessageAssetUseCase =
-            GetMessageAssetUseCaseImpl(
-                assetDataSource, messageRepository, userRepository,
-                updateAssetMessageTransferStatus, testScope, testDispatcher
-            )
+        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(
+            assetRepository = assetDataSource,
+            messageRepository = messageRepository,
+            userRepository = userRepository,
+            updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
+            audioNormalizedLoudnessScheduler = audioNormalizedLoudnessScheduler,
+            scope = testScope,
+            dispatcher = testDispatcher
+        )
 
         suspend fun withSuccessfulFlow(
             conversationId: ConversationId,
             messageId: String,
             encodedPath: Path,
-            secretKey: AES256Key
+            secretKey: AES256Key,
+            assetMetadata: AssetContent.AssetMetadata?,
+            justDownloaded: Boolean = true,
         ): Arrangement {
             convId = conversationId
             msgId = messageId
             encryptionKey = secretKey
+            metadata = assetMetadata
             coEvery {
                 messageRepository.getMessageById(any(), any())
             }.returns(Either.Right(mockedImageMessage.copy(content = MessageContent.Asset(mockedImageContent))))
@@ -355,7 +428,7 @@ class GetMessageAssetUseCaseTest {
                     any(),
                     any()
                 )
-            }.returns(Either.Right(encodedPath))
+            }.returns(Either.Right(FetchedAssetData(encodedPath, justDownloaded)))
             coEvery {
                 updateAssetMessageTransferStatus.invoke(any(), matches { it == conversationId }, matches { it == messageId })
             }.returns(UpdateTransferStatusResult.Success)

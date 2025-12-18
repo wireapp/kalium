@@ -45,19 +45,19 @@ import kotlinx.coroutines.cancel
  * This class is only for platform specific variables,
  * and it should only override functions/variables from CoreLogicCommon
  */
-public actual class CoreLogic(
+actual class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
 
-    override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
+    actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
         appContext,
         kaliumConfigs.shouldEncryptData
     )
 
-    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(appContext),
         queriesContext = KaliumDispatcherImpl.io,
         passphrase = if (kaliumConfigs.shouldEncryptData) {
@@ -68,23 +68,28 @@ public actual class CoreLogic(
         enableWAL = true
     )
 
-    override fun getSessionScope(userId: UserId): UserSessionScope =
+    actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override val globalCallManager: GlobalCallManager by lazy {
+    actual override suspend fun deleteSessionScope(userId: UserId) {
+        userSessionScopeProvider.value.get(userId)?.cancel()
+        userSessionScopeProvider.value.delete(userId)
+    }
+
+    actual override val globalCallManager: GlobalCallManager by lazy {
         GlobalCallManager(
             appContext = PlatformContext(appContext),
             scope = getGlobalScope()
         )
     }
 
-    override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl(appContext)
+    actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl(appContext)
 
-    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
+    actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
         appContext = appContext
     )
 
-    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
+    actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
             rootPathsProvider,
@@ -101,11 +106,11 @@ public actual class CoreLogic(
         )
     }
 
-    override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
+    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
         dispatcher = KaliumDispatcherImpl.io,
         audioEffect = AudioEffect(appContext),
     )
 }
 
 @Suppress("MayBeConst")
-internal actual val clientPlatform: String = "android"
+actual val clientPlatform: String = "android"

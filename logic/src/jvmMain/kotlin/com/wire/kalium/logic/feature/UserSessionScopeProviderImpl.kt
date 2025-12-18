@@ -39,7 +39,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import java.io.File
 
 @Suppress("LongParameterList")
-internal actual class UserSessionScopeProviderImpl(
+internal actual open class UserSessionScopeProviderImpl(
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val rootPathsProvider: RootPathsProvider,
     private val globalScope: GlobalKaliumScope,

@@ -18,103 +18,26 @@
 
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.auth.login.ProxyCredentials
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.di.PlatformRootPathsProvider
-import com.wire.kalium.logic.di.PlatformUserStorageProvider
-import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
-import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
-import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-public expect class CoreLogic : CoreLogicCommon
-
-public abstract class CoreLogicCommon internal constructor(
-    protected val rootPath: String,
-    protected val userAgent: String,
-    protected val kaliumConfigs: KaliumConfigs,
-    protected val idMapper: IdMapper = MapperProvider.idMapper()
-) {
-    protected abstract val globalPreferences: GlobalPrefProvider
-    protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
-    protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-    protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
-
-    internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    protected val authenticationScopeProvider: AuthenticationScopeProvider =
-        AuthenticationScopeProvider(userAgent)
-
-    private val globalKaliumScope by lazy {
-        GlobalKaliumScope(
-            userAgent,
-            globalDatabaseBuilder,
-            globalPreferences,
-            kaliumConfigs,
-            userSessionScopeProvider,
-            authenticationScopeProvider,
-            logoutCallbackManager,
-            workSchedulerProvider,
-            audioNormalizedLoudnessBuilder
-        )
-    }
-    public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
-
-    @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    public fun getAuthenticationScope(
-        serverConfig: ServerConfig,
-        proxyCredentials: ProxyCredentials?
-    ): AuthenticationScope =
-        authenticationScopeProvider.provide(
-            serverConfig,
-            proxyCredentials,
-            globalDatabaseBuilder,
-            kaliumConfigs
-        )
-
-    @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    public abstract fun getSessionScope(userId: UserId): UserSessionScope
-
-    // TODO: make globalScope a singleton
-    public inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
-
-    public inline fun <T> authenticationScope(
-        serverConfig: ServerConfig,
-        proxyCredentials: ProxyCredentials?,
-        action: AuthenticationScope.() -> T
-    ): T =
-        getAuthenticationScope(serverConfig, proxyCredentials).action()
-
-    public inline fun <T> sessionScope(
-        userId: UserId,
-        action: UserSessionScope.() -> T
-    ): T = getSessionScope(userId).action()
-
-    protected abstract val globalCallManager: GlobalCallManager
-
-    protected abstract val workSchedulerProvider: WorkSchedulerProvider
-
-    public fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
-        AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
-
-    public abstract val networkStateObserver: NetworkStateObserver
-
-    internal val logoutCallbackManager = LogoutCallbackManagerImpl()
-
-    public abstract val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+expect class CoreLogic : CoreLogicCommon {
+    override val globalPreferences: GlobalPrefProvider
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder
+    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    override fun getSessionScope(userId: UserId): UserSessionScope
+    override suspend fun deleteSessionScope(userId: UserId)
+    override val globalCallManager: GlobalCallManager
+    override val workSchedulerProvider: WorkSchedulerProvider
+    override val networkStateObserver: NetworkStateObserver
+    override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 }
 
-internal expect val clientPlatform: String
+expect val clientPlatform: String
