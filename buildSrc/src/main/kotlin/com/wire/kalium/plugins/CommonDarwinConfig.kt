@@ -21,6 +21,7 @@ package com.wire.kalium.plugins
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 
 fun Project.appleTargets(): List<String> =
     listOf(
@@ -37,5 +38,12 @@ fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
     targets
         .filterIsInstance<KotlinNativeTarget>()
         .flatMap { it.binaries }
-        .forEach { compilationUnit -> compilationUnit.linkerOpts("-lsqlite3") }
+        .forEach { compilationUnit ->
+            compilationUnit.linkerOpts("-lsqlite3")
+            // Configure Stop-The-World with Mark and Sweep GC for iOS Simulator ARM64 tests
+            // to work around test execution issues
+            if (compilationUnit is TestExecutable && compilationUnit.target.name == "iosSimulatorArm64") {
+                compilationUnit.binaryOptions["gc"] = "stwms"
+            }
+        }
 }

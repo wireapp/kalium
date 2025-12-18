@@ -46,12 +46,14 @@ class TeamDAOImpl(
 
     val mapper = TeamMapper()
 
-    override suspend fun insertTeam(team: TeamEntity) = withContext(writeDispatcher.value) {
-        queries.insertTeam(
-            id = team.id,
-            name = team.name,
-            icon = team.icon
-        )
+    override suspend fun insertTeam(team: TeamEntity) {
+        withContext(writeDispatcher.value) {
+            queries.insertTeam(
+                id = team.id,
+                name = team.name,
+                icon = team.icon
+            )
+        }
     }
 
     override suspend fun insertTeams(teams: List<TeamEntity>) = withContext(writeDispatcher.value) {
@@ -72,11 +74,13 @@ class TeamDAOImpl(
         .mapToOneOrNull()
         .map { it?.let { mapper.toModel(team = it) } }
 
-    override suspend fun updateTeam(team: TeamEntity) = withContext(writeDispatcher.value) {
-        queries.updateTeam(
-            id = team.id,
-            name = team.name,
-            icon = team.icon
-        )
+    override suspend fun updateTeam(team: TeamEntity) {
+        withContext(writeDispatcher.value) {
+            queries.updateTeam(
+                id = team.id,
+                name = team.name,
+                icon = team.icon
+            )
+        }
     }
 }

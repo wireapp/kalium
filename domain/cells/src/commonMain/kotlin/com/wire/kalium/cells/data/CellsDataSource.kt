@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.Pagination
 import com.wire.kalium.cells.domain.model.PreCheckResult
@@ -103,6 +104,7 @@ internal class CellsDataSource internal constructor(
                 )
             } else {
                 cellsApi.getNodesForPath(
+                    query = query,
                     path = path,
                     limit = limit,
                     offset = offset,
@@ -124,11 +126,12 @@ internal class CellsDataSource internal constructor(
     }
 
     override suspend fun getNodesByPath(
+        query: String,
         path: String,
         onlyFolders: Boolean
     ): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNodesForPath(path = path, onlyFolders = onlyFolders).mapSuccess { response ->
+            cellsApi.getNodesForPath(query = query, path = path, onlyFolders = onlyFolders).mapSuccess { response ->
                 response.nodes.map { it.toModel() }
             }
         }
@@ -295,5 +298,24 @@ internal class CellsDataSource internal constructor(
 
     override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?) = wrapApiRequest {
         cellsApi.setPublicLinkExpiration(linkUuid, expiresAt)
+    }
+
+    override suspend fun getNodeVersions(uuid: String): Either<NetworkFailure, List<NodeVersion>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.getNodeVersions(uuid = uuid).mapSuccess { collection -> collection.map { it.toModel() } }
+        }
+    }
+
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = wrapApiRequest {
+        cellsApi.getNodeEditorUrl(nodeUuid, urlKey)
+    }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String
+    ): Either<NetworkFailure, Unit> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.restoreNodeVersion(uuid, versionId)
+        }
     }
 }

@@ -23,9 +23,9 @@ AS SELECT
     User.deleted AS senderIsDeleted,
     SelfUser.id AS selfUserId,
     (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-    MemberChangeContent.member_change_list AS memberChangeList,
-    MemberChangeContent.member_change_type AS memberChangeType,
-    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
     Conversation.name AS conversationName,
     (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
     TextContent.is_quoting_self AS isQuotingSelfUser,
@@ -39,9 +39,8 @@ FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
-LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
 LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
-LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 

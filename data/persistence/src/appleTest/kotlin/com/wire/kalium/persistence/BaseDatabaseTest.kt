@@ -57,9 +57,17 @@ actual open class BaseDatabaseTest actual constructor() {
     actual fun createDatabase(
         userId: UserIDEntity,
         passphrase: UserDBSecret?,
-        enableWAL: Boolean
+        enableWAL: Boolean,
+        dbInvalidationControlEnabled: Boolean
     ): UserDatabaseBuilder {
-        return userDatabaseBuilder(platformDBData(userId), userId, null, dispatcher, false)
+        return userDatabaseBuilder(
+            platformDBData(userId),
+            userId,
+            null,
+            dispatcher,
+            false,
+            dbInvalidationControlEnabled
+        )
     }
 
     actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(storePath))

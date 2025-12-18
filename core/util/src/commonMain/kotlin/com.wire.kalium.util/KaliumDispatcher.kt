@@ -28,5 +28,3 @@ interface KaliumDispatcher {
     val unconfined: CoroutineDispatcher
     val io: CoroutineDispatcher
 }
-
-expect object KaliumDispatcherImpl : KaliumDispatcher

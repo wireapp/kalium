@@ -829,6 +829,45 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenASuccess_WhenSendingMultipartEditMessage_ThenUpdateMessageIdButDoNotUpdateCreationDate() {
+        // given
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withUpdateMultipartMessage()
+        }
+
+        val originalMessageId = "original_id"
+        val editedMessageId = "edited_id"
+        val content = MessageContent.MultipartEdited(originalMessageId, "", listOf())
+        val message = Message.Signaling(
+            id = editedMessageId,
+            content = content,
+            conversationId = Arrangement.TEST_CONVERSATION_ID,
+            date = TestMessage.TEST_DATE,
+            senderUserId = UserId("userValue", "userDomain"),
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.Pending,
+            isSelfMessage = false,
+            expirationData = null
+        )
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message = message)
+
+            // then
+            result.shouldSucceed()
+            coVerify {
+                arrangement.messageRepository.updateMultipartMessage(any(), eq(content), eq(editedMessageId), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), eq(editedMessageId), eq<Instant?>(null), any())
+            }.wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
     fun givenASuccess_WhenSendingRegularMessage_ThenDoNotUpdateMessageIdButUpdateCreationDateToServerDate() {
         // given
         val (arrangement, messageSender) = arrange {
@@ -1190,6 +1229,12 @@ class MessageSenderTest {
         suspend fun withUpdateTextMessage() = apply {
             coEvery {
                 messageRepository.updateTextMessage(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withUpdateMultipartMessage() = apply {
+            coEvery {
+                messageRepository.updateMultipartMessage(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 

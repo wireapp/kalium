@@ -162,4 +162,7 @@ public abstract class CommonMPBackupImporter internal constructor(
  * digestible data in [BackupData] format.
  * @sample samples.backup.BackupSample.commonImport
  */
-public expect class MPBackupImporter : CommonMPBackupImporter
+public expect class MPBackupImporter : CommonMPBackupImporter {
+    override fun getUnencryptedArchiveSink(): Sink
+    override suspend fun unzipAllEntries(): BackupPageStorage
+}

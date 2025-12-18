@@ -25,6 +25,8 @@ import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupMessageContent.Asset.EncryptionAlgorithm
 import com.wire.backup.data.BackupMetadata
 import com.wire.backup.data.BackupUser
+import com.wire.backup.data.BackupReaction
+import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.toLongMilliseconds
 import com.wire.backup.data.toModel
 import com.wire.backup.data.toProtoModel
@@ -36,9 +38,12 @@ import com.wire.kalium.protobuf.backup.ExportedEncryptionAlgorithm
 import com.wire.kalium.protobuf.backup.ExportedGenericMetaData
 import com.wire.kalium.protobuf.backup.ExportedImageMetaData
 import com.wire.kalium.protobuf.backup.ExportedLocation
+import com.wire.kalium.protobuf.backup.ExportedMention
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.protobuf.backup.ExportedMessage.Content
 import com.wire.kalium.protobuf.backup.ExportedText
+import com.wire.kalium.protobuf.backup.ExportedReaction
+import com.wire.kalium.protobuf.backup.EmojiReaction
 import com.wire.kalium.protobuf.backup.ExportedVideoMetaData
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.backup.BackupData as ProtoBackupData
@@ -112,8 +117,17 @@ internal class MPBackupMapper {
                     )
                 }
 
-                is BackupMessageContent.Text ->
-                    Content.Text(ExportedText(content.text))
+                is BackupMessageContent.Text -> {
+                    fun mapMention(mention: BackupMessageContent.Text.Mention): ExportedMention =
+                        ExportedMention(mention.start, mention.length, mention.userId.toProtoModel())
+                    Content.Text(
+                        ExportedText(
+                            content = content.text,
+                            mentions = content.mentions.map(::mapMention),
+                            quotedMessageId = content.quotedMessageId
+                        )
+                    )
+                }
 
                 is BackupMessageContent.Location -> Content.Location(
                     ExportedLocation(
@@ -135,6 +149,16 @@ internal class MPBackupMapper {
         lastModifiedTime = it.lastModifiedTime?.toLongMilliseconds(),
     )
 
+    fun mapReactionToProtobuf(it: BackupReaction): ExportedReaction = ExportedReaction(
+        messageId = it.messageId,
+        reactions = it.emojiReactions.map { er ->
+            EmojiReaction(
+                emoji = er.emoji,
+                users = er.users.map { userId -> userId.toProtoModel() }
+            )
+        }
+    )
+
     fun fromProtoToBackupModel(
         protobufData: ProtoBackupData
     ): BackupData = protobufData.run {
@@ -153,15 +177,41 @@ internal class MPBackupMapper {
             }.toTypedArray(),
             messages.map { message ->
                 fromMessageProtoToBackupModel(message)
+            }.toTypedArray(),
+            reactions = reactions.map { reaction ->
+                fromReactionProtoToBackupModel(reaction)
             }.toTypedArray()
         )
     }
+
+    private fun fromReactionProtoToBackupModel(reaction: ExportedReaction): BackupReaction =
+        BackupReaction(
+            messageId = reaction.messageId,
+            emojiReactions = reaction.reactions.map { emojiReaction ->
+                BackupEmojiReaction(
+                    emoji = emojiReaction.emoji,
+                    users = emojiReaction.users.map { it.toModel() }
+                )
+            }
+        )
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun fromMessageProtoToBackupModel(message: ExportedMessage): BackupMessage {
         val content = when (val protoContent = message.content) {
             is Content.Text -> {
-                BackupMessageContent.Text(protoContent.value.content)
+                fun mapMention(
+                    mention: ExportedMention
+                ): BackupMessageContent.Text.Mention = BackupMessageContent.Text.Mention(
+                    userId = mention.userId.toModel(),
+                    start = mention.start,
+                    length = mention.length
+                )
+
+                BackupMessageContent.Text(
+                    text = protoContent.value.content,
+                    mentions = protoContent.value.mentions.map(::mapMention),
+                    quotedMessageId = protoContent.value.quotedMessageId
+                )
             }
 
             is Content.Asset -> BackupMessageContent.Asset(

@@ -34,16 +34,18 @@ import java.io.File
 
 private const val DEFAULT_CACHE_SIZE = 20
 
+@Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
     val isEncryptionEnabled = passphrase != null
-    val driver = databaseDriver(
+    val rawDriver = databaseDriver(
         context = platformDatabaseData.context,
         dbName = dbName,
         passphrase = passphrase?.value,
@@ -51,12 +53,24 @@ actual fun userDatabaseBuilder(
     ) {
         isWALEnabled = enableWAL
     }
+
+    val invalidationController = DbInvalidationController(
+        enabled = dbInvalidationControlEnabled,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
     return UserDatabaseBuilder(
         userId = userId,
         sqlDriver = driver,
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
         isEncrypted = isEncryptionEnabled,
+        dbInvalidationController = invalidationController
     )
 }
 
@@ -84,18 +98,30 @@ fun inMemoryDatabase(
 ): UserDatabaseBuilder {
     val passphrase = "testPass".toByteArray()
     System.loadLibrary("sqlcipher")
-    val driver = AndroidSqliteDriver(
+    val rawDriver = AndroidSqliteDriver(
         schema = UserDatabase.Schema,
         context = context,
         name = null,
         factory = SupportOpenHelperFactory(passphrase)
     )
+
+    val invalidationController = DbInvalidationController(
+        enabled = false,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
     return UserDatabaseBuilder(
         userId = userId,
         sqlDriver = driver,
         dispatcher = dispatcher,
         platformDatabaseData = PlatformDatabaseData(context = context),
-        true
+        true,
+        invalidationController
     )
 }
 

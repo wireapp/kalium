@@ -196,6 +196,10 @@ sealed interface Message {
                     typeKey to "textEdit"
                 )
 
+                is MessageContent.MultipartEdited -> mutableMapOf(
+                    typeKey to "multipartEdit"
+                )
+
                 is MessageContent.Calling -> mutableMapOf(
                     typeKey to "calling"
                 )

@@ -19,7 +19,9 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
+import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
+import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -44,6 +46,7 @@ import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdate
 import com.wire.kalium.cells.sdk.kmp.model.RestMetaUpdateOp
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeLocator
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeUpdates
+import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.cells.sdk.kmp.model.RestPublicLinkRequest
 import com.wire.kalium.cells.sdk.kmp.model.RestShareLink
@@ -78,6 +81,11 @@ internal class CellsApiImpl(
             nodeServiceApi.getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
 
+    override suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String> =
+        wrapCellsResponse {
+            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
+        }.mapSuccess { response -> response.editorUrl(urlKey) ?: "" }
+
     override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val lookupTags = tags.map {
@@ -107,6 +115,7 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
 
     override suspend fun getNodesForPath(
+        query: String,
         path: String,
         limit: Int?,
         offset: Int?,
@@ -137,7 +146,11 @@ internal class CellsApiImpl(
                         } else {
                             TreeNodeType.UNKNOWN
                         },
-                        metadata = lookupTags
+                        metadata = lookupTags,
+                        text = LookupFilterTextSearch(
+                            searchIn = LookupFilterTextSearchIn.BaseName,
+                            term = query.ifEmpty { null }
+                        ),
                     ),
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
@@ -293,6 +306,7 @@ internal class CellsApiImpl(
                         link = link.copy(
                             accessEnd = expireAt?.toServerTime()?.toString()
                         ),
+                        passwordEnabled = link.passwordRequired,
                     )
                 )
             }
@@ -404,6 +418,30 @@ internal class CellsApiImpl(
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
         nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA)
     }.mapSuccess { it.propertyValues ?: emptyList() }
+
+    override suspend fun getNodeVersions(
+        uuid: String,
+        query: RestNodeVersionsFilter
+    ): NetworkResponse<List<NodeVersionDTO>> = wrapCellsResponse {
+        nodeServiceApi.nodeVersions(
+            uuid = uuid,
+            query = query
+        )
+    }.mapSuccess { collection ->
+        collection.versions?.map { it.toDto() } ?: emptyList()
+    }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters
+    ): NetworkResponse<Unit> = wrapCellsResponse {
+        nodeServiceApi.promoteVersion(
+            uuid = uuid,
+            versionId = versionId,
+            parameters = restPromoteParameters
+        )
+    }.mapSuccess {}
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))

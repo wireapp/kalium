@@ -26,12 +26,14 @@ import kotlinx.coroutines.CoroutineDispatcher
 
 actual class PlatformDatabaseData
 
+@Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder = TODO("Not yet implemented")
 
 actual fun userDatabaseDriverByPath(

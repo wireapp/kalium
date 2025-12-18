@@ -221,6 +221,7 @@ message MessageEdit {
     oneof content {
         Text text = 2;
         Composite composite = 3;
+        Multipart multipart = 4;
         // Reply can also be edited, but the edit will only affect the Text part
     }
 }

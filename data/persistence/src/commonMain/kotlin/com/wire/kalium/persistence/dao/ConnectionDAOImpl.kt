@@ -134,44 +134,51 @@ class ConnectionDAOImpl(
             .mapToList()
     }
 
-    override suspend fun insertConnection(connectionEntity: ConnectionEntity) = withContext(writeDispatcher.value) {
-        connectionsQueries.insertConnection(
-            from_id = connectionEntity.from,
-            conversation_id = connectionEntity.conversationId,
-            qualified_conversation = connectionEntity.qualifiedConversationId,
-            to_id = connectionEntity.toId,
-            last_update_date = connectionEntity.lastUpdateDate,
-            qualified_to = connectionEntity.qualifiedToId,
-            status = connectionEntity.status
-        )
+    override suspend fun insertConnection(connectionEntity: ConnectionEntity) {
+        withContext(writeDispatcher.value) {
+            connectionsQueries.insertConnection(
+                from_id = connectionEntity.from,
+                conversation_id = connectionEntity.conversationId,
+                qualified_conversation = connectionEntity.qualifiedConversationId,
+                to_id = connectionEntity.toId,
+                last_update_date = connectionEntity.lastUpdateDate,
+                qualified_to = connectionEntity.qualifiedToId,
+                status = connectionEntity.status
+            )
+        }
     }
 
-    override suspend fun insertConnections(users: List<ConnectionEntity>) = withContext(writeDispatcher.value) {
-        connectionsQueries.transaction {
-            for (connectionEntity: ConnectionEntity in users) {
-                connectionsQueries.insertConnection(
-                    from_id = connectionEntity.from,
-                    conversation_id = connectionEntity.conversationId,
-                    qualified_conversation = connectionEntity.qualifiedConversationId,
-                    to_id = connectionEntity.toId,
-                    last_update_date = connectionEntity.lastUpdateDate,
-                    qualified_to = connectionEntity.qualifiedToId,
-                    status = connectionEntity.status
-                )
+    override suspend fun insertConnections(users: List<ConnectionEntity>) {
+        withContext(writeDispatcher.value) {
+            connectionsQueries.transaction {
+                for (connectionEntity: ConnectionEntity in users) {
+                    connectionsQueries.insertConnection(
+                        from_id = connectionEntity.from,
+                        conversation_id = connectionEntity.conversationId,
+                        qualified_conversation = connectionEntity.qualifiedConversationId,
+                        to_id = connectionEntity.toId,
+                        last_update_date = connectionEntity.lastUpdateDate,
+                        qualified_to = connectionEntity.qualifiedToId,
+                        status = connectionEntity.status
+                    )
+                }
             }
         }
     }
 
-    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(writeDispatcher.value) {
-        connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
-    }
-
-    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        connectionsQueries.transaction {
-            connectionsQueries.deleteConnection(conversationId)
-            conversationsQueries.deleteConversation(conversationId)
+    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) {
+        withContext(writeDispatcher.value) {
+            connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
         }
     }
+
+    override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) =
+        withContext(writeDispatcher.value) {
+            connectionsQueries.transaction {
+                connectionsQueries.deleteConnection(conversationId)
+                conversationsQueries.deleteConversation(conversationId)
+            }
+        }
 
     override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
@@ -180,12 +187,16 @@ class ConnectionDAOImpl(
             .mapToList()
     }
 
-    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        connectionsQueries.updateNotificationFlag(flag, userId)
+    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            connectionsQueries.updateNotificationFlag(flag, userId)
+        }
     }
 
-    override suspend fun setAllConnectionsAsNotified() = withContext(writeDispatcher.value) {
-        connectionsQueries.setAllConnectionsAsNotified()
+    override suspend fun setAllConnectionsAsNotified() {
+        withContext(writeDispatcher.value) {
+            connectionsQueries.setAllConnectionsAsNotified()
+        }
     }
 
     override suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity? {

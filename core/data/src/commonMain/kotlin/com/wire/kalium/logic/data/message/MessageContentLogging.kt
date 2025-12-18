@@ -47,4 +47,5 @@ inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
     MessageContent.History.ClientsRequest -> "History.ClientsRequest"
     is MessageContent.History.ClientsResponse -> "History.ClientsResponse"
     is MessageContent.History.NewClientAvailable -> "History.NewClientAvailable"
+    is MessageContent.MultipartEdited -> "MultipartEdited"
 }

@@ -2838,6 +2838,161 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
     }
 
+    @Test
+    fun givenUnreadMessagesAndReadDateBeforeMessages_whenUpdateReadDateAndGetHasUnreadEvents_thenReturnsTrue() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val conversation = conversationEntity1
+
+        val messageDate = Clock.System.now()
+
+        val messages = buildList {
+            repeat(5) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(),
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        date = messageDate
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+
+        val readDate = messageDate - 1.days
+
+        // when
+        val hasUnread = conversationDAO.updateReadDateAndGetHasUnreadEvents(
+            conversationID = conversation.id,
+            date = readDate
+        )
+
+        // then
+        assertTrue(hasUnread)
+    }
+
+    @Test
+    fun givenUnreadMessagesAndReadDateAfterMessages_whenUpdateReadDateAndGetHasUnreadEvents_thenReturnsFalse() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val conversation = conversationEntity1
+
+        val messageDate = Clock.System.now()
+
+        val messages = buildList {
+            repeat(5) {
+                add(
+                    newRegularMessageEntity(
+                        id = it.toString(),
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        date = messageDate
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+        val readDate = messageDate + 1.days
+
+        // when
+        val hasUnread = conversationDAO.updateReadDateAndGetHasUnreadEvents(
+            conversationID = conversation.id,
+            date = readDate
+        )
+
+        // then
+        assertFalse(hasUnread)
+    }
+
+//     @Test
+//     fun givenMutedInvalidations_whenInsertingManyConversations_thenFlowDoesNotEmitUntilFlushAndThenEmitsOnce() =
+//         runTest(dispatcher) {
+//             // given
+//             val db = createDatabase(
+//                 userId = selfUserId,
+//                 passphrase = encryptedDBSecret,
+//                 enableWAL = true,
+//                 dbInvalidationControlEnabled = true
+//             )
+//             val conversationDAO = db.conversationDAO
+//             val userDAO = db.userDAO
+//             userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
+//
+//             conversationDAO.getAllConversations().test {
+//                 awaitItem()
+//
+//                 val job = launch {
+//                     db.dbInvalidationController.runMuted {
+//                         repeat(50) { i ->
+//                             conversationDAO.insertConversation(
+//                                 newConversationEntity(ConversationIDEntity("c$i", "domain"))
+//                             )
+//                         }
+//                     }
+//                 }
+//
+//                 yield()
+//                 expectNoEvents()
+//
+//                 job.join()
+//
+//                 val afterFlush = awaitItem()
+//                 assertEquals(50, afterFlush.size)
+//
+//                 withTimeout(200) { expectNoEvents() }
+//
+//                 cancelAndIgnoreRemainingEvents()
+//             }
+//         }
+
+//     @OptIn(ExperimentalCoroutinesApi::class)
+//     @Test
+//     fun givenMutedInvalidationsDisabled_whenInsertingManyConversations_thenFlowEmitsIntermediateStates() =
+//         runTest(dispatcher) {
+//             val db = createDatabase(
+//                 userId = selfUserId,
+//                 passphrase = encryptedDBSecret,
+//                 enableWAL = true,
+//                 dbInvalidationControlEnabled = false
+//             )
+//             val conversationDAO = db.conversationDAO
+//             val userDAO = db.userDAO
+//             userDAO.upsertUser(newUserEntity(UserIDEntity("user", "domain")))
+//
+//             val sizes = mutableListOf<Int>()
+//
+//             val job = backgroundScope.launch {
+//                 conversationDAO.getAllConversations().collect { sizes += it.size }
+//             }
+//
+//             runCurrent()
+//
+//             db.dbInvalidationController.runMuted {
+//                 repeat(50) { i ->
+//                     conversationDAO.insertConversation(newConversationEntity(ConversationIDEntity("c$i", "domain")))
+//                     runCurrent()
+//                 }
+//             }
+//
+//             runCurrent()
+//             job.cancel()
+//
+//             assertTrue(
+//                 sizes.size > 2,
+//                 "Expected intermediate emissions when invalidation control is disabled. Got sizes=$sizes"
+//             )
+//
+//             assertTrue(
+//                 sizes.last() >= 45,
+//                 "Expected final emission to include almost all inserts. Got ${sizes.last()}"
+//             )
+//         }
+
     private companion object {
         const val teamId = "teamId"
         val messageTimer = 5000L

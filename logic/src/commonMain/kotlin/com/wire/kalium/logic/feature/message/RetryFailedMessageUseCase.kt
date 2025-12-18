@@ -210,7 +210,7 @@ class RetryFailedMessageUseCase internal constructor(
                 mimeType = mimeType,
                 downloadIfNeeded = false
             )
-                .flatMap { assetDataPath ->
+                .flatMap { (assetDataPath, _) ->
                     assetRepository.uploadAndPersistPrivateAsset(
                         mimeType = mimeType,
                         assetDataPath = assetDataPath,

@@ -51,6 +51,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.wire.kalium.cells.domain.model.NodeVersion
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NodeUploadManagerTest {
@@ -306,7 +307,7 @@ private class TestRepository : CellsRepository {
         pagination = null
     ).right()
 
-    override suspend fun getNodesByPath(path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
+    override suspend fun getNodesByPath(query: String, path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
         TODO("Not yet implemented")
     }
 
@@ -363,4 +364,10 @@ private class TestRepository : CellsRepository {
     override suspend fun savePublicLinkPassword(linkUuid: String, password: String) {}
     override suspend fun clearPublicLinkPassword(linkUuid: String) {}
     override suspend fun setPublicLinkExpiration(linkUuid: String, expiresAt: Long?) = Unit.right()
+    override suspend fun getNodeVersions(uuid: String) = listOf<NodeVersion>().right()
+    override suspend fun getEditorUrl(nodeUuid: String, urlKey: String) = "".right()
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String
+    ): Either<NetworkFailure, Unit> = Unit.right()
 }

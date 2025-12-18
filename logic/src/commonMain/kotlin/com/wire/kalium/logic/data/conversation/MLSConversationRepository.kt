@@ -70,7 +70,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -83,6 +82,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -481,7 +481,7 @@ internal class MLSConversationDataSource(
                 }
             }.flatMap { result ->
                 val keyPackages = result.successfullyFetchedKeyPackages
-                val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
+                val clientKeyPackageList = keyPackages.map { Base64.decode(it.keyPackage) }
                 wrapMLSRequest {
                     if (clientKeyPackageList.isEmpty()) {
                         // We are creating a group with only our self client which technically

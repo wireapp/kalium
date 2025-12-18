@@ -214,6 +214,13 @@ sealed interface MessageContent {
         val newButtonList: List<Button> = listOf()
     ) : Signaling
 
+    data class MultipartEdited(
+        val editMessageId: String,
+        val newTextContent: String? = null,
+        val newMentions: List<MessageMention> = listOf(),
+        val newAttachments: List<MessageAttachment> = emptyList(),
+    ) : Signaling
+
     data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Composite(
@@ -504,6 +511,7 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.NewConversationWithCellMessage -> "NewConversationWithCell"
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> "NewConversationWithCellSelfDeleteDisabled"
     is MessageContent.ConversationAppsEnabledChanged -> "ConversationAppsEnabledChanged"
+    is MessageContent.MultipartEdited -> "MultipartEdited"
 }
 
 sealed interface MessagePreviewContent {

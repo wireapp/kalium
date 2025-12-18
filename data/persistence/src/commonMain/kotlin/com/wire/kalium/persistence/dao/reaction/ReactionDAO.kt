@@ -99,14 +99,16 @@ class ReactionDAOImpl(
         senderUserId: UserIDEntity,
         instant: Instant,
         emoji: String
-    ) = withContext(writeDispatcher.value) {
-        reactionsQueries.insertReaction(
-            message_id = originalMessageId,
-            conversation_id = conversationId,
-            sender_id = senderUserId,
-            emoji = emoji,
-            date = instant.toIsoDateTimeString()
-        )
+    ) {
+        withContext(writeDispatcher.value) {
+            reactionsQueries.insertReaction(
+                message_id = originalMessageId,
+                conversation_id = conversationId,
+                sender_id = senderUserId,
+                emoji = emoji,
+                date = instant.toIsoDateTimeString()
+            )
+        }
     }
 
     override suspend fun deleteReaction(
@@ -114,8 +116,10 @@ class ReactionDAOImpl(
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
         emoji: String
-    ) = withContext(writeDispatcher.value) {
-        reactionsQueries.deleteReaction(originalMessageId, conversationId, senderUserId, emoji)
+    ) {
+        withContext(writeDispatcher.value) {
+            reactionsQueries.deleteReaction(originalMessageId, conversationId, senderUserId, emoji)
+        }
     }
 
     override suspend fun getReaction(
