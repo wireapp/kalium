@@ -126,7 +126,7 @@ class CallManagerImpl internal constructor(
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
-
+    private val tagWithUserId = "$TAG(${selfUserId.toLogString()})"
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
@@ -149,17 +149,17 @@ class CallManagerImpl internal constructor(
         currentClientIdProvider().fold({
             TODO("adjust correct variable calling")
         }, {
-            callingLogger.d("$TAG - clientId $it")
+            callingLogger.d("$tagWithUserId: clientId: $it")
             it
         })
     }
 
     private val initializeServerTimeOffsetJob: Deferred<Unit> = scope.async(start = CoroutineStart.LAZY) {
         callRepository.fetchServerTime()?.let { serverTime ->
-            callingLogger.d("$TAG - Computing server time offset: $serverTime")
+            callingLogger.d("$tagWithUserId: Computing server time offset: $serverTime")
             serverTimeHandler.computeTimeOffset(serverTime.toInstant().epochSeconds)
         } ?: run {
-            callingLogger.w("$TAG: Failed to fetch server time for offset computation.")
+            callingLogger.w("$tagWithUserId: Failed to fetch server time for offset computation.")
         }
     }
 
@@ -171,14 +171,14 @@ class CallManagerImpl internal constructor(
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
-        callingLogger.i("Calling metrics: $metricsJson")
+        callingLogger.i("$tagWithUserId: Calling metrics: $metricsJson")
     }.keepingStrongReference()
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val constantBitRateStateChangeHandler =
         ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
             callingLogger.i(
-                "$TAG -> constantBitRateStateChangeHandler for userId: ${userId.obfuscateId()} " +
+                "$tagWithUserId: constantBitRateStateChangeHandler for userId: ${userId.obfuscateId()} " +
                         "clientId: ${clientId.obfuscateId()}  isCbrEnabled: $isEnabled"
             )
             runBlocking { callRepository.updateIsCbrEnabled(isEnabled) }
@@ -187,15 +187,15 @@ class CallManagerImpl internal constructor(
     private fun startHandleAsync(): Deferred<Handle> {
         return scope.async(start = CoroutineStart.LAZY) {
             val mediaManagerStartJob = launch {
-                callingLogger.i("$TAG: Starting MediaManager")
+                callingLogger.i("$tagWithUserId: Starting MediaManager")
                 mediaManagerService.startMediaManager()
             }
             val flowManagerStartJob = launch {
-                callingLogger.i("$TAG: Starting FlowManager")
+                callingLogger.i("$tagWithUserId: Starting FlowManager")
                 flowManagerService.startFlowManager()
             }
             joinAll(flowManagerStartJob, mediaManagerStartJob)
-            callingLogger.i("$TAG: Creating Handle")
+            callingLogger.i("$tagWithUserId: Creating Handle")
             val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
             val selfClientId = clientId.await().value
 
@@ -205,7 +205,7 @@ class CallManagerImpl internal constructor(
                 userId = selfUserId,
                 clientId = selfClientId,
                 readyHandler = ReadyHandler { version: Int, arg: Pointer? ->
-                    callingLogger.i("$TAG -> readyHandler; version=$version; arg=$arg")
+                    callingLogger.i("$tagWithUserId: readyHandler; version=$version; arg=$arg")
                     onCallingReady()
                     waitInitializationJob.complete()
                     Unit
@@ -241,7 +241,7 @@ class CallManagerImpl internal constructor(
                 videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
                 arg = null
             )
-            callingLogger.d("$TAG - wcall_create() called")
+            callingLogger.d("$tagWithUserId: wcall_create() called")
             // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
             waitInitializationJob.join()
             handle
@@ -258,7 +258,7 @@ class CallManagerImpl internal constructor(
         content: MessageContent.Calling,
     ) = withCalling {
         ensureServerTimeOffsetComputed() // make sure the offset is now computed and only process if was not computed before.
-        callingLogger.i("$TAG - onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
+        callingLogger.i("$tagWithUserId: onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
         val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
@@ -292,7 +292,7 @@ class CallManagerImpl internal constructor(
                 clientId = message.senderClientId.value,
                 convType = callMapper.toConversationTypeCalling(type).avsValue
             )
-            callingLogger.i("$TAG - wcall_recv_msg() called")
+            callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
         }
     }
 
@@ -303,7 +303,7 @@ class CallManagerImpl internal constructor(
         isAudioCbr: Boolean
     ) {
         callingLogger.d(
-            "$TAG -> starting call for conversation = " +
+            "$tagWithUserId: starting call for conversationId: " +
                     "${conversationId.toLogString()}.."
         )
         val isCameraOn = callType == CallType.VIDEO
@@ -335,7 +335,7 @@ class CallManagerImpl internal constructor(
                             isAudioCbr.toInt()
                         )
                         callingLogger.d(
-                            "$TAG - wcall_start() called -> Call for conversation = " +
+                            "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
                                     "${conversationId.toLogString()} started"
                         )
                     },
@@ -353,7 +353,7 @@ class CallManagerImpl internal constructor(
                     isAudioCbr.toInt()
                 )
                 callingLogger.d(
-                    "$TAG - wcall_start() called -> Call for conversation = " +
+                    "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
                             "${conversationId.toLogString()} started"
                 )
             }
@@ -367,7 +367,7 @@ class CallManagerImpl internal constructor(
     ) {
         withCalling {
             callingLogger.d(
-                "$TAG -> answering call for conversation = " +
+                "$tagWithUserId: answering call for conversationId: " +
                         "${conversationId.toLogString()}.."
             )
             val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
@@ -383,7 +383,7 @@ class CallManagerImpl internal constructor(
                             cbrEnabled = isAudioCbr
                         )
                         callingLogger.i(
-                            "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                            "$tagWithUserId: wcall_answer() called -> Incoming call for conversationId: " +
                                     "${conversationId.toLogString()} answered"
                         )
                     },
@@ -399,7 +399,7 @@ class CallManagerImpl internal constructor(
                     cbrEnabled = isAudioCbr
                 )
                 callingLogger.i(
-                    "$TAG - wcall_answer() called -> Incoming call for conversation = " +
+                    "$tagWithUserId: wcall_answer() called -> Incoming call for conversationId: " +
                             "${conversationId.toLogString()} answered"
                 )
             }
@@ -407,11 +407,7 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d(
-            "[$TAG][endCall] -> ConversationId: " +
-                    "[${conversationId.toLogString()}]"
-        )
-        callingLogger.d("[$TAG][endCall] -> Calling wcall_end()")
+        callingLogger.d("$tagWithUserId: endCall -> Calling wcall_end() for conversationId: " + conversationId.toLogString())
         wcall_end(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId)
@@ -419,11 +415,7 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d(
-            "[$TAG][rejectCall] -> ConversationId: " +
-                    "[${conversationId.toLogString()}]"
-        )
-        callingLogger.d("[$TAG][rejectCall] -> Calling wcall_reject()")
+        callingLogger.d("$tagWithUserId: rejectCall -> Calling wcall_reject() for conversationId: " + conversationId.toLogString())
         wcall_reject(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId)
@@ -432,9 +424,9 @@ class CallManagerImpl internal constructor(
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
         val logString = if (shouldMute) "muting" else "un-muting"
-        callingLogger.d("$TAG -> $logString call..")
+        callingLogger.d("$tagWithUserId: $logString call..")
         wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
-        callingLogger.d("$TAG - wcall_set_mute() called")
+        callingLogger.d("$tagWithUserId: wcall_set_mute() called")
     }
 
     override suspend fun setTestVideoType(testVideoType: TestVideoType) = withCalling {
@@ -444,7 +436,7 @@ class CallManagerImpl internal constructor(
             TestVideoType.FAKE -> "FAKE"
             else -> "????"
         }
-        callingLogger.d("$TAG -> set test video to $logString")
+        callingLogger.d("$tagWithUserId: set test video to $logString")
 
         val selfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
         val selfClientId = clientId.await().value
@@ -469,7 +461,7 @@ class CallManagerImpl internal constructor(
 
     override suspend fun setTestPreviewActive(shouldEnable: Boolean) = withCalling {
         val logString = if (shouldEnable) "enabling" else "disabling"
-        callingLogger.d("$TAG -> $logString preview..")
+        callingLogger.d("$tagWithUserId: $logString preview..")
         if (shouldEnable)
             kcall_preview_start()
         else
@@ -493,7 +485,7 @@ class CallManagerImpl internal constructor(
      */
     override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
-            callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
+            callingLogger.d("$tagWithUserId: changing video state to ${videoState.name}..")
             scope.launch {
                 val videoStateCalling = callMapper.toVideoStateCalling(videoState)
                 wcall_set_video_send_state(
@@ -501,7 +493,7 @@ class CallManagerImpl internal constructor(
                     federatedIdMapper.parseToFederatedId(conversationId),
                     videoStateCalling.avsValue
                 )
-                callingLogger.d("$TAG -> wcall_set_video_send_state called..")
+                callingLogger.d("$tagWithUserId: wcall_set_video_send_state called..")
             }
         }
     }
@@ -522,7 +514,8 @@ class CallManagerImpl internal constructor(
             }
             val clientsJson = CallClientList(clients).toJsonString()
             callingLogger.d(
-                "$TAG - wcall_request_video_streams() called -> Requesting video streams for conversation = ${conversationId.toLogString()}"
+                "$tagWithUserId: wcall_request_video_streams() called -> Requesting video streams for conversationId: " +
+                        conversationId.toLogString()
             )
             val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
             calling.wcall_request_video_streams(
@@ -537,7 +530,7 @@ class CallManagerImpl internal constructor(
     override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
         withCalling {
             callingLogger.d(
-                "$TAG - wcall_set_epoch_info() called -> Updating epoch info call for conversation = " +
+                "$tagWithUserId: wcall_set_epoch_info() called -> Updating epoch info call for conversationId: " +
                         "${conversationId.toLogString()} for epoch = ${epochInfo.epoch}"
             )
 
@@ -604,7 +597,7 @@ class CallManagerImpl internal constructor(
                     wcall_participant_changed_h = onParticipantListChanged,
                     arg = null
                 )
-                callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
+                callingLogger.d("$tagWithUserId: wcall_set_participant_changed_handler() called")
             }
         }
     }
@@ -621,7 +614,7 @@ class CallManagerImpl internal constructor(
                     intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
                     arg = null
                 )
-                callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
+                callingLogger.d("$tagWithUserId: wcall_set_network_quality_handler() called")
             }
         }
     }
@@ -642,7 +635,7 @@ class CallManagerImpl internal constructor(
                     wcall_req_clients_h = onClientsRequest
                 )
 
-                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+                callingLogger.d("$tagWithUserId: wcall_set_req_clients_handler() called")
             }
         }
     }
@@ -660,7 +653,7 @@ class CallManagerImpl internal constructor(
                     activeSpeakersHandler = activeSpeakersHandler
                 )
 
-                callingLogger.d("$TAG - wcall_set_active_speaker_handler() called")
+                callingLogger.d("$tagWithUserId: wcall_set_active_speaker_handler() called")
             }
         }
     }
@@ -679,7 +672,7 @@ class CallManagerImpl internal constructor(
                     requestNewEpochHandler = requestNewEpochHandler
                 )
 
-                callingLogger.d("$TAG - wcall_set_req_new_epoch_handler() called")
+                callingLogger.d("$tagWithUserId: wcall_set_req_new_epoch_handler() called")
             }
         }
     }
@@ -698,7 +691,7 @@ class CallManagerImpl internal constructor(
                     arg = null
                 )
 
-                callingLogger.d("$TAG - wcall_set_mute_handler() called")
+                callingLogger.d("$tagWithUserId: wcall_set_mute_handler() called")
             }
         }
     }
@@ -706,6 +699,13 @@ class CallManagerImpl internal constructor(
     override suspend fun reportProcessNotifications(isStarted: Boolean) {
         withCalling {
             wcall_process_notifications(it, isStarted)
+        }
+    }
+
+    override suspend fun setBackground(background: Boolean) {
+        withCalling {
+            wcall_set_background(it, background)
+            callingLogger.d("$tagWithUserId: wcall_set_background() called -> background: $background")
         }
     }
 
