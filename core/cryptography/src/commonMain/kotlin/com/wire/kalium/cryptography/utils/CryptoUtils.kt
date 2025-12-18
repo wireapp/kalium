@@ -22,7 +22,6 @@ import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
 import okio.Buffer
 import okio.HashingSink
-import okio.Path
 import okio.Sink
 import okio.Source
 import okio.blackholeSink
@@ -109,10 +108,6 @@ expect fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
  * @see encryptDataWithAES256
  */
 expect fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Long
-
-// fun encryptFileWithAES256(assetDataPath: Path, key: AES256Key, tempEncryptedDataPath: Path): Long {
-//
-// }
 
 /**
  * Method used to decrypt some binary data using the AES256 encryption algorithm

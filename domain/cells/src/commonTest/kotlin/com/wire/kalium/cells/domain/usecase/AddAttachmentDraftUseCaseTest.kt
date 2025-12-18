@@ -82,9 +82,10 @@ class AddAttachmentDraftUseCaseTest {
 
     @Test
     fun given_valid_request_upload_manager_is_called() = testScope.runTest {
-        val (arrangement, useCase) = Arrangement(testScope)
+        val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
+            .withUploadEvents()
             .arrange()
 
         useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
@@ -100,9 +101,10 @@ class AddAttachmentDraftUseCaseTest {
 
     @Test
     fun given_success_pre_check_attachment_is_persisted() = testScope.runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(this.backgroundScope)
             .withSuccessAdd()
             .withSuccessPreCheck()
+            .withUploadEvents()
             .arrange()
 
         useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
