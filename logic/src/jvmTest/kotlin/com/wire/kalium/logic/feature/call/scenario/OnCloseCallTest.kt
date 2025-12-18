@@ -108,6 +108,42 @@ class OnCloseCallTest {
         }
 
     @Test
+    fun givenAStartedGroupCall_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val groupCall = callMetadata.copy(
+                callStatus = CallStatus.STARTED,
+                conversationType = Conversation.Type.Group.Regular,
+                establishedTime = null,
+            )
+            val (arrangement, onCloseCall) = Arrangement(testScope)
+                .withGetCallMetadata(groupCall)
+                .arrange()
+            val reason = CallClosedReason.TIMEOUT_ECONN.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                arrangement.callRepository.persistMissedCall(eq(conversationId))
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+            }.wasInvoked(once)
+
+            coVerify {
+                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
+
+    @Test
     fun givenAnIncomingGroupCall_whenOnCloseCallBackHappens_thenPersistMissedCallAndUpdateStatus() =
         testScope.runTest {
             val incomingCall = callMetadata.copy(
