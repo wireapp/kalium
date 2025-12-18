@@ -28,7 +28,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-expect class CoreLogic : CoreLogicCommon {
+internal expect class CoreLogic : CoreLogicCommon {
     override val globalPreferences: GlobalPrefProvider
     override val globalDatabaseBuilder: GlobalDatabaseBuilder
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
@@ -40,4 +40,4 @@ expect class CoreLogic : CoreLogicCommon {
     override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 }
 
-expect val clientPlatform: String
+internal expect val clientPlatform: String

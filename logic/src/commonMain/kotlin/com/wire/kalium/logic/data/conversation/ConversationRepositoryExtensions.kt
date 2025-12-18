@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface ConversationRepositoryExtensions {
+internal interface ConversationRepositoryExtensions {
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
@@ -38,7 +38,7 @@ interface ConversationRepositoryExtensions {
     ): Flow<PagingData<ConversationDetailsWithEvents>>
 }
 
-class ConversationRepositoryExtensionsImpl internal constructor(
+internal class ConversationRepositoryExtensionsImpl internal constructor(
     private val conversationDAO: ConversationDAO,
     private val conversationMapper: ConversationMapper
 ) : ConversationRepositoryExtensions {
@@ -73,7 +73,7 @@ class ConversationRepositoryExtensionsImpl internal constructor(
     }
 }
 
-data class ConversationQueryConfig(
+internal data class ConversationQueryConfig(
     val searchQuery: String = "",
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,

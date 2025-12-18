@@ -29,7 +29,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 @Mockable
-interface UpdateAssetMessageTransferStatusUseCase {
+internal interface UpdateAssetMessageTransferStatusUseCase {
     /**
      * Function that allows update an asset message transfer status.
      *
@@ -63,7 +63,7 @@ internal class UpdateAssetMessageTransferStatusUseCaseImpl(
     }
 }
 
-sealed class UpdateTransferStatusResult {
-    data object Success : UpdateTransferStatusResult()
-    data class Failure(val coreFailure: CoreFailure) : UpdateTransferStatusResult()
+internal sealed class UpdateTransferStatusResult {
+    internal data object Success : UpdateTransferStatusResult()
+    internal data class Failure(val coreFailure: CoreFailure) : UpdateTransferStatusResult()
 }

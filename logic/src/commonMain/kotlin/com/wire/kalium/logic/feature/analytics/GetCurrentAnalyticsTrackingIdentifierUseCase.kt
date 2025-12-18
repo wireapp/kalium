@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 /**
  * Use case that returns the current analytics tracking identifier
  */
-interface GetCurrentAnalyticsTrackingIdentifierUseCase {
+internal interface GetCurrentAnalyticsTrackingIdentifierUseCase {
     /**
      * Use case [GetCurrentAnalyticsTrackingIdentifierUseCase] operation
      *

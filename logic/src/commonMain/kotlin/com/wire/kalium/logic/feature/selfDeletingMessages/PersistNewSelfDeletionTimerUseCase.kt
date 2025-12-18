@@ -30,14 +30,14 @@ import kotlinx.coroutines.withContext
 /**
  * Use case to persist the new self deletion timer for a given conversation to memory.
  */
-interface PersistNewSelfDeletionTimerUseCase {
+internal interface PersistNewSelfDeletionTimerUseCase {
     /**
      * @param conversationId the conversation id for which the self deletion timer should be updated
      */
     suspend operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
 }
 
-class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
+internal class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : PersistNewSelfDeletionTimerUseCase {

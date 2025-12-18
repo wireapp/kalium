@@ -25,11 +25,11 @@ import com.wire.kalium.common.functional.fold
  * Use case to check if the current user can create password protected invite links.
  * This is only possible if the server api version is greater or equal to 4.
  */
-class CanCreatePasswordProtectedLinksUseCase internal constructor(
+internal class CanCreatePasswordProtectedLinksUseCase internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(): Boolean =
+    internal suspend operator fun invoke(): Boolean =
         serverConfigRepository.configForUser(selfUserId).fold(
             { false },
             {

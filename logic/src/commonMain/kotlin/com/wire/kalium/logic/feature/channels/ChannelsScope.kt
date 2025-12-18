@@ -25,11 +25,11 @@ import com.wire.kalium.logic.feature.conversation.channel.UpdateChannelAddPermis
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.persistence.dao.MetadataDAO
 
-class ChannelsScope(
-    val selfUser: () -> GetSelfUserUseCase,
-    val conversationRepository: () -> ConversationRepository,
-    val metadataDaoProvider: () -> MetadataDAO,
-    val selfUserObservationProvider: () -> SelfUserObservationProvider
+internal class ChannelsScope(
+    internal val selfUser: () -> GetSelfUserUseCase,
+    internal val conversationRepository: () -> ConversationRepository,
+    internal val metadataDaoProvider: () -> MetadataDAO,
+    internal val selfUserObservationProvider: () -> SelfUserObservationProvider
 ) {
     internal val channelsConfigStorage: ChannelsConfigurationStorage
         get() = ChannelsConfigurationStorage(metadataDaoProvider())
@@ -37,9 +37,9 @@ class ChannelsScope(
     internal val channelsFeatureConfigHandler: ChannelsFeatureConfigurationHandler
         get() = ChannelsFeatureConfigurationHandler(channelsConfigStorage)
 
-    val observeChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
+    internal val observeChannelsCreationPermissionUseCase: ObserveChannelsCreationPermissionUseCase
         get() = ObserveChannelsCreationPermissionUseCase(channelsConfigStorage, selfUserObservationProvider())
 
-    val updateChannelAddPermission: UpdateChannelAddPermissionUseCase
+    internal val updateChannelAddPermission: UpdateChannelAddPermissionUseCase
         get() = UpdateChannelAddPermissionUseCaseImpl(conversationRepository())
 }

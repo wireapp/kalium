@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.Flow
  * @return Flow<List<MessageReaction>> - Flow of MessageReactions List that should be shown to the user.
  * That Flow emits everytime a reaction on the message is added/removed.
  */
-interface ObserveMessageReactionsUseCase {
+internal interface ObserveMessageReactionsUseCase {
     suspend operator fun invoke(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>>
 }
 

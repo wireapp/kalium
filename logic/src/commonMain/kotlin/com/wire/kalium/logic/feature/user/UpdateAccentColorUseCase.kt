@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 /**
  * Updates the accent color of current user.
  */
-fun interface UpdateAccentColorUseCase {
+internal fun interface UpdateAccentColorUseCase {
     /**
      * @param accentId the new accent color id.
      * @return The result of the operation [UpdateAccentColorResult.Success] or a mapped [CoreFailure].
@@ -49,7 +49,7 @@ internal class UpdateAccentColorUseCaseImpl(
     }
 }
 
-sealed class UpdateAccentColorResult {
-    data object Success : UpdateAccentColorResult()
-    data class Failure(val coreFailure: CoreFailure) : UpdateAccentColorResult()
+internal sealed class UpdateAccentColorResult {
+    internal data object Success : UpdateAccentColorResult()
+    internal data class Failure(val coreFailure: CoreFailure) : UpdateAccentColorResult()
 }

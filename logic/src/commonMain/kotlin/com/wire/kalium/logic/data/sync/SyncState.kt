@@ -21,12 +21,12 @@ package com.wire.kalium.logic.data.sync
 import com.wire.kalium.common.error.CoreFailure
 import kotlin.time.Duration
 
-sealed class SyncState {
+internal sealed class SyncState {
 
     /**
      * Sync hasn't started yet.
      */
-    data object Waiting : SyncState()
+    internal data object Waiting : SyncState()
 
     /**
      * Fetching all initial data:
@@ -38,23 +38,23 @@ sealed class SyncState {
      * - All team members (if user belongs to a team)
      * - Details of all other users discovered in past steps
      */
-    data object SlowSync : SyncState()
+    internal data object SlowSync : SyncState()
 
     /**
      * Is fetching events lost while this client was offline.
      * Implies that [SlowSync] is done.
      */
-    data object GatheringPendingEvents : SyncState()
+    internal data object GatheringPendingEvents : SyncState()
 
     /**
      * Is processing events, connected to the server and receiving real-time events.
      * This implies that [GatheringPendingEvents] is done.
      */
-    data object Live : SyncState()
+    internal data object Live : SyncState()
 
     /**
      * Sync was not completed due to a failure.
      * [retryDelay] specifies the duration in which next try will happen
      */
-    data class Failed(val cause: CoreFailure, val retryDelay: Duration) : SyncState()
+    internal data class Failed(val cause: CoreFailure, val retryDelay: Duration) : SyncState()
 }

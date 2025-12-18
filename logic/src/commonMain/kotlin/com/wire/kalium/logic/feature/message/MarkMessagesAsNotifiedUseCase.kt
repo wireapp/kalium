@@ -27,14 +27,14 @@ import com.wire.kalium.common.functional.fold
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
  * @see GetNotificationsUseCase
  */
-class MarkMessagesAsNotifiedUseCase internal constructor(
+internal class MarkMessagesAsNotifiedUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {
 
     /**
      * @param conversationsToUpdate which conversation(s) to be marked as notified.
      */
-    suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
+    internal suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
         when (conversationsToUpdate) {
             UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate()
 
@@ -45,7 +45,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
     /**
      * Specifies which conversations should be marked as notified
      */
-    sealed interface UpdateTarget {
+    internal sealed interface UpdateTarget {
         /**
          * All conversations should be marked as notified.
          */
@@ -58,7 +58,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
     }
 }
 
-sealed class Result {
-    data object Success : Result()
-    data class Failure(val storageFailure: StorageFailure) : Result()
+internal sealed class Result {
+    internal data object Success : Result()
+    internal data class Failure(val storageFailure: StorageFailure) : Result()
 }

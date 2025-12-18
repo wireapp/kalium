@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Observe incoming in-call reactions
  */
-interface ObserveInCallReactionsUseCase {
+internal interface ObserveInCallReactionsUseCase {
     operator fun invoke(conversationId: ConversationId): Flow<InCallReactionMessage>
 }
 

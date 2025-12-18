@@ -44,7 +44,7 @@ import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mockable
 
 @Mockable
-interface NewConversationEventHandler {
+internal interface NewConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
 }
 

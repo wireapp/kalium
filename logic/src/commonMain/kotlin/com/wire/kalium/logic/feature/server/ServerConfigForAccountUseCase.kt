@@ -33,7 +33,7 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 /**
  * Gets the server configuration for the given user.
  */
-class ServerConfigForAccountUseCase internal constructor(
+internal class ServerConfigForAccountUseCase internal constructor(
     private val dao: ServerConfigurationDAO,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
@@ -41,13 +41,13 @@ class ServerConfigForAccountUseCase internal constructor(
      * @param userId the id of the user
      * @return the [ServerConfig] for the given user if successful, otherwise a [StorageFailure]
      */
-    suspend operator fun invoke(userId: UserId): Result =
+    internal suspend operator fun invoke(userId: UserId): Result =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
             .fold(Result::Failure, Result::Success)
 
-    sealed class Result {
-        data class Success(val config: ServerConfig) : Result()
-        data class Failure(val cause: StorageFailure) : Result()
+    internal sealed class Result {
+        internal data class Success(val config: ServerConfig) : Result()
+        internal data class Failure(val cause: StorageFailure) : Result()
     }
 }

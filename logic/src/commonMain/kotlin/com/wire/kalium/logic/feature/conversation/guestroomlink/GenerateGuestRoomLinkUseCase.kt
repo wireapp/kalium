@@ -31,11 +31,11 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 /**
  * Use this use case to generate a new guest room link for a team conversation
  */
-interface GenerateGuestRoomLinkUseCase {
+internal interface GenerateGuestRoomLinkUseCase {
     suspend operator fun invoke(conversationId: ConversationId, password: String?): GenerateGuestRoomLinkResult
 }
 
-class GenerateGuestRoomLinkUseCaseImpl internal constructor(
+internal class GenerateGuestRoomLinkUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val codeUpdatedHandler: CodeUpdatedHandler,
 ) : GenerateGuestRoomLinkUseCase {
@@ -61,7 +61,7 @@ class GenerateGuestRoomLinkUseCaseImpl internal constructor(
             )
 }
 
-sealed interface GenerateGuestRoomLinkResult {
+internal sealed interface GenerateGuestRoomLinkResult {
     data object Success : GenerateGuestRoomLinkResult
     data class Failure(val cause: NetworkFailure) : GenerateGuestRoomLinkResult
 }

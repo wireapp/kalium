@@ -34,7 +34,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-interface BreakSessionUseCase {
+internal interface BreakSessionUseCase {
     /**
      * Function that can be used to create a broken session with another user on purpose. This debug function
      * can be used to test correct client behaviour in case of broken sessions. It should not be used by
@@ -80,7 +80,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
     }
 }
 
-sealed class BreakSessionResult {
-    data object Success : BreakSessionResult()
-    data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
+internal sealed class BreakSessionResult {
+    internal data object Success : BreakSessionResult()
+    internal data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
 }

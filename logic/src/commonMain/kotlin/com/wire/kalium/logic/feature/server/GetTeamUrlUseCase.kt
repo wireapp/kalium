@@ -23,9 +23,9 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Use case to get the team url for the current user.
  */
-class GetTeamUrlUseCase internal constructor(
+internal class GetTeamUrlUseCase internal constructor(
     private val selfUserId: UserId,
     private val serverConfigRepository: ServerConfigRepository
 ) {
-    suspend operator fun invoke(): String = serverConfigRepository.getTeamUrlForUser(selfUserId) ?: ""
+    internal suspend operator fun invoke(): String = serverConfigRepository.getTeamUrlForUser(selfUserId) ?: ""
 }

@@ -34,11 +34,11 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
  * This use case is used to get the e2ei certificates of all the users in Conversation.
  * Return [Map] where keys are [UserId] and values - nullable [CertificateStatus] of corresponding user.
  */
-interface GetMembersE2EICertificateStatusesUseCase {
+internal interface GetMembersE2EICertificateStatusesUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean>
 }
 
-class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
+internal class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
     private val transactionProvider: CryptoTransactionProvider
@@ -64,7 +64,7 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
 /**
  * @return if given user is verified or not
  */
-fun List<WireIdentity>.isUserMLSVerified(nameAndHandle: NameAndHandle?) = this.isNotEmpty() && this.all {
+internal fun List<WireIdentity>.isUserMLSVerified(nameAndHandle: NameAndHandle?) = this.isNotEmpty() && this.all {
     it.x509Identity != null
             && it.credentialType == CredentialType.X509
             && it.status == CryptoCertificateStatus.VALID

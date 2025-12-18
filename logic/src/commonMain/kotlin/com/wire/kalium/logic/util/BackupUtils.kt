@@ -26,25 +26,25 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long>
-expect fun extractCompressedFile(
+internal expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long>
+internal expect fun extractCompressedFile(
     inputSource: Source,
     outputRootPath: Path,
     param: ExtractFilesParam,
     fileSystem: KaliumFileSystem
 ): Either<CoreFailure, Long>
 
-expect fun checkIfCompressedFileContainsFileTypes(
+internal expect fun checkIfCompressedFileContainsFileTypes(
     compressedFilePath: Path,
     fileSystem: KaliumFileSystem,
     expectedFileExtensions: List<String>
 ): Either<CoreFailure, Map<String, Boolean>>
 
-sealed interface ExtractFilesParam {
+internal sealed interface ExtractFilesParam {
     data object All : ExtractFilesParam
     data class Only(val files: Set<String>) : ExtractFilesParam {
-        constructor(vararg files: String) : this(files.toSet())
+        internal constructor(vararg files: String) : this(files.toSet())
     }
 }
 
-expect inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T>
+internal expect inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T>

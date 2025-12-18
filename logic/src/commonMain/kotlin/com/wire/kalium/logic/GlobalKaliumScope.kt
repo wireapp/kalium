@@ -86,21 +86,21 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
 @Suppress("LongParameterList")
-class GlobalKaliumScope internal constructor(
+internal class GlobalKaliumScope internal constructor(
     userAgent: String,
     private val globalDatabase: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    val logoutCallbackManager: LogoutCallbackManager,
-    val workSchedulerProvider: WorkSchedulerProvider,
-    val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+    internal val logoutCallbackManager: LogoutCallbackManager,
+    internal val workSchedulerProvider: WorkSchedulerProvider,
+    internal val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    val unboundNetworkContainer: UnboundNetworkContainer by lazy {
+    internal val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
@@ -110,7 +110,7 @@ class GlobalKaliumScope internal constructor(
         )
     }
 
-    val sessionRepository: SessionRepository
+    internal val sessionRepository: SessionRepository
         get() = SessionDataSource(
             globalDatabase.accountsDAO,
             globalPreferences.authTokenStorage,
@@ -118,7 +118,7 @@ class GlobalKaliumScope internal constructor(
             kaliumConfigs
         )
 
-    val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
+    internal val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository
@@ -131,23 +131,23 @@ class GlobalKaliumScope internal constructor(
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             globalDatabase.serverConfigurationDAO
         )
-    val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
-    val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
-    val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
-    val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
-    val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
+    internal val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    internal val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
+    internal val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
+    internal val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
+    internal val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
 
-    val addAuthenticatedAccount: AddAuthenticatedUserUseCase
+    internal val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
-    val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
-    val observeValidAccounts: ObserveValidAccountsUseCase
+    internal val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    internal val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
+    internal val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
-    val session: SessionScope get() = SessionScope(sessionRepository)
-    val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
-    val updateApiVersions: UpdateApiVersionsUseCase
+    internal val session: SessionScope get() = SessionScope(sessionRepository)
+    internal val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
+    internal val updateApiVersions: UpdateApiVersionsUseCase
         get() = UpdateApiVersionsUseCaseImpl(
             sessionRepository,
             globalPreferences.authTokenStorage,
@@ -161,20 +161,20 @@ class GlobalKaliumScope internal constructor(
             },
         )
 
-    val saveNotificationToken: SaveNotificationTokenUseCase
+    internal val saveNotificationToken: SaveNotificationTokenUseCase
         get() = SaveNotificationTokenUseCaseImpl(
             notificationTokenRepository,
             observeValidAccounts,
             userSessionScopeProvider.value
         )
 
-    val deleteSession: DeleteSessionUseCase
+    internal val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 
-    val serverConfigForAccounts: ServerConfigForAccountUseCase
+    internal val serverConfigForAccounts: ServerConfigForAccountUseCase
         get() = ServerConfigForAccountUseCase(globalDatabase.serverConfigurationDAO)
 
-    val observeIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
+    internal val observeIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
         get() = ObserveIfAppUpdateRequiredUseCaseImpl(
             customServerConfigRepository,
             authenticationScopeProvider,
@@ -186,19 +186,19 @@ class GlobalKaliumScope internal constructor(
     private val userClientRepositoryProvider: UserClientRepositoryProvider
         get() = UserClientRepositoryProviderImpl(userSessionScopeProvider.value)
 
-    val observeNewClientsUseCase: ObserveNewClientsUseCase
+    internal val observeNewClientsUseCase: ObserveNewClientsUseCase
         get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)
 
-    val clearNewClientsForUser: ClearNewClientsForUserUseCase
+    internal val clearNewClientsForUser: ClearNewClientsForUserUseCase
         get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
 
-    val observeIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
+    internal val observeIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
         get() = ObserveIsAppLockEditableUseCaseImpl(userSessionScopeProvider.value, sessionRepository)
 
     internal val updateApiVersionsWorker: UpdateApiVersionsWorker by lazy { UpdateApiVersionsWorker(updateApiVersions) }
 
     private val globalWorkScheduler: GlobalWorkScheduler = workSchedulerProvider.globalWorkScheduler(this)
-    val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
+    internal val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
 
     init {
         globalWorkScheduler.schedulePeriodicApiVersionUpdate()

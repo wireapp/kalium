@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
  * This use case is responsible for answering a call.
  */
 @Mockable
-interface AnswerCallUseCase {
+internal interface AnswerCallUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId
     )

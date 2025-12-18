@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will remove a conversation from the selected folder and if the folder is empty, it will remove the folder.
  */
-interface RemoveConversationFromFolderUseCase {
+internal interface RemoveConversationFromFolderUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param folderId the id of the folder

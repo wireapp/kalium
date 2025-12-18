@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.days
 /**
  * Use case that updates next time when user should be asked for a feedback about call quality.
  */
-interface UpdateNextTimeCallFeedbackUseCase {
+internal interface UpdateNextTimeCallFeedbackUseCase {
     /**
      * Update next time when user should be asked for a feedback about call quality.
      * @param neverAskAgain [Boolean] if user checked "never ask me again"
@@ -33,7 +33,7 @@ interface UpdateNextTimeCallFeedbackUseCase {
     suspend operator fun invoke(neverAskAgain: Boolean)
 
     companion object {
-        val askingForFeedbackPeriod = 3.days
+        internal val askingForFeedbackPeriod = 3.days
     }
 }
 

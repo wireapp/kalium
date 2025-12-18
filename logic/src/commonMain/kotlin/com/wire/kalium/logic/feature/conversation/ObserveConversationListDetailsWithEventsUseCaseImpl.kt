@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.flowOf
  * This use case will observe and return the list of conversation details for the current user.
  * @see ConversationDetails
  */
-fun interface ObserveConversationListDetailsWithEventsUseCase {
+internal fun interface ObserveConversationListDetailsWithEventsUseCase {
     suspend operator fun invoke(fromArchive: Boolean, conversationFilter: ConversationFilter): Flow<List<ConversationDetailsWithEvents>>
 }
 

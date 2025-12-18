@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.map
  * Use case that allows to observe the legal hold state for a given user.
  */
 @Mockable
-interface ObserveLegalHoldStateForUserUseCase {
+internal interface ObserveLegalHoldStateForUserUseCase {
     suspend operator fun invoke(userId: UserId): Flow<LegalHoldState>
 }
 
@@ -56,7 +56,7 @@ internal class ObserveLegalHoldStateForUserUseCaseImpl internal constructor(
         }
 }
 
-sealed class LegalHoldState {
-    data object Enabled : LegalHoldState()
-    data object Disabled : LegalHoldState()
+internal sealed class LegalHoldState {
+    internal data object Enabled : LegalHoldState()
+    internal data object Disabled : LegalHoldState()
 }

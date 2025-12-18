@@ -37,18 +37,18 @@ import com.wire.kalium.network.exceptions.isKeyExists
 import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
 
-sealed class RegisterParam(
-    open val name: String,
-    open val email: String,
-    open val password: String,
-    open val emailActivationCode: String,
-    open val cookieLabel: String?
+internal sealed class RegisterParam(
+    internal open val name: String,
+    internal open val email: String,
+    internal open val password: String,
+    internal open val emailActivationCode: String,
+    internal open val cookieLabel: String?
 ) {
 
     @Deprecated("This belongs to the old flow, it is overridden by [PersonalAccount] it will be deleted when enabling the new flow")
-    class PrivateAccount(
-        val firstName: String,
-        val lastName: String,
+    internal class PrivateAccount(
+        internal val firstName: String,
+        internal val lastName: String,
         email: String,
         password: String,
         emailActivationCode: String,
@@ -61,14 +61,14 @@ sealed class RegisterParam(
 
     @Deprecated("This belongs to the old flow, it will be deleted when enabling the new flow")
     @Suppress("LongParameterList")
-    class Team(
-        val firstName: String,
-        val lastName: String,
+    internal class Team(
+        internal val firstName: String,
+        internal val lastName: String,
         email: String,
         password: String,
         emailActivationCode: String,
-        val teamName: String,
-        val teamIcon: String,
+        internal val teamName: String,
+        internal val teamIcon: String,
         cookieLabel: String? = Uuid.random().toString()
     ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
 
@@ -76,7 +76,7 @@ sealed class RegisterParam(
             get() = "$firstName $lastName"
     }
 
-    data class PersonalAccount(
+    internal data class PersonalAccount(
         override val name: String,
         override val email: String,
         override val password: String,
@@ -88,7 +88,7 @@ sealed class RegisterParam(
 /**
  * This use case is responsible for registering a new account.
  */
-class RegisterAccountUseCase internal constructor(
+internal class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
@@ -99,7 +99,7 @@ class RegisterAccountUseCase internal constructor(
      *
      * @return [RegisterResult] with credentials if successful or [RegisterResult.Failure] with the specific error
      */
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         param: RegisterParam
     ): RegisterResult = when (param) {
         is RegisterParam.PersonalAccount,
@@ -154,22 +154,22 @@ class RegisterAccountUseCase internal constructor(
     }
 }
 
-sealed class RegisterResult {
-    data class Success(
+internal sealed class RegisterResult {
+    internal data class Success(
         val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : RegisterResult()
 
-    sealed class Failure : RegisterResult() {
-        data object EmailDomainBlocked : Failure()
-        data object AccountAlreadyExists : Failure()
-        data object InvalidActivationCode : Failure()
-        data object UserCreationRestricted : Failure()
-        data object TeamMembersLimitReached : Failure()
-        data object BlackListed : Failure()
-        data object InvalidEmail : Failure()
-        data class Generic(val failure: CoreFailure) : Failure()
+    internal sealed class Failure : RegisterResult() {
+        internal data object EmailDomainBlocked : Failure()
+        internal data object AccountAlreadyExists : Failure()
+        internal data object InvalidActivationCode : Failure()
+        internal data object UserCreationRestricted : Failure()
+        internal data object TeamMembersLimitReached : Failure()
+        internal data object BlackListed : Failure()
+        internal data object InvalidEmail : Failure()
+        internal data class Generic(val failure: CoreFailure) : Failure()
     }
 }

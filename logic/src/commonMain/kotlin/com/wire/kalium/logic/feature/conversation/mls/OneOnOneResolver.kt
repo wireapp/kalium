@@ -52,7 +52,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
 @Mockable
-interface OneOnOneResolver {
+internal interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(
         transactionContext: CryptoTransactionContext,
         synchronizeUsers: Boolean = false

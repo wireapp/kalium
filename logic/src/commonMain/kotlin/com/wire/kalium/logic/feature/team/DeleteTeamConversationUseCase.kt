@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 
-fun interface DeleteTeamConversationUseCase {
+internal fun interface DeleteTeamConversationUseCase {
 
     /**
      * This use case will allow a group conversation creator (only available for team accounts)
@@ -65,11 +65,11 @@ internal class DeleteTeamConversationUseCaseImpl(
     }
 }
 
-sealed class Result {
-    data object Success : Result()
-    sealed class Failure : Result() {
-        data class GenericFailure(val coreFailure: CoreFailure) : Failure()
-        data object NoTeamFailure : Result()
+internal sealed class Result {
+    internal data object Success : Result()
+    internal sealed class Failure : Result() {
+        internal data class GenericFailure(val coreFailure: CoreFailure) : Failure()
+        internal data object NoTeamFailure : Result()
     }
 
 }

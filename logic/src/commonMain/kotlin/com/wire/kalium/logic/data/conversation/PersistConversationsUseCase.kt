@@ -125,7 +125,7 @@ internal class PersistConversationsUseCaseImpl(
 
 }
 
-sealed interface ConversationSyncReason {
+internal sealed interface ConversationSyncReason {
     fun newGroupState(): ConversationEntity.GroupState
 
     data object Event : ConversationSyncReason {

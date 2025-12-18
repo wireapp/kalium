@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Gets the public user profile of a contact
  */
-interface GetKnownUserUseCase {
+internal interface GetKnownUserUseCase {
     /**
      * @param userId the user id of the contact
      * @return the [Flow] of [OtherUser] if successful

@@ -42,7 +42,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Mockable
-interface ProteusClientProvider {
+internal interface ProteusClientProvider {
     suspend fun clearLocalFiles()
 
     /**
@@ -57,7 +57,7 @@ interface ProteusClientProvider {
     suspend fun getOrError(): Either<CoreFailure, ProteusClient>
 }
 
-class ProteusClientProviderImpl(
+internal class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,

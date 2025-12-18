@@ -19,4 +19,4 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.network.utils.MockWebSocketSession
 
-data class KaliumMockWebsocket(val session: MockWebSocketSession)
+internal data class KaliumMockWebsocket(val session: MockWebSocketSession)

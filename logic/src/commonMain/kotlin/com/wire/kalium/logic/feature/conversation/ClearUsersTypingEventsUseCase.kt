@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 /**
  * Use case for clearing and drop orphaned typing indicators
  */
-interface ClearUsersTypingEventsUseCase {
+internal interface ClearUsersTypingEventsUseCase {
     suspend operator fun invoke()
 }
 

@@ -25,7 +25,7 @@ import com.wire.kalium.common.functional.getOrNull
 /**
  * This use case is responsible for retrieving the current user.
  */
-interface GetSelfUserUseCase {
+internal interface GetSelfUserUseCase {
 
     /**
      * @return current user [SelfUser]

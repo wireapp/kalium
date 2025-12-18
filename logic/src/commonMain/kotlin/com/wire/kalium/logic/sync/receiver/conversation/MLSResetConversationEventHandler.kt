@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mockable
 
 @Mockable
-interface MLSResetConversationEventHandler {
+internal interface MLSResetConversationEventHandler {
     suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
 }
 

@@ -30,14 +30,14 @@ import com.wire.kalium.network.exceptions.isKeyExists
 /**
  * Use case to request an activation code for a given email address.
  */
-class RequestActivationCodeUseCase internal constructor(
+internal class RequestActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
     /**
      * @param email [String] the registered email address to request an activation code for
      * @return [RequestActivationCodeResult.Success] or [RequestActivationCodeResult.Failure] with the specific error.
      */
-    suspend operator fun invoke(email: String): RequestActivationCodeResult {
+    internal suspend operator fun invoke(email: String): RequestActivationCodeResult {
 
         return registerAccountRepository.requestEmailActivationCode(email)
             .fold({
@@ -57,13 +57,13 @@ class RequestActivationCodeUseCase internal constructor(
     }
 }
 
-sealed class RequestActivationCodeResult {
-    data object Success : RequestActivationCodeResult()
-    sealed class Failure : RequestActivationCodeResult() {
-        data object InvalidEmail : Failure()
-        data object BlacklistedEmail : Failure()
-        data object AlreadyInUse : Failure()
-        data object DomainBlocked : Failure()
-        data class Generic(val failure: NetworkFailure) : Failure()
+internal sealed class RequestActivationCodeResult {
+    internal data object Success : RequestActivationCodeResult()
+    internal sealed class Failure : RequestActivationCodeResult() {
+        internal data object InvalidEmail : Failure()
+        internal data object BlacklistedEmail : Failure()
+        internal data object AlreadyInUse : Failure()
+        internal data object DomainBlocked : Failure()
+        internal data class Generic(val failure: NetworkFailure) : Failure()
     }
 }

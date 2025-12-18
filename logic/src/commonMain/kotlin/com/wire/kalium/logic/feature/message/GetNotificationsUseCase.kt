@@ -41,7 +41,7 @@ import kotlinx.coroutines.flow.onStart
 /**
  * Get notifications for the current user
  */
-interface GetNotificationsUseCase {
+internal interface GetNotificationsUseCase {
     /**
      * Operation to get all notifications, the Flow emits everytime when the list is changed
      * @return [Flow] of [List] of [LocalNotification] with the List that should be shown to the user.

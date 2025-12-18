@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.map
  *
  * @return GetAllContactsResult with list of known users
  */
-interface GetAllContactsUseCase {
+internal interface GetAllContactsUseCase {
     suspend operator fun invoke(): Flow<GetAllContactsResult>
 }
 
@@ -44,7 +44,7 @@ internal class GetAllContactsUseCaseImpl internal constructor(
 
 }
 
-sealed class GetAllContactsResult {
-    data class Success(val allContacts: List<OtherUser>) : GetAllContactsResult()
-    data class Failure(val storageFailure: StorageFailure) : GetAllContactsResult()
+internal sealed class GetAllContactsResult {
+    internal data class Success(val allContacts: List<OtherUser>) : GetAllContactsResult()
+    internal data class Failure(val storageFailure: StorageFailure) : GetAllContactsResult()
 }

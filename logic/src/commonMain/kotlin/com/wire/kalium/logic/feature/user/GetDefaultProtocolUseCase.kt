@@ -26,7 +26,7 @@ import io.mockative.Mockable
  * Get the Default Protocol [SupportedProtocol]
  */
 @Mockable
-interface GetDefaultProtocolUseCase {
+internal interface GetDefaultProtocolUseCase {
     /**
      * @return [SupportedProtocol.MLS] or [SupportedProtocol.PROTEUS]
      */

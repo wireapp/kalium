@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case to observe if we should ask for feedback after the call has ended.
  */
-interface ObserveAskCallFeedbackUseCase {
+internal interface ObserveAskCallFeedbackUseCase {
     /**
      * @return [Flow] that emits [ShouldAskCallFeedbackUseCaseResult] when the call has ended and we should ask for feedback.
      */

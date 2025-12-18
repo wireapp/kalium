@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
  *
  * @result [Result] Success with Int position. Failure with StorageFailure.
  */
-interface GetSearchedConversationMessagePositionUseCase {
+internal interface GetSearchedConversationMessagePositionUseCase {
 
     suspend operator fun invoke(
         conversationId: ConversationId,

@@ -30,7 +30,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConf
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 
 @Suppress("TooManyFunctions")
-interface FeatureConfigMapper {
+internal interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
     fun fromDTO(status: FeatureFlagStatusDTO): Status
     fun fromDTO(data: FeatureConfigData.MLS?): MLSModel
@@ -50,16 +50,16 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.AssetAuditLog): AssetAuditLogConfigModel
 }
 
-fun FeatureFlagStatusDTO.toModel(): Status =
+internal fun FeatureFlagStatusDTO.toModel(): Status =
     when (this) {
         FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
         FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
     }
 
-fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
+internal fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
 
 @Suppress("TooManyFunctions")
-class FeatureConfigMapperImpl : FeatureConfigMapper {
+internal class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
         with(featureConfigResponse) {
             FeatureConfigModel(
@@ -229,14 +229,14 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 }
 
-fun MLSMigrationModel.toEntity(): MLSMigrationEntity =
+internal fun MLSMigrationModel.toEntity(): MLSMigrationEntity =
     MLSMigrationEntity(
         status = status.equals(Status.ENABLED),
         startTime = startTime,
         endTime = endTime
     )
 
-fun MLSMigrationEntity.toModel(): MLSMigrationModel =
+internal fun MLSMigrationEntity.toModel(): MLSMigrationModel =
     MLSMigrationModel(
         status = if (status) Status.ENABLED else Status.DISABLED,
         startTime = startTime,

@@ -22,7 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.util.DelicateKaliumApi
 
-interface SyncRequest {
+internal interface SyncRequest {
 
     /**
      * Suspends execution until the specified [syncState] is reached or a failure occurs.

@@ -29,7 +29,7 @@ import io.mockative.Mockable
  * but when the logout is triggered automatically by some event (i.e. session expired, device removed, account removed),
  * then the app will not be able to execute these actions without registering to this manager.
  */
-interface LogoutCallbackManager {
+internal interface LogoutCallbackManager {
     fun register(callback: LogoutCallback)
     fun unregister(callback: LogoutCallback)
 }
@@ -42,6 +42,6 @@ internal class LogoutCallbackManagerImpl : LogoutCallbackManager, LogoutCallback
 }
 
 @Mockable
-interface LogoutCallback {
+internal interface LogoutCallback {
     suspend operator fun invoke(userId: UserId, reason: LogoutReason)
 }

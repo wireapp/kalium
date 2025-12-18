@@ -27,10 +27,10 @@ import com.wire.kalium.common.functional.fold
  *
  * @see [GetAllSessionsResult.Success.sessions]
  */
-class GetSessionsUseCase(
+internal class GetSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(): GetAllSessionsResult = sessionRepository.allValidSessions().fold(
+    internal suspend operator fun invoke(): GetAllSessionsResult = sessionRepository.allValidSessions().fold(
         {
             when (it) {
                 StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound

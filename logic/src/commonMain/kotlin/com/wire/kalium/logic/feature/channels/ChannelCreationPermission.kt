@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.channels
  * Represents the permission state for channel creation in the system.
  * This sealed interface defines whether channel creation is allowed or forbidden for users.
  */
-sealed interface ChannelCreationPermission {
+internal sealed interface ChannelCreationPermission {
     /**
      * Represents a state where channel creation is not permitted for the user.
      */

@@ -39,13 +39,13 @@ import kotlinx.datetime.Clock
  *
  * the action message is sent only to the message original sender.
  */
-class SendButtonActionConfirmationMessageUseCase internal constructor(
+internal class SendButtonActionConfirmationMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val syncManager: SyncManager,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         buttonId: String,
@@ -70,7 +70,7 @@ class SendButtonActionConfirmationMessageUseCase internal constructor(
             }
     }.fold(Result::Failure, { Result.Success })
 
-    sealed interface Result {
+    internal sealed interface Result {
         data object Success : Result
         data class Failure(
             val error: CoreFailure

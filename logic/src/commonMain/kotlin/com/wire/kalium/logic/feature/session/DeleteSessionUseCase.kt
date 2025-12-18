@@ -29,11 +29,11 @@ import kotlinx.coroutines.cancel
 /**
  * This class is responsible for deleting a user session and freeing up all the resources.
  */
-class DeleteSessionUseCase internal constructor(
+internal class DeleteSessionUseCase internal constructor(
     private val sessionRepository: SessionRepository,
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) {
-    suspend operator fun invoke(userId: UserId) = sessionRepository.deleteSession(userId)
+    internal suspend operator fun invoke(userId: UserId) = sessionRepository.deleteSession(userId)
         .onSuccess {
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
@@ -43,8 +43,8 @@ class DeleteSessionUseCase internal constructor(
             Result.Success
         })
 
-    sealed class Result {
-        data object Success : Result()
-        data class Failure(val cause: StorageFailure) : Result()
+    internal sealed class Result {
+        internal data object Success : Result()
+        internal data class Failure(val cause: StorageFailure) : Result()
     }
 }

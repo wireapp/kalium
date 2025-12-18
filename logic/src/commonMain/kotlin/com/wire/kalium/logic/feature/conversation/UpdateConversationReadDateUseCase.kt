@@ -53,7 +53,7 @@ import kotlinx.datetime.Instant
 // TODO: look into excluding self clients from sendConfirmation or run sendLastReadMessageToOtherClients if
 //  the conversation does not need to be notified
 @Suppress("LongParameterList")
-class UpdateConversationReadDateUseCase internal constructor(
+internal class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -68,7 +68,7 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param conversationId The conversation id to update the last read date.
      * @param time The last read date to update.
      */
-    operator fun invoke(conversationId: QualifiedID, time: Instant) {
+    internal operator fun invoke(conversationId: QualifiedID, time: Instant) {
         workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
     }
 

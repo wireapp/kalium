@@ -42,7 +42,7 @@ import kotlinx.datetime.Clock
  * Use case for sending a delivery confirmation signal for a list of messages in a conversation.
  */
 @Mockable
-interface SendDeliverSignalUseCase {
+internal interface SendDeliverSignalUseCase {
     suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit>
 }
 

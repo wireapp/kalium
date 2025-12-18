@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 
-interface UpdateConversationMemberRoleUseCase {
+internal interface UpdateConversationMemberRoleUseCase {
     /**
      * Use case that allows a conversation member to change its role to:
      * [Member.Role.Admin] or [Member.Role.Member]
@@ -62,7 +62,7 @@ internal class UpdateConversationMemberRoleUseCaseImpl(
             })
 }
 
-sealed class UpdateConversationMemberRoleResult {
-    data object Success : UpdateConversationMemberRoleResult()
-    data object Failure : UpdateConversationMemberRoleResult()
+internal sealed class UpdateConversationMemberRoleResult {
+    internal data object Success : UpdateConversationMemberRoleResult()
+    internal data object Failure : UpdateConversationMemberRoleResult()
 }

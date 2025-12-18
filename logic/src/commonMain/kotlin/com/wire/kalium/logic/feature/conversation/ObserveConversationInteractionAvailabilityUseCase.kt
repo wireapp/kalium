@@ -48,7 +48,7 @@ import kotlinx.coroutines.withContext
  *
  * @see InteractionAvailability
  */
-class ObserveConversationInteractionAvailabilityUseCase internal constructor(
+internal class ObserveConversationInteractionAvailabilityUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val selfUserId: UserId,
@@ -60,7 +60,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
      * @param conversationId the id of the conversation where user checks his interaction availability
      * @return an [IsInteractionAvailableResult] containing Success or Failure cases
      */
-    suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> = withContext(dispatcher.io) {
+    internal suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> = withContext(dispatcher.io) {
 
         val isSelfClientMlsCapable = selfClientIdProvider().flatMap {
             userRepository.isClientMlsCapable(selfUserId, it)
@@ -96,7 +96,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
     }
 }
 
-sealed class IsInteractionAvailableResult {
-    data class Success(val interactionAvailability: InteractionAvailability) : IsInteractionAvailableResult()
-    data class Failure(val coreFailure: CoreFailure) : IsInteractionAvailableResult()
+internal sealed class IsInteractionAvailableResult {
+    internal data class Success(val interactionAvailability: InteractionAvailability) : IsInteractionAvailableResult()
+    internal data class Failure(val coreFailure: CoreFailure) : IsInteractionAvailableResult()
 }

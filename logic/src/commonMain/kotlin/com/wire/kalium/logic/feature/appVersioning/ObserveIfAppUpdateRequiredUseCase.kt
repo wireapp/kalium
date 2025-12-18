@@ -50,11 +50,11 @@ import kotlin.coroutines.coroutineContext
  * @return Flow<Boolean> emits true if at least one ServerConfig requires app updating, false - otherwise.
  *
  */
-interface ObserveIfAppUpdateRequiredUseCase {
+internal interface ObserveIfAppUpdateRequiredUseCase {
     suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
 }
 
-class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
+internal class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val customServerConfigRepository: CustomServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
@@ -128,7 +128,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
             }
     }
 
-    companion object {
+    internal companion object {
         private const val CHECK_APP_VERSION_FREQUENCY_MS = 24 * 60 * 60 * 1000L
         private const val TAG = "ObserveIfAppFreshEnoughUseCase"
     }

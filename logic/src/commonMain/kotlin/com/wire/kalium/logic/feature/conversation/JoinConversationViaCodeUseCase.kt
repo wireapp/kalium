@@ -36,11 +36,11 @@ import com.wire.kalium.network.exceptions.isWrongConversationPassword
  * @param key The key of the conversation to join.
  * @param domain optional domain of the conversation to join.
  */
-class JoinConversationViaCodeUseCase internal constructor(
+internal class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         code: String,
         key: String,
         domain: String?,
@@ -94,7 +94,7 @@ class JoinConversationViaCodeUseCase internal constructor(
                 }
             })
 
-    sealed interface Result {
+    internal sealed interface Result {
         sealed interface Success : Result {
             val conversationId: ConversationId?
 

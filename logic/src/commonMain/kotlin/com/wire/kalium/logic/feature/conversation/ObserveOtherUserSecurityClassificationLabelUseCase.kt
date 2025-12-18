@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-interface ObserveOtherUserSecurityClassificationLabelUseCase {
+internal interface ObserveOtherUserSecurityClassificationLabelUseCase {
     /**
      * This operation will observe if a given user [otherUserId] is classified or not.
      *

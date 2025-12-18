@@ -26,11 +26,11 @@ import kotlinx.coroutines.withContext
 /**
  * This use case is responsible for turning the loudspeaker on for a call.
  */
-class TurnLoudSpeakerOnUseCase(
+internal class TurnLoudSpeakerOnUseCase(
     private val mediaManagerService: MediaManagerService,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    suspend operator fun invoke() {
+    internal suspend operator fun invoke() {
         withContext(dispatcher.default) {
             mediaManagerService.turnLoudSpeakerOn()
         }

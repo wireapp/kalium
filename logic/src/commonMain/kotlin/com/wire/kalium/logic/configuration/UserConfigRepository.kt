@@ -60,7 +60,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface UserConfigRepository {
+internal interface UserConfigRepository {
     fun setAppLockStatus(
         isAppLocked: Boolean,
         timeout: Int,

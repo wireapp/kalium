@@ -31,16 +31,16 @@ import kotlinx.coroutines.flow.Flow
  * @see Conversation
  * @see ObserveConversationDetailsUseCase
  */
-class GetConversationsUseCase(
+internal class GetConversationsUseCase(
     private val conversationRepository: ConversationRepository
 ) {
 
-    sealed class Result {
-        data class Success(val convFlow: Flow<List<Conversation>>) : Result()
-        data class Failure(val storageFailure: StorageFailure) : Result()
+    internal sealed class Result {
+        internal data class Success(val convFlow: Flow<List<Conversation>>) : Result()
+        internal data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
-    suspend operator fun invoke(): Result {
+    internal suspend operator fun invoke(): Result {
         return conversationRepository.getConversationList().fold({
             Result.Failure(it)
         }, {

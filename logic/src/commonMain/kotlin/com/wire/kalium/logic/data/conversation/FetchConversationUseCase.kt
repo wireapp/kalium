@@ -31,7 +31,7 @@ import io.mockative.Mockable
  * and persisting it locally if the fetch is successful.
  */
 @Mockable
-interface FetchConversationUseCase {
+internal interface FetchConversationUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,

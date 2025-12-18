@@ -32,7 +32,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
 
-class SendButtonActionMessageUseCase internal constructor(
+internal class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val compositeMessageRepository: CompositeMessageRepository,
     private val messageMetadataRepository: MessageMetadataRepository,
@@ -49,7 +49,7 @@ class SendButtonActionMessageUseCase internal constructor(
      * @param buttonId The id of the button.
      * @return [Result.Success] if the message was sent successfully, [Result.Failure] otherwise.
      */
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         buttonId: String
@@ -86,7 +86,7 @@ class SendButtonActionMessageUseCase internal constructor(
         Result.Success
     }
 
-    sealed interface Result {
+    internal sealed interface Result {
         data object Success : Result
         data class Failure(
             val error: CoreFailure

@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 /**
  * Use Case that allows the current self user to unblock another previously blocked user
  */
-fun interface UnblockUserUseCase {
+internal fun interface UnblockUserUseCase {
     /**
      * Use case [UnblockUserUseCase] operation
      *
@@ -55,7 +55,7 @@ internal class UnblockUserUseCaseImpl(
         })
 }
 
-sealed class UnblockUserResult {
-    data object Success : UnblockUserResult()
-    data class Failure(val coreFailure: CoreFailure) : UnblockUserResult()
+internal sealed class UnblockUserResult {
+    internal data object Success : UnblockUserResult()
+    internal data class Failure(val coreFailure: CoreFailure) : UnblockUserResult()
 }

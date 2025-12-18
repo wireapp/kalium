@@ -24,7 +24,7 @@ import io.mockative.Mockable
  * Validates a user handle
  */
 @Mockable
-interface ValidateUserHandleUseCase {
+internal interface ValidateUserHandleUseCase {
     /**
      * Validates a user handle
      * @param handle The user handle to validate
@@ -61,17 +61,17 @@ internal class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
     }
 }
 
-sealed class ValidateUserHandleResult(val handle: String) {
-    class Valid(handle: String) : ValidateUserHandleResult(handle)
-    sealed class Invalid(handleWithoutInvalidCharacters: String) : ValidateUserHandleResult(handleWithoutInvalidCharacters) {
-        class InvalidCharacters(
+internal sealed class ValidateUserHandleResult(val handle: String) {
+    internal class Valid(handle: String) : ValidateUserHandleResult(handle)
+    internal sealed class Invalid(handleWithoutInvalidCharacters: String) : ValidateUserHandleResult(handleWithoutInvalidCharacters) {
+        internal class InvalidCharacters(
             handleWithoutInvalidCharacters: String,
-            val invalidCharactersUsed: List<Char>
+            internal val invalidCharactersUsed: List<Char>
         ) : Invalid(handleWithoutInvalidCharacters)
 
-        class TooShort(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
-        class TooLong(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+        internal class TooShort(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+        internal class TooLong(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
     }
 
-    val isValid: Boolean get() = this is Valid
+    internal val isValid: Boolean get() = this is Valid
 }

@@ -43,12 +43,12 @@ import kotlinx.coroutines.flow.first
  * @param domain optional domain of the conversation
  *
  */
-class CheckConversationInviteCodeUseCase internal constructor(
+internal class CheckConversationInviteCodeUseCase internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(code: String, key: String, domain: String?) =
+    internal suspend operator fun invoke(code: String, key: String, domain: String?) =
         conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key).fold(
             { failure ->
                 when (failure) {
@@ -99,7 +99,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
             else -> Result.Failure.Generic(error)
         }
 
-    sealed interface Result {
+    internal sealed interface Result {
         data class Success(
             val name: String?,
             val conversationId: ConversationId,

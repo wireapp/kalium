@@ -37,9 +37,9 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import io.mockative.Mockable
 
-sealed class RecoverMLSConversationsResult {
-    data object Success : RecoverMLSConversationsResult()
-    data class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
+internal sealed class RecoverMLSConversationsResult {
+    internal data object Success : RecoverMLSConversationsResult()
+    internal data class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
 }
 
 /**

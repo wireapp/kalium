@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.map
  * This use case combines channel feature configuration with user permissions to determine
  * whether channels are enabled and what operations the current user can perform.
  */
-class ObserveChannelsCreationPermissionUseCase internal constructor(
+internal class ObserveChannelsCreationPermissionUseCase internal constructor(
     private val channelsConfigStorage: ChannelsConfigurationStorage,
     private val selfUserObservationProvider: SelfUserObservationProvider
 ) {
@@ -47,7 +47,7 @@ class ObserveChannelsCreationPermissionUseCase internal constructor(
      * @return Either a [CoreFailure] if the operation fails, or a [ChannelCreationPermission]
      * indicating whether channels are enabled and what operations the current user can perform
      */
-    suspend operator fun invoke(): Flow<ChannelCreationPermission> = channelsConfigStorage.observePersistedChannelsConfiguration()
+    internal suspend operator fun invoke(): Flow<ChannelCreationPermission> = channelsConfigStorage.observePersistedChannelsConfiguration()
         .combine(selfUserObservationProvider.observeSelfUser())
         .map { (channelFeatureConfig, selfUser) ->
             when (channelFeatureConfig) {

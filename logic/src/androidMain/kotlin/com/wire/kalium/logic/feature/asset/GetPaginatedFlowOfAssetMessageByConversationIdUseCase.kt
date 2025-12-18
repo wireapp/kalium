@@ -31,11 +31,11 @@ import kotlinx.coroutines.flow.flowOn
  * @see PagingData
  * @see Message
  */
-class GetPaginatedFlowOfAssetMessageByConversationIdUseCase internal constructor(
+internal class GetPaginatedFlowOfAssetMessageByConversationIdUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository
 ) {
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         startingOffset: Long,
         pagingConfig: PagingConfig

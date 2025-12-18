@@ -23,10 +23,10 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
-class CellsConfigHandler(
+internal class CellsConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(model: CellsConfigModel?): Either<CoreFailure, Unit> =
+    internal suspend fun handle(model: CellsConfigModel?): Either<CoreFailure, Unit> =
         when {
             model == null -> userConfigRepository.setCellsEnabled(false)
             else -> userConfigRepository.setCellsEnabled(model.status == Status.ENABLED)

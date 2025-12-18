@@ -40,14 +40,14 @@ import kotlinx.datetime.Clock
  * This use case can be used by QA to send read and delivery receipts. This debug function can be used to test correct
  * client behaviour. It should not be used by clients itself.
  */
-class SendConfirmationUseCase internal constructor(
+internal class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val selfUserId: UserId
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         type: ReceiptType,
         firstMessageId: String,

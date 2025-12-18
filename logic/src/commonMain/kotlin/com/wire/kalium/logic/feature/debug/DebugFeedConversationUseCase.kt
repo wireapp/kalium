@@ -39,7 +39,7 @@ import com.wire.kalium.util.DebugKaliumApi
 @DebugKaliumApi(
     message = "This use case is for debug / performance testing only and must not be used in production."
 )
-interface DebugFeedConversationUseCase {
+internal interface DebugFeedConversationUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         config: DebugFeedConfig = DebugFeedConfig.All
@@ -91,14 +91,14 @@ internal class DebugFeedConversationUseCaseImpl(
     }
 }
 
-data class DebugFeedConfig(
+internal data class DebugFeedConfig(
     val messages: Boolean = false,
     val reactions: Boolean = false,
     val unreadEvents: Boolean = false,
     val mentions: Boolean = false
 ) {
-    companion object {
-        val All = DebugFeedConfig(
+    internal companion object {
+        internal val All = DebugFeedConfig(
             messages = true,
             reactions = true,
             unreadEvents = true,
@@ -107,7 +107,7 @@ data class DebugFeedConfig(
     }
 }
 
-sealed class DebugFeedResult {
-    data object Success : DebugFeedResult()
-    data class Failure(val coreFailure: CoreFailure) : DebugFeedResult()
+internal sealed class DebugFeedResult {
+    internal data object Success : DebugFeedResult()
+    internal data class Failure(val coreFailure: CoreFailure) : DebugFeedResult()
 }

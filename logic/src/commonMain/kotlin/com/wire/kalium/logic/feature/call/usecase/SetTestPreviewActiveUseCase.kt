@@ -23,11 +23,11 @@ import com.wire.kalium.logic.feature.call.CallManager
 /**
  * Enable / disable preview video when running the calling test tool
  */
-class SetTestPreviewActiveUseCase internal constructor(
+internal class SetTestPreviewActiveUseCase internal constructor(
     private val callManager: Lazy<CallManager>
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         active: Boolean
     ) {
         callManager.value.setTestPreviewActive(active)

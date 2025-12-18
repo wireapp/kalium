@@ -32,17 +32,17 @@ import kotlinx.coroutines.flow.map
  * @param conversationId
  * @return Result with list of known users not being a part of a conversation
  */
-class GetAllContactsNotInConversationUseCase internal constructor(
+internal class GetAllContactsNotInConversationUseCase internal constructor(
     private val userRepository: UserRepository
 ) {
-    operator fun invoke(conversationId: ConversationId): Flow<Result> =
+    internal operator fun invoke(conversationId: ConversationId): Flow<Result> =
         userRepository
             .observeAllKnownUsersNotInConversation(conversationId)
             .map { it.fold(Result::Failure, Result::Success) }
 
 }
 
-sealed class Result {
-    data class Success(val contactsNotInConversation: List<OtherUser>) : Result()
-    data class Failure(val storageFailure: StorageFailure) : Result()
+internal sealed class Result {
+    internal data class Success(val contactsNotInConversation: List<OtherUser>) : Result()
+    internal data class Failure(val storageFailure: StorageFailure) : Result()
 }

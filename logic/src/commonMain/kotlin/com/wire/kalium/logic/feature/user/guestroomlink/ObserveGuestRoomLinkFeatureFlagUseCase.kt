@@ -29,11 +29,11 @@ import kotlinx.coroutines.flow.map
 /**
  * observe on guest link feature status
  */
-interface ObserveGuestRoomLinkFeatureFlagUseCase {
+internal interface ObserveGuestRoomLinkFeatureFlagUseCase {
     suspend operator fun invoke(): Flow<GuestRoomLinkStatus>
 }
 
-class ObserveGuestRoomLinkFeatureFlagUseCaseImpl internal constructor(
+internal class ObserveGuestRoomLinkFeatureFlagUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : ObserveGuestRoomLinkFeatureFlagUseCase {
     override suspend fun invoke(): Flow<GuestRoomLinkStatus> =

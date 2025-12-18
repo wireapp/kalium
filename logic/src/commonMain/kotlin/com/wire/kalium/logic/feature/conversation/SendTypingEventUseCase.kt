@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
  * after a certain amount of time.
  *
  */
-interface SendTypingEventUseCase {
+internal interface SendTypingEventUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         typingStatus: Conversation.TypingIndicatorMode

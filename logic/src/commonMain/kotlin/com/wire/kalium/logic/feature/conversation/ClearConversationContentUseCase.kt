@@ -39,7 +39,7 @@ import kotlinx.datetime.Clock
  * This use case will clear all messages from a conversation and notify other clients, using the self conversation.
  */
 @Mockable
-interface ClearConversationContentUseCase {
+internal interface ClearConversationContentUseCase {
     /**
      * @param conversationId The conversation id to clear all messages.
      * @return [Result] of the operation, indicating success or failure.
@@ -47,8 +47,8 @@ interface ClearConversationContentUseCase {
     suspend operator fun invoke(conversationId: ConversationId, needToRemoveConversation: Boolean = false): Result
 
     sealed class Result {
-        data object Success : Result()
-        data class Failure(val failure: CoreFailure) : Result()
+        internal data object Success : Result()
+        internal data class Failure(val failure: CoreFailure) : Result()
     }
 }
 

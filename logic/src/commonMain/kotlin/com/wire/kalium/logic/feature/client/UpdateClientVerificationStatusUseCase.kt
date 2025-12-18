@@ -31,16 +31,16 @@ import com.wire.kalium.common.functional.fold
  * @return [UpdateClientVerificationStatusUseCase.Result.Success] if the client was updated successfully.
  * [UpdateClientVerificationStatusUseCase.Result.Failure] if the client could not be updated.
  */
-class UpdateClientVerificationStatusUseCase internal constructor(
+internal class UpdateClientVerificationStatusUseCase internal constructor(
     private val clientRepository: ClientRepository
 ) {
-    suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
+    internal suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
         clientRepository.updateClientProteusVerificationStatus(userId, clientId, verified).fold(
             { error -> Result.Failure(error) },
             { Result.Success }
         )
 
-    sealed interface Result {
+    internal sealed interface Result {
         data object Success : Result
         data class Failure(val error: StorageFailure) : Result
     }

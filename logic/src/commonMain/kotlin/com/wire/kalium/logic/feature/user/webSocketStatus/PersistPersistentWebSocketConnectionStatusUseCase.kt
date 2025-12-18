@@ -27,7 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 /**
  * This use case is responsible for persisting the persistent web socket connection status of the current user.
  */
-interface PersistPersistentWebSocketConnectionStatusUseCase {
+internal interface PersistPersistentWebSocketConnectionStatusUseCase {
     /**
      * @param enabled true if the persistent web socket connection should be enabled, false otherwise
      */

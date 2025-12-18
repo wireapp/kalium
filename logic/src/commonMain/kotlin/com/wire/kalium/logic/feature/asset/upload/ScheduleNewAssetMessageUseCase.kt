@@ -53,7 +53,7 @@ import kotlinx.coroutines.withContext
 import okio.Path
 import kotlin.uuid.Uuid
 
-interface ScheduleNewAssetMessageUseCase {
+internal interface ScheduleNewAssetMessageUseCase {
     /**
      * Function that enables sending an asset message to a given conversation with the strategy of fire & forget. This message is persisted
      * locally and the asset upload is scheduled but not awaited, so returning a [ScheduleNewAssetMessageResult.Success] doesn't mean that
@@ -167,7 +167,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     }
 }
 
-sealed interface ScheduleNewAssetMessageResult {
+internal sealed interface ScheduleNewAssetMessageResult {
     data class Success(val messageId: String) : ScheduleNewAssetMessageResult
     sealed interface Failure : ScheduleNewAssetMessageResult {
         data class Generic(val coreFailure: CoreFailure) : Failure
@@ -176,7 +176,7 @@ sealed interface ScheduleNewAssetMessageResult {
     }
 }
 
-data class AssetUploadParams(
+internal data class AssetUploadParams(
     val conversationId: ConversationId,
     val assetDataPath: Path,
     val assetDataSize: Long,

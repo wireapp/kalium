@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Use case that is responsible for observing outgoing calls.
  */
-interface ObserveOutgoingCallUseCase {
+internal interface ObserveOutgoingCallUseCase {
 
     /**
      * That Flow emits everytime when the list is changed
@@ -33,7 +33,7 @@ interface ObserveOutgoingCallUseCase {
     suspend operator fun invoke(): Flow<List<Call>>
 }
 
-class ObserveOutgoingCallUseCaseImpl internal constructor(
+internal class ObserveOutgoingCallUseCaseImpl internal constructor(
     private val callRepository: CallRepository
 ) : ObserveOutgoingCallUseCase {
 

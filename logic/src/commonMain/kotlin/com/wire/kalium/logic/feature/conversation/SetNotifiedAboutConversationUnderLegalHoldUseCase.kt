@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
  * UseCase for setting legal_hold_change_notified flag to true,
  * it means that User was notified about the recent change in legal hold status.
  */
-interface SetNotifiedAboutConversationUnderLegalHoldUseCase {
+internal interface SetNotifiedAboutConversationUnderLegalHoldUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 

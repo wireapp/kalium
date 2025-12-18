@@ -21,12 +21,12 @@ package com.wire.kalium.logic.data.asset
 import kotlin.jvm.JvmInline
 
 @JvmInline
-value class CacheFolder(val value: String)
+internal value class CacheFolder(val value: String)
 
 @JvmInline
-value class AssetsStorageFolder(val value: String)
+internal value class AssetsStorageFolder(val value: String)
 
 @JvmInline
-value class DBFolder(val value: String)
+internal value class DBFolder(val value: String)
 
-data class DataStoragePaths(val assetStoragePath: AssetsStorageFolder, val cachePath: CacheFolder, val dbPath: DBFolder)
+internal data class DataStoragePaths(val assetStoragePath: AssetsStorageFolder, val cachePath: CacheFolder, val dbPath: DBFolder)

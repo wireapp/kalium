@@ -55,7 +55,7 @@ import kotlin.time.Duration
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
 @Suppress("LongParameterList")
-class SendTextMessageUseCase internal constructor(
+internal class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -69,7 +69,7 @@ class SendTextMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
@@ -126,8 +126,8 @@ class SendTextMessageUseCase internal constructor(
         }
     }.await()
 
-    companion object {
-        const val TYPE = "Text"
+    internal companion object {
+        internal const val TYPE = "Text"
     }
 
     private suspend fun uploadLinkPreviewImages(

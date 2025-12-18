@@ -31,14 +31,14 @@ import kotlinx.coroutines.flow.Flow
  * @param conversationId ID of the conversation service will be seen, added or removed.
  * @return Qualified ID of Service in User table or NULL.
  */
-interface ObserveIsServiceMemberUseCase {
+internal interface ObserveIsServiceMemberUseCase {
     suspend operator fun invoke(
         serviceId: ServiceId,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>>
 }
 
-class ObserveIsServiceMemberUseCaseImpl internal constructor(
+internal class ObserveIsServiceMemberUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : ObserveIsServiceMemberUseCase {
 

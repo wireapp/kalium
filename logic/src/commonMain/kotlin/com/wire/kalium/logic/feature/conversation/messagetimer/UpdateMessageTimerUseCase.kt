@@ -25,7 +25,7 @@ import com.wire.kalium.common.functional.fold
 /**
  * A use case used to update messages self deletion for conversation
  */
-interface UpdateMessageTimerUseCase {
+internal interface UpdateMessageTimerUseCase {
     suspend operator fun invoke(conversationId: ConversationId, messageTimer: Long?): Result
 
     sealed interface Result {
@@ -34,7 +34,7 @@ interface UpdateMessageTimerUseCase {
     }
 }
 
-class UpdateMessageTimerUseCaseImpl internal constructor(
+internal class UpdateMessageTimerUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
 ) : UpdateMessageTimerUseCase {
     override suspend fun invoke(conversationId: ConversationId, messageTimer: Long?): UpdateMessageTimerUseCase.Result =

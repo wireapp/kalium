@@ -86,7 +86,7 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface UserRepository : SelfUserObservationProvider {
+internal interface UserRepository : SelfUserObservationProvider {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 

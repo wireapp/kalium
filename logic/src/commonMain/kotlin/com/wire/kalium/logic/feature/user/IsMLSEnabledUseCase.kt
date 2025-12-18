@@ -27,7 +27,7 @@ import io.mockative.Mockable
  * Checks if the current user has enabled MLS support.
  */
 @Mockable
-interface IsMLSEnabledUseCase {
+internal interface IsMLSEnabledUseCase {
     /**
      * @return true if MLS is enabled, false otherwise.
      */

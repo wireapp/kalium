@@ -28,11 +28,11 @@ import kotlinx.coroutines.withContext
  * Save message draft for given conversation
  * @param messageDraft message payload to save
  */
-interface SaveMessageDraftUseCase {
+internal interface SaveMessageDraftUseCase {
     suspend operator fun invoke(messageDraft: MessageDraft)
 }
 
-class SaveMessageDraftUseCaseImpl internal constructor(
+internal class SaveMessageDraftUseCaseImpl internal constructor(
     private val messageDraftRepository: MessageDraftRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SaveMessageDraftUseCase {

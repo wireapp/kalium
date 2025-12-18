@@ -29,7 +29,7 @@ import com.wire.kalium.network.session.SessionManager
  * Use case to check if the user can migrate from personal to team account.
  * The user can migrate if the user is not in a team and the server supports the migration.
  */
-interface CanMigrateFromPersonalToTeamUseCase {
+internal interface CanMigrateFromPersonalToTeamUseCase {
     suspend operator fun invoke(): Boolean
 }
 

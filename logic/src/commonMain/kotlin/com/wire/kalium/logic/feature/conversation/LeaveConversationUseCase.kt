@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 
-interface LeaveConversationUseCase {
+internal interface LeaveConversationUseCase {
 
     /**
      * This use case will allow the self user to leave a given group conversation while still keeping the mentioned conversation in

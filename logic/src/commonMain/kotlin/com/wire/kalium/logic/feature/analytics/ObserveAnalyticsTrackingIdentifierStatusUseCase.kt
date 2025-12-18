@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.map
  * changes, due to receiving a new identifier from another client
  * or when it's user's first interaction with analytics.
  */
-interface ObserveAnalyticsTrackingIdentifierStatusUseCase {
+internal interface ObserveAnalyticsTrackingIdentifierStatusUseCase {
     /**
      * Use case [ObserveAnalyticsTrackingIdentifierStatusUseCase] operation
      *

@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
  * UseCase for observing the count of archived conversations that have unread events (e.g., messages, pings, missed calls).
  * The result is presented as a continuous flow, updating whenever the count changes.
  */
-interface ObserveArchivedUnreadConversationsCountUseCase {
+internal interface ObserveArchivedUnreadConversationsCountUseCase {
     suspend operator fun invoke(): Flow<Long>
 }
 

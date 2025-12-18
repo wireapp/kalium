@@ -38,53 +38,53 @@ import com.wire.kalium.network.exceptions.isAccountSuspended
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
-sealed class AuthenticationResult {
-    data class Success(
+internal sealed class AuthenticationResult {
+    internal data class Success(
         val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : AuthenticationResult()
 
-    sealed class Failure : AuthenticationResult() {
-        data object SocketError : Failure()
-        sealed class InvalidCredentials : Failure() {
+    internal sealed class Failure : AuthenticationResult() {
+        internal data object SocketError : Failure()
+        internal sealed class InvalidCredentials : Failure() {
             /**
              * The team has enabled 2FA but the user has not entered it yet
              */
-            data object Missing2FA : InvalidCredentials()
+            internal data object Missing2FA : InvalidCredentials()
 
             /**
              * The user has entered an invalid 2FA code, or the 2FA code has expired
              */
-            data object Invalid2FA : InvalidCredentials()
+            internal data object Invalid2FA : InvalidCredentials()
 
             /**
              * The user has entered an invalid email/handle or password combination
              */
-            data object InvalidPasswordIdentityCombination : InvalidCredentials()
+            internal data object InvalidPasswordIdentityCombination : InvalidCredentials()
         }
 
         /**
          * The user has entered a text that isn't considered a valid email or handle
          */
-        data object InvalidUserIdentifier : Failure()
+        internal data object InvalidUserIdentifier : Failure()
 
         /**
          * The user's account has been suspended, for instance via backoffice
          */
-        data object AccountSuspended : Failure()
+        internal data object AccountSuspended : Failure()
 
         /**
          * The user has been invited to a team but hasn't accepted the invitation yet
          */
-        data object AccountPendingActivation : Failure()
+        internal data object AccountPendingActivation : Failure()
 
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
-interface LoginUseCase {
+internal interface LoginUseCase {
     /**
      * Login with user credentials and return the session
      * Be noticed that session won't be stored locally, to store it use [AddAuthenticatedUserUseCase].

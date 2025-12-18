@@ -25,11 +25,11 @@ import com.wire.kalium.logic.data.id.ConversationId
  * Use case to sync the conversation code.
  * This use case is used to update the conversation code in the database.
  */
-class SyncConversationCodeUseCase(
+internal class SyncConversationCodeUseCase(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val serverConfigLinks: ServerConfig.Links
 ) {
-    suspend operator fun invoke(conversationId: ConversationId) {
+    internal suspend operator fun invoke(conversationId: ConversationId) {
         conversationGroupRepository.updateGuestRoomLink(conversationId, serverConfigLinks.accounts)
     }
 }

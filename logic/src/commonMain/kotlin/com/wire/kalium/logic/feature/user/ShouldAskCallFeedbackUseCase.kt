@@ -29,7 +29,7 @@ import kotlinx.datetime.Instant
  * Use case to determine if the call feedback should be asked.
  */
 @Mockable
-interface ShouldAskCallFeedbackUseCase {
+internal interface ShouldAskCallFeedbackUseCase {
     suspend operator fun invoke(
         establishedTime: Instant?,
         currentTime: Instant = DateTimeUtil.currentInstant()
@@ -71,13 +71,13 @@ internal fun ShouldAskCallFeedbackUseCase(
     }
 }
 
-sealed class ShouldAskCallFeedbackUseCaseResult {
-    data class ShouldAskCallFeedback(val callDurationInSeconds: Long) : ShouldAskCallFeedbackUseCaseResult()
-    sealed class ShouldNotAskCallFeedback(val reason: String) : ShouldAskCallFeedbackUseCaseResult() {
-        data class CallDurationIsLessThanOneMinute(val callDurationInSeconds: Long) :
+internal sealed class ShouldAskCallFeedbackUseCaseResult {
+    internal data class ShouldAskCallFeedback(val callDurationInSeconds: Long) : ShouldAskCallFeedbackUseCaseResult()
+    internal sealed class ShouldNotAskCallFeedback(val reason: String) : ShouldAskCallFeedbackUseCaseResult() {
+        internal data class CallDurationIsLessThanOneMinute(val callDurationInSeconds: Long) :
             ShouldNotAskCallFeedback("Call duration is less than 1 minute")
 
-        data class NextTimeForCallFeedbackIsNotReached(val callDurationInSeconds: Long) :
+        internal data class NextTimeForCallFeedbackIsNotReached(val callDurationInSeconds: Long) :
             ShouldNotAskCallFeedback("Next time for call feedback is not reached")
     }
 }

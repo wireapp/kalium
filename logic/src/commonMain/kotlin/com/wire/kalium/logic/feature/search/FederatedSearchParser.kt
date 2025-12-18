@@ -24,7 +24,7 @@ import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class FederatedSearchParser(
+internal class FederatedSearchParser(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId
 ) {
@@ -35,7 +35,7 @@ class FederatedSearchParser(
     private val cachedIsFederationEnabled = AtomicReference<Boolean?>(null)
     private val mutex = Mutex()
 
-    suspend operator fun invoke(searchQuery: String, isOtherDomainAllowed: Boolean): Result {
+    internal suspend operator fun invoke(searchQuery: String, isOtherDomainAllowed: Boolean): Result {
 
         val isFederated = cachedIsFederationEnabled.get()
             ?: mutex.withLock {
@@ -68,7 +68,7 @@ class FederatedSearchParser(
         const val DOMAIN_REGEX = ".+\\$DOMAIN_SEPARATOR[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
     }
 
-    data class Result(
+    internal data class Result(
         val searchTerm: String,
         val domain: String
     )

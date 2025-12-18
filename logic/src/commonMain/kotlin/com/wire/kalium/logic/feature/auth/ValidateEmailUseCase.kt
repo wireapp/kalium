@@ -24,7 +24,7 @@ import io.mockative.Mockable
  * Validates an email address
  */
 @Mockable
-interface ValidateEmailUseCase {
+internal interface ValidateEmailUseCase {
     /**
      * Validates an email address
      * @param email The email address to validate

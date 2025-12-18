@@ -22,11 +22,11 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import io.mockative.Mockable
 
 @Mockable
-interface MLSPublicKeysMapper {
+internal interface MLSPublicKeysMapper {
     fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType
 }
 
-class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
+internal class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
 
     override fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType {
         return when (cipherSuite) {
@@ -43,7 +43,7 @@ class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
 }
 
 @Suppress("ClassNaming")
-sealed interface MLSPublicKeyType {
+internal sealed interface MLSPublicKeyType {
     val value: String?
 
     data object ECDSA_SECP256R1_SHA256 : MLSPublicKeyType {
@@ -69,7 +69,7 @@ sealed interface MLSPublicKeyType {
     data class Unknown(override val value: String?) : MLSPublicKeyType
 
     companion object {
-        fun from(value: String) = when (value) {
+        internal fun from(value: String) = when (value) {
             ECDSA_SECP256R1_SHA256.value -> ECDSA_SECP256R1_SHA256
             ECDSA_SECP384R1_SHA384.value -> ECDSA_SECP384R1_SHA384
             ECDSA_SECP521R1_SHA512.value -> ECDSA_SECP521R1_SHA512

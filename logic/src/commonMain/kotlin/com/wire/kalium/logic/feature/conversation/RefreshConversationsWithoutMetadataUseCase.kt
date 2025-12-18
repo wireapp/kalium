@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
  * Refresh conversations without metadata, only if necessary.
  */
 @Mockable
-interface RefreshConversationsWithoutMetadataUseCase {
+internal interface RefreshConversationsWithoutMetadataUseCase {
     suspend operator fun invoke()
 }
 

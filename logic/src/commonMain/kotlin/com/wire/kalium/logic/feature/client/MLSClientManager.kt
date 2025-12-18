@@ -35,12 +35,12 @@ import kotlinx.coroutines.async
  * upgrades to an MLS supported build.
  */
 @Mockable
-interface MLSClientManager {
+internal interface MLSClientManager {
     suspend operator fun invoke()
 }
 
 @Suppress("LongParameterList")
-class MLSClientManagerImpl internal constructor(
+internal class MLSClientManagerImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val syncStateObserver: SyncStateObserver,

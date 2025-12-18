@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 
-interface RemoveMemberFromConversationUseCase {
+internal interface RemoveMemberFromConversationUseCase {
 
     /**
      * This use case will allow to remove a user from a given group conversation while still keeping the mentioned conversation in

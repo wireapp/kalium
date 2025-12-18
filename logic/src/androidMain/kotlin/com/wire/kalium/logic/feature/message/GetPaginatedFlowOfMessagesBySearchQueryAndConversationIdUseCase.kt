@@ -31,12 +31,12 @@ import kotlinx.coroutines.flow.flowOn
  * @see PagingData
  * @see Message
  */
-class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal constructor(
+internal class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         searchQuery: String,
         conversationId: ConversationId,
         startingOffset: Long,

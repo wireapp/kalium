@@ -24,18 +24,18 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 
-sealed class SSOSettingsResult {
-    data class Success(val ssoSettings: SSOSettingsResponse) : SSOSettingsResult()
+internal sealed class SSOSettingsResult {
+    internal data class Success(val ssoSettings: SSOSettingsResponse) : SSOSettingsResult()
 
-    sealed class Failure : SSOSettingsResult() {
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+    internal sealed class Failure : SSOSettingsResult() {
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
 /**
  * Gets the SSO settings
  */
-interface SSOSettingsUseCase {
+internal interface SSOSettingsUseCase {
     /**
      * @return the [SSOSettingsResult] with the default_sso_code settings if successful
      */

@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 /**
  * This use case enqueue the self deletion of a [Message] for a specific conversation id and message id
  */
-interface EnqueueMessageSelfDeletionUseCase {
+internal interface EnqueueMessageSelfDeletionUseCase {
     operator fun invoke(conversationId: ConversationId, messageId: String)
 }
 

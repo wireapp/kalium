@@ -18,4 +18,4 @@
 
 package com.wire.kalium.logic.configuration
 
-data class GuestRoomLinkStatus(val isGuestRoomLinkEnabled: Boolean?, val isStatusChanged: Boolean?)
+internal data class GuestRoomLinkStatus(val isGuestRoomLinkEnabled: Boolean?, val isStatusChanged: Boolean?)

@@ -30,13 +30,13 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will reject a call for the given conversation.
  */
-class RejectCallUseCase(
+internal class RejectCallUseCase(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
+    internal suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         callingLogger.d("[RejectCallUseCase] -> Updating call status to REJECTED")
         callRepository.updateCallStatusById(conversationId, CallStatus.REJECTED)
 

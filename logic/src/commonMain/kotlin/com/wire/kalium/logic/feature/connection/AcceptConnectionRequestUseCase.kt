@@ -36,7 +36,7 @@ import com.wire.kalium.util.DateTimeUtil
 /**
  * Use Case that allows a user accept a connection request to connect with another User
  */
-interface AcceptConnectionRequestUseCase {
+internal interface AcceptConnectionRequestUseCase {
     /**
      * Use case [AcceptConnectionRequestUseCase] operation
      *
@@ -87,7 +87,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
     }
 }
 
-sealed class AcceptConnectionRequestUseCaseResult {
-    data object Success : AcceptConnectionRequestUseCaseResult()
-    data class Failure(val coreFailure: CoreFailure) : AcceptConnectionRequestUseCaseResult()
+internal sealed class AcceptConnectionRequestUseCaseResult {
+    internal data object Success : AcceptConnectionRequestUseCaseResult()
+    internal data class Failure(val coreFailure: CoreFailure) : AcceptConnectionRequestUseCaseResult()
 }

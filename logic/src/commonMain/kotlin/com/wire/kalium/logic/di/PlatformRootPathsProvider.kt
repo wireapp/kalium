@@ -19,7 +19,7 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
 
-expect class PlatformRootPathsProvider(rootPath: String) : RootPathsProvider {
+internal expect class PlatformRootPathsProvider(rootPath: String) : RootPathsProvider {
     override fun rootAccountPath(userId: UserId): String
     override fun rootProteusPath(userId: UserId): String
     override fun rootMLSPath(userId: UserId): String

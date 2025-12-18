@@ -31,12 +31,12 @@ import com.wire.kalium.common.functional.fold
  * @return [Result.Success] with [ConversationFolder] in case of success,
  * or [Result.Failure] if something went wrong - can't get data from local DB.
  */
-fun interface GetFavoriteFolderUseCase {
+internal fun interface GetFavoriteFolderUseCase {
     suspend operator fun invoke(): Result
 
     sealed class Result {
-        data class Success(val folder: ConversationFolder) : Result()
-        data object Failure : Result()
+        internal data class Success(val folder: ConversationFolder) : Result()
+        internal data object Failure : Result()
     }
 }
 

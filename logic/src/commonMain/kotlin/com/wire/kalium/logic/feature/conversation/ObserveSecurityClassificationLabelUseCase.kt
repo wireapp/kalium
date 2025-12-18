@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
-interface ObserveSecurityClassificationLabelUseCase {
+internal interface ObserveSecurityClassificationLabelUseCase {
     /**
      * Operation that lets compute if a given conversation [conversationId] in terms of compromising security or not.
      * This will observe the conversation and its participants and will return a [Flow] of [SecurityClassificationType]
@@ -86,6 +86,6 @@ internal class ObserveSecurityClassificationLabelUseCaseImpl(
     }
 }
 
-enum class SecurityClassificationType {
+internal enum class SecurityClassificationType {
     CLASSIFIED, NOT_CLASSIFIED, NONE
 }

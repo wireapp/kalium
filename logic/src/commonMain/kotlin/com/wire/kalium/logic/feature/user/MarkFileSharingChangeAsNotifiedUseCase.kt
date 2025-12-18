@@ -24,10 +24,10 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
  */
-class MarkFileSharingChangeAsNotifiedUseCase(
+internal class MarkFileSharingChangeAsNotifiedUseCase(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend operator fun invoke() {
+    internal suspend operator fun invoke() {
         userConfigRepository.setFileSharingAsNotified()
     }
 }

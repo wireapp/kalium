@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.auth
 /**
  * Validates a password
  */
-interface ValidatePasswordUseCase {
+internal interface ValidatePasswordUseCase {
     /**
      * Validates a password
      * @param password The password to validate
@@ -62,9 +62,9 @@ internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
     }
 }
 
-sealed class ValidatePasswordResult {
-    data object Valid : ValidatePasswordResult()
-    data class Invalid(
+internal sealed class ValidatePasswordResult {
+    internal data object Valid : ValidatePasswordResult()
+    internal data class Invalid(
         val missingLowercaseCharacter: Boolean = true,
         val missingUppercaseCharacter: Boolean = true,
         val missingDigit: Boolean = true,
@@ -72,6 +72,6 @@ sealed class ValidatePasswordResult {
         val tooShort: Boolean = true,
     ) : ValidatePasswordResult()
 
-    val isValid: Boolean
+    internal val isValid: Boolean
         get() = this is Valid
 }

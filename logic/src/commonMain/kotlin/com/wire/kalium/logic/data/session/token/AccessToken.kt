@@ -30,10 +30,10 @@ internal data class AccessTokenRefreshResult(
  * @property value The value of the access token.
  * @property tokenType The type of the access token. _e.g._ "Bearer"
  */
-data class AccessToken(
+internal data class AccessToken(
     val value: String,
     val tokenType: String
 )
 
 @JvmInline
-value class RefreshToken(val value: String)
+internal value class RefreshToken(val value: String)

@@ -24,7 +24,7 @@ import com.wire.kalium.network.utils.TestRequestHandler
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
-data class KaliumConfigs(
+internal data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
     // Disabling db-encryption will crash on android-api level below 30
@@ -57,7 +57,7 @@ data class KaliumConfigs(
     val dbInvalidationControlEnabled: Boolean = false
 )
 
-sealed interface BuildFileRestrictionState {
+internal sealed interface BuildFileRestrictionState {
     data object NoRestriction : BuildFileRestrictionState
     data class AllowSome(val allowedType: List<String>) : BuildFileRestrictionState
 }

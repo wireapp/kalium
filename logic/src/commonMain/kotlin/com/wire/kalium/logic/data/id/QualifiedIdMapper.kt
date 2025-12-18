@@ -22,12 +22,12 @@ import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
 @Mockable
-interface QualifiedIdMapper {
+internal interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID
 }
 
 @Deprecated("Mapper should not be public and visible to consumer apps")
-class QualifiedIdMapperImpl(
+internal class QualifiedIdMapperImpl(
     private val selfUserId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
@@ -54,4 +54,4 @@ class QualifiedIdMapperImpl(
     private fun selfUserDomain(): String = selfUserId?.domain ?: ""
 }
 
-fun String.toQualifiedID(mapper: QualifiedIdMapper): QualifiedID = mapper.fromStringToQualifiedID(this)
+internal fun String.toQualifiedID(mapper: QualifiedIdMapper): QualifiedID = mapper.fromStringToQualifiedID(this)

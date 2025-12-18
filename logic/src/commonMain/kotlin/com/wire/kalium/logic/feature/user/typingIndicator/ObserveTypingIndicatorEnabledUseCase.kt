@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.map
 /**
  * UseCase allowing to observe changes of the global configuration flag regarding User Typing Indicator feature
  */
-interface ObserveTypingIndicatorEnabledUseCase {
+internal interface ObserveTypingIndicatorEnabledUseCase {
     suspend operator fun invoke(): Flow<Boolean>
 }
 

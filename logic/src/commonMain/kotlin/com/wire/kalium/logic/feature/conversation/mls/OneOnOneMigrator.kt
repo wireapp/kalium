@@ -41,7 +41,7 @@ import kotlinx.datetime.Instant
 import io.mockative.Mockable
 
 @Mockable
-interface OneOnOneMigrator {
+internal interface OneOnOneMigrator {
     /**
      * Migrates the user's one-on-one Proteus. Without creating a new one since MLS is the default, marking it as active.
      */
@@ -170,6 +170,6 @@ internal class OneOnOneMigratorImpl(
 }
 
 @Mockable
-fun interface CurrentInstantProvider {
+internal fun interface CurrentInstantProvider {
     operator fun invoke(): Instant
 }

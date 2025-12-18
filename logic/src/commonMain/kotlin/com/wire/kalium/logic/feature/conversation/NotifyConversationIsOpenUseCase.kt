@@ -44,7 +44,7 @@ import kotlinx.coroutines.withContext
  * that the conversation is using the latest agreed protocol when the user
  * opens it.
  */
-interface NotifyConversationIsOpenUseCase {
+internal interface NotifyConversationIsOpenUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 

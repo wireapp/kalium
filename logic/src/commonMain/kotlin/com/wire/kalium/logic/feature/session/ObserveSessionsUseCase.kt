@@ -29,10 +29,10 @@ import kotlinx.coroutines.flow.map
  *
  * @see [GetAllSessionsResult.Success.sessions]
  */
-class ObserveSessionsUseCase(
+internal class ObserveSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(): Flow<GetAllSessionsResult> = sessionRepository.allValidSessionsFlow()
+    internal suspend operator fun invoke(): Flow<GetAllSessionsResult> = sessionRepository.allValidSessionsFlow()
         .map {
             it.fold(
                 { failure ->

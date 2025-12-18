@@ -44,7 +44,7 @@ import kotlin.time.Duration
  * Sending a ping/knock message to a conversation
  */
 @Suppress("LongParameterList")
-class SendKnockUseCase internal constructor(
+internal class SendKnockUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -62,7 +62,7 @@ class SendKnockUseCase internal constructor(
      * @param hotKnock whether to send this as a hot knock or not @see [MessageContent.Knock]
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
+    internal suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -92,7 +92,7 @@ class SendKnockUseCase internal constructor(
         }
     }
 
-    companion object {
-        const val TYPE = "Knock"
+    internal companion object {
+        internal const val TYPE = "Knock"
     }
 }

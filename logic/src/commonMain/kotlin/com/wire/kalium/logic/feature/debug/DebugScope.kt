@@ -75,7 +75,7 @@ import kotlinx.coroutines.CoroutineScope
  * This scope can be used to test client behaviour. Debug functions are not needed for normal client activity.
  */
 @Suppress("LongParameterList")
-class DebugScope internal constructor(
+internal class DebugScope internal constructor(
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -109,13 +109,13 @@ class DebugScope internal constructor(
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
-    val establishSession: EstablishSessionUseCase
+    internal val establishSession: EstablishSessionUseCase
         get() = EstablishSessionUseCaseImpl(sessionEstablisher, transactionProvider)
 
-    val breakSession: BreakSessionUseCase
+    internal val breakSession: BreakSessionUseCase
         get() = BreakSessionUseCaseImpl(transactionProvider)
 
-    val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
+    internal val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
         get() = SendBrokenAssetMessageUseCaseImpl(
             currentClientIdProvider,
             assetRepository,
@@ -125,7 +125,7 @@ class DebugScope internal constructor(
             messageRepository
         )
 
-    val sendConfirmation: SendConfirmationUseCase
+    internal val sendConfirmation: SendConfirmationUseCase
         get() = SendConfirmationUseCase(
             currentClientIdProvider = currentClientIdProvider,
             slowSyncRepository = slowSyncRepository,
@@ -133,12 +133,12 @@ class DebugScope internal constructor(
             selfUserId = userId,
         )
 
-    val disableEventProcessing: DisableEventProcessingUseCase
+    internal val disableEventProcessing: DisableEventProcessingUseCase
         get() = DisableEventProcessingUseCaseImpl(
             eventProcessor = eventProcessor
         )
 
-    val synchronizeExternalData: SynchronizeExternalDataUseCase
+    internal val synchronizeExternalData: SynchronizeExternalDataUseCase
         get() = SynchronizeExternalDataUseCaseImpl(
             eventRepository = eventRepository,
             eventProcessor = eventProcessor,
@@ -234,20 +234,20 @@ class DebugScope internal constructor(
             kaliumLogger = logger
         )
 
-    val sendFCMTokenToServer: SendFCMTokenUseCase
+    internal val sendFCMTokenToServer: SendFCMTokenUseCase
         get() = SendFCMTokenToAPIUseCaseImpl(
             currentClientIdProvider,
             clientRepository,
             notificationTokenRepository,
         )
 
-    val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
+    internal val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
 
-    val observeDatabaseLoggerState get() = ObserveDatabaseLoggerStateUseCase(userStorage)
+    internal val observeDatabaseLoggerState get() = ObserveDatabaseLoggerStateUseCase(userStorage)
 
-    val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
+    internal val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
 
-    val debugFeedConversationUseCase
+    internal val debugFeedConversationUseCase
         get(): DebugFeedConversationUseCase = DebugFeedConversationUseCaseImpl(
             userStorage.database.messagesFeeder,
             userStorage.database.reactionFeeder,
@@ -255,12 +255,12 @@ class DebugScope internal constructor(
             userStorage.database.mentionsFeeder,
         )
 
-    val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
+    internal val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
         get() = StartUsingAsyncNotificationsUseCaseImpl(selfServerConfig, updateSelfClientCapabilityToConsumableNotifications)
 
-    val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
+    internal val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
         get() = ObserveIsConsumableNotificationsEnabledUseCaseImpl(clientRepository)
 
-    val getFeatureConfig: GetFeatureConfigUseCase
+    internal val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
 }

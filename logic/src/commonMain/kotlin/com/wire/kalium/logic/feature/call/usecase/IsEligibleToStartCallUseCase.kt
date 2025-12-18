@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 /**
  * @return the [Boolean] for if the user's team has conference calling enabled in its plan.
  */
-interface IsEligibleToStartCallUseCase {
+internal interface IsEligibleToStartCallUseCase {
     suspend operator fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult
 }
 
@@ -80,7 +80,7 @@ internal class IsEligibleToStartCallUseCaseImpl(
     }
 }
 
-sealed interface ConferenceCallingResult {
+internal sealed interface ConferenceCallingResult {
     /**
      * Eligible to start conference/one on one calls
      */

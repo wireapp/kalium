@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
  * and return one [Result].
  */
 @Suppress("LongParameterList")
-class StartCallUseCase internal constructor(
+internal class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
     private val syncManager: SyncManager,
     private val kaliumConfigs: KaliumConfigs,
@@ -47,7 +47,7 @@ class StartCallUseCase internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
     ) = withContext(dispatchers.default) {
@@ -75,7 +75,7 @@ class StartCallUseCase internal constructor(
         })
     }
 
-    sealed interface Result {
+    internal sealed interface Result {
         /**
          * Call started successfully
          */

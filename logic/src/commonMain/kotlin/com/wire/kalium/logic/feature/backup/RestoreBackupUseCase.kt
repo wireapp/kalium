@@ -60,7 +60,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 
-interface RestoreBackupUseCase {
+internal interface RestoreBackupUseCase {
 
     /**
      * Restores a valid previously created backup file into the current database, respecting the current data if there is any overlap.

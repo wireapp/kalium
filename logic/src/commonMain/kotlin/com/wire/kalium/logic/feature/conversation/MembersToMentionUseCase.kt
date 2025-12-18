@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
  * @constructor Creates an instance of the usecase
  */
 @Suppress("ReturnCount")
-class MembersToMentionUseCase internal constructor(
+internal class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val selfUserId: UserId,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -51,7 +51,7 @@ class MembersToMentionUseCase internal constructor(
      * @param searchQuery string used to search for members
      * @return a List of [MemberDetails] of a conversation for the given string
      */
-    suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> = withContext(dispatcher.io) {
+    internal suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> = withContext(dispatcher.io) {
         val conversationMembers = observeConversationMembers(conversationId).first()
 
         // TODO apply normalization techniques that are used for other searches to the name (e.g. ö -> oe)
@@ -95,8 +95,8 @@ class MembersToMentionUseCase internal constructor(
  * Split the name in tokens.
  * Any character that is not a alphanumeric character is a separator (e.g. (space), -, !, 🤣 and so on)
  */
-val nameTokens: (String) -> List<String> = {
+internal val nameTokens: (String) -> List<String> = {
     it.split(NON_ALPHANUMERIC_REGEX).filter { s -> s.isNotEmpty() }
 }
 
-val NON_ALPHANUMERIC_REGEX = Regex("[^\\w]")
+internal val NON_ALPHANUMERIC_REGEX = Regex("[^\\w]")

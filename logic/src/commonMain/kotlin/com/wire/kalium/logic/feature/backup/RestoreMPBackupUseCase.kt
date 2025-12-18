@@ -44,7 +44,7 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.use
 
-interface RestoreMPBackupUseCase {
+internal interface RestoreMPBackupUseCase {
     /**
      * Restores a valid previously created backup file in multiplatform format into the current database, respecting the current data
      * if there is any overlap.

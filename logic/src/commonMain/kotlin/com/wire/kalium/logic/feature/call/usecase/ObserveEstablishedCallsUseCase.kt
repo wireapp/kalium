@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
  * This use case is responsible for observing the established calls.
  */
 @Mockable
-interface ObserveEstablishedCallsUseCase {
+internal interface ObserveEstablishedCallsUseCase {
     /**
      * That Flow emits everytime when the list is changed
      * @return a [Flow] of the list of established calls that should be shown to the user.

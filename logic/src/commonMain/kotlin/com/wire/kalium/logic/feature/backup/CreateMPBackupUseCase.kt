@@ -51,7 +51,7 @@ import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.use
 
-interface CreateMPBackupUseCase {
+internal interface CreateMPBackupUseCase {
     /**
      * Creates a compressed backup file in multiplatform format. This file can be encrypted
      * with the provided password if password is not empty.

@@ -24,10 +24,10 @@ import com.wire.kalium.logic.feature.call.CallManager
 /**
  * This usecase is responsible for setting the video send state of a call.
  */
-class SetVideoSendStateUseCase(
+internal class SetVideoSendStateUseCase(
     private val callManager: Lazy<CallManager>,
 ) {
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         videoState: VideoState
     ) {

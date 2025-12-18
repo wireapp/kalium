@@ -22,7 +22,7 @@ import okio.Sink
 import okio.Source
 
 @Suppress("TooManyFunctions")
-interface KaliumFileSystem {
+internal interface KaliumFileSystem {
     /**
      * Provides the root of the cache path, used to store temporary files
      */

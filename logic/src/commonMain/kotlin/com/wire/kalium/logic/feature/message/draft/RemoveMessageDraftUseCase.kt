@@ -27,11 +27,11 @@ import kotlinx.coroutines.withContext
 /**
  * Removes message draft for given [ConversationId]
  */
-interface RemoveMessageDraftUseCase {
+internal interface RemoveMessageDraftUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 
-class RemoveMessageDraftUseCaseImpl internal constructor(
+internal class RemoveMessageDraftUseCaseImpl internal constructor(
     private val messageDraftRepository: MessageDraftRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : RemoveMessageDraftUseCase {

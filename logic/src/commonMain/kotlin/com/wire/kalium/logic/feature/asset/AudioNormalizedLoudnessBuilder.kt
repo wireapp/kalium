@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.asset
 
-fun interface AudioNormalizedLoudnessBuilder {
+internal fun interface AudioNormalizedLoudnessBuilder {
     /**
      * Generates audio normalized loudness [ByteArray] for the given file path.
      * @param filePath the path to the audio file.
@@ -26,9 +26,9 @@ fun interface AudioNormalizedLoudnessBuilder {
     suspend operator fun invoke(filePath: String): ByteArray?
 
     companion object {
-        const val MAX_SIZE = 200
-        const val MAX_VALUE = 255 // normalized loudness can be up to 255 (UByte.MAX_VALUE)
-        const val TAG = "AudioNormalizedLoudnessBuilder"
+        internal const val MAX_SIZE = 200
+        internal const val MAX_VALUE = 255 // normalized loudness can be up to 255 (UByte.MAX_VALUE)
+        internal const val TAG = "AudioNormalizedLoudnessBuilder"
     }
 }
 

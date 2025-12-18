@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.map
 /**
  * UseCase that allow us to get the configuration of read receipts enabled or not
  */
-interface ObserveReadReceiptsEnabledUseCase {
+internal interface ObserveReadReceiptsEnabledUseCase {
     suspend operator fun invoke(): Flow<Boolean>
 }
 

@@ -62,7 +62,7 @@ import okio.use
  */
 @DelicateKaliumApi("This class is used for debugging purposes only")
 @Suppress("LongParameterList")
-class CreateObfuscatedCopyUseCase internal constructor(
+internal class CreateObfuscatedCopyUseCase internal constructor(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
@@ -73,7 +73,7 @@ class CreateObfuscatedCopyUseCase internal constructor(
 ) {
 
     @DelicateKaliumApi("This function is used for debugging purposes only")
-    suspend operator fun invoke(password: String?): CreateBackupResult = withContext(dispatchers.default) {
+    internal suspend operator fun invoke(password: String?): CreateBackupResult = withContext(dispatchers.default) {
         val userHandle = userRepository.getSelfUser().getOrNull()?.handle?.replace(".", "-")
         val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
         val backupName = createFinalZipName(userHandle, timeStamp)

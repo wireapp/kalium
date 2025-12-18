@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 
-sealed interface ConversationCreationResult {
+internal sealed interface ConversationCreationResult {
     /**
      * Conversation created successfully.
      */
@@ -28,7 +28,7 @@ sealed interface ConversationCreationResult {
         /**
          * Details of the newly created conversation
          */
-        val conversation: Conversation
+        internal val conversation: Conversation
     ) : ConversationCreationResult
 
     /**
@@ -44,10 +44,10 @@ sealed interface ConversationCreationResult {
         /**
          * The root cause of the failure
          */
-        val cause: CoreFailure
+        internal val cause: CoreFailure
     ) : ConversationCreationResult
 
     class BackendConflictFailure(
-        val domains: List<String>
+        internal val domains: List<String>
     ) : ConversationCreationResult
 }

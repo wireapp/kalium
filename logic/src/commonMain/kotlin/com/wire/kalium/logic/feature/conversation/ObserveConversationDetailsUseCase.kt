@@ -33,20 +33,20 @@ import kotlinx.coroutines.withContext
  * This use case will observe and return the conversation details for a specific conversation.
  * @see ConversationDetails
  */
-class ObserveConversationDetailsUseCase(
+internal class ObserveConversationDetailsUseCase(
     private val conversationRepository: ConversationRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    sealed class Result {
-        data class Success(val conversationDetails: ConversationDetails) : Result()
-        data class Failure(val storageFailure: StorageFailure) : Result()
+    internal sealed class Result {
+        internal data class Success(val conversationDetails: ConversationDetails) : Result()
+        internal data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
     /**
      * @param conversationId the id of the conversation to observe
      * @return a flow of [Result] with the [ConversationDetails] of the conversation
      */
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Result> = withContext(dispatcher.io) {
+    internal suspend operator fun invoke(conversationId: ConversationId): Flow<Result> = withContext(dispatcher.io) {
         conversationRepository.observeConversationDetailsById(conversationId)
             .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
     }

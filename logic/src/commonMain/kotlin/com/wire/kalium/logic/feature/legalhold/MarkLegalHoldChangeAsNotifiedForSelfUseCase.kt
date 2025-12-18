@@ -25,12 +25,12 @@ import com.wire.kalium.common.logger.kaliumLogger
 /**
  * Use case that marks the recent legal hold change as already notified to the user.
  */
-interface MarkLegalHoldChangeAsNotifiedForSelfUseCase {
+internal interface MarkLegalHoldChangeAsNotifiedForSelfUseCase {
     suspend operator fun invoke(): Result
 
     sealed class Result {
-        data object Success : Result()
-        data class Failure(val failure: CoreFailure) : Result()
+        internal data object Success : Result()
+        internal data class Failure(val failure: CoreFailure) : Result()
     }
 }
 

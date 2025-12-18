@@ -31,13 +31,13 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case that observes if the legal hold change should be notified to the user or if it has been already notified.
  */
-interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
+internal interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
     suspend operator fun invoke(): Flow<Result>
 
     sealed class Result {
-        data class ShouldNotify(val legalHoldState: LegalHoldState) : Result()
-        data object AlreadyNotified : Result()
-        data class Failure(val failure: CoreFailure) : Result()
+        internal data class ShouldNotify(val legalHoldState: LegalHoldState) : Result()
+        internal data object AlreadyNotified : Result()
+        internal data class Failure(val failure: CoreFailure) : Result()
     }
 }
 

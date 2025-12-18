@@ -29,16 +29,16 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case to fetch all the other user clients (devices) information from the local db for specific user
  */
-class ObserveClientsByUserIdUseCase(
+internal class ObserveClientsByUserIdUseCase(
     private val clientRepository: ClientRepository
 ) {
-    suspend operator fun invoke(userId: UserId): Flow<Result> =
+    internal suspend operator fun invoke(userId: UserId): Flow<Result> =
         clientRepository.observeClientsByUserId(userId).map { clients ->
             clients.fold(Result::Failure, Result::Success)
         }
 
-    sealed class Result {
-        class Success(val clients: List<Client>) : Result()
-        class Failure(val genericFailure: CoreFailure) : Result()
+    internal sealed class Result {
+        internal class Success(val clients: List<Client>) : Result()
+        internal class Failure(val genericFailure: CoreFailure) : Result()
     }
 }

@@ -34,7 +34,7 @@ import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
 @Mockable
-interface RenamedConversationEventHandler {
+internal interface RenamedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.RenamedConversation)
 }
 

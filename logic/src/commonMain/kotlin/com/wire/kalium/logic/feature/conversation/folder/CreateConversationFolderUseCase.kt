@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will create a new conversation folder.
  */
-interface CreateConversationFolderUseCase {
+internal interface CreateConversationFolderUseCase {
     /**
      * @param folderName the name of the folder
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]

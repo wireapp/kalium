@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.first
  * @see Conversation.Access
  */
 @Mockable
-interface UpdateConversationAccessRoleUseCase {
+internal interface UpdateConversationAccessRoleUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param accessRoles the set of access roles to set

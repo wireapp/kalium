@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.feature.backup
 
-sealed class RestoreBackupResult {
-    data class Failure(val failure: BackupRestoreFailure) : RestoreBackupResult()
-    data object Success : RestoreBackupResult()
+internal sealed class RestoreBackupResult {
+    internal data class Failure(val failure: BackupRestoreFailure) : RestoreBackupResult()
+    internal data object Success : RestoreBackupResult()
 
-    sealed class BackupRestoreFailure(open val cause: String) {
-        data object InvalidPassword : BackupRestoreFailure("The provided password is invalid")
-        data object InvalidUserId : BackupRestoreFailure("User id in the backup file does not match the current user id")
-        data class IncompatibleBackup(override val cause: String) : BackupRestoreFailure(cause)
-        data class BackupIOFailure(override val cause: String) : BackupRestoreFailure(cause)
-        data class DecryptionFailure(override val cause: String) : BackupRestoreFailure(cause)
+    internal sealed class BackupRestoreFailure(open val cause: String) {
+        internal data object InvalidPassword : BackupRestoreFailure("The provided password is invalid")
+        internal data object InvalidUserId : BackupRestoreFailure("User id in the backup file does not match the current user id")
+        internal data class IncompatibleBackup(override val cause: String) : BackupRestoreFailure(cause)
+        internal data class BackupIOFailure(override val cause: String) : BackupRestoreFailure(cause)
+        internal data class DecryptionFailure(override val cause: String) : BackupRestoreFailure(cause)
     }
 }

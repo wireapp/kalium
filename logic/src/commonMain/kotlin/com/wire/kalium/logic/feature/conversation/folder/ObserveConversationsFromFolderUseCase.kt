@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.flowOn
  * This use case will observe and return the list of conversations from given folder.
  * @see ConversationDetailsWithEvents
  */
-fun interface ObserveConversationsFromFolderUseCase {
+internal fun interface ObserveConversationsFromFolderUseCase {
     suspend operator fun invoke(folderId: String): Flow<List<ConversationDetailsWithEvents>>
 }
 

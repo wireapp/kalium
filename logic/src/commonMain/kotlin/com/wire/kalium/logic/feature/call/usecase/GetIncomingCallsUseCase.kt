@@ -40,7 +40,7 @@ import kotlinx.coroutines.flow.onEach
 /**
  * Use case that is responsible for observing the incoming calls.
  */
-interface GetIncomingCallsUseCase {
+internal interface GetIncomingCallsUseCase {
 
     /**
      * That Flow emits everytime when the list is changed

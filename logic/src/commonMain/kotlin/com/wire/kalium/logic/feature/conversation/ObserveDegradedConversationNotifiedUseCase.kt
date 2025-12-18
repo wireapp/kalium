@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * UseCase for observing if User was notified about verification degrading of conversation
  */
-interface ObserveDegradedConversationNotifiedUseCase {
+internal interface ObserveDegradedConversationNotifiedUseCase {
     /**
      * @return [Flow] of [Boolean], false means conversation's verification degraded and user needs to be notified
      * true in other cases.
@@ -32,7 +32,7 @@ interface ObserveDegradedConversationNotifiedUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean>
 }
 
-class ObserveDegradedConversationNotifiedUseCaseImpl internal constructor(
+internal class ObserveDegradedConversationNotifiedUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : ObserveDegradedConversationNotifiedUseCase {
 

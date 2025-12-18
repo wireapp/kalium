@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.map
 /**
  * This use case will return the details of a client.
  */
-interface ObserveClientDetailsUseCase {
+internal interface ObserveClientDetailsUseCase {
     /**
      * @param clientId the id of the client to get the details for
      * @return the [GetClientDetailsResult] with the client details, otherwise a [CoreFailure]
@@ -57,10 +57,10 @@ internal class ObserveClientDetailsUseCaseImpl(
                 )
             }
 }
-    sealed class GetClientDetailsResult {
-        data class Success(val client: Client, val isCurrentClient: Boolean) : GetClientDetailsResult()
+    internal sealed class GetClientDetailsResult {
+        internal data class Success(val client: Client, val isCurrentClient: Boolean) : GetClientDetailsResult()
 
-        sealed class Failure : GetClientDetailsResult() {
-            data class Generic(val genericFailure: CoreFailure) : Failure()
+        internal sealed class Failure : GetClientDetailsResult() {
+            internal data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }

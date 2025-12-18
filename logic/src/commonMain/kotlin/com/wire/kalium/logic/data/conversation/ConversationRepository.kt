@@ -85,7 +85,7 @@ import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface ConversationRepository {
+internal interface ConversationRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id

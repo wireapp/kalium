@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case is responsible for observing the current user.
  */
-interface ObserveSelfUserUseCase {
+internal interface ObserveSelfUserUseCase {
 
     /**
      * @return a [Flow] of the current user [SelfUser]

@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 @Mockable
-interface EndCallResultListener {
+internal interface EndCallResultListener {
     suspend fun observeCallEndedResult(): Flow<EndCallResult>
     suspend fun onCallEndedBecauseOfVerificationDegraded()
     suspend fun onCallEndedAskForFeedback(shouldAskCallFeedback: ShouldAskCallFeedbackUseCaseResult)
@@ -32,7 +32,7 @@ interface EndCallResultListener {
 /**
  * This singleton allow us to queue event to show dialog informing user that call was ended because of verification degradation.
  */
-object EndCallResultListenerImpl : EndCallResultListener {
+internal object EndCallResultListenerImpl : EndCallResultListener {
 
     private val conversationCallEnded = MutableSharedFlow<EndCallResult>()
 
@@ -47,7 +47,7 @@ object EndCallResultListenerImpl : EndCallResultListener {
     }
 }
 
-sealed class EndCallResult {
-    data object VerificationDegraded : EndCallResult()
-    data class AskForFeedback(val shouldAskCallFeedback: ShouldAskCallFeedbackUseCaseResult) : EndCallResult()
+internal sealed class EndCallResult {
+    internal data object VerificationDegraded : EndCallResult()
+    internal data class AskForFeedback(val shouldAskCallFeedback: ShouldAskCallFeedbackUseCaseResult) : EndCallResult()
 }

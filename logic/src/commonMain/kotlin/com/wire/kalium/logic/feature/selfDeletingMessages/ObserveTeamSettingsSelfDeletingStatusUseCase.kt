@@ -28,11 +28,11 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case to observe the status of the self deletion settings set by the team admin.
  */
-interface ObserveTeamSettingsSelfDeletingStatusUseCase {
+internal interface ObserveTeamSettingsSelfDeletingStatusUseCase {
     suspend operator fun invoke(): Flow<TeamSettingsSelfDeletionStatus>
 }
 
-class ObserveTeamSettingsSelfDeletingStatusUseCaseImpl internal constructor(
+internal class ObserveTeamSettingsSelfDeletingStatusUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : ObserveTeamSettingsSelfDeletingStatusUseCase {
     override suspend fun invoke(): Flow<TeamSettingsSelfDeletionStatus> =

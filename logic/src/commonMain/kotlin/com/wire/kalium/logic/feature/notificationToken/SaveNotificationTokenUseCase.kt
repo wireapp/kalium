@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.first
 /**
  * Saves the push notification token for the users registered in the device.
  */
-interface SaveNotificationTokenUseCase {
+internal interface SaveNotificationTokenUseCase {
     /**
      * @param token the push notification token
      * @param type the type being ie: "GCM, APNS"
@@ -65,9 +65,9 @@ internal class SaveNotificationTokenUseCaseImpl(
 
 }
 
-sealed class Result {
-    data object Success : Result()
-    sealed class Failure : Result() {
-        data class Generic(val failure: StorageFailure) : Failure()
+internal sealed class Result {
+    internal data object Success : Result()
+    internal sealed class Failure : Result() {
+        internal data class Generic(val failure: StorageFailure) : Failure()
     }
 }

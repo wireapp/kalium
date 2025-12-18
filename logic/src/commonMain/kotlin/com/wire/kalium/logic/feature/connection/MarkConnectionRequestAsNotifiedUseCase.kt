@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Use Case that listen to any user connection changes
  */
-fun interface MarkConnectionRequestAsNotifiedUseCase {
+internal fun interface MarkConnectionRequestAsNotifiedUseCase {
     /**
      * Use case [MarkConnectionRequestAsNotifiedUseCase] operation
      *

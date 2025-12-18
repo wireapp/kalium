@@ -45,7 +45,7 @@ import kotlinx.coroutines.cancel
  * This class is only for platform specific variables,
  * and it should only override functions/variables from CoreLogicCommon
  */
-actual class CoreLogic(
+internal actual class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,
@@ -113,4 +113,4 @@ actual class CoreLogic(
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "android"
+internal actual val clientPlatform: String = "android"

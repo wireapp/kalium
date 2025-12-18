@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.Flow
  * In case a slow collector is interested in receiving all values, it should add a buffer of its own.
  */
 @Mockable
-interface ObserveSyncStateUseCase {
+internal interface ObserveSyncStateUseCase {
     operator fun invoke(): Flow<SyncState>
 }
 

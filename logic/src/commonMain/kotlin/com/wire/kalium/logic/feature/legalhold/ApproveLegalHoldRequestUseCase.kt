@@ -33,7 +33,7 @@ import io.ktor.http.HttpStatusCode
 /**
  * Use Case that allows the user to accept a requested legal hold.
  */
-interface ApproveLegalHoldRequestUseCase {
+internal interface ApproveLegalHoldRequestUseCase {
 
     /**
      * Use case [ApproveLegalHoldRequestUseCase] operation
@@ -44,16 +44,16 @@ interface ApproveLegalHoldRequestUseCase {
     suspend operator fun invoke(password: String?): Result
 
     sealed class Result {
-        data object Success : Result()
-        sealed class Failure : Result() {
-            data class GenericFailure(val coreFailure: CoreFailure) : Failure()
-            data object InvalidPassword : Failure()
-            data object PasswordRequired : Failure()
+        internal data object Success : Result()
+        internal sealed class Failure : Result() {
+            internal data class GenericFailure(val coreFailure: CoreFailure) : Failure()
+            internal data object InvalidPassword : Failure()
+            internal data object PasswordRequired : Failure()
         }
     }
 }
 
-class ApproveLegalHoldRequestUseCaseImpl internal constructor(
+internal class ApproveLegalHoldRequestUseCaseImpl internal constructor(
     private val teamRepository: TeamRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : ApproveLegalHoldRequestUseCase {

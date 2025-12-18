@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 /**
  * Use Case that allows a user to block user
  */
-fun interface BlockUserUseCase {
+internal fun interface BlockUserUseCase {
     /**
      * Use case [BlockUserUseCase] operation
      *
@@ -62,7 +62,7 @@ internal class BlockUserUseCaseImpl(
     }
 }
 
-sealed class BlockUserResult {
-    data object Success : BlockUserResult()
-    data class Failure(val coreFailure: CoreFailure) : BlockUserResult()
+internal sealed class BlockUserResult {
+    internal data object Success : BlockUserResult()
+    internal data class Failure(val coreFailure: CoreFailure) : BlockUserResult()
 }

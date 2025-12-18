@@ -18,4 +18,4 @@
 
 package com.wire.kalium.logic.util
 
-expect class PlatformView
+internal expect class PlatformView

@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.map
  * @return true if the self user is a team member, false otherwise.
  */
 @Mockable
-interface IsSelfATeamMemberUseCase {
+internal interface IsSelfATeamMemberUseCase {
     /**
      * Flow that emits the current value, _i.e._ whether self user is a team member or not.
      * It will _not_ emit while SlowSync isn't done, as it needs to assure that SelfUser has been properly initialised.

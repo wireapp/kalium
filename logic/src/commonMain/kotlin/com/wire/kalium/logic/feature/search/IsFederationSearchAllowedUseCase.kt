@@ -33,7 +33,7 @@ import kotlinx.coroutines.withContext
  * Check if FederatedSearchIsAllowed according to MLS configuration of the backend
  * and the conversation  protocol if a [ConversationId] is provided.
  */
-interface IsFederationSearchAllowedUseCase {
+internal interface IsFederationSearchAllowedUseCase {
     suspend operator fun invoke(conversationId: ConversationId?): Boolean
 }
 

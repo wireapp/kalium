@@ -33,7 +33,7 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 /**
  * This use case will add a member(s) to a given conversation.
  */
-interface AddMemberToConversationUseCase {
+internal interface AddMemberToConversationUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param userIdList the list of user ids to add to the conversation

@@ -30,8 +30,8 @@ import kotlinx.coroutines.flow.map
  * fixme: rename to ObserveCurrentSessionUseCase
  * @see [CurrentSessionResult.Success.accountInfo]
  */
-class CurrentSessionFlowUseCase(private val sessionRepository: SessionRepository) {
-    operator fun invoke(): Flow<CurrentSessionResult> =
+internal class CurrentSessionFlowUseCase(private val sessionRepository: SessionRepository) {
+    internal operator fun invoke(): Flow<CurrentSessionResult> =
         sessionRepository.currentSessionFlow().map {
             it.fold({
                 when (it) {

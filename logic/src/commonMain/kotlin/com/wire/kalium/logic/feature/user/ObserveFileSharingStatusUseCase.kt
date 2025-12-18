@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.map
  * so we can use it to show and hide things on the screen
  */
 @Mockable
-interface ObserveFileSharingStatusUseCase {
+internal interface ObserveFileSharingStatusUseCase {
     operator fun invoke(): Flow<FileSharingStatus>
 }
 

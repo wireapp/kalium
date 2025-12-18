@@ -19,7 +19,7 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.data.event.EventEnvelope
 
-sealed interface EventStreamData {
+internal sealed interface EventStreamData {
 
     data class NewEvents(val eventList: List<EventEnvelope>) : EventStreamData
 

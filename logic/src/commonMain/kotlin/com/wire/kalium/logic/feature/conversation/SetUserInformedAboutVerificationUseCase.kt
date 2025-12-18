@@ -24,11 +24,11 @@ import com.wire.kalium.logic.data.id.ConversationId
  * UseCase for setting DegradedConversationNotified flag to true,
  * means user was notified about verification changes and no need to do it again.
  */
-interface SetUserInformedAboutVerificationUseCase {
+internal interface SetUserInformedAboutVerificationUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 
-class SetUserInformedAboutVerificationUseCaseImpl internal constructor(
+internal class SetUserInformedAboutVerificationUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : SetUserInformedAboutVerificationUseCase {
 

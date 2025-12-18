@@ -30,14 +30,14 @@ import com.wire.kalium.common.functional.map
  * In case the user doesn't have a password, means is an SSO user.
  */
 // TODO: rename to HasSAMLCredentialsUseCase
-class IsPasswordRequiredUseCase internal constructor(
+internal class IsPasswordRequiredUseCase internal constructor(
     private val selfUserId: UserId,
     private val sessionRepository: SessionRepository,
 ) {
     /**
      * @return [Result] with [Boolean] true if the user requires password, false otherwise.
      */
-    suspend operator fun invoke(): Result = eitherInvoke().fold({
+    internal suspend operator fun invoke(): Result = eitherInvoke().fold({
         Result.Failure(it)
     }, {
         Result.Success(it)
@@ -47,8 +47,8 @@ class IsPasswordRequiredUseCase internal constructor(
         it?.subject.isNullOrBlank()
     }
 
-    sealed class Result {
-        data class Success(val value: Boolean) : Result()
-        data class Failure(val cause: StorageFailure) : Result()
+    internal sealed class Result {
+        internal data class Success(val value: Boolean) : Result()
+        internal data class Failure(val cause: StorageFailure) : Result()
     }
 }

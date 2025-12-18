@@ -39,7 +39,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.io.encoding.Base64
 
-fun MLSPublicKeys?.getRemovalKey(
+internal fun MLSPublicKeys?.getRemovalKey(
     cipherSuite: CipherSuite,
     mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
 ): Either<CoreFailure, ByteArray> {
@@ -50,16 +50,16 @@ fun MLSPublicKeys?.getRemovalKey(
     return Base64.decode(key).right()
 }
 
-class NoKeyFoundException(cipherSuite: String) : IllegalStateException("No key found for cipher suite $cipherSuite")
+internal class NoKeyFoundException(cipherSuite: String) : IllegalStateException("No key found for cipher suite $cipherSuite")
 
 @Mockable
-interface MLSPublicKeysRepository {
+internal interface MLSPublicKeysRepository {
     suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
     suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys>
     suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray>
 }
 
-class MLSPublicKeysRepositoryImpl(
+internal class MLSPublicKeysRepositoryImpl(
     private val mlsPublicKeyApi: MLSPublicKeyApi,
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
     initialPublicKeys: MLSPublicKeys? = null, // for testing purposes
@@ -107,7 +107,7 @@ class MLSPublicKeysRepositoryImpl(
             }
     }
 
-    companion object {
+    internal companion object {
         private const val TAG = "MLSPublicKeysRepository"
     }
 }

@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will move a conversation to the selected folder.
  */
-interface MoveConversationToFolderUseCase {
+internal interface MoveConversationToFolderUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param folderId the id of the conversation folder

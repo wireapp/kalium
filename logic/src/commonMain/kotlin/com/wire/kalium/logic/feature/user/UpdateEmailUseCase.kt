@@ -37,10 +37,10 @@ import com.wire.kalium.network.exceptions.isKeyExists
  * @return [Result.Failure.EmailAlreadyInUse] if the email is already in use.
  * @return [Result.Failure.GenericFailure] if the email update failed for any other reason.
  */
-class UpdateEmailUseCase internal constructor(
+internal class UpdateEmailUseCase internal constructor(
     private val accountRepository: AccountRepository
 ) {
-    suspend operator fun invoke(email: String): Result = accountRepository.updateSelfEmail(email)
+    internal suspend operator fun invoke(email: String): Result = accountRepository.updateSelfEmail(email)
         .fold(::onError, ::onSuccess)
 
     private fun onError(error: NetworkFailure): Result.Failure {
@@ -64,7 +64,7 @@ class UpdateEmailUseCase internal constructor(
         }
     }
 
-    sealed interface Result {
+    internal sealed interface Result {
         sealed interface Success : Result {
             data object VerificationEmailSent : Success
             data object NoChange : Success

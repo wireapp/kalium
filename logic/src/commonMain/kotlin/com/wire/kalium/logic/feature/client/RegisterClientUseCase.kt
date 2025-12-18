@@ -50,32 +50,32 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
-sealed class RegisterClientResult {
-    class Success(val client: Client) : RegisterClientResult()
+internal sealed class RegisterClientResult {
+    internal class Success(val client: Client) : RegisterClientResult()
 
-    class E2EICertificateRequired(val client: Client, val userId: UserId) : RegisterClientResult()
+    internal class E2EICertificateRequired(val client: Client, val userId: UserId) : RegisterClientResult()
 
-    sealed class Failure : RegisterClientResult() {
-        sealed class InvalidCredentials : Failure() {
+    internal sealed class Failure : RegisterClientResult() {
+        internal sealed class InvalidCredentials : Failure() {
             /**
              * The team has enabled 2FA but has not provided a 2FA code.
              */
-            data object Missing2FA : InvalidCredentials()
+            internal data object Missing2FA : InvalidCredentials()
 
             /**
              * The team has enabled 2FA but the user has provided an invalid or expired 2FA code.
              */
-            data object Invalid2FA : InvalidCredentials()
+            internal data object Invalid2FA : InvalidCredentials()
 
             /**
              * The password is invalid.
              */
-            data object InvalidPassword : InvalidCredentials()
+            internal data object InvalidPassword : InvalidCredentials()
         }
 
-        data object TooManyClients : Failure()
-        data object PasswordAuthRequired : Failure()
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+        internal data object TooManyClients : Failure()
+        internal data object PasswordAuthRequired : Failure()
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

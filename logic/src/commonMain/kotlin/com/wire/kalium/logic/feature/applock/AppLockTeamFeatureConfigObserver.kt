@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.map
 /**
  * observe app lock feature flag of the team
  */
-interface AppLockTeamFeatureConfigObserver {
+internal interface AppLockTeamFeatureConfigObserver {
     operator fun invoke(): Flow<AppLockTeamConfig?>
 }
 

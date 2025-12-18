@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will add a conversation to the favorites folder.
  */
-interface AddConversationToFavoritesUseCase {
+internal interface AddConversationToFavoritesUseCase {
     /**
      * @param conversationId the id of the conversation
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]

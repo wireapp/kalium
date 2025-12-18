@@ -50,7 +50,7 @@ import kotlinx.datetime.Clock
 import okio.Path
 
 @Suppress("MaxLineLength")
-fun interface SendBrokenAssetMessageUseCase {
+internal fun interface SendBrokenAssetMessageUseCase {
     /**
      * Function that can be used to send manipulated asset messages to a given conversation. Manipulation can be either a wrong
      * checksum or a changed otrKey. This debug function can be used to test correct client behaviour. It should not be used by
@@ -217,9 +217,9 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     }
 }
 
-sealed class SendBrokenAssetMessageResult {
-    data object Success : SendBrokenAssetMessageResult()
-    data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
+internal sealed class SendBrokenAssetMessageResult {
+    internal data object Success : SendBrokenAssetMessageResult()
+    internal data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 
 private data class AssetMessageMetadata(
@@ -235,7 +235,7 @@ private data class AssetMessageMetadata(
     val sha256Key: SHA256Key
 )
 
-data class BrokenState(
+internal data class BrokenState(
     val invalidHash: Boolean,
     val otherHash: Boolean,
     val otherAlgorithm: Boolean

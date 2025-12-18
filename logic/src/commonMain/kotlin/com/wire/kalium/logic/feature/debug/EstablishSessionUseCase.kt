@@ -27,7 +27,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
-interface EstablishSessionUseCase {
+internal interface EstablishSessionUseCase {
 
     /**
      * Establish a proteus session with another client
@@ -40,9 +40,9 @@ interface EstablishSessionUseCase {
     suspend operator fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult
 }
 
-sealed class EstablishSessionResult {
-    data object Success : EstablishSessionResult()
-    data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
+internal sealed class EstablishSessionResult {
+    internal data object Success : EstablishSessionResult()
+    internal data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
 }
 
 internal class EstablishSessionUseCaseImpl(

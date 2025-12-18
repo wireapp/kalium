@@ -33,7 +33,7 @@ import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 /**
  * Use Case that allows a user send a connection request to connect with another User
  */
-interface SendConnectionRequestUseCase {
+internal interface SendConnectionRequestUseCase {
     /**
      * Use case [SendConnectionRequestUseCase] operation
      *
@@ -81,13 +81,13 @@ internal class SendConnectionRequestUseCaseImpl(
         }
 }
 
-sealed class SendConnectionRequestResult {
-    data object Success : SendConnectionRequestResult()
+internal sealed class SendConnectionRequestResult {
+    internal data object Success : SendConnectionRequestResult()
 
-    sealed class Failure : SendConnectionRequestResult() {
-        class GenericFailure(val coreFailure: CoreFailure) : Failure()
-        data object FederationDenied : Failure()
-        data object MissingLegalHoldConsent : Failure()
+    internal sealed class Failure : SendConnectionRequestResult() {
+        internal class GenericFailure(val coreFailure: CoreFailure) : Failure()
+        internal data object FederationDenied : Failure()
+        internal data object MissingLegalHoldConsent : Failure()
     }
 
 }

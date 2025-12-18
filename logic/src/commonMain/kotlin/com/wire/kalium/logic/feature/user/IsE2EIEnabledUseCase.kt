@@ -26,7 +26,7 @@ import io.mockative.Mockable
  * Checks if the current user's team has enabled E2EI and MLS.
  */
 @Mockable
-interface IsE2EIEnabledUseCase {
+internal interface IsE2EIEnabledUseCase {
     /**
      * @return true if E2EI and MLS is enabled, false otherwise.
      */

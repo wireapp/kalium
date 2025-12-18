@@ -43,7 +43,7 @@ import kotlinx.datetime.Instant
  * Updates the supported protocols of the current user.
  */
 @Mockable
-interface UpdateSelfUserSupportedProtocolsUseCase {
+internal interface UpdateSelfUserSupportedProtocolsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Boolean>
 }
 

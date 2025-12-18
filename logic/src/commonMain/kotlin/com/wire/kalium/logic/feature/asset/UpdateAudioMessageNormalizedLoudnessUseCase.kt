@@ -25,7 +25,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-interface UpdateAudioMessageNormalizedLoudnessUseCase {
+internal interface UpdateAudioMessageNormalizedLoudnessUseCase {
     /**
      * Updates the audio waves mask for a given message in a conversation.
      * @param conversationId The ID of the conversation containing the message.

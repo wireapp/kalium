@@ -27,17 +27,17 @@ import com.wire.kalium.logic.data.user.UserId
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-sealed class AccountInfo {
-    abstract val userId: UserId
+internal sealed class AccountInfo {
+    internal abstract val userId: UserId
 
-    data class Valid(override val userId: UserId) : AccountInfo()
-    data class Invalid(
+    internal data class Valid(override val userId: UserId) : AccountInfo()
+    internal data class Invalid(
         override val userId: UserId,
         val logoutReason: LogoutReason
     ) : AccountInfo()
 
     @OptIn(ExperimentalContracts::class)
-    fun isValid(): Boolean {
+    internal fun isValid(): Boolean {
         contract {
             returns(true) implies (this@AccountInfo is Valid)
             returns(false) implies (this@AccountInfo is Invalid)
@@ -46,12 +46,12 @@ sealed class AccountInfo {
     }
 }
 
-data class PersistentWebSocketStatus(
+internal data class PersistentWebSocketStatus(
     val userId: UserId,
     val isPersistentWebSocketEnabled: Boolean
 )
 
-data class Account(
+internal data class Account(
     val info: AccountInfo,
     val serverConfig: ServerConfig,
     val ssoId: SsoId?
@@ -60,13 +60,13 @@ data class Account(
 /**
  * Holds information about the user ID, and the associated user id.
  */
-data class AccountTokens(
+internal data class AccountTokens(
     val userId: UserId,
     val accessToken: AccessToken,
     val refreshToken: RefreshToken,
     val cookieLabel: String?
 ) {
-    constructor(
+    internal constructor(
         userId: UserId,
         accessToken: String,
         refreshToken: String,

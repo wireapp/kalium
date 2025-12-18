@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 @Mockable
-interface EpochChangesObserver : MLSEpochObserver {
+internal interface EpochChangesObserver : MLSEpochObserver {
     fun observe(): Flow<GroupWithEpoch>
     suspend fun emit(groupId: MLSGroupId, epoch: ULong)
 }
@@ -43,4 +43,4 @@ internal class EpochChangesObserverImpl : EpochChangesObserver {
     }
 }
 
-data class GroupWithEpoch(val groupId: GroupID, val epoch: ULong)
+internal data class GroupWithEpoch(val groupId: GroupID, val epoch: ULong)

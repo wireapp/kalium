@@ -26,7 +26,7 @@ import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 @Suppress("LongParameterList")
-class SearchScope internal constructor(
+internal class SearchScope internal constructor(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val getDefaultProtocol: GetDefaultProtocolUseCase,
     private val getConversationProtocolInfo: GetConversationProtocolInfoUseCase,
@@ -35,21 +35,21 @@ class SearchScope internal constructor(
     private val selfUserId: UserId,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    val searchUsers: SearchUsersUseCase
+    internal val searchUsers: SearchUsersUseCase
         get() = SearchUsersUseCaseImpl(
             searchUserRepository,
             selfUserId,
             kaliumConfigs.maxRemoteSearchResultCount
         )
 
-    val searchByHandle: SearchByHandleUseCase
+    internal val searchByHandle: SearchByHandleUseCase
         get() = SearchByHandleUseCase(
             searchUserRepository,
             selfUserId,
             kaliumConfigs.maxRemoteSearchResultCount
         )
-    val federatedSearchParser: FederatedSearchParser get() = FederatedSearchParser(sessionRepository, selfUserId)
+    internal val federatedSearchParser: FederatedSearchParser get() = FederatedSearchParser(sessionRepository, selfUserId)
 
-    val isFederationSearchAllowedUseCase: IsFederationSearchAllowedUseCase
+    internal val isFederationSearchAllowedUseCase: IsFederationSearchAllowedUseCase
         get() = IsFederationSearchAllowedUseCase(mlsPublicKeysRepository, getDefaultProtocol, getConversationProtocolInfo)
 }

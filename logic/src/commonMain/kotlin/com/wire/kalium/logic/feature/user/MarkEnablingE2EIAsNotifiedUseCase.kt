@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.minutes
  * Based on this Duration we calculate how much to snooze the notification for.
  * This duration should be just passed from the [E2EIRequiredResult.WithGracePeriod].
  */
-interface MarkEnablingE2EIAsNotifiedUseCase {
+internal interface MarkEnablingE2EIAsNotifiedUseCase {
     suspend operator fun invoke(tillTheEndOfGracePeriod: Duration)
 }
 

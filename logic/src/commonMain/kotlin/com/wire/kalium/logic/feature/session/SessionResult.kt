@@ -21,11 +21,11 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.auth.AccountInfo
 
-sealed class GetAllSessionsResult {
-    class Success(val sessions: List<AccountInfo>) : GetAllSessionsResult()
+internal sealed class GetAllSessionsResult {
+    internal class Success(val sessions: List<AccountInfo>) : GetAllSessionsResult()
 
-    sealed class Failure : GetAllSessionsResult() {
-        data object NoSessionFound : Failure()
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+    internal sealed class Failure : GetAllSessionsResult() {
+        internal data object NoSessionFound : Failure()
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

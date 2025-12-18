@@ -34,12 +34,12 @@ import kotlinx.coroutines.flow.map
  *
  * @see User
  */
-class ObserveUserListByIdUseCase internal constructor(
+internal class ObserveUserListByIdUseCase internal constructor(
     private val userRepository: UserRepository,
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    suspend operator fun invoke(userIdList: List<UserId>): Flow<List<User>> {
+    internal suspend operator fun invoke(userIdList: List<UserId>): Flow<List<User>> {
         return flowOf(userIdList).map { members ->
             members.map { userId ->
                 userRepository.observeUser(userId)

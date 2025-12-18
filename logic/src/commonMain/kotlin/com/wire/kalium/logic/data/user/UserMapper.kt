@@ -53,7 +53,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions")
-interface UserMapper {
+internal interface UserMapper {
     fun fromSelfUserToUserEntity(selfUser: SelfUser): UserEntity
     fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity
     fun fromUserEntityToSelfUser(userEntity: UserEntity): SelfUser
@@ -441,32 +441,32 @@ internal class UserMapperImpl(
     )
 }
 
-fun SupportedProtocol.toApi() = when (this) {
+internal fun SupportedProtocol.toApi() = when (this) {
     SupportedProtocol.MLS -> SupportedProtocolDTO.MLS
     SupportedProtocol.PROTEUS -> SupportedProtocolDTO.PROTEUS
 }
 
-fun SupportedProtocol.toDao() = when (this) {
+internal fun SupportedProtocol.toDao() = when (this) {
     SupportedProtocol.MLS -> SupportedProtocolEntity.MLS
     SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
-fun SupportedProtocolDTO.toModel() = when (this) {
+internal fun SupportedProtocolDTO.toModel() = when (this) {
     SupportedProtocolDTO.MLS -> SupportedProtocol.MLS
     SupportedProtocolDTO.PROTEUS -> SupportedProtocol.PROTEUS
 }
 
-fun SupportedProtocolDTO.toDao() = when (this) {
+internal fun SupportedProtocolDTO.toDao() = when (this) {
     SupportedProtocolDTO.MLS -> SupportedProtocolEntity.MLS
     SupportedProtocolDTO.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
-fun SupportedProtocolEntity.toModel() = when (this) {
+internal fun SupportedProtocolEntity.toModel() = when (this) {
     SupportedProtocolEntity.MLS -> SupportedProtocol.MLS
     SupportedProtocolEntity.PROTEUS -> SupportedProtocol.PROTEUS
 }
 
-fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
-fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
-fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
-fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()
+internal fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
+internal fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
+internal fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
+internal fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()

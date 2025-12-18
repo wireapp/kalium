@@ -31,12 +31,12 @@ import kotlinx.coroutines.withContext
 /**
  * Provides a way to get a full message using its [ConversationId] and message ID coordinates.
  */
-class GetMessageByIdUseCase internal constructor(
+internal class GetMessageByIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
     ): Result = withContext(dispatchers.io) {
@@ -47,7 +47,7 @@ class GetMessageByIdUseCase internal constructor(
         })
     }
 
-    sealed interface Result {
+    internal sealed interface Result {
 
         data class Success(val message: Message) : Result
 

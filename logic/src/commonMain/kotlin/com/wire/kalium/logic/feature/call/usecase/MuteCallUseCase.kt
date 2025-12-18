@@ -27,14 +27,14 @@ import io.mockative.Mockable
  * This use case is responsible for muting a call.
  */
 @Mockable
-interface MuteCallUseCase {
+internal interface MuteCallUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         shouldApplyOnDeviceMicrophone: Boolean = true
     )
 }
 
-class MuteCallUseCaseImpl internal constructor(
+internal class MuteCallUseCaseImpl internal constructor(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository
 ) : MuteCallUseCase {

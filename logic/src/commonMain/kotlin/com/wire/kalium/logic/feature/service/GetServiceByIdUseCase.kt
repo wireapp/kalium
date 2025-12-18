@@ -27,14 +27,14 @@ import com.wire.kalium.common.functional.nullableFold
  * @param serviceId contains service ID and Provider.
  * @return Service Details or NULL.
  */
-interface GetServiceByIdUseCase {
+internal interface GetServiceByIdUseCase {
 
     suspend operator fun invoke(
         serviceId: ServiceId
     ): ServiceDetails?
 }
 
-class GetServiceByIdUseCaseImpl internal constructor(
+internal class GetServiceByIdUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : GetServiceByIdUseCase {
 

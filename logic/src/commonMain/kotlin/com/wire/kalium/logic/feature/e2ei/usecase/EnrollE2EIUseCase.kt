@@ -40,7 +40,7 @@ import kotlinx.serialization.json.JsonPrimitive
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
  */
-interface EnrollE2EIUseCase {
+internal interface EnrollE2EIUseCase {
     suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): Either<E2EIFailure, E2EIEnrollmentResult.Initialized>
     suspend fun finalizeEnrollment(
         idToken: String,
@@ -50,7 +50,7 @@ interface EnrollE2EIUseCase {
 }
 
 @Suppress("ReturnCount")
-class EnrollE2EIUseCaseImpl internal constructor(
+internal class EnrollE2EIUseCaseImpl internal constructor(
     private val e2EIRepository: E2EIRepository,
     private val userRepository: UserRepository,
     private val coroutineScope: CoroutineScope,
@@ -270,7 +270,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         )
     )
 
-    companion object {
+    internal companion object {
         private const val ID_TOKEN = "id_token"
         private const val KEY_AUTH = "keyauth"
         private const val ESSENTIAL = "essential"
@@ -281,7 +281,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
     }
 }
 
-sealed interface E2EIEnrollmentResult {
+internal sealed interface E2EIEnrollmentResult {
     @Suppress("LongParameterList")
     data class Initialized(
         val target: String,

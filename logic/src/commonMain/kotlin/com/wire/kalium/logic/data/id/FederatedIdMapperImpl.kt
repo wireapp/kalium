@@ -27,7 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 
 @Mockable
-interface FederatedIdMapper {
+internal interface FederatedIdMapper {
     suspend fun parseToFederatedId(qualifiedID: QualifiedID): String
     suspend fun parseToFederatedId(qualifiedStringID: String): String
 }
@@ -38,7 +38,7 @@ interface FederatedIdMapper {
  * In detail, if [isFederationEnabled] is [true] then the full qualified form will be used
  * otherwise the plain value will be used
  */
-class FederatedIdMapperImpl internal constructor(
+internal class FederatedIdMapperImpl internal constructor(
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val sessionRepository: SessionRepository,

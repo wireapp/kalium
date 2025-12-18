@@ -26,11 +26,11 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 /**
  * Use case to get fingerprint of current user client (device). Only applies to proteus devices.
  */
-interface GetProteusFingerprintUseCase {
+internal interface GetProteusFingerprintUseCase {
     suspend operator fun invoke(): GetProteusFingerprintResult
 }
 
-class GetProteusFingerprintUseCaseImpl internal constructor(
+internal class GetProteusFingerprintUseCaseImpl internal constructor(
     private val transactionProvider: CryptoTransactionProvider
 ) : GetProteusFingerprintUseCase {
     override suspend fun invoke(): GetProteusFingerprintResult {
@@ -47,8 +47,8 @@ class GetProteusFingerprintUseCaseImpl internal constructor(
     }
 }
 
-sealed class GetProteusFingerprintResult {
-    data class Success(val fingerprint: String) : GetProteusFingerprintResult()
+internal sealed class GetProteusFingerprintResult {
+    internal data class Success(val fingerprint: String) : GetProteusFingerprintResult()
 
-    data class Failure(val genericFailure: CoreFailure) : GetProteusFingerprintResult()
+    internal data class Failure(val genericFailure: CoreFailure) : GetProteusFingerprintResult()
 }

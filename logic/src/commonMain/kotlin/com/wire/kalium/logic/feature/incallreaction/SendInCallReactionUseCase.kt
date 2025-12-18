@@ -36,7 +36,7 @@ import kotlinx.datetime.Clock
 /**
  * Sends in-call reaction to the call with the conversationId
  */
-class SendInCallReactionUseCase(
+internal class SendInCallReactionUseCase(
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val messageSender: MessageSender,
@@ -44,7 +44,7 @@ class SendInCallReactionUseCase(
     private val scope: CoroutineScope
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, reaction: String): Either<CoreFailure, Unit> =
+    internal suspend operator fun invoke(conversationId: ConversationId, reaction: String): Either<CoreFailure, Unit> =
         scope.async(dispatchers.io) {
 
             val generatedMessageUuid = Uuid.random().toString()

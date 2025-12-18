@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.client.ClientType
  * preKeysToSend : the initial public keys to start a conversation with another client
  * @see [RegisterClientParam]
  */
-data class RegisterClientParam(
+internal data class RegisterClientParam(
     val password: String?,
     val capabilities: List<ClientCapability>?,
     val clientType: ClientType? = null,
@@ -38,5 +38,5 @@ data class RegisterClientParam(
     val modelPostfix: String? = null
 )
 
-const val FIRST_KEY_ID = 0
-const val DEFAULT_PRE_KEYS_COUNT = 100
+internal const val FIRST_KEY_ID = 0
+internal const val DEFAULT_PRE_KEYS_COUNT = 100

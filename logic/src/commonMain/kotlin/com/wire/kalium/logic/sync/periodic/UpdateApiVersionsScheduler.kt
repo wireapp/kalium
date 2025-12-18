@@ -27,7 +27,7 @@ package com.wire.kalium.logic.sync.periodic
  *  - Mobile: at least once every 24 hours OR whenever the app comes to the foreground
  *
  */
-interface UpdateApiVersionsScheduler {
+internal interface UpdateApiVersionsScheduler {
 
     /**
      *  Schedules a periodic execution of [UpdateApiVersionsWorker], which checks and tries to determine

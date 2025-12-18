@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
  * or changes its state to foreground (mobile).
  */
 @Mockable
-interface ForegroundActionsUseCase {
+internal interface ForegroundActionsUseCase {
     suspend operator fun invoke()
 }
 

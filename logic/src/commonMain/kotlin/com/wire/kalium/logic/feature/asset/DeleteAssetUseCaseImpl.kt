@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
  * @param assetId the id of the asset to delete
  */
 
-interface DeleteAssetUseCase {
+internal interface DeleteAssetUseCase {
     suspend operator fun invoke(assetId: AssetId)
 }
 

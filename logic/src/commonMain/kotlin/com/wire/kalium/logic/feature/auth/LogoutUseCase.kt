@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
  * Logs out the user from the current session
  */
 @Mockable
-interface LogoutUseCase {
+internal interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed
      * @param waitUntilCompletes if true, the logout suspend fun will wait until all the logout operations are completed

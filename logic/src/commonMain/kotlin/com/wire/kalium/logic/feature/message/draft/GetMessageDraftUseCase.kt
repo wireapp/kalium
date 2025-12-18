@@ -34,11 +34,11 @@ import kotlinx.coroutines.withContext
  * @param conversationId the id of the conversation to get message draft
  * @return [MessageDraft] or null if draft doesn't exist
  */
-interface GetMessageDraftUseCase {
+internal interface GetMessageDraftUseCase {
     suspend operator fun invoke(conversationId: ConversationId): MessageDraft?
 }
 
-class GetMessageDraftUseCaseImpl internal constructor(
+internal class GetMessageDraftUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val messageDraftRepository: MessageDraftRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl

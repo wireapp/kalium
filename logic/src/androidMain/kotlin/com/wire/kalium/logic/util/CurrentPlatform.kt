@@ -19,6 +19,6 @@
 
 package com.wire.kalium.logic.util
 
-actual class CurrentPlatform(
-    val type: PlatformType = PlatformType.ANDROID
+internal actual class CurrentPlatform(
+    internal val type: PlatformType = PlatformType.ANDROID
 )

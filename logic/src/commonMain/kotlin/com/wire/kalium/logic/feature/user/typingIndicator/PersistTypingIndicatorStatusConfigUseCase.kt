@@ -27,7 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 /**
  * UseCase allowing to persist the global configuration flag regarding User Typing Indicator feature
  */
-interface PersistTypingIndicatorStatusConfigUseCase {
+internal interface PersistTypingIndicatorStatusConfigUseCase {
     suspend operator fun invoke(enabled: Boolean): TypingIndicatorConfigResult
 }
 
@@ -52,7 +52,7 @@ internal class PersistTypingIndicatorStatusConfigUseCaseImpl(
     }
 }
 
-sealed class TypingIndicatorConfigResult {
-    data object Success : TypingIndicatorConfigResult()
-    data class Failure(val cause: CoreFailure) : TypingIndicatorConfigResult()
+internal sealed class TypingIndicatorConfigResult {
+    internal data object Success : TypingIndicatorConfigResult()
+    internal data class Failure(val cause: CoreFailure) : TypingIndicatorConfigResult()
 }

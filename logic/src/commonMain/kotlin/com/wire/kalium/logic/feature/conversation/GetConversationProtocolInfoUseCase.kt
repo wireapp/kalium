@@ -33,10 +33,10 @@ import kotlinx.coroutines.withContext
  * @see Conversation.ProtocolInfo
  */
 @Mockable
-interface GetConversationProtocolInfoUseCase {
+internal interface GetConversationProtocolInfoUseCase {
     sealed class Result {
-        data class Success(val protocolInfo: Conversation.ProtocolInfo) : Result()
-        data class Failure(val storageFailure: StorageFailure) : Result()
+        internal data class Success(val protocolInfo: Conversation.ProtocolInfo) : Result()
+        internal data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
     /**

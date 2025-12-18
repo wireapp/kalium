@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.combine
 /**
  * Use case that allows to observe the legal hold state for the self user.
  */
-interface ObserveLegalHoldStateForSelfUserUseCase {
+internal interface ObserveLegalHoldStateForSelfUserUseCase {
     suspend operator fun invoke(): Flow<LegalHoldStateForSelfUser>
 }
 
@@ -47,8 +47,8 @@ internal class ObserveLegalHoldStateForSelfUserUseCaseImpl internal constructor(
         }
 }
 
-sealed class LegalHoldStateForSelfUser {
-    data object Enabled : LegalHoldStateForSelfUser()
-    data object Disabled : LegalHoldStateForSelfUser()
-    data object PendingRequest : LegalHoldStateForSelfUser()
+internal sealed class LegalHoldStateForSelfUser {
+    internal data object Enabled : LegalHoldStateForSelfUser()
+    internal data object Disabled : LegalHoldStateForSelfUser()
+    internal data object PendingRequest : LegalHoldStateForSelfUser()
 }

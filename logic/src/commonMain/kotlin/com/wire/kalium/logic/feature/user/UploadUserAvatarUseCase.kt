@@ -29,7 +29,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.Path
 
-interface UploadUserAvatarUseCase {
+internal interface UploadUserAvatarUseCase {
     /**
      * Function allowing the upload of a user profile picture (avatar)
      * This first will upload the data as an asset and then will link this asset with the [User]
@@ -67,7 +67,7 @@ internal class UploadUserAvatarUseCaseImpl(
     }
 }
 
-sealed class UploadAvatarResult {
-    class Success(val userAssetId: UserAssetId) : UploadAvatarResult()
-    class Failure(val coreFailure: CoreFailure) : UploadAvatarResult()
+internal sealed class UploadAvatarResult {
+    internal class Success(val userAssetId: UserAssetId) : UploadAvatarResult()
+    internal class Failure(val coreFailure: CoreFailure) : UploadAvatarResult()
 }

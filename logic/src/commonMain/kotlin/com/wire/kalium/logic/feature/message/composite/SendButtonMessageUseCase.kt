@@ -47,7 +47,7 @@ import kotlinx.datetime.Clock
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
 @Suppress("LongParameterList")
-class SendButtonMessageUseCase internal constructor(
+internal class SendButtonMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -59,7 +59,7 @@ class SendButtonMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
@@ -117,7 +117,7 @@ class SendButtonMessageUseCase internal constructor(
         }
     }.await()
 
-    companion object {
-        const val TYPE = "Text"
+    internal companion object {
+        internal const val TYPE = "Text"
     }
 }

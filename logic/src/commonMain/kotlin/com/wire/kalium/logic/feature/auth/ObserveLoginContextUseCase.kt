@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Observes the [LoginContext] that the current server supports.
  */
-interface ObserveLoginContextUseCase {
+internal interface ObserveLoginContextUseCase {
     /**
      * @return [LoginContext]
      */
@@ -55,7 +55,7 @@ internal fun ObserveLoginContextUseCase(
     }
 }
 
-sealed interface LoginContext {
+internal sealed interface LoginContext {
     /**
      * The server supports enterprise login experience.
      */

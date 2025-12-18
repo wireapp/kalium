@@ -36,7 +36,7 @@ import okio.FileSystem
 import okio.Path
 import okio.SYSTEM
 
-interface VerifyBackupUseCase {
+internal interface VerifyBackupUseCase {
     /**
      * Checks whether the given backup file is encrypted and requires a password.
      * @param compressedBackupFilePath The absolute file system path to the compressed file.
@@ -107,24 +107,24 @@ internal class VerifyBackupUseCaseImpl(
     }
 }
 
-enum class BackupFileFormat {
+internal enum class BackupFileFormat {
     ANDROID, MULTIPLATFORM
 }
 
-sealed class VerifyBackupResult {
+internal sealed class VerifyBackupResult {
 
     @Suppress("FunctionName")
-    companion object {
+    internal companion object {
         internal fun AndroidBackup(isEncrypted: Boolean) = Success(BackupFileFormat.ANDROID, isEncrypted)
         internal fun MultiPlatformBackup(isEncrypted: Boolean) = Success(BackupFileFormat.MULTIPLATFORM, isEncrypted)
     }
 
-    data class Success(val format: BackupFileFormat, val isEncrypted: Boolean) : VerifyBackupResult()
+    internal data class Success(val format: BackupFileFormat, val isEncrypted: Boolean) : VerifyBackupResult()
 
-    sealed class Failure : VerifyBackupResult() {
-        data object InvalidBackupFile : Failure()
-        data class UnsupportedVersion(val version: String) : Failure()
-        data class Generic(val error: CoreFailure) : Failure()
-        data object InvalidUserId : Failure()
+    internal sealed class Failure : VerifyBackupResult() {
+        internal data object InvalidBackupFile : Failure()
+        internal data class UnsupportedVersion(val version: String) : Failure()
+        internal data class Generic(val error: CoreFailure) : Failure()
+        internal data object InvalidUserId : Failure()
     }
 }

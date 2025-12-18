@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
  * Use case to create a regular group conversation.
  * This is a wrapper around [GroupConversationCreator] that sets the group type to [CreateConversationParam.GroupType.REGULAR_GROUP].
  */
-interface CreateRegularGroupUseCase {
+internal interface CreateRegularGroupUseCase {
     suspend operator fun invoke(name: String, userIdList: List<UserId>, options: CreateConversationParam): ConversationCreationResult
 }
 

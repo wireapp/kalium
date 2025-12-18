@@ -25,7 +25,7 @@ import io.mockative.Mockable
  * Responsible for [scheduleSendingOfPendingMessages].
  */
 @Mockable
-interface MessageSendingScheduler {
+internal interface MessageSendingScheduler {
 
     /**
      *  Schedules an execution of [PendingMessagesSenderWorker], which attempts to send

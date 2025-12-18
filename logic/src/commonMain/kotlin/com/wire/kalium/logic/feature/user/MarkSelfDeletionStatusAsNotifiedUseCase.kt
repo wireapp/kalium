@@ -23,7 +23,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
  * Mark the Self Deleting Messages team setting change as notified on the app.
  * It needs to be called after notifying the user about that specific change, e.g. after showing a dialog, or a toast etc.
  */
-interface MarkSelfDeletionStatusAsNotifiedUseCase {
+internal interface MarkSelfDeletionStatusAsNotifiedUseCase {
     suspend operator fun invoke()
 }
 

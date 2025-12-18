@@ -33,7 +33,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
 
-interface AnalyticsIdentifierManager {
+internal interface AnalyticsIdentifierManager {
 
     /**
      * When doing a migration of tracking identifier (receive new identifier -> migrate new identifier),

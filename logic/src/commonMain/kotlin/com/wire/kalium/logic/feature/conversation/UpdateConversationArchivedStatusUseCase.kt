@@ -28,7 +28,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
-interface UpdateConversationArchivedStatusUseCase {
+internal interface UpdateConversationArchivedStatusUseCase {
     /**
      * Use case that allows a conversation to mark a conversation as archived or not.
      *
@@ -97,7 +97,7 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
         }
 }
 
-sealed class ArchiveStatusUpdateResult {
-    data object Success : ArchiveStatusUpdateResult()
-    data object Failure : ArchiveStatusUpdateResult()
+internal sealed class ArchiveStatusUpdateResult {
+    internal data object Success : ArchiveStatusUpdateResult()
+    internal data object Failure : ArchiveStatusUpdateResult()
 }

@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 /**
  * Use Case that allows a user to ignore a connection request from given user
  */
-fun interface IgnoreConnectionRequestUseCase {
+internal fun interface IgnoreConnectionRequestUseCase {
     /**
      * Use case [IgnoreConnectionRequestUseCase] operation
      *
@@ -60,7 +60,7 @@ internal class IgnoreConnectionRequestUseCaseImpl(
     }
 }
 
-sealed class IgnoreConnectionRequestUseCaseResult {
-    data object Success : IgnoreConnectionRequestUseCaseResult()
-    data class Failure(val coreFailure: CoreFailure) : IgnoreConnectionRequestUseCaseResult()
+internal sealed class IgnoreConnectionRequestUseCaseResult {
+    internal data object Success : IgnoreConnectionRequestUseCaseResult()
+    internal data class Failure(val coreFailure: CoreFailure) : IgnoreConnectionRequestUseCaseResult()
 }

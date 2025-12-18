@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
  * before it's [ConnectionState.ACCEPTED]
  *
  */
-fun interface CancelConnectionRequestUseCase {
+internal fun interface CancelConnectionRequestUseCase {
     /**
      * Use case [CancelConnectionRequestUseCase] operation
      *
@@ -64,7 +64,7 @@ internal class CancelConnectionRequestUseCaseImpl(
     }
 }
 
-sealed class CancelConnectionRequestUseCaseResult {
-    data object Success : CancelConnectionRequestUseCaseResult()
-    data class Failure(val coreFailure: CoreFailure) : CancelConnectionRequestUseCaseResult()
+internal sealed class CancelConnectionRequestUseCaseResult {
+    internal data object Success : CancelConnectionRequestUseCaseResult()
+    internal data class Failure(val coreFailure: CoreFailure) : CancelConnectionRequestUseCaseResult()
 }

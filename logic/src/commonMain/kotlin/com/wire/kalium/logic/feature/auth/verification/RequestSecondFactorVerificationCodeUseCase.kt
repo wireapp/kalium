@@ -48,11 +48,11 @@ import com.wire.kalium.network.exceptions.isTooManyRequests
  *
  * @see VerifiableAction
  */
-class RequestSecondFactorVerificationCodeUseCase(
+internal class RequestSecondFactorVerificationCodeUseCase(
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
 ) {
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         email: String,
         verifiableAction: VerifiableAction,
     ): Result = secondFactorVerificationRepository.requestVerificationCode(email, verifiableAction).fold({
@@ -68,7 +68,7 @@ class RequestSecondFactorVerificationCodeUseCase(
         Result.Success
     })
 
-    interface Result {
+    internal interface Result {
         data object Success : Result
 
         interface Failure : Result {

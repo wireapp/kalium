@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.first
 /**
  * Gets the recent messages from the conversation
  */
-class GetRecentMessagesUseCase internal constructor(
+internal class GetRecentMessagesUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val slowSyncRepository: SlowSyncRepository
 ) {
@@ -41,7 +41,7 @@ class GetRecentMessagesUseCase internal constructor(
      * @param visibility the visibility of the messages to return @see [Message.Visibility]
      * @return the [Flow] of [List] of [Message] if successful
      */
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         limit: Int = 100,
         offset: Int = 0,

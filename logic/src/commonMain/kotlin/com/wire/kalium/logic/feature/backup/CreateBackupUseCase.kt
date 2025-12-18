@@ -58,7 +58,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 
-interface CreateBackupUseCase {
+internal interface CreateBackupUseCase {
     /**
      * Creates a compressed backup file, containing a metadata json file and the current state of the database. This file can be encrypted
      * with the provided password if it is not empty. Otherwise, the file will be unencrypted.
@@ -189,7 +189,7 @@ internal class CreateBackupUseCaseImpl(
     }
 }
 
-sealed class CreateBackupResult {
-    data class Failure(val coreFailure: CoreFailure) : CreateBackupResult()
-    data class Success(val backupFilePath: Path, val backupFileName: String) : CreateBackupResult()
+internal sealed class CreateBackupResult {
+    internal data class Failure(val coreFailure: CoreFailure) : CreateBackupResult()
+    internal data class Success(val backupFilePath: Path, val backupFileName: String) : CreateBackupResult()
 }

@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 
-interface GetPersistentWebSocketStatus {
+internal interface GetPersistentWebSocketStatus {
     suspend operator fun invoke(): Boolean
 }
 

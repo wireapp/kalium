@@ -36,7 +36,7 @@ import kotlinx.datetime.toInstant
  * This use case is responsible for ending a call.
  */
 @Mockable
-interface EndCallUseCase {
+internal interface EndCallUseCase {
 
     /**
      * @param conversationId the id of the conversation for the call should be ended.

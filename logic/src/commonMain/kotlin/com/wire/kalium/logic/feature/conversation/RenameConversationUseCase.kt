@@ -35,7 +35,7 @@ import com.wire.kalium.persistence.dao.message.LocalId
 /**
  * Renames a conversation by its ID.
  */
-interface RenameConversationUseCase {
+internal interface RenameConversationUseCase {
     /**
      * @param conversationId the conversation id to rename
      * @param conversationName the new conversation name
@@ -66,7 +66,7 @@ internal class RenameConversationUseCaseImpl(
     }
 }
 
-sealed class RenamingResult {
-    data object Success : RenamingResult()
-    data class Failure(val coreFailure: CoreFailure) : RenamingResult()
+internal sealed class RenamingResult {
+    internal data object Success : RenamingResult()
+    internal data class Failure(val coreFailure: CoreFailure) : RenamingResult()
 }

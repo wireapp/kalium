@@ -26,7 +26,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
-interface UpdateConversationMutedStatusUseCase {
+internal interface UpdateConversationMutedStatusUseCase {
     /**
      * Use case that allows a conversation to change its muted status to:
      * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAndRepliesAllowed]
@@ -66,7 +66,7 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
 
 }
 
-sealed class ConversationUpdateStatusResult {
-    data object Success : ConversationUpdateStatusResult()
-    data object Failure : ConversationUpdateStatusResult()
+internal sealed class ConversationUpdateStatusResult {
+    internal data object Success : ConversationUpdateStatusResult()
+    internal data object Failure : ConversationUpdateStatusResult()
 }

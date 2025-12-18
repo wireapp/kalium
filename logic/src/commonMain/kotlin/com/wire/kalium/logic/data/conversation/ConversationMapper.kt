@@ -72,7 +72,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @Mockable
-interface ConversationMapper {
+internal interface ConversationMapper {
     fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
@@ -620,22 +620,22 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
+internal fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
     ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
     ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
 }
 
-fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
+internal fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
     ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
     ConversationEntity.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
 }
 
-fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {
+internal fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {
     ConversationEntity.ChannelAccess.PRIVATE -> ChannelAccess.PRIVATE
     ConversationEntity.ChannelAccess.PUBLIC -> ChannelAccess.PUBLIC
 }
 
-fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
+internal fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.Self
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
     ConversationEntity.Type.GROUP -> {

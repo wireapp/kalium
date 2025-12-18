@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
  */
 @Mockable
-interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
+internal interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
     /**
      * @param conversationId the conversation id to observe
      * @param considerSelfUserSettings if true, the user settings will be considered,
@@ -48,7 +48,7 @@ interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, considerSelfUserSettings: Boolean): Flow<SelfDeletionTimer>
 }
 
-class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constructor(
+internal class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl

@@ -47,7 +47,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.mockative.Mockable
 
 @Mockable
-interface MemberLeaveEventHandler {
+internal interface MemberLeaveEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.MemberLeave

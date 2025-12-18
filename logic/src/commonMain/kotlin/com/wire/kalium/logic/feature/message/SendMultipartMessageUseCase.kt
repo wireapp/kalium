@@ -77,7 +77,7 @@ import kotlin.time.Duration
  * For regular conversations, each attachment is sent as a separate Asset message.
  */
 @Suppress("LongParameterList")
-class SendMultipartMessageUseCase internal constructor(
+internal class SendMultipartMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -96,11 +96,11 @@ class SendMultipartMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    companion object {
+    internal companion object {
         private const val MSG_TYPE_TEXT = "Text"
     }
 
-    suspend operator fun invoke(
+    internal suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
@@ -283,7 +283,7 @@ class SendMultipartMessageUseCase internal constructor(
     }
 }
 
-fun AttachmentDraft.metadata(): AssetContent.AssetMetadata? {
+internal fun AttachmentDraft.metadata(): AssetContent.AssetMetadata? {
 
     val type = AttachmentType.fromMimeTypeString(mimeType)
 

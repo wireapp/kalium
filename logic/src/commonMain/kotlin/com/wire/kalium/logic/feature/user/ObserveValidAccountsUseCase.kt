@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.flowOn
  * This gets and observes the list of valid accounts, and it's associated team.
  */
 @Mockable
-interface ObserveValidAccountsUseCase {
+internal interface ObserveValidAccountsUseCase {
 
     /**
      * @return a [Flow] of the list of valid accounts and their associated team.

@@ -32,7 +32,7 @@ import kotlinx.datetime.Clock
  * This use case will wait until the sync is done and then check the CRLs if needed.
  */
 @Mockable
-interface SyncCertificateRevocationListUseCase {
+internal interface SyncCertificateRevocationListUseCase {
     suspend operator fun invoke()
 }
 
@@ -42,7 +42,7 @@ interface SyncCertificateRevocationListUseCase {
  * @param incrementalSyncRepository The incremental sync repository.
  * @param revocationListChecker The check revocation list use case.
  */
-class SyncCertificateRevocationListUseCaseImpl internal constructor(
+internal class SyncCertificateRevocationListUseCaseImpl internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val revocationListChecker: RevocationListChecker,

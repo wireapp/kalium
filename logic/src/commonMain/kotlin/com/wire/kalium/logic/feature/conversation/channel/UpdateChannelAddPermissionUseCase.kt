@@ -25,15 +25,15 @@ import com.wire.kalium.logic.data.id.ConversationId
 /**
  * Use case to update the channel permission.
  */
-interface UpdateChannelAddPermissionUseCase {
+internal interface UpdateChannelAddPermissionUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
     ): UpdateChannelAddPermissionUseCaseResult
 
     sealed class UpdateChannelAddPermissionUseCaseResult {
-        data object Success : UpdateChannelAddPermissionUseCaseResult()
-        data object Failure : UpdateChannelAddPermissionUseCaseResult()
+        internal data object Success : UpdateChannelAddPermissionUseCaseResult()
+        internal data object Failure : UpdateChannelAddPermissionUseCaseResult()
     }
 }
 

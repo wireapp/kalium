@@ -44,10 +44,10 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 
 @Deprecated("Use SyncStateObserver instead", ReplaceWith("SyncStateObserver"))
-typealias SyncManager = SyncStateObserver
+internal typealias SyncManager = SyncStateObserver
 
 @Mockable
-interface SyncStateObserver {
+internal interface SyncStateObserver {
 
     /**
      * Allows observing of [SyncState].

@@ -24,7 +24,7 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 
-fun interface SynchronizeExternalDataUseCase {
+internal fun interface SynchronizeExternalDataUseCase {
 
     /**
      * Consume event data coming from an external source.
@@ -38,9 +38,9 @@ fun interface SynchronizeExternalDataUseCase {
 
 }
 
-sealed class SynchronizeExternalDataResult {
-    data object Success : SynchronizeExternalDataResult()
-    data class Failure(val coreFailure: CoreFailure) : SynchronizeExternalDataResult()
+internal sealed class SynchronizeExternalDataResult {
+    internal data object Success : SynchronizeExternalDataResult()
+    internal data class Failure(val coreFailure: CoreFailure) : SynchronizeExternalDataResult()
 }
 
 internal class SynchronizeExternalDataUseCaseImpl(

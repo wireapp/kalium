@@ -28,7 +28,7 @@ import com.wire.kalium.common.functional.isRight
  * @param otherUserId [UserId] private conversation with which we are interested in.
  * @return true
  */
-interface IsOneToOneConversationCreatedUseCase {
+internal interface IsOneToOneConversationCreatedUseCase {
     suspend operator fun invoke(otherUserId: UserId): Boolean
 }
 

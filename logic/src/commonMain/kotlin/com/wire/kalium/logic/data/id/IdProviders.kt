@@ -23,7 +23,7 @@ import com.wire.kalium.common.functional.Either
 import io.mockative.Mockable
 
 @Mockable
-fun interface CurrentClientIdProvider {
+internal fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
 

@@ -29,17 +29,17 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Observes the persistent web socket connection configuration status, for all accounts.
  */
-interface ObservePersistentWebSocketConnectionStatusUseCase {
+internal interface ObservePersistentWebSocketConnectionStatusUseCase {
     /**
      * @return [Result] containing the [Flow] of [PersistentWebSocketStatus] if successful, otherwise a mapped failure.
      */
     suspend operator fun invoke(): Result
 
     sealed class Result {
-        class Success(val persistentWebSocketStatusListFlow: Flow<List<PersistentWebSocketStatus>>) : Result()
-        sealed class Failure : Result() {
-            data object StorageFailure : Failure()
-            data class Generic(val genericFailure: CoreFailure) : Failure()
+        internal class Success(val persistentWebSocketStatusListFlow: Flow<List<PersistentWebSocketStatus>>) : Result()
+        internal sealed class Failure : Result() {
+            internal data object StorageFailure : Failure()
+            internal data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
 }

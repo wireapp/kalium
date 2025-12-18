@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will remove a conversation from the favorites folder.
  */
-interface RemoveConversationFromFavoritesUseCase {
+internal interface RemoveConversationFromFavoritesUseCase {
     /**
      * @param conversationId the id of the conversation
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]

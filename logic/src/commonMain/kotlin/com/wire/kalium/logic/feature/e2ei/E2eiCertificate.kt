@@ -27,15 +27,15 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class MLSClientIdentity(
+internal data class MLSClientIdentity(
     @SerialName("clientId") val clientId: QualifiedClientID,
     @SerialName("e2eiStatus") val e2eiStatus: MLSClientE2EIStatus,
     @SerialName("thumbprint") val thumbprint: String,
     @SerialName("credentialType") val credentialType: MLSCredentialsType,
     @SerialName("x509Identity") val x509Identity: X509Identity?
 ) {
-    companion object {
-        fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity = MLSClientIdentity(
+    internal companion object {
+        internal fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity = MLSClientIdentity(
             clientId = identity.clientId.toModel(),
             e2eiStatus = MLSClientE2EIStatus.fromCryptoStatus(identity),
             thumbprint = identity.thumbprint,
@@ -56,7 +56,7 @@ data class MLSClientIdentity(
 }
 
 @Serializable
-data class X509Identity(
+internal data class X509Identity(
     @SerialName("handle") val handle: Handle,
     @SerialName("displayName") val displayName: String,
     @SerialName("domain") val domain: String,
@@ -67,22 +67,22 @@ data class X509Identity(
 )
 
 @Serializable
-data class Handle(
+internal data class Handle(
     @SerialName("scheme") val scheme: String,
     @SerialName("handle") val handle: String,
     @SerialName("domain") val domain: String
 ) {
-    companion object {
-        fun fromWireIdentity(handle: WireIdentity.Handle) =
+    internal companion object {
+        internal fun fromWireIdentity(handle: WireIdentity.Handle) =
             Handle(handle.scheme, handle.handle, handle.domain)
     }
 }
 
-enum class MLSClientE2EIStatus {
+internal enum class MLSClientE2EIStatus {
     REVOKED, EXPIRED, VALID, NOT_ACTIVATED;
 
-    companion object {
-        fun fromCryptoStatus(identity: WireIdentity) =
+    internal companion object {
+        internal fun fromCryptoStatus(identity: WireIdentity) =
             if (identity.credentialType == CredentialType.Basic || identity.x509Identity == null)
                 NOT_ACTIVATED
             else when (identity.status) {
@@ -93,11 +93,11 @@ enum class MLSClientE2EIStatus {
     }
 }
 
-enum class MLSCredentialsType {
+internal enum class MLSCredentialsType {
     X509, BASIC;
 
-    companion object {
-        fun fromCrypto(value: CredentialType) = when (value) {
+    internal companion object {
+        internal fun fromCrypto(value: CredentialType) = when (value) {
             CredentialType.Basic -> BASIC
             CredentialType.X509 -> X509
         }
