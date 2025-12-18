@@ -26,6 +26,7 @@ message BackupData {
     repeated ExportedConversation conversations = 2;
     repeated ExportedMessage messages = 3;
     repeated ExportUser users = 4;
+    repeated ExportedReaction reactions = 5;
 }
 
 message BackupInfo {
@@ -68,9 +69,20 @@ message ExportedMessage {
     optional int64 lastEditTime = 10;
 }
 
+message ExportedReaction {
+    required string message_id = 1;
+    repeated EmojiReaction reactions = 2;
+}
+
+message EmojiReaction {
+    required string emoji = 1;
+    repeated ExportedQualifiedId users = 2;
+}
+
 message ExportedText {
     required string content = 1;
     repeated ExportedMention mentions = 2;
+    optional string quoted_message_id = 3;
 }
 
 message ExportedMention {

@@ -30,9 +30,11 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFoundLabel
 import com.wire.kalium.util.KaliumDispatcher
@@ -61,11 +63,13 @@ interface GetMessageAssetUseCase {
     ): Deferred<MessageAssetResult>
 }
 
+@Suppress("LongParameterList")
 internal class GetMessageAssetUseCaseImpl(
     private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
+    private val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher
 ) : GetMessageAssetUseCase {
@@ -140,13 +144,19 @@ internal class GetMessageAssetUseCaseImpl(
                                     it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
                                     else -> MessageAssetResult.Failure(it, true)
                                 }
-                            }, { decodedAssetPath ->
+                            }, { (decodedAssetPath, justDownloaded) ->
                                 // TODO Kubaz rethink should we store images asset status when they are already downloaded
                                 updateAssetMessageTransferStatus(AssetTransferStatus.SAVED_INTERNALLY, conversationId, messageId)
+                                (content.value.metadata as? AssetContent.AssetMetadata.Audio)?.let {
+                                    if (justDownloaded && it.normalizedLoudness == null) {
+                                        // downloaded audio asset without normalized loudness, so schedule building it
+                                        audioNormalizedLoudnessScheduler.scheduleBuildingAudioNormalizedLoudness(conversationId, messageId)
+                                    }
+                                }
                                 MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
                             })
                         } else {
-                            MessageAssetResult.Success(decodedAsset!!, assetMetadata.assetSize, assetMetadata.assetName)
+                            MessageAssetResult.Success(decodedAsset, assetMetadata.assetSize, assetMetadata.assetName)
                         }
                     }
                 }

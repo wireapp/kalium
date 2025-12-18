@@ -102,7 +102,7 @@ value class UserDBSecret(val value: ByteArray)
 
 /**
  * Dispatcher for database read operations.
- * Limited to [MAX_READ_PARALLELISM] (3) concurrent reads to prevent SQLCipher
+ * Limited to [MAX_READ_PARALLELISM] (32) concurrent reads to prevent SQLCipher
  * connection pool exhaustion while maintaining good throughput.
  */
 @JvmInline
@@ -124,12 +124,14 @@ value class WriteDispatcher(val value: CoroutineDispatcher)
  * @param dispatcher The dispatcher used to perform database operations
  * @param enableWAL Whether to enable WAL mode for the database https://www.sqlite.org/wal.html
  **/
+@Suppress("LongParameterList")
 expect fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean = true
+    enableWAL: Boolean = true,
+    dbInvalidationControlEnabled: Boolean = false
 ): UserDatabaseBuilder
 
 internal expect fun userDatabaseDriverByPath(
@@ -146,6 +148,7 @@ class UserDatabaseBuilder internal constructor(
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
+    val dbInvalidationController: DbInvalidationController
 ) {
 
     internal val database: UserDatabase = UserDatabase(
@@ -157,9 +160,6 @@ class UserDatabaseBuilder internal constructor(
         MemberAdapter = TableMapper.memberAdapter,
         MessageAdapter = TableMapper.messageAdapter,
         MessageAssetContentAdapter = TableMapper.messageAssetContentAdapter,
-        MessageConversationChangedContentAdapter = TableMapper.messageConversationChangedContentAdapter,
-        MessageFailedToDecryptContentAdapter = TableMapper.messageFailedToDecryptContentAdapter,
-        MessageMemberChangeContentAdapter = TableMapper.messageMemberChangeContentAdapter,
         MessageLinkPreviewAdapter = TableMapper.messageLinkPreviewAdapter,
         MessageMentionAdapter = TableMapper.messageMentionAdapter,
         MessageMissedCallContentAdapter = TableMapper.messageMissedCallContentAdapter,
@@ -170,20 +170,12 @@ class UserDatabaseBuilder internal constructor(
         ReceiptAdapter = TableMapper.receiptAdapter,
         SelfUserAdapter = TableMapper.selfUserAdapter,
         UserAdapter = TableMapper.userAdapter,
-        MessageConversationReceiptModeChangedContentAdapter = TableMapper.messageConversationReceiptModeChangedContentAdapter,
-        MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
         UnreadEventAdapter = TableMapper.unreadEventAdapter,
-        MessageConversationTimerChangedContentAdapter = TableMapper.messageConversationTimerChangedContentAdapter,
         ServiceAdapter = TableMapper.serviceAdapter,
         NewClientAdapter = TableMapper.newClientAdapter,
         MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
         ButtonContentAdapter = TableMapper.buttonContentAdapter,
-        MessageFederationTerminatedContentAdapter = TableMapper.messageFederationTerminatedContentAdapter,
-        MessageConversationProtocolChangedContentAdapter = TableMapper.messageConversationProtocolChangedContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
-        MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
-        MessageConversationProtocolChangedDuringACallContentAdapter =
-            TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
         MessageDraftAdapter = TableMapper.messageDraftsAdapter,
@@ -193,7 +185,7 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageConversationAppsEnabledChangedContentAdapter = TableMapper.conversationAppsAccessChangedAdapter
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter
     )
 
     init {

@@ -24,8 +24,10 @@ import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
 import com.wire.kalium.cells.data.CellsAwsClient
 import com.wire.kalium.cells.data.CellsDataSource
+import com.wire.kalium.cells.data.FileDownloader
 import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
+import com.wire.kalium.cells.data.fileDownloader
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadManager
@@ -45,6 +47,8 @@ import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DownloadCellVersionUseCase
+import com.wire.kalium.cells.domain.usecase.DownloadCellVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
@@ -57,6 +61,8 @@ import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCase
@@ -99,6 +105,8 @@ import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordU
 import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
+import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
@@ -109,6 +117,7 @@ import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import okio.FileSystem
@@ -130,6 +139,17 @@ public class CellsScope(
         val userDao: UserDAO,
         val publicLinkDao: PublicLinkDao,
     )
+
+    /**
+     * A dedicated minimalist HttpClient for downloads
+     */
+    public val downloadHttpClient: HttpClient = HttpClient {
+        followRedirects = true
+        install(HttpRedirect) {
+            checkHttpMethod = false
+            allowHttpsDowngrade = false
+        }
+    }
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -196,8 +216,11 @@ public class CellsScope(
     public val observePagedFiles: GetCellFilesPagedUseCase
         get() = GetCellFilesPagedUseCaseImpl(observeFiles)
 
-    public val downloadFile: DownloadCellFileUseCase
+    public val downloadCellFile: DownloadCellFileUseCase
         get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+
+    private val fileDownloader: FileDownloader
+        get() = fileDownloader(httpClient = downloadHttpClient)
 
     public val refreshAsset: RefreshCellAssetStateUseCase
         get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
@@ -253,6 +276,10 @@ public class CellsScope(
         GetMessageAttachmentUseCaseImpl(cellAttachmentsRepository)
     }
 
+    public val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase by lazy {
+        GetMessageAttachmentsUseCaseImpl(cellAttachmentsRepository)
+    }
+
     public val getCellFileUseCase: GetCellFileUseCase by lazy {
         GetCellFileUseCaseImpl(cellsRepository)
     }
@@ -272,11 +299,19 @@ public class CellsScope(
     public val setPublicLinkExpiration: SetPublicLinkExpirationUseCase by lazy {
         SetPublicLinkExpirationUseCaseImpl(cellsRepository)
     }
+
+    public val getEditorUrl: GetEditorUrlUseCase by lazy {
+        GetEditorUrlUseCaseImpl(cellsRepository)
+    }
+
     public val getNodeVersions: GetNodeVersionsUseCase by lazy {
         GetNodeVersionsUseCaseImpl(cellsRepository)
     }
 
-    public val getEditorUrl: GetEditorUrlUseCase by lazy {
-        GetEditorUrlUseCaseImpl(cellsRepository)
+    public val restoreNodeVersion: RestoreNodeVersionUseCase by lazy {
+        RestoreNodeVersionUseCaseImpl(cellsRepository)
+    }
+    public val downloadCellVersion: DownloadCellVersionUseCase by lazy {
+        DownloadCellVersionUseCaseImpl(fileDownloader)
     }
 }

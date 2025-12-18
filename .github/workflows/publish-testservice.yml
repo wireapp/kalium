@@ -1,0 +1,34 @@
+name: Build and publish image of Testservice to quay.io
+
+on:
+  push:
+    branches: ["develop"]
+
+jobs:
+  quay_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Quay
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: wire+testservice_kalium_bot
+          password: ${{ secrets.QUAY_TESTSERVICE_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./tools/testservice/Dockerfile
+          platforms: linux/amd64
+          tags: quay.io/wire/testservice:latest
+          push: true

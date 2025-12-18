@@ -36,24 +36,14 @@ import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAttachmentDraft
 import com.wire.kalium.persistence.MessageAttachments
-import com.wire.kalium.persistence.MessageConversationAppsEnabledChangedContent
-import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
-import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
-import com.wire.kalium.persistence.MessageConversationProtocolChangedDuringACallContent
-import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
-import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageDraft
-import com.wire.kalium.persistence.MessageFailedToDecryptContent
-import com.wire.kalium.persistence.MessageFederationTerminatedContent
-import com.wire.kalium.persistence.MessageLegalHoldContent
 import com.wire.kalium.persistence.MessageLinkPreview
-import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
-import com.wire.kalium.persistence.MessageNewConversationReceiptModeContent
 import com.wire.kalium.persistence.MessageRecipientFailure
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
+import com.wire.kalium.persistence.MessageSystemContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.NewClient
@@ -74,7 +64,6 @@ import com.wire.kalium.persistence.adapter.MentionListAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
-import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
 
@@ -140,22 +129,7 @@ internal object TableMapper {
         asset_widthAdapter = IntColumnAdapter,
         asset_heightAdapter = IntColumnAdapter,
     )
-    val messageConversationChangedContentAdapter = MessageConversationChangedContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
-    )
-    val messageFailedToDecryptContentAdapter = MessageFailedToDecryptContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
-    )
-    val messageMemberChangeContentAdapter = MessageMemberChangeContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        member_change_listAdapter = QualifiedIDListAdapter,
-        member_change_typeAdapter = EnumColumnAdapter()
-    )
-    val messageFederationTerminatedContentAdapter = MessageFederationTerminatedContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        domain_listAdapter = StringListAdapter,
-        federation_typeAdapter = EnumColumnAdapter()
-    )
+
     val messageLinkPreviewAdapter = MessageLinkPreview.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         url_offsetAdapter = IntColumnAdapter
@@ -204,22 +178,7 @@ internal object TableMapper {
         supported_protocolsAdapter = SupportedProtocolSetAdapter,
         active_one_on_one_conversation_idAdapter = QualifiedIDAdapter
     )
-    val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
-    )
-    val messageConversationReceiptModeChangedContentAdapter = MessageConversationReceiptModeChangedContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
-    )
-    val messageConversationTimerChangedContentAdapter = MessageConversationTimerChangedContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
-    )
-    val messageConversationProtocolChangedContentAdapter = MessageConversationProtocolChangedContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        protocolAdapter = EnumColumnAdapter()
-    )
-    val messageConversationProtocolChangedDuringACAllContentAdapter = MessageConversationProtocolChangedDuringACallContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
-    )
+
     val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         typeAdapter = EnumColumnAdapter(),
@@ -253,12 +212,6 @@ internal object TableMapper {
         latitudeAdapter = FloatColumnAdapter,
         longitudeAdapter = FloatColumnAdapter,
         zoomAdapter = IntColumnAdapter
-    )
-
-    val messageLegalHoldContentAdapter = MessageLegalHoldContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        legal_hold_member_listAdapter = QualifiedIDListAdapter,
-        legal_hold_typeAdapter = EnumColumnAdapter()
     )
 
     val conversationLegalHoldStatusChangeNotifiedAdapter = ConversationLegalHoldStatusChangeNotified.Adapter(
@@ -306,7 +259,7 @@ internal object TableMapper {
         creation_dateAdapter = InstantTypeAdapter,
     )
 
-    val conversationAppsAccessChangedAdapter = MessageConversationAppsEnabledChangedContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
+    val messageSystemContentAdapter = MessageSystemContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
     )
 }

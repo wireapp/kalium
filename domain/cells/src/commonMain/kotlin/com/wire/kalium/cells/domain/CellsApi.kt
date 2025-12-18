@@ -23,26 +23,28 @@ import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
+import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.network.utils.NetworkResponse
-
+import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
     suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO>
     suspend fun getNodesForPath(
+        query: String,
         path: String,
         limit: Int? = null,
         offset: Int? = null,
         onlyDeleted: Boolean = false,
         onlyFolders: Boolean = false,
-        tags: List<String> = emptyList()
+        tags: List<String> = emptyList(),
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>
     suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink>
     suspend fun getNodeVersions(
         uuid: String,
-        query: RestNodeVersionsFilter = RestNodeVersionsFilter()
+        query: RestNodeVersionsFilter = RestNodeVersionsFilter(flags = listOf(RestFlag.WithPreSignedURLs))
     ): NetworkResponse<List<NodeVersionDTO>>
 
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>
@@ -70,6 +72,11 @@ internal interface CellsApi {
     ): NetworkResponse<Unit>
 
     suspend fun restoreNode(uuid: String): NetworkResponse<Unit>
+    suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String,
+        restPromoteParameters: RestPromoteParameters = RestPromoteParameters()
+    ): NetworkResponse<Unit>
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
     suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.logger.KaliumLogger
@@ -110,6 +111,7 @@ import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
@@ -138,6 +140,7 @@ class MessageScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
+    private val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler,
     private val userPropertyRepository: UserPropertyRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val protoContentMapper: ProtoContentMapper,
@@ -146,6 +149,7 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
+    private val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase,
     private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
     private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
     private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
@@ -298,6 +302,17 @@ class MessageScope internal constructor(
             messageSendFailureHandler
         )
 
+    val sendEditMultipartMessage: SendEditMultipartMessageUseCase
+        get() = SendEditMultipartMessageUseCase(
+            messageRepository = messageRepository,
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            getMessageAttachments = getMessageAttachmentsUseCase,
+        )
+
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
         get() = GetAssetMessageTransferStatusUseCaseImpl(
             messageRepository,
@@ -368,6 +383,7 @@ class MessageScope internal constructor(
             messageRepository,
             userRepository,
             updateAssetMessageTransferStatus,
+            audioNormalizedLoudnessScheduler,
             scope,
             dispatcher
         )

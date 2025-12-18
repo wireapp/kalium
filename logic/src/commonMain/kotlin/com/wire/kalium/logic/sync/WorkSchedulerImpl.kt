@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncScheduler
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import io.mockative.Mockable
 
 interface WorkSchedulerProvider {
@@ -35,7 +37,7 @@ interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
 }
 
 @Mockable
-interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler {
+interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler, AudioNormalizedLoudnessScheduler {
     val scope: UserSessionScope
 }
 
@@ -54,4 +56,5 @@ internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
     override fun cancelScheduledSendingOfPendingMessages()
     override fun schedulePeriodicUserConfigSync()
     override fun resetBackoffForPeriodicUserConfigSync()
+    override fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String)
 }

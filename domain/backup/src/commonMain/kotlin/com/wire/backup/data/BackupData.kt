@@ -24,7 +24,6 @@ import kotlinx.serialization.Serializable
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.js.JsExport
-import kotlin.js.JsName
 import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
@@ -36,7 +35,9 @@ public class BackupData(
     @ShouldRefineInSwift
     public val conversations: Array<BackupConversation>,
     @ShouldRefineInSwift
-    public val messages: Array<BackupMessage>
+    public val messages: Array<BackupMessage>,
+    @ShouldRefineInSwift
+    public val reactions: Array<BackupReaction> = emptyArray()
 ) {
     @ObjCName("users")
     public val userList: List<BackupUser> get() = users.toList()
@@ -46,6 +47,9 @@ public class BackupData(
 
     @ObjCName("messages")
     public val messageList: List<BackupMessage> get() = messages.toList()
+
+    @ObjCName("reactions")
+    public val reactionList: List<BackupReaction> get() = reactions.toList()
 }
 
 @JsExport
@@ -113,6 +117,32 @@ public data class BackupMessage(
     val lastEditTime: BackupDateTime? = null,
 )
 
+/**
+ * Represents a backup of message reactions for a single message.
+ * Each reaction is represented as an emoji plus the list of users
+ * who reacted with it. This list-based representation improves JS interop.
+ *
+ * @property messageId The unique identifier of the message associated with these reactions.
+ * @property emojiReactions The list of emoji reactions with their respective users.
+ */
+@JsExport
+@Serializable
+public data class BackupReaction(
+    @SerialName("messageId")
+    val messageId: String,
+    @SerialName("reactions")
+    val emojiReactions: List<BackupEmojiReaction>
+)
+
+@JsExport
+@Serializable
+public data class BackupEmojiReaction(
+    @SerialName("emoji")
+    val emoji: String,
+    @SerialName("users")
+    val users: List<BackupQualifiedId>
+)
+
 @Serializable(BackupDateTimeSerializer::class)
 public expect class BackupDateTime
 
@@ -128,20 +158,21 @@ public sealed class BackupMessageContent {
      *
      * @property text The content of the text message.
      * @property mentions A list of mentions within the text. Each mention identifies a specific user and its position in the text.
+     * @property quotedMessageId The ID of a message that is being quoted by this one, if any.
      *
      * @throws IllegalArgumentException if any mention's range exceeds the length of the text.
      */
     @Serializable
-    public data class Text(val text: String, val mentions: List<Mention>) : BackupMessageContent() {
+    public data class Text(
+        @SerialName("text") val text: String,
+        @SerialName("mentions") val mentions: List<Mention> = emptyList(),
+        @SerialName("quotedMessageId") val quotedMessageId: String? = null
+    ) : BackupMessageContent() {
         init {
             mentions.forEach { mention ->
                 require(mention.start + mention.length <= text.length) { "Mention range exceeds text length" }
             }
         }
-
-        @Deprecated("Use constructor with mentions")
-        @JsName("withoutMentions")
-        public constructor(text: String) : this(text, emptyList())
 
         /**
          * Represents a mention of a user in a text.

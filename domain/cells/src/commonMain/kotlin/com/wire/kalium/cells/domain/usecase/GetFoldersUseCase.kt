@@ -35,7 +35,15 @@ internal class GetFoldersUseCaseImpl(
 ) : GetFoldersUseCase {
 
     override suspend operator fun invoke(conversationId: String): Either<CoreFailure, List<Node.Folder>> =
-        cellsRepository.getNodesByPath(path = conversationId, onlyFolders = true).map { nodes ->
+        cellsRepository.getNodesByPath(
+            path = conversationId,
+            onlyFolders = true,
+            query = EMPTY
+        ).map { nodes ->
             nodes.map { it.toFolderModel() }
         }
+
+    companion object {
+        private const val EMPTY = ""
+    }
 }

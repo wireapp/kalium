@@ -21,6 +21,8 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
+import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
@@ -197,18 +199,18 @@ internal class MessageInsertExtensionImpl(
                 unknown_type_name = content.typeName
             )
 
-            is MessageEntityContent.FailedDecryption -> messagesQueries.insertFailedDecryptionMessageContent(
+            is MessageEntityContent.FailedDecryption -> messagesQueries.insertSystemFailedDecryption(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 unknown_encoded_data = content.encodedData,
                 error_code = content.code?.toLong()
             )
 
-            is MessageEntityContent.MemberChange -> messagesQueries.insertMemberChangeMessage(
+            is MessageEntityContent.MemberChange -> messagesQueries.insertSystemMemberChange(
                 message_id = message.id,
                 conversation_id = message.conversationId,
-                member_change_list = content.memberUserIdList,
-                member_change_type = content.memberChangeType
+                member_change_list = QualifiedIDListAdapter.encode(content.memberUserIdList),
+                member_change_type = content.memberChangeType.name
             )
 
             is MessageEntityContent.MissedCall -> messagesQueries.insertMissedCallMessage(
@@ -221,7 +223,7 @@ internal class MessageInsertExtensionImpl(
                 /** NO-OP. No need to insert any content for Knock messages */
             }
 
-            is MessageEntityContent.ConversationRenamed -> messagesQueries.insertConversationRenamedMessage(
+            is MessageEntityContent.ConversationRenamed -> messagesQueries.insertSystemConversationRenamed(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 conversation_name = content.conversationName
@@ -243,19 +245,19 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
-            is MessageEntityContent.ConversationReceiptModeChanged -> messagesQueries.insertConversationReceiptModeChanged(
+            is MessageEntityContent.ConversationReceiptModeChanged -> messagesQueries.insertSystemConversationReceiptModeChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
             )
 
-            is MessageEntityContent.NewConversationReceiptMode -> messagesQueries.insertNewConversationReceiptMode(
+            is MessageEntityContent.NewConversationReceiptMode -> messagesQueries.insertSystemNewConversationReceiptMode(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
             )
 
-            is MessageEntityContent.ConversationMessageTimerChanged -> messagesQueries.insertConversationMessageTimerChanged(
+            is MessageEntityContent.ConversationMessageTimerChanged -> messagesQueries.insertSystemConversationTimerChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 message_timer = content.messageTimer
@@ -284,24 +286,23 @@ internal class MessageInsertExtensionImpl(
             }
 
             is MessageEntityContent.Federation -> {
-                messagesQueries.insertFederationTerminatedMessage(
+                messagesQueries.insertSystemFederationTerminated(
                     message_id = message.id,
                     conversation_id = message.conversationId,
-                    domain_list = content.domainList,
-                    federation_type = content.type
+                    domain_list = StringListAdapter.encode(content.domainList),
+                    federation_type = content.type.name
                 )
             }
 
-            is MessageEntityContent.ConversationProtocolChanged -> messagesQueries.insertConversationProtocolChanged(
+            is MessageEntityContent.ConversationProtocolChanged -> messagesQueries.insertSystemConversationProtocolChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
-                protocol = content.protocol
+                protocol = content.protocol.name
             )
 
-            is MessageEntityContent.ConversationProtocolChangedDuringACall -> messagesQueries.insertConversationProtocolChangedDuringACall(
-                message_id = message.id,
-                conversation_id = message.conversationId
-            )
+            is MessageEntityContent.ConversationProtocolChangedDuringACall -> {
+                // No content table needed - message exists only in Message table
+            }
 
             is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
                 /* no-op */
@@ -316,11 +317,11 @@ internal class MessageInsertExtensionImpl(
                 zoom = content.zoom
             )
 
-            is MessageEntityContent.LegalHold -> messagesQueries.insertLegalHoldMessage(
+            is MessageEntityContent.LegalHold -> messagesQueries.insertSystemLegalHold(
                 message_id = message.id,
                 conversation_id = message.conversationId,
-                legal_hold_member_list = content.memberUserIdList,
-                legal_hold_type = content.type
+                legal_hold_member_list = QualifiedIDListAdapter.encode(content.memberUserIdList),
+                legal_hold_type = content.type.name
             )
 
             is MessageEntityContent.Multipart -> {
@@ -379,7 +380,7 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
-            is MessageEntityContent.ConversationAppsAccessChanged -> messagesQueries.insertConversationAppsEnabledChanged(
+            is MessageEntityContent.ConversationAppsAccessChanged -> messagesQueries.insertSystemConversationAppsEnabledChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 is_apps_enabled = content.isEnabled

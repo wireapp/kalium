@@ -69,6 +69,7 @@ class FakeCellsRepository : CellsRepository {
     }
 
     override suspend fun getNodesByPath(
+        query: String,
         path: String,
         onlyFolders: Boolean
     ): Either<NetworkFailure, List<CellNode>> {
@@ -195,6 +196,13 @@ class FakeCellsRepository : CellsRepository {
     override suspend fun setPublicLinkExpiration(
         linkUuid: String,
         expiresAt: Long?
+    ): Either<NetworkFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun restoreNodeVersion(
+        uuid: String,
+        versionId: String
     ): Either<NetworkFailure, Unit> {
         TODO("Not yet implemented")
     }

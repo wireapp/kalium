@@ -128,6 +128,7 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -439,6 +440,9 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorkerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
@@ -491,6 +495,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
@@ -554,7 +559,8 @@ class UserSessionScope internal constructor(
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
-        kaliumConfigs.shouldEncryptData
+        kaliumConfigs.shouldEncryptData,
+        kaliumConfigs.dbInvalidationControlEnabled
     )
 
     private var _clientId: ClientId? = null
@@ -1070,6 +1076,9 @@ class UserSessionScope internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler
         get() = userSessionWorkScheduler
 
+    private val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler
+        get() = userSessionWorkScheduler
+
     private val assetRepository: AssetRepository
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
@@ -1319,6 +1328,7 @@ class UserSessionScope internal constructor(
             eventGatherer,
             eventProcessor,
             cryptoTransactionProvider,
+            userStorage.database,
             userScopedLogger,
         )
     }
@@ -1584,6 +1594,7 @@ class UserSessionScope internal constructor(
             persistMessage,
             persistReaction,
             MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
+            MessageMultipartEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
             LastReadContentHandlerImpl(
                 conversationRepository,
                 userId,
@@ -1995,6 +2006,16 @@ class UserSessionScope internal constructor(
         )
     }
 
+    internal fun buildAudioNormalizedLoudnessWorker(
+        conversationId: ConversationId,
+        messageId: String
+    ): AudioNormalizedLoudnessWorker = AudioNormalizedLoudnessWorkerImpl(
+        conversationId = conversationId,
+        messageId = messageId,
+        messageScope = messages,
+        audioNormalizedLoudnessBuilder = globalScope.audioNormalizedLoudnessBuilder
+    )
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider,
@@ -2195,6 +2216,7 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
+            audioNormalizedLoudnessScheduler,
             userPropertyRepository,
             incrementalSyncRepository,
             protoContentMapper,
@@ -2203,6 +2225,7 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
+            cells.getMessageAttachmentsUseCase,
             cells.publishAttachments,
             cells.removeAttachments,
             cells.deleteAttachmentsUseCase,

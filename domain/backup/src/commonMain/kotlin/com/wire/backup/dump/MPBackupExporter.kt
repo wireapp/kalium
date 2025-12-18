@@ -20,6 +20,7 @@ package com.wire.backup.dump
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.data.toProtoModel
 import com.wire.backup.encryption.EncryptedStream
@@ -37,6 +38,7 @@ import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedMessage
+import com.wire.kalium.protobuf.backup.ExportedReaction
 import kotlinx.coroutines.Deferred
 import kotlinx.datetime.Clock
 import okio.Buffer
@@ -61,9 +63,11 @@ public abstract class CommonMPBackupExporter(
     private val usersChunk = mutableListOf<ExportUser>()
     private val conversationsChunk = mutableListOf<ExportedConversation>()
     private val messagesChunk = mutableListOf<ExportedMessage>()
+    private val reactionsChunk = mutableListOf<ExportedReaction>()
     private var persistedUserChunks = 0
     private var persistedConversationsChunks = 0
     private var persistedMessagesChunks = 0
+    private var persistedReactionsChunks = 0
 
     private val backupInfo by lazy {
         BackupInfo(
@@ -144,10 +148,32 @@ public abstract class CommonMPBackupExporter(
         messagesChunk.clear()
     }
 
+    @JsName("addReaction")
+    public fun add(reaction: BackupReaction) {
+        reactionsChunk.add(mapper.mapReactionToProtobuf(reaction))
+        if (reactionsChunk.size > ITEMS_CHUNK_SIZE) {
+            flushReactions()
+        }
+    }
+
+    private fun flushReactions() {
+        if (reactionsChunk.isEmpty()) return
+        val backupData = BackupData(backupInfo, reactions = reactionsChunk)
+        storage.persistEntry(
+            BackupPage(
+                name = BackupPage.REACTIONS_PREFIX + persistedReactionsChunks + BackupPage.PAGE_SUFFIX,
+                data = backupData.asSource()
+            )
+        )
+        persistedReactionsChunks++
+        reactionsChunk.clear()
+    }
+
     private fun flushAll() {
         flushUsers()
         flushConversations()
         flushMessages()
+        flushReactions()
     }
 
     private fun BackupData.asSource(): Source {
@@ -219,7 +245,7 @@ public abstract class CommonMPBackupExporter(
 
     private companion object {
         /**
-         * Amount of items (conversations or messages) to be put into a single page / entry
+         * Number of items (conversations, messages, reactions, users) to be put into a single page / zip entry
          */
         const val ITEMS_CHUNK_SIZE = 1_000
     }
@@ -229,4 +255,7 @@ public abstract class CommonMPBackupExporter(
  * Entity able to serialize [BackupData] entities, like [BackupMessage], [BackupConversation], [BackupUser]
  * into a cross-platform [BackupData] format.
  */
-public expect class MPBackupExporter : CommonMPBackupExporter
+public expect class MPBackupExporter : CommonMPBackupExporter {
+    override val storage: BackupPageStorage
+    override fun zipEntries(data: List<BackupPage>): Deferred<Source>
+}
