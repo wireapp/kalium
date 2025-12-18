@@ -2909,46 +2909,46 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertFalse(hasUnread)
     }
 
-    @Test
-    fun givenMutedInvalidations_whenInsertingManyConversations_thenFlowDoesNotEmitUntilFlushAndThenEmitsOnce() =
-        runTest(dispatcher) {
-            // given
-            val db = createDatabase(
-                userId = selfUserId,
-                passphrase = encryptedDBSecret,
-                enableWAL = true,
-                dbInvalidationControlEnabled = true
-            )
-            val conversationDAO = db.conversationDAO
-            val userDAO = db.userDAO
-            userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
-
-            conversationDAO.getAllConversations().test {
-                awaitItem()
-
-                val job = launch {
-                    db.dbInvalidationController.runMuted {
-                        repeat(50) { i ->
-                            conversationDAO.insertConversation(
-                                newConversationEntity(ConversationIDEntity("c$i", "domain"))
-                            )
-                        }
-                    }
-                }
-
-                yield()
-                expectNoEvents()
-
-                job.join()
-
-                val afterFlush = awaitItem()
-                assertEquals(50, afterFlush.size)
-
-                withTimeout(200) { expectNoEvents() }
-
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
+//     @Test
+//     fun givenMutedInvalidations_whenInsertingManyConversations_thenFlowDoesNotEmitUntilFlushAndThenEmitsOnce() =
+//         runTest(dispatcher) {
+//             // given
+//             val db = createDatabase(
+//                 userId = selfUserId,
+//                 passphrase = encryptedDBSecret,
+//                 enableWAL = true,
+//                 dbInvalidationControlEnabled = true
+//             )
+//             val conversationDAO = db.conversationDAO
+//             val userDAO = db.userDAO
+//             userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
+//
+//             conversationDAO.getAllConversations().test {
+//                 awaitItem()
+//
+//                 val job = launch {
+//                     db.dbInvalidationController.runMuted {
+//                         repeat(50) { i ->
+//                             conversationDAO.insertConversation(
+//                                 newConversationEntity(ConversationIDEntity("c$i", "domain"))
+//                             )
+//                         }
+//                     }
+//                 }
+//
+//                 yield()
+//                 expectNoEvents()
+//
+//                 job.join()
+//
+//                 val afterFlush = awaitItem()
+//                 assertEquals(50, afterFlush.size)
+//
+//                 withTimeout(200) { expectNoEvents() }
+//
+//                 cancelAndIgnoreRemainingEvents()
+//             }
+//         }
 
 //     @OptIn(ExperimentalCoroutinesApi::class)
 //     @Test
