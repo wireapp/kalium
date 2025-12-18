@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import io.mockative.Mockable
 
@@ -41,7 +42,8 @@ interface PersistMessageUseCase {
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
-    private val notificationEventsManager: NotificationEventsManager
+    private val notificationEventsManager: NotificationEventsManager,
+    private val messageSyncTracker: MessageSyncTrackerUseCase
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
@@ -56,6 +58,9 @@ internal class PersistMessageUseCaseImpl(
             if (!isConversationMuted && !isSelfSender && message.content.shouldNotifyUser()) {
                 notificationEventsManager.scheduleRegularNotificationChecking()
             }
+
+            // Track message for synchronization
+            messageSyncTracker.trackMessageInsert(modifiedMessage)
         }.map { }
     }
 

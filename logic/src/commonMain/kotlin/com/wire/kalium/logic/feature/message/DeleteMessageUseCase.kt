@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
@@ -60,6 +61,7 @@ class DeleteMessageUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val deleteAttachments: DeleteMessageAttachmentsUseCase,
+    private val messageSyncTracker: MessageSyncTrackerUseCase,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -85,7 +87,12 @@ class DeleteMessageUseCase internal constructor(
                 return@withContext when (message.status) {
                     // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
                     // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
-                    Message.Status.Failed -> messageRepository.deleteMessage(messageId, conversationId)
+                    Message.Status.Failed -> messageRepository.deleteMessage(messageId, conversationId).onSuccess {
+                        messageSyncTracker.trackMessageDelete(
+                            conversationId = conversationId,
+                            messageId = messageId
+                        )
+                    }
                     else -> {
                         currentClientIdProvider().flatMap { currentClientId ->
                             selfConversationIdProvider().flatMap { selfConversationIds ->
@@ -115,9 +122,19 @@ class DeleteMessageUseCase internal constructor(
                             // as this can only happen when the user decides to delete the message, before the self-deletion timer expired
                             val isEphemeralMessage = message is Message.Regular && message.expirationData != null
                             if (isEphemeralMessage) {
-                                messageRepository.deleteMessage(messageId, conversationId)
+                                messageRepository.deleteMessage(messageId, conversationId).onSuccess {
+                                    messageSyncTracker.trackMessageDelete(
+                                        conversationId = conversationId,
+                                        messageId = messageId
+                                    )
+                                }
                             } else {
-                                messageRepository.markMessageAsDeleted(messageId, conversationId)
+                                messageRepository.markMessageAsDeleted(messageId, conversationId).onSuccess {
+                                    messageSyncTracker.trackMessageDelete(
+                                        conversationId = conversationId,
+                                        messageId = messageId
+                                    )
+                                }
                             }
                         }.onFailure { failure ->
                             kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")

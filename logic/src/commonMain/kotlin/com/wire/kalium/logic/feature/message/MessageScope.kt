@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -96,6 +97,7 @@ import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCaseImpl
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
@@ -163,6 +165,11 @@ class MessageScope internal constructor(
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
+    private val messageSyncTracker: MessageSyncTrackerUseCase,
+    private val messageSyncApi: com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi,
+    private val messageSyncDAO: com.wire.kalium.persistence.dao.message.MessageSyncDAO,
+    private val messageSyncEnabled: Boolean,
+    private val qualifiedIdMapper: com.wire.kalium.logic.data.id.QualifiedIdMapper,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
@@ -257,7 +264,7 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl)
+        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl, messageSyncTracker)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
@@ -418,6 +425,7 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider,
             deleteMessageAttachmentsUseCase,
+            messageSyncTracker
         )
 
     val toggleReaction: ToggleReactionUseCase
@@ -577,4 +585,14 @@ class MessageScope internal constructor(
 
     val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
         get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
+
+    val syncMessages: com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase
+        get() = com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase(
+            messageSyncDAO = messageSyncDAO,
+            messageSyncApi = messageSyncApi,
+            userId = selfUserId,
+            isFeatureEnabled = messageSyncEnabled,
+            qualifiedIdMapper = qualifiedIdMapper,
+            kaliumLogger = kaliumLogger
+        )
 }

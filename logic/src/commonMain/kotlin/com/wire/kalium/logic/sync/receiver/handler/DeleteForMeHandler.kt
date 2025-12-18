@@ -23,7 +23,9 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.functional.onSuccess
 import io.mockative.Mockable
 
 @Mockable
@@ -36,7 +38,8 @@ internal interface DeleteForMeHandler {
 
 internal class DeleteForMeHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
-    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
+    private val messageSyncTracker: MessageSyncTrackerUseCase
 ) : DeleteForMeHandler {
 
     override suspend fun handle(
@@ -47,7 +50,12 @@ internal class DeleteForMeHandlerImpl internal constructor(
             messageRepository.deleteMessage(
                 messageUuid = messageContent.messageId,
                 conversationId = messageContent.conversationId
-            )
+            ).onSuccess {
+                messageSyncTracker.trackMessageDelete(
+                    conversationId = messageContent.conversationId,
+                    messageId = messageContent.messageId
+                )
+            }
         } else {
             kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
                 .i(message = "Delete message sender is not verified: $messageContent")

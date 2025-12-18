@@ -317,6 +317,8 @@ import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsU
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCaseImpl
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
@@ -404,6 +406,7 @@ import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
+import com.wire.kalium.logic.sync.MessageSyncRetryWorker
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
@@ -877,6 +880,14 @@ class UserSessionScope internal constructor(
         InMemoryIncrementalSyncRepository(userScopedLogger)
     }
 
+    private val messageSyncTracker: MessageSyncTrackerUseCase by lazy {
+        MessageSyncTrackerUseCaseImpl(
+            messageSyncDAO = userStorage.database.messageSyncDAO,
+            isFeatureEnabled = kaliumConfigs.messageSynchronizationEnabled,
+            kaliumLogger = userScopedLogger
+        )
+    }
+
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
         selfUserId = userId,
         persistMessage = persistMessage,
@@ -1025,7 +1036,7 @@ class UserSessionScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl, messageSyncTracker)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
         get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
@@ -1608,8 +1619,8 @@ class UserSessionScope internal constructor(
                 conversations.clearConversationAssetsLocally,
                 deleteConversationUseCase
             ),
-            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
+            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation, messageSyncTracker),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId, messageSyncTracker),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -2006,6 +2017,12 @@ class UserSessionScope internal constructor(
         )
     }
 
+    internal val messageSyncRetryWorker: MessageSyncRetryWorker by lazy {
+        MessageSyncRetryWorker(
+            syncMessages = messages.syncMessages
+        )
+    }
+
     internal fun buildAudioNormalizedLoudnessWorker(
         conversationId: ConversationId,
         messageId: String
@@ -2238,7 +2255,12 @@ class UserSessionScope internal constructor(
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
             this,
-            userScopedLogger
+            userScopedLogger,
+            messageSyncTracker,
+            authenticatedNetworkContainer.messageSyncApi,
+            userStorage.database.messageSyncDAO,
+            kaliumConfigs.messageSynchronizationEnabled,
+            qualifiedIdMapper
         )
     }
 

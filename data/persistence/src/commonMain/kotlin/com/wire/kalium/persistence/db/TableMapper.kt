@@ -46,6 +46,7 @@ import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageSystemContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
+import com.wire.kalium.persistence.MessagesToSynchronize
 import com.wire.kalium.persistence.NewClient
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
@@ -261,5 +262,10 @@ internal object TableMapper {
 
     val messageSystemContentAdapter = MessageSystemContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val messagesToSynchronizeAdapter = MessagesToSynchronize.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        timestampAdapter = InstantTypeAdapter
     )
 }

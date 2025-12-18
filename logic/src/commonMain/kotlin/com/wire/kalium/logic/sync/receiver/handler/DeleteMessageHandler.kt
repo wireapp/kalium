@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
 import com.wire.kalium.common.functional.onSuccess
 import io.mockative.Mockable
 
@@ -40,7 +41,8 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val notificationEventsManager: NotificationEventsManager,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val messageSyncTracker: MessageSyncTrackerUseCase
 ) : DeleteMessageHandler {
     override suspend fun invoke(
         content: MessageContent.DeleteMessage,
@@ -58,19 +60,34 @@ internal class DeleteMessageHandlerImpl internal constructor(
                 messageRepository.deleteMessage(
                     messageUuid = messageToRemove.id,
                     conversationId = messageToRemove.conversationId
-                )
+                ).onSuccess {
+                    messageSyncTracker.trackMessageDelete(
+                        conversationId = messageToRemove.conversationId,
+                        messageId = messageToRemove.id
+                    )
+                }
             } else if (isSenderVerified(messageToRemove, senderUserId)) {
                 if (isOriginalEphemeral) {
                     messageRepository.deleteMessage(
                         messageUuid = messageToRemove.id,
                         conversationId = messageToRemove.conversationId
-                    )
+                    ).onSuccess {
+                        messageSyncTracker.trackMessageDelete(
+                            conversationId = messageToRemove.conversationId,
+                            messageId = messageToRemove.id
+                        )
+                    }
                 } else {
                     notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
                     messageRepository.markMessageAsDeleted(
                         messageUuid = messageToRemove.id,
                         conversationId = messageToRemove.conversationId
-                    )
+                    ).onSuccess {
+                        messageSyncTracker.trackMessageDelete(
+                            conversationId = messageToRemove.conversationId,
+                            messageId = messageToRemove.id
+                        )
+                    }
                 }
             }
             removeAssetIfExists(messageToRemove)

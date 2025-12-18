@@ -54,7 +54,8 @@ data class KaliumConfigs(
     val isMlsResetEnabled: Boolean = false,
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
-    val dbInvalidationControlEnabled: Boolean = false
+    val dbInvalidationControlEnabled: Boolean = false,
+    val messageSynchronizationEnabled: Boolean = false
 )
 
 sealed interface BuildFileRestrictionState {

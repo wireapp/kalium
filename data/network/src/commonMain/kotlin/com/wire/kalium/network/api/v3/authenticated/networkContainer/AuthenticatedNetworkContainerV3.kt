@@ -65,6 +65,7 @@ import com.wire.kalium.network.api.v3.authenticated.PropertiesApiV3
 import com.wire.kalium.network.api.v3.authenticated.SelfApiV3
 import com.wire.kalium.network.api.v3.authenticated.ServerTimeApiV3
 import com.wire.kalium.network.api.v3.authenticated.ConversationHistoryApiV3
+import com.wire.kalium.network.api.v3.authenticated.MessageSyncApiV3
 import com.wire.kalium.network.api.v3.authenticated.TeamsApiV3
 import com.wire.kalium.network.api.v3.authenticated.UpgradePersonalToTeamApiV3
 import com.wire.kalium.network.api.v3.authenticated.UserDetailsApiV3
@@ -155,4 +156,7 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
         )
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV3(networkClient)
+
+    override val messageSyncApi: com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
+        get() = MessageSyncApiV3()
 }

@@ -71,6 +71,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageSyncDAO
+import com.wire.kalium.persistence.dao.message.MessageSyncDAOImpl
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
@@ -185,7 +187,8 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
+        MessagesToSynchronizeAdapter = TableMapper.messagesToSynchronizeAdapter
     )
 
     init {
@@ -365,6 +368,9 @@ class UserDatabaseBuilder internal constructor(
             writeDispatcher
         )
 
+    val messageSyncDAO: MessageSyncDAO
+        get() = MessageSyncDAOImpl(database.messagesToSynchronizeQueries, readDispatcher, writeDispatcher)
+
     val messageAttachmentDraftDao: MessageAttachmentDraftDao
         get() = MessageAttachmentDraftDaoImpl(database.messageAttachmentDraftQueries, readDispatcher, writeDispatcher)
 
@@ -376,6 +382,7 @@ class UserDatabaseBuilder internal constructor(
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
+
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

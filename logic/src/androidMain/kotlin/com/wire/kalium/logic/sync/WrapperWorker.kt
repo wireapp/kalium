@@ -108,6 +108,8 @@ class WrapperWorkerFactory(
         return when (innerWorkerClassName) {
             PendingMessagesSenderWorker::class.java.canonicalName -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
 
+            MessageSyncRetryWorker::class.java.canonicalName -> withSessionScope(userId) { it.messageSyncRetryWorker }
+
             UserConfigSyncWorker::class.java.canonicalName -> withSessionScope(userId) { it.userConfigSyncWorker }
 
             UpdateApiVersionsWorker::class.java.canonicalName -> coreLogic.getGlobalScope().updateApiVersionsWorker

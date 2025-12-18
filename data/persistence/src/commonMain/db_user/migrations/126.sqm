@@ -1,0 +1,11 @@
+CREATE TABLE MessagesToSynchronize (
+    conversation_id TEXT NOT NULL,
+    message_nonce TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    operation INTEGER NOT NULL,
+    payload TEXT,
+    PRIMARY KEY (conversation_id, message_nonce)
+);
+
+CREATE INDEX idx_messages_to_sync_timestamp ON MessagesToSynchronize(timestamp ASC);
+CREATE INDEX idx_messages_to_sync_operation ON MessagesToSynchronize(operation);

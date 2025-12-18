@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.WildCardApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
+import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -123,6 +124,8 @@ interface AuthenticatedNetworkContainer {
     val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     val serverTimeApi: ServerTimeApi
+
+    val messageSyncApi: MessageSyncApi
 
     val cellsHttpClient: HttpClient
         get() = HttpClient()

@@ -1,0 +1,39 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE MessagesToSynchronize (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_nonce TEXT NOT NULL,
+    timestamp INTEGER AS Instant NOT NULL,
+    operation INTEGER NOT NULL,  -- 1=upsert, 2=delete
+    payload TEXT,  -- JSON serialized BackupMessage, NULL if operation=delete
+    PRIMARY KEY (conversation_id, message_nonce)
+);
+
+CREATE INDEX idx_messages_to_sync_timestamp ON MessagesToSynchronize(timestamp ASC);
+CREATE INDEX idx_messages_to_sync_operation ON MessagesToSynchronize(operation);
+
+-- Insert or replace entry (upsert behavior)
+insertOrReplaceMessage:
+INSERT OR REPLACE INTO MessagesToSynchronize(conversation_id, message_nonce, timestamp, operation, payload)
+VALUES(?, ?, ?, ?, ?);
+
+-- Get messages to sync in batches, ordered by timestamp
+getMessagesToSync:
+SELECT * FROM MessagesToSynchronize
+ORDER BY timestamp ASC
+LIMIT ?;
+
+-- Delete synced messages (batch delete)
+deleteSyncedBatch:
+DELETE FROM MessagesToSynchronize
+WHERE conversation_id IN :conversationIds AND message_nonce IN :messageNonces;
+
+-- Count pending messages
+countPendingMessages:
+SELECT COUNT(*) FROM MessagesToSynchronize;
+
+-- Get all messages (for debugging)
+getAllMessages:
+SELECT * FROM MessagesToSynchronize
+ORDER BY timestamp ASC;
