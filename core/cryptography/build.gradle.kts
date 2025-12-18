@@ -29,21 +29,22 @@ plugins {
 kaliumLibrary {
     multiplatform {
         includeNativeInterop.set(true)
+        enableApple.set(false)
     }
 }
 
 kotlin {
-    iosX64 {
-        binaries.all {
-            linkerOpts("-framework", "Security")
-        }
-    }
     iosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
         }
     }
     iosSimulatorArm64 {
+        binaries.all {
+            linkerOpts("-framework", "Security")
+        }
+    }
+    macosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
         }
@@ -77,6 +78,11 @@ kotlin {
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("@wireapp/store-engine", "4.9.9"))
+            }
+        }
 
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
@@ -84,13 +90,9 @@ kotlin {
                 implementation(libs.coreCryptoJvm)
             }
         }
-        val jvmTest by getting
-        val jsMain by getting {
-            dependencies {
-                implementation(npm("@wireapp/store-engine", "4.9.9"))
-            }
-        }
         val jsTest by getting
+
+        val jvmTest by getting
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
