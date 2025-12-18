@@ -54,7 +54,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MessageDAOImpl internal constructor(
@@ -356,7 +355,7 @@ internal class MessageDAOImpl internal constructor(
         queries.selectMessagesByConversationIdAndVisibilityAfterDate(
             conversationId,
             visibility,
-            date.toInstant(),
+            Instant.parse(date),
             mapper::toEntityMessageFromView
         )
             .asFlow()
