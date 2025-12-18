@@ -29,15 +29,17 @@ abstract class UserStorageProvider {
     fun getOrCreate(
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
-        shouldEncryptData: Boolean = true
+        shouldEncryptData: Boolean = true,
+        dbInvalidationControlEnabled: Boolean,
     ): UserStorage = inMemoryUserStorage.computeIfAbsent(userId) {
-        create(userId, shouldEncryptData, platformUserStorageProperties)
+        create(userId, shouldEncryptData, platformUserStorageProperties, dbInvalidationControlEnabled)
     }
 
     protected abstract fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
-        platformProperties: PlatformUserStorageProperties
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean
     ): UserStorage
 
     fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)

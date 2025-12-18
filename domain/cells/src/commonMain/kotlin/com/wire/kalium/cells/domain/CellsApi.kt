@@ -25,7 +25,7 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.network.utils.NetworkResponse
-
+import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
@@ -44,7 +44,7 @@ internal interface CellsApi {
     suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink>
     suspend fun getNodeVersions(
         uuid: String,
-        query: RestNodeVersionsFilter = RestNodeVersionsFilter()
+        query: RestNodeVersionsFilter = RestNodeVersionsFilter(flags = listOf(RestFlag.WithPreSignedURLs))
     ): NetworkResponse<List<NodeVersionDTO>>
 
     suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO>

@@ -15,15 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.di
+package com.wire.kalium.cells.data
 
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import io.ktor.client.HttpClient
+import okio.Sink
 
-internal expect class PlatformUserStorageProvider constructor() : UserStorageProvider {
-    override fun create(
-        userId: UserId,
-        shouldEncryptData: Boolean,
-        platformProperties: PlatformUserStorageProperties,
-        dbInvalidationControlEnabled: Boolean
-    ): UserStorage
+internal actual fun fileDownloader(
+    httpClient: HttpClient
+): FileDownloader = FileDownloaderApple(httpClient)
+
+public class FileDownloaderApple(
+    private val httpClient: HttpClient
+) : FileDownloader {
+
+    override suspend fun downloadViaPresignedUrl(
+        presignedUrl: String,
+        outFileSink: Sink,
+        onProgressUpdate: (Long, Long) -> Unit,
+    ): Either<NetworkFailure, Unit> = Unit.right()
 }
