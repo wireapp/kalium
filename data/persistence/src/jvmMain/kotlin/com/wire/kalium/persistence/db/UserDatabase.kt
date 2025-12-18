@@ -29,12 +29,14 @@ import java.io.File
 
 private const val DATABASE_NAME = "main.db"
 
+@Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
@@ -53,15 +55,33 @@ actual fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
 
-    val driver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+    val rawDriver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
     }
 
     if (!databaseExists) {
-        UserDatabase.Schema.create(driver)
+        UserDatabase.Schema.create(rawDriver)
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, !passphrase.isNullOrBlank())
+
+    val invalidationController = DbInvalidationController(
+        enabled = dbInvalidationControlEnabled,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
+    return UserDatabaseBuilder(
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = !passphrase.isNullOrBlank(),
+        dbInvalidationController = invalidationController
+    )
 }
 
 actual fun userDatabaseDriverByPath(
@@ -103,13 +123,24 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val driver = databaseDriver(JdbcSqliteDriver.IN_MEMORY) {
+    val rawDriver = databaseDriver(JdbcSqliteDriver.IN_MEMORY) {
         isWALEnabled = false
         areForeignKeyConstraintsEnforced = true
     }
-    UserDatabase.Schema.create(driver)
+    UserDatabase.Schema.create(rawDriver)
     val storageData = StorageData.FileBacked(File("inMemory"))
-    UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storageData), false)
+
+    val invalidationController = DbInvalidationController(
+        enabled = false,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+
+    UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storageData), false, invalidationController)
 }
 
 fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {

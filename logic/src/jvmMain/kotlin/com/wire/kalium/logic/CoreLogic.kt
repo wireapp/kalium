@@ -55,13 +55,13 @@ actual class CoreLogic(
     userAgent = userAgent
 ) {
 
-    override val globalPreferences: GlobalPrefProvider =
+    actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
                 StorageData.InMemory
@@ -73,22 +73,22 @@ actual class CoreLogic(
         queriesContext = KaliumDispatcherImpl.io
     )
 
-    override fun getSessionScope(userId: UserId): UserSessionScope =
+    actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override suspend fun deleteSessionScope(userId: UserId) {
+    actual override suspend fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager = GlobalCallManager(
+    actual override val globalCallManager: GlobalCallManager = GlobalCallManager(
         PlatformContext(),
         CoroutineScope(KaliumDispatcherImpl.io)
     )
 
-    override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
-    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
+    actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
+    actual override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+    actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
             rootPathsProvider,
@@ -104,7 +104,7 @@ actual class CoreLogic(
             useInMemoryStorage
         )
     }
-    override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 }
 
 @Suppress("MayBeConst")

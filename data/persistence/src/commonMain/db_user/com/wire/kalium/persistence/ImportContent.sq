@@ -70,14 +70,12 @@ INSERT OR IGNORE INTO MessageAssetContent SELECT
 importMessageRestrictedAssetContentTable:
 INSERT OR IGNORE INTO MessageRestrictedAssetContent SELECT * FROM backup_db.MessageRestrictedAssetContent;
 
-importMessageConversationChangedContentTable:
-INSERT OR IGNORE INTO MessageConversationChangedContent SELECT * FROM backup_db.MessageConversationChangedContent;
-
-importMessageFailedToDecryptContentTable:
-INSERT OR IGNORE INTO MessageFailedToDecryptContent SELECT * FROM backup_db.MessageFailedToDecryptContent;
-
-importMessageMemberChangeContentTable:
-INSERT OR IGNORE INTO MessageMemberChangeContent SELECT * FROM backup_db.MessageMemberChangeContent;
+-- Import only specific system message types (conversation renamed, failed decrypt, member change)
+-- These match the previous selective import behavior
+importMessageSystemContentTable:
+INSERT OR IGNORE INTO MessageSystemContent
+SELECT * FROM backup_db.MessageSystemContent
+WHERE content_type IN ('CONVERSATION_RENAMED', 'FAILED_DECRYPT', 'MEMBER_CHANGE');
 
 importMessageLinkPreviewTable:
 INSERT OR IGNORE INTO MessageLinkPreview SELECT * FROM backup_db.MessageLinkPreview;

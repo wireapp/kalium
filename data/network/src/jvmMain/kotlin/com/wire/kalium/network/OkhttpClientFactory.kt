@@ -26,7 +26,6 @@ fun buildOkhttpClient(
 ): OkHttpClient = OkHttpClient.Builder()
     .apply(block)
     .apply {
-
         // OkHttp doesn't support configuring ping intervals dynamically,
         // so they must be set when creating the Engine
         // See https://youtrack.jetbrains.com/issue/KTOR-4752

@@ -46,6 +46,7 @@ internal interface CellsRepository {
     ): Either<NetworkFailure, PaginatedList<CellNode>>
 
     suspend fun getNodesByPath(
+        query: String,
         path: String,
         onlyFolders: Boolean
     ): Either<NetworkFailure, List<CellNode>>
