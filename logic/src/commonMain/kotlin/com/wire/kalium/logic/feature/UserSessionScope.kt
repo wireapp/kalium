@@ -2155,6 +2155,7 @@ class UserSessionScope internal constructor(
             mlsConversationRepository,
             clientIdProvider,
             messages.messageSender,
+            messages.deleteRemoteSyncMessages,
             teamRepository,
             slowSyncRepository,
             userId,

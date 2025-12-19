@@ -58,7 +58,8 @@ internal class ClearConversationContentUseCaseImpl(
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
-    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase
+    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
+    private val deleteRemoteSyncMessages: com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase
 ) : ClearConversationContentUseCase {
 
     override suspend fun invoke(
@@ -88,6 +89,10 @@ internal class ClearConversationContentUseCaseImpl(
                 }
             }
         }
+            .flatMap {
+                // Delete messages from remote sync service
+                deleteRemoteSyncMessages(conversationId)
+            }
             .flatMap { clearLocalConversationAssets(conversationId) }
             .flatMap { conversationRepository.clearContent(conversationId) }
             .fold({ ClearConversationContentUseCase.Result.Failure(it) }, { ClearConversationContentUseCase.Result.Success })

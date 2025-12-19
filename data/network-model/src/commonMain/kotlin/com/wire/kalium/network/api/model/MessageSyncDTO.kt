@@ -72,3 +72,12 @@ data class MessageSyncResultDTO(
     @SerialName("payload")
     val payload: String // JSON-encoded string of BackupMessage
 )
+
+/**
+ * Response payload for deleting messages from the backup service
+ */
+@Serializable
+data class DeleteMessagesResponseDTO(
+    @SerialName("deleted_count")
+    val deletedCount: Int
+)

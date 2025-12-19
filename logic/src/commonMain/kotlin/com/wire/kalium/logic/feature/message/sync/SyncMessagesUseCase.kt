@@ -104,10 +104,8 @@ class SyncMessagesUseCase internal constructor(
             )
 
             // POST to API
-            val response = messageSyncApi.syncMessages(request)
-
             // Handle response
-            when (response) {
+            when (val response = messageSyncApi.syncMessages(request)) {
                 is NetworkResponse.Success -> {
                     logger.i("Successfully synced ${messagesToSync.size} messages")
 

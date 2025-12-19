@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
+import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.utils.NetworkResponse
@@ -35,4 +36,11 @@ internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
         MessageSyncApi.getApiNotSupportError(::fetchMessages.name)
+
+    override suspend fun deleteMessages(
+        userId: String?,
+        conversationId: String?,
+        before: Long?
+    ): NetworkResponse<DeleteMessagesResponseDTO> =
+        MessageSyncApi.getApiNotSupportError(::deleteMessages.name)
 }

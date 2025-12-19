@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.backup
 
+import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.exceptions.APINotSupported
@@ -52,6 +53,20 @@ interface MessageSyncApi {
         order: String = "asc",
         size: Int = 100
     ): NetworkResponse<MessageSyncFetchResponseDTO>
+
+    /**
+     * Deletes messages from the backup service based on filter criteria
+     * At least one filter parameter must be provided
+     * @param userId Delete messages for this user (optional)
+     * @param conversationId Delete messages in this conversation (optional)
+     * @param before Delete messages before this timestamp in epoch milliseconds (optional)
+     * @return Network response containing the count of deleted messages
+     */
+    suspend fun deleteMessages(
+        userId: String? = null,
+        conversationId: String? = null,
+        before: Long? = null
+    ): NetworkResponse<DeleteMessagesResponseDTO>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(

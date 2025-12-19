@@ -601,6 +601,14 @@ class MessageScope internal constructor(
             kaliumLogger = kaliumLogger
         )
 
+    val deleteRemoteSyncMessages: com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase
+        get() = com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase(
+            messageSyncApi = messageSyncApi,
+            userId = selfUserId,
+            isFeatureEnabled = messageSyncEnabled,
+            kaliumLogger = kaliumLogger
+        )
+
     val debouncedMessageSyncScheduler: com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncScheduler by lazy {
         com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncSchedulerImpl(
             messageSyncDAO = messageSyncDAO,

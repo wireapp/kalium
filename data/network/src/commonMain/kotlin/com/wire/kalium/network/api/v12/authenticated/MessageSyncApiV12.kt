@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v12.authenticated
 
+import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.api.v11.authenticated.MessageSyncApiV11
@@ -25,6 +26,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -49,13 +51,26 @@ internal open class MessageSyncApiV12(
         order: String,
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$backupServiceUrl/messages") {
                 parameter("user", userId)
                 since?.let { parameter("since", it) }
                 conversationId?.let { parameter("conversation", it) }
                 parameter("order", order)
                 parameter("size", size)
+            }
+        }
+
+    override suspend fun deleteMessages(
+        userId: String?,
+        conversationId: String?,
+        before: Long?
+    ): NetworkResponse<DeleteMessagesResponseDTO> =
+        wrapRequest {
+            httpClient.delete("$backupServiceUrl/messages") {
+                userId?.let { parameter("user_id", it) }
+                conversationId?.let { parameter("conversation_id", it) }
+                before?.let { parameter("before", it) }
             }
         }
 }

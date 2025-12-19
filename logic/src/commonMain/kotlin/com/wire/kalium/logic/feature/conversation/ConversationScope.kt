@@ -118,6 +118,7 @@ class ConversationScope internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
+    private val deleteRemoteSyncMessages: com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase,
     private val teamRepository: TeamRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: UserId,
@@ -312,7 +313,8 @@ class ConversationScope internal constructor(
             selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider,
-            clearConversationAssetsLocally
+            clearConversationAssetsLocally,
+            deleteRemoteSyncMessages
         )
 
     val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
