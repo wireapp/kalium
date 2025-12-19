@@ -21,14 +21,14 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -157,7 +157,7 @@ class StartCallUseCaseTest {
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         val callManager = mock(CallManager::class)
-        val syncManager = mock(SyncManager::class)
+        val syncStateObserver = mock(SyncStateObserver::class)
         val answerCall = mock(AnswerCallUseCase::class)
         val getCallConversationType = mock(GetCallConversationTypeProvider::class)
         val callRepository = mock(CallRepository::class)
@@ -166,7 +166,7 @@ class StartCallUseCaseTest {
 
         private val startCallUseCase = StartCallUseCase(
             lazy { callManager },
-            syncManager,
+            syncStateObserver,
             kaliumConfigs,
             callRepository,
             getCallConversationType,
@@ -176,7 +176,7 @@ class StartCallUseCaseTest {
 
         private val startCallUseCaseWithCBR = StartCallUseCase(
             lazy { callManager },
-            syncManager,
+            syncStateObserver,
             KaliumConfigs(forceConstantBitrateCalls = true),
             callRepository,
             getCallConversationType,
@@ -208,7 +208,7 @@ class StartCallUseCaseTest {
 
         private suspend fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                syncManager.waitUntilLiveOrFailure()
+                syncStateObserver.waitUntilLiveOrFailure()
             }.returns(result)
         }
 

@@ -18,14 +18,13 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase.Result
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -39,7 +38,7 @@ import kotlinx.coroutines.withContext
 @Suppress("LongParameterList")
 class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
-    private val syncManager: SyncManager,
+    private val syncStateObserver: SyncStateObserver,
     private val kaliumConfigs: KaliumConfigs,
     private val callRepository: CallRepository,
     private val getCallConversationType: GetCallConversationTypeProvider,
@@ -51,7 +50,7 @@ class StartCallUseCase internal constructor(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
     ) = withContext(dispatchers.default) {
-        syncManager.waitUntilLiveOrFailure().fold({
+        syncStateObserver.waitUntilLiveOrFailure().fold({
             return@withContext Result.SyncFailure
         }, {
             callRepository.incomingCallsFlow().first().run {

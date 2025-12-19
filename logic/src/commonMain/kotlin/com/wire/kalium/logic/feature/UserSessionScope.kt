@@ -216,6 +216,8 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
+import com.wire.kalium.logic.feature.call.CallBackgroundManager
+import com.wire.kalium.logic.feature.call.CallBackgroundManagerImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -530,6 +532,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -581,6 +585,12 @@ class UserSessionScope internal constructor(
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
             _clientId = null
+        }
+    }
+
+    private suspend fun waitUntilClientIdIsAvailable() {
+        if (_clientId == null) {
+            clientRepository.observeCurrentClientId().filterNotNull().first()
         }
     }
 
@@ -1120,9 +1130,9 @@ class UserSessionScope internal constructor(
 
     @Deprecated("Use syncStateObserver instead", ReplaceWith("syncStateObserver"))
     val syncManager: SyncManager
-        get() = syncStateObserver
+        get() = syncStateObserver.value
 
-    val syncStateObserver: SyncStateObserver by lazy {
+    val syncStateObserver: Lazy<SyncStateObserver> = lazy {
         SyncStateObserverImpl(
             slowSyncRepository = slowSyncRepository,
             incrementalSyncRepository = incrementalSyncRepository,
@@ -1133,7 +1143,7 @@ class UserSessionScope internal constructor(
 
     val syncExecutor: SyncExecutor by lazy {
         SyncExecutorImpl(
-            syncStateObserver,
+            syncStateObserver.value,
             slowSyncManager,
             incrementalSyncManager,
             this,
@@ -1416,7 +1426,7 @@ class UserSessionScope internal constructor(
     val keyingMaterialsManager: KeyingMaterialsManager
         get() = KeyingMaterialsManagerImpl(
             featureSupport,
-            syncStateObserver,
+            syncStateObserver.value,
             lazy { clientRepository },
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository },
@@ -1427,7 +1437,7 @@ class UserSessionScope internal constructor(
         get() = MLSClientManagerImpl(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
-            syncStateObserver,
+            syncStateObserver.value,
             lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy {
@@ -1455,7 +1465,7 @@ class UserSessionScope internal constructor(
         get() = MLSMigrationManagerImpl(
             kaliumConfigs,
             isMLSEnabled,
-            syncStateObserver,
+            syncStateObserver.value,
             lazy { clientRepository },
             lazy { users.timestampKeyRepository },
             lazy { mlsMigrationWorker },
@@ -1497,6 +1507,13 @@ class UserSessionScope internal constructor(
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
         )
     }
+
+    internal val callBackgroundManager: CallBackgroundManager = CallBackgroundManagerImpl(
+        callManager = callManager,
+        syncStateObserver = syncStateObserver,
+        selfUserId = userId,
+        logger = userScopedLogger
+    )
 
     private val flowManagerService by lazy {
         globalCallManager.getFlowManager()
@@ -2429,11 +2446,12 @@ class UserSessionScope internal constructor(
     val calls: CallsScope
         get() = CallsScope(
             callManager = callManager,
+            callBackgroundManager = callBackgroundManager,
             callRepository = callRepository,
             conversationRepository = conversationRepository,
             flowManagerService = flowManagerService,
             mediaManagerService = mediaManagerService,
-            syncManager = lazy { syncManager },
+            syncStateObserver = syncStateObserver,
             qualifiedIdMapper = qualifiedIdMapper,
             currentClientIdProvider = clientIdProvider,
             userConfigRepository = userConfigRepository,
@@ -2649,9 +2667,8 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            clientIdProvider().map {
-                avsSyncStateReporter.execute()
-            }
+            waitUntilClientIdIsAvailable()
+            avsSyncStateReporter.execute()
         }
 
         launch {
@@ -2665,6 +2682,11 @@ class UserSessionScope internal constructor(
         }
 
         userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+
+        launch {
+            waitUntilClientIdIsAvailable()
+            callBackgroundManager.startProcessing()
+        }
     }
 }
 

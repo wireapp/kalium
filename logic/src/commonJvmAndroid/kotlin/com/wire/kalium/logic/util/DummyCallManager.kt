@@ -65,5 +65,7 @@ class DummyCallManager : CallManager {
 
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {}
 
+    override suspend fun setBackground(background: Boolean) {}
+
     override suspend fun cancelJobs() {}
 }

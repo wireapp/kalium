@@ -193,6 +193,12 @@ interface Calling : Library {
         isStarted: Boolean,
     )
 
+    @Suppress("FunctionNaming")
+    fun wcall_set_background(
+        inst: Handle,
+        isInBackground: Boolean,
+    )
+
     fun kcall_init(env: Int)
     fun kcall_close()
 
