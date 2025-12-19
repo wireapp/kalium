@@ -61,8 +61,12 @@ object FeatureConfigTest {
             status = Status.ENABLED,
             mlsConversationsReset = false,
         ),
-        cellsConfigModel: CellsConfigModel? = CellsConfigModel(
+        cellsModel: CellsModel? = CellsModel(
             status = Status.ENABLED,
+        ),
+        cellsInternalModel: CellsInternalModel? = CellsInternalModel(
+            status = Status.ENABLED,
+            config = CellsInternalConfigModel(null),
         ),
         appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
         enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel? = EnableUserProfileQRCodeConfigModel(
@@ -91,7 +95,8 @@ object FeatureConfigTest {
         channelFeatureConfiguration,
         asyncNotificationsModel,
         allowedGlobalOperationsModel,
-        cellsConfigModel,
+        cellsModel,
+        cellsInternalModel,
         appsModel,
         enableUserProfileQRCodeConfigModel,
         assetAuditLogConfigModel,

@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
-import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
@@ -50,6 +49,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -59,8 +59,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseImpl
-import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCase
-import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -71,6 +69,8 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCase
@@ -79,9 +79,6 @@ import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
@@ -105,7 +102,6 @@ import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletio
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
@@ -128,7 +124,7 @@ class MessageScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
-    private val attachmentsRepository: MessageAttachmentDraftRepository,
+    private val attachmentsRepository: Lazy<MessageAttachmentDraftRepository>,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
@@ -149,15 +145,13 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
-    private val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase,
-    private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
-    private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
-    private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
-    private val getMessageAttachment: GetMessageAttachmentUseCase,
+    private val getMessageAttachmentsUseCase: Lazy<GetMessageAttachmentsUseCase>,
+    private val publishAttachmentsUseCase: Lazy<PublishAttachmentsUseCase>,
+    private val removeAttachmentDraftsUseCase: Lazy<RemoveAttachmentDraftsUseCase>,
+    private val deleteMessageAttachmentsUseCase: Lazy<DeleteMessageAttachmentsUseCase>,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val compositeMessageRepository: CompositeMessageRepository,
-    private val isWireCellsEnabledForConversationUseCase: IsWireCellsEnabledForConversationUseCase,
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
@@ -284,10 +278,10 @@ class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             conversationRepository = conversationRepository,
-            attachmentsRepository = attachmentsRepository,
+            attachmentsRepository = attachmentsRepository.value,
             selfDeleteTimer = observeSelfDeletingMessages,
-            publishAttachments = publishAttachmentsUseCase,
-            removeAttachmentDrafts = removeAttachmentDraftsUseCase,
+            publishAttachments = publishAttachmentsUseCase.value,
+            removeAttachmentDrafts = removeAttachmentDraftsUseCase.value,
             sendAssetMessage = sendAssetMessage,
             scope = scope
         )
@@ -310,7 +304,7 @@ class MessageScope internal constructor(
             slowSyncRepository = slowSyncRepository,
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
-            getMessageAttachments = getMessageAttachmentsUseCase,
+            getMessageAttachments = getMessageAttachmentsUseCase.value,
         )
 
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
@@ -324,9 +318,9 @@ class MessageScope internal constructor(
             messageRepository,
             assetRepository,
             conversationRepository,
-            attachmentsRepository,
+            attachmentsRepository.value,
             persistMessage,
-            publishAttachmentsUseCase,
+            publishAttachmentsUseCase.value,
             scope,
             dispatcher,
             messageSender,
@@ -388,14 +382,6 @@ class MessageScope internal constructor(
             dispatcher
         )
 
-    val getAudioAssetUseCase: GetAudioAssetUseCase by lazy {
-        GetAudioAssetUseCaseImpl(
-            isWireCellsEnabledForConversation = isWireCellsEnabledForConversationUseCase,
-            getMessageAsset = getAssetMessage,
-            getMessageAttachment = getMessageAttachment
-        )
-    }
-
     val getImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
         get() = GetImageAssetMessagesForConversationUseCaseImpl(
             dispatcher,
@@ -417,7 +403,7 @@ class MessageScope internal constructor(
             selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider,
-            deleteMessageAttachmentsUseCase,
+            deleteMessageAttachmentsUseCase.value,
         )
 
     val toggleReaction: ToggleReactionUseCase
@@ -573,7 +559,7 @@ class MessageScope internal constructor(
         get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 
     val observeAssetUploadState: ObserveAssetUploadStateUseCase
-        get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository)
+        get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository.value)
 
     val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
         get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
