@@ -35,8 +35,8 @@ import kotlinx.coroutines.flow.first
  * Operation that creates one-to-one Conversation with specific [UserId] (only if it is absent in local DB)
  * and returns [Conversation] data.
  */
-internal interface GetOrCreateOneToOneConversationUseCase {
-    suspend operator fun invoke(otherUserId: UserId): CreateConversationResult
+public interface GetOrCreateOneToOneConversationUseCase {
+    public suspend operator fun invoke(otherUserId: UserId): CreateConversationResult
 }
 
 internal class GetOrCreateOneToOneConversationUseCaseImpl(
@@ -98,7 +98,7 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
 
 }
 
-internal sealed class CreateConversationResult {
-    internal data class Success(val conversation: Conversation) : CreateConversationResult()
-    internal data class Failure(val coreFailure: CoreFailure) : CreateConversationResult()
+public sealed class CreateConversationResult {
+    public data class Success(val conversation: Conversation) : CreateConversationResult()
+    public data class Failure(val coreFailure: CoreFailure) : CreateConversationResult()
 }

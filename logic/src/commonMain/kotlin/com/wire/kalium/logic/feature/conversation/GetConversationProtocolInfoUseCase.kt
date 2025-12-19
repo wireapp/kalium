@@ -33,17 +33,17 @@ import kotlinx.coroutines.withContext
  * @see Conversation.ProtocolInfo
  */
 @Mockable
-internal interface GetConversationProtocolInfoUseCase {
-    sealed class Result {
-        internal data class Success(val protocolInfo: Conversation.ProtocolInfo) : Result()
-        internal data class Failure(val storageFailure: StorageFailure) : Result()
+public interface GetConversationProtocolInfoUseCase {
+    public sealed class Result {
+        public data class Success(val protocolInfo: Conversation.ProtocolInfo) : Result()
+        public data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
     /**
      * @param conversationId the id of the conversation to observe
      * @return a [Result] with the [Conversation.ProtocolInfo] of the conversation
      */
-    suspend operator fun invoke(conversationId: ConversationId): Result
+    public suspend operator fun invoke(conversationId: ConversationId): Result
 }
 
 @Suppress("FunctionNaming")

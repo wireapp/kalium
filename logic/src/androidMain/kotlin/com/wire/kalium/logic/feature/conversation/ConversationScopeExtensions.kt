@@ -17,5 +17,5 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
-internal val ConversationScope.getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery
+public val ConversationScope.getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery
     get() = GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase(dispatcher, conversationRepository)

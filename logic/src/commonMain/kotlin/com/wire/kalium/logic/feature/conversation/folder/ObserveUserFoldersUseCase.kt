@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.flowOn
  * This use case will observe and return the list of all user folders.
  * @see ConversationFolder
  */
-internal fun interface ObserveUserFoldersUseCase {
-    suspend operator fun invoke(): Flow<List<ConversationFolder>>
+public fun interface ObserveUserFoldersUseCase {
+    public suspend operator fun invoke(): Flow<List<ConversationFolder>>
 }
 
 internal class ObserveUserFoldersUseCaseImpl(

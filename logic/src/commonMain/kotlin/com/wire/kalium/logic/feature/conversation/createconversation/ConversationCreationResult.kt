@@ -20,11 +20,11 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 
-internal sealed interface ConversationCreationResult {
+public sealed interface ConversationCreationResult {
     /**
      * Conversation created successfully.
      */
-    class Success(
+    public class Success(
         /**
          * Details of the newly created conversation
          */
@@ -34,20 +34,20 @@ internal sealed interface ConversationCreationResult {
     /**
      * There was a failure trying to Sync with the server
      */
-    data object SyncFailure : ConversationCreationResult
-    data object Forbidden : ConversationCreationResult
+    public data object SyncFailure : ConversationCreationResult
+    public data object Forbidden : ConversationCreationResult
 
     /**
      * Other, unknown failure.
      */
-    class UnknownFailure(
+    public class UnknownFailure(
         /**
          * The root cause of the failure
          */
         internal val cause: CoreFailure
     ) : ConversationCreationResult
 
-    class BackendConflictFailure(
+    public class BackendConflictFailure(
         internal val domains: List<String>
     ) : ConversationCreationResult
 }

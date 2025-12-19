@@ -73,7 +73,7 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
     }
 }
 
-internal data class ConversationQueryConfig(
+public data class ConversationQueryConfig(
     val searchQuery: String = "",
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,

@@ -39,8 +39,9 @@ import kotlinx.coroutines.withContext
  * @param userRepository Retrieves the self user
  * @constructor Creates an instance of the usecase
  */
+// todo(interface). extract interface for use case
 @Suppress("ReturnCount")
-internal class MembersToMentionUseCase internal constructor(
+public class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val selfUserId: UserId,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -51,7 +52,7 @@ internal class MembersToMentionUseCase internal constructor(
      * @param searchQuery string used to search for members
      * @return a List of [MemberDetails] of a conversation for the given string
      */
-    internal suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> = withContext(dispatcher.io) {
+    public suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> = withContext(dispatcher.io) {
         val conversationMembers = observeConversationMembers(conversationId).first()
 
         // TODO apply normalization techniques that are used for other searches to the name (e.g. ö -> oe)

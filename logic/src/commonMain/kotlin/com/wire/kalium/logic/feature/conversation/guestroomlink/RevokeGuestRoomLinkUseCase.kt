@@ -25,8 +25,8 @@ import com.wire.kalium.common.functional.fold
 /**
  * A use case used to revoke a guest room link
  */
-internal interface RevokeGuestRoomLinkUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): RevokeGuestRoomLinkResult
+public interface RevokeGuestRoomLinkUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): RevokeGuestRoomLinkResult
 }
 
 internal class RevokeGuestRoomLinkUseCaseImpl internal constructor(
@@ -39,7 +39,7 @@ internal class RevokeGuestRoomLinkUseCaseImpl internal constructor(
         )
 }
 
-internal sealed interface RevokeGuestRoomLinkResult {
-    data object Success : RevokeGuestRoomLinkResult
-    data class Failure(val cause: CoreFailure) : RevokeGuestRoomLinkResult
+public sealed interface RevokeGuestRoomLinkResult {
+    public data object Success : RevokeGuestRoomLinkResult
+    public data class Failure(val cause: CoreFailure) : RevokeGuestRoomLinkResult
 }

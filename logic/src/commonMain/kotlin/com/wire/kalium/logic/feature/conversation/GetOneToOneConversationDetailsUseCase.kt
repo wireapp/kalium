@@ -36,19 +36,20 @@ import kotlinx.coroutines.flow.map
  * @return [Result.Success] with [Conversation] in case of success,
  * or [Result.Failure] if something went wrong - can't get data from local DB.
  */
-internal class GetOneToOneConversationDetailsUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetOneToOneConversationDetailsUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    internal suspend operator fun invoke(otherUserId: UserId): Flow<Result> =
+    public suspend operator fun invoke(otherUserId: UserId): Flow<Result> =
         conversationRepository.observeOneToOneConversationDetailsWithOtherUser(otherUserId)
             .map { result -> result.fold({ Result.Failure }, { Result.Success(it) }) }
             .flowOn(dispatchers.io)
 
-    internal sealed class Result {
-        internal data class Success(val conversation: ConversationDetails.OneOne) : Result()
-        internal data object Failure : Result()
+    public sealed class Result {
+        public data class Success(val conversation: ConversationDetails.OneOne) : Result()
+        public data object Failure : Result()
     }
 
 }

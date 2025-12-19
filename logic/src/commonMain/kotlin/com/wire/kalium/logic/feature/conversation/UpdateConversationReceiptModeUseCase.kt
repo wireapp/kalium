@@ -35,8 +35,8 @@ import kotlinx.datetime.Clock
  * Possible values: [Conversation.ReceiptMode.ENABLED] and [Conversation.ReceiptMode.DISABLED]
  * Returns: [ConversationUpdateReceiptModeResult]
  */
-internal interface UpdateConversationReceiptModeUseCase {
-    suspend operator fun invoke(
+public interface UpdateConversationReceiptModeUseCase {
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         receiptMode: Conversation.ReceiptMode
     ): ConversationUpdateReceiptModeResult
@@ -86,7 +86,7 @@ internal class UpdateConversationReceiptModeUseCaseImpl(
     }
 }
 
-internal sealed interface ConversationUpdateReceiptModeResult {
-    data object Success : ConversationUpdateReceiptModeResult
-    data class Failure(val cause: CoreFailure) : ConversationUpdateReceiptModeResult
+public sealed interface ConversationUpdateReceiptModeResult {
+    public data object Success : ConversationUpdateReceiptModeResult
+    public data class Failure(val cause: CoreFailure) : ConversationUpdateReceiptModeResult
 }

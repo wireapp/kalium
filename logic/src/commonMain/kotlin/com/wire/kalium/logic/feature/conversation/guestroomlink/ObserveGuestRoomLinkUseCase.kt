@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * observe guest room link
  */
-internal interface ObserveGuestRoomLinkUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
+public interface ObserveGuestRoomLinkUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
 }
 
 internal class ObserveGuestRoomLinkUseCaseImpl internal constructor(

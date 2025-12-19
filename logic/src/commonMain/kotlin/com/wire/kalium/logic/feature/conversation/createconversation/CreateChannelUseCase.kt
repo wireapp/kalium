@@ -23,10 +23,11 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Use case to create a channel.
  */
-internal class CreateChannelUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class CreateChannelUseCase internal constructor(
     private val createGroupConversation: GroupConversationCreator
 ) {
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         name: String,
         userIdList: List<UserId>,
         options: CreateConversationParam

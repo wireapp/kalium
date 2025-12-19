@@ -19,6 +19,10 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -29,10 +33,6 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
@@ -48,7 +48,8 @@ import kotlinx.coroutines.withContext
  *
  * @see InteractionAvailability
  */
-internal class ObserveConversationInteractionAvailabilityUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class ObserveConversationInteractionAvailabilityUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val selfUserId: UserId,
@@ -60,7 +61,7 @@ internal class ObserveConversationInteractionAvailabilityUseCase internal constr
      * @param conversationId the id of the conversation where user checks his interaction availability
      * @return an [IsInteractionAvailableResult] containing Success or Failure cases
      */
-    internal suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> = withContext(dispatcher.io) {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> = withContext(dispatcher.io) {
 
         val isSelfClientMlsCapable = selfClientIdProvider().flatMap {
             userRepository.isClientMlsCapable(selfUserId, it)
@@ -96,7 +97,7 @@ internal class ObserveConversationInteractionAvailabilityUseCase internal constr
     }
 }
 
-internal sealed class IsInteractionAvailableResult {
-    internal data class Success(val interactionAvailability: InteractionAvailability) : IsInteractionAvailableResult()
-    internal data class Failure(val coreFailure: CoreFailure) : IsInteractionAvailableResult()
+public sealed class IsInteractionAvailableResult {
+    public data class Success(val interactionAvailability: InteractionAvailability) : IsInteractionAvailableResult()
+    public data class Failure(val coreFailure: CoreFailure) : IsInteractionAvailableResult()
 }

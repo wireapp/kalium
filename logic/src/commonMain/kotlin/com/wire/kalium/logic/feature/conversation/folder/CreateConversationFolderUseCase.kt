@@ -31,18 +31,18 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will create a new conversation folder.
  */
-internal interface CreateConversationFolderUseCase {
+public interface CreateConversationFolderUseCase {
     /**
      * @param folderName the name of the folder
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         folderName: String
     ): Result
 
-    sealed interface Result {
-        data class Success(val folderId: String) : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data class Success(val folderId: String) : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

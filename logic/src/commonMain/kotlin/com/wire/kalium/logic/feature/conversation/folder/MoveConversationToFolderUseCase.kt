@@ -31,22 +31,22 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will move a conversation to the selected folder.
  */
-internal interface MoveConversationToFolderUseCase {
+public interface MoveConversationToFolderUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param folderId the id of the conversation folder
      * @param previousFolderId the id of the previous folder, if any
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         folderId: String,
         previousFolderId: String?
     ): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

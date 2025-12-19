@@ -959,7 +959,7 @@ public class UserSessionScope internal constructor(
             persistConversations = persistConversationsUseCase
         )
 
-    internal val fetchConversationUseCase: FetchConversationUseCase
+    public val fetchConversationUseCase: FetchConversationUseCase
         get() = FetchConversationUseCaseImpl(
             conversationRepository = conversationRepository,
             persistConversations = persistConversationsUseCase,
@@ -2106,7 +2106,7 @@ public class UserSessionScope internal constructor(
             isAllowedToUseAsyncNotifications
         )
     }
-    internal val conversations: ConversationScope by lazy {
+    public val conversations: ConversationScope by lazy {
         ConversationScope(
             conversationRepository,
             conversationGroupRepository,
@@ -2589,7 +2589,7 @@ public class UserSessionScope internal constructor(
 
     internal val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
 
-    internal val resetMlsConversation: ResetMLSConversationUseCase
+    public val resetMlsConversation: ResetMLSConversationUseCase
         get() = ResetMLSConversationUseCaseImpl(
             userConfig = userConfigRepository,
             transactionProvider = cryptoTransactionProvider,

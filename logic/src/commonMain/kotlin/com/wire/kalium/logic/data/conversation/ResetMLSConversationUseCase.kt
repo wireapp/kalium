@@ -47,15 +47,15 @@ import io.mockative.Mockable
  *  - Re-establishing the MLS group with the updated group ID and current members.
  */
 @Mockable
-internal interface ResetMLSConversationUseCase {
+public interface ResetMLSConversationUseCase {
     // TODO(refactor): transactionProvider should be always required to avoid deadlocks.
     //                 Callers of this function should get one if needed.
     @Deprecated("Transaction provider should be provided")
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
     ): Either<CoreFailure, Unit>

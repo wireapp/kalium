@@ -31,14 +31,14 @@ import io.mockative.Mockable
  * and persisting it locally if the fetch is successful.
  */
 @Mockable
-internal interface FetchConversationUseCase {
-    suspend operator fun invoke(
+public interface FetchConversationUseCase {
+    public suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         reason: ConversationSyncReason = ConversationSyncReason.Other,
     ): Either<CoreFailure, Unit>
 
-    suspend fun fetchWithTransaction(
+    public suspend fun fetchWithTransaction(
         conversationId: ConversationId,
         reason: ConversationSyncReason = ConversationSyncReason.Other,
     ): Either<CoreFailure, Unit>

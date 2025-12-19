@@ -33,8 +33,8 @@ import kotlinx.coroutines.withContext
  * Use case for observing current users typing in a given conversation.
  * This will get their info details from the local database.
  */
-internal interface ObserveUsersTypingUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>>
+public interface ObserveUsersTypingUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>>
 }
 
 internal class ObserveUsersTypingUseCaseImpl(

@@ -49,11 +49,11 @@ import kotlinx.datetime.Instant
  * This use case will update last read date for a conversation.
  * After that, will sync against other user's registered clients, using the self conversation.
  */
-
+// todo(interface). extract interface for use case
 // TODO: look into excluding self clients from sendConfirmation or run sendLastReadMessageToOtherClients if
 //  the conversation does not need to be notified
 @Suppress("LongParameterList")
-internal class UpdateConversationReadDateUseCase internal constructor(
+public class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -68,7 +68,7 @@ internal class UpdateConversationReadDateUseCase internal constructor(
      * @param conversationId The conversation id to update the last read date.
      * @param time The last read date to update.
      */
-    internal operator fun invoke(conversationId: QualifiedID, time: Instant) {
+    public operator fun invoke(conversationId: QualifiedID, time: Instant) {
         workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
     }
 

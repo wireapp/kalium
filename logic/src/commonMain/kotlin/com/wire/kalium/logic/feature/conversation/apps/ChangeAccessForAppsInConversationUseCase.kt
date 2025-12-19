@@ -28,13 +28,14 @@ import com.wire.kalium.logic.feature.conversation.UpdateConversationAccessRoleUs
  * It updates the access roles and access of the conversation for apps (old service bots)
  * and inserts a system message indicating the change.
  */
-internal class ChangeAccessForAppsInConversationUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class ChangeAccessForAppsInConversationUseCase internal constructor(
     private val updateConversationAccessRole: UpdateConversationAccessRoleUseCase,
     private val systemMessageInserter: SystemMessageInserter,
     private val selfUserId: UserId,
 ) {
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         accessRoles: Set<Conversation.AccessRole>,
         access: Set<Conversation.Access>,

@@ -32,17 +32,17 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will remove a conversation from the selected folder and if the folder is empty, it will remove the folder.
  */
-internal interface RemoveConversationFromFolderUseCase {
+public interface RemoveConversationFromFolderUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param folderId the id of the folder
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(conversationId: ConversationId, folderId: String): Result
+    public suspend operator fun invoke(conversationId: ConversationId, folderId: String): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

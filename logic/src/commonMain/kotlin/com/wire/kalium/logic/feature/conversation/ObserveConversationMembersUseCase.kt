@@ -35,12 +35,12 @@ import kotlinx.coroutines.flow.map
  * This use case will observe and return the list of members of a given conversation.
  */
 @Mockable
-internal interface ObserveConversationMembersUseCase {
+public interface ObserveConversationMembersUseCase {
     /**
      * @param conversationId the id of the conversation to observe
      * @return a flow of [Result] with the list of [MemberDetails] of the conversation
      */
-    suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>>
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>>
 }
 
 internal class ObserveConversationMembersUseCaseImpl internal constructor(

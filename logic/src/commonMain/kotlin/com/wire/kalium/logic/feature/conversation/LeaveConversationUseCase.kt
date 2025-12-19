@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 
-internal interface LeaveConversationUseCase {
+public interface LeaveConversationUseCase {
 
     /**
      * This use case will allow the self user to leave a given group conversation while still keeping the mentioned conversation in
@@ -31,7 +31,7 @@ internal interface LeaveConversationUseCase {
      * @param conversationId of the group conversation to leave.
      * @return [Result] indicating operation succeeded or if anything failed while removing the user from the conversation.
      */
-    suspend operator fun invoke(conversationId: ConversationId): RemoveMemberFromConversationUseCase.Result
+    public suspend operator fun invoke(conversationId: ConversationId): RemoveMemberFromConversationUseCase.Result
 }
 
 internal class LeaveConversationUseCaseImpl(

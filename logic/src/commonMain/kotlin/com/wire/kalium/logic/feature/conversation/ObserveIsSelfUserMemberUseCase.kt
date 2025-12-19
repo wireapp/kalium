@@ -26,13 +26,13 @@ import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-internal interface ObserveIsSelfUserMemberUseCase {
+public interface ObserveIsSelfUserMemberUseCase {
     /**
      * Use case that check if self user is member of given conversation
      * @param conversationId the id of the conversation where user checks his membership
      * @return an [IsSelfUserMemberResult] containing Success or Failure cases
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId
     ): Flow<IsSelfUserMemberResult>
 }
@@ -48,7 +48,7 @@ internal class ObserveIsSelfUserMemberUseCaseImpl(
     }
 }
 
-internal sealed class IsSelfUserMemberResult {
-    internal data class Success(val isMember: Boolean) : IsSelfUserMemberResult()
-    internal data class Failure(val coreFailure: CoreFailure) : IsSelfUserMemberResult()
+public sealed class IsSelfUserMemberResult {
+    public data class Success(val isMember: Boolean) : IsSelfUserMemberResult()
+    public data class Failure(val coreFailure: CoreFailure) : IsSelfUserMemberResult()
 }
