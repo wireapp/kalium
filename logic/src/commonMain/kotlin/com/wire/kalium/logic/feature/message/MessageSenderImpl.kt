@@ -87,6 +87,7 @@ internal class MessageSenderImpl internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val transactionProvider: CryptoTransactionProvider,
     private val mlsMissingUsersMessageRejectionHandler: MLSMissingUsersMessageRejectionHandler,
+    private val messageSyncTracker: com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
@@ -158,6 +159,12 @@ internal class MessageSenderImpl internal constructor(
                             serverDate = if (!isEditMessage) serverDate else null,
                             millis = millis
                         )
+
+                        // Track successfully sent message for remote sync
+                        // Fetch the updated message with Sent status and track it
+                        messageRepository.getMessageById(processedMessage.conversationId, processedMessage.id).map { sentMessage ->
+                            messageSyncTracker.trackMessageInsert(sentMessage)
+                        }
                         Unit
                     }
                 }.onSuccess {

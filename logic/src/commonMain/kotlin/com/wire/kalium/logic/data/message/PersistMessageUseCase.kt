@@ -60,7 +60,12 @@ internal class PersistMessageUseCaseImpl(
             }
 
             // Track message for synchronization
-            messageSyncTracker.trackMessageInsert(modifiedMessage)
+            // Only track messages that are not self-sent with Pending status
+            // Self-sent pending messages will be tracked after successful sending
+            val shouldTrack = !isSelfSender || modifiedMessage.status != Message.Status.Pending
+            if (shouldTrack) {
+                messageSyncTracker.trackMessageInsert(modifiedMessage)
+            }
         }.map { }
     }
 

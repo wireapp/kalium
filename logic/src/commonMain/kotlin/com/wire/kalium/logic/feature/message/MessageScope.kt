@@ -262,6 +262,7 @@ class MessageScope internal constructor(
             staleEpochVerifier,
             transactionProvider,
             mlsMissingUsersMessageRejectionHandlerProvider(),
+            messageSyncTracker,
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
         )

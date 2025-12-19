@@ -198,6 +198,12 @@ class DebugScope internal constructor(
             staleEpochVerifier,
             transactionProvider,
             mlsMissingUsersMessageRejectionHandlerProvider(),
+            // No-op message sync tracker for debug scope
+            object : com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase {
+                override suspend fun trackMessageInsert(message: com.wire.kalium.logic.data.message.Message) = Unit
+                override suspend fun trackMessageDelete(conversationId: com.wire.kalium.logic.data.id.ConversationId, messageId: String) = Unit
+                override suspend fun trackMessageUpdate(conversationId: com.wire.kalium.logic.data.id.ConversationId, messageId: String) = Unit
+            },
             { message, expirationData ->
                 ephemeralMessageDeletionHandler.enqueueSelfDeletion(
                     message,
