@@ -38,20 +38,21 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
  * Adds an authenticated user to the session
  * In case of the new session having a different server configurations, the new session should not be added
  */
-internal class AddAuthenticatedUserUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
     private val serverConfigurationDAO: ServerConfigurationDAO,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
-    internal sealed class Result {
-        internal data class Success(val userId: UserId) : Result()
-        internal sealed class Failure : Result() {
-            internal data object UserAlreadyExists : Failure()
-            internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Result {
+        public data class Success(val userId: UserId) : Result()
+        public sealed class Failure : Result() {
+            public data object UserAlreadyExists : Failure()
+            public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
     }
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AccountTokens,

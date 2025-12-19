@@ -39,19 +39,19 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-internal data class ServerConfigWithUserId(
+public data class ServerConfigWithUserId(
     val serverConfig: ServerConfig,
     val userId: UserId
 )
 
 @Serializable
-internal data class ServerConfig(
+public data class ServerConfig(
     @SerialName("config_id") val id: String,
     @SerialName("links") val links: Links,
     @SerialName("metadata") val metaData: MetaData
 ) {
     @Serializable
-    internal data class Links(
+    public data class Links(
         @SerialName("apiBaseUrl") val api: String,
         @SerialName("accountsBaseUrl") val accounts: String,
         @SerialName("webSocketBaseUrl") val webSocket: String,
@@ -88,7 +88,7 @@ internal data class ServerConfig(
     }
 
     @Serializable
-    internal data class MetaData(
+    public data class MetaData(
         @SerialName("federation") val federation: Boolean,
         @SerialName("commonApiVersion")
         @Serializable(CommonApiVersionTypeSerializer::class)
@@ -97,7 +97,7 @@ internal data class ServerConfig(
     )
 
     @Serializable
-    internal data class VersionInfo(
+    public data class VersionInfo(
         @SerialName("federation") val federation: Boolean,
         @SerialName("supported") val supported: List<Int>,
         @SerialName("domain") val domain: String? = null,
@@ -105,13 +105,13 @@ internal data class ServerConfig(
     )
 
     @Serializable
-    internal data class ApiProxy(
+    public data class ApiProxy(
         @SerialName("needsAuthentication") val needsAuthentication: Boolean,
         @SerialName("host") val host: String,
         @SerialName("port") val port: Int
     )
 
-    internal companion object {
+    public companion object {
         internal val PRODUCTION = Links(
             api = """https://prod-nginz-https.wire.com""",
             accounts = """https://account.wire.com""",
@@ -345,22 +345,22 @@ internal class ServerConfigMapperImpl(
         )
 }
 
-internal sealed interface CommonApiVersionType {
-    val version: Int
+public sealed interface CommonApiVersionType {
+    public val version: Int
 
-    data object New : CommonApiVersionType {
+    public data object New : CommonApiVersionType {
         override val version: Int
             get() = NEW_API_VERSION_NUMBER
     }
 
-    data object Unknown : CommonApiVersionType {
+    public data object Unknown : CommonApiVersionType {
         override val version: Int
             get() = UNKNOWN_API_VERSION_NUMBER
     }
 
-    data class Valid(override val version: Int) : CommonApiVersionType
+    public data class Valid(override val version: Int) : CommonApiVersionType
 
-    companion object {
+    public companion object {
         internal const val NEW_API_VERSION_NUMBER = -1
         internal const val UNKNOWN_API_VERSION_NUMBER = -2
         internal const val MINIMUM_VALID_API_VERSION = 0

@@ -28,11 +28,11 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-internal expect class CoreLogic : CoreLogicCommon {
+public expect class CoreLogic : CoreLogicCommon {
     override val globalPreferences: GlobalPrefProvider
     override val globalDatabaseBuilder: GlobalDatabaseBuilder
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-    override fun getSessionScope(userId: UserId): UserSessionScope
+    public override fun getSessionScope(userId: UserId): UserSessionScope
     override suspend fun deleteSessionScope(userId: UserId)
     override val globalCallManager: GlobalCallManager
     override val workSchedulerProvider: WorkSchedulerProvider

@@ -35,13 +35,13 @@ import com.wire.kalium.network.SupportedApiVersions
  * This use case is responsible for obtaining the authentication scope for the current version of the app.
  * It will try to validate if the current client is able to talk to a specific backend version.
  */
-internal class AutoVersionAuthScopeUseCase(
+public class AutoVersionAuthScopeUseCase(
     private val kaliumConfigs: KaliumConfigs,
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon,
 ) {
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         proxyCredentials: ProxyCredentials?
     ): Result =
         coreLogic.getAuthenticationScope(
@@ -76,13 +76,13 @@ internal class AutoVersionAuthScopeUseCase(
             else -> Result.Failure.Generic(coreFailure)
         }.also { kaliumLogger.e(coreFailure.toString()) }
 
-    internal sealed class Result {
-        internal class Success(val authenticationScope: AuthenticationScope) : Result()
+    public sealed class Result {
+        public class Success(public val authenticationScope: AuthenticationScope) : Result()
 
-        internal sealed class Failure : Result() {
-            internal data object UnknownServerVersion : Failure()
-            internal data object TooNewVersion : Failure()
-            internal data class Generic(val genericFailure: CoreFailure) : Failure()
+        public sealed class Failure : Result() {
+            public data object UnknownServerVersion : Failure()
+            public data object TooNewVersion : Failure()
+            public data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
 }

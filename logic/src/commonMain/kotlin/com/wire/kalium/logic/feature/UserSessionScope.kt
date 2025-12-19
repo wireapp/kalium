@@ -538,7 +538,7 @@ import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList", "LargeClass")
-internal class UserSessionScope internal constructor(
+public class UserSessionScope internal constructor(
     userAgent: String,
     internal val userId: UserId,
     private val globalScope: GlobalKaliumScope,
@@ -2084,7 +2084,7 @@ internal class UserSessionScope internal constructor(
     }
 
     @OptIn(DelicateKaliumApi::class)
-    internal val client: ClientScope by lazy {
+    public val client: ClientScope by lazy {
         ClientScope(
             clientRepository,
             pushTokenRepository,
@@ -2195,7 +2195,7 @@ internal class UserSessionScope internal constructor(
         )
     }
 
-    internal val messages: MessageScope by lazy {
+    public val messages: MessageScope by lazy {
         MessageScope(
             connectionRepository,
             messageDraftRepository,

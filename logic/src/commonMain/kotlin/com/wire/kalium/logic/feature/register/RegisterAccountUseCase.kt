@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.register
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
@@ -36,19 +35,20 @@ import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
 import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
+import kotlin.uuid.Uuid
 
-internal sealed class RegisterParam(
-    internal open val name: String,
-    internal open val email: String,
-    internal open val password: String,
-    internal open val emailActivationCode: String,
-    internal open val cookieLabel: String?
+public sealed class RegisterParam(
+    public open val name: String,
+    public open val email: String,
+    public open val password: String,
+    public open val emailActivationCode: String,
+    public open val cookieLabel: String?
 ) {
 
     @Deprecated("This belongs to the old flow, it is overridden by [PersonalAccount] it will be deleted when enabling the new flow")
-    internal class PrivateAccount(
-        internal val firstName: String,
-        internal val lastName: String,
+    public class PrivateAccount(
+        public val firstName: String,
+        public val lastName: String,
         email: String,
         password: String,
         emailActivationCode: String,
@@ -61,14 +61,14 @@ internal sealed class RegisterParam(
 
     @Deprecated("This belongs to the old flow, it will be deleted when enabling the new flow")
     @Suppress("LongParameterList")
-    internal class Team(
-        internal val firstName: String,
-        internal val lastName: String,
+    public class Team(
+        public val firstName: String,
+        public val lastName: String,
         email: String,
         password: String,
         emailActivationCode: String,
-        internal val teamName: String,
-        internal val teamIcon: String,
+        public val teamName: String,
+        public val teamIcon: String,
         cookieLabel: String? = Uuid.random().toString()
     ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
 
@@ -76,7 +76,7 @@ internal sealed class RegisterParam(
             get() = "$firstName $lastName"
     }
 
-    internal data class PersonalAccount(
+    public data class PersonalAccount(
         override val name: String,
         override val email: String,
         override val password: String,
@@ -88,7 +88,8 @@ internal sealed class RegisterParam(
 /**
  * This use case is responsible for registering a new account.
  */
-internal class RegisterAccountUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
@@ -99,7 +100,7 @@ internal class RegisterAccountUseCase internal constructor(
      *
      * @return [RegisterResult] with credentials if successful or [RegisterResult.Failure] with the specific error
      */
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         param: RegisterParam
     ): RegisterResult = when (param) {
         is RegisterParam.PersonalAccount,
@@ -154,22 +155,22 @@ internal class RegisterAccountUseCase internal constructor(
     }
 }
 
-internal sealed class RegisterResult {
-    internal data class Success(
+public sealed class RegisterResult {
+    public data class Success(
         val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : RegisterResult()
 
-    internal sealed class Failure : RegisterResult() {
-        internal data object EmailDomainBlocked : Failure()
-        internal data object AccountAlreadyExists : Failure()
-        internal data object InvalidActivationCode : Failure()
-        internal data object UserCreationRestricted : Failure()
-        internal data object TeamMembersLimitReached : Failure()
-        internal data object BlackListed : Failure()
-        internal data object InvalidEmail : Failure()
-        internal data class Generic(val failure: CoreFailure) : Failure()
+    public sealed class Failure : RegisterResult() {
+        public data object EmailDomainBlocked : Failure()
+        public data object AccountAlreadyExists : Failure()
+        public data object InvalidActivationCode : Failure()
+        public data object UserCreationRestricted : Failure()
+        public data object TeamMembersLimitReached : Failure()
+        public data object BlackListed : Failure()
+        public data object InvalidEmail : Failure()
+        public data class Generic(val failure: CoreFailure) : Failure()
     }
 }

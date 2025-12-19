@@ -44,7 +44,7 @@ import java.io.File
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
@@ -73,7 +73,7 @@ actual class CoreLogic(
         queriesContext = KaliumDispatcherImpl.io
     )
 
-    actual override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
@@ -108,4 +108,4 @@ actual class CoreLogic(
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "jvm"
+internal actual val clientPlatform: String = "jvm"

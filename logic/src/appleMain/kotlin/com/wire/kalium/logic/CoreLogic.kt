@@ -38,7 +38,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
@@ -83,7 +83,7 @@ actual class CoreLogic(
         )
     }
 
-    actual override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
@@ -98,4 +98,4 @@ actual class CoreLogic(
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "ios"
+internal actual val clientPlatform: String = "ios"

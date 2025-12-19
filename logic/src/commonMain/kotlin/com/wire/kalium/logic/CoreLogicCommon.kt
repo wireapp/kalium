@@ -40,7 +40,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-internal abstract class CoreLogicCommon internal constructor(
+public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
     protected val kaliumConfigs: KaliumConfigs,
@@ -48,11 +48,11 @@ internal abstract class CoreLogicCommon internal constructor(
 ) {
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
-    protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-    protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
+    internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    internal val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    protected val authenticationScopeProvider: AuthenticationScopeProvider =
+    internal val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
     private val globalKaliumScope by lazy {
@@ -69,7 +69,7 @@ internal abstract class CoreLogicCommon internal constructor(
         )
     }
 
-    internal fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
+    public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     internal fun getAuthenticationScope(
@@ -103,11 +103,11 @@ internal abstract class CoreLogicCommon internal constructor(
         action: UserSessionScope.() -> T
     ): T = getSessionScope(userId).action()
 
-    protected abstract val globalCallManager: GlobalCallManager
+    internal abstract val globalCallManager: GlobalCallManager
 
-    protected abstract val workSchedulerProvider: WorkSchedulerProvider
+    internal abstract val workSchedulerProvider: WorkSchedulerProvider
 
-    internal fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
+    public fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
     internal abstract val networkStateObserver: NetworkStateObserver

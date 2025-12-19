@@ -120,7 +120,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
-internal class MessageScope internal constructor(
+public class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageDraftRepository: MessageDraftRepository,
     private val selfUserId: QualifiedID,
@@ -572,7 +572,7 @@ internal class MessageScope internal constructor(
     internal val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
         get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 
-    internal val observeAssetUploadState: ObserveAssetUploadStateUseCase
+    public val observeAssetUploadState: ObserveAssetUploadStateUseCase
         get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository)
 
     internal val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase

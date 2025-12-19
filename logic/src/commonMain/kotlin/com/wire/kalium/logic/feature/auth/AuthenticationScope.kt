@@ -76,7 +76,7 @@ internal class AuthenticationScopeProvider internal constructor(
         }
 }
 
-internal class AuthenticationScope internal constructor(
+public class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
@@ -143,7 +143,7 @@ internal class AuthenticationScope internal constructor(
         )
     internal val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
-    internal val registerScope: RegisterScope
+    public val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
     internal val ssoLoginScope: SSOLoginScope
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)

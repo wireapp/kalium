@@ -45,7 +45,7 @@ import kotlinx.coroutines.cancel
  * This class is only for platform specific variables,
  * and it should only override functions/variables from CoreLogicCommon
  */
-internal actual class CoreLogic(
+public actual class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,
@@ -68,7 +68,7 @@ internal actual class CoreLogic(
         enableWAL = true
     )
 
-    actual override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
@@ -76,7 +76,7 @@ internal actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    actual override val globalCallManager: GlobalCallManager by lazy {
+    internal actual override val globalCallManager: GlobalCallManager by lazy {
         GlobalCallManager(
             appContext = PlatformContext(appContext),
             scope = getGlobalScope()

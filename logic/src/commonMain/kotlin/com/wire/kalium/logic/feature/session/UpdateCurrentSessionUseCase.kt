@@ -29,12 +29,13 @@ import com.wire.kalium.common.functional.fold
  *
  * @see [UpdateCurrentSessionUseCase.Result]
  */
-internal class UpdateCurrentSessionUseCase internal constructor(private val sessionRepository: SessionRepository) {
-    internal suspend operator fun invoke(userId: UserId?) =
+// todo(interface). extract interface for use case
+public class UpdateCurrentSessionUseCase internal constructor(private val sessionRepository: SessionRepository) {
+    public suspend operator fun invoke(userId: UserId?): Result =
         sessionRepository.updateCurrentSession(userId).fold({ Result.Failure(it) }, { Result.Success })
 
-    internal sealed class Result {
-        internal data object Success : Result()
-        internal data class Failure(val cause: StorageFailure) : Result()
+    public sealed class Result {
+        public data object Success : Result()
+        public data class Failure(public val cause: StorageFailure) : Result()
     }
 }

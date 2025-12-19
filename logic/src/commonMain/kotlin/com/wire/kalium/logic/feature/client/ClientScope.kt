@@ -51,7 +51,7 @@ import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseI
 import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
-internal class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
+public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     internal val clientRepository: ClientRepository,
     private val pushTokenRepository: PushTokenRepository,
     private val logoutRepository: LogoutRepository,
@@ -149,7 +149,7 @@ internal class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor
             getOrRegister
         )
 
-    internal val getOrRegister: GetOrRegisterClientUseCase
+    public val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(
             clientRepository,
             pushTokenRepository,

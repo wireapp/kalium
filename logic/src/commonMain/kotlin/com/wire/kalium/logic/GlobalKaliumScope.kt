@@ -86,7 +86,7 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
 @Suppress("LongParameterList")
-internal class GlobalKaliumScope internal constructor(
+public class GlobalKaliumScope internal constructor(
     userAgent: String,
     private val globalDatabase: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
@@ -145,7 +145,7 @@ internal class GlobalKaliumScope internal constructor(
     internal val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
-    internal val session: SessionScope get() = SessionScope(sessionRepository)
+    public val session: SessionScope get() = SessionScope(sessionRepository)
     internal val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
     internal val updateApiVersions: UpdateApiVersionsUseCase
         get() = UpdateApiVersionsUseCaseImpl(

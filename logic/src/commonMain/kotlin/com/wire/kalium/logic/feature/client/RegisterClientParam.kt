@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.client.ClientType
  * preKeysToSend : the initial public keys to start a conversation with another client
  * @see [RegisterClientParam]
  */
-internal data class RegisterClientParam(
+public data class RegisterClientParam(
     val password: String?,
     val capabilities: List<ClientCapability>?,
     val clientType: ClientType? = null,

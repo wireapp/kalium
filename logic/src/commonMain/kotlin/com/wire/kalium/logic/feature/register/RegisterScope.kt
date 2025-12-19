@@ -22,12 +22,11 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 
-internal class RegisterScope internal constructor(
+public class RegisterScope internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
 ) {
-    internal val register get() = RegisterAccountUseCase(registerAccountRepository, serverConfig, proxyCredentials)
-    internal val requestActivationCode get() = RequestActivationCodeUseCase(registerAccountRepository)
-    internal val activate get() = VerifyActivationCodeUseCase(registerAccountRepository)
+    public val register: RegisterAccountUseCase get() = RegisterAccountUseCase(registerAccountRepository, serverConfig, proxyCredentials)
+    public val requestActivationCode: RequestActivationCodeUseCase get() = RequestActivationCodeUseCase(registerAccountRepository)
 }
