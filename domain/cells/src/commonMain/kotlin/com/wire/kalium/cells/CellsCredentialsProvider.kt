@@ -18,6 +18,7 @@
 package com.wire.kalium.cells
 
 import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 
 /**
@@ -33,4 +34,30 @@ internal class CellsCredentialsProvider(
         serverUrl = userConfigDAO.getWireCellsConfig()?.backendUrl ?: "",
         gatewaySecret = "gatewaysecret"
     )
+
+    internal fun getCredentials(serverConfig: ServerConfigDTO) =
+        when {
+            serverConfig.links.api.endsWith("imai.wire.link") ->
+                CellsCredentials(
+                    serverUrl = "https://cells.imai.wire.link",
+                    gatewaySecret = "gatewaysecret",
+                )
+
+            serverConfig.links.api.endsWith("fulu.wire.link") -> CellsCredentials(
+                serverUrl = "https://cells.fulu.wire.link",
+                gatewaySecret = "gatewaysecret",
+            )
+
+            serverConfig.links.api.endsWith("staging-nginz-https.zinfra.io") -> CellsCredentials(
+                serverUrl = "https://cells.staging.zinfra.io",
+                gatewaySecret = "gatewaysecret",
+            )
+
+            serverConfig.links.api.endsWith("rod-nginz-https.wire.com") -> CellsCredentials(
+                serverUrl = "https://cells-beta.wire.com",
+                gatewaySecret = "gatewaysecret",
+            )
+
+            else -> CellsCredentials(serverConfig.links.api, "gatewaysecret")
+        }
 }

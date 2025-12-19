@@ -161,7 +161,7 @@ public class CellsScope(
 
     private val cellClientCredentials: Lazy<CellsCredentials> = lazy {
         runBlocking {
-            cellsCredentialsProvider.getCredentials()
+            cellsCredentialsProvider.getCredentials(sessionManager.serverConfig())
         }
     }
 
