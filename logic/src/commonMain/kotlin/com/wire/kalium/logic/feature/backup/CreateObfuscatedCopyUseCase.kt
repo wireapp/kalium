@@ -21,11 +21,17 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -33,12 +39,6 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.nullableFold
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.util.DateTimeUtil
@@ -46,7 +46,6 @@ import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.FileNotFoundException
 import okio.Path
@@ -60,9 +59,10 @@ import okio.use
  * Creates an obfuscated copy of the user's data.
  * TO BE USED FOR DEBUGGING PURPOSES ONLY.
  */
+// todo(interface). extract interface for use case
 @DelicateKaliumApi("This class is used for debugging purposes only")
 @Suppress("LongParameterList")
-internal class CreateObfuscatedCopyUseCase internal constructor(
+public class CreateObfuscatedCopyUseCase internal constructor(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
@@ -73,7 +73,7 @@ internal class CreateObfuscatedCopyUseCase internal constructor(
 ) {
 
     @DelicateKaliumApi("This function is used for debugging purposes only")
-    internal suspend operator fun invoke(password: String?): CreateBackupResult = withContext(dispatchers.default) {
+    public suspend operator fun invoke(password: String?): CreateBackupResult = withContext(dispatchers.default) {
         val userHandle = userRepository.getSelfUser().getOrNull()?.handle?.replace(".", "-")
         val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
         val backupName = createFinalZipName(userHandle, timeStamp)

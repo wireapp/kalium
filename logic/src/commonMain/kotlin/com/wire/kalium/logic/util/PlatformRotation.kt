@@ -17,6 +17,6 @@
  */
 package com.wire.kalium.logic.util
 
-internal expect class PlatformRotation
+public expect class PlatformRotation
 
 internal expect fun mockPlatformRotation(): PlatformRotation

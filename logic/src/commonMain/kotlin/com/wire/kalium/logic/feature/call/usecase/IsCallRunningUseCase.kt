@@ -28,13 +28,14 @@ import kotlinx.coroutines.flow.map
  * This use case is responsible for checking if there is a call running.
  * @see [runningCalls]
  */
-internal class IsCallRunningUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class IsCallRunningUseCase internal constructor(
     private val callRepository: CallRepository
 ) {
     /**
      * @return true if there is a call running, false otherwise.
      */
-    internal suspend operator fun invoke(): Boolean {
+    public suspend operator fun invoke(): Boolean {
         return callRepository.callsFlow().map { calls ->
             val call = calls.find {
                 it.status in runningCalls

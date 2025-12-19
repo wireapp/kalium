@@ -40,13 +40,13 @@ import kotlinx.coroutines.flow.onEach
 /**
  * Use case that is responsible for observing the incoming calls.
  */
-internal interface GetIncomingCallsUseCase {
+public interface GetIncomingCallsUseCase {
 
     /**
      * That Flow emits everytime when the list is changed
      * @return a [Flow] of incoming calls List that should be shown to the user.
      */
-    suspend operator fun invoke(): Flow<List<Call>>
+    public suspend operator fun invoke(): Flow<List<Call>>
 }
 
 internal class GetIncomingCallsUseCaseImpl internal constructor(

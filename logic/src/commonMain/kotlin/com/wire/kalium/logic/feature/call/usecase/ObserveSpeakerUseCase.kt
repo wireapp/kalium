@@ -24,7 +24,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case is responsible for observing the speaker state, returns true if the speaker is on, false otherwise.
  */
-internal class ObserveSpeakerUseCase(private val mediaManagerService: MediaManagerService) {
+// todo(interface). extract interface for use case
+public class ObserveSpeakerUseCase internal constructor(private val mediaManagerService: MediaManagerService) {
 
-    internal operator fun invoke(): Flow<Boolean> = mediaManagerService.observeSpeaker()
+    public operator fun invoke(): Flow<Boolean> = mediaManagerService.observeSpeaker()
 }

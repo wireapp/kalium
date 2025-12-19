@@ -29,7 +29,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
-internal class BackupScope internal constructor(
+public class BackupScope internal constructor(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
@@ -37,7 +37,7 @@ internal class BackupScope internal constructor(
     private val userStorage: UserStorage,
     internal val globalPreferences: GlobalPrefProvider,
 ) {
-    internal val create: CreateBackupUseCase
+    public val create: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(
             userId,
             clientIdProvider,
@@ -47,10 +47,10 @@ internal class BackupScope internal constructor(
             securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
         )
 
-    internal val verify: VerifyBackupUseCase
+    public val verify: VerifyBackupUseCase
         get() = VerifyBackupUseCaseImpl(userId, kaliumFileSystem)
 
-    internal val restore: RestoreBackupUseCase
+    public val restore: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
             userStorage.database.databaseImporter,
             kaliumFileSystem,
@@ -60,7 +60,7 @@ internal class BackupScope internal constructor(
         )
 
     @DelicateKaliumApi("this is NOT a backup feature, but a feature to create an unencrypted and obfuscated copy of the database")
-    internal val createUnEncryptedCopy: CreateObfuscatedCopyUseCase
+    public val createUnEncryptedCopy: CreateObfuscatedCopyUseCase
         get() = CreateObfuscatedCopyUseCase(
             userId,
             clientIdProvider,

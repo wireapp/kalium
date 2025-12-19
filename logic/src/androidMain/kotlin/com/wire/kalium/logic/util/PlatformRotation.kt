@@ -20,7 +20,7 @@ package com.wire.kalium.logic.util
 import android.view.Surface
 import androidx.camera.core.impl.ImageOutputConfig.RotationValue
 
-internal actual data class PlatformRotation(
+public actual data class PlatformRotation(
     @RotationValue val value: Int
 )
 

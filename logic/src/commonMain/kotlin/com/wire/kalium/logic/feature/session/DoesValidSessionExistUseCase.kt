@@ -24,12 +24,12 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 
-internal sealed class DoesValidSessionExistResult {
-    internal data class Success(val doesValidSessionExist: Boolean) : DoesValidSessionExistResult()
+public sealed class DoesValidSessionExistResult {
+    public data class Success(val doesValidSessionExist: Boolean) : DoesValidSessionExistResult()
 
-    internal sealed class Failure : DoesValidSessionExistResult() {
+    public sealed class Failure : DoesValidSessionExistResult() {
         @Suppress("UNUSED_PARAMETER") // It's used by consumers of Kalium
-        internal class Generic(coreFailure: CoreFailure) : Failure()
+        public class Generic(coreFailure: CoreFailure) : Failure()
     }
 }
 
@@ -38,7 +38,7 @@ internal sealed class DoesValidSessionExistResult {
  */
 // todo(interface). extract interface for use case
 public class DoesValidSessionExistUseCase internal constructor(private val sessionRepository: SessionRepository) {
-    internal suspend operator fun invoke(userId: UserId): DoesValidSessionExistResult =
+    public suspend operator fun invoke(userId: UserId): DoesValidSessionExistResult =
         sessionRepository.doesValidSessionExist(userId).fold({
             when (it) {
                 StorageFailure.DataNotFound -> DoesValidSessionExistResult.Success(false)

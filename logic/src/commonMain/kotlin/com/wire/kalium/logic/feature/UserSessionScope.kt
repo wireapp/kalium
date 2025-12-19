@@ -683,7 +683,7 @@ public class UserSessionScope internal constructor(
     internal val cellsClient: HttpClient
         get() = authenticatedNetworkContainer.cellsHttpClient
 
-    internal val authenticationScope: AuthenticationScope by lazy {
+    public val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
             serverConfig = sessionManager.getServerConfig(),
             proxyCredentials = sessionManager.getProxyCredentials(),
@@ -1005,7 +1005,7 @@ public class UserSessionScope internal constructor(
             selfTeamId
         )
 
-    internal val backup: BackupScope
+    public val backup: BackupScope
         get() = BackupScope(
             userId = userId,
             clientIdProvider = clientIdProvider,
@@ -2424,7 +2424,7 @@ public class UserSessionScope internal constructor(
             selfTeamId
         )
 
-    internal val calls: CallsScope
+    public val calls: CallsScope
         get() = CallsScope(
             callManager = callManager,
             callRepository = callRepository,

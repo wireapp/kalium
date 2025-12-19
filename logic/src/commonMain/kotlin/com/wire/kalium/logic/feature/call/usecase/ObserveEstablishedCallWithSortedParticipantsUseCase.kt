@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case to observe the established call with sorted participants according to the [CallingParticipantsOrder]
  */
-internal interface ObserveEstablishedCallWithSortedParticipantsUseCase {
-    suspend operator fun invoke(): Flow<Call?>
+public interface ObserveEstablishedCallWithSortedParticipantsUseCase {
+    public suspend operator fun invoke(): Flow<Call?>
 }
 
 internal class ObserveEstablishedCallWithSortedParticipantsUseCaseImpl internal constructor(

@@ -24,12 +24,13 @@ import com.wire.kalium.logic.util.PlatformRotation
 /**
  * This use case is responsible for setting the UI rotation in a call.
  */
-internal class SetUIRotationUseCase internal constructor(private val flowManagerService: FlowManagerService) {
+// todo(interface). extract interface for use case
+public class SetUIRotationUseCase internal constructor(private val flowManagerService: FlowManagerService) {
 
     /**
      * @param rotation the target rotation to set the UI rotation.
      */
-    internal suspend operator fun invoke(rotation: PlatformRotation) {
+    public suspend operator fun invoke(rotation: PlatformRotation) {
         flowManagerService.setUIRotation(rotation)
     }
 }

@@ -57,13 +57,13 @@ import okio.Source
 import okio.buffer
 import okio.use
 
-internal interface CreateBackupUseCase {
+public interface CreateBackupUseCase {
     /**
      * Creates a compressed backup file, containing a metadata json file and the current state of the database. This file can be encrypted
      * with the provided password if it is not empty. Otherwise, the file will be unencrypted.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String): CreateBackupResult
+    public suspend operator fun invoke(password: String): CreateBackupResult
 }
 
 @Suppress("LongParameterList")

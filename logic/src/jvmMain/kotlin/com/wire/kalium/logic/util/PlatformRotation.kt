@@ -17,6 +17,6 @@
  */
 package com.wire.kalium.logic.util
 
-internal actual class PlatformRotation
+public actual class PlatformRotation
 
 internal actual fun mockPlatformRotation() = PlatformRotation()

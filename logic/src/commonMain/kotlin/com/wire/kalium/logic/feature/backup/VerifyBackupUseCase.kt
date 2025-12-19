@@ -36,13 +36,13 @@ import okio.FileSystem
 import okio.Path
 import okio.SYSTEM
 
-internal interface VerifyBackupUseCase {
+public interface VerifyBackupUseCase {
     /**
      * Checks whether the given backup file is encrypted and requires a password.
      * @param compressedBackupFilePath The absolute file system path to the compressed file.
      * @return A [VerifyBackupResult] indicating whether the given backup file contains encrypted file or not or failure.
      */
-    suspend operator fun invoke(compressedBackupFilePath: Path): VerifyBackupResult
+    public suspend operator fun invoke(compressedBackupFilePath: Path): VerifyBackupResult
 }
 
 internal class VerifyBackupUseCaseImpl(
@@ -107,24 +107,24 @@ internal class VerifyBackupUseCaseImpl(
     }
 }
 
-internal enum class BackupFileFormat {
+public enum class BackupFileFormat {
     ANDROID, MULTIPLATFORM
 }
 
-internal sealed class VerifyBackupResult {
+public sealed class VerifyBackupResult {
 
     @Suppress("FunctionName")
-    internal companion object {
-        internal fun AndroidBackup(isEncrypted: Boolean) = Success(BackupFileFormat.ANDROID, isEncrypted)
-        internal fun MultiPlatformBackup(isEncrypted: Boolean) = Success(BackupFileFormat.MULTIPLATFORM, isEncrypted)
+    public companion object {
+        public fun AndroidBackup(isEncrypted: Boolean): Success = Success(BackupFileFormat.ANDROID, isEncrypted)
+        public fun MultiPlatformBackup(isEncrypted: Boolean): Success = Success(BackupFileFormat.MULTIPLATFORM, isEncrypted)
     }
 
-    internal data class Success(val format: BackupFileFormat, val isEncrypted: Boolean) : VerifyBackupResult()
+    public data class Success(val format: BackupFileFormat, val isEncrypted: Boolean) : VerifyBackupResult()
 
-    internal sealed class Failure : VerifyBackupResult() {
-        internal data object InvalidBackupFile : Failure()
-        internal data class UnsupportedVersion(val version: String) : Failure()
-        internal data class Generic(val error: CoreFailure) : Failure()
-        internal data object InvalidUserId : Failure()
+    public sealed class Failure : VerifyBackupResult() {
+        public data object InvalidBackupFile : Failure()
+        public data class UnsupportedVersion(val version: String) : Failure()
+        public data class Generic(val error: CoreFailure) : Failure()
+        public data object InvalidUserId : Failure()
     }
 }

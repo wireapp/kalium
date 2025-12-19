@@ -38,7 +38,7 @@ public class CheckCrlRevocationListUseCase internal constructor(
 
     private val logger = kaliumLogger.withTextTag("CheckCrlRevocationListUseCase")
 
-    internal suspend operator fun invoke(forceUpdate: Boolean) {
+    public suspend operator fun invoke(forceUpdate: Boolean) {
         logger.i("Checking certificate revocation list (CRL). Force update: $forceUpdate")
         certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
             if (forceUpdate || (crl.expiration < Clock.System.now().epochSeconds.toULong())) {

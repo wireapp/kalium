@@ -141,7 +141,7 @@ public class AuthenticationScope internal constructor(
             proxyCredentials,
             secondFactorVerificationRepository
         )
-    internal val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
+    public val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
     public val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)

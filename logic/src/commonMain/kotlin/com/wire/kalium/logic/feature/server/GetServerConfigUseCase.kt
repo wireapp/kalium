@@ -34,16 +34,16 @@ public class GetServerConfigUseCase internal constructor(
      * @param url the url to use as a key to get the [ServerConfig.Links]
      * @return the [Result] with the [ServerConfig.Links] if successful, otherwise a mapped failure.
      */
-    internal suspend operator fun invoke(url: String): GetServerConfigResult = customServerConfigRepository.fetchRemoteConfig(url).fold({
+    public suspend operator fun invoke(url: String): GetServerConfigResult = customServerConfigRepository.fetchRemoteConfig(url).fold({
         GetServerConfigResult.Failure.Generic(it)
     }, { GetServerConfigResult.Success(it) })
 }
 
-internal sealed class GetServerConfigResult {
+public sealed class GetServerConfigResult {
     // TODO: change to return the id only so we are now passing the whole config object around in the app
-    internal class Success(val serverConfigLinks: ServerConfig.Links) : GetServerConfigResult()
+    public class Success(public val serverConfigLinks: ServerConfig.Links) : GetServerConfigResult()
 
-    internal sealed class Failure : GetServerConfigResult() {
-        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : GetServerConfigResult() {
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

@@ -48,7 +48,8 @@ import com.wire.kalium.network.exceptions.isTooManyRequests
  *
  * @see VerifiableAction
  */
-internal class RequestSecondFactorVerificationCodeUseCase(
+// todo(interface). extract interface for use case
+public class RequestSecondFactorVerificationCodeUseCase internal constructor(
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
 ) {
 

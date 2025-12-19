@@ -36,12 +36,12 @@ import kotlinx.datetime.Instant
  * This use case is responsible for ending a call.
  */
 @Mockable
-internal interface EndCallUseCase {
+public interface EndCallUseCase {
 
     /**
      * @param conversationId the id of the conversation for the call should be ended.
      */
-    suspend operator fun invoke(conversationId: ConversationId)
+    public suspend operator fun invoke(conversationId: ConversationId)
 }
 
 /**

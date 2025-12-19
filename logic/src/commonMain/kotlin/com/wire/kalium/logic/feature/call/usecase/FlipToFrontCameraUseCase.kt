@@ -23,12 +23,13 @@ import com.wire.kalium.logic.feature.call.FlowManagerService
 /**
  * This use case will flip the camera to front facing
  */
-internal class FlipToFrontCameraUseCase internal constructor(private val flowManagerService: FlowManagerService) {
+// todo(interface). extract interface for use case
+public class FlipToFrontCameraUseCase internal constructor(private val flowManagerService: FlowManagerService) {
 
     /**
      * @param conversationId the id of the conversation.
      */
-    internal suspend operator fun invoke(conversationId: ConversationId) {
+    public suspend operator fun invoke(conversationId: ConversationId) {
         flowManagerService.flipToFrontCamera(conversationId)
     }
 }
