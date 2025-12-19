@@ -68,6 +68,6 @@ internal class UploadUserAvatarUseCaseImpl(
 }
 
 public sealed class UploadAvatarResult {
-    public class Success(val userAssetId: UserAssetId) : UploadAvatarResult()
-    public class Failure(val coreFailure: CoreFailure) : UploadAvatarResult()
+    public class Success(public val userAssetId: UserAssetId) : UploadAvatarResult()
+    public class Failure(public val coreFailure: CoreFailure) : UploadAvatarResult()
 }
