@@ -24,13 +24,13 @@ import io.mockative.Mockable
  * Validates an email address
  */
 @Mockable
-internal interface ValidateEmailUseCase {
+public interface ValidateEmailUseCase {
     /**
      * Validates an email address
      * @param email The email address to validate
      * @return true if the email address is valid, false otherwise
      */
-    operator fun invoke(email: String): Boolean
+    public operator fun invoke(email: String): Boolean
 }
 
 internal class ValidateEmailUseCaseImpl : ValidateEmailUseCase {

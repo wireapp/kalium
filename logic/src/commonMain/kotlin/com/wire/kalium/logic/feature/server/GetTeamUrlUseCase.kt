@@ -23,7 +23,8 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Use case to get the team url for the current user.
  */
-internal class GetTeamUrlUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetTeamUrlUseCase internal constructor(
     private val selfUserId: UserId,
     private val serverConfigRepository: ServerConfigRepository
 ) {

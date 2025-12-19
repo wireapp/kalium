@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -31,7 +32,6 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
@@ -44,13 +44,13 @@ import kotlinx.coroutines.launch
  * Logs out the user from the current session
  */
 @Mockable
-internal interface LogoutUseCase {
+public interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed
      * @param waitUntilCompletes if true, the logout suspend fun will wait until all the logout operations are completed
      * @see [LogoutReason]
      */
-    suspend operator fun invoke(reason: LogoutReason, waitUntilCompletes: Boolean = false)
+    public suspend operator fun invoke(reason: LogoutReason, waitUntilCompletes: Boolean = false)
 }
 
 internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(

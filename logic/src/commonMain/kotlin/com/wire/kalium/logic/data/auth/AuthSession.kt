@@ -46,7 +46,7 @@ public sealed class AccountInfo {
     }
 }
 
-internal data class PersistentWebSocketStatus(
+public data class PersistentWebSocketStatus(
     val userId: UserId,
     val isPersistentWebSocketEnabled: Boolean
 )

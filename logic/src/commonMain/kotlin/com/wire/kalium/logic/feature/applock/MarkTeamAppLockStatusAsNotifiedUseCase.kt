@@ -24,8 +24,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
  */
-internal interface MarkTeamAppLockStatusAsNotifiedUseCase {
-    operator fun invoke()
+public interface MarkTeamAppLockStatusAsNotifiedUseCase {
+    public operator fun invoke()
 }
 
 internal class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(

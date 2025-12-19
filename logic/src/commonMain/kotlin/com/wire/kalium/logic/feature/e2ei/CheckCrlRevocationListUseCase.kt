@@ -28,7 +28,8 @@ import kotlinx.datetime.Clock
  * Use case to check the certificate revocation list (CRL) for expired entries.
  * param forceUpdate: if true, the CRL will be checked even if it is not expired.
  */
-internal class CheckCrlRevocationListUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class CheckCrlRevocationListUseCase internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val revocationListChecker: RevocationListChecker,
     private val transactionProvider: CryptoTransactionProvider,

@@ -48,7 +48,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.FileNotFoundException
 import okio.Path
@@ -189,7 +188,7 @@ internal class CreateBackupUseCaseImpl(
     }
 }
 
-internal sealed class CreateBackupResult {
-    internal data class Failure(val coreFailure: CoreFailure) : CreateBackupResult()
-    internal data class Success(val backupFilePath: Path, val backupFileName: String) : CreateBackupResult()
+public sealed class CreateBackupResult {
+    public data class Failure(public val coreFailure: CoreFailure) : CreateBackupResult()
+    public data class Success(public val backupFilePath: Path, public val backupFileName: String) : CreateBackupResult()
 }

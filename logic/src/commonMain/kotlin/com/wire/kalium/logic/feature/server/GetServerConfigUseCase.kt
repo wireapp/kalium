@@ -26,7 +26,8 @@ import com.wire.kalium.common.functional.fold
 /**
  * Gets the [ServerConfig.Links] stored locally, using the url as a key.
  */
-internal class GetServerConfigUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetServerConfigUseCase internal constructor(
     private val customServerConfigRepository: CustomServerConfigRepository
 ) {
     /**

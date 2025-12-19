@@ -33,10 +33,10 @@ import kotlinx.coroutines.flow.map
  * Use case that observes the legal hold request.
  */
 @Mockable
-internal interface ObserveLegalHoldRequestUseCase {
-    operator fun invoke(): Flow<Result>
+public interface ObserveLegalHoldRequestUseCase {
+    public operator fun invoke(): Flow<Result>
 
-    sealed class Result {
+    public sealed class Result {
         internal data class LegalHoldRequestAvailable(val fingerprint: String) : Result()
 
         internal data object NoLegalHoldRequest : Result()

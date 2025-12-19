@@ -51,13 +51,13 @@ import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.use
 
-internal interface CreateMPBackupUseCase {
+public interface CreateMPBackupUseCase {
     /**
      * Creates a compressed backup file in multiplatform format. This file can be encrypted
      * with the provided password if password is not empty.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
+    public suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
 }
 
 internal class CreateMPBackupUseCaseImpl(

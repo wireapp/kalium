@@ -27,8 +27,8 @@ import com.wire.kalium.common.functional.fold
  * so we can use it to show and hide things on the screen
  */
 
-internal interface IsFileSharingEnabledUseCase {
-    operator fun invoke(): FileSharingStatus
+public interface IsFileSharingEnabledUseCase {
+    public operator fun invoke(): FileSharingStatus
 }
 
 internal class IsFileSharingEnabledUseCaseImpl(

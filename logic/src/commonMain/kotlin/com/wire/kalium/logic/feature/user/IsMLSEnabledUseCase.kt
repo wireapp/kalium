@@ -18,20 +18,20 @@
 
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.common.functional.fold
 import io.mockative.Mockable
 
 /**
  * Checks if the current user has enabled MLS support.
  */
 @Mockable
-internal interface IsMLSEnabledUseCase {
+public interface IsMLSEnabledUseCase {
     /**
      * @return true if MLS is enabled, false otherwise.
      */
-    suspend operator fun invoke(): Boolean
+    public suspend operator fun invoke(): Boolean
 }
 
 internal class IsMLSEnabledUseCaseImpl(

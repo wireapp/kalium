@@ -24,8 +24,8 @@ import com.wire.kalium.common.functional.onSuccess
 /**
  * Mark Guest Link Feature Flag state as not changed
  */
-internal interface MarkGuestLinkFeatureFlagAsNotChangedUseCase {
-    operator fun invoke()
+public interface MarkGuestLinkFeatureFlagAsNotChangedUseCase {
+    public operator fun invoke()
 }
 
 internal class MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl internal constructor(

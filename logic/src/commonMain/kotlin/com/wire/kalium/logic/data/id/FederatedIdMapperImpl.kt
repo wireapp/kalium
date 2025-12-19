@@ -18,18 +18,18 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 
 @Mockable
-internal interface FederatedIdMapper {
-    suspend fun parseToFederatedId(qualifiedID: QualifiedID): String
-    suspend fun parseToFederatedId(qualifiedStringID: String): String
+public interface FederatedIdMapper {
+    public suspend fun parseToFederatedId(qualifiedID: QualifiedID): String
+    public suspend fun parseToFederatedId(qualifiedStringID: String): String
 }
 
 /**

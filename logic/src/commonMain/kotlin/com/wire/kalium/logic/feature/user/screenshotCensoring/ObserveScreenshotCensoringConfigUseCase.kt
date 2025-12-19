@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.combine
 /**
  * UseCase that allow us to get the configuration of screenshot censoring enabled or not
  */
-internal interface ObserveScreenshotCensoringConfigUseCase {
-    suspend operator fun invoke(): Flow<ObserveScreenshotCensoringConfigResult>
+public interface ObserveScreenshotCensoringConfigUseCase {
+    public suspend operator fun invoke(): Flow<ObserveScreenshotCensoringConfigResult>
 }
 
 internal class ObserveScreenshotCensoringConfigUseCaseImpl(
@@ -53,10 +53,10 @@ internal class ObserveScreenshotCensoringConfigUseCaseImpl(
     }
 }
 
-internal sealed class ObserveScreenshotCensoringConfigResult {
-    internal data object Disabled : ObserveScreenshotCensoringConfigResult()
-    internal sealed class Enabled : ObserveScreenshotCensoringConfigResult() {
-        internal data object ChosenByUser : Enabled()
-        internal data object EnforcedByTeamSelfDeletingSettings : Enabled()
+public sealed class ObserveScreenshotCensoringConfigResult {
+    public data object Disabled : ObserveScreenshotCensoringConfigResult()
+    public sealed class Enabled : ObserveScreenshotCensoringConfigResult() {
+        public data object ChosenByUser : Enabled()
+        public data object EnforcedByTeamSelfDeletingSettings : Enabled()
     }
 }

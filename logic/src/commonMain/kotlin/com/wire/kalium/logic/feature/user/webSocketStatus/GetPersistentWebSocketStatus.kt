@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
 
-internal interface GetPersistentWebSocketStatus {
-    suspend operator fun invoke(): Boolean
+public interface GetPersistentWebSocketStatus {
+    public suspend operator fun invoke(): Boolean
 }
 
 internal class GetPersistentWebSocketStatusImpl(

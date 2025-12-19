@@ -19,6 +19,10 @@
 
 package com.wire.kalium.logic.feature.appVersioning
 
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.intervalFlow
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
@@ -26,10 +30,6 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl.Companion.CHECK_APP_VERSION_FREQUENCY_MS
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.intervalFlow
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,8 +50,8 @@ import kotlin.coroutines.coroutineContext
  * @return Flow<Boolean> emits true if at least one ServerConfig requires app updating, false - otherwise.
  *
  */
-internal interface ObserveIfAppUpdateRequiredUseCase {
-    suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
+public interface ObserveIfAppUpdateRequiredUseCase {
+    public suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
 }
 
 internal class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(

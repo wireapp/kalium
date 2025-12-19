@@ -25,21 +25,21 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 
 @Suppress("LongParameterList")
-internal class MultiPlatformBackupScope internal constructor(
+public class MultiPlatformBackupScope internal constructor(
     private val selfUserId: UserId,
     private val kaliumFileSystem: KaliumFileSystem,
     private val backupRepository: BackupRepository,
     private val userRepository: UserRepository,
 ) {
 
-    internal val create: CreateMPBackupUseCase
+    public val create: CreateMPBackupUseCase
         get() = CreateMPBackupUseCaseImpl(
             backupRepository = backupRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
         )
 
-    internal val restore: RestoreMPBackupUseCase
+    public val restore: RestoreMPBackupUseCase
         get() = RestoreMPBackupUseCaseImpl(
             selfUserId = selfUserId,
             backupRepository = backupRepository,

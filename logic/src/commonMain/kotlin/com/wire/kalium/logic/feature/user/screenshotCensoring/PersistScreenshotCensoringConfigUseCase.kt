@@ -27,8 +27,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 /**
  * UseCase that allow us to persist the configuration of screenshot censoring to enabled or not
  */
-internal interface PersistScreenshotCensoringConfigUseCase {
-    suspend operator fun invoke(enabled: Boolean): PersistScreenshotCensoringConfigResult
+public interface PersistScreenshotCensoringConfigUseCase {
+    public suspend operator fun invoke(enabled: Boolean): PersistScreenshotCensoringConfigResult
 }
 
 internal class PersistScreenshotCensoringConfigUseCaseImpl(
@@ -47,7 +47,7 @@ internal class PersistScreenshotCensoringConfigUseCaseImpl(
             }
 }
 
-internal sealed class PersistScreenshotCensoringConfigResult {
-    internal data object Success : PersistScreenshotCensoringConfigResult()
-    internal data class Failure(val cause: CoreFailure) : PersistScreenshotCensoringConfigResult()
+public sealed class PersistScreenshotCensoringConfigResult {
+    public data object Success : PersistScreenshotCensoringConfigResult()
+    public data class Failure(val cause: CoreFailure) : PersistScreenshotCensoringConfigResult()
 }

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 
 @Suppress("LongParameterList")
-internal class ConnectionScope internal constructor(
+public class ConnectionScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -68,10 +68,10 @@ internal class ConnectionScope internal constructor(
     internal val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
-    internal val blockUser: BlockUserUseCase
+    public val blockUser: BlockUserUseCase
         get() = BlockUserUseCaseImpl(connectionRepository, transactionProvider)
 
-    internal val unblockUser: UnblockUserUseCase
+    public val unblockUser: UnblockUserUseCase
         get() = UnblockUserUseCaseImpl(connectionRepository, transactionProvider)
 
 }

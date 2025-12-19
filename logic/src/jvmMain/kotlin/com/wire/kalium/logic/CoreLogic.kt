@@ -87,7 +87,7 @@ public actual class CoreLogic(
     )
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    actual override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+    public actual override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -104,7 +104,7 @@ public actual class CoreLogic(
             useInMemoryStorage
         )
     }
-    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 }
 
 @Suppress("MayBeConst")

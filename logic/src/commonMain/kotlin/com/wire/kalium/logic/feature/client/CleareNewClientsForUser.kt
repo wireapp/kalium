@@ -24,8 +24,8 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
  * Clear all NewClients for the [UserId] from the BD.
  * Use it after informing user about NewClients, or when user logs out.
  */
-internal interface ClearNewClientsForUserUseCase {
-    suspend operator fun invoke(userId: UserId)
+public interface ClearNewClientsForUserUseCase {
+    public suspend operator fun invoke(userId: UserId)
 }
 
 internal class ClearNewClientsForUserUseCaseImpl(private val userSessionScopeProvider: UserSessionScopeProvider) :

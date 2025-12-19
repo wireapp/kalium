@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 /**
  * Trigger the checking and updating MLS Conversations Verification status.
  */
-internal interface FetchConversationMLSVerificationStatusUseCase {
-    suspend operator fun invoke(conversationId: ConversationId)
+public interface FetchConversationMLSVerificationStatusUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId)
 }
 
 internal class FetchConversationMLSVerificationStatusUseCaseImpl(

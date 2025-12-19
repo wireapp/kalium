@@ -20,20 +20,21 @@
 package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 /**
  * Gets the server configuration for the given user.
  */
-internal class ServerConfigForAccountUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class ServerConfigForAccountUseCase internal constructor(
     private val dao: ServerConfigurationDAO,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
@@ -41,13 +42,13 @@ internal class ServerConfigForAccountUseCase internal constructor(
      * @param userId the id of the user
      * @return the [ServerConfig] for the given user if successful, otherwise a [StorageFailure]
      */
-    internal suspend operator fun invoke(userId: UserId): Result =
+    public suspend operator fun invoke(userId: UserId): Result =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
             .fold(Result::Failure, Result::Success)
 
-    internal sealed class Result {
-        internal data class Success(val config: ServerConfig) : Result()
-        internal data class Failure(val cause: StorageFailure) : Result()
+    public sealed class Result {
+        public data class Success(val config: ServerConfig) : Result()
+        public data class Failure(val cause: StorageFailure) : Result()
     }
 }
