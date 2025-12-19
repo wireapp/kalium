@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.backup
 
+import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
@@ -34,6 +35,23 @@ interface MessageSyncApi {
      * @return Network response indicating success or failure
      */
     suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit>
+
+    /**
+     * Fetches messages from the backup service with filtering and pagination
+     * @param userId User ID to fetch messages for
+     * @param since Timestamp in epoch milliseconds for cursor-based pagination (optional)
+     * @param conversationId Filter by conversation ID (optional)
+     * @param order Sort order: "asc" or "desc" (default: "asc")
+     * @param size Page size: 1-1000 (default: 100)
+     * @return Network response containing paginated messages
+     */
+    suspend fun fetchMessages(
+        userId: String,
+        since: Long? = null,
+        conversationId: String? = null,
+        order: String = "asc",
+        size: Int = 100
+    ): NetworkResponse<MessageSyncFetchResponseDTO>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(

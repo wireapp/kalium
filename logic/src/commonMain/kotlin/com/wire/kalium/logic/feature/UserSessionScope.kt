@@ -213,6 +213,8 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
+import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase
+import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -1291,6 +1293,8 @@ class UserSessionScope internal constructor(
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver,
+            restoreRemoteBackup,
+            kaliumConfigs,
             cryptoTransactionProvider
         )
     }
@@ -2051,6 +2055,14 @@ class UserSessionScope internal constructor(
             userDAO = userStorage.database.userDAO,
             conversationDAO = userStorage.database.conversationDAO,
             messageDAO = userStorage.database.messageDAO,
+        )
+
+    private val restoreRemoteBackup: RestoreRemoteBackupUseCase
+        get() = RestoreRemoteBackupUseCaseImpl(
+            selfUserId = userId,
+            messageSyncApi = authenticatedNetworkContainer.messageSyncApi,
+            backupRepository = backupRepository,
+            messageDAO = userStorage.database.messageDAO
         )
 
     val observeSyncState: ObserveSyncStateUseCase

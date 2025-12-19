@@ -18,12 +18,15 @@
 
 package com.wire.kalium.network.api.v12.authenticated
 
+import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.api.v11.authenticated.MessageSyncApiV11
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -36,6 +39,23 @@ internal open class MessageSyncApiV12(
         wrapRequest {
             httpClient.post("$backupServiceUrl/messages") {
                 setBody(request)
+            }
+        }
+
+    override suspend fun fetchMessages(
+        userId: String,
+        since: Long?,
+        conversationId: String?,
+        order: String,
+        size: Int
+    ): NetworkResponse<MessageSyncFetchResponseDTO> =
+        wrapKaliumResponse {
+            httpClient.get("$backupServiceUrl/messages") {
+                parameter("user", userId)
+                since?.let { parameter("since", it) }
+                conversationId?.let { parameter("conversation", it) }
+                parameter("order", order)
+                parameter("size", size)
             }
         }
 }

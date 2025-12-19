@@ -19,10 +19,20 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
+import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
         MessageSyncApi.getApiNotSupportError(::syncMessages.name)
+
+    override suspend fun fetchMessages(
+        userId: String,
+        since: Long?,
+        conversationId: String?,
+        order: String,
+        size: Int
+    ): NetworkResponse<MessageSyncFetchResponseDTO> =
+        MessageSyncApi.getApiNotSupportError(::fetchMessages.name)
 }

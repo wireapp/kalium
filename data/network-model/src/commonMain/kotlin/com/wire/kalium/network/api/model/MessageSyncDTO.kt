@@ -48,3 +48,29 @@ data class MessageSyncUpdateDTO(
     @SerialName("payload")
     val payload: String? // JSON string of BackupMessage, null for deletes
 )
+
+/**
+ * Response payload for fetching messages from the backup service
+ */
+@Serializable
+data class MessageSyncFetchResponseDTO(
+    @SerialName("has_more")
+    val hasMore: Boolean,
+    @SerialName("results")
+    val results: List<MessageSyncResultDTO>
+)
+
+/**
+ * Individual message result from fetch operation
+ */
+@Serializable
+data class MessageSyncResultDTO(
+    @SerialName("timestamp")
+    val timestamp: String,
+    @SerialName("conversation_id")
+    val conversationId: String,
+    @SerialName("message_id")
+    val messageId: String,
+    @SerialName("payload")
+    val payload: String // JSON-encoded string of BackupMessage
+)

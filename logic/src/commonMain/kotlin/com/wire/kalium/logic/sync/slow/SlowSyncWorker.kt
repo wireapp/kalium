@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvid
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -43,6 +44,7 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import io.mockative.Mockable
@@ -79,6 +81,8 @@ internal class SlowSyncWorkerImpl(
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
+    private val restoreRemoteBackup: RestoreRemoteBackupUseCase,
+    private val kaliumConfigs: KaliumConfigs,
     private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
@@ -117,6 +121,16 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
                     transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
                         oneOnOneResolver.resolveAllOneOnOneConversations(it)
+                    }
+                }
+                .continueWithStep(SlowSyncStep.RESTORE_REMOTE_BACKUP) {
+                    if (kaliumConfigs.messageSynchronizationEnabled) {
+                        restoreRemoteBackup().map { restoredCount ->
+                            logger.i("Restored $restoredCount messages from remote backup")
+                        }
+                    } else {
+                        logger.i("Message synchronization is disabled, skipping remote backup restore")
+                        Either.Right(Unit)
                     }
                 }
                 .flatMap {
