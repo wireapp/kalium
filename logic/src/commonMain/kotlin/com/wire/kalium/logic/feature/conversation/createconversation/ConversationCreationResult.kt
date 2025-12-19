@@ -28,7 +28,7 @@ public sealed interface ConversationCreationResult {
         /**
          * Details of the newly created conversation
          */
-        internal val conversation: Conversation
+        public val conversation: Conversation
     ) : ConversationCreationResult
 
     /**
@@ -44,10 +44,10 @@ public sealed interface ConversationCreationResult {
         /**
          * The root cause of the failure
          */
-        internal val cause: CoreFailure
+        public val cause: CoreFailure
     ) : ConversationCreationResult
 
     public class BackendConflictFailure(
-        internal val domains: List<String>
+        public val domains: List<String>
     ) : ConversationCreationResult
 }

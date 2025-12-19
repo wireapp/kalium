@@ -28,5 +28,5 @@ public class GetTeamUrlUseCase internal constructor(
     private val selfUserId: UserId,
     private val serverConfigRepository: ServerConfigRepository
 ) {
-    internal suspend operator fun invoke(): String = serverConfigRepository.getTeamUrlForUser(selfUserId) ?: ""
+    public suspend operator fun invoke(): String = serverConfigRepository.getTeamUrlForUser(selfUserId) ?: ""
 }

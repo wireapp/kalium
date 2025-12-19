@@ -30,7 +30,7 @@ public val Duration.inWholeWeeks: Long
     get() = inWholeDays / DAYS_IN_WEEK
 
 @OptIn(ExperimentalContracts::class)
-internal fun Duration?.isPositiveNotNull(): Boolean {
+public fun Duration?.isPositiveNotNull(): Boolean {
     contract {
         returns(true) implies (this@isPositiveNotNull != null)
     }
@@ -44,7 +44,7 @@ internal fun Boolean.toInt() = if (this) 1 else 0
     a space then it's considered a part of its name: copy of "file_name(1).jpg" will be "file_name(1) (1).jpg".
     This is how it usually works on many operating systems.
  */
-internal fun buildFileName(name: String, extension: String? = null, copyCounter: Int = 0): String {
+public fun buildFileName(name: String, extension: String? = null, copyCounter: Int = 0): String {
     val nameWithCopyCounter = if (copyCounter <= 0) name else "$name ($copyCounter)"
     return extension?.let { "$nameWithCopyCounter.$extension" } ?: nameWithCopyCounter
 }
@@ -63,7 +63,7 @@ public fun String.splitFileExtension(): Pair<String, String?> {
     return (name to extension)
 }
 
-internal fun String.splitFileExtensionAndCopyCounter(): Triple<String, Int, String?> {
+public fun String.splitFileExtensionAndCopyCounter(): Triple<String, Int, String?> {
     val (name, extension) = this.splitFileExtension()
     val copyCounterRegex = " \\(\\d+\\)\$".toRegex()
     val (nameWithoutCopyCounter, copyCounter) = copyCounterRegex.find(name)?.let {

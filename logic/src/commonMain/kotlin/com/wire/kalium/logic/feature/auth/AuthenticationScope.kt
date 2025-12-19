@@ -145,7 +145,7 @@ public class AuthenticationScope internal constructor(
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
     public val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
-    internal val ssoLoginScope: SSOLoginScope
+    public val ssoLoginScope: SSOLoginScope
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
     internal val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)

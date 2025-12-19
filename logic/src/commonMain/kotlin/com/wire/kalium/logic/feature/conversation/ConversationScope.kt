@@ -318,7 +318,7 @@ public class ConversationScope internal constructor(
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
         get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
 
-    internal val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
+    public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
         get() = DeleteConversationLocallyUseCaseImpl(
             clearConversationContent,
             deleteConversationUseCase,
@@ -328,7 +328,7 @@ public class ConversationScope internal constructor(
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
 
-    internal val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
+    public val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
         get() = CheckConversationInviteCodeUseCase(
             conversationGroupRepository,
             conversationRepository,

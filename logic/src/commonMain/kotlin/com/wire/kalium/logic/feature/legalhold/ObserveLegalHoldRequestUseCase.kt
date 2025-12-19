@@ -37,10 +37,10 @@ public interface ObserveLegalHoldRequestUseCase {
     public operator fun invoke(): Flow<Result>
 
     public sealed class Result {
-        internal data class LegalHoldRequestAvailable(val fingerprint: String) : Result()
+        public data class LegalHoldRequestAvailable(val fingerprint: String) : Result()
 
-        internal data object NoLegalHoldRequest : Result()
-        internal data class Failure(val failure: CoreFailure) : Result()
+        public data object NoLegalHoldRequest : Result()
+        public data class Failure(val failure: CoreFailure) : Result()
     }
 
 }

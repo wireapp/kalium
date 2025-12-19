@@ -35,7 +35,7 @@ public interface ValidateSSOCodeUseCase {
     public operator fun invoke(ssoCode: String): ValidateSSOCodeResult
 
     public companion object {
-        internal const val SSO_CODE_WIRE_PREFIX = "wire-"
+        public const val SSO_CODE_WIRE_PREFIX: String = "wire-"
     }
 }
 

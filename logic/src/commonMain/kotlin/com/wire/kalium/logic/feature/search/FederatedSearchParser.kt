@@ -35,7 +35,7 @@ public class FederatedSearchParser internal constructor(
     private val cachedIsFederationEnabled = AtomicReference<Boolean?>(null)
     private val mutex = Mutex()
 
-    internal suspend operator fun invoke(searchQuery: String, isOtherDomainAllowed: Boolean): Result {
+    public suspend operator fun invoke(searchQuery: String, isOtherDomainAllowed: Boolean): Result {
 
         val isFederated = cachedIsFederationEnabled.get()
             ?: mutex.withLock {
@@ -68,7 +68,7 @@ public class FederatedSearchParser internal constructor(
         const val DOMAIN_REGEX = ".+\\$DOMAIN_SEPARATOR[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
     }
 
-    internal data class Result(
+    public data class Result(
         val searchTerm: String,
         val domain: String
     )

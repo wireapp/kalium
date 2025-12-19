@@ -161,7 +161,7 @@ public class GlobalKaliumScope internal constructor(
             },
         )
 
-    internal val saveNotificationToken: SaveNotificationTokenUseCase
+    public val saveNotificationToken: SaveNotificationTokenUseCase
         get() = SaveNotificationTokenUseCaseImpl(
             notificationTokenRepository,
             observeValidAccounts,

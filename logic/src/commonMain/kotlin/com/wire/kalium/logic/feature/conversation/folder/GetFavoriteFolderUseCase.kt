@@ -35,8 +35,8 @@ public fun interface GetFavoriteFolderUseCase {
     public suspend operator fun invoke(): Result
 
     public sealed class Result {
-        internal data class Success(val folder: ConversationFolder) : Result()
-        internal data object Failure : Result()
+        public data class Success(val folder: ConversationFolder) : Result()
+        public data object Failure : Result()
     }
 }
 

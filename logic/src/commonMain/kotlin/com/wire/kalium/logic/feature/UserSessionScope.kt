@@ -1821,10 +1821,10 @@ public class UserSessionScope internal constructor(
     public val observeLegalHoldForSelfUser: ObserveLegalHoldStateForSelfUserUseCase
         get() = ObserveLegalHoldStateForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser, observeLegalHoldRequest)
 
-    internal val observeLegalHoldChangeNotifiedForSelf: ObserveLegalHoldChangeNotifiedForSelfUseCase
+    public val observeLegalHoldChangeNotifiedForSelf: ObserveLegalHoldChangeNotifiedForSelfUseCase
         get() = ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(userId, userConfigRepository, observeLegalHoldStateForUser)
 
-    internal val markLegalHoldChangeAsNotifiedForSelf: MarkLegalHoldChangeAsNotifiedForSelfUseCase
+    public val markLegalHoldChangeAsNotifiedForSelf: MarkLegalHoldChangeAsNotifiedForSelfUseCase
         get() = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
 
     public val observeLegalHoldRequest: ObserveLegalHoldRequestUseCase
@@ -1833,7 +1833,7 @@ public class UserSessionScope internal constructor(
             transactionProvider = cryptoTransactionProvider
         )
 
-    internal val approveLegalHoldRequest: ApproveLegalHoldRequestUseCase
+    public val approveLegalHoldRequest: ApproveLegalHoldRequestUseCase
         get() = ApproveLegalHoldRequestUseCaseImpl(
             teamRepository = teamRepository,
             selfTeamIdProvider = selfTeamId,
@@ -2324,10 +2324,10 @@ public class UserSessionScope internal constructor(
     public val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    internal val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
+    public val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
             by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
 
-    internal val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
+    public val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
             by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
 
     public val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
@@ -2376,7 +2376,7 @@ public class UserSessionScope internal constructor(
             users.getE2EICertificate,
             clientIdProvider
         )
-    internal val markE2EIRequiredAsNotified: MarkEnablingE2EIAsNotifiedUseCase
+    public val markE2EIRequiredAsNotified: MarkEnablingE2EIAsNotifiedUseCase
         get() = MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)

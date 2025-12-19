@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 
-internal interface DeleteConversationLocallyUseCase {
+public interface DeleteConversationLocallyUseCase {
     /**
      * Delete local conversation which:
      * - Clear all local assets
@@ -34,7 +34,7 @@ internal interface DeleteConversationLocallyUseCase {
      *
      * @param conversationId - id of conversation to delete
      */
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class DeleteConversationLocallyUseCaseImpl(

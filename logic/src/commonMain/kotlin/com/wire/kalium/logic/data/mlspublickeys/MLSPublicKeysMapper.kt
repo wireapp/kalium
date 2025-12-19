@@ -43,33 +43,33 @@ internal class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
 }
 
 @Suppress("ClassNaming")
-internal sealed interface MLSPublicKeyType {
-    val value: String?
+public sealed interface MLSPublicKeyType {
+    public val value: String?
 
-    data object ECDSA_SECP256R1_SHA256 : MLSPublicKeyType {
+    public data object ECDSA_SECP256R1_SHA256 : MLSPublicKeyType {
         override val value: String = "ecdsa_secp256r1_sha256"
     }
 
-    data object ECDSA_SECP384R1_SHA384 : MLSPublicKeyType {
+    public data object ECDSA_SECP384R1_SHA384 : MLSPublicKeyType {
         override val value: String = "ecdsa_secp384r1_sha384"
     }
 
-    data object ECDSA_SECP521R1_SHA512 : MLSPublicKeyType {
+    public data object ECDSA_SECP521R1_SHA512 : MLSPublicKeyType {
         override val value: String = "ecdsa_secp521r1_sha512"
     }
 
-    data object ED448 : MLSPublicKeyType {
+    public data object ED448 : MLSPublicKeyType {
         override val value: String = "ed448"
     }
 
-    data object ED25519 : MLSPublicKeyType {
+    public data object ED25519 : MLSPublicKeyType {
         override val value: String = "ed25519"
     }
 
-    data class Unknown(override val value: String?) : MLSPublicKeyType
+    public data class Unknown(override val value: String?) : MLSPublicKeyType
 
-    companion object {
-        internal fun from(value: String) = when (value) {
+    public companion object {
+        public fun from(value: String): MLSPublicKeyType = when (value) {
             ECDSA_SECP256R1_SHA256.value -> ECDSA_SECP256R1_SHA256
             ECDSA_SECP384R1_SHA384.value -> ECDSA_SECP384R1_SHA384
             ECDSA_SECP521R1_SHA512.value -> ECDSA_SECP521R1_SHA512

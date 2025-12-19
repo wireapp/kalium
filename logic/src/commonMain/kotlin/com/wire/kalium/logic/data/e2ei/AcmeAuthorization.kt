@@ -29,7 +29,7 @@ internal data class AcmeAuthorization(
 )
 
 @JvmInline
-internal value class Nonce(val value: String)
+public value class Nonce(public val value: String)
 
 internal data class AuthorizationResult(
     val oidcAuthorization: NewAcmeAuthz,

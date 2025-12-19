@@ -23,6 +23,10 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+public const val IMAGE_SIZE_LIMIT_BYTES: Long = 15L * 1024 * 1024 // 15 MB limit for images
+public const val ASSET_SIZE_DEFAULT_LIMIT_BYTES: Long = 25L * 1024 * 1024 // 25 MB asset default user limit size
+public const val ASSET_SIZE_TEAM_USER_LIMIT_BYTES: Long = 100L * 1024 * 1024 // 100 MB asset team user limit size
+
 public interface GetAssetSizeLimitUseCase {
     /**
      * Returns the maximum size in Bytes of an asset that can be uploaded to the Wire backend.
@@ -42,11 +46,5 @@ internal class GetAssetSizeLimitUseCaseImpl internal constructor(
             hasUserTeam -> ASSET_SIZE_TEAM_USER_LIMIT_BYTES
             else -> ASSET_SIZE_DEFAULT_LIMIT_BYTES
         }
-    }
-
-    internal companion object {
-        internal const val IMAGE_SIZE_LIMIT_BYTES = 15L * 1024 * 1024 // 15 MB limit for images
-        internal const val ASSET_SIZE_DEFAULT_LIMIT_BYTES = 25L * 1024 * 1024 // 25 MB asset default user limit size
-        internal const val ASSET_SIZE_TEAM_USER_LIMIT_BYTES = 100L * 1024 * 1024 // 100 MB asset team user limit size
     }
 }

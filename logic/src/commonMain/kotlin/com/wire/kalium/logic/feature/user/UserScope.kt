@@ -154,7 +154,7 @@ public class UserScope internal constructor(
     public val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
 
     public val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
-    internal val enrollE2EI: EnrollE2EIUseCase
+    public val enrollE2EI: EnrollE2EIUseCase
         get() = EnrollE2EIUseCaseImpl(
             e2EIRepository = e2EIRepository,
             userRepository = userRepository,

@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.flowOf
 /**
  * Use case that observes if the user should be notified about revoked E2ei certificate.
  */
-internal interface ObserveShouldNotifyForRevokedCertificateUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+public interface ObserveShouldNotifyForRevokedCertificateUseCase {
+    public suspend operator fun invoke(): Flow<Boolean>
 }
 
 internal class ObserveShouldNotifyForRevokedCertificateUseCaseImpl(

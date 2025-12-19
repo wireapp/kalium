@@ -240,7 +240,7 @@ public class CallsScope internal constructor(
     public val observeConferenceCallingEnabled: ObserveConferenceCallingEnabledUseCase
         get() = ObserveConferenceCallingEnabledUseCaseImpl(userConfigRepository)
 
-    internal val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
+    public val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
         get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
     public val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
         get() = observeAskCallFeedbackUseCase(EndCallResultListenerImpl)
