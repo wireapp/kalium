@@ -49,7 +49,7 @@ internal fun buildFileName(name: String, extension: String? = null, copyCounter:
     return extension?.let { "$nameWithCopyCounter.$extension" } ?: nameWithCopyCounter
 }
 
-internal fun String.splitFileExtension(): Pair<String, String?> {
+public fun String.splitFileExtension(): Pair<String, String?> {
     val splitElements = split(".")
     val startsWithADot = splitElements.isNotEmpty() && splitElements.first().isEmpty()
     // Most authors define extension in a way that doesn't allow more than one in the same file name,

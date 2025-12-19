@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.util
 
-internal class RandomPassword {
-    internal operator fun invoke(): String {
+public class RandomPassword {
+    public operator fun invoke(): String {
 
         val secureRandom = SecureRandom()
 
