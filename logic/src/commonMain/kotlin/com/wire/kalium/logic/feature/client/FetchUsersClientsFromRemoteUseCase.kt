@@ -32,8 +32,8 @@ import io.mockative.Mockable
  * Use case to get the other users clients (devices) from remote and save it in our local db so it can be fetched later
  */
 @Mockable
-internal interface FetchUsersClientsFromRemoteUseCase {
-    suspend operator fun invoke(userIdList: List<UserId>)
+public interface FetchUsersClientsFromRemoteUseCase {
+    public suspend operator fun invoke(userIdList: List<UserId>)
 }
 
 internal class FetchUsersClientsFromRemoteUseCaseImpl(

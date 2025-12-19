@@ -75,7 +75,7 @@ import kotlinx.coroutines.CoroutineScope
  * This scope can be used to test client behaviour. Debug functions are not needed for normal client activity.
  */
 @Suppress("LongParameterList")
-internal class DebugScope internal constructor(
+public class DebugScope internal constructor(
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -112,7 +112,7 @@ internal class DebugScope internal constructor(
     internal val establishSession: EstablishSessionUseCase
         get() = EstablishSessionUseCaseImpl(sessionEstablisher, transactionProvider)
 
-    internal val breakSession: BreakSessionUseCase
+    public val breakSession: BreakSessionUseCase
         get() = BreakSessionUseCaseImpl(transactionProvider)
 
     internal val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
@@ -133,7 +133,7 @@ internal class DebugScope internal constructor(
             selfUserId = userId,
         )
 
-    internal val disableEventProcessing: DisableEventProcessingUseCase
+    public val disableEventProcessing: DisableEventProcessingUseCase
         get() = DisableEventProcessingUseCaseImpl(
             eventProcessor = eventProcessor
         )
@@ -234,20 +234,20 @@ internal class DebugScope internal constructor(
             kaliumLogger = logger
         )
 
-    internal val sendFCMTokenToServer: SendFCMTokenUseCase
+    public val sendFCMTokenToServer: SendFCMTokenUseCase
         get() = SendFCMTokenToAPIUseCaseImpl(
             currentClientIdProvider,
             clientRepository,
             notificationTokenRepository,
         )
 
-    internal val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
+    public val changeProfiling: ChangeProfilingUseCase get() = ChangeProfilingUseCase(userStorage)
 
-    internal val observeDatabaseLoggerState get() = ObserveDatabaseLoggerStateUseCase(userStorage)
+    public val observeDatabaseLoggerState: ObserveDatabaseLoggerStateUseCase get() = ObserveDatabaseLoggerStateUseCase(userStorage)
 
     internal val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
 
-    internal val debugFeedConversationUseCase
+    public val debugFeedConversationUseCase: DebugFeedConversationUseCase
         get(): DebugFeedConversationUseCase = DebugFeedConversationUseCaseImpl(
             userStorage.database.messagesFeeder,
             userStorage.database.reactionFeeder,
@@ -255,12 +255,12 @@ internal class DebugScope internal constructor(
             userStorage.database.mentionsFeeder,
         )
 
-    internal val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
+    public val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
         get() = StartUsingAsyncNotificationsUseCaseImpl(selfServerConfig, updateSelfClientCapabilityToConsumableNotifications)
 
-    internal val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
+    public val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
         get() = ObserveIsConsumableNotificationsEnabledUseCaseImpl(clientRepository)
 
-    internal val getFeatureConfig: GetFeatureConfigUseCase
+    public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
 }

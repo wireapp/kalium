@@ -36,14 +36,14 @@ public class ConnectionScope internal constructor(
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) {
-    internal val sendConnectionRequest: SendConnectionRequestUseCase
+    public val sendConnectionRequest: SendConnectionRequestUseCase
         get() = SendConnectionRequestUseCaseImpl(
             connectionRepository,
             userRepository,
             transactionProvider
         )
 
-    internal val acceptConnectionRequest: AcceptConnectionRequestUseCase
+    public val acceptConnectionRequest: AcceptConnectionRequestUseCase
         get() = AcceptConnectionRequestUseCaseImpl(
             connectionRepository,
             conversationRepository,
@@ -53,13 +53,13 @@ public class ConnectionScope internal constructor(
             transactionProvider
         )
 
-    internal val cancelConnectionRequest: CancelConnectionRequestUseCase
+    public val cancelConnectionRequest: CancelConnectionRequestUseCase
         get() = CancelConnectionRequestUseCaseImpl(
             connectionRepository,
             transactionProvider
         )
 
-    internal val ignoreConnectionRequest: IgnoreConnectionRequestUseCase
+    public val ignoreConnectionRequest: IgnoreConnectionRequestUseCase
         get() = IgnoreConnectionRequestUseCaseImpl(
             connectionRepository,
             transactionProvider

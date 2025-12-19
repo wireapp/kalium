@@ -25,8 +25,8 @@ import io.mockative.Mockable
  * Restart slowSync process for recovery.
  */
 @Mockable
-internal interface RestartSlowSyncProcessForRecoveryUseCase {
-    suspend operator fun invoke()
+public interface RestartSlowSyncProcessForRecoveryUseCase {
+    public suspend operator fun invoke()
 }
 
 internal class RestartSlowSyncProcessForRecoveryUseCaseImpl internal constructor(

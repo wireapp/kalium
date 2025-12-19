@@ -19,31 +19,31 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.util.DateTimeUtil
 
 /**
  * Use Case that allows a user accept a connection request to connect with another User
  */
-internal interface AcceptConnectionRequestUseCase {
+public interface AcceptConnectionRequestUseCase {
     /**
      * Use case [AcceptConnectionRequestUseCase] operation
      *
      * @param userId the target user to connect with
      * @return a [AcceptConnectionRequestUseCaseResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult
+    public suspend operator fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult
 }
 
 internal class AcceptConnectionRequestUseCaseImpl(
@@ -87,7 +87,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
     }
 }
 
-internal sealed class AcceptConnectionRequestUseCaseResult {
-    internal data object Success : AcceptConnectionRequestUseCaseResult()
-    internal data class Failure(val coreFailure: CoreFailure) : AcceptConnectionRequestUseCaseResult()
+public sealed class AcceptConnectionRequestUseCaseResult {
+    public data object Success : AcceptConnectionRequestUseCaseResult()
+    public data class Failure(val coreFailure: CoreFailure) : AcceptConnectionRequestUseCaseResult()
 }

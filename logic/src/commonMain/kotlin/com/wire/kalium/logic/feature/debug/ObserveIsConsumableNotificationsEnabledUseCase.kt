@@ -23,8 +23,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Use case to observe if the client has consumable notifications enabled.
  */
-internal interface ObserveIsConsumableNotificationsEnabledUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+public interface ObserveIsConsumableNotificationsEnabledUseCase {
+    public suspend operator fun invoke(): Flow<Boolean>
 }
 
 internal class ObserveIsConsumableNotificationsEnabledUseCaseImpl(

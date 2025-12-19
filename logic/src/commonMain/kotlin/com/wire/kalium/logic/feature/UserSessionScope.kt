@@ -2145,7 +2145,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val channels: ChannelsScope by lazy {
+    public val channels: ChannelsScope by lazy {
         ChannelsScope(
             { users.getSelfUser },
             { conversationRepository },
@@ -2154,7 +2154,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val debug: DebugScope by lazy {
+    public val debug: DebugScope by lazy {
         DebugScope(
             messageRepository,
             conversationRepository,
@@ -2562,7 +2562,7 @@ public class UserSessionScope internal constructor(
             coroutineScope = this,
         )
 
-    internal val cells: CellsScope by lazy {
+    public val cells: CellsScope by lazy {
         CellsScope(
             cellsClient = cellsClient,
             dao = with(userStorage.database) {

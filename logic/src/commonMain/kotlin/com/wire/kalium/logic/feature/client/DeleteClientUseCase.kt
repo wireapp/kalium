@@ -35,8 +35,8 @@ import com.wire.kalium.network.exceptions.isMissingAuth
  * This use case is responsible for deleting the client.
  * The client will be deleted from the backend and the local storage.
  */
-internal interface DeleteClientUseCase {
-    suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult
+public interface DeleteClientUseCase {
+    public suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult
 }
 
 internal class DeleteClientUseCaseImpl(
@@ -77,12 +77,12 @@ internal class DeleteClientUseCaseImpl(
         }
 }
 
-internal sealed class DeleteClientResult {
-    internal data object Success : DeleteClientResult()
+public sealed class DeleteClientResult {
+    public data object Success : DeleteClientResult()
 
-    internal sealed class Failure : DeleteClientResult() {
-        internal data object InvalidCredentials : Failure()
-        internal data object PasswordAuthRequired : Failure()
-        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : DeleteClientResult() {
+        public data object InvalidCredentials : Failure()
+        public data object PasswordAuthRequired : Failure()
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

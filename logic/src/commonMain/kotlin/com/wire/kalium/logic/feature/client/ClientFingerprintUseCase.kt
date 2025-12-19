@@ -43,8 +43,8 @@ import com.wire.kalium.logic.data.user.UserId
  * @return [Result.Success] if the fingerprint was retrieved successfully.
  * [Result.Failure] if the fingerprint could not be retrieved.
  */
-internal interface ClientFingerprintUseCase {
-    suspend operator fun invoke(userId: UserId, clientId: ClientId): Result
+public interface ClientFingerprintUseCase {
+    public suspend operator fun invoke(userId: UserId, clientId: ClientId): Result
 }
 
 internal class ClientFingerprintUseCaseImpl internal constructor(
@@ -93,8 +93,8 @@ internal class ClientFingerprintUseCaseImpl internal constructor(
     }
 }
 
-internal sealed interface Result {
-    data class Success(val fingerprint: String) : Result {
+public sealed interface Result {
+    public data class Success(val fingerprint: String) : Result {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
@@ -109,5 +109,5 @@ internal sealed interface Result {
         }
     }
 
-    data class Failure(val error: CoreFailure) : Result
+    public data class Failure(val error: CoreFailure) : Result
 }

@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 /**
  * Fetch features configuration from server. Only used in debug menu.
  */
-internal interface GetFeatureConfigUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, FeatureConfigModel>
+public interface GetFeatureConfigUseCase {
+    public suspend operator fun invoke(): Either<CoreFailure, FeatureConfigModel>
 }
 
 internal class GetFeatureConfigUseCaseImpl(

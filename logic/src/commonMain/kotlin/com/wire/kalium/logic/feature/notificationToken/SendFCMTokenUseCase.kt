@@ -28,15 +28,15 @@ import com.wire.kalium.common.functional.nullableFold
 /**
  * Sends to the API locally stored FCM push token
  */
-internal interface SendFCMTokenUseCase {
-    suspend operator fun invoke(): Either<SendFCMTokenError, Unit>
+public interface SendFCMTokenUseCase {
+    public suspend operator fun invoke(): Either<SendFCMTokenError, Unit>
 }
 
-internal data class SendFCMTokenError(
+public data class SendFCMTokenError(
     val status: Reason,
     val error: String? = null,
 ) {
-    internal enum class Reason {
+    public enum class Reason {
         CANT_GET_CLIENT_ID, CANT_GET_NOTIFICATION_TOKEN, CANT_REGISTER_TOKEN,
     }
 }

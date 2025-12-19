@@ -19,13 +19,14 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.di.UserStorage
 
-internal class ChangeProfilingUseCase(
+// todo(interface). extract interface for use case
+public class ChangeProfilingUseCase internal constructor(
     private val userStorage: UserStorage,
 ) {
     /**
      * Change profiling state.
      */
-    internal suspend operator fun invoke(enabled: Boolean) {
+    public suspend operator fun invoke(enabled: Boolean) {
         userStorage.database.debugExtension.changeProfiling(enabled)
     }
 }

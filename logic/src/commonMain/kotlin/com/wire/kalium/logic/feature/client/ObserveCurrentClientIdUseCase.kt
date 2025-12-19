@@ -25,8 +25,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case will observe and return the current client id of the current user.
  */
-internal interface ObserveCurrentClientIdUseCase {
-    suspend operator fun invoke(): Flow<ClientId?>
+public interface ObserveCurrentClientIdUseCase {
+    public suspend operator fun invoke(): Flow<ClientId?>
 }
 
 internal class ObserveCurrentClientIdUseCaseImpl internal constructor(

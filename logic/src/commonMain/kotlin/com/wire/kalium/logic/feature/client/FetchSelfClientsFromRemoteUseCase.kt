@@ -32,11 +32,11 @@ import io.mockative.Mockable
  * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]
  */
 @Mockable
-internal interface FetchSelfClientsFromRemoteUseCase {
+public interface FetchSelfClientsFromRemoteUseCase {
     /**
      * @return the [SelfClientsResult] with the list of clients of the current user, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(): SelfClientsResult
+    public suspend operator fun invoke(): SelfClientsResult
 }
 
 internal class FetchSelfClientsFromRemoteUseCaseImpl(
@@ -55,10 +55,10 @@ internal class FetchSelfClientsFromRemoteUseCaseImpl(
     )
 }
 
-internal sealed class SelfClientsResult {
-    internal data class Success(val clients: List<Client>, val currentClientId: ClientId?) : SelfClientsResult()
+public sealed class SelfClientsResult {
+    public data class Success(val clients: List<Client>, val currentClientId: ClientId?) : SelfClientsResult()
 
-    internal sealed class Failure : SelfClientsResult() {
-        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : SelfClientsResult() {
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

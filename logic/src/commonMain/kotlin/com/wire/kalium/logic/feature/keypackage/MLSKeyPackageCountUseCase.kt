@@ -36,8 +36,8 @@ import io.mockative.Mockable
  * This use case will return the current number of key packages.
  */
 @Mockable
-internal interface MLSKeyPackageCountUseCase {
-    suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
+public interface MLSKeyPackageCountUseCase {
+    public suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
 }
 
 internal class MLSKeyPackageCountUseCaseImpl(
@@ -89,13 +89,13 @@ internal class MLSKeyPackageCountUseCaseImpl(
         })
 }
 
-internal sealed class MLSKeyPackageCountResult {
-    internal data class Success(val clientId: ClientId, val count: Int, val needsRefill: Boolean) : MLSKeyPackageCountResult()
+public sealed class MLSKeyPackageCountResult {
+    public data class Success(val clientId: ClientId, val count: Int, val needsRefill: Boolean) : MLSKeyPackageCountResult()
 
-    internal sealed class Failure : MLSKeyPackageCountResult() {
-        internal class NetworkCallFailure(val networkFailure: NetworkFailure) : Failure()
-        internal class FetchClientIdFailure(val genericFailure: CoreFailure) : Failure()
-        internal data object NotEnabled : Failure()
-        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : MLSKeyPackageCountResult() {
+        public class NetworkCallFailure(public val networkFailure: NetworkFailure) : Failure()
+        public class FetchClientIdFailure(public val genericFailure: CoreFailure) : Failure()
+        public data object NotEnabled : Failure()
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
