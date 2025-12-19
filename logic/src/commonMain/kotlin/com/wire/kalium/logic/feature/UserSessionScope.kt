@@ -161,6 +161,8 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandlerImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
@@ -182,6 +184,7 @@ import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
@@ -234,8 +237,6 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
@@ -320,8 +321,6 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandlerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
@@ -524,6 +523,7 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
@@ -531,6 +531,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import okio.Path.Companion.toPath
@@ -2077,12 +2078,6 @@ class UserSessionScope internal constructor(
             }
         )
 
-    val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase by lazy {
-        IsWireCellsEnabledForConversationUseCaseImpl(
-            conversationRepository = conversationRepository
-        )
-    }
-
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope by lazy {
         ClientScope(
@@ -2204,7 +2199,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             messageRepository,
             conversationRepository,
-            cells.messageAttachmentsDraftRepository,
+            lazy { cells.messageAttachmentsDraftRepository },
             mlsConversationRepository,
             clientRepository,
             clientRemoteRepository,
@@ -2225,15 +2220,13 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             legalHoldHandler,
             observeFileSharingStatus,
-            cells.getMessageAttachmentsUseCase,
-            cells.publishAttachments,
-            cells.removeAttachments,
-            cells.deleteAttachmentsUseCase,
-            cells.getMessageAttachmentUseCase,
+            lazy { cells.getMessageAttachmentsUseCase },
+            lazy { cells.publishAttachments },
+            lazy { cells.removeAttachments },
+            lazy { cells.deleteAttachmentsUseCase },
             fetchConversationUseCase,
             cryptoTransactionProvider,
             compositeMessageRepository,
-            isWireCellsEnabledForConversation,
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
@@ -2582,6 +2575,7 @@ class UserSessionScope internal constructor(
                     assetsDao = assetDAO,
                     userDao = userDAO,
                     publicLinkDao = publicLinks,
+                    userConfigDAO = userConfigDAO,
                 )
             },
             sessionManager = sessionManager,
@@ -2606,6 +2600,11 @@ class UserSessionScope internal constructor(
             fetchConversationUseCase = fetchConversationUseCase,
             kaliumConfigs = kaliumConfigs,
         )
+
+    val longWork: LongWorkScope = LongWorkScope(
+        { this },
+        { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
+    )
 
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.

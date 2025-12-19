@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.config.LastPreKey
 import com.wire.kalium.persistence.config.LegalHoldRequestEntity
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
+import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
@@ -83,6 +84,9 @@ interface UserConfigDAO {
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean)
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun setWireCellsConfig(config: WireCellsConfigEntity)
+    suspend fun removeWireCellsConfig()
+    suspend fun getWireCellsConfig(): WireCellsConfigEntity?
 }
 
 @Suppress("TooManyFunctions")
@@ -276,6 +280,17 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isAssetAuditLogEnabled(): Boolean =
         metadataDAO.valueByKey(ASSET_AUDIT_LOG_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun setWireCellsConfig(config: WireCellsConfigEntity) {
+        metadataDAO.putSerializable(WIRE_CELLS_CONFIG, config, WireCellsConfigEntity.serializer())
+    }
+
+    override suspend fun removeWireCellsConfig() {
+        metadataDAO.deleteValue(WIRE_CELLS_CONFIG)
+    }
+
+    override suspend fun getWireCellsConfig(): WireCellsConfigEntity? =
+        metadataDAO.getSerializable(WIRE_CELLS_CONFIG, WireCellsConfigEntity.serializer())
+
     override suspend fun setAppsEnabled(isAppsEnabled: Boolean) {
         metadataDAO.insertValue(isAppsEnabled.toString(), APPS_ENABLED_KEY)
     }
@@ -304,5 +319,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val PROFILE_QR_CODE_ENABLED = "profile_qr_code_enabled"
         private const val APPS_ENABLED_KEY = "apps_enabled"
         private const val ASSET_AUDIT_LOG_ENABLED = "asset_audit_log"
+        private const val WIRE_CELLS_CONFIG = "wire_cells_config"
     }
 }

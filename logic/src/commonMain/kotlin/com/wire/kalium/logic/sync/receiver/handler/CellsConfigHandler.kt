@@ -20,15 +20,26 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
+import com.wire.kalium.logic.configuration.WireCellsConfig
+import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
+import com.wire.kalium.logic.data.featureConfig.CellsModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
 class CellsConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(model: CellsConfigModel?): Either<CoreFailure, Unit> =
+    suspend fun handle(model: CellsModel?): Either<CoreFailure, Unit> =
         when {
             model == null -> userConfigRepository.setCellsEnabled(false)
             else -> userConfigRepository.setCellsEnabled(model.status == Status.ENABLED)
         }
+
+    suspend fun handle(model: CellsInternalModel?): Either<CoreFailure, Unit> =
+        userConfigRepository.setWireCellsConfig(
+            config = model?.let {
+                WireCellsConfig(
+                    backendUrl = it.config.backend?.url
+                )
+            }
+        )
 }

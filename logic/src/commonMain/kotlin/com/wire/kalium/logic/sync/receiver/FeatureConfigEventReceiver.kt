@@ -98,6 +98,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 
             is Event.FeatureConfig.AllowedGlobalOperationsUpdated -> allowedGlobalOperationsHandler.handle(event.model)
             is Event.FeatureConfig.CellsConfigUpdated -> cellsConfigHandler.handle(event.model)
+            is Event.FeatureConfig.CellsInternalConfigUpdated -> cellsConfigHandler.handle(event.model)
             is Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated ->
                 enableUserProfileQRCodeConfigHandler.handle(event.model)
             is Event.FeatureConfig.AssetAuditLogConfigUpdated -> assetAuditLogConfigHandler.handle(event.model)

@@ -53,7 +53,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 
 @Deprecated(
     "Data-mocks module should be used to share test mocks across modules.",
@@ -123,8 +122,8 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = "someValue",
@@ -146,8 +145,8 @@ object TestConversation {
         previewAssetId = null,
         mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
         teamId = TestTeam.TEAM_ID.value,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         userAvailabilityStatus = null,
         userType = null,
         botService = null,
@@ -301,8 +300,8 @@ object TestConversation {
         ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         lastNotificationDate = null,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
@@ -331,8 +330,8 @@ object TestConversation {
         previewAssetId = null,
         mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
         teamId = "teamId",
-        lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-        lastReadDate = "2022-03-30T15:36:00.000Z".toInstant(),
+        lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         userAvailabilityStatus = null,
         userType = null,
         botService = null,

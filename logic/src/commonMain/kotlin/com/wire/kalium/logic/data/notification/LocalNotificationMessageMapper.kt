@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 
 interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
@@ -84,7 +84,7 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
                     messageId = "",
                     author = LocalNotificationMessageAuthor(author?.name ?: "", null),
                     // TODO: change time to Instant
-                    time = conversationEvent.timestampIso.toInstant()
+                    time = Instant.parse(conversationEvent.timestampIso)
                 )
                 LocalNotification.Conversation(
                     id = conversation.id,

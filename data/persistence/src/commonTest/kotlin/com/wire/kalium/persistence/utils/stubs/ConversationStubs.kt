@@ -21,7 +21,6 @@ package com.wire.kalium.persistence.utils.stubs
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 
 fun newConversationEntity(id: String = "test") = ConversationEntity(
     id = QualifiedIDEntity(id, "wire.com"),
@@ -31,8 +30,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
     creatorId = "someValue",
     lastNotificationDate = null,
-    lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-    lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+    lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+    lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
     receiptMode = ConversationEntity.ReceiptMode.DISABLED,
