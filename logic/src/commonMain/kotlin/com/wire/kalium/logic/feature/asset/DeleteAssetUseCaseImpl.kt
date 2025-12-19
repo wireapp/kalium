@@ -31,8 +31,8 @@ import kotlinx.coroutines.withContext
  * @param assetId the id of the asset to delete
  */
 
-internal interface DeleteAssetUseCase {
-    suspend operator fun invoke(assetId: AssetId)
+public interface DeleteAssetUseCase {
+    public suspend operator fun invoke(assetId: AssetId)
 }
 
 internal class DeleteAssetUseCaseImpl(
@@ -40,9 +40,9 @@ internal class DeleteAssetUseCaseImpl(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : DeleteAssetUseCase {
 
-    override suspend operator fun invoke(assetKey: AssetId) {
+    override suspend operator fun invoke(assetId: AssetId) {
         withContext(dispatcher.default) {
-            assetRepository.deleteAssetLocally(assetKey.value)
+            assetRepository.deleteAssetLocally(assetId.value)
         }
     }
 

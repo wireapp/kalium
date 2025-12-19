@@ -21,9 +21,9 @@ import io.mockative.Mockable
 import kotlin.time.Duration
 
 @Mockable
-internal interface ExponentialDurationHelper {
-    fun reset()
-    fun next(): Duration
+public interface ExponentialDurationHelper {
+    public fun reset()
+    public fun next(): Duration
 }
 
 internal class ExponentialDurationHelperImpl(
@@ -41,3 +41,9 @@ internal class ExponentialDurationHelperImpl(
         currentDuration = currentDuration.times(factor).coerceAtMost(maxDuration)
     }
 }
+
+public fun ExponentialDurationHelper(initialDuration: Duration, maxDuration: Duration): ExponentialDurationHelper =
+    ExponentialDurationHelperImpl(
+        initialDuration = initialDuration,
+        maxDuration = maxDuration
+    )

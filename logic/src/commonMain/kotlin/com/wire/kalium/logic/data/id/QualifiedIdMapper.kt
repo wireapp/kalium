@@ -22,8 +22,8 @@ import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
 @Mockable
-internal interface QualifiedIdMapper {
-    fun fromStringToQualifiedID(id: String): QualifiedID
+public interface QualifiedIdMapper {
+    public fun fromStringToQualifiedID(id: String): QualifiedID
 }
 
 @Deprecated("Mapper should not be public and visible to consumer apps")

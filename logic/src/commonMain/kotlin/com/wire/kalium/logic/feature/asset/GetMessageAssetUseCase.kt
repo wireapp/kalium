@@ -46,7 +46,7 @@ import kotlinx.coroutines.async
 import okio.Path
 
 @Mockable
-internal interface GetMessageAssetUseCase {
+public interface GetMessageAssetUseCase {
     /**
      * Function that enables fetching a message asset locally or if it doesn't exist, downloading it from the server, decrypting it and
      * saving it locally. The function returns a [Deferred] result to the path where the decrypted asset was stored. The caller is
@@ -57,7 +57,7 @@ internal interface GetMessageAssetUseCase {
      * @return a [Deferred] [MessageAssetResult] with the [Path] and size of the decrypted asset in case of success or [CoreFailure] if any
      * failure occurred.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
     ): Deferred<MessageAssetResult>
@@ -171,12 +171,12 @@ internal class GetMessageAssetUseCaseImpl(
         })
 }
 
-internal sealed class MessageAssetResult {
-    internal class Success(
-        internal val decodedAssetPath: Path,
-        internal val assetSize: Long,
-        internal val assetName: String
+public sealed class MessageAssetResult {
+    public class Success(
+        public val decodedAssetPath: Path,
+        public val assetSize: Long,
+        public val assetName: String
     ) : MessageAssetResult()
 
-    internal class Failure(val coreFailure: CoreFailure, val isRetryNeeded: Boolean) : MessageAssetResult()
+    public class Failure(public val coreFailure: CoreFailure, public val isRetryNeeded: Boolean) : MessageAssetResult()
 }
