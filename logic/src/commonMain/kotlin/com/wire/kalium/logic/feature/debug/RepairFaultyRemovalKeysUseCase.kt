@@ -65,9 +65,10 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
             return@withContext RepairResult.RepairNotNeeded
         }
         transactionProvider.transaction("RepairFaultRemovalKeys") { transactionContext ->
-            val conversations = conversationRepository.getMLSConversationsByDomain(param.domain).getOrElse { emptyList() }
+            // get all MLS conversations for the user's domain.
+            val conversations = conversationRepository.getMLSConversationsByDomain(selfUserId.domain).getOrElse { emptyList() }
             val conversationsWithFaultyKeys = conversations.filter { convo ->
-                checkConversationHasFaultyKey(convo.protocol, param.faultyKey, transactionContext)
+                checkConversationHasFaultyKey(convo.protocol, param.faultyKeys, transactionContext)
             }
             when {
                 conversationsWithFaultyKeys.isEmpty() -> RepairResult.NoConversationsToRepair.right()
@@ -138,12 +139,12 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
 
 /**
  * Parameters for targeted repair of faulty removal keys in MLS conversations.
- * @property faultyKey The faulty removal key to be repaired in hex string format.
+ * @property faultyKeys The faulty removal key to be repaired in hex string format.
  * @property domain The target domain in which the repair should be performed for the user and conversations.
  */
 data class TargetedRepairParam(
     val domain: String,
-    val faultyKey: List<String>
+    val faultyKeys: List<String>
 )
 
 /**
@@ -166,5 +167,11 @@ sealed interface RepairResult {
         val conversationsWithFaultyKeys: Int,
         val successfullyRepairedConversations: Int,
         val failedRepairs: List<String>
-    ) : RepairResult
+    ) : RepairResult {
+        fun toLogString(): String =
+            "TotalChecked=$totalConversationsChecked, " +
+                    "WithFaultyKeys=$conversationsWithFaultyKeys, " +
+                    "SuccessfullyRepaired=$successfullyRepairedConversations, " +
+                    "FailedRepairs=${failedRepairs.size}"
+    }
 }

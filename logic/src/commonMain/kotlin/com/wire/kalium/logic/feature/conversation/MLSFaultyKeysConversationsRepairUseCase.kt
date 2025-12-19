@@ -42,7 +42,7 @@ internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
     private val repairFaultyRemovalKeys: RepairFaultyRemovalKeysUseCase,
     kaliumLogger: KaliumLogger,
 ) : MLSFaultyKeysConversationsRepairUseCase {
-    private val logger by lazy { kaliumLogger.withTextTag("MLSFaultyKeysRepairUseCase") }
+    private val logger by lazy { kaliumLogger.withTextTag("MLSFaultyKeysConversationsRepairUseCase") }
 
     override suspend fun invoke() {
         val wasRepairPerformed = userConfigRepository.isMLSFaultyKeysRepairExecuted()
@@ -64,7 +64,7 @@ internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
                     val result = repairFaultyRemovalKeys(
                         TargetedRepairParam(
                             domain = domain,
-                            faultyKey = faultyKey
+                            faultyKeys = faultyKey
                         )
                     )
 
@@ -89,10 +89,8 @@ internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
 
     private suspend fun mapResultOfRepairPerformed(result: RepairResult.RepairPerformed) {
         if (result.failedRepairs.isEmpty()) {
-            logger.i("Successfully repaired all conversations with faulty MLS keys for user ${selfUserId.toLogString()}")
             userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
-        } else {
-            logger.w("Failed to repair some conversations [${result.failedRepairs.size}] for user ${selfUserId.toLogString()}")
         }
+        logger.i("Repair was performed for user: ${selfUserId.toLogString()} with result: ${result.toLogString()}")
     }
 }

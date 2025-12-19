@@ -102,7 +102,7 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             arrangement.repairFaultyRemovalKeysUseCase(
                 TargetedRepairParam(
                     domain = TestUser.USER_ID.domain,
-                    faultyKey = faultyKey
+                    faultyKeys = faultyKey
                 )
             )
         }.wasInvoked(exactly = once)
@@ -216,7 +216,7 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             arrangement.repairFaultyRemovalKeysUseCase(
                 TargetedRepairParam(
                     domain = TestUser.USER_ID.domain,
-                    faultyKey = matchingKey
+                    faultyKeys = matchingKey
                 )
             )
         }.wasInvoked(exactly = once)
