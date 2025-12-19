@@ -22,17 +22,18 @@ import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.api.v11.authenticated.MessageSyncApiV11
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
 internal open class MessageSyncApiV12(
     private val httpClient: HttpClient,
-    private val backupServiceUrl: String = "https://replica.wdebug.link"
+    private val backupServiceUrl: String = "https://replica.wdebug.link:4545"
 ) : MessageSyncApiV11() {
 
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$backupServiceUrl/messages") {
                 setBody(request)
             }
