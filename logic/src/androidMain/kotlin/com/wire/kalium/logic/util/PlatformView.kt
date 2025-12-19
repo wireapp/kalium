@@ -20,6 +20,6 @@ package com.wire.kalium.logic.util
 
 import android.view.View
 
-internal actual class PlatformView(
-    internal val view: View?
+public actual class PlatformView(
+    public val view: View?
 )

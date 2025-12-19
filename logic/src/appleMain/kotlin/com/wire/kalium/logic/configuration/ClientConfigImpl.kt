@@ -30,7 +30,7 @@ import kotlinx.cinterop.value
 import platform.Foundation.NSProcessInfo
 import platform.darwin.sysctlbyname
 
-actual open class ClientConfigImpl : ClientConfig {
+internal actual open class ClientConfigImpl : ClientConfig {
     actual override fun deviceType(): DeviceType {
         // TODO: Figure out the actual darwin device type
         return DeviceType.Desktop

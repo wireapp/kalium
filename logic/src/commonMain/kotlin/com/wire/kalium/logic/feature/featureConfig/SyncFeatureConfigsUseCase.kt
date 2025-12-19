@@ -97,6 +97,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
             it.allowedGlobalOperationsModel?.let { model -> allowedGlobalOperationsHandler.handle(model) }
             cellsConfigHandler.handle(it.cellsModel)
+            cellsConfigHandler.handle(it.cellsInternalModel)
             it.appsModel?.let { appsModel ->
                 appsFeatureHandler.handle(appsModel)
             }

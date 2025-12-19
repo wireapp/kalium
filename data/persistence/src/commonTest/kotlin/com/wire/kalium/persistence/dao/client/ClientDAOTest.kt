@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -397,8 +397,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             deviceType = DeviceTypeEntity.Tablet,
             clientType = ClientTypeEntity.Permanent,
             label = "label",
-            registrationDate = "2022-03-30T15:36:00.000Z".toInstant(),
-            lastActive = "2022-03-30T15:36:00.000Z".toInstant(),
+            registrationDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+            lastActive = Instant.parse("2022-03-30T15:36:00.000Z"),
             model = "model",
         )
         val insertClientWithNullValues = insertedClient1.copy(
@@ -431,8 +431,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             deviceType = DeviceTypeEntity.Tablet,
             clientType = ClientTypeEntity.Permanent,
             label = "label",
-            registrationDate = "2022-03-30T15:36:00.000Z".toInstant(),
-            lastActive = "2022-03-30T15:36:00.000Z".toInstant(),
+            registrationDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+            lastActive = Instant.parse("2022-03-30T15:36:00.000Z"),
             model = "model",
         )
         val insertClientWithNullValues = insertedClient1.copy(
@@ -518,8 +518,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
-            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+            lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),

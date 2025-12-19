@@ -31,7 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ApiMigrationMock : ApiMigration {
+internal class ApiMigrationMock : ApiMigration {
 
     var hasBeenPerformed = false
 
@@ -144,7 +144,7 @@ class ApiMigrationManagerTest {
         }.wasInvoked(once)
     }
 
-    class Arrangement {
+    internal class Arrangement {
 
         var apiVersion: Int = 0
         val metadataDAO = mock(MetadataDAO::class)

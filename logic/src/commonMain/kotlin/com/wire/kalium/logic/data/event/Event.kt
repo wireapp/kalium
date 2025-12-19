@@ -35,7 +35,8 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.AssetAuditLogConfigModel
-import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
+import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
+import com.wire.kalium.logic.data.featureConfig.CellsModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -613,7 +614,7 @@ internal sealed class Event(open val id: String) {
 
         internal data class CellsConfigUpdated(
             override val id: String,
-            val model: CellsConfigModel,
+            val model: CellsModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.CellsConfigUpdated",
@@ -621,6 +622,18 @@ internal sealed class Event(open val id: String) {
                 featureStatusKey to model.status.name,
             )
         }
+
+        internal data class CellsInternalConfigUpdated(
+            override val id: String,
+            val model: CellsInternalModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.CellsInternalConfigUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+            )
+        }
+
         internal data class EnableUserProfileQRCodeConfigUpdated(
             override val id: String,
             val model: EnableUserProfileQRCodeConfigModel,

@@ -27,7 +27,7 @@ import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.Job
 
-interface OneOnOneResolverArrangement {
+internal interface OneOnOneResolverArrangement {
 
     val oneOnOneResolver: OneOnOneResolver
 
@@ -38,7 +38,7 @@ interface OneOnOneResolverArrangement {
 
 }
 
-class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
+internal class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     override val oneOnOneResolver = mock(OneOnOneResolver::class)
     override suspend fun withScheduleResolveOneOnOneConversationWithUserId() {

@@ -571,6 +571,11 @@ internal class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
         )
+
+        is FeatureConfigData.CellsInternal -> Event.FeatureConfig.CellsInternalConfigUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.CellsInternal)
+        )
         is FeatureConfigData.EnableUserProfileQRCode -> Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.EnableUserProfileQRCode)

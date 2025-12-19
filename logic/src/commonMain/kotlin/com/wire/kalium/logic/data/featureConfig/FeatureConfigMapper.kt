@@ -45,7 +45,8 @@ internal interface FeatureConfigMapper {
     fun fromModel(status: Status): FeatureFlagStatusDTO
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
     fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
-    fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
+    fun fromDTO(data: FeatureConfigData.Cells): CellsModel
+    fun fromDTO(data: FeatureConfigData.CellsInternal): CellsInternalModel
     fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode): EnableUserProfileQRCodeConfigModel
     fun fromDTO(data: FeatureConfigData.AssetAuditLog): AssetAuditLogConfigModel
 }
@@ -85,6 +86,7 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
                 consumableNotificationsModel = consumableNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
+                cellsInternalModel = cellsInternal?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 enableUserProfileQRCodeConfigModel = enableUserProfileQRCode?.let {
                     fromDTO(it)
@@ -201,8 +203,17 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
             status = fromDTO(data.status)
         )
 
-    override fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel = CellsConfigModel(
+    override fun fromDTO(data: FeatureConfigData.Cells): CellsModel = CellsModel(
         status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.CellsInternal) = CellsInternalModel(
+        status = fromDTO(data.status),
+        config = CellsInternalConfigModel(
+            backend = data.config.backend?.url?.let {
+                CellsInternalBackendConfigModel(it)
+            }
+        ),
     )
 
     override fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode) = EnableUserProfileQRCodeConfigModel(

@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.time.Duration
 
 internal const val MLS_DEFAULT_EPOCH = 0L
@@ -422,7 +421,7 @@ internal class ConversationDAOImpl internal constructor(
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationArchivingStatus(
                 isArchived,
-                archivedStatusTimestamp.toIsoDateTimeString().toInstant(),
+                Instant.parse(archivedStatusTimestamp.toIsoDateTimeString()),
                 conversationId
             )
         }
@@ -477,7 +476,7 @@ internal class ConversationDAOImpl internal constructor(
             .asFlow()
             .flowOn(readDispatcher.value)
             .mapToList()
-            .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, it.mls_proposal_timer.toInstant()) } }
+            .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, Instant.parse(it.mls_proposal_timer)) } }
     }
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =

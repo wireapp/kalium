@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,10 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.featureConfig
 
-package com.wire.kalium.logic.di
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-internal actual class PlatformUserStorageProperties internal constructor(
-    val rootPath: String,
-    val rootStoragePath: String
+@Serializable
+data class CellsModel(
+    @SerialName("status")
+    val status: Status,
+)
+
+@Serializable
+data class CellsInternalModel(
+    @SerialName("status")
+    val status: Status,
+    @SerialName("config")
+    val config: CellsInternalConfigModel,
+)
+
+@Serializable
+data class CellsInternalConfigModel(
+    @SerialName("backend")
+    val backend: CellsInternalBackendConfigModel?,
+)
+
+@Serializable
+data class CellsInternalBackendConfigModel(
+    @SerialName("url")
+    val url: String,
 )

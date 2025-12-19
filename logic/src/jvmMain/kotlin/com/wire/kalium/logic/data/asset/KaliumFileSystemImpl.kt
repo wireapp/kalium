@@ -29,7 +29,7 @@ import okio.buffer
 import okio.use
 
 @Suppress("TooManyFunctions")
-actual class KaliumFileSystemImpl actual constructor(
+internal actual class KaliumFileSystemImpl actual constructor(
     private val dataStoragePaths: DataStoragePaths,
     private val dispatcher: KaliumDispatcher
 ) : KaliumFileSystem {
