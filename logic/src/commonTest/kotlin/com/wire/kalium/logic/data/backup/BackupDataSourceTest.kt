@@ -11,7 +11,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,7 +45,6 @@ class BackupDataSourceTest {
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
-        testDispatcher.cancel()
     }
 
     @Test

@@ -49,19 +49,42 @@ import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import okio.Buffer
 import okio.Path
 import okio.buffer
 import okio.use
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AssetRepositoryTest {
 
+    private lateinit var testScope: TestDispatcher
+    private lateinit var fakeKaliumFileSystem: FakeKaliumFileSystem
+
+    @BeforeTest
+    fun setup() {
+        testScope = StandardTestDispatcher()
+        Dispatchers.setMain(testScope)
+        fakeKaliumFileSystem = FakeKaliumFileSystem()
+    }
+
+    @AfterTest
+    fun breakDown() {
+        Dispatchers.resetMain()
+    }
     @Test
     fun givenValidParams_whenUploadingPublicAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given
@@ -70,7 +93,7 @@ class AssetRepositoryTest {
         val dummyData = "some-dummy-data".encodeToByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(false)
@@ -101,7 +124,7 @@ class AssetRepositoryTest {
         val randomAES256Key = generateRandomAES256Key()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(false)
@@ -136,7 +159,7 @@ class AssetRepositoryTest {
         val dataNamePath = "dummy-data-path"
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
         val dummyData = "some-dummy-data".encodeToByteArray()
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
             .withAssetAuditLogEnabled(false)
@@ -156,7 +179,8 @@ class AssetRepositoryTest {
 
         verifySuspend {
             arrangement.assetApi.uploadAsset(any(), any(), any())
-        }    }
+        }
+    }
 
     @Test
     fun givenAnError_whenUploadingPrivateAssets_thenShouldFail() = runTest {
@@ -165,7 +189,7 @@ class AssetRepositoryTest {
         val fullDataPath = fakeKaliumFileSystem.tempFilePath(dummyPath)
         val dummyData = "some-dummy-data".encodeToByteArray()
         val randomAES256Key = generateRandomAES256Key()
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
             .withAssetAuditLogEnabled(false)
@@ -195,7 +219,7 @@ class AssetRepositoryTest {
         val assetKey = AssetId("value1", "domain1")
         val assetData = listOf(assetKey to byteArrayOf(1, 10, 100))
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessfulDownloadAndPersistedData(assetData)
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .arrange()
@@ -237,7 +261,7 @@ class AssetRepositoryTest {
                 it.readByteArray()
             }
 
-            val (arrangement, assetRepository) = Arrangement()
+            val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
                 .withSuccessfulDownloadAndPersistedData(listOf(assetKey to assetEncryptedData))
                 .withMockedAssetDaoGetByKeyCall(assetKey, null)
                 .arrange()
@@ -285,7 +309,7 @@ class AssetRepositoryTest {
             val encryptedDataPath = encryptDataWithPath(assetRawData, assetEncryptionKey)
             val assetSha256 = calcFileSHA256(fakeKaliumFileSystem.source(encryptedDataPath))
 
-            val (arrangement, assetRepository) = Arrangement()
+            val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
                 .withMockedAssetDaoGetByKeyCall(assetKey, null)
                 .arrange()
 
@@ -330,7 +354,7 @@ class AssetRepositoryTest {
             val assetSha256 = calcFileSHA256(fakeKaliumFileSystem.source(encryptedDataPath))
             val assetPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
 
-            val (arrangement, assetRepository) = Arrangement()
+            val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
                 .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetPath, assetRawData.size.toLong()))
                 .arrange()
 
@@ -381,7 +405,7 @@ class AssetRepositoryTest {
             it.readByteArray()
         }
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessfulDownloadAndPersistedData(listOf(assetKey to assetEncryptedData))
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .arrange()
@@ -410,7 +434,7 @@ class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .withErrorDownloadResponse()
             .arrange()
@@ -449,7 +473,7 @@ class AssetRepositoryTest {
         val encryptionKey = AES256Key("some-encryption-key".encodeToByteArray())
         val assetSha256 = SHA256Key(byteArrayOf(1, 2, 3))
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .withErrorDownloadResponse()
             .arrange()
@@ -495,7 +519,7 @@ class AssetRepositoryTest {
         val expectedImage = "my_image_asset".encodeToByteArray()
         val dummyPath = fakeKaliumFileSystem.providePersistentAssetPath("dummy_data_path")
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessfulDownload(listOf(assetKey))
             .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, dummyPath, expectedImage.size.toLong()))
             .arrange()
@@ -523,7 +547,7 @@ class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withErrorDeleteResponse()
             .arrange()
 
@@ -544,7 +568,7 @@ class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
@@ -569,7 +593,7 @@ class AssetRepositoryTest {
         val assetRawData = "some-dummy-data".encodeToByteArray()
         val assetFile = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.toString())
 
-        val (_, assetRepository) = Arrangement()
+        val (_, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
             .withRawStoredData(assetRawData, assetFile)
@@ -592,7 +616,7 @@ class AssetRepositoryTest {
         val assetRawData = "some-dummy-data".encodeToByteArray()
         val assetFile = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.toString())
 
-        val (_, assetRepository) = Arrangement()
+        val (_, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessDeleteLocallyResponse()
             .withRawStoredData(assetRawData, assetFile)
             .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()))
@@ -618,7 +642,7 @@ class AssetRepositoryTest {
         val assetDomain = "some_domain"
         val expectedAssetPath = fakeKaliumFileSystem.providePersistentAssetPath(assetId)
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulInsert()
             .arrange()
@@ -656,7 +680,7 @@ class AssetRepositoryTest {
         val assetDomain = "some_domain"
         val expectedAssetPath = fakeKaliumFileSystem.providePersistentAssetPath(assetId)
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withErrorInsertResponse()
             .arrange()
@@ -690,7 +714,7 @@ class AssetRepositoryTest {
         val assetId = "some_key"
         val assetDomain = "some_domain"
 
-        val (arrangement, assetRepository) = Arrangement().arrange()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem).arrange()
 
         // When
         val actual = assetRepository.persistAsset(
@@ -720,7 +744,7 @@ class AssetRepositoryTest {
         val testFilename = "test-filename"
         val testFiletype = "image/jpg"
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(true)
@@ -759,7 +783,7 @@ class AssetRepositoryTest {
         val testFilename = "test-filename"
         val testFiletype = "image/jpg"
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(false)
@@ -800,7 +824,7 @@ class AssetRepositoryTest {
         val testFilename = "test-filename"
         val testFiletype = "image/jpg"
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(true)
@@ -842,7 +866,7 @@ class AssetRepositoryTest {
         val testFilename = "test-filename"
         val testFiletype = "image/jpg"
 
-        val (arrangement, assetRepository) = Arrangement()
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(false)
@@ -873,7 +897,7 @@ class AssetRepositoryTest {
         }
     }
 
-    class Arrangement {
+    class Arrangement(private val fakeKaliumFileSystem: FakeKaliumFileSystem) {
 
         val assetApi = mock<AssetApi>()
         val assetDAO = mock<AssetDAO>()
@@ -1007,10 +1031,6 @@ class AssetRepositoryTest {
         }
 
         fun arrange(): Pair<Arrangement, AssetRepository> = this to assetRepository
-    }
-
-    companion object {
-        val fakeKaliumFileSystem: FakeKaliumFileSystem = FakeKaliumFileSystem()
     }
 
     private fun stubAssetEntity(assetKey: String, dataPath: Path, dataSize: Long) =

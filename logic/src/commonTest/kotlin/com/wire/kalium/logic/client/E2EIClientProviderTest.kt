@@ -26,28 +26,48 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class E2EIClientProviderTest {
+
+    private lateinit var testDispatcher: TestDispatcher
+
+    @BeforeTest
+    fun setup() {
+        testDispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun breakDown() {
+        Dispatchers.resetMain()
+    }
+
     @Test
     fun givenMLSClientWithoutE2EI_whenGettingE2EIClient_callsNewRotateEnrollment() = runTest {
-        val (arrangement, e2eiClientProvider) = Arrangement()
+        val (arrangement, e2eiClientProvider) = Arrangement(testDispatcher.testKaliumDispatcher())
             .arrange {
-                dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewActivationEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF.right())
@@ -56,24 +76,23 @@ class E2EIClientProviderTest {
 
         e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userRepository.getSelfUser()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenMLSClientWithE2EI_whenGettingE2EIClient_callsNewActivationEnrollment() = runTest {
-        val (arrangement, e2eiClientProvider) = Arrangement()
+        val (arrangement, e2eiClientProvider) = Arrangement(testDispatcher.testKaliumDispatcher())
             .arrange {
-                dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewRotationEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF.right())
@@ -82,28 +101,27 @@ class E2EIClientProviderTest {
 
         e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userRepository.getSelfUser()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.mlsClientProvider.getMLSClient(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenSelfUserNotFound_whenGettingE2EIClient_ReturnsError() = runTest {
-        val (arrangement, e2eiClientProvider) = Arrangement()
+        val (arrangement, e2eiClientProvider) = Arrangement(testDispatcher.testKaliumDispatcher())
             .arrange {
-                dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewRotationEnrollmentSuccessful()
                 withSelfUser(StorageFailure.DataNotFound.left())
@@ -112,21 +130,21 @@ class E2EIClientProviderTest {
 
         e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID).shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.userRepository.getSelfUser()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsClientProvider.getMLSClient(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -138,9 +156,8 @@ class E2EIClientProviderTest {
             ),
             default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
         )
-        val (arrangement, e2eiClientProvider) = Arrangement()
+        val (arrangement, e2eiClientProvider) = Arrangement(testDispatcher.testKaliumDispatcher())
             .arrange {
-                dispatcher = this@runTest.testKaliumDispatcher
                 withGettingCoreCryptoSuccessful()
                 withGetNewAcmeEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF.right())
@@ -149,19 +166,19 @@ class E2EIClientProviderTest {
 
         e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID, isNewClient = true).shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userRepository.getSelfUser()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
+    private class Arrangement(
+        private val testDispatcher: KaliumDispatcher
+    ) : E2EIClientProviderArrangement by E2EIClientProviderArrangementMokkeryImpl() {
         private lateinit var e2eiClientProvider: E2EIClientProvider
-
-        var dispatcher: KaliumDispatcher = TestKaliumDispatcher
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, E2EIClientProvider> {
             block()
@@ -169,14 +186,14 @@ class E2EIClientProviderTest {
                 currentClientIdProvider,
                 mlsClientProvider,
                 userRepository,
-                dispatcher
+                testDispatcher
             )
 
             return this to e2eiClientProvider
         }
 
         override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
-            coEvery { mlsClientProvider.getOrFetchMLSConfig() }.returns(result.right())
+            everySuspend { mlsClientProvider.getOrFetchMLSConfig() } returns result.right()
         }
     }
 }
