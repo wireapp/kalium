@@ -23,19 +23,32 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
 interface MessageSyncDAO {
-    suspend fun insertOrReplaceMessageToSync(
+    /**
+     * Inserts or updates a message in the sync queue with payload (for UPSERT operation).
+     */
+    suspend fun upsertMessageToSync(
         conversationId: QualifiedIDEntity,
         messageNonce: String,
         timestamp: Instant,
-        operation: SyncOperationType,
-        payload: String?
+        payload: String
+    )
+
+    /**
+     * Marks a message for deletion in the sync queue (for DELETE operation).
+     */
+    suspend fun markMessageForDeletion(
+        conversationId: QualifiedIDEntity,
+        messageNonce: String
     )
 
     suspend fun getMessagesToSync(limit: Int): List<MessageToSynchronizeEntity>
 
+    /**
+     * Deletes synced messages from the sync queue.
+     * @param messagesToDelete Map of conversation ID to list of message nonces in that conversation
+     */
     suspend fun deleteSyncedMessages(
-        conversationIds: List<QualifiedIDEntity>,
-        messageNonces: List<String>
+        messagesToDelete: Map<QualifiedIDEntity, List<String>>
     )
 
     suspend fun countPendingMessages(): Long

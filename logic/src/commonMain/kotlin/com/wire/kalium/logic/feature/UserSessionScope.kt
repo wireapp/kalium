@@ -885,6 +885,7 @@ class UserSessionScope internal constructor(
     private val messageSyncTracker: MessageSyncTrackerUseCase by lazy {
         MessageSyncTrackerUseCaseImpl(
             messageSyncDAO = userStorage.database.messageSyncDAO,
+            messageRepository = messageRepository,
             isFeatureEnabled = kaliumConfigs.messageSynchronizationEnabled,
             kaliumLogger = userScopedLogger
         )

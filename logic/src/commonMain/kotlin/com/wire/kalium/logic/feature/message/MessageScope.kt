@@ -306,7 +306,8 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
-            messageSendFailureHandler
+            messageSendFailureHandler,
+            messageSyncTracker
         )
 
     val sendEditMultipartMessage: SendEditMultipartMessageUseCase
@@ -318,6 +319,7 @@ class MessageScope internal constructor(
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
             getMessageAttachments = getMessageAttachmentsUseCase,
+            messageSyncTracker = messageSyncTracker
         )
 
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase

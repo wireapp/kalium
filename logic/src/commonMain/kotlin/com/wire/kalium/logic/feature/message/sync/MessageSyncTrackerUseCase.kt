@@ -35,10 +35,12 @@ import kotlinx.serialization.json.Json
 interface MessageSyncTrackerUseCase {
     suspend fun trackMessageInsert(message: Message)
     suspend fun trackMessageDelete(conversationId: ConversationId, messageId: String)
+    suspend fun trackMessageUpdate(conversationId: ConversationId, messageId: String)
 }
 
 internal class MessageSyncTrackerUseCaseImpl(
     private val messageSyncDAO: MessageSyncDAO,
+    private val messageRepository: com.wire.kalium.logic.data.message.MessageRepository,
     private val isFeatureEnabled: Boolean,
     kaliumLogger: KaliumLogger
 ) : MessageSyncTrackerUseCase {
@@ -54,17 +56,16 @@ internal class MessageSyncTrackerUseCaseImpl(
 
         try {
             val backupMessage = message.toBackupMessage() ?: run {
-                logger.d("Message cannot be converted to BackupMessage (unsupported type), skipping sync tracking")
+                logger.d("Message cannot be converted to BackupMessage (unsupported type), skipping sync")
                 return
             }
 
             val payload = json.encodeToString<BackupMessage>(backupMessage)
 
-            messageSyncDAO.insertOrReplaceMessageToSync(
+            messageSyncDAO.upsertMessageToSync(
                 conversationId = message.conversationId.toDao(),
                 messageNonce = message.id,
-                timestamp = Clock.System.now(),
-                operation = SyncOperationType.UPSERT,
+                timestamp = message.date,
                 payload = payload
             )
 
@@ -78,17 +79,50 @@ internal class MessageSyncTrackerUseCaseImpl(
         if (!isFeatureEnabled) return
 
         try {
-            messageSyncDAO.insertOrReplaceMessageToSync(
+            messageSyncDAO.markMessageForDeletion(
                 conversationId = conversationId.toDao(),
-                messageNonce = messageId,
-                timestamp = Clock.System.now(),
-                operation = SyncOperationType.DELETE,
-                payload = null
+                messageNonce = messageId
             )
 
             logger.d("Tracked message delete: $messageId in conversation $conversationId")
         } catch (e: Exception) {
             logger.w("Failed to track message delete: ${e.message}")
+        }
+    }
+
+    override suspend fun trackMessageUpdate(conversationId: ConversationId, messageId: String) {
+        if (!isFeatureEnabled) return
+
+        try {
+            // Fetch the updated message from the repository
+            when (val messageResult = messageRepository.getMessageById(conversationId, messageId)) {
+                is com.wire.kalium.common.functional.Either.Left -> {
+                    logger.w("Failed to fetch updated message for tracking: ${messageResult.value}")
+                }
+                is com.wire.kalium.common.functional.Either.Right -> {
+                    val message = messageResult.value
+                    // Convert to BackupMessage
+                    val backupMessage = message.toBackupMessage()
+                    if (backupMessage == null) {
+                        logger.d("Updated message cannot be converted to BackupMessage (unsupported type), skipping sync tracking")
+                        return
+                    }
+
+                    val payload = json.encodeToString<BackupMessage>(backupMessage)
+
+                    // UPSERT the sync record
+                    messageSyncDAO.upsertMessageToSync(
+                        conversationId = conversationId.toDao(),
+                        messageNonce = messageId,
+                        timestamp = message.date,
+                        payload = payload
+                    )
+
+                    logger.d("Tracked message update: $messageId in conversation $conversationId")
+                }
+            }
+        } catch (e: Exception) {
+            logger.w("Failed to track message update: ${e.message}")
         }
     }
 }

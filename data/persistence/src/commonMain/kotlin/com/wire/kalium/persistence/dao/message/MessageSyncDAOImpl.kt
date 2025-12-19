@@ -34,19 +34,31 @@ internal class MessageSyncDAOImpl(
     private val writeDispatcher: WriteDispatcher
 ) : MessageSyncDAO {
 
-    override suspend fun insertOrReplaceMessageToSync(
+    override suspend fun upsertMessageToSync(
         conversationId: QualifiedIDEntity,
         messageNonce: String,
         timestamp: Instant,
-        operation: SyncOperationType,
-        payload: String?
+        payload: String
     ): Unit = withContext(writeDispatcher.value) {
         queries.insertOrReplaceMessage(
             conversation_id = conversationId,
             message_nonce = messageNonce,
             timestamp = timestamp,
-            operation = operation.value.toLong(),
+            operation = SyncOperationType.UPSERT.value.toLong(),
             payload = payload
+        )
+    }
+
+    override suspend fun markMessageForDeletion(
+        conversationId: QualifiedIDEntity,
+        messageNonce: String
+    ): Unit = withContext(writeDispatcher.value) {
+        queries.insertOrReplaceMessage(
+            conversation_id = conversationId,
+            message_nonce = messageNonce,
+            timestamp = kotlinx.datetime.Clock.System.now(),
+            operation = SyncOperationType.DELETE.value.toLong(),
+            payload = null
         )
     }
 
@@ -54,7 +66,7 @@ internal class MessageSyncDAOImpl(
         withContext(readDispatcher.value) {
             queries.getMessagesToSync(limit.toLong())
                 .executeAsList()
-                .map { 
+                .map {
                     MessageToSynchronizeEntity(
                         conversationId = it.conversation_id,
                         messageNonce = it.message_nonce,
@@ -66,10 +78,13 @@ internal class MessageSyncDAOImpl(
         }
 
     override suspend fun deleteSyncedMessages(
-        conversationIds: List<QualifiedIDEntity>,
-        messageNonces: List<String>
+        messagesToDelete: Map<QualifiedIDEntity, List<String>>
     ): Unit = withContext(writeDispatcher.value) {
-        queries.deleteSyncedBatch(conversationIds, messageNonces)
+        messagesToDelete.forEach { (conversationId, messageNonces) ->
+            messageNonces.forEach { messageNonce ->
+                queries.deleteSyncedMessage(conversationId, messageNonce)
+            }
+        }
     }
 
     override suspend fun countPendingMessages(): Long =

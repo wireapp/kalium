@@ -512,28 +512,35 @@ class SlowSyncWorkerTest {
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
+        val restoreRemoteBackup = mock(com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase::class)
+        val kaliumConfigs = com.wire.kalium.logic.featureFlags.KaliumConfigs(
+            messageSynchronizationEnabled = false
+        )
 
         init {
             runBlocking {
                 withLastSavedEventIdReturning(Either.Right("LastSavedEventId"))
                 withIsClientAsyncNotificationsCapableReturning(false)
                 withTransactionReturning(Either.Right(Unit))
+                coEvery { restoreRemoteBackup.invoke() }.returns(Either.Right(0))
             }
         }
 
         fun arrange() = this to SlowSyncWorkerImpl(
+            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             eventRepository = eventRepository,
             syncSelfUser = syncSelfUser,
             syncFeatureConfigs = syncFeatureConfigs,
+            updateSupportedProtocols = updateSupportedProtocols,
             syncConversations = syncConversations,
             syncConnections = syncConnections,
             syncSelfTeam = syncSelfTeam,
             syncContacts = syncContacts,
             joinMLSConversations = joinMLSConversations,
-            updateSupportedProtocols = updateSupportedProtocols,
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
-            isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
+            restoreRemoteBackup = restoreRemoteBackup,
+            kaliumConfigs = kaliumConfigs,
             transactionProvider = cryptoTransactionProvider
         )
 

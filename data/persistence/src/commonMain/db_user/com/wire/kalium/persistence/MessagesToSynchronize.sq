@@ -24,10 +24,10 @@ SELECT * FROM MessagesToSynchronize
 ORDER BY timestamp ASC
 LIMIT ?;
 
--- Delete synced messages (batch delete)
-deleteSyncedBatch:
+-- Delete a single synced message
+deleteSyncedMessage:
 DELETE FROM MessagesToSynchronize
-WHERE conversation_id IN :conversationIds AND message_nonce IN :messageNonces;
+WHERE conversation_id = ? AND message_nonce = ?;
 
 -- Count pending messages
 countPendingMessages:

@@ -115,11 +115,13 @@ class PersistMessageUseCaseTest {
     private class Arrangement {
                 val messageRepository = mock(MessageRepository::class)
         val notificationEventsManager = mock(NotificationEventsManager::class)
+        val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = TestUser.USER_ID,
-            notificationEventsManager = notificationEventsManager
+            notificationEventsManager = notificationEventsManager,
+            messageSyncTracker = messageSyncTracker
         )
 
         suspend fun withPersistMessageSuccess() = apply {

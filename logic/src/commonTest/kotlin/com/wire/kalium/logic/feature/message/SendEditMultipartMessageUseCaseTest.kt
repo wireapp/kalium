@@ -191,6 +191,12 @@ class SendEditMultipartMessageUseCaseTest {
             }
         }
 
+        private val messageSyncTracker = object : com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase {
+            override suspend fun trackMessageInsert(message: Message) = Unit
+            override suspend fun trackMessageDelete(conversationId: ConversationId, messageId: String) = Unit
+            override suspend fun trackMessageUpdate(conversationId: ConversationId, messageId: String) = Unit
+        }
+
         fun withSendMessage(block: () -> Either<CoreFailure, Unit>) = apply {
             sendMessage = block
         }
@@ -215,6 +221,7 @@ class SendEditMultipartMessageUseCaseTest {
             messageSender = messageSender,
             messageSendFailureHandler = sendFailureHandler,
             getMessageAttachments = { _, _ -> emptyList<MessageAttachment>().right() },
+            messageSyncTracker = messageSyncTracker,
             dispatchers = dispatcher
         )
         

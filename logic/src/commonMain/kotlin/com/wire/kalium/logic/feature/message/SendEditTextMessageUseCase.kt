@@ -54,6 +54,7 @@ class SendEditTextMessageUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val messageSyncTracker: com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -102,6 +103,9 @@ class SendEditTextMessageUseCase internal constructor(
                 newMessageId = originalMessageId,
                 editInstant = message.date
             ).flatMap {
+                    // Track the message edit for synchronization
+                    messageSyncTracker.trackMessageUpdate(message.conversationId, originalMessageId)
+
                     messageRepository.updateMessageStatus(
                         messageStatus = MessageEntity.Status.PENDING,
                         conversationId = message.conversationId,

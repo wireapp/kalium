@@ -28,25 +28,23 @@ import kotlinx.serialization.Serializable
 data class MessageSyncRequestDTO(
     @SerialName("user_id")
     val userId: String,
-    @SerialName("updates")
-    val updates: List<MessageSyncUpdateDTO>
+    @SerialName("upserts")
+    val upserts: Map<String, List<MessageSyncUpsertDTO>>, // Map from conversation ID to list of upserts
+    @SerialName("deletions")
+    val deletions: Map<String, List<String>> // Map from conversation ID to list of message IDs to delete
 )
 
 /**
- * Individual message update to be synchronized
+ * Individual message upsert operation
  */
 @Serializable
-data class MessageSyncUpdateDTO(
-    @SerialName("conversation_id")
-    val conversationId: String,
-    @SerialName("message_nonce")
-    val messageNonce: String,
+data class MessageSyncUpsertDTO(
+    @SerialName("message_id")
+    val messageId: String,
     @SerialName("timestamp")
     val timestamp: Long, // Unix timestamp in milliseconds
-    @SerialName("operation")
-    val operation: Int, // 1 = upsert, 2 = delete
     @SerialName("payload")
-    val payload: String? // JSON string of BackupMessage, null for deletes
+    val payload: String // JSON string of BackupMessage
 )
 
 /**

@@ -57,6 +57,7 @@ class SendEditTextMessageUseCaseTest {
             .withCurrentClientProviderSuccess()
             .withUpdateTextMessageSuccess()
             .withUpdateMessageStatusSuccess()
+            .withMessageSyncTrackerSuccess()
             .withSendMessageSuccess()
             .arrange()
         val originalMessageId = "message id"
@@ -90,6 +91,7 @@ class SendEditTextMessageUseCaseTest {
             .withCurrentClientProviderSuccess()
             .withUpdateTextMessageSuccess()
             .withUpdateMessageStatusSuccess()
+            .withMessageSyncTrackerSuccess()
             .withSendMessageFailure()
             .arrange()
         val originalMessageId = "message id"
@@ -124,6 +126,7 @@ class SendEditTextMessageUseCaseTest {
         val slowSyncRepository = mock(SlowSyncRepository::class)
         val messageSender = mock(MessageSender::class)
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
+        val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
 
         suspend fun withSendMessageSuccess() = apply {
             coEvery {
@@ -157,6 +160,12 @@ class SendEditTextMessageUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
+        suspend fun withMessageSyncTrackerSuccess() = apply {
+            coEvery {
+                messageSyncTracker.trackMessageUpdate(any(), any())
+            }.returns(Unit)
+        }
+
         fun arrange() = this to SendEditTextMessageUseCase(
             messageRepository,
             TestUser.SELF.id,
@@ -164,6 +173,7 @@ class SendEditTextMessageUseCaseTest {
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler,
+            messageSyncTracker,
             dispatcher
         )
     }

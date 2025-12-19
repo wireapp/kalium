@@ -32,6 +32,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificatio
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -243,13 +244,16 @@ class DeleteMessageHandlerTest {
         AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
         NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
+        private val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
+
         fun arrange() = run {
             runBlocking { block() }
             this@Arrangement to DeleteMessageHandlerImpl(
                 messageRepository = messageRepository,
                 assetRepository = assetRepository,
                 notificationEventsManager = notificationEventsManager,
-                selfUserId = SELF_USER_ID
+                selfUserId = SELF_USER_ID,
+                messageSyncTracker = messageSyncTracker
             )
         }
     }

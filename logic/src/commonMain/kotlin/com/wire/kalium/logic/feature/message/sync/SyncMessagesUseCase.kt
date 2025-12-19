@@ -23,8 +23,9 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
-import com.wire.kalium.network.api.model.MessageSyncUpdateDTO
+import com.wire.kalium.network.api.model.MessageSyncUpsertDTO
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.dao.message.SyncOperationType
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.message.MessageSyncDAO
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -72,20 +73,34 @@ class SyncMessagesUseCase internal constructor(
 
             logger.i("Syncing ${messagesToSync.size} messages for user ${userId.value}")
 
-            // Build request
-            val updates = messagesToSync.map { entity ->
-                MessageSyncUpdateDTO(
-                    conversationId = entity.conversationId.toModel().toString(),
-                    messageNonce = entity.messageNonce,
-                    timestamp = entity.timestamp.toEpochMilliseconds(),
-                    operation = entity.operation.value,
-                    payload = entity.payload
-                )
-            }
+            // Separate messages by operation type
+            val upsertMessages = messagesToSync.filter { it.operation == SyncOperationType.UPSERT }
+            val deleteMessages = messagesToSync.filter { it.operation == SyncOperationType.DELETE }
+
+            // Build upserts map: conversation ID -> list of upsert operations
+            val upserts = upsertMessages
+                .groupBy { it.conversationId.toModel().toString() }
+                .mapValues { (_, entities) ->
+                    entities.map { entity ->
+                        MessageSyncUpsertDTO(
+                            messageId = entity.messageNonce,
+                            timestamp = entity.timestamp.toEpochMilliseconds(),
+                            payload = entity.payload!! // Upserts always have payload
+                        )
+                    }
+                }
+
+            // Build deletions map: conversation ID -> list of message IDs
+            val deletions = deleteMessages
+                .groupBy { it.conversationId.toModel().toString() }
+                .mapValues { (_, entities) ->
+                    entities.map { it.messageNonce }
+                }
 
             val request = MessageSyncRequestDTO(
                 userId = userId.value,
-                updates = updates
+                upserts = upserts,
+                deletions = deletions
             )
 
             // POST to API
@@ -97,10 +112,13 @@ class SyncMessagesUseCase internal constructor(
                     logger.i("Successfully synced ${messagesToSync.size} messages")
 
                     // Delete synced messages from database
-                    messageSyncDAO.deleteSyncedMessages(
-                        conversationIds = messagesToSync.map { it.conversationId },
-                        messageNonces = messagesToSync.map { it.messageNonce }
+                    // Group messages by conversation ID to ensure precise deletion
+                    val messagesToDelete = messagesToSync.groupBy(
+                        keySelector = { it.conversationId },
+                        valueTransform = { it.messageNonce }
                     )
+
+                    messageSyncDAO.deleteSyncedMessages(messagesToDelete)
 
                     SyncMessagesResult.Success
                 }

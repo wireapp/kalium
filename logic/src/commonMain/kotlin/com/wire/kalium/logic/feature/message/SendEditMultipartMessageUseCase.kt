@@ -56,6 +56,7 @@ class SendEditMultipartMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val getMessageAttachments: GetMessageAttachmentsUseCase,
+    private val messageSyncTracker: com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -112,6 +113,9 @@ class SendEditMultipartMessageUseCase internal constructor(
                 newMessageId = originalMessageId,
                 editInstant = message.date
             ).flatMap {
+                // Track the message edit for synchronization
+                messageSyncTracker.trackMessageUpdate(message.conversationId, originalMessageId)
+
                 messageRepository.updateMessageStatus(
                     messageStatus = MessageEntity.Status.PENDING,
                     conversationId = message.conversationId,
