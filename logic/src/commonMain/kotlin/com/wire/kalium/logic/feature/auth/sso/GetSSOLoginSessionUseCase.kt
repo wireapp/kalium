@@ -31,16 +31,16 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
-internal sealed class SSOLoginSessionResult {
-    internal data class Success(
+public sealed class SSOLoginSessionResult {
+    public data class Success(
         val accountTokens: AccountTokens,
         val ssoId: SsoId?,
         val proxyCredentials: ProxyCredentials?
     ) : SSOLoginSessionResult()
 
-    internal sealed class Failure : SSOLoginSessionResult() {
-        internal data object InvalidCookie : Failure()
-        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : SSOLoginSessionResult() {
+        public data object InvalidCookie : Failure()
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

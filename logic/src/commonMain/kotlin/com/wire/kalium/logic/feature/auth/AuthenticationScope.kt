@@ -129,10 +129,10 @@ public class AuthenticationScope internal constructor(
     private val appVersionRepository: AppVersionRepository
         get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
 
-    internal val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
+    public val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
         get() = GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)
 
-    internal val login: LoginUseCase
+    public val login: LoginUseCase
         get() = LoginUseCaseImpl(
             loginRepository,
             validateEmailUseCase,
@@ -150,13 +150,13 @@ public class AuthenticationScope internal constructor(
     internal val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
 
-    internal val domainLookup: DomainLookupUseCase
+    public val domainLookup: DomainLookupUseCase
         get() = DomainLookupUseCase(
             customServerConfigRepository = customServerConfigRepository,
             ssoLoginRepository = ssoLoginRepository
         )
 
-    internal val currentServerConfig: () -> ServerConfig = {
+    public val currentServerConfig: () -> ServerConfig = {
         serverConfig
     }
 }

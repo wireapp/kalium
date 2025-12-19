@@ -138,7 +138,7 @@ public class DebugScope internal constructor(
             eventProcessor = eventProcessor
         )
 
-    internal val synchronizeExternalData: SynchronizeExternalDataUseCase
+    public val synchronizeExternalData: SynchronizeExternalDataUseCase
         get() = SynchronizeExternalDataUseCaseImpl(
             eventRepository = eventRepository,
             eventProcessor = eventProcessor,

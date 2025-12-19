@@ -249,7 +249,7 @@ public class CallsScope internal constructor(
         ShouldAskCallFeedbackUseCase(userConfigRepository)
     }
 
-    internal val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase by lazy {
+    public val updateNextTimeCallFeedback: UpdateNextTimeCallFeedbackUseCase by lazy {
         UpdateNextTimeCallFeedbackUseCase(userConfigRepository)
     }
 

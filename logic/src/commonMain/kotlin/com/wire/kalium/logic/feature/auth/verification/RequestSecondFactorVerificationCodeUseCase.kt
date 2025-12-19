@@ -19,10 +19,10 @@ package com.wire.kalium.logic.feature.auth.verification
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
 
@@ -53,7 +53,7 @@ public class RequestSecondFactorVerificationCodeUseCase internal constructor(
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
 ) {
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         email: String,
         verifiableAction: VerifiableAction,
     ): Result = secondFactorVerificationRepository.requestVerificationCode(email, verifiableAction).fold({
@@ -69,11 +69,11 @@ public class RequestSecondFactorVerificationCodeUseCase internal constructor(
         Result.Success
     })
 
-    internal interface Result {
-        data object Success : Result
+    public interface Result {
+        public data object Success : Result
 
-        interface Failure : Result {
-            data class Generic(val cause: CoreFailure) : Result
+        public interface Failure : Result {
+            public data class Generic(val cause: CoreFailure) : Result
 
             /**
              * The backend is rejecting this request, as too many were
@@ -81,7 +81,7 @@ public class RequestSecondFactorVerificationCodeUseCase internal constructor(
              * From a UI point of view, you might be able to proceed and request
              * the 2FA code to the user anyway
              */
-            data object TooManyRequests : Result
+            public data object TooManyRequests : Result
         }
     }
 }

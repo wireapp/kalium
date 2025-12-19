@@ -27,14 +27,14 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
-internal sealed class SSOInitiateLoginResult {
-    internal data class Success(val requestUrl: String) : SSOInitiateLoginResult()
+public sealed class SSOInitiateLoginResult {
+    public data class Success(val requestUrl: String) : SSOInitiateLoginResult()
 
-    internal sealed class Failure : SSOInitiateLoginResult() {
-        internal data object InvalidCodeFormat : Failure()
-        internal data object InvalidCode : Failure()
-        internal data object InvalidRedirect : Failure()
-        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : SSOInitiateLoginResult() {
+        public data object InvalidCodeFormat : Failure()
+        public data object InvalidCode : Failure()
+        public data object InvalidRedirect : Failure()
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 

@@ -84,7 +84,7 @@ public abstract class CoreLogicCommon internal constructor(
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    internal abstract fun getSessionScope(userId: UserId): UserSessionScope
+    public abstract fun getSessionScope(userId: UserId): UserSessionScope
 
     internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
@@ -98,7 +98,7 @@ public abstract class CoreLogicCommon internal constructor(
     ): T =
         getAuthenticationScope(serverConfig, proxyCredentials).action()
 
-    internal inline fun <T> sessionScope(
+    public inline fun <T> sessionScope(
         userId: UserId,
         action: UserSessionScope.() -> T
     ): T = getSessionScope(userId).action()
