@@ -1623,7 +1623,8 @@ class UserSessionScope internal constructor(
                 userId,
                 isMessageSentInSelfConversation,
                 conversations.clearConversationAssetsLocally,
-                deleteConversationUseCase
+                deleteConversationUseCase,
+                messages.deleteRemoteSyncMessages
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation, messageSyncTracker),
             DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId, messageSyncTracker),

@@ -45,6 +45,7 @@ internal class ClearConversationContentHandlerImpl(
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
     private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
     private val deleteConversation: DeleteConversationUseCase,
+    private val deleteRemoteSyncMessages: com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase,
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
@@ -81,6 +82,9 @@ internal class ClearConversationContentHandlerImpl(
     }
 
     private suspend fun clearConversation(conversationId: ConversationId) {
+        // Delete messages from remote sync service
+        deleteRemoteSyncMessages(conversationId)
+
         conversationRepository.clearContent(conversationId)
         clearLocalConversationAssets(conversationId)
     }
