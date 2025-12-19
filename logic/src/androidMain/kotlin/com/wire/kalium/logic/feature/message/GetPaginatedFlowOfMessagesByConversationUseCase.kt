@@ -32,12 +32,13 @@ import kotlinx.coroutines.flow.flowOn
  * @see PagingData
  * @see Message
  */
-internal class GetPaginatedFlowOfMessagesByConversationUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetPaginatedFlowOfMessagesByConversationUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository,
 ) {
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
         startingOffset: Long,

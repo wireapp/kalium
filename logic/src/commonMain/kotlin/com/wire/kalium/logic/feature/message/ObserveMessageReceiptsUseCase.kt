@@ -33,8 +33,8 @@ import kotlinx.coroutines.flow.Flow
  * @return Flow<List<DetailedReceipt>> - Flow of DetailedReceipt List that should be shown to the user.
  * That Flow emits everytime a receipt on the message is added.
  */
-internal interface ObserveMessageReceiptsUseCase {
-    suspend operator fun invoke(
+public interface ObserveMessageReceiptsUseCase {
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         type: ReceiptType

@@ -76,8 +76,9 @@ import kotlin.time.Duration
  * Sends Multipart message with multiple attachments in conversations with Cell Feature enabled.
  * For regular conversations, each attachment is sent as a separate Asset message.
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-internal class SendMultipartMessageUseCase internal constructor(
+public class SendMultipartMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -100,7 +101,7 @@ internal class SendMultipartMessageUseCase internal constructor(
         private const val MSG_TYPE_TEXT = "Text"
     }
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),

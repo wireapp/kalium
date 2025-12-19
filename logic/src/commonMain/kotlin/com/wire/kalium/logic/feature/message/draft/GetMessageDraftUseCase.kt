@@ -34,8 +34,8 @@ import kotlinx.coroutines.withContext
  * @param conversationId the id of the conversation to get message draft
  * @return [MessageDraft] or null if draft doesn't exist
  */
-internal interface GetMessageDraftUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): MessageDraft?
+public interface GetMessageDraftUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): MessageDraft?
 }
 
 internal class GetMessageDraftUseCaseImpl internal constructor(

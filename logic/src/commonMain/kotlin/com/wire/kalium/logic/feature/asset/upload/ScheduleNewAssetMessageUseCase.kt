@@ -53,7 +53,7 @@ import kotlinx.coroutines.withContext
 import okio.Path
 import kotlin.uuid.Uuid
 
-internal interface ScheduleNewAssetMessageUseCase {
+public interface ScheduleNewAssetMessageUseCase {
     /**
      * Function that enables sending an asset message to a given conversation with the strategy of fire & forget. This message is persisted
      * locally and the asset upload is scheduled but not awaited, so returning a [ScheduleNewAssetMessageResult.Success] doesn't mean that
@@ -65,7 +65,7 @@ internal interface ScheduleNewAssetMessageUseCase {
      * succeeded. Note that this doesn't imply that the asset upload will succeed, it just confirms that the creation and persistence of the
      * initial worked out.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         asset: AssetUploadParams
     ): ScheduleNewAssetMessageResult
 }
@@ -167,16 +167,16 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     }
 }
 
-internal sealed interface ScheduleNewAssetMessageResult {
-    data class Success(val messageId: String) : ScheduleNewAssetMessageResult
-    sealed interface Failure : ScheduleNewAssetMessageResult {
-        data class Generic(val coreFailure: CoreFailure) : Failure
-        data object DisabledByTeam : Failure
-        data object RestrictedFileType : Failure
+public sealed interface ScheduleNewAssetMessageResult {
+    public data class Success(val messageId: String) : ScheduleNewAssetMessageResult
+    public sealed interface Failure : ScheduleNewAssetMessageResult {
+        public data class Generic(val coreFailure: CoreFailure) : Failure
+        public data object DisabledByTeam : Failure
+        public data object RestrictedFileType : Failure
     }
 }
 
-internal data class AssetUploadParams(
+public data class AssetUploadParams(
     val conversationId: ConversationId,
     val assetDataPath: Path,
     val assetDataSize: Long,

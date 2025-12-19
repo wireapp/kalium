@@ -56,8 +56,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-internal class RetryFailedMessageUseCase internal constructor(
+public class RetryFailedMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val conversationRepository: ConversationRepository,
@@ -86,7 +87,7 @@ internal class RetryFailedMessageUseCase internal constructor(
      * @return [Either.Left] in case the message could not be found or has invalid status, [Either.Right] otherwise. Note that this doesn't
      * imply that send will succeed, it just confirms that resending is the valid action for this message, and it has been started.
      */
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         messageId: String,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> =

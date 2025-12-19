@@ -46,7 +46,8 @@ import kotlinx.datetime.Instant
  * Toggles a reaction on a message.
  * If the reaction already exists it will be removed, if not it will be added.
  */
-internal class ToggleReactionUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class ToggleReactionUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
@@ -62,7 +63,7 @@ internal class ToggleReactionUseCase internal constructor(
      * @param reaction the reaction "emoji" to toggle
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         reaction: String

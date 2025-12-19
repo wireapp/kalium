@@ -43,8 +43,9 @@ import kotlin.time.Duration
 /**
  * Sending a location message to a conversation
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-internal class SendLocationUseCase internal constructor(
+public class SendLocationUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -66,7 +67,7 @@ internal class SendLocationUseCase internal constructor(
      *
      * @return [Either] [CoreFailure] or [Unit]
      */
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         latitude: Float,
         longitude: Float,

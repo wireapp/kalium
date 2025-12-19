@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -28,11 +27,13 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.messaging.sending.MessageSender
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
-internal class SendButtonActionMessageUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val compositeMessageRepository: CompositeMessageRepository,
     private val messageMetadataRepository: MessageMetadataRepository,
@@ -49,7 +50,7 @@ internal class SendButtonActionMessageUseCase internal constructor(
      * @param buttonId The id of the button.
      * @return [Result.Success] if the message was sent successfully, [Result.Failure] otherwise.
      */
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         buttonId: String
@@ -86,9 +87,9 @@ internal class SendButtonActionMessageUseCase internal constructor(
         Result.Success
     }
 
-    internal sealed interface Result {
-        data object Success : Result
-        data class Failure(
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(
             val error: CoreFailure
         ) : Result
     }
