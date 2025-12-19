@@ -65,15 +65,18 @@ internal class ClearConversationContentUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId,
         needToRemoveConversation: Boolean
-    ): ClearConversationContentUseCase.Result =
-        currentClientIdProvider().flatMap { currentClientId ->
+    ): ClearConversationContentUseCase.Result {
+        // Capture the timestamp when clearing is initiated
+        val clearedTime = DateTimeUtil.currentInstant()
+
+        return currentClientIdProvider().flatMap { currentClientId ->
             selfConversationIdProvider().flatMap { selfConversationIds ->
                 selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
                     val regularMessage = Message.Signaling(
                         id = Uuid.random().toString(),
                         content = MessageContent.Cleared(
                             conversationId = conversationId,
-                            time = DateTimeUtil.currentInstant(),
+                            time = clearedTime,
                             needToRemoveLocally = needToRemoveConversation
                         ),
                         // sending the message to clear this conversation
@@ -90,10 +93,11 @@ internal class ClearConversationContentUseCaseImpl(
             }
         }
             .flatMap {
-                // Delete messages from remote sync service
-                deleteRemoteSyncMessages(conversationId)
+                // Delete messages from remote sync service before this timestamp
+                deleteRemoteSyncMessages(conversationId, before = clearedTime.toEpochMilliseconds())
             }
             .flatMap { clearLocalConversationAssets(conversationId) }
             .flatMap { conversationRepository.clearContent(conversationId) }
             .fold({ ClearConversationContentUseCase.Result.Failure(it) }, { ClearConversationContentUseCase.Result.Success })
+    }
 }

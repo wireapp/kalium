@@ -58,7 +58,7 @@ internal class ClearConversationContentHandlerImpl(
 
         if (isSelfSender != isMessageInSelfConversation) return
 
-        clearConversation(messageContent.conversationId)
+        clearConversation(messageContent.conversationId, messageContent.time)
 
         if (messageContent.needToRemoveLocally && isSelfSender) {
             tryToRemoveConversation(transactionContext, messageContent.conversationId)
@@ -81,9 +81,9 @@ internal class ClearConversationContentHandlerImpl(
             }
     }
 
-    private suspend fun clearConversation(conversationId: ConversationId) {
-        // Delete messages from remote sync service
-        deleteRemoteSyncMessages(conversationId)
+    private suspend fun clearConversation(conversationId: ConversationId, time: kotlinx.datetime.Instant) {
+        // Delete messages from remote sync service before this timestamp
+        deleteRemoteSyncMessages(conversationId, before = time.toEpochMilliseconds())
 
         conversationRepository.clearContent(conversationId)
         clearLocalConversationAssets(conversationId)
