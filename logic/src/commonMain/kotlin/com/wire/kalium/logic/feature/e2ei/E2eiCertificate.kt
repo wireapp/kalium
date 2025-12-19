@@ -27,15 +27,15 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class MLSClientIdentity(
+public data class MLSClientIdentity(
     @SerialName("clientId") val clientId: QualifiedClientID,
     @SerialName("e2eiStatus") val e2eiStatus: MLSClientE2EIStatus,
     @SerialName("thumbprint") val thumbprint: String,
     @SerialName("credentialType") val credentialType: MLSCredentialsType,
     @SerialName("x509Identity") val x509Identity: X509Identity?
 ) {
-    internal companion object {
-        internal fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity = MLSClientIdentity(
+    public companion object {
+        public fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity = MLSClientIdentity(
             clientId = identity.clientId.toModel(),
             e2eiStatus = MLSClientE2EIStatus.fromCryptoStatus(identity),
             thumbprint = identity.thumbprint,
@@ -56,7 +56,7 @@ internal data class MLSClientIdentity(
 }
 
 @Serializable
-internal data class X509Identity(
+public data class X509Identity(
     @SerialName("handle") val handle: Handle,
     @SerialName("displayName") val displayName: String,
     @SerialName("domain") val domain: String,
@@ -67,7 +67,7 @@ internal data class X509Identity(
 )
 
 @Serializable
-internal data class Handle(
+public data class Handle(
     @SerialName("scheme") val scheme: String,
     @SerialName("handle") val handle: String,
     @SerialName("domain") val domain: String
@@ -78,7 +78,7 @@ internal data class Handle(
     }
 }
 
-internal enum class MLSClientE2EIStatus {
+public enum class MLSClientE2EIStatus {
     REVOKED, EXPIRED, VALID, NOT_ACTIVATED;
 
     internal companion object {
@@ -93,7 +93,7 @@ internal enum class MLSClientE2EIStatus {
     }
 }
 
-internal enum class MLSCredentialsType {
+public enum class MLSCredentialsType {
     X509, BASIC;
 
     internal companion object {

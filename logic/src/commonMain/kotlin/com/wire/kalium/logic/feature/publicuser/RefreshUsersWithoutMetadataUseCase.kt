@@ -29,8 +29,8 @@ import kotlinx.coroutines.withContext
  * Refresh users without metadata, only if necessary.
  */
 @Mockable
-internal interface RefreshUsersWithoutMetadataUseCase {
-    suspend operator fun invoke()
+public interface RefreshUsersWithoutMetadataUseCase {
+    public suspend operator fun invoke()
 }
 
 internal class RefreshUsersWithoutMetadataUseCaseImpl(

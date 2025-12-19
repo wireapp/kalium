@@ -27,12 +27,13 @@ import com.wire.kalium.common.functional.flatMap
 /**
  * This use case is responsible for getting the updated team information of the self user.
  */
-internal class GetUpdatedSelfTeamUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetUpdatedSelfTeamUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
 ) {
 
-    internal suspend operator fun invoke(): Either<CoreFailure, Team?> {
+    public suspend operator fun invoke(): Either<CoreFailure, Team?> {
         return selfTeamIdProvider().flatMap { teamId ->
             teamId?.let { teamRepository.syncTeam(it) }
                 ?: Either.Right(null)

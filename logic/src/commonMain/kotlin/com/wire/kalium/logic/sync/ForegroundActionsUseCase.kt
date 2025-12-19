@@ -36,8 +36,8 @@ import kotlinx.coroutines.withContext
  * or changes its state to foreground (mobile).
  */
 @Mockable
-internal interface ForegroundActionsUseCase {
-    suspend operator fun invoke()
+public interface ForegroundActionsUseCase {
+    public suspend operator fun invoke()
 }
 
 @Suppress("LongParameterList")

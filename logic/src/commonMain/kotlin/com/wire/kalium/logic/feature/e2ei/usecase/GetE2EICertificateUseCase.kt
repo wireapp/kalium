@@ -33,8 +33,8 @@ import io.mockative.Mockable
  * This use case is used to get the e2ei certificate
  */
 @Mockable
-internal interface GetMLSClientIdentityUseCase {
-    suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity>
+public interface GetMLSClientIdentityUseCase {
+    public suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity>
 }
 
 internal class GetMLSClientIdentityUseCaseImpl internal constructor(

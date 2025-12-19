@@ -22,8 +22,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 /**
  * Use case to check if Simplified Connection Request feature is enabled.
  */
-internal interface IsProfileQRCodeEnabledUseCase {
-    suspend operator fun invoke(): Boolean
+public interface IsProfileQRCodeEnabledUseCase {
+    public suspend operator fun invoke(): Boolean
 }
 
 internal class IsProfileQRCodeEnabledUseCaseImpl(

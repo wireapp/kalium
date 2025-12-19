@@ -24,35 +24,35 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCase
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppsAllowedForUsageUseCaseImpl
 
-internal class ServiceScope internal constructor(
+public class ServiceScope internal constructor(
     private val serviceRepository: ServiceRepository,
     private val teamRepository: TeamRepository,
     private val userConfigRepository: UserConfigRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
 
-    internal val getServiceById: GetServiceByIdUseCase
+    public val getServiceById: GetServiceByIdUseCase
         get() = GetServiceByIdUseCaseImpl(
             serviceRepository = serviceRepository
         )
 
-    internal val observeIsServiceMember: ObserveIsServiceMemberUseCase
+    public val observeIsServiceMember: ObserveIsServiceMemberUseCase
         get() = ObserveIsServiceMemberUseCaseImpl(
             serviceRepository = serviceRepository
         )
 
-    internal val observeAllServices: ObserveAllServicesUseCase
+    public val observeAllServices: ObserveAllServicesUseCase
         get() = ObserveAllServicesUseCaseImpl(
             serviceRepository = serviceRepository,
             teamRepository = teamRepository,
             selfTeamIdProvider = selfTeamIdProvider
         )
 
-    internal val searchServicesByName: SearchServicesByNameUseCase
+    public val searchServicesByName: SearchServicesByNameUseCase
         get() = SearchServicesByNameUseCaseImpl(
             serviceRepository = serviceRepository
         )
 
-    internal val observeIsAppsAllowedForUsage: ObserveIsAppsAllowedForUsageUseCase
+    public val observeIsAppsAllowedForUsage: ObserveIsAppsAllowedForUsageUseCase
         get() = ObserveIsAppsAllowedForUsageUseCaseImpl(userConfigRepository, selfTeamIdProvider)
 }

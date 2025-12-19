@@ -38,7 +38,8 @@ import kotlinx.datetime.Clock
  * Updates the current user's [UserAvailabilityStatus] status.
  * @see [UserAvailabilityStatus]
  */
-internal class UpdateSelfAvailabilityStatusUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class UpdateSelfAvailabilityStatusUseCase internal constructor(
     private val accountRepository: AccountRepository,
     private val messageSender: MessageSender,
     private val provideClientId: CurrentClientIdProvider,
@@ -48,7 +49,7 @@ internal class UpdateSelfAvailabilityStatusUseCase internal constructor(
     /**
      * @param status the new [UserAvailabilityStatus] status.
      */
-    internal suspend operator fun invoke(status: UserAvailabilityStatus) {
+    public suspend operator fun invoke(status: UserAvailabilityStatus) {
         withContext(dispatchers.io) {
             accountRepository.updateSelfUserAvailabilityStatus(status)
             provideClientId().flatMap { selfClientId ->

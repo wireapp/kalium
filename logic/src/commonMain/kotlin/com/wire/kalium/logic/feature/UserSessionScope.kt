@@ -2233,7 +2233,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val users: UserScope by lazy {
+    public val users: UserScope by lazy {
         UserScope(
             userRepository,
             userConfigRepository,
@@ -2275,7 +2275,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val search: SearchScope by lazy {
+    public val search: SearchScope by lazy {
         SearchScope(
             mlsPublicKeysRepository = mlsPublicKeysRepository,
             getDefaultProtocol = getDefaultProtocol,
@@ -2409,14 +2409,14 @@ public class UserSessionScope internal constructor(
             assetAuditLogConfigHandler,
         )
 
-    internal val team: TeamScope
+    public val team: TeamScope
         get() = TeamScope(
             teamRepository = teamRepository,
             slowSyncRepository = slowSyncRepository,
             selfTeamIdProvider = selfTeamId
         )
 
-    internal val service: ServiceScope
+    public val service: ServiceScope
         get() = ServiceScope(
             serviceRepository,
             teamRepository,

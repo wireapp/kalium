@@ -27,8 +27,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 /**
  * UseCase that allow us to persist the configuration of read receipts to enabled or not
  */
-internal interface PersistReadReceiptsStatusConfigUseCase {
-    suspend operator fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult
+public interface PersistReadReceiptsStatusConfigUseCase {
+    public suspend operator fun invoke(enabled: Boolean): ReadReceiptStatusConfigResult
 }
 
 internal class PersistReadReceiptsStatusConfigUseCaseImpl(
@@ -52,7 +52,7 @@ internal class PersistReadReceiptsStatusConfigUseCaseImpl(
     }
 }
 
-internal sealed class ReadReceiptStatusConfigResult {
-    internal data object Success : ReadReceiptStatusConfigResult()
-    internal data class Failure(val cause: CoreFailure) : ReadReceiptStatusConfigResult()
+public sealed class ReadReceiptStatusConfigResult {
+    public data object Success : ReadReceiptStatusConfigResult()
+    public data class Failure(val cause: CoreFailure) : ReadReceiptStatusConfigResult()
 }

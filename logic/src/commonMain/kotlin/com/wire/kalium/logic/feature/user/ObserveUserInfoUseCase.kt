@@ -42,14 +42,14 @@ import kotlinx.coroutines.flow.map
  * Use case that allows observing the user details of a user locally,
  * or request it from API and save to DB, if there is no local data for such user.
  */
-internal interface ObserveUserInfoUseCase {
+public interface ObserveUserInfoUseCase {
     /**
      * Use case [GetUserInfoUseCase] operation
      *
      * @param userId the target user identifier
      * @return a [GetUserInfoResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): Flow<GetUserInfoResult>
+    public suspend operator fun invoke(userId: UserId): Flow<GetUserInfoResult>
 }
 
 internal class ObserveUserInfoUseCaseImpl(

@@ -24,18 +24,18 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 
-internal class TeamScope internal constructor(
+public class TeamScope internal constructor(
     private val teamRepository: TeamRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
-    internal val getUpdatedSelfTeamUseCase: GetUpdatedSelfTeamUseCase
+    public val getUpdatedSelfTeamUseCase: GetUpdatedSelfTeamUseCase
         get() = GetUpdatedSelfTeamUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
             teamRepository = teamRepository,
         )
 
-    internal val isSelfATeamMember: IsSelfATeamMemberUseCase
+    public val isSelfATeamMember: IsSelfATeamMemberUseCase
         get() = IsSelfATeamMemberUseCaseImpl(
             selfTeamIdProvider = selfTeamIdProvider,
             slowSyncRepository = slowSyncRepository

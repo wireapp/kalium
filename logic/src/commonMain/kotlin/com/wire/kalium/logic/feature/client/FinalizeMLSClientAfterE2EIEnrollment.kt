@@ -21,8 +21,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.common.functional.map
 
-internal interface FinalizeMLSClientAfterE2EIEnrollment {
-    suspend fun invoke()
+public interface FinalizeMLSClientAfterE2EIEnrollment {
+    public suspend fun invoke()
 }
 
 internal class FinalizeMLSClientAfterE2EIEnrollmentImpl(

@@ -29,8 +29,8 @@ import kotlinx.coroutines.withContext
 /**
  * Computes the managed_by property of the account to define if this is a read only account or not.
  */
-internal interface IsReadOnlyAccountUseCase {
-    suspend operator fun invoke(): Boolean
+public interface IsReadOnlyAccountUseCase {
+    public suspend operator fun invoke(): Boolean
 }
 
 internal class IsReadOnlyAccountUseCaseImpl(

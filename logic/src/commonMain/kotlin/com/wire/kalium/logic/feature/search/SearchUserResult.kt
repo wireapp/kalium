@@ -21,12 +21,12 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 
-internal data class SearchUserResult(
+public data class SearchUserResult(
     val connected: List<UserSearchDetails>,
     val notConnected: List<UserSearchDetails>
 ) {
-    internal companion object {
-        inline fun resolveLocalAndRemoteResult(
+    public companion object {
+        public fun resolveLocalAndRemoteResult(
             localResult: MutableMap<UserId, UserSearchDetails>,
             remoteSearch: MutableMap<UserId, UserSearchDetails>
         ): SearchUserResult {

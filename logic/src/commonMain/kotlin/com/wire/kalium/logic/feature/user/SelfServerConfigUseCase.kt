@@ -29,16 +29,16 @@ import io.mockative.Mockable
  * This use case is responsible for retrieving the current user's server configuration.
  */
 @Mockable
-internal interface SelfServerConfigUseCase {
+public interface SelfServerConfigUseCase {
     /**
      * @return [ServerConfig] or [CoreFailure]
      */
-    suspend operator fun invoke(): Result
+    public suspend operator fun invoke(): Result
 
-    sealed class Result {
+    public sealed class Result {
         // TODO: rename serverLinks to serverConfig
-        internal data class Success(val serverLinks: ServerConfig) : Result()
-        internal data class Failure(val cause: CoreFailure) : Result()
+        public data class Success(val serverLinks: ServerConfig) : Result()
+        public data class Failure(val cause: CoreFailure) : Result()
     }
 }
 

@@ -34,8 +34,8 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
  * This use case is used to get the e2ei certificates of all the users in Conversation.
  * Return [Map] where keys are [UserId] and values - nullable [CertificateStatus] of corresponding user.
  */
-internal interface GetMembersE2EICertificateStatusesUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean>
+public interface GetMembersE2EICertificateStatusesUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean>
 }
 
 internal class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(

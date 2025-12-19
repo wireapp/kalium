@@ -24,7 +24,7 @@ import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal class FederatedSearchParser(
+public class FederatedSearchParser internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId
 ) {

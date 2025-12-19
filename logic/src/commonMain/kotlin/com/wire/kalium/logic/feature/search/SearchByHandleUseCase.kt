@@ -31,12 +31,13 @@ import kotlinx.coroutines.coroutineScope
 /**
  * Result of a search by handle.
  */
-internal class SearchByHandleUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class SearchByHandleUseCase internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val selfUserId: UserId,
     private val maxRemoteSearchResultCount: Int
 ) {
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         searchHandle: String,
         excludingConversation: ConversationId?,
         customDomain: String?

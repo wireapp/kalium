@@ -33,8 +33,8 @@ import kotlinx.coroutines.flow.map
  * In case the team or session does not have the apps feature enabled, it will return false.
  */
 @Mockable
-internal interface ObserveIsAppsAllowedForUsageUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+public interface ObserveIsAppsAllowedForUsageUseCase {
+    public suspend operator fun invoke(): Flow<Boolean>
 }
 
 internal class ObserveIsAppsAllowedForUsageUseCaseImpl(

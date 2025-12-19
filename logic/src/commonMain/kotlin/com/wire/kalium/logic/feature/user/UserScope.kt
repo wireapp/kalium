@@ -106,7 +106,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
-internal class UserScope internal constructor(
+public class UserScope internal constructor(
     private val userRepository: UserRepository,
     private val userConfigRepository: UserConfigRepository,
     private val accountRepository: AccountRepository,
@@ -127,7 +127,7 @@ internal class UserScope internal constructor(
     private val updateSelfUserSupportedProtocolsUseCase: UpdateSelfUserSupportedProtocolsUseCase,
     private val clientRepository: ClientRepository,
     private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase,
-    internal val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    public val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
@@ -146,14 +146,14 @@ internal class UserScope internal constructor(
     private val userCoroutineScope: CoroutineScope,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
-    internal val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
-    internal val observeSelfUser: ObserveSelfUserUseCase get() = ObserveSelfUserUseCaseImpl(userRepository)
+    public val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
+    public val observeSelfUser: ObserveSelfUserUseCase get() = ObserveSelfUserUseCaseImpl(userRepository)
     internal val getSelfUserWithTeam: ObserveSelfUserWithTeamUseCase get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
-    internal val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
-    internal val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+    public val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
+    public val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     internal val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
 
-    internal val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
+    public val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     internal val enrollE2EI: EnrollE2EIUseCase
         get() = EnrollE2EIUseCaseImpl(
             e2EIRepository = e2EIRepository,
@@ -164,87 +164,87 @@ internal class UserScope internal constructor(
         )
     internal val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
-    internal val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
+    public val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
         get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(
             clientRepository,
             joinExistingMLSConversationsUseCase
         )
-    internal val getE2EICertificate: GetMLSClientIdentityUseCase
+    public val getE2EICertificate: GetMLSClientIdentityUseCase
         get() = GetMLSClientIdentityUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             transactionProvider = transactionProvider
         )
-    internal val getUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
+    public val getUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
         get() = IsOtherUserE2EIVerifiedUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase,
             userRepository = userRepository,
             transactionProvider = transactionProvider
         )
-    internal val getUserMlsClientIdentities: GetUserMlsClientIdentitiesUseCase
+    public val getUserMlsClientIdentities: GetUserMlsClientIdentitiesUseCase
         get() = GetUserMlsClientIdentitiesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             isMlsEnabledUseCase = isMLSEnabledUseCase,
             transactionProvider = transactionProvider
         )
-    internal val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
+    public val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             conversationRepository = conversationRepository,
             transactionProvider = transactionProvider
         )
-    internal val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
-    internal val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
-    internal val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
-    internal val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
-    internal val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
-    internal val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
+    public val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
+    public val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
+    public val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
+    public val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
+    public val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
+    public val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
         get() = UpdateSelfAvailabilityStatusUseCase(accountRepository, messageSender, clientIdProvider, selfUserId)
-    internal val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
+    public val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 
-    internal val isPasswordRequired
+    public val isPasswordRequired: IsPasswordRequiredUseCase
         get() = IsPasswordRequiredUseCase(
             selfUserId = selfUserId,
             sessionRepository = sessionRepository
         )
 
-    internal val isReadOnlyAccount: IsReadOnlyAccountUseCase
+    public val isReadOnlyAccount: IsReadOnlyAccountUseCase
         get() = IsReadOnlyAccountUseCaseImpl(
             selfUserId = selfUserId,
             sessionRepository = sessionRepository
         )
 
-    internal val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
+    public val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
         get() = ObserveReadReceiptsEnabledUseCaseImpl(
             userPropertyRepository = userPropertyRepository
         )
 
-    internal val observeTypingIndicatorEnabled: ObserveTypingIndicatorEnabledUseCase
+    public val observeTypingIndicatorEnabled: ObserveTypingIndicatorEnabledUseCase
         get() = ObserveTypingIndicatorEnabledUseCaseImpl(
             userPropertyRepository = userPropertyRepository
         )
-    internal val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
+    public val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
         get() = PersistReadReceiptsStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
-    internal val persistTypingIndicatorStatusConfig: PersistTypingIndicatorStatusConfigUseCase
+    public val persistTypingIndicatorStatusConfig: PersistTypingIndicatorStatusConfigUseCase
         get() = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
-    internal val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
+    public val serverLinks: SelfServerConfigUseCase get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 
     internal val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 
     internal val persistMigratedUsers: PersistMigratedUsersUseCase get() = PersistMigratedUsersUseCaseImpl(userRepository)
 
-    internal val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(accountRepository)
+    public val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(accountRepository)
 
-    internal val updateAccentColor: UpdateAccentColorUseCase get() = UpdateAccentColorUseCaseImpl(accountRepository)
+    public val updateAccentColor: UpdateAccentColorUseCase get() = UpdateAccentColorUseCaseImpl(accountRepository)
 
-    internal val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(accountRepository)
+    public val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(accountRepository)
 
-    internal val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
+    public val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
 
-    internal val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
+    public val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
 
     internal val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase get() = updateSelfUserSupportedProtocolsUseCase
 
@@ -266,7 +266,7 @@ internal class UserScope internal constructor(
                 kaliumLogger = userScopedLogger,
             )
 
-    internal val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase by lazy {
+    public val isPersonalToTeamAccountSupportedByBackend: CanMigrateFromPersonalToTeamUseCase by lazy {
         CanMigrateFromPersonalToTeamUseCaseImpl(
             sessionManager = sessionManager,
             serverConfigRepository = serverConfigRepository,
@@ -274,7 +274,7 @@ internal class UserScope internal constructor(
         )
     }
 
-    internal val foregroundActions: ForegroundActionsUseCase
+    public val foregroundActions: ForegroundActionsUseCase
         get() = ForegroundActionsUseCaseImpl(
             updateApiVersionsUseCase = updateApiVersionsUseCase,
             userConfigSyncWorker = userConfigSyncWorker,
@@ -285,16 +285,16 @@ internal class UserScope internal constructor(
             keyingMaterialsManager = keyingMaterialsManager,
         )
 
-    internal val isWireCellsEnabled: IsWireCellsEnabledUseCase
+    public val isWireCellsEnabled: IsWireCellsEnabledUseCase
         get() = IsWireCellsEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
         )
-    internal val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
+    public val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
         get() = IsWireCellsEnabledForConversationUseCaseImpl(
             conversationRepository = conversationRepository
         )
 
-    internal val isProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
+    public val isProfileQRCodeEnabled: IsProfileQRCodeEnabledUseCase
         get() = IsProfileQRCodeEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
         )

@@ -28,8 +28,8 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 /**
  * This use case is used to get the e2ei certificate status of specific user
  */
-internal interface IsOtherUserE2EIVerifiedUseCase {
-    suspend operator fun invoke(userId: UserId): Boolean
+public interface IsOtherUserE2EIVerifiedUseCase {
+    public suspend operator fun invoke(userId: UserId): Boolean
 }
 
 internal class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(

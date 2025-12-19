@@ -37,9 +37,9 @@ import kotlinx.coroutines.launch
  *
  * @return Flow<List<ServiceDetails>>
  */
-internal interface ObserveAllServicesUseCase {
+public interface ObserveAllServicesUseCase {
 
-    suspend operator fun invoke(): Flow<List<ServiceDetails>>
+    public suspend operator fun invoke(): Flow<List<ServiceDetails>>
 }
 
 internal class ObserveAllServicesUseCaseImpl internal constructor(
