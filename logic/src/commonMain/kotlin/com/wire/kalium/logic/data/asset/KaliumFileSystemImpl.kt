@@ -25,8 +25,10 @@ import okio.Sink
 import okio.Source
 
 @Suppress("TooManyFunctions")
-internal expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
-    KaliumFileSystem {
+internal expect class KaliumFileSystemImpl constructor(
+    dataStoragePaths: DataStoragePaths,
+    dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) : KaliumFileSystem {
     override val rootCachePath: Path
     override val rootDBPath: Path
     override fun sink(outputPath: Path, mustCreate: Boolean): Sink

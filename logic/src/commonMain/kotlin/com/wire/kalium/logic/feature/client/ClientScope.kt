@@ -98,7 +98,8 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     public val fetchUsersClients: FetchUsersClientsFromRemoteUseCase
         get() = FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
     public val getOtherUserClients: ObserveClientsByUserIdUseCase get() = ObserveClientsByUserIdUseCase(clientRepository)
-    public val observeClientDetailsUseCase: ObserveClientDetailsUseCase get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
+    public val observeClientDetailsUseCase: ObserveClientDetailsUseCase
+        get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
     public val deleteClient: DeleteClientUseCase
         get() = DeleteClientUseCaseImpl(
             clientRepository,
@@ -162,7 +163,8 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             syncFeatureConfigsUseCase
         )
 
-    public val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCaseImpl(transactionProvider, preKeyRepository)
+    public val remoteClientFingerPrint: ClientFingerprintUseCase
+        get() = ClientFingerprintUseCaseImpl(transactionProvider, preKeyRepository)
     public val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
         get() = UpdateClientVerificationStatusUseCase(clientRepository)
 

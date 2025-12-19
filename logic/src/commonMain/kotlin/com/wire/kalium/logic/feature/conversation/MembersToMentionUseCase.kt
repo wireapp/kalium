@@ -52,44 +52,45 @@ public class MembersToMentionUseCase internal constructor(
      * @param searchQuery string used to search for members
      * @return a List of [MemberDetails] of a conversation for the given string
      */
-    public suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> = withContext(dispatcher.io) {
-        val conversationMembers = observeConversationMembers(conversationId).first()
+    public suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> =
+        withContext(dispatcher.io) {
+            val conversationMembers = observeConversationMembers(conversationId).first()
 
-        // TODO apply normalization techniques that are used for other searches to the name (e.g. ö -> oe)
+            // TODO apply normalization techniques that are used for other searches to the name (e.g. ö -> oe)
 
-        val usersToSearch = conversationMembers.filter {
-            it.user.id != selfUserId
+            val usersToSearch = conversationMembers.filter {
+                it.user.id != selfUserId
+            }
+            if (searchQuery.isEmpty())
+                return@withContext usersToSearch
+
+            if (searchQuery.first().isWhitespace())
+                return@withContext listOf()
+
+            val rules: List<(MemberDetails) -> Boolean> = listOf(
+                { it.user.name?.startsWith(searchQuery, true) == true },
+                {
+                    it.user.name?.let { name ->
+                        nameTokens(name).firstOrNull { nameToken -> nameToken.startsWith(searchQuery, true) }
+                    } != null
+                },
+                { it.user.handle?.startsWith(searchQuery, true) == true },
+                { it.user.name?.contains(searchQuery, true) == true },
+                { it.user.handle?.contains(searchQuery, true) == true }
+            )
+
+            var foundUsers: Set<MemberDetails> = emptySet()
+            val usersToMention = mutableListOf<MemberDetails>()
+            rules.forEach { rule ->
+                val matches = usersToSearch.filter { rule(it) }
+                    .filter { !foundUsers.contains(it) }
+                    .sortedBy { it.user.name }
+                foundUsers = foundUsers.union(matches)
+                usersToMention += matches
+            }
+
+            return@withContext usersToMention
         }
-        if (searchQuery.isEmpty())
-            return@withContext usersToSearch
-
-        if (searchQuery.first().isWhitespace())
-            return@withContext listOf()
-
-        val rules: List<(MemberDetails) -> Boolean> = listOf(
-            { it.user.name?.startsWith(searchQuery, true) == true },
-            {
-                it.user.name?.let { name ->
-                    nameTokens(name).firstOrNull { nameToken -> nameToken.startsWith(searchQuery, true) }
-                } != null
-            },
-            { it.user.handle?.startsWith(searchQuery, true) == true },
-            { it.user.name?.contains(searchQuery, true) == true },
-            { it.user.handle?.contains(searchQuery, true) == true }
-        )
-
-        var foundUsers: Set<MemberDetails> = emptySet()
-        val usersToMention = mutableListOf<MemberDetails>()
-        rules.forEach { rule ->
-            val matches = usersToSearch.filter { rule(it) }
-                .filter { !foundUsers.contains(it) }
-                .sortedBy { it.user.name }
-            foundUsers = foundUsers.union(matches)
-            usersToMention += matches
-        }
-
-        return@withContext usersToMention
-    }
 }
 
 /**

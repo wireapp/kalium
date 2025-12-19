@@ -18,8 +18,10 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -29,9 +31,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -39,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * Sending a ping/knock message to a conversation
@@ -63,35 +63,41 @@ public class SendKnockUseCase internal constructor(
      * @param hotKnock whether to send this as a hot knock or not @see [MessageContent.Knock]
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    public suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
+    public suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> =
+        withContext(dispatcher.io) {
+            slowSyncRepository.slowSyncStatus.first {
+                it is SlowSyncStatus.Complete
+            }
 
-        val generatedMessageUuid = Uuid.random().toString()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
-            .first()
-            .duration
+            val generatedMessageUuid = Uuid.random().toString()
+            val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
+                .first()
+                .duration
 
-        return@withContext currentClientIdProvider().flatMap { currentClientId ->
-            val message = Message.Regular(
-                id = generatedMessageUuid,
-                content = MessageContent.Knock(hotKnock),
-                conversationId = conversationId,
-                date = Clock.System.now(),
-                senderUserId = selfUserId,
-                senderClientId = currentClientId,
-                status = Message.Status.Pending,
-                editStatus = Message.EditStatus.NotEdited,
-                isSelfMessage = true,
-                expirationData = messageTimer?.let { Message.ExpirationData(it) }
-            )
-            persistMessage(message)
-                .flatMap { messageSender.sendMessage(message) }
-        }.onFailure {
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
+            return@withContext currentClientIdProvider().flatMap { currentClientId ->
+                val message = Message.Regular(
+                    id = generatedMessageUuid,
+                    content = MessageContent.Knock(hotKnock),
+                    conversationId = conversationId,
+                    date = Clock.System.now(),
+                    senderUserId = selfUserId,
+                    senderClientId = currentClientId,
+                    status = Message.Status.Pending,
+                    editStatus = Message.EditStatus.NotEdited,
+                    isSelfMessage = true,
+                    expirationData = messageTimer?.let { Message.ExpirationData(it) }
+                )
+                persistMessage(message)
+                    .flatMap { messageSender.sendMessage(message) }
+            }.onFailure {
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    it,
+                    conversationId,
+                    generatedMessageUuid,
+                    TYPE,
+                )
+            }
         }
-    }
 
     internal companion object {
         internal const val TYPE = "Knock"

@@ -27,8 +27,9 @@ public interface SetNewUserTrackingIdentifierUseCase {
 }
 
 @Suppress("FunctionNaming")
-internal fun SetNewUserTrackingIdentifierUseCase(userConfigRepository: UserConfigRepository) = object : SetNewUserTrackingIdentifierUseCase {
-    override suspend fun invoke(newIdentifier: String) {
-        userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
+internal fun SetNewUserTrackingIdentifierUseCase(userConfigRepository: UserConfigRepository) =
+    object : SetNewUserTrackingIdentifierUseCase {
+        override suspend fun invoke(newIdentifier: String) {
+            userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
+        }
     }
-}

@@ -32,7 +32,10 @@ import kotlinx.coroutines.flow.flowOf
  * @see ConversationDetails
  */
 public fun interface ObserveConversationListDetailsWithEventsUseCase {
-    public suspend operator fun invoke(fromArchive: Boolean, conversationFilter: ConversationFilter): Flow<List<ConversationDetailsWithEvents>>
+    public suspend operator fun invoke(
+        fromArchive: Boolean,
+        conversationFilter: ConversationFilter
+    ): Flow<List<ConversationDetailsWithEvents>>
 }
 
 internal class ObserveConversationListDetailsWithEventsUseCaseImpl(

@@ -87,7 +87,8 @@ public actual class CoreLogic(
     )
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    public actual override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+    public actual override val networkStateObserver: NetworkStateObserver =
+        kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
