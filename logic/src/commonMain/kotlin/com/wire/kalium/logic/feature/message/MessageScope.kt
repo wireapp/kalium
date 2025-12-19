@@ -170,6 +170,9 @@ class MessageScope internal constructor(
     private val messageSyncDAO: com.wire.kalium.persistence.dao.message.MessageSyncDAO,
     private val messageSyncEnabled: Boolean,
     private val qualifiedIdMapper: com.wire.kalium.logic.data.id.QualifiedIdMapper,
+    private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
+    private val userSessionWorkScheduler: com.wire.kalium.logic.sync.UserSessionWorkScheduler,
+    private val userId: com.wire.kalium.logic.data.user.UserId,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
@@ -604,6 +607,18 @@ class MessageScope internal constructor(
             syncMessagesUseCase = syncMessages,
             scope = scope,
             isFeatureEnabled = messageSyncEnabled,
+            kaliumLogger = kaliumLogger
+        )
+    }
+
+    internal val appVisibilityAwareSyncCoordinator: com.wire.kalium.logic.feature.message.sync.AppVisibilityAwareSyncCoordinator by lazy {
+        com.wire.kalium.logic.feature.message.sync.AppVisibilityAwareSyncCoordinatorImpl(
+            appVisibilityObserver = appVisibilityObserver,
+            syncMessagesUseCase = syncMessages,
+            debouncedMessageSyncScheduler = debouncedMessageSyncScheduler,
+            userSessionWorkScheduler = userSessionWorkScheduler,
+            userId = userId,
+            scope = scope,
             kaliumLogger = kaliumLogger
         )
     }

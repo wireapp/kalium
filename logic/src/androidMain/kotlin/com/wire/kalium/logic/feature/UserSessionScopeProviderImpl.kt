@@ -50,6 +50,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
+    private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
     private val logoutCallback: LogoutCallback,
     userAgent: String
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent), UserSessionScopeProvider {
@@ -75,6 +76,7 @@ internal actual open class UserSessionScopeProviderImpl(
             userStorageProvider = userStorageProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,
+            appVisibilityObserver = appVisibilityObserver,
             logoutCallback = logoutCallback,
         )
     }

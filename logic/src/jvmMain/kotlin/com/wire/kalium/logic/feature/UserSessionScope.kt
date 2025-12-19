@@ -50,6 +50,7 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
+    appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
     logoutCallback: LogoutCallback,
     userAgent: String
 ): UserSessionScope {
@@ -72,6 +73,7 @@ internal fun UserSessionScope(
         clientConfig,
         platformUserStorageProperties,
         networkStateObserver,
+        appVisibilityObserver,
         logoutCallback,
     )
 }

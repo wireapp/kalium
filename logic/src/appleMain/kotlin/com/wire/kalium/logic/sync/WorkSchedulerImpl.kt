@@ -87,4 +87,10 @@ internal actual open class UserSessionWorkSchedulerImpl(
             "Scheduling of building normalized loudness is not supported on iOS. Audio normalized loudness building won't be scheduled."
         )
     }
+
+    actual override fun scheduleMessageSyncRetry(userId: com.wire.kalium.logic.data.user.UserId) {
+        kaliumLogger.withFeatureId(SYNC).w(
+            "Message sync retry scheduling is not supported on iOS."
+        )
+    }
 }

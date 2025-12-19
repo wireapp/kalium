@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
@@ -39,6 +40,14 @@ interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
 @Mockable
 interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler, AudioNormalizedLoudnessScheduler {
     val scope: UserSessionScope
+
+    /**
+     * Schedules a retry attempt for failed message sync operations.
+     * Typically enqueued with a delay (e.g., 30 seconds) and network connectivity constraint.
+     *
+     * @param userId The user whose messages failed to sync
+     */
+    fun scheduleMessageSyncRetry(userId: UserId)
 }
 
 internal expect class WorkSchedulerProviderImpl : WorkSchedulerProvider {
@@ -57,4 +66,5 @@ internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
     override fun schedulePeriodicUserConfigSync()
     override fun resetBackoffForPeriodicUserConfigSync()
     override fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String)
+    override fun scheduleMessageSyncRetry(userId: UserId)
 }

@@ -143,6 +143,23 @@ internal actual open class UserSessionWorkSchedulerImpl(
             )
         }
     }
+
+    actual override fun scheduleMessageSyncRetry(userId: UserId) {
+        val inputData = WrapperWorkerFactory.workData(MessageSyncRetryWorker::class, userId)
+        val connectedConstraint = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        WorkManager.getInstance(appContext).enqueueUniqueWork(
+            MessageSyncRetryWorker.NAME_PREFIX + userId.value,
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequest.Builder(workerClass)
+                .setConstraints(connectedConstraint)
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .setInputData(inputData)
+                .setInitialDelay(30, TimeUnit.SECONDS)
+                .build()
+        )
+    }
 }
 
 private fun buildConnectedPeriodicWorkRequest(

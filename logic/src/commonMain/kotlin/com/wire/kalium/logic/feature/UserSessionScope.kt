@@ -559,6 +559,7 @@ class UserSessionScope internal constructor(
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
+    appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
     private val userStorage = userStorageProvider.getOrCreate(
@@ -2273,7 +2274,10 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.messageSyncApi,
             userStorage.database.messageSyncDAO,
             kaliumConfigs.messageSynchronizationEnabled,
-            qualifiedIdMapper
+            qualifiedIdMapper,
+            appVisibilityObserver,
+            userSessionWorkScheduler,
+            userId
         )
     }
 
@@ -2701,6 +2705,10 @@ class UserSessionScope internal constructor(
         }
 
         userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+
+        launch {
+            messages.appVisibilityAwareSyncCoordinator.start()
+        }
     }
 }
 

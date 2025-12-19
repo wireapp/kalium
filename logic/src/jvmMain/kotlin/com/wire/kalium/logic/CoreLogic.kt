@@ -88,6 +88,10 @@ actual class CoreLogic(
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
     actual override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+
+    private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver =
+        com.wire.kalium.logic.network.AppVisibilityObserverImpl()
+
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -99,6 +103,7 @@ actual class CoreLogic(
             globalDatabaseBuilder,
             userStorageProvider,
             networkStateObserver,
+            appVisibilityObserver,
             logoutCallbackManager,
             userAgent,
             useInMemoryStorage

@@ -49,7 +49,8 @@ actual class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,
-    kaliumConfigs: KaliumConfigs
+    kaliumConfigs: KaliumConfigs,
+    appVisibilityFlow: kotlinx.coroutines.flow.StateFlow<Boolean>
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
 
     actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
@@ -89,6 +90,9 @@ actual class CoreLogic(
         appContext = appContext
     )
 
+    private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver =
+        com.wire.kalium.logic.network.AppVisibilityObserverImpl(appVisibilityFlow)
+
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -101,6 +105,7 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
+            appVisibilityObserver,
             logoutCallbackManager,
             userAgent
         )

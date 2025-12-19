@@ -49,6 +49,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
+    private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
     private val logoutCallback: LogoutCallback,
     userAgent: String,
     private val useInMemoryDatabase: Boolean
@@ -82,6 +83,7 @@ internal actual open class UserSessionScopeProviderImpl(
             userStorageProvider,
             this,
             networkStateObserver,
+            appVisibilityObserver,
             logoutCallback,
             userAgent
         )
