@@ -595,4 +595,14 @@ class MessageScope internal constructor(
             qualifiedIdMapper = qualifiedIdMapper,
             kaliumLogger = kaliumLogger
         )
+
+    val debouncedMessageSyncScheduler: com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncScheduler by lazy {
+        com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncSchedulerImpl(
+            messageSyncDAO = messageSyncDAO,
+            syncMessagesUseCase = syncMessages,
+            scope = scope,
+            isFeatureEnabled = messageSyncEnabled,
+            kaliumLogger = kaliumLogger
+        )
+    }
 }

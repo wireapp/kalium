@@ -18,10 +18,13 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToOne
 import com.wire.kalium.persistence.MessagesToSynchronizeQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
@@ -88,4 +91,9 @@ internal class MessageSyncDAOImpl(
                     )
                 }
         }
+
+    override fun observePendingMessagesCount(): Flow<Long> =
+        queries.countPendingMessages()
+            .asFlow()
+            .mapToOne(readDispatcher.value)
 }

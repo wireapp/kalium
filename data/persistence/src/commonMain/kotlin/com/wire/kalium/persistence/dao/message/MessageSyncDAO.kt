@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
 interface MessageSyncDAO {
@@ -40,4 +41,10 @@ interface MessageSyncDAO {
     suspend fun countPendingMessages(): Long
 
     suspend fun getAllMessages(): List<MessageToSynchronizeEntity>
+
+    /**
+     * Observes the count of pending messages to sync.
+     * Emits whenever messages are inserted or deleted from the sync table.
+     */
+    fun observePendingMessagesCount(): Flow<Long>
 }
