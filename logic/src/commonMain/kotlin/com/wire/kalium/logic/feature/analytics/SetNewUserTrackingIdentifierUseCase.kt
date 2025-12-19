@@ -19,11 +19,11 @@ package com.wire.kalium.logic.feature.analytics
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 
-internal interface SetNewUserTrackingIdentifierUseCase {
+public interface SetNewUserTrackingIdentifierUseCase {
     /**
      * Use case for setting a new tracking identifier [newIdentifier] associated with the user.
      */
-    suspend operator fun invoke(newIdentifier: String)
+    public suspend operator fun invoke(newIdentifier: String)
 }
 
 @Suppress("FunctionNaming")

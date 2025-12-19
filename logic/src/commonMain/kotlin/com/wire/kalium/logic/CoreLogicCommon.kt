@@ -89,7 +89,7 @@ public abstract class CoreLogicCommon internal constructor(
     internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
     // TODO: make globalScope a singleton
-    internal inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
+    public inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
     internal inline fun <T> authenticationScope(
         serverConfig: ServerConfig,

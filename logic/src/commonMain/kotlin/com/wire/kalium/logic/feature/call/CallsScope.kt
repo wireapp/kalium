@@ -242,7 +242,7 @@ public class CallsScope internal constructor(
 
     internal val observeEndCallDueToDegradationDialog: ObserveEndCallDueToConversationDegradationUseCase
         get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
-    internal val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
+    public val observeAskCallFeedbackUseCase: ObserveAskCallFeedbackUseCase
         get() = observeAskCallFeedbackUseCase(EndCallResultListenerImpl)
 
     private val shouldAskCallFeedback: ShouldAskCallFeedbackUseCase by lazy {
@@ -253,7 +253,7 @@ public class CallsScope internal constructor(
         UpdateNextTimeCallFeedbackUseCase(userConfigRepository)
     }
 
-    internal val observeRecentlyEndedCallMetadata: ObserveRecentlyEndedCallMetadataUseCase
+    public val observeRecentlyEndedCallMetadata: ObserveRecentlyEndedCallMetadataUseCase
         get() = ObserveRecentlyEndedCallMetadataUseCaseImpl(
             callRepository = callRepository
         )

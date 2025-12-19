@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.auth.verification
 /**
  * Actions that might require a second factor verification code.
  */
-internal enum class VerifiableAction {
+public enum class VerifiableAction {
     LOGIN_OR_CLIENT_REGISTRATION,
     CREATE_SCIM_TOKEN,
     DELETE_TEAM

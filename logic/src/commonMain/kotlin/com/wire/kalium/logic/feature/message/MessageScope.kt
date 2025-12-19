@@ -227,7 +227,7 @@ public class MessageScope internal constructor(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
-    internal val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase = DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
+    public val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase = DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
@@ -555,7 +555,7 @@ public class MessageScope internal constructor(
     public val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
         get() = GetSenderNameByMessageIdUseCase(messageRepository)
 
-    internal val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
+    public val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
         get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 
     public val observeAssetUploadState: ObserveAssetUploadStateUseCase

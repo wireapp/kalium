@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
-internal abstract class SyncExecutor {
+public abstract class SyncExecutor {
 
     internal abstract fun startAndStopSyncAsNeeded()
 
@@ -53,7 +53,7 @@ internal abstract class SyncExecutor {
      *
      * Sync will keep ongoing if at least one request is still active (not released).
      */
-    internal abstract suspend fun <T> request(executorAction: suspend SyncRequest.() -> T): T
+    public abstract suspend fun <T> request(executorAction: suspend SyncRequest.() -> T): T
 
     internal inner class Request internal constructor(
         private val syncStateFlow: StateFlow<SyncState>,

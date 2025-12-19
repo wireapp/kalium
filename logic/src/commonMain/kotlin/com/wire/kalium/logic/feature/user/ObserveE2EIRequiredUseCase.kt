@@ -46,11 +46,11 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Observe [E2EISettings] to notify user when setting is changed to Enabled
  */
-internal interface ObserveE2EIRequiredUseCase {
+public interface ObserveE2EIRequiredUseCase {
     /**
      * @return [Flow] of [E2EIRequiredResult]
      */
-    operator fun invoke(): Flow<E2EIRequiredResult>
+    public operator fun invoke(): Flow<E2EIRequiredResult>
 }
 
 internal class ObserveE2EIRequiredUseCaseImpl(
@@ -136,16 +136,16 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     }
 }
 
-internal sealed class E2EIRequiredResult {
-    internal sealed class WithGracePeriod(open val timeLeft: Duration) : E2EIRequiredResult() {
-        internal data class Create(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
-        internal data class Renew(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
+public sealed class E2EIRequiredResult {
+    public sealed class WithGracePeriod(public open val timeLeft: Duration) : E2EIRequiredResult() {
+        public data class Create(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
+        public data class Renew(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
     }
 
-    internal sealed class NoGracePeriod : E2EIRequiredResult() {
-        internal data object Create : NoGracePeriod()
-        internal data object Renew : NoGracePeriod()
+    public sealed class NoGracePeriod : E2EIRequiredResult() {
+        public data object Create : NoGracePeriod()
+        public data object Renew : NoGracePeriod()
     }
 
-    internal data object NotRequired : E2EIRequiredResult()
+    public data object NotRequired : E2EIRequiredResult()
 }

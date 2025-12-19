@@ -34,14 +34,15 @@ import kotlin.time.Duration.Companion.days
  * Use case that combine contacts data necessary for analytics [AnalyticsContactsData].
  * It always get a Cached data and, except case when there is no cache, in that case useCase selects all the data from DB.
  */
-internal class GetAnalyticsContactsDataUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetAnalyticsContactsDataUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val analyticsRepository: AnalyticsRepository,
     private val userConfigRepository: UserConfigRepository,
     private val coroutineScope: CoroutineScope,
 ) {
 
-    internal suspend operator fun invoke(currentTime: Instant = Clock.System.now()): AnalyticsContactsData {
+    public suspend operator fun invoke(currentTime: Instant = Clock.System.now()): AnalyticsContactsData {
 
         val lastUpdate = analyticsRepository.getLastContactsDateUpdateDate().getOrNull()
 
@@ -135,7 +136,7 @@ internal class GetAnalyticsContactsDataUseCase internal constructor(
  * If val is null mean it shouldn't be provided to the analytics.
  * More details in task https://wearezeta.atlassian.net/browse/WPB-16121
  */
-internal data class AnalyticsContactsData(
+public data class AnalyticsContactsData(
     val teamId: String?,
     val contactsSize: Int?,
     val teamSize: Int?,

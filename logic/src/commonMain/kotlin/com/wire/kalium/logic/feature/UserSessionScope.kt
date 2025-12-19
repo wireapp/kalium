@@ -1129,7 +1129,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val syncExecutor: SyncExecutor by lazy {
+    public val syncExecutor: SyncExecutor by lazy {
         SyncExecutorImpl(
             syncStateObserver,
             slowSyncManager,
@@ -1796,16 +1796,16 @@ public class UserSessionScope internal constructor(
     public val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
 
-    internal val observeAnalyticsTrackingIdentifierStatus: ObserveAnalyticsTrackingIdentifierStatusUseCase
+    public val observeAnalyticsTrackingIdentifierStatus: ObserveAnalyticsTrackingIdentifierStatusUseCase
         get() = ObserveAnalyticsTrackingIdentifierStatusUseCase(userConfigRepository, userScopedLogger)
 
-    internal val setNewUserTrackingIdentifier: SetNewUserTrackingIdentifierUseCase
+    public val setNewUserTrackingIdentifier: SetNewUserTrackingIdentifierUseCase
         get() = SetNewUserTrackingIdentifierUseCase(userConfigRepository)
 
     public val getCurrentAnalyticsTrackingIdentifier: GetCurrentAnalyticsTrackingIdentifierUseCase
         get() = GetCurrentAnalyticsTrackingIdentifierUseCase(userConfigRepository)
 
-    internal val analyticsIdentifierManager: AnalyticsIdentifierManager
+    public val analyticsIdentifierManager: AnalyticsIdentifierManager
         get() = AnalyticsIdentifierManager(
             messages.messageSender,
             userConfigRepository,
@@ -1816,7 +1816,7 @@ public class UserSessionScope internal constructor(
             userScopedLogger
         )
 
-    internal suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
+    public suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 
     public val observeLegalHoldForSelfUser: ObserveLegalHoldStateForSelfUserUseCase
         get() = ObserveLegalHoldStateForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser, observeLegalHoldRequest)
@@ -2333,7 +2333,7 @@ public class UserSessionScope internal constructor(
     public val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
-    internal val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
+    public val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
         get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
 
     public val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
@@ -2369,7 +2369,7 @@ public class UserSessionScope internal constructor(
             userConfigRepository = userConfigRepository
         )
 
-    internal val observeE2EIRequired: ObserveE2EIRequiredUseCase
+    public val observeE2EIRequired: ObserveE2EIRequiredUseCase
         get() = ObserveE2EIRequiredUseCaseImpl(
             userConfigRepository,
             featureSupport,
@@ -2554,7 +2554,7 @@ public class UserSessionScope internal constructor(
             authenticationScope.serverConfigRepository,
         )
 
-    internal val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase
+    public val getAnalyticsContactsData: GetAnalyticsContactsDataUseCase
         get() = GetAnalyticsContactsDataUseCase(
             selfTeamIdProvider = selfTeamId,
             analyticsRepository = analyticsRepository,

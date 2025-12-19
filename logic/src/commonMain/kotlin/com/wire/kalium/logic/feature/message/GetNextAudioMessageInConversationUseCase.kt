@@ -29,11 +29,12 @@ import kotlinx.coroutines.withContext
 /**
  * Provides a way to get a messageId of next AudioMessage after [messageId] in [ConversationId] conversation.
  */
-internal class GetNextAudioMessageInConversationUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetNextAudioMessageInConversationUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
     ): Result = withContext(dispatchers.io) {
@@ -41,13 +42,13 @@ internal class GetNextAudioMessageInConversationUseCase internal constructor(
             .fold({ Result.Failure(it) }, { Result.Success(it, "") })
     }
 
-    internal sealed interface Result {
+    public sealed interface Result {
 
-        data class Success(val messageId: String, val assetId: String) : Result
+        public data class Success(val messageId: String, val assetId: String) : Result
 
         /**
          * [StorageFailure.DataNotFound] in case there is no AudioMessage or some other generic error.
          */
-        data class Failure(val cause: CoreFailure) : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }

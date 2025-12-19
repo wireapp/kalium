@@ -25,8 +25,8 @@ import kotlinx.coroutines.flow.Flow
  * Use case to observe recently ended call metadata. This gives us all metadata assigned to a call.
  * Used mainly for analytics.
  */
-internal interface ObserveRecentlyEndedCallMetadataUseCase {
-    suspend operator fun invoke(): Flow<RecentlyEndedCallMetadata>
+public interface ObserveRecentlyEndedCallMetadataUseCase {
+    public suspend operator fun invoke(): Flow<RecentlyEndedCallMetadata>
 }
 
 internal class ObserveRecentlyEndedCallMetadataUseCaseImpl internal constructor(

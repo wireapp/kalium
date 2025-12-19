@@ -254,7 +254,7 @@ public class ConversationScope internal constructor(
     internal val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
         get() = ObservePendingConnectionRequestsUseCaseImpl(connectionRepository)
 
-    internal val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
+    public val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
     private val conversationWorkQueue: ConversationWorkQueue by lazy {

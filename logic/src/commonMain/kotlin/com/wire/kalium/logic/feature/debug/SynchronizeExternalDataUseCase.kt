@@ -38,9 +38,9 @@ internal fun interface SynchronizeExternalDataUseCase {
 
 }
 
-internal sealed class SynchronizeExternalDataResult {
-    internal data object Success : SynchronizeExternalDataResult()
-    internal data class Failure(val coreFailure: CoreFailure) : SynchronizeExternalDataResult()
+public sealed class SynchronizeExternalDataResult {
+    public data object Success : SynchronizeExternalDataResult()
+    public data class Failure(val coreFailure: CoreFailure) : SynchronizeExternalDataResult()
 }
 
 internal class SynchronizeExternalDataUseCaseImpl(

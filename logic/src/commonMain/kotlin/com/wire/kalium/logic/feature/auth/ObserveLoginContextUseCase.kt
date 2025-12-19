@@ -29,11 +29,11 @@ import kotlinx.coroutines.flow.map
 /**
  * Observes the [LoginContext] that the current server supports.
  */
-internal interface ObserveLoginContextUseCase {
+public interface ObserveLoginContextUseCase {
     /**
      * @return [LoginContext]
      */
-    suspend operator fun invoke(serverLinks: ServerConfig.Links): Flow<LoginContext>
+    public suspend operator fun invoke(serverLinks: ServerConfig.Links): Flow<LoginContext>
 }
 
 @Suppress("FunctionNaming")
@@ -55,16 +55,16 @@ internal fun ObserveLoginContextUseCase(
     }
 }
 
-internal sealed interface LoginContext {
+public sealed interface LoginContext {
     /**
      * The server supports enterprise login experience.
      */
-    data object EnterpriseLogin : LoginContext
+    public data object EnterpriseLogin : LoginContext
 
     /**
      * The server does not support or in case of Proxy used we fallback to current login, for now both flows are supported.
      */
-    data object FallbackLogin : LoginContext
+    public data object FallbackLogin : LoginContext
 }
 
 private const val MIN_API_VERSION_FOR_ENTERPRISE_LOGIN = 8

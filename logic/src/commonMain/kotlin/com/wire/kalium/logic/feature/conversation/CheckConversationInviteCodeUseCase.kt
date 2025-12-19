@@ -43,12 +43,13 @@ import kotlinx.coroutines.flow.first
  * @param domain optional domain of the conversation
  *
  */
-internal class CheckConversationInviteCodeUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class CheckConversationInviteCodeUseCase internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId
 ) {
-    internal suspend operator fun invoke(code: String, key: String, domain: String?) =
+    public suspend operator fun invoke(code: String, key: String, domain: String?): Result =
         conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key).fold(
             { failure ->
                 when (failure) {
@@ -99,21 +100,21 @@ internal class CheckConversationInviteCodeUseCase internal constructor(
             else -> Result.Failure.Generic(error)
         }
 
-    internal sealed interface Result {
-        data class Success(
+    public sealed interface Result {
+        public data class Success(
             val name: String?,
             val conversationId: ConversationId,
             val isSelfMember: Boolean,
             val isPasswordProtected: Boolean
         ) : Result
 
-        sealed interface Failure : Result {
-            data object InvalidCodeOrKey : Failure
-            data object RequestingUserIsNotATeamMember : Failure
-            data object AccessDenied : Failure
-            data object ConversationNotFound : Failure
-            data object GuestLinksDisabled : Failure
-            data class Generic(val failure: CoreFailure) : Failure
+        public sealed interface Failure : Result {
+            public data object InvalidCodeOrKey : Failure
+            public data object RequestingUserIsNotATeamMember : Failure
+            public data object AccessDenied : Failure
+            public data object ConversationNotFound : Failure
+            public data object GuestLinksDisabled : Failure
+            public data class Generic(val failure: CoreFailure) : Failure
         }
     }
 }

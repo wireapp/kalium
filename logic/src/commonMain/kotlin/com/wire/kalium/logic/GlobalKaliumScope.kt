@@ -93,7 +93,7 @@ public class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    internal val logoutCallbackManager: LogoutCallbackManager,
+    public val logoutCallbackManager: LogoutCallbackManager,
     internal val workSchedulerProvider: WorkSchedulerProvider,
     internal val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 ) : CoroutineScope {
@@ -135,12 +135,12 @@ public class GlobalKaliumScope internal constructor(
     public val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     public val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     public val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
-    internal val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
+    public val observeLoginContext: ObserveLoginContextUseCase get() = ObserveLoginContextUseCase(customServerConfigRepository)
 
     public val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
-    internal val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    public val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     public val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)

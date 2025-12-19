@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.ZERO
 
 private const val DAYS_IN_WEEK = 7
 
-internal val Duration.inWholeWeeks: Long
+public val Duration.inWholeWeeks: Long
     get() = inWholeDays / DAYS_IN_WEEK
 
 @OptIn(ExperimentalContracts::class)
@@ -74,10 +74,10 @@ internal fun String.splitFileExtensionAndCopyCounter(): Triple<String, Int, Stri
     return Triple(nameWithoutCopyCounter, copyCounter, extension)
 }
 
-internal fun String.fileExtension(): String? = splitFileExtension().second
+public fun String.fileExtension(): String? = splitFileExtension().second
 
 @OptIn(ExperimentalContracts::class)
-internal fun Int?.isGreaterThan(other: Int?): Boolean {
+public fun Int?.isGreaterThan(other: Int?): Boolean {
     contract {
         returns(true) implies (this@isGreaterThan != null)
         returns(true) implies (other != null)

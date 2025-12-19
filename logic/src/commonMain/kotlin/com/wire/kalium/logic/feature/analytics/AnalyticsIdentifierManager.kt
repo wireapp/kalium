@@ -33,7 +33,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
 
-internal interface AnalyticsIdentifierManager {
+public interface AnalyticsIdentifierManager {
 
     /**
      * When doing a migration of tracking identifier (receive new identifier -> migrate new identifier),
@@ -42,13 +42,13 @@ internal interface AnalyticsIdentifierManager {
      * Previous tracking identifier is kept because in case migration or network failure, we still have both values
      * to do the correct migration of tracking identifiers.
      */
-    suspend fun onMigrationComplete()
+    public suspend fun onMigrationComplete()
 
     /**
      * When user first login, we generate a new tracking identifier, when this tracking identifier is set,
      * we need to send a message to the other clients of the user, to ensure they also use this newly generated identifier.
      */
-    suspend fun propagateTrackingIdentifier(identifier: String)
+    public suspend fun propagateTrackingIdentifier(identifier: String)
 }
 
 @Suppress("FunctionNaming", "LongParameterList")

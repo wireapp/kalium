@@ -112,7 +112,7 @@ public data class ServerConfig(
     )
 
     public companion object {
-        internal val PRODUCTION = Links(
+        public val PRODUCTION: Links = Links(
             api = """https://prod-nginz-https.wire.com""",
             accounts = """https://account.wire.com""",
             webSocket = """https://prod-nginz-ssl.wire.com""",
@@ -124,7 +124,7 @@ public data class ServerConfig(
             apiProxy = null
         )
 
-        internal val STAGING = Links(
+        public val STAGING: Links = Links(
             api = """https://staging-nginz-https.zinfra.io""",
             accounts = """https://wire-account-staging.zinfra.io""",
             webSocket = """https://staging-nginz-ssl.zinfra.io""",
@@ -136,7 +136,7 @@ public data class ServerConfig(
             apiProxy = null
         )
 
-        internal val DUMMY = Links(
+        public val DUMMY: Links = Links(
             api = """https://dummy-nginz-https.zinfra.io""",
             accounts = """https://wire-account-dummy.zinfra.io""",
             webSocket = """https://dummy-nginz-ssl.zinfra.io""",
@@ -148,7 +148,7 @@ public data class ServerConfig(
             apiProxy = null
         )
 
-        internal val DEFAULT = PRODUCTION
+        public val DEFAULT: Links = PRODUCTION
 
         private const val FORGOT_PASSWORD_PATH = "forgot"
         private const val PRICING_PATH = "pricing"
