@@ -159,7 +159,7 @@ object FeatureConfigJson {
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.CellsInternal(
                 FeatureFlagStatusDTO.DISABLED,
-                FeatureConfigData.CellsInternalConfigDTO(null)
+                FeatureConfigData.CellsInternalConfigDTO(null, null, null)
             ),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
