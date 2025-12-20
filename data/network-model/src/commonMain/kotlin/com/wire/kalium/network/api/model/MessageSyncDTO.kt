@@ -81,3 +81,12 @@ data class DeleteMessagesResponseDTO(
     @SerialName("deleted_count")
     val deletedCount: Int
 )
+
+/**
+ * Response payload for uploading cryptographic state backup
+ */
+@Serializable
+data class StateBackupUploadResponse(
+    @SerialName("uploaded_at")
+    val uploadedAt: String? = null
+)

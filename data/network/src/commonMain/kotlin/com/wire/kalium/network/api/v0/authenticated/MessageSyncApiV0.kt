@@ -22,7 +22,9 @@ import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
+import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import okio.Source
 
 internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
@@ -43,4 +45,11 @@ internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
         before: Long?
     ): NetworkResponse<DeleteMessagesResponseDTO> =
         MessageSyncApi.getApiNotSupportError(::deleteMessages.name)
+
+    override suspend fun uploadStateBackup(
+        userId: String,
+        backupDataSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<StateBackupUploadResponse> =
+        MessageSyncApi.getApiNotSupportError(::uploadStateBackup.name)
 }

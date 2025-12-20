@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v12.authenticated
 import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
+import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.api.v11.authenticated.MessageSyncApiV11
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -31,6 +32,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import okio.Source
 
 internal open class MessageSyncApiV12(
     private val httpClient: HttpClient,
@@ -71,6 +75,24 @@ internal open class MessageSyncApiV12(
                 userId?.let { parameter("user_id", it) }
                 conversationId?.let { parameter("conversation_id", it) }
                 before?.let { parameter("before", it) }
+            }
+        }
+
+    override suspend fun uploadStateBackup(
+        userId: String,
+        backupDataSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<StateBackupUploadResponse> =
+        wrapRequest {
+            httpClient.post("$backupServiceUrl/state") {
+                parameter("user_id", userId)
+                contentType(ContentType.Application.OctetStream)
+                setBody(
+                    StreamStateBackupContent(
+                        backupDataSource = backupDataSource,
+                        backupSize = backupSize
+                    )
+                )
             }
         }
 }

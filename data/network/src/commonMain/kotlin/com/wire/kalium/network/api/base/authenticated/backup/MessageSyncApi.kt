@@ -21,9 +21,11 @@ package com.wire.kalium.network.api.base.authenticated.backup
 import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
+import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
+import okio.Source
 
 /**
  * API client for synchronizing messages to an external backup service
@@ -67,6 +69,19 @@ interface MessageSyncApi {
         conversationId: String? = null,
         before: Long? = null
     ): NetworkResponse<DeleteMessagesResponseDTO>
+
+    /**
+     * Uploads the cryptographic state backup for the specified user
+     * @param userId User ID to backup state for
+     * @param backupDataSource Lazy source providing the zip file data
+     * @param backupSize Size of the backup data in bytes
+     * @return Network response indicating upload success
+     */
+    suspend fun uploadStateBackup(
+        userId: String,
+        backupDataSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<StateBackupUploadResponse>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(

@@ -211,7 +211,11 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
+import com.wire.kalium.logic.feature.backup.BackupCryptoStateUseCase
+import com.wire.kalium.logic.feature.backup.BackupCryptoStateUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
+import com.wire.kalium.logic.feature.backup.BackupStateVisibilityCoordinator
+import com.wire.kalium.logic.feature.backup.BackupStateVisibilityCoordinatorImpl
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
 import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCaseImpl
@@ -1125,6 +1129,7 @@ class UserSessionScope internal constructor(
             userPropertiesEventReceiver = userPropertiesEventReceiver,
             federationEventReceiver = federationEventReceiver,
             processingScope = this@UserSessionScope,
+            eventProcessingCallback = backupStateVisibilityCoordinator,
             logger = userScopedLogger,
         )
     }
@@ -2069,6 +2074,25 @@ class UserSessionScope internal constructor(
             conversationDAO = userStorage.database.conversationDAO
         )
 
+    private val backupCryptoState: BackupCryptoStateUseCase
+        get() = BackupCryptoStateUseCaseImpl(
+            selfUserId = userId,
+            currentClientIdProvider = clientIdProvider,
+            messageSyncApi = authenticatedNetworkContainer.messageSyncApi,
+            rootPathsProvider = rootPathsProvider,
+            kaliumFileSystem = kaliumFileSystem,
+            kaliumConfigs = kaliumConfigs
+        )
+
+    private val backupStateVisibilityCoordinator: BackupStateVisibilityCoordinator by lazy {
+        BackupStateVisibilityCoordinatorImpl(
+            appVisibilityObserver = appVisibilityObserver,
+            backupCryptoStateUseCase = backupCryptoState,
+            kaliumConfigs = kaliumConfigs,
+            scope = this
+        )
+    }
+
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCaseImpl(syncManager)
 
@@ -2712,6 +2736,8 @@ class UserSessionScope internal constructor(
         launch {
             messages.appVisibilityAwareSyncCoordinator.start()
         }
+
+        backupStateVisibilityCoordinator.start()
     }
 }
 

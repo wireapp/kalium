@@ -82,6 +82,16 @@ internal interface EventProcessor {
     ): Either<CoreFailure, Unit>
 }
 
+/**
+ * Callback interface for notifications about event processing.
+ */
+interface EventProcessingCallback {
+    /**
+     * Called after an event is successfully processed.
+     */
+    fun onEventProcessed()
+}
+
 @Suppress("LongParameterList")
 internal class EventProcessorImpl(
     private val eventRepository: EventRepository,
@@ -92,6 +102,7 @@ internal class EventProcessorImpl(
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
     private val federationEventReceiver: FederationEventReceiver,
     private val processingScope: CoroutineScope,
+    private val eventProcessingCallback: EventProcessingCallback? = null,
     logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
 
@@ -140,6 +151,8 @@ internal class EventProcessorImpl(
         }.onSuccess {
             eventRepository.setEventAsProcessed(event.id).onSuccess {
                 logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
+                // Notify callback that event was processed
+                eventProcessingCallback?.onEventProcessed()
             }
         }
     }
