@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
@@ -272,6 +273,19 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationModifiedDate(date, qualifiedID)
+        }
+    }
+
+    override suspend fun updateConversationsModifiedDateFromMessages(
+        conversationIds: List<QualifiedIDEntity>,
+        qualifyingContentTypes: List<MessageEntity.ContentType>
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationsModifiedDateFromMessages(
+                qualifyingContentTypes,
+                conversationIds,
+                qualifyingContentTypes
+            )
         }
     }
 

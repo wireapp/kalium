@@ -2065,7 +2065,8 @@ class UserSessionScope internal constructor(
             selfUserId = userId,
             messageSyncApi = authenticatedNetworkContainer.messageSyncApi,
             backupRepository = backupRepository,
-            messageDAO = userStorage.database.messageDAO
+            messageDAO = userStorage.database.messageDAO,
+            conversationDAO = userStorage.database.conversationDAO
         )
 
     val observeSyncState: ObserveSyncStateUseCase

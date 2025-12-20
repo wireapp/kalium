@@ -51,7 +51,7 @@ internal class PersistMessageUseCaseImpl(
 
         return messageRepository.persistMessage(
             message = modifiedMessage,
-            updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
+            updateConversationModifiedDate = MessageContentOrderPolicy.shouldUpdateConversationOrder(message.content)
         ).onSuccess {
             val isConversationMuted = it == InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
 
@@ -84,68 +84,6 @@ internal class PersistMessageUseCaseImpl(
             message.copy(expectsReadConfirmation = expectsReadConfirmation)
         } else {
             message
-        }
-
-    @Suppress("ComplexMethod")
-    private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
-        when (this) {
-            is MessageContent.MemberChange.Added -> true
-            is MessageContent.MemberChange.Removed -> false
-            is MessageContent.Text -> true
-            is MessageContent.Calling -> true
-            is MessageContent.Asset -> true
-            is MessageContent.Knock -> true
-            is MessageContent.DeleteMessage -> false
-            is MessageContent.TextEdited -> false
-            is MessageContent.CompositeEdited -> false
-            is MessageContent.MultipartEdited -> false
-            is MessageContent.RestrictedAsset -> true
-            is MessageContent.DeleteForMe -> false
-            is MessageContent.Unknown -> false
-            is MessageContent.Availability -> false
-            is MessageContent.FailedDecryption -> true
-            is MessageContent.MissedCall -> true
-            is MessageContent.Ignored -> false
-            is MessageContent.LastRead -> false
-            is MessageContent.Reaction -> false
-            is MessageContent.Cleared -> false
-            is MessageContent.ConversationRenamed -> true
-            is MessageContent.Receipt -> false
-            is MessageContent.ClientAction -> false
-            is MessageContent.CryptoSessionReset -> false
-            is MessageContent.NewConversationReceiptMode -> false
-            is MessageContent.ConversationReceiptModeChanged -> false
-            is MessageContent.HistoryLost -> false
-            is MessageContent.HistoryLostProtocolChanged -> false
-            is MessageContent.ConversationMessageTimerChanged -> false
-            is MessageContent.MemberChange.CreationAdded -> false
-            is MessageContent.MemberChange.FailedToAdd -> false
-            is MessageContent.ConversationCreated -> false
-            is MessageContent.MLSWrongEpochWarning -> false
-            MessageContent.ConversationDegradedMLS -> false
-            MessageContent.ConversationVerifiedMLS -> false
-            MessageContent.ConversationDegradedProteus -> false
-            MessageContent.ConversationVerifiedProteus -> false
-            is MessageContent.Composite -> true
-            is MessageContent.ButtonAction -> false
-            is MessageContent.ButtonActionConfirmation -> false
-            is MessageContent.MemberChange.FederationRemoved -> false
-            is MessageContent.FederationStopped.ConnectionRemoved -> false
-            is MessageContent.FederationStopped.Removed -> false
-            is MessageContent.ConversationProtocolChanged -> false
-            is MessageContent.ConversationProtocolChangedDuringACall -> false
-            is MessageContent.ConversationStartedUnverifiedWarning -> false
-            is MessageContent.Location -> true
-            is MessageContent.LegalHold -> false
-            is MessageContent.MemberChange.RemovedFromTeam -> false
-            is MessageContent.TeamMemberRemoved -> false
-            is MessageContent.DataTransfer -> false
-            is MessageContent.InCallEmoji -> false
-            is MessageContent.Multipart -> true
-            is MessageContent.History -> false
-            is MessageContent.NewConversationWithCellMessage -> false
-            is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
-            is MessageContent.ConversationAppsEnabledChanged -> false
         }
 
     @Suppress("ComplexMethod")

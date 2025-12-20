@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
@@ -57,6 +58,22 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
+
+    /**
+     * Updates the last_modified_date for multiple conversations based on the most recent
+     * qualifying message in each conversation.
+     *
+     * Only updates conversations where the most recent qualifying message is newer than
+     * the current last_modified_date.
+     *
+     * @param conversationIds List of conversation IDs to update
+     * @param qualifyingContentTypes List of content types that should affect conversation order
+     */
+    suspend fun updateConversationsModifiedDateFromMessages(
+        conversationIds: List<QualifiedIDEntity>,
+        qualifyingContentTypes: List<MessageEntity.ContentType>
+    )
+
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()

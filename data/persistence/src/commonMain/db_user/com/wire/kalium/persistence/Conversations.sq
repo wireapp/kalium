@@ -188,6 +188,22 @@ UPDATE Conversation
 SET last_modified_date = ?
 WHERE qualified_id = ?;
 
+updateConversationsModifiedDateFromMessages:
+UPDATE Conversation
+SET last_modified_date = (
+    SELECT MAX(creation_date)
+    FROM Message
+    WHERE Message.conversation_id = Conversation.qualified_id
+      AND Message.content_type IN ?
+)
+WHERE qualified_id IN ?
+  AND (
+    SELECT MAX(creation_date)
+    FROM Message
+    WHERE Message.conversation_id = Conversation.qualified_id
+      AND Message.content_type IN ?
+  ) > last_modified_date;
+
 getConversationLastReadDate:
 SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
 

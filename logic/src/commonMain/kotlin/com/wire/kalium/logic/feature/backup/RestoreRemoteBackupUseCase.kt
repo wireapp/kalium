@@ -32,10 +32,12 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.MessageContentOrderPolicy
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.serialization.SerializationException
 
@@ -60,6 +62,7 @@ internal class RestoreRemoteBackupUseCaseImpl(
     private val messageSyncApi: MessageSyncApi,
     private val backupRepository: BackupRepository,
     private val messageDAO: MessageDAO,
+    private val conversationDAO: ConversationDAO,
     private val serializer: KtxSerializer = KtxSerializer
 ) : RestoreRemoteBackupUseCase {
 
@@ -158,16 +161,37 @@ internal class RestoreRemoteBackupUseCaseImpl(
             return Either.Right(0)
         }
 
-        return backupRepository.insertMessages(newMessages).fold(
+        return backupRepository.insertMessages(newMessages).flatMap {
+            updateConversationDatesAfterRestore(newMessages)
+        }.fold(
             { failure ->
-                logger.e("Failed to insert messages: $failure")
+                logger.e("Failed to insert messages or update conversation dates: $failure")
                 Either.Left(failure)
             },
             {
-                logger.d("Successfully inserted ${newMessages.size} new messages")
+                logger.d("Successfully inserted ${newMessages.size} new messages and updated conversation dates")
                 Either.Right(newMessages.size)
             }
         )
+    }
+
+    private suspend fun updateConversationDatesAfterRestore(
+        messages: List<com.wire.kalium.logic.data.message.Message.Standalone>
+    ): Either<CoreFailure, Unit> {
+        val affectedConversationIds = messages
+            .map { it.conversationId.toDao() }
+            .distinct()
+
+        if (affectedConversationIds.isEmpty()) {
+            return Either.Right(Unit)
+        }
+
+        return wrapStorageRequest {
+            conversationDAO.updateConversationsModifiedDateFromMessages(
+                conversationIds = affectedConversationIds,
+                qualifyingContentTypes = MessageContentOrderPolicy.getQualifyingContentTypes()
+            )
+        }
     }
 
     private data class PageResult(
