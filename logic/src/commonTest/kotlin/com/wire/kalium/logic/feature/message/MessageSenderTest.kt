@@ -1085,6 +1085,7 @@ class MessageSenderTest {
         val mlsMissingUsersMessageRejectionHandler = FakeMLSMissingUsersRejectionHandler()
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
+        val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
 
         val testScope = TestScope()
 
@@ -1119,6 +1120,7 @@ class MessageSenderTest {
                 staleEpochVerifier = staleEpochVerifier,
                 transactionProvider = cryptoTransactionProvider,
                 mlsMissingUsersMessageRejectionHandler = mlsMissingUsersMessageRejectionHandler,
+                messageSyncTracker = messageSyncTracker,
                 scope = testScope
             )
         }

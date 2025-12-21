@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
+import com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
@@ -228,6 +229,7 @@ class ClearConversationContentHandlerTest {
 
         val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
         val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
+        val deleteRemoteSyncMessages = mock(DeleteRemoteSyncMessagesUseCase::class)
 
         suspend fun withMessageSentInSelfConversation(isSentInSelfConv: Boolean) = apply {
             coEvery { isMessageSentInSelfConversationUseCase(any()) }.returns(isSentInSelfConv)
@@ -239,11 +241,13 @@ class ClearConversationContentHandlerTest {
                 selfUserId = TestUser.USER_ID,
                 isMessageSentInSelfConversation = isMessageSentInSelfConversationUseCase,
                 clearLocalConversationAssets = clearConversationAssetsLocally,
-                deleteConversation = deleteConversation
+                deleteConversation = deleteConversation,
+                deleteRemoteSyncMessages = deleteRemoteSyncMessages
             )
             withDeletingConversationSucceeding()
             withClearContentSucceeding()
             coEvery { clearConversationAssetsLocally(any()) }.returns(Either.Right(Unit))
+            coEvery { deleteRemoteSyncMessages.invoke(any(), any()) }.returns(Either.Right(0))
             block()
 
             this to clearConversationContentHandler

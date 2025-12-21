@@ -96,6 +96,7 @@ class ClearConversationContentUseCaseTest {
             .withCurrentClientId(true)
             .withMessageSending(true)
             .withClearConversationAssetsLocally(false)
+            .withDeleteRemoteSyncMessages()
             .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
@@ -121,6 +122,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationAssetsLocally(true)
             .withMessageSending(true)
             .withCurrentClientId((true))
+            .withDeleteRemoteSyncMessages()
             .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
@@ -146,6 +148,7 @@ class ClearConversationContentUseCaseTest {
             .withCurrentClientId(true)
             .withMessageSending(true)
             .withClearConversationAssetsLocally(true)
+            .withDeleteRemoteSyncMessages()
             .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
@@ -174,6 +177,7 @@ class ClearConversationContentUseCaseTest {
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
         val messageSender = mock(MessageSender::class)
         val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
+        val deleteRemoteSyncMessages = mock(com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase::class)
 
         suspend fun withClearConversationContent(isSuccessFull: Boolean) = apply {
             coEvery {
@@ -207,13 +211,20 @@ class ClearConversationContentUseCaseTest {
             }.returns(Either.Right(conversationIds))
         }
 
+        suspend fun withDeleteRemoteSyncMessages(isSuccessful: Boolean = true) = apply {
+            coEvery {
+                deleteRemoteSyncMessages.invoke(any(), any())
+            }.returns(if (isSuccessful) Either.Right(0) else Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+        }
+
         fun arrange() = this to ClearConversationContentUseCaseImpl(
             conversationRepository,
             messageSender,
             TestUser.SELF.id,
             currentClientIdProvider,
             selfConversationIdProvider,
-            clearConversationAssetsLocally
+            clearConversationAssetsLocally,
+            deleteRemoteSyncMessages
         )
     }
 

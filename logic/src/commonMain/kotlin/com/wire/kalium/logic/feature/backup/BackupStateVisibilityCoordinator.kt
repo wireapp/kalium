@@ -38,6 +38,7 @@ import kotlin.time.Duration.Companion.minutes
  * 1. When app transitions to/from background
  * 2. After processing server events while in background (debounced by 5 minutes)
  */
+@io.mockative.Mockable
 interface BackupStateVisibilityCoordinator : EventProcessingCallback {
     /**
      * Starts observing app visibility and coordinating backup operations.

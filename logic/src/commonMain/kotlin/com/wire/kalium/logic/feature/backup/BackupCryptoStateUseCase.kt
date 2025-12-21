@@ -28,20 +28,44 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import okio.Buffer
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
+import okio.buffer
+
+/**
+ * Metadata included in the crypto state backup zip file.
+ */
+@Serializable
+data class CryptoStateBackupMetadata(
+    @SerialName("version")
+    val version: Int,
+    @SerialName("client_id")
+    val clientId: String
+) {
+    companion object {
+        const val CURRENT_VERSION = 1
+        const val METADATA_FILE_NAME = "metadata.json"
+    }
+}
 
 /**
  * Use case for backing up the client's cryptographic state to the remote backup service.
  * Zips the Proteus and MLS cryptographic directories and uploads them to the server.
  */
+@io.mockative.Mockable
 interface BackupCryptoStateUseCase {
     /**
      * Creates a backup of the client's cryptographic state and uploads it to the remote service
@@ -63,20 +87,21 @@ internal class BackupCryptoStateUseCaseImpl(
     private val logger = kaliumLogger.withTextTag("BackupCryptoState")
 
     override suspend fun invoke(lastUploadedHash: String?): Either<CoreFailure, String> {
-        // Validate preconditions before attempting backup
-        val validationResult = validatePreconditions()
-        if (validationResult != null) {
-            return validationResult
+        // Validate preconditions and get client ID
+        val clientIdValidation = validatePreconditionsAndGetClientId()
+        if (clientIdValidation is Either.Left) {
+            return clientIdValidation
         }
 
-        logger.i("Starting cryptographic state backup for user: ${selfUserId.value}")
+        val clientId = (clientIdValidation as Either.Right).value
+        logger.i("Starting cryptographic state backup for user: ${selfUserId.value}, client: ${clientId.value}")
 
         return try {
             // Create temporary zip file
             val tempZipPath = createTempZipFile()
 
-            // Zip crypto directories
-            zipCryptoDirectories(tempZipPath).flatMap { zipFile ->
+            // Zip crypto directories with metadata
+            zipCryptoDirectories(tempZipPath, clientId.value).flatMap { zipFile ->
                 // Calculate hash of the zip file
                 calculateHash(zipFile).flatMap { hash ->
                     // Check if hash matches last uploaded hash
@@ -102,9 +127,9 @@ internal class BackupCryptoStateUseCaseImpl(
 
     /**
      * Validates all preconditions required for crypto state backup.
-     * Returns null if all checks pass, or Either.Left with appropriate failure if any check fails.
+     * Returns Either.Right(ClientId) if all checks pass, or Either.Left with appropriate failure if any check fails.
      */
-    private suspend fun validatePreconditions(): Either<CoreFailure, String>? {
+    private suspend fun validatePreconditionsAndGetClientId(): Either<CoreFailure, ClientId> {
         // 1. Check if feature flag is enabled
         if (!kaliumConfigs.messageSynchronizationEnabled) {
             logger.d("Message synchronization disabled, skipping crypto state backup")
@@ -121,7 +146,7 @@ internal class BackupCryptoStateUseCaseImpl(
         val clientId = (clientIdResult as Either.Right).value
         logger.d("Client registered: ${clientId.value}")
 
-        // 3. Check if crypto folders exist and are not empty
+        // 3. Check if crypto folders exist
         val proteusPath = rootPathsProvider.rootProteusPath(selfUserId).toPath()
         val mlsPath = rootPathsProvider.rootMLSPath(selfUserId).toPath()
 
@@ -133,33 +158,11 @@ internal class BackupCryptoStateUseCaseImpl(
             return Either.Left(CoreFailure.Unknown(IllegalStateException("No crypto directories")))
         }
 
-        // Check if at least one directory has content
-        val hasProteusContent = proteusExists && isFolderNotEmpty(proteusPath)
-        val hasMlsContent = mlsExists && isFolderNotEmpty(mlsPath)
-
-        if (!hasProteusContent && !hasMlsContent) {
-            logger.d("Crypto directories are empty, skipping crypto state backup")
-            return Either.Left(CoreFailure.Unknown(IllegalStateException("Crypto directories empty")))
-        }
-
-        logger.d("Preconditions validated: Proteus=${hasProteusContent}, MLS=${hasMlsContent}")
-        return null // All checks passed
+        logger.d("Preconditions validated: Proteus exists=$proteusExists, MLS exists=$mlsExists")
+        return Either.Right(clientId) // All checks passed, return client ID
     }
 
-    /**
-     * Checks if a folder contains any files or subdirectories.
-     */
-    private suspend fun isFolderNotEmpty(path: Path): Boolean {
-        return try {
-            val entries = kaliumFileSystem.listDirectories(path)
-            entries.isNotEmpty()
-        } catch (e: Exception) {
-            logger.w("Failed to check folder content: ${e.message}")
-            false
-        }
-    }
-
-    private suspend fun zipCryptoDirectories(outputPath: Path): Either<CoreFailure, Path> {
+    private suspend fun zipCryptoDirectories(outputPath: Path, clientId: String): Either<CoreFailure, Path> {
         val proteusPath = rootPathsProvider.rootProteusPath(selfUserId).toPath()
         val mlsPath = rootPathsProvider.rootMLSPath(selfUserId).toPath()
 
@@ -181,7 +184,16 @@ internal class BackupCryptoStateUseCaseImpl(
             return Either.Left(CoreFailure.Unknown(IllegalStateException("No crypto data to backup")))
         }
 
-        logger.d("Zipping ${filesToZip.size} crypto files")
+        // Add metadata JSON file to the zip
+        val metadata = CryptoStateBackupMetadata(
+            version = CryptoStateBackupMetadata.CURRENT_VERSION,
+            clientId = clientId
+        )
+        val metadataJson = Json.encodeToString(metadata)
+        val metadataSource = Buffer().writeUtf8(metadataJson)
+        filesToZip.add(metadataSource to CryptoStateBackupMetadata.METADATA_FILE_NAME)
+
+        logger.d("Zipping ${filesToZip.size} crypto files (including metadata)")
 
         // Create zip using existing utility
         return kaliumFileSystem.sink(outputPath).use { sink ->
@@ -197,21 +209,38 @@ internal class BackupCryptoStateUseCaseImpl(
         prefix: String,
         output: MutableList<Pair<Source, String>>
     ) {
-        val entries = kaliumFileSystem.listDirectories(directory)
+        try {
+            // Use kaliumFileSystem.listDirectories which actually lists all entries (despite the name)
+            val entries = kaliumFileSystem.listDirectories(directory)
 
-        entries.forEach { entry ->
-            val metadata = okio.FileSystem.SYSTEM.metadata(entry)
-            val fileName = entry.name
+            entries.forEach { entry ->
+                val fileName = entry.name
 
-            if (metadata.isDirectory) {
-                // Recursively collect from subdirectory
-                collectFilesRecursively(entry, "$prefix/$fileName", output)
-            } else {
-                // Add file to output
-                val source = kaliumFileSystem.source(entry)
-                val relativeName = "$prefix/$fileName"
-                output.add(source to relativeName)
+                // Try to determine if it's a directory by attempting to list its contents
+                val isDirectory = try {
+                    kaliumFileSystem.listDirectories(entry)
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+
+                if (!isDirectory) {
+                    // It's a file - add it to output
+                    try {
+                        val source = kaliumFileSystem.source(entry)
+                        val relativeName = "$prefix/$fileName"
+                        output.add(source to relativeName)
+                        logger.d("Collected file: $relativeName")
+                    } catch (e: Exception) {
+                        logger.w("Failed to read file $entry: ${e.message}")
+                    }
+                } else {
+                    // It's a directory - recurse into it
+                    collectFilesRecursively(entry, "$prefix/$fileName", output)
+                }
             }
+        } catch (e: Exception) {
+            logger.w("Failed to collect files from $directory: ${e.message}")
         }
     }
 
@@ -250,7 +279,7 @@ internal class BackupCryptoStateUseCaseImpl(
     private fun createTempZipFile(): Path {
         // Use KaliumFileSystem's cache path
         val cacheDir = kaliumFileSystem.rootCachePath
-        return cacheDir / "crypto_state_backup_${System.currentTimeMillis()}.zip"
+        return cacheDir / "crypto_state_backup.zip"
     }
 
     private fun cleanupTempFile(path: Path) {

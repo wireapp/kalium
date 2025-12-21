@@ -603,7 +603,7 @@ class MessageScope internal constructor(
         )
 
     val deleteRemoteSyncMessages: com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase
-        get() = com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase(
+        get() = com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCaseImpl(
             messageSyncApi = messageSyncApi,
             userId = selfUserId,
             isFeatureEnabled = messageSyncEnabled,

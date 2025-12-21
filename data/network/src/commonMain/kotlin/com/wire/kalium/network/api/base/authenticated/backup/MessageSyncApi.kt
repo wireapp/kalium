@@ -75,13 +75,13 @@ interface MessageSyncApi {
      * @param userId User ID to backup state for
      * @param backupDataSource Lazy source providing the zip file data
      * @param backupSize Size of the backup data in bytes
-     * @return Network response indicating upload success
+     * @return Network response indicating upload success (empty response body)
      */
     suspend fun uploadStateBackup(
         userId: String,
         backupDataSource: () -> Source,
         backupSize: Long
-    ): NetworkResponse<StateBackupUploadResponse>
+    ): NetworkResponse<Unit>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(

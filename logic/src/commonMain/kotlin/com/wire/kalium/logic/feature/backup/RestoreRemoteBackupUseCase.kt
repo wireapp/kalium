@@ -39,6 +39,7 @@ import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import io.mockative.Mockable
 import kotlinx.serialization.SerializationException
 
 private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
@@ -49,6 +50,7 @@ private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
 /**
  * Use case for restoring messages from a remote backup service
  */
+@Mockable
 interface RestoreRemoteBackupUseCase {
     /**
      * Restores messages from the remote backup service for the current user

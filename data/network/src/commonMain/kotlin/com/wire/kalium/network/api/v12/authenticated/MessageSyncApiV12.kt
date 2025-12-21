@@ -82,7 +82,7 @@ internal open class MessageSyncApiV12(
         userId: String,
         backupDataSource: () -> Source,
         backupSize: Long
-    ): NetworkResponse<StateBackupUploadResponse> =
+    ): NetworkResponse<Unit> =
         wrapRequest {
             httpClient.post("$backupServiceUrl/state") {
                 parameter("user_id", userId)

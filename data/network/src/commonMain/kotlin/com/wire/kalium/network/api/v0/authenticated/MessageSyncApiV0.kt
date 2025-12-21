@@ -50,6 +50,6 @@ internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
         userId: String,
         backupDataSource: () -> Source,
         backupSize: Long
-    ): NetworkResponse<StateBackupUploadResponse> =
+    ): NetworkResponse<Unit> =
         MessageSyncApi.getApiNotSupportError(::uploadStateBackup.name)
 }

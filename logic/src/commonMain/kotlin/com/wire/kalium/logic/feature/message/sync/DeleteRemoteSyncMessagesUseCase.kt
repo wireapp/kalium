@@ -26,20 +26,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
 
 /**
  * Use case for deleting messages from the remote message sync service.
  * This is used when clearing conversation content to ensure the remote
  * backup service also removes the messages.
  */
-class DeleteRemoteSyncMessagesUseCase internal constructor(
-    private val messageSyncApi: MessageSyncApi,
-    private val userId: UserId,
-    private val isFeatureEnabled: Boolean,
-    kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
-) {
-    private val logger = kaliumLogger.withTextTag("DeleteRemoteSyncMessagesUseCase")
-
+@Mockable
+interface DeleteRemoteSyncMessagesUseCase {
     /**
      * Deletes all messages for a specific conversation from the remote sync service
      * @param conversationId The conversation to delete messages from
@@ -49,6 +44,20 @@ class DeleteRemoteSyncMessagesUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         before: Long? = null
+    ): Either<CoreFailure, Int>
+}
+
+internal class DeleteRemoteSyncMessagesUseCaseImpl(
+    private val messageSyncApi: MessageSyncApi,
+    private val userId: UserId,
+    private val isFeatureEnabled: Boolean,
+    kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
+) : DeleteRemoteSyncMessagesUseCase {
+    private val logger = kaliumLogger.withTextTag("DeleteRemoteSyncMessagesUseCase")
+
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        before: Long?
     ): Either<CoreFailure, Int> {
         if (!isFeatureEnabled) {
             logger.d("Message sync feature is disabled, skipping remote deletion")
