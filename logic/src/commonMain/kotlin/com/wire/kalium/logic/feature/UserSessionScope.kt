@@ -1120,7 +1120,7 @@ public class UserSessionScope internal constructor(
         get() = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
     @Deprecated("Use syncStateObserver instead", ReplaceWith("syncStateObserver"))
-    internal val syncManager: SyncManager
+    public val syncManager: SyncManager
         get() = syncStateObserver
 
     internal val syncStateObserver: SyncStateObserver by lazy {

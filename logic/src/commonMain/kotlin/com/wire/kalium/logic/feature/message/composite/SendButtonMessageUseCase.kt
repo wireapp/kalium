@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -35,19 +34,22 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
+@InternalKaliumApi
 @Suppress("LongParameterList")
-internal class SendButtonMessageUseCase internal constructor(
+public class SendButtonMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -59,7 +61,7 @@ internal class SendButtonMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),

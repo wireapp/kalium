@@ -111,6 +111,7 @@ import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessSchedule
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -480,7 +481,7 @@ public class MessageScope internal constructor(
     public val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(transactionProvider, sessionResetSender, messageRepository)
 
-    internal val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
+    public val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
         get() = SendButtonActionConfirmationMessageUseCase(
             syncManager = syncManager,
             messageSender = messageSender,
@@ -498,7 +499,8 @@ public class MessageScope internal constructor(
             compositeMessageRepository = compositeMessageRepository
         )
 
-    internal val sendButtonMessage: SendButtonMessageUseCase
+    @OptIn(InternalKaliumApi::class)
+    public val sendButtonMessage: SendButtonMessageUseCase
         get() = SendButtonMessageUseCase(
             persistMessage = persistMessage,
             selfUserId = selfUserId,

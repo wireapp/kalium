@@ -361,9 +361,9 @@ public sealed interface CommonApiVersionType {
     public data class Valid(override val version: Int) : CommonApiVersionType
 
     public companion object {
-        internal const val NEW_API_VERSION_NUMBER = -1
-        internal const val UNKNOWN_API_VERSION_NUMBER = -2
-        internal const val MINIMUM_VALID_API_VERSION = 0
+        public const val NEW_API_VERSION_NUMBER: Int = -1
+        public const val UNKNOWN_API_VERSION_NUMBER: Int = -2
+        public const val MINIMUM_VALID_API_VERSION: Int = 0
     }
 }
 

@@ -130,7 +130,8 @@ public class DebugScope internal constructor(
     public val breakSession: BreakSessionUseCase
         get() = BreakSessionUseCaseImpl(transactionProvider)
 
-    internal val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
+    @OptIn(InternalKaliumApi::class)
+    public val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
         get() = SendBrokenAssetMessageUseCaseImpl(
             currentClientIdProvider,
             assetRepository,
@@ -140,7 +141,8 @@ public class DebugScope internal constructor(
             messageRepository
         )
 
-    internal val sendConfirmation: SendConfirmationUseCase
+    @OptIn(InternalKaliumApi::class)
+    public val sendConfirmation: SendConfirmationUseCase
         get() = SendConfirmationUseCase(
             currentClientIdProvider = currentClientIdProvider,
             slowSyncRepository = slowSyncRepository,
