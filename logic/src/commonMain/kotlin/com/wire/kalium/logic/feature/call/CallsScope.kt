@@ -116,7 +116,7 @@ public class CallsScope internal constructor(
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    internal val allCallsWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
+    public val allCallsWithSortedParticipants: ObserveEstablishedCallWithSortedParticipantsUseCase
         get() = ObserveEstablishedCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
 
     public val establishedCall: ObserveEstablishedCallsUseCase
@@ -209,9 +209,9 @@ public class CallsScope internal constructor(
     public val flipToFrontCamera: FlipToFrontCameraUseCase get() = FlipToFrontCameraUseCase(flowManagerService)
     public val flipToBackCamera: FlipToBackCameraUseCase get() = FlipToBackCameraUseCase(flowManagerService)
 
-    internal val setTestVideoType: SetTestVideoTypeUseCase get() = SetTestVideoTypeUseCase(callManager)
-    internal val setTestPreviewActive: SetTestPreviewActiveUseCase get() = SetTestPreviewActiveUseCase(callManager)
-    internal val setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase get() = SetTestRemoteVideoStatesUseCase(callManager)
+    public val setTestVideoType: SetTestVideoTypeUseCase get() = SetTestVideoTypeUseCase(callManager)
+    public val setTestPreviewActive: SetTestPreviewActiveUseCase get() = SetTestPreviewActiveUseCase(callManager)
+    public val setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase get() = SetTestRemoteVideoStatesUseCase(callManager)
 
     public val turnLoudSpeakerOff: TurnLoudSpeakerOffUseCase get() = TurnLoudSpeakerOffUseCase(mediaManagerService)
 

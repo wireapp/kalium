@@ -2187,6 +2187,7 @@ public class UserSessionScope internal constructor(
             users.serverLinks,
             fetchConversationUseCase,
             cryptoTransactionProvider,
+            client.refillKeyPackages,
             userScopedLogger,
         )
     }

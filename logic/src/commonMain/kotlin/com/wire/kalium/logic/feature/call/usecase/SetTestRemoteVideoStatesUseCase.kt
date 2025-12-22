@@ -25,11 +25,12 @@ import com.wire.kalium.logic.feature.call.CallManager
 /**
  * Forward the calling participants' video state to the calling test tool
  */
-internal class SetTestRemoteVideoStatesUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class SetTestRemoteVideoStatesUseCase internal constructor(
     private val callManager: Lazy<CallManager>
 ) {
 
-    internal suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         participants: List<Participant>
     ) {

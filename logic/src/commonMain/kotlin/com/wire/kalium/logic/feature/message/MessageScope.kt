@@ -388,7 +388,7 @@ public class MessageScope internal constructor(
             messageRepository
         )
 
-    internal val getRecentMessages: GetRecentMessagesUseCase
+    public val getRecentMessages: GetRecentMessagesUseCase
         get() = GetRecentMessagesUseCase(
             messageRepository,
             slowSyncRepository

@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
@@ -25,25 +28,33 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.event.EventGenerator
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCase
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -51,7 +62,6 @@ import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
@@ -59,7 +69,6 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
@@ -67,9 +76,13 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 
 /*
  * This scope can be used to test client behaviour. Debug functions are not needed for normal client activity.
@@ -105,11 +118,13 @@ public class DebugScope internal constructor(
     private val selfServerConfig: SelfServerConfigUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
-    internal val establishSession: EstablishSessionUseCase
+    @OptIn(InternalKaliumApi::class)
+    public val establishSession: EstablishSessionUseCase
         get() = EstablishSessionUseCaseImpl(sessionEstablisher, transactionProvider)
 
     public val breakSession: BreakSessionUseCase
@@ -263,4 +278,51 @@ public class DebugScope internal constructor(
 
     public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+
+    /**
+     * Refills MLS key packages on the backend.
+     * This is a debug utility that wraps the internal crypto transaction logic.
+     */
+    @OptIn(InternalKaliumApi::class)
+    public suspend fun refillKeyPackages(): Either<CoreFailure, Unit> {
+        return transactionProvider.transaction { transactionContext ->
+            transactionContext.wrapInMLSContext { mlsContext ->
+                when (val result = refillKeyPackagesUseCase(mlsContext)) {
+                    is RefillKeyPackagesResult.Success -> Either.Right(Unit)
+                    is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
+                }
+            }
+        }
+    }
+
+    /**
+     * Generates test events for debugging purposes.
+     * This is a debug utility that creates encrypted events between two clients.
+     *
+     * @param targetUserId The user ID to generate events for
+     * @param targetClientId The client ID to generate events for
+     * @param conversationId The conversation where events will be sent
+     * @param limit The number of events to generate
+     * @return A flow of generated event responses
+     */
+    @InternalKaliumApi
+    public suspend fun generateEvents(
+        targetUserId: UserId,
+        targetClientId: ClientId,
+        conversationId: ConversationId,
+        limit: Int
+    ): Flow<EventResponse> {
+        val selfClientId = currentClientIdProvider().getOrNull() ?: throw RuntimeException("No current client ID available")
+        val generator = EventGenerator(
+            selfClient = QualifiedClientID(
+                clientId = selfClientId,
+                userId = userId
+            ),
+            targetClient = QualifiedClientID(
+                clientId = targetClientId,
+                userId = targetUserId
+            )
+        )
+        return generator.generateEvents(transactionProvider, limit, conversationId)
+    }
 }

@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -31,16 +31,17 @@ import kotlinx.coroutines.flow.Flow
  * @see Conversation
  * @see ObserveConversationDetailsUseCase
  */
-internal class GetConversationsUseCase(
+// todo(interface). extract interface for use case
+public class GetConversationsUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {
 
-    internal sealed class Result {
-        internal data class Success(val convFlow: Flow<List<Conversation>>) : Result()
-        internal data class Failure(val storageFailure: StorageFailure) : Result()
+    public sealed class Result {
+        public data class Success(val convFlow: Flow<List<Conversation>>) : Result()
+        public data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
-    internal suspend operator fun invoke(): Result {
+    public suspend operator fun invoke(): Result {
         return conversationRepository.getConversationList().fold({
             Result.Failure(it)
         }, {

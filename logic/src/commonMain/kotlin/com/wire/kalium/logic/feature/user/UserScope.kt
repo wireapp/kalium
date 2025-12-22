@@ -78,7 +78,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCase
 import com.wire.kalium.logic.feature.personaltoteamaccount.CanMigrateFromPersonalToTeamUseCaseImpl
@@ -101,6 +100,7 @@ import com.wire.kalium.logic.sync.ForegroundActionsUseCase
 import com.wire.kalium.logic.sync.ForegroundActionsUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.CoroutineScope
@@ -246,7 +246,7 @@ public class UserScope internal constructor(
 
     public val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
 
-    internal val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase get() = updateSelfUserSupportedProtocolsUseCase
+    public val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase get() = updateSelfUserSupportedProtocolsUseCase
 
     internal val observeCertificateRevocationForSelfClient: ObserveCertificateRevocationForSelfClientUseCase
         get() = ObserveCertificateRevocationForSelfClientUseCaseImpl(

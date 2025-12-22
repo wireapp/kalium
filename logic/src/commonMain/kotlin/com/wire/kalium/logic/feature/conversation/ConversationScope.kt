@@ -146,7 +146,7 @@ public class ConversationScope internal constructor(
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
-    internal val getConversations: GetConversationsUseCase
+    public val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
 
     internal val getConversationDetails: GetConversationUseCase
