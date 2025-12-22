@@ -1,3 +1,4 @@
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
