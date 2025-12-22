@@ -21,11 +21,11 @@ package com.wire.kalium.logic.feature.message.sync
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
-import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
 
 /**
@@ -48,7 +48,7 @@ interface DeleteRemoteSyncMessagesUseCase {
 }
 
 internal class DeleteRemoteSyncMessagesUseCaseImpl(
-    private val messageSyncApi: MessageSyncApi,
+    private val messageSyncRepository: MessageSyncRepository,
     private val userId: UserId,
     private val isFeatureEnabled: Boolean,
     kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
@@ -67,22 +67,20 @@ internal class DeleteRemoteSyncMessagesUseCaseImpl(
         logger.i("Deleting remote sync messages for conversation: ${conversationId.toLogString()}")
 
         return try {
-            val response = messageSyncApi.deleteMessages(
+            messageSyncRepository.deleteMessages(
                 userId = userId.value,
                 conversationId = conversationId.toString(),
                 before = before
+            ).fold(
+                { networkFailure ->
+                    logger.w("Failed to delete remote sync messages: API error $networkFailure")
+                    Either.Left(networkFailure)
+                },
+                { response ->
+                    logger.i("Successfully deleted ${response.deletedCount} messages from remote sync")
+                    Either.Right(response.deletedCount)
+                }
             )
-
-            when (response) {
-                is NetworkResponse.Success -> {
-                    logger.i("Successfully deleted ${response.value.deletedCount} messages from remote sync")
-                    Either.Right(response.value.deletedCount)
-                }
-                is NetworkResponse.Error -> {
-                    logger.w("Failed to delete remote sync messages: API error ${response.kException.message}")
-                    Either.Left(NetworkFailure.ServerMiscommunication(response.kException))
-                }
-            }
         } catch (e: Exception) {
             logger.e("Exception during remote message deletion: ${e.message}", e)
             Either.Left(CoreFailure.Unknown(e))

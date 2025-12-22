@@ -39,6 +39,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
@@ -249,7 +250,7 @@ class DeleteMessageUseCaseTest {
         val assetRepository: AssetRepository = mock(AssetRepository::class)
         val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
         val deleteCellAssets: DeleteMessageAttachmentsUseCase = mock(DeleteMessageAttachmentsUseCase::class)
-        val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
+        val messageSyncTracker = mock(MessageSyncTracker::class)
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 

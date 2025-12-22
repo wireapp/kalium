@@ -83,6 +83,7 @@ import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -1172,6 +1173,7 @@ class ConversationRepositoryTest {
         private val messageDraftDAO = mock(MessageDraftDAO::class)
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
         val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
+        val conversationSyncDAO: ConversationSyncDAO = mock(ConversationSyncDAO::class)
 
         val conversationRepository =
             ConversationDataSource(
@@ -1184,7 +1186,8 @@ class ConversationRepositoryTest {
                 clientDao,
                 clientApi,
                 conversationMetaDataDAO,
-                metadataDAO
+                metadataDAO,
+                conversationSyncDAO
             )
 
         suspend fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {

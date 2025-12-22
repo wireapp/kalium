@@ -513,6 +513,7 @@ class SlowSyncWorkerTest {
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
         val restoreRemoteBackup = mock(com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase::class)
+        val restoreConversationsLastRead = mock(com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCase::class)
         val kaliumConfigs = com.wire.kalium.logic.featureFlags.KaliumConfigs(
             messageSynchronizationEnabled = false
         )
@@ -523,6 +524,9 @@ class SlowSyncWorkerTest {
                 withIsClientAsyncNotificationsCapableReturning(false)
                 withTransactionReturning(Either.Right(Unit))
                 coEvery { restoreRemoteBackup.invoke() }.returns(Either.Right(0))
+                coEvery { restoreConversationsLastRead.invoke() }.returns(
+                    com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadResult.NoDataFound
+                )
             }
         }
 
@@ -540,6 +544,7 @@ class SlowSyncWorkerTest {
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
             restoreRemoteBackup = restoreRemoteBackup,
+            restoreConversationsLastRead = restoreConversationsLastRead,
             kaliumConfigs = kaliumConfigs,
             transactionProvider = cryptoTransactionProvider
         )

@@ -69,6 +69,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.ConversationPersistenceApi
@@ -203,6 +204,10 @@ interface ConversationRepository {
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
+    suspend fun updateConversationsModifiedDateFromMessages(
+        conversationIds: List<QualifiedIDEntity>,
+        qualifyingContentTypes: List<MessageEntity.ContentType>
+    ): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: Set<Conversation.Access>,
@@ -607,6 +612,17 @@ internal class ConversationDataSource internal constructor(
         date: Instant
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationModifiedDate(qualifiedID.toDao(), date) }
+
+    override suspend fun updateConversationsModifiedDateFromMessages(
+        conversationIds: List<QualifiedIDEntity>,
+        qualifyingContentTypes: List<MessageEntity.ContentType>
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateConversationsModifiedDateFromMessages(
+                conversationIds = conversationIds,
+                qualifyingContentTypes = qualifyingContentTypes
+            )
+        }
 
     override suspend fun updateAccessInfo(
         conversationID: ConversationId,

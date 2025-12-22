@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.message.sync
 
 import com.wire.kalium.common.logger.kaliumLogger as defaultKaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.persistence.dao.message.MessageSyncDAO
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -51,7 +51,7 @@ interface DebouncedMessageSyncScheduler {
 }
 
 internal class DebouncedMessageSyncSchedulerImpl(
-    private val messageSyncDAO: MessageSyncDAO,
+    private val messageSyncRepository: MessageSyncRepository,
     private val syncMessagesUseCase: SyncMessagesUseCase,
     private val scope: CoroutineScope,
     private val debounceTime: Duration = 3.seconds,
@@ -76,7 +76,7 @@ internal class DebouncedMessageSyncSchedulerImpl(
         logger.i("Starting debounced message sync scheduler with ${debounceTime.inWholeSeconds}s debounce")
 
         observerJob = scope.launch {
-            messageSyncDAO.observePendingMessagesCount()
+            messageSyncRepository.observePendingMessagesCount()
                 .distinctUntilChanged() // Only emit when count actually changes
                 .filter { count -> count > 0 } // Only proceed if there are messages to sync
                 .debounce(debounceTime) // Wait for debounce period of inactivity

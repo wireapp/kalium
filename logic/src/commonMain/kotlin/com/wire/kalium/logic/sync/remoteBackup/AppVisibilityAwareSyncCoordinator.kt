@@ -16,11 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message.sync
+package com.wire.kalium.logic.sync.remoteBackup
 
 import com.wire.kalium.common.logger.kaliumLogger as defaultKaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncScheduler
+import com.wire.kalium.logic.feature.message.sync.SyncMessagesResult
+import com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.network.AppVisibilityObserver
 import kotlinx.coroutines.CoroutineScope

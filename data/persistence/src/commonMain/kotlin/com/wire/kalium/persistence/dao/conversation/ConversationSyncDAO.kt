@@ -19,7 +19,9 @@
 package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.mockative.Mockable
 
+@Mockable
 interface ConversationSyncDAO {
     /**
      * Upserts a conversation sync entry with the last read message ID.

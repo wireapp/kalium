@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
@@ -115,7 +116,7 @@ class PersistMessageUseCaseTest {
     private class Arrangement {
                 val messageRepository = mock(MessageRepository::class)
         val notificationEventsManager = mock(NotificationEventsManager::class)
-        val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
+        val messageSyncTracker = mock(MessageSyncTracker::class)
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,34 +16,37 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message.sync
+package com.wire.kalium.logic.sync.remoteBackup
 
 import com.wire.backup.data.BackupMessage
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
-import com.wire.kalium.persistence.dao.message.MessageSyncDAO
-import com.wire.kalium.persistence.dao.message.SyncOperationType
 import io.mockative.Mockable
-import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+/**
+ * Domain service for tracking message operations for remote synchronization.
+ * This is not a traditional use case, but rather a cross-cutting service
+ * that can be depended upon by use cases and other components.
+ */
 @Mockable
-interface MessageSyncTrackerUseCase {
+interface MessageSyncTracker {
     suspend fun trackMessageInsert(message: Message)
     suspend fun trackMessageDelete(conversationId: ConversationId, messageId: String)
     suspend fun trackMessageUpdate(conversationId: ConversationId, messageId: String)
 }
 
-internal class MessageSyncTrackerUseCaseImpl(
-    private val messageSyncDAO: MessageSyncDAO,
-    private val messageRepository: com.wire.kalium.logic.data.message.MessageRepository,
+internal class MessageSyncTrackerImpl(
+    private val messageSyncRepository: MessageSyncRepository,
+    private val messageRepository: MessageRepository,
     private val isFeatureEnabled: Boolean,
     kaliumLogger: KaliumLogger
-) : MessageSyncTrackerUseCase {
+) : MessageSyncTracker {
 
     companion object {
         private val json: Json = Json { ignoreUnknownKeys = true }
@@ -62,8 +65,8 @@ internal class MessageSyncTrackerUseCaseImpl(
 
             val payload = json.encodeToString<BackupMessage>(backupMessage)
 
-            messageSyncDAO.upsertMessageToSync(
-                conversationId = message.conversationId.toDao(),
+            messageSyncRepository.upsertMessageToSync(
+                conversationId = message.conversationId,
                 messageNonce = message.id,
                 timestamp = message.date,
                 payload = payload
@@ -79,8 +82,8 @@ internal class MessageSyncTrackerUseCaseImpl(
         if (!isFeatureEnabled) return
 
         try {
-            messageSyncDAO.markMessageForDeletion(
-                conversationId = conversationId.toDao(),
+            messageSyncRepository.markMessageForDeletion(
+                conversationId = conversationId,
                 messageNonce = messageId
             )
 
@@ -96,10 +99,10 @@ internal class MessageSyncTrackerUseCaseImpl(
         try {
             // Fetch the updated message from the repository
             when (val messageResult = messageRepository.getMessageById(conversationId, messageId)) {
-                is com.wire.kalium.common.functional.Either.Left -> {
+                is Either.Left -> {
                     logger.w("Failed to fetch updated message for tracking: ${messageResult.value}")
                 }
-                is com.wire.kalium.common.functional.Either.Right -> {
+                is Either.Right -> {
                     val message = messageResult.value
                     // Convert to BackupMessage
                     val backupMessage = message.toBackupMessage()
@@ -111,8 +114,8 @@ internal class MessageSyncTrackerUseCaseImpl(
                     val payload = json.encodeToString<BackupMessage>(backupMessage)
 
                     // UPSERT the sync record
-                    messageSyncDAO.upsertMessageToSync(
-                        conversationId = conversationId.toDao(),
+                    messageSyncRepository.upsertMessageToSync(
+                        conversationId = conversationId,
                         messageNonce = messageId,
                         timestamp = message.date,
                         payload = payload

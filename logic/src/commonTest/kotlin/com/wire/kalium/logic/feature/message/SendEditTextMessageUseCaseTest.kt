@@ -28,6 +28,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
@@ -126,7 +127,7 @@ class SendEditTextMessageUseCaseTest {
         val slowSyncRepository = mock(SlowSyncRepository::class)
         val messageSender = mock(MessageSender::class)
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
-        val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
+        val messageSyncTracker = mock(MessageSyncTracker::class)
 
         suspend fun withSendMessageSuccess() = apply {
             coEvery {

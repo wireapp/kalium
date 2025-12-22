@@ -211,11 +211,11 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
-import com.wire.kalium.logic.feature.backup.BackupCryptoStateUseCase
-import com.wire.kalium.logic.feature.backup.BackupCryptoStateUseCaseImpl
+import com.wire.kalium.logic.sync.remoteBackup.BackupCryptoStateUseCase
+import com.wire.kalium.logic.sync.remoteBackup.BackupCryptoStateUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
-import com.wire.kalium.logic.feature.backup.BackupStateVisibilityCoordinator
-import com.wire.kalium.logic.feature.backup.BackupStateVisibilityCoordinatorImpl
+import com.wire.kalium.logic.sync.remoteBackup.BackupStateVisibilityCoordinator
+import com.wire.kalium.logic.sync.remoteBackup.BackupStateVisibilityCoordinatorImpl
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
 import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase
 import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCaseImpl
@@ -323,8 +323,8 @@ import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsU
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
-import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
-import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCaseImpl
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTrackerImpl
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
@@ -685,7 +685,8 @@ class UserSessionScope internal constructor(
         certificatePinning = kaliumConfigs.certPinningConfig,
         mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
         mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
-        kaliumLogger = userScopedLogger
+        kaliumLogger = userScopedLogger,
+        remoteBackupURL = kaliumConfigs.remoteBackupURL
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
@@ -888,9 +889,9 @@ class UserSessionScope internal constructor(
         InMemoryIncrementalSyncRepository(userScopedLogger)
     }
 
-    private val messageSyncTracker: MessageSyncTrackerUseCase by lazy {
-        MessageSyncTrackerUseCaseImpl(
-            messageSyncDAO = userStorage.database.messageSyncDAO,
+    private val messageSyncTracker: MessageSyncTracker by lazy {
+        MessageSyncTrackerImpl(
+            messageSyncRepository = messageSyncRepository,
             messageRepository = messageRepository,
             isFeatureEnabled = kaliumConfigs.messageSynchronizationEnabled,
             kaliumLogger = userScopedLogger
@@ -1302,6 +1303,7 @@ class UserSessionScope internal constructor(
             fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver,
             restoreRemoteBackup,
+            messages.restoreConversationsLastRead,
             kaliumConfigs,
             cryptoTransactionProvider
         )
@@ -2066,13 +2068,20 @@ class UserSessionScope internal constructor(
             messageDAO = userStorage.database.messageDAO,
         )
 
+    private val messageSyncRepository: com.wire.kalium.logic.data.sync.MessageSyncRepository
+        get() = com.wire.kalium.logic.data.sync.MessageSyncDataSource(
+            messageSyncApi = authenticatedNetworkContainer.messageSyncApi,
+            messageSyncDAO = userStorage.database.messageSyncDAO,
+            conversationSyncDAO = userStorage.database.conversationSyncDAO
+        )
+
     private val restoreRemoteBackup: RestoreRemoteBackupUseCase
         get() = RestoreRemoteBackupUseCaseImpl(
             selfUserId = userId,
-            messageSyncApi = authenticatedNetworkContainer.messageSyncApi,
+            messageSyncRepository = messageSyncRepository,
             backupRepository = backupRepository,
-            messageDAO = userStorage.database.messageDAO,
-            conversationDAO = userStorage.database.conversationDAO
+            messageRepository = messageRepository,
+            conversationRepository = conversationRepository
         )
 
     private val backupCryptoState: BackupCryptoStateUseCase
@@ -2169,7 +2178,7 @@ class UserSessionScope internal constructor(
             userConfigRepository,
             cryptoTransactionProvider,
             isAllowedToUseAsyncNotifications,
-            authenticatedNetworkContainer.messageSyncApi,
+            messageSyncRepository,
             rootPathsProvider,
             kaliumFileSystem,
             kaliumConfigs
@@ -2303,9 +2312,7 @@ class UserSessionScope internal constructor(
             this,
             userScopedLogger,
             messageSyncTracker,
-            authenticatedNetworkContainer.messageSyncApi,
-            userStorage.database.messageSyncDAO,
-            userStorage.database.conversationSyncDAO,
+            messageSyncRepository,
             kaliumConfigs.messageSynchronizationEnabled,
             qualifiedIdMapper,
             appVisibilityObserver,

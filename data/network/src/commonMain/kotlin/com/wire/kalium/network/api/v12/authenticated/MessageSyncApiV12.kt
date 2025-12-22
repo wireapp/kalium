@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v12.authenticated
 
+import com.wire.kalium.network.api.model.ConversationsLastReadResponseDTO
 import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
@@ -47,7 +48,7 @@ import okio.buffer
 
 internal open class MessageSyncApiV12(
     private val httpClient: HttpClient,
-    private val backupServiceUrl: String = "https://replica.wdebug.link:4545"
+    private val backupServiceUrl: String
 ) : MessageSyncApiV11() {
 
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
@@ -124,6 +125,15 @@ internal open class MessageSyncApiV12(
         }
         NetworkResponse.Error(com.wire.kalium.network.exceptions.KaliumException.GenericError(unhandledException))
     }
+
+    override suspend fun fetchConversationsLastRead(
+        userId: String
+    ): NetworkResponse<ConversationsLastReadResponseDTO> =
+        wrapRequest {
+            httpClient.get("$backupServiceUrl/conversations-last-read") {
+                parameter("user_id", userId)
+            }
+        }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun handleStateBackupDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {

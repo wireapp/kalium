@@ -15,32 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
-
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContentOrderPolicy
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
-import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
-import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.message.MessageDAO
 import io.mockative.Mockable
-import kotlinx.serialization.SerializationException
 
 private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
     value = id,
@@ -61,11 +55,10 @@ interface RestoreRemoteBackupUseCase {
 
 internal class RestoreRemoteBackupUseCaseImpl(
     private val selfUserId: UserId,
-    private val messageSyncApi: MessageSyncApi,
+    private val messageSyncRepository: MessageSyncRepository,
     private val backupRepository: BackupRepository,
-    private val messageDAO: MessageDAO,
-    private val conversationDAO: ConversationDAO,
-    private val serializer: KtxSerializer = KtxSerializer
+    private val messageRepository: MessageRepository,
+    private val conversationRepository: ConversationRepository
 ) : RestoreRemoteBackupUseCase {
 
     private val logger by lazy {
@@ -100,17 +93,15 @@ internal class RestoreRemoteBackupUseCaseImpl(
     }
 
     private suspend fun fetchAndProcessPage(since: Long?): Either<CoreFailure, PageResult> {
-        return wrapApiRequest {
-            messageSyncApi.fetchMessages(
-                userId = selfUserId.value,
-                since = since,
-                conversationId = null,
-                order = "asc",
-                size = DEFAULT_PAGE_SIZE
-            )
-        }.flatMap { response ->
+        return messageSyncRepository.fetchMessages(
+            userId = selfUserId.value,
+            since = since,
+            conversationId = null,
+            order = "asc",
+            size = DEFAULT_PAGE_SIZE
+        ).flatMap { response ->
             processMessages(response.results.mapNotNull { result ->
-                parseBackupMessage(result.payload)
+                backupRepository.parseBackupMessage(result.payload)
             }).fold(
                 { failure -> Either.Left(failure) },
                 { restoredCount ->
@@ -121,18 +112,6 @@ internal class RestoreRemoteBackupUseCaseImpl(
         }
     }
 
-    private fun parseBackupMessage(payload: String): BackupMessage? {
-        return try {
-            serializer.json.decodeFromString<BackupMessage>(payload)
-        } catch (e: SerializationException) {
-            logger.w("Failed to parse BackupMessage from payload: ${e.message}")
-            null
-        } catch (e: Exception) {
-            logger.w("Unexpected error parsing BackupMessage: ${e.message}")
-            null
-        }
-    }
-
     private suspend fun processMessages(backupMessages: List<BackupMessage>): Either<CoreFailure, Int> {
         if (backupMessages.isEmpty()) {
             return Either.Right(0)
@@ -140,14 +119,12 @@ internal class RestoreRemoteBackupUseCaseImpl(
 
         // Filter out messages that already exist in the database
         val newMessages = backupMessages.mapNotNull { backupMessage ->
-            val messageExists = wrapStorageRequest {
-                messageDAO.getMessageById(
-                    id = backupMessage.id,
-                    conversationId = backupMessage.conversationId.toQualifiedId().toDao()
-                ) != null
-            }.fold(
-                { false }, // If there's an error, assume message doesn't exist
-                { it }     // Return the actual boolean result
+            val messageExists = messageRepository.getMessageById(
+                conversationId = backupMessage.conversationId.toQualifiedId(),
+                messageUuid = backupMessage.id
+            ).fold(
+                { false }, // If there's an error (including not found), assume message doesn't exist
+                { true }   // Message was found, so it exists
             )
 
             if (messageExists) {
@@ -187,13 +164,10 @@ internal class RestoreRemoteBackupUseCaseImpl(
         if (affectedConversationIds.isEmpty()) {
             return Either.Right(Unit)
         }
-
-        return wrapStorageRequest {
-            conversationDAO.updateConversationsModifiedDateFromMessages(
-                conversationIds = affectedConversationIds,
-                qualifyingContentTypes = MessageContentOrderPolicy.getQualifyingContentTypes()
-            )
-        }
+        return conversationRepository.updateConversationsModifiedDateFromMessages(
+            conversationIds = affectedConversationIds,
+            qualifyingContentTypes = MessageContentOrderPolicy.getQualifyingContentTypes()
+        )
     }
 
     private data class PageResult(

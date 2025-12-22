@@ -38,7 +38,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
@@ -61,7 +61,7 @@ class DeleteMessageUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val deleteAttachments: DeleteMessageAttachmentsUseCase,
-    private val messageSyncTracker: MessageSyncTrackerUseCase,
+    private val messageSyncTracker: MessageSyncTracker,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 

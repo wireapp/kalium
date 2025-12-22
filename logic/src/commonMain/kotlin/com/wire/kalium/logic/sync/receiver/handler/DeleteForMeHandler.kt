@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.functional.onSuccess
 import io.mockative.Mockable
@@ -39,7 +39,7 @@ internal interface DeleteForMeHandler {
 internal class DeleteForMeHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-    private val messageSyncTracker: MessageSyncTrackerUseCase
+    private val messageSyncTracker: MessageSyncTracker
 ) : DeleteForMeHandler {
 
     override suspend fun handle(

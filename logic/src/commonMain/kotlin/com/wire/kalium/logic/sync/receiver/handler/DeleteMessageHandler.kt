@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.common.functional.onSuccess
 import io.mockative.Mockable
 
@@ -42,7 +42,7 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private val assetRepository: AssetRepository,
     private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId,
-    private val messageSyncTracker: MessageSyncTrackerUseCase
+    private val messageSyncTracker: MessageSyncTracker
 ) : DeleteMessageHandler {
     override suspend fun invoke(
         content: MessageContent.DeleteMessage,

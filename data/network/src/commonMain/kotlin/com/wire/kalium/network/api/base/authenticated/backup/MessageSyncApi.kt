@@ -96,6 +96,15 @@ interface MessageSyncApi {
         tempFileSink: Sink
     ): NetworkResponse<Unit>
 
+    /**
+     * Fetches conversation last read data for the specified user
+     * @param userId User ID to fetch conversation last read data for
+     * @return Network response containing map of conversation IDs to last read message IDs
+     */
+    suspend fun fetchConversationsLastRead(
+        userId: String
+    ): NetworkResponse<com.wire.kalium.network.api.model.ConversationsLastReadResponseDTO>
+
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")

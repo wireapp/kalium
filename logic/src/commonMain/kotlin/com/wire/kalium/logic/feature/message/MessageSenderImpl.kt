@@ -58,6 +58,7 @@ import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageSender
@@ -87,7 +88,7 @@ internal class MessageSenderImpl internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val transactionProvider: CryptoTransactionProvider,
     private val mlsMissingUsersMessageRejectionHandler: MLSMissingUsersMessageRejectionHandler,
-    private val messageSyncTracker: com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase,
+    private val messageSyncTracker: MessageSyncTracker,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {

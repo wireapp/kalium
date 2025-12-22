@@ -66,6 +66,7 @@ import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -199,7 +200,7 @@ class DebugScope internal constructor(
             transactionProvider,
             mlsMissingUsersMessageRejectionHandlerProvider(),
             // No-op message sync tracker for debug scope
-            object : com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase {
+            object : MessageSyncTracker {
                 override suspend fun trackMessageInsert(message: com.wire.kalium.logic.data.message.Message) = Unit
                 override suspend fun trackMessageDelete(conversationId: com.wire.kalium.logic.data.id.ConversationId, messageId: String) = Unit
                 override suspend fun trackMessageUpdate(conversationId: com.wire.kalium.logic.data.id.ConversationId, messageId: String) = Unit

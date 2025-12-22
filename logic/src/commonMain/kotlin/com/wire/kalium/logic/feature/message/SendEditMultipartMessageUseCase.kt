@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
@@ -56,7 +57,7 @@ class SendEditMultipartMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val getMessageAttachments: GetMessageAttachmentsUseCase,
-    private val messageSyncTracker: com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase,
+    private val messageSyncTracker: MessageSyncTracker,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 

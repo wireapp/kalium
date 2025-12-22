@@ -56,7 +56,8 @@ data class KaliumConfigs(
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
     val messageSynchronizationEnabled: Boolean = false,
-    val cryptoStateBackupEnabled: Boolean = false
+    val cryptoStateBackupEnabled: Boolean = false,
+    val remoteBackupURL: String = ""
 )
 
 sealed interface BuildFileRestrictionState {

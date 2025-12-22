@@ -34,6 +34,7 @@ import com.wire.kalium.logic.fakes.sync.FakeSlowSyncRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
@@ -191,7 +192,7 @@ class SendEditMultipartMessageUseCaseTest {
             }
         }
 
-        private val messageSyncTracker = object : com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase {
+        private val messageSyncTracker = object : MessageSyncTracker {
             override suspend fun trackMessageInsert(message: Message) = Unit
             override suspend fun trackMessageDelete(conversationId: ConversationId, messageId: String) = Unit
             override suspend fun trackMessageUpdate(conversationId: ConversationId, messageId: String) = Unit

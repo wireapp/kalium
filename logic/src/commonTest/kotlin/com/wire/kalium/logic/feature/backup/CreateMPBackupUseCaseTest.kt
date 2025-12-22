@@ -131,6 +131,8 @@ class CreateMPBackupUseCaseTest {
             override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
+
+            override fun parseBackupMessage(payload: String): com.wire.backup.data.BackupMessage? = null
         }
 
         fun withMessages(messages: List<Message.Standalone>) = apply {

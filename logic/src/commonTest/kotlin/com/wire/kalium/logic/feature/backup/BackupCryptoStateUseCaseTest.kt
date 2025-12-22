@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.remoteBackup.BackupCryptoStateUseCase
+import com.wire.kalium.logic.sync.remoteBackup.BackupCryptoStateUseCaseImpl
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import io.mockative.any
@@ -35,7 +37,6 @@ import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import okio.Path
-import okio.Path.Companion.toPath
 import okio.buffer
 import kotlin.test.Test
 import kotlin.test.assertIs

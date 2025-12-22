@@ -18,17 +18,12 @@
 
 package com.wire.kalium.logic.feature.message.sync
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
-import com.wire.kalium.network.api.model.MessageSyncRequestDTO
-import com.wire.kalium.network.api.model.MessageSyncUpsertDTO
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.persistence.dao.message.SyncOperationType
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.message.MessageSyncDAO
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
+import com.wire.kalium.logic.data.sync.MessageSyncRequest
+import com.wire.kalium.logic.data.sync.MessageSyncUpsert
+import com.wire.kalium.logic.data.sync.SyncOperationType
 
 /**
  * Result of synchronizing messages to the backup service
@@ -45,12 +40,9 @@ sealed class SyncMessagesResult {
  * Use case for synchronizing pending messages to the backup service
  */
 class SyncMessagesUseCase internal constructor(
-    private val messageSyncDAO: MessageSyncDAO,
-    private val conversationSyncDAO: com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO,
-    private val messageSyncApi: MessageSyncApi,
+    private val messageSyncRepository: MessageSyncRepository,
     private val userId: com.wire.kalium.logic.data.user.UserId,
     private val isFeatureEnabled: Boolean,
-    private val qualifiedIdMapper: QualifiedIdMapper,
     kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
 ) {
 
@@ -65,10 +57,18 @@ class SyncMessagesUseCase internal constructor(
 
         return try {
             // Fetch messages to sync (limit 100)
-            val messagesToSync = messageSyncDAO.getMessagesToSync(limit = 100)
+            val messagesToSyncResult = messageSyncRepository.getMessagesToSync(limit = 100)
+            val messagesToSync = messagesToSyncResult.fold(
+                { return SyncMessagesResult.Failure(Exception("Failed to get messages to sync")) },
+                { it }
+            )
 
             // Fetch conversations with pending last read updates
-            val conversationsWithPendingSync = conversationSyncDAO.getConversationsWithPendingSync()
+            val conversationsWithPendingSyncResult = messageSyncRepository.getConversationsWithPendingSync()
+            val conversationsWithPendingSync = conversationsWithPendingSyncResult.fold(
+                { return SyncMessagesResult.Failure(Exception("Failed to get conversations pending sync")) },
+                { it }
+            )
 
             if (messagesToSync.isEmpty() && conversationsWithPendingSync.isEmpty()) {
                 logger.i("No messages or conversations to sync")
@@ -83,10 +83,10 @@ class SyncMessagesUseCase internal constructor(
 
             // Build upserts map: conversation ID -> list of upsert operations
             val upserts = upsertMessages
-                .groupBy { it.conversationId.toModel().toString() }
+                .groupBy { it.conversationId.toString() }
                 .mapValues { (_, entities) ->
                     entities.map { entity ->
-                        MessageSyncUpsertDTO(
+                        MessageSyncUpsert(
                             messageId = entity.messageNonce,
                             timestamp = entity.timestamp.toEpochMilliseconds(),
                             payload = entity.payload!! // Upserts always have payload
@@ -96,17 +96,17 @@ class SyncMessagesUseCase internal constructor(
 
             // Build deletions map: conversation ID -> list of message IDs
             val deletions = deleteMessages
-                .groupBy { it.conversationId.toModel().toString() }
+                .groupBy { it.conversationId.toString() }
                 .mapValues { (_, entities) ->
                     entities.map { it.messageNonce }
                 }
 
             // Build conversationsLastRead map: conversation ID -> last read message ID
             val conversationsLastRead = conversationsWithPendingSync.associate { conversation ->
-                conversation.conversationId.toModel().toString() to conversation.toUploadLastRead
+                conversation.conversationId.toString() to conversation.toUploadLastRead
             }
 
-            val request = MessageSyncRequestDTO(
+            val request = MessageSyncRequest(
                 userId = userId.value,
                 upserts = upserts,
                 deletions = deletions,
@@ -114,39 +114,28 @@ class SyncMessagesUseCase internal constructor(
             )
 
             // POST to API
-            // Handle response
-            when (val response = messageSyncApi.syncMessages(request)) {
-                is NetworkResponse.Success -> {
+            messageSyncRepository.syncMessages(request).fold(
+                { networkFailure ->
+                    logger.w("API failure: $networkFailure")
+                    SyncMessagesResult.ApiFailure(0, networkFailure.toString())
+                },
+                {
                     logger.i("Successfully synced ${messagesToSync.size} messages and ${conversationsWithPendingSync.size} conversation last reads")
 
-                    // Delete synced messages from database
-                    // Group messages by conversation ID to ensure precise deletion
-                    val messagesToDelete = messagesToSync.groupBy(
-                        keySelector = { it.conversationId },
-                        valueTransform = { it.messageNonce }
-                    )
-
-                    messageSyncDAO.deleteSyncedMessages(messagesToDelete)
+                    // Delete synced messages
+                    val messagesToDelete = messagesToSync
+                        .groupBy { it.conversationId }
+                        .mapValues { (_, entities) -> entities.map { it.messageNonce } }
+                    messageSyncRepository.deleteSyncedMessages(messagesToDelete)
 
                     // Mark conversations as uploaded
                     conversationsWithPendingSync.forEach { conversation ->
-                        conversationSyncDAO.markAsUploaded(conversation.conversationId)
+                        messageSyncRepository.markConversationLastReadAsUploaded(conversation.conversationId)
                     }
 
                     SyncMessagesResult.Success
                 }
-                is NetworkResponse.Error -> {
-                    val statusCode = when (val exception = response.kException) {
-                        is KaliumException.InvalidRequestError -> exception.errorResponse.code
-                        is KaliumException.ServerError -> exception.errorResponse.code
-                        is KaliumException.RedirectError -> exception.errorResponse.code
-                        else -> 0
-                    }
-                    val message = "HTTP $statusCode"
-                    logger.w("API failure - $message")
-                    SyncMessagesResult.ApiFailure(statusCode, message)
-                }
-            }
+            )
         } catch (e: Exception) {
             logger.e("Exception during sync: ${e.message}", e)
             SyncMessagesResult.Failure(e)

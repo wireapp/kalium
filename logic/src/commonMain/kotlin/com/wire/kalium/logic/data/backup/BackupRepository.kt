@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.data.backup
 
+import com.wire.backup.data.BackupMessage
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.message.Message
@@ -28,6 +30,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -37,6 +40,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerializationException
 
 @Mockable
 interface BackupRepository {
@@ -46,6 +50,13 @@ interface BackupRepository {
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
+
+    /**
+     * Parses a backup message from a JSON payload string
+     * @param payload The JSON string to parse
+     * @return BackupMessage if parsing succeeds, null if parsing fails
+     */
+    fun parseBackupMessage(payload: String): com.wire.backup.data.BackupMessage?
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 1000
@@ -115,6 +126,22 @@ internal class BackupDataSource(
             withUnreadEvents = false,
             checkAssetUpdate = false,
         )
+    }
+
+    override fun parseBackupMessage(payload: String): BackupMessage? {
+        return try {
+            KtxSerializer.json.decodeFromString<BackupMessage>(payload)
+        } catch (e: SerializationException) {
+            logger.w("Failed to parse BackupMessage from payload: ${e.message}")
+            null
+        } catch (e: Exception) {
+            logger.w("Unexpected error parsing BackupMessage: ${e.message}")
+            null
+        }
+    }
+
+    private companion object {
+        private val logger = kaliumLogger.withTextTag("BackupRepository")
     }
 }
 

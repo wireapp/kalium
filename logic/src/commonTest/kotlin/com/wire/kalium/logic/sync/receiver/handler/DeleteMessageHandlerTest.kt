@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
@@ -244,7 +245,7 @@ class DeleteMessageHandlerTest {
         AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
         NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
-        private val messageSyncTracker = mock(com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase::class)
+        private val messageSyncTracker = mock(MessageSyncTracker::class)
 
         fun arrange() = run {
             runBlocking { block() }

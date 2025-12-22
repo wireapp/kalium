@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
@@ -54,7 +55,7 @@ class SendEditTextMessageUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
-    private val messageSyncTracker: com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase,
+    private val messageSyncTracker: MessageSyncTracker,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 

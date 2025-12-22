@@ -15,28 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
-
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.sync.remoteBackup.CryptoStateBackupMetadata
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
-import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import okio.Path
 import okio.Path.Companion.toPath
@@ -79,7 +73,7 @@ interface DownloadAndRestoreCryptoStateUseCase {
 
 internal class DownloadAndRestoreCryptoStateUseCaseImpl(
     private val selfUserId: UserId,
-    private val messageSyncApi: MessageSyncApi,
+    private val messageSyncRepository: MessageSyncRepository,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
@@ -95,9 +89,8 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
 
         return try {
             // Download the backup
-            val downloadResult = wrapApiRequest {
-                val sink = kaliumFileSystem.sink(tempZipPath)
-                messageSyncApi.downloadStateBackup(selfUserId.value, sink)
+            val downloadResult = kaliumFileSystem.sink(tempZipPath).let { sink ->
+                messageSyncRepository.downloadStateBackup(selfUserId.value, sink)
             }
 
             val result: Either<CoreFailure, ClientId> = downloadResult.flatMap {

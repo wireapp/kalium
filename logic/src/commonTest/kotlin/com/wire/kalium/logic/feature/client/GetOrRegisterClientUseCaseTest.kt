@@ -28,8 +28,10 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.backup.DownloadAndRestoreCryptoStateUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import io.mockative.any
 import io.mockative.coEvery
@@ -191,6 +193,8 @@ class GetOrRegisterClientUseCaseTest {
         val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val verifyExistingClientUseCase = mock(VerifyExistingClientUseCase::class)
         val cachedClientIdClearer = mock(CachedClientIdClearer::class)
+        val downloadAndRestoreCryptoState = mock(DownloadAndRestoreCryptoStateUseCase::class)
+        val kaliumConfigs = KaliumConfigs()
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,
@@ -201,7 +205,9 @@ class GetOrRegisterClientUseCaseTest {
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
             cachedClientIdClearer,
-            syncFeatureConfigsUseCase
+            syncFeatureConfigsUseCase,
+            downloadAndRestoreCryptoState,
+            kaliumConfigs
         )
 
         suspend fun withSyncFeatureConfigResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {

@@ -97,7 +97,8 @@ import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCaseImpl
-import com.wire.kalium.logic.feature.message.sync.MessageSyncTrackerUseCase
+import com.wire.kalium.logic.sync.remoteBackup.MessageSyncTracker
+import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
@@ -115,6 +116,8 @@ import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.remoteBackup.AppVisibilityAwareSyncCoordinator
+import com.wire.kalium.logic.sync.remoteBackup.AppVisibilityAwareSyncCoordinatorImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
@@ -165,10 +168,8 @@ class MessageScope internal constructor(
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
-    private val messageSyncTracker: MessageSyncTrackerUseCase,
-    private val messageSyncApi: com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi,
-    private val messageSyncDAO: com.wire.kalium.persistence.dao.message.MessageSyncDAO,
-    private val conversationSyncDAO: com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO,
+    private val messageSyncTracker: MessageSyncTracker,
+    private val messageSyncRepository: MessageSyncRepository,
     private val messageSyncEnabled: Boolean,
     private val qualifiedIdMapper: com.wire.kalium.logic.data.id.QualifiedIdMapper,
     private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
@@ -595,9 +596,16 @@ class MessageScope internal constructor(
 
     val syncMessages: com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase
         get() = com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase(
-            messageSyncDAO = messageSyncDAO,
-            conversationSyncDAO = conversationSyncDAO,
-            messageSyncApi = messageSyncApi,
+            messageSyncRepository = messageSyncRepository,
+            userId = selfUserId,
+            isFeatureEnabled = messageSyncEnabled,
+            kaliumLogger = kaliumLogger
+        )
+
+    val restoreConversationsLastRead: com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCase
+        get() = com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCaseImpl(
+            messageSyncRepository = messageSyncRepository,
+            conversationRepository = conversationRepository,
             userId = selfUserId,
             isFeatureEnabled = messageSyncEnabled,
             qualifiedIdMapper = qualifiedIdMapper,
@@ -606,7 +614,7 @@ class MessageScope internal constructor(
 
     val deleteRemoteSyncMessages: com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCase
         get() = com.wire.kalium.logic.feature.message.sync.DeleteRemoteSyncMessagesUseCaseImpl(
-            messageSyncApi = messageSyncApi,
+            messageSyncRepository = messageSyncRepository,
             userId = selfUserId,
             isFeatureEnabled = messageSyncEnabled,
             kaliumLogger = kaliumLogger
@@ -614,7 +622,7 @@ class MessageScope internal constructor(
 
     val debouncedMessageSyncScheduler: com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncScheduler by lazy {
         com.wire.kalium.logic.feature.message.sync.DebouncedMessageSyncSchedulerImpl(
-            messageSyncDAO = messageSyncDAO,
+            messageSyncRepository = messageSyncRepository,
             syncMessagesUseCase = syncMessages,
             scope = scope,
             isFeatureEnabled = messageSyncEnabled,
@@ -622,8 +630,8 @@ class MessageScope internal constructor(
         )
     }
 
-    internal val appVisibilityAwareSyncCoordinator: com.wire.kalium.logic.feature.message.sync.AppVisibilityAwareSyncCoordinator by lazy {
-        com.wire.kalium.logic.feature.message.sync.AppVisibilityAwareSyncCoordinatorImpl(
+    internal val appVisibilityAwareSyncCoordinator: AppVisibilityAwareSyncCoordinator by lazy {
+        AppVisibilityAwareSyncCoordinatorImpl(
             appVisibilityObserver = appVisibilityObserver,
             syncMessagesUseCase = syncMessages,
             debouncedMessageSyncScheduler = debouncedMessageSyncScheduler,

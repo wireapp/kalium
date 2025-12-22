@@ -17,16 +17,15 @@
  */
 @file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly", "konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
-package com.wire.kalium.logic.feature.backup
+package com.wire.kalium.logic.sync.remoteBackup
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -35,15 +34,15 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
+import io.mockative.Mockable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.Buffer
+import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
-import okio.buffer
 
 /**
  * Metadata included in the crypto state backup zip file.
@@ -65,7 +64,7 @@ data class CryptoStateBackupMetadata(
  * Use case for backing up the client's cryptographic state to the remote backup service.
  * Zips the Proteus and MLS cryptographic directories and uploads them to the server.
  */
-@io.mockative.Mockable
+@Mockable
 interface BackupCryptoStateUseCase {
     /**
      * Creates a backup of the client's cryptographic state and uploads it to the remote service
@@ -130,9 +129,9 @@ internal class BackupCryptoStateUseCaseImpl(
      * Returns Either.Right(ClientId) if all checks pass, or Either.Left with appropriate failure if any check fails.
      */
     private suspend fun validatePreconditionsAndGetClientId(): Either<CoreFailure, ClientId> {
-        // 1. Check if feature flag is enabled
-        if (!kaliumConfigs.cryptoStateBackupEnabled) {
-            logger.d("Crypto state backup disabled, skipping crypto state backup")
+        // 1. Check if feature flag is enabled and remote backup URL is configured
+        if (!kaliumConfigs.cryptoStateBackupEnabled || kaliumConfigs.remoteBackupURL.isEmpty()) {
+            logger.d("Crypto state backup disabled or remote backup URL not configured, skipping crypto state backup")
             return Either.Left(CoreFailure.Unknown(IllegalStateException("Feature disabled")))
         }
 
@@ -246,11 +245,11 @@ internal class BackupCryptoStateUseCaseImpl(
 
     private fun calculateHash(zipPath: Path): Either<CoreFailure, String> {
         return try {
-            val hashBytes = com.wire.kalium.cryptography.utils.calcFileSHA256(
+            val hashBytes = calcFileSHA256(
                 kaliumFileSystem.source(zipPath)
             )
             if (hashBytes != null) {
-                val hash = hashBytes.joinToString("") { "%02x".format(it) }
+                val hash = hashBytes.toHexString()
                 Either.Right(hash)
             } else {
                 Either.Left(CoreFailure.Unknown(IllegalStateException("Failed to calculate hash")))
@@ -262,7 +261,7 @@ internal class BackupCryptoStateUseCaseImpl(
     }
 
     private suspend fun uploadZipFile(zipPath: Path): Either<CoreFailure, Unit> {
-        val fileSize = okio.FileSystem.SYSTEM.metadata(zipPath).size ?: 0L
+        val fileSize = FileSystem.SYSTEM.metadata(zipPath).size ?: 0L
         logger.i("Uploading crypto state backup: $fileSize bytes")
 
         return wrapApiRequest {

@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.backup
+package com.wire.kalium.logic.sync.remoteBackup
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger as defaultKaliumLogger
@@ -24,6 +24,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.incremental.EventProcessingCallback
 import com.wire.kalium.network.AppVisibilityObserver
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,7 +39,7 @@ import kotlin.time.Duration.Companion.minutes
  * 1. When app transitions to/from background
  * 2. After processing server events while in background (debounced by 5 minutes)
  */
-@io.mockative.Mockable
+@Mockable
 interface BackupStateVisibilityCoordinator : EventProcessingCallback {
     /**
      * Starts observing app visibility and coordinating backup operations.
@@ -79,8 +80,8 @@ internal class BackupStateVisibilityCoordinatorImpl(
     }
 
     override fun start() {
-        if (!kaliumConfigs.messageSynchronizationEnabled) {
-            logger.d("Message synchronization disabled, skipping backup state coordinator")
+        if (!kaliumConfigs.messageSynchronizationEnabled || kaliumConfigs.remoteBackupURL.isEmpty()) {
+            logger.d("Message synchronization disabled or remote backup URL not configured, skipping backup state coordinator")
             return
         }
 
@@ -110,7 +111,7 @@ internal class BackupStateVisibilityCoordinatorImpl(
     }
 
     override fun onEventProcessed() {
-        if (!kaliumConfigs.messageSynchronizationEnabled) {
+        if (!kaliumConfigs.messageSynchronizationEnabled || kaliumConfigs.remoteBackupURL.isEmpty()) {
             return
         }
 

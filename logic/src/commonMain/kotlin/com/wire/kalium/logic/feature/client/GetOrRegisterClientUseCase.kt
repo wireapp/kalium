@@ -117,9 +117,9 @@ internal class GetOrRegisterClientUseCaseImpl(
     }
 
     private suspend fun tryRestoreFromBackupOrRegister(registerClientParam: RegisterClientParam): RegisterClientResult {
-        // Check if message synchronization (backup) feature is enabled
-        if (kaliumConfigs.messageSynchronizationEnabled) {
-            kaliumLogger.i("Message synchronization enabled, checking for crypto state backup")
+        // Check if crypto state backup feature is enabled and remote backup URL is configured
+        if (kaliumConfigs.cryptoStateBackupEnabled && kaliumConfigs.remoteBackupURL.isNotEmpty()) {
+            kaliumLogger.i("Crypto state backup enabled and remote backup URL configured, checking for crypto state backup")
 
             when (val restoreResult = downloadAndRestoreCryptoState()) {
                 is DownloadAndRestoreCryptoStateResult.Success -> {
@@ -161,7 +161,7 @@ internal class GetOrRegisterClientUseCaseImpl(
                 }
             }
         } else {
-            kaliumLogger.d("Message synchronization disabled, proceeding with normal client registration")
+            kaliumLogger.d("Crypto state backup disabled, proceeding with normal client registration")
             // Feature disabled, proceed with normal registration
             return registerClient(registerClientParam)
         }
