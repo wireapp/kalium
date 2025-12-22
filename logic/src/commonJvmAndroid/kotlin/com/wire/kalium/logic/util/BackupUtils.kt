@@ -20,10 +20,10 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.web.KtxWebSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.DecodeSequenceMode
 import kotlinx.serialization.json.decodeToSequence
@@ -159,6 +159,6 @@ private fun readCompressedEntry(
 /**
  * Verification that the entry path is valid and does not contain any invalid characters leading to write in undesired directories.
  */
-private fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
+internal fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
 
 private const val BUFFER_SIZE = 8192L
