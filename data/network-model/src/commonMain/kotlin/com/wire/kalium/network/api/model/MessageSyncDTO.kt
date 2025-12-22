@@ -32,7 +32,7 @@ data class MessageSyncRequestDTO(
     val upserts: Map<String, List<MessageSyncUpsertDTO>>, // Map from conversation ID to list of upserts
     @SerialName("deletions")
     val deletions: Map<String, List<String>>, // Map from conversation ID to list of message IDs to delete
-    @SerialName("conversationsLastRead")
+    @SerialName("conversations_last_read")
     val conversationsLastRead: Map<String, String> = emptyMap() // Map from conversation ID to last read message ID
 )
 
@@ -91,4 +91,13 @@ data class DeleteMessagesResponseDTO(
 data class StateBackupUploadResponse(
     @SerialName("uploaded_at")
     val uploadedAt: String? = null
+)
+
+/**
+ * Response payload for fetching conversation last read data
+ */
+@Serializable
+data class ConversationsLastReadResponseDTO(
+    @SerialName("conversations_last_read")
+    val conversationsLastRead: Map<String, String> // Map from conversation ID to last read message ID
 )
