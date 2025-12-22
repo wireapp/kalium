@@ -55,6 +55,7 @@ data class KaliumConfigs(
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false
+    val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
 )
 
 sealed interface BuildFileRestrictionState {
