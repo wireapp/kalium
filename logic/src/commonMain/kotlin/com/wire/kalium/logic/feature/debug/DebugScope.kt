@@ -306,6 +306,7 @@ public class DebugScope internal constructor(
      * @return A flow of generated event responses
      */
     @InternalKaliumApi
+    @Suppress("TooGenericExceptionThrown")
     public suspend fun generateEvents(
         targetUserId: UserId,
         targetClientId: ClientId,
