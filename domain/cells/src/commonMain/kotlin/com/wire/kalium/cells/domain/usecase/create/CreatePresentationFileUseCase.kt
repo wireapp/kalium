@@ -15,20 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
+package com.wire.kalium.cells.domain.usecase.create
 
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
-public interface CreateFolderUseCase {
+/**
+ * Create a presentation file(.pptx) in the wire cell server.
+ */
+public interface CreatePresentationFileUseCase {
     public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
 }
 
-internal class CreateFolderUseCaseImpl(
+internal class CreatePresentationFileUseCaseImpl(
     private val cellsRepository: CellsRepository,
-) : CreateFolderUseCase {
+) : CreatePresentationFileUseCase {
     override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFolder(path).map { }
+        cellsRepository.createFile(path + EXTENSION, CONTENT_TYPE).map { }
+
+    companion object {
+        const val EXTENSION = ".pptx"
+        const val CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    }
 }

@@ -146,6 +146,10 @@ class FakeCellsRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun createFile(folderName: String): Either<NetworkFailure, List<CellNode>> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun moveNode(
         uuid: String,
         path: String,
