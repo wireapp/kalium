@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -51,7 +53,6 @@ import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
@@ -59,7 +60,6 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
@@ -67,6 +67,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -104,6 +105,7 @@ class DebugScope internal constructor(
     UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val selfServerConfig: SelfServerConfigUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -263,4 +265,13 @@ class DebugScope internal constructor(
 
     val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+
+    val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase by lazy {
+        RepairFaultyRemovalKeysUseCaseImpl(
+            selfUserId = userId,
+            conversationRepository = conversationRepository,
+            resetMLSConversation = resetMLSConversationUseCase,
+            transactionProvider = transactionProvider
+        )
+    }
 }

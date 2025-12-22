@@ -87,6 +87,8 @@ interface UserConfigDAO {
     suspend fun setWireCellsConfig(config: WireCellsConfigEntity)
     suspend fun removeWireCellsConfig()
     suspend fun getWireCellsConfig(): WireCellsConfigEntity?
+    suspend fun isMlsFaultyKeysRepairExecuted(): Boolean
+    suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean)
 }
 
 @Suppress("TooManyFunctions")
@@ -280,6 +282,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isAssetAuditLogEnabled(): Boolean =
         metadataDAO.valueByKey(ASSET_AUDIT_LOG_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun isMlsFaultyKeysRepairExecuted(): Boolean =
+        metadataDAO.valueByKey(MLS_FAULTY_CONVERSATIONS_REPAIRED)?.toBoolean() ?: false
+
+    override suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean) {
+        metadataDAO.insertValue(repaired.toString(), MLS_FAULTY_CONVERSATIONS_REPAIRED)
+    }
+
     override suspend fun setWireCellsConfig(config: WireCellsConfigEntity) {
         metadataDAO.putSerializable(WIRE_CELLS_CONFIG, config, WireCellsConfigEntity.serializer())
     }
@@ -320,5 +329,6 @@ internal class UserConfigDAOImpl internal constructor(
         private const val APPS_ENABLED_KEY = "apps_enabled"
         private const val ASSET_AUDIT_LOG_ENABLED = "asset_audit_log"
         private const val WIRE_CELLS_CONFIG = "wire_cells_config"
+        private const val MLS_FAULTY_CONVERSATIONS_REPAIRED = "mls_faulty_conversations_repaired"
     }
 }
