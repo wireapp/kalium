@@ -54,7 +54,7 @@ data class KaliumConfigs(
     val isMlsResetEnabled: Boolean = false,
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
-    val dbInvalidationControlEnabled: Boolean = false
+    val dbInvalidationControlEnabled: Boolean = false,
     val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
 )
 
