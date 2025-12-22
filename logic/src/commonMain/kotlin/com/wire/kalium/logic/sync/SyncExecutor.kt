@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 
 public abstract class SyncExecutor {
 
-    internal abstract fun startAndStopSyncAsNeeded()
+    public abstract fun startAndStopSyncAsNeeded()
 
     /**
      * Requests Sync to be performed, fetching new events, etc. bringing the user to an online status.

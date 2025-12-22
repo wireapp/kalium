@@ -66,7 +66,7 @@ public data class AccountTokens(
     val refreshToken: RefreshToken,
     val cookieLabel: String?
 ) {
-    internal constructor(
+    public constructor(
         userId: UserId,
         accessToken: String,
         refreshToken: String,
