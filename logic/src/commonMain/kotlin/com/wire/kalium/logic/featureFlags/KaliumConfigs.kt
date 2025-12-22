@@ -24,6 +24,7 @@ import com.wire.kalium.network.utils.TestRequestHandler
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
+@ConsistentCopyVisibility
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
@@ -55,10 +56,13 @@ data class KaliumConfigs(
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
-    val messageSynchronizationEnabled: Boolean = false,
-    val cryptoStateBackupEnabled: Boolean = false,
-    val remoteBackupURL: String = ""
-)
+    private val messageSynchronizationEnabledFlag: Boolean = false,
+    private val cryptoStateBackupEnabledFlag: Boolean = false,
+    val remoteBackupURL: String? = null
+) {
+    val messageSynchronizationEnabled = messageSynchronizationEnabledFlag && remoteBackupURL != null
+    val cryptoStateBackupEnabled = cryptoStateBackupEnabledFlag && remoteBackupURL != null
+}
 
 sealed interface BuildFileRestrictionState {
     data object NoRestriction : BuildFileRestrictionState

@@ -45,10 +45,11 @@ import kotlinx.coroutines.CancellationException
 import okio.Sink
 import okio.Source
 import okio.buffer
+import okio.use
 
 internal open class MessageSyncApiV12(
     private val httpClient: HttpClient,
-    private val backupServiceUrl: String
+    private val backupServiceUrl: String?
 ) : MessageSyncApiV11() {
 
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
@@ -139,7 +140,7 @@ internal open class MessageSyncApiV12(
     private suspend fun handleStateBackupDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {
         val channel = httpResponse.body<ByteReadChannel>()
         tempFileSink.buffer().use { bufferedSink ->
-            val array = ByteArray(DEFAULT_BUFFER_SIZE)
+            val array = ByteArray(16*1024)
             while (!channel.isClosedForRead) {
                 val read = channel.readAvailable(array, 0, array.size)
                 if (read <= 0) break

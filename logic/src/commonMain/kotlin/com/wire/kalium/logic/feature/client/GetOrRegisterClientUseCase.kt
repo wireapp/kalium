@@ -118,7 +118,7 @@ internal class GetOrRegisterClientUseCaseImpl(
 
     private suspend fun tryRestoreFromBackupOrRegister(registerClientParam: RegisterClientParam): RegisterClientResult {
         // Check if crypto state backup feature is enabled and remote backup URL is configured
-        if (kaliumConfigs.cryptoStateBackupEnabled && kaliumConfigs.remoteBackupURL.isNotEmpty()) {
+        if (kaliumConfigs.cryptoStateBackupEnabled) {
             kaliumLogger.i("Crypto state backup enabled and remote backup URL configured, checking for crypto state backup")
 
             when (val restoreResult = downloadAndRestoreCryptoState()) {

@@ -141,7 +141,7 @@ interface AuthenticatedNetworkContainer {
             mockEngine: HttpClientEngine?,
             mockWebSocketSession: WebSocketSession?,
             kaliumLogger: KaliumLogger,
-            remoteBackupURL: String = "",
+            remoteBackupURL: String?,
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)

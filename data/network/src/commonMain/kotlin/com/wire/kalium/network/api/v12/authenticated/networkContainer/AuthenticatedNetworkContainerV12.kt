@@ -88,7 +88,7 @@ internal class AuthenticatedNetworkContainerV12 internal constructor(
     mockEngine: HttpClientEngine?,
     mockWebSocketSession: WebSocketSession?,
     kaliumLogger: KaliumLogger,
-    private val remoteBackupURL: String = "",
+    private val remoteBackupURL: String?,
     engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),

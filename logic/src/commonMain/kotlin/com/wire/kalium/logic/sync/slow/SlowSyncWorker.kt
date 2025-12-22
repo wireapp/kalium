@@ -125,7 +125,7 @@ internal class SlowSyncWorkerImpl(
                     }
                 }
                 .continueWithStep(SlowSyncStep.RESTORE_REMOTE_BACKUP) {
-                    if (kaliumConfigs.messageSynchronizationEnabled && kaliumConfigs.remoteBackupURL.isNotEmpty()) {
+                    if (kaliumConfigs.messageSynchronizationEnabled) {
                         restoreRemoteBackup().map { restoredCount ->
                             logger.i("Restored $restoredCount messages from remote backup")
                         }
@@ -135,7 +135,7 @@ internal class SlowSyncWorkerImpl(
                     }
                 }
                 .continueWithStep(SlowSyncStep.RESTORE_CONVERSATIONS_LAST_READ) {
-                    if (kaliumConfigs.messageSynchronizationEnabled && kaliumConfigs.remoteBackupURL.isNotEmpty()) {
+                    if (kaliumConfigs.messageSynchronizationEnabled) {
                         when (val result = restoreConversationsLastRead()) {
                             is com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadResult.Success -> {
                                 logger.i("Restored last read status for ${result.conversationCount} conversations")

@@ -130,7 +130,7 @@ internal class BackupCryptoStateUseCaseImpl(
      */
     private suspend fun validatePreconditionsAndGetClientId(): Either<CoreFailure, ClientId> {
         // 1. Check if feature flag is enabled and remote backup URL is configured
-        if (!kaliumConfigs.cryptoStateBackupEnabled || kaliumConfigs.remoteBackupURL.isEmpty()) {
+        if (!kaliumConfigs.cryptoStateBackupEnabled) {
             logger.d("Crypto state backup disabled or remote backup URL not configured, skipping crypto state backup")
             return Either.Left(CoreFailure.Unknown(IllegalStateException("Feature disabled")))
         }

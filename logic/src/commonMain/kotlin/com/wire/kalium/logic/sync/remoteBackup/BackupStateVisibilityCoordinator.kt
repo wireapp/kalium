@@ -80,7 +80,7 @@ internal class BackupStateVisibilityCoordinatorImpl(
     }
 
     override fun start() {
-        if (!kaliumConfigs.messageSynchronizationEnabled || kaliumConfigs.remoteBackupURL.isEmpty()) {
+        if (!kaliumConfigs.messageSynchronizationEnabled) {
             logger.d("Message synchronization disabled or remote backup URL not configured, skipping backup state coordinator")
             return
         }
@@ -111,7 +111,7 @@ internal class BackupStateVisibilityCoordinatorImpl(
     }
 
     override fun onEventProcessed() {
-        if (!kaliumConfigs.messageSynchronizationEnabled || kaliumConfigs.remoteBackupURL.isEmpty()) {
+        if (!kaliumConfigs.messageSynchronizationEnabled) {
             return
         }
 
