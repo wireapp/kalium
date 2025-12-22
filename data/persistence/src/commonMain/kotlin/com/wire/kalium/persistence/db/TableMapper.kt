@@ -268,4 +268,8 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         timestampAdapter = InstantTypeAdapter
     )
+
+    val conversationsSynchronizationAdapter = com.wire.kalium.persistence.ConversationsSynchronization.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
 }

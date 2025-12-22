@@ -131,8 +131,8 @@ internal class BackupCryptoStateUseCaseImpl(
      */
     private suspend fun validatePreconditionsAndGetClientId(): Either<CoreFailure, ClientId> {
         // 1. Check if feature flag is enabled
-        if (!kaliumConfigs.messageSynchronizationEnabled) {
-            logger.d("Message synchronization disabled, skipping crypto state backup")
+        if (!kaliumConfigs.cryptoStateBackupEnabled) {
+            logger.d("Crypto state backup disabled, skipping crypto state backup")
             return Either.Left(CoreFailure.Unknown(IllegalStateException("Feature disabled")))
         }
 

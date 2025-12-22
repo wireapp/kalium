@@ -9,3 +9,11 @@ CREATE TABLE MessagesToSynchronize (
 
 CREATE INDEX idx_messages_to_sync_timestamp ON MessagesToSynchronize(timestamp ASC);
 CREATE INDEX idx_messages_to_sync_operation ON MessagesToSynchronize(operation);
+
+CREATE TABLE ConversationsSynchronization (
+    conversation_id TEXT NOT NULL PRIMARY KEY,
+    last_uploaded_last_read TEXT,
+    to_upload_last_read TEXT
+);
+
+CREATE INDEX idx_conversations_sync_to_upload ON ConversationsSynchronization(to_upload_last_read) WHERE to_upload_last_read IS NOT NULL;

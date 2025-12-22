@@ -1,0 +1,48 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
+CREATE TABLE ConversationsSynchronization (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    last_uploaded_last_read TEXT,
+    to_upload_last_read TEXT
+);
+
+CREATE INDEX idx_conversations_sync_to_upload ON ConversationsSynchronization(to_upload_last_read) WHERE to_upload_last_read IS NOT NULL;
+
+-- Upsert conversation sync entry
+-- Only sets to_upload_last_read if it's different from last_uploaded_last_read
+upsertConversationSync:
+INSERT INTO ConversationsSynchronization(conversation_id, last_uploaded_last_read, to_upload_last_read)
+VALUES(:conversationId, NULL, :lastReadMessageId)
+ON CONFLICT(conversation_id) DO UPDATE SET
+    to_upload_last_read = CASE
+        WHEN excluded.to_upload_last_read != ConversationsSynchronization.last_uploaded_last_read
+            THEN excluded.to_upload_last_read
+        ELSE ConversationsSynchronization.to_upload_last_read
+    END;
+
+-- Get conversations with pending last read updates
+getConversationsWithPendingSync:
+SELECT conversation_id, to_upload_last_read
+FROM ConversationsSynchronization
+WHERE to_upload_last_read IS NOT NULL;
+
+-- Mark last read as uploaded and clear pending
+markAsUploaded:
+UPDATE ConversationsSynchronization
+SET last_uploaded_last_read = to_upload_last_read,
+    to_upload_last_read = NULL
+WHERE conversation_id = :conversationId;
+
+-- Get sync status for a conversation
+getSyncStatusForConversation:
+SELECT * FROM ConversationsSynchronization
+WHERE conversation_id = :conversationId;
+
+-- Count conversations with pending sync
+countPendingSync:
+SELECT COUNT(*) FROM ConversationsSynchronization
+WHERE to_upload_last_read IS NOT NULL;
+
+-- Get all conversations sync data (for debugging)
+getAllConversationsSync:
+SELECT * FROM ConversationsSynchronization;

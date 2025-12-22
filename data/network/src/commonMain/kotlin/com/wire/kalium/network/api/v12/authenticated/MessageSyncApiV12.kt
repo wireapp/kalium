@@ -27,14 +27,23 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readAvailable
+import kotlinx.coroutines.CancellationException
+import okio.Sink
 import okio.Source
+import okio.buffer
 
 internal open class MessageSyncApiV12(
     private val httpClient: HttpClient,
@@ -95,4 +104,42 @@ internal open class MessageSyncApiV12(
                 )
             }
         }
+
+    override suspend fun downloadStateBackup(
+        userId: String,
+        tempFileSink: Sink
+    ): NetworkResponse<Unit> = runCatching {
+        httpClient.prepareGet("$backupServiceUrl/state") {
+            parameter("user_id", userId)
+        }.execute { httpResponse ->
+            if (httpResponse.status.isSuccess()) {
+                handleStateBackupDownload(httpResponse, tempFileSink)
+            } else {
+                wrapKaliumResponse { httpResponse }
+            }
+        }
+    }.getOrElse { unhandledException ->
+        if (unhandledException is CancellationException) {
+            throw unhandledException
+        }
+        NetworkResponse.Error(com.wire.kalium.network.exceptions.KaliumException.GenericError(unhandledException))
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun handleStateBackupDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {
+        val channel = httpResponse.body<ByteReadChannel>()
+        tempFileSink.buffer().use { bufferedSink ->
+            val array = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (!channel.isClosedForRead) {
+                val read = channel.readAvailable(array, 0, array.size)
+                if (read <= 0) break
+                bufferedSink.write(array, 0, read)
+            }
+        }
+        NetworkResponse.Success(Unit, httpResponse)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        NetworkResponse.Error(com.wire.kalium.network.exceptions.KaliumException.GenericError(e))
+    }
 }

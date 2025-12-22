@@ -57,6 +57,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationSyncDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
@@ -188,7 +190,8 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
-        MessagesToSynchronizeAdapter = TableMapper.messagesToSynchronizeAdapter
+        MessagesToSynchronizeAdapter = TableMapper.messagesToSynchronizeAdapter,
+        ConversationsSynchronizationAdapter = TableMapper.conversationsSynchronizationAdapter
     )
 
     init {
@@ -364,6 +367,13 @@ class UserDatabaseBuilder internal constructor(
     val conversationMetaDataDAO: ConversationMetaDataDAO
         get() = ConversationMetaDataDAOImpl(
             database.conversationMetadataQueries,
+            readDispatcher,
+            writeDispatcher
+        )
+
+    val conversationSyncDAO: ConversationSyncDAO
+        get() = ConversationSyncDAOImpl(
+            database.conversationsSynchronizationQueries,
             readDispatcher,
             writeDispatcher
         )

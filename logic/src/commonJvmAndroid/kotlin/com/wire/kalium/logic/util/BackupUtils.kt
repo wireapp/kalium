@@ -149,7 +149,16 @@ private fun readCompressedEntry(
 ): Long {
     var totalExtractedFilesSize = 0L
     val entryPathName = "$outputRootPath/${entry.name}"
-    val outputSink = fileSystem.sink(entryPathName.toPath().normalized())
+    val outputPath = entryPathName.toPath().normalized()
+
+    // Create parent directories if they don't exist
+    outputPath.parent?.let { parentDir ->
+        if (!fileSystem.exists(parentDir)) {
+            fileSystem.createDirectories(parentDir)
+        }
+    }
+
+    val outputSink = fileSystem.sink(outputPath)
     outputSink.buffer().outputStream().use { output ->
         totalExtractedFilesSize = zipInputStream.copyTo(output, BUFFER_SIZE.toInt())
     }

@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
 import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import okio.Sink
 import okio.Source
 
 internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
@@ -52,4 +53,10 @@ internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
         backupSize: Long
     ): NetworkResponse<Unit> =
         MessageSyncApi.getApiNotSupportError(::uploadStateBackup.name)
+
+    override suspend fun downloadStateBackup(
+        userId: String,
+        tempFileSink: Sink
+    ): NetworkResponse<Unit> =
+        MessageSyncApi.getApiNotSupportError(::downloadStateBackup.name)
 }

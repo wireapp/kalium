@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -36,7 +37,10 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.backup.DownloadAndRestoreCryptoStateUseCase
+import com.wire.kalium.logic.feature.backup.DownloadAndRestoreCryptoStateUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
@@ -46,8 +50,10 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
+import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
@@ -77,6 +83,10 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase,
+    private val messageSyncApi: MessageSyncApi,
+    private val rootPathsProvider: RootPathsProvider,
+    private val kaliumFileSystem: KaliumFileSystem,
+    private val kaliumConfigs: KaliumConfigs,
 ) {
 
     @OptIn(DelicateKaliumApi::class)
@@ -149,6 +159,14 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             getOrRegister
         )
 
+    internal val downloadAndRestoreCryptoState: DownloadAndRestoreCryptoStateUseCase
+        get() = DownloadAndRestoreCryptoStateUseCaseImpl(
+            selfUserId = selfUserId,
+            messageSyncApi = messageSyncApi,
+            rootPathsProvider = rootPathsProvider,
+            kaliumFileSystem = kaliumFileSystem
+        )
+
     val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(
             clientRepository,
@@ -159,7 +177,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
             cachedClientIdClearer,
-            syncFeatureConfigsUseCase
+            syncFeatureConfigsUseCase,
+            downloadAndRestoreCryptoState,
+            kaliumConfigs
         )
 
     val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCaseImpl(transactionProvider, preKeyRepository)

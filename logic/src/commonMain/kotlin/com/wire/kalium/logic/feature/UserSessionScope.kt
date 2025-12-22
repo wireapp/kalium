@@ -824,6 +824,7 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
             userStorage.database.metadataDAO,
+            userStorage.database.conversationSyncDAO,
         )
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
@@ -2167,7 +2168,11 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userConfigRepository,
             cryptoTransactionProvider,
-            isAllowedToUseAsyncNotifications
+            isAllowedToUseAsyncNotifications,
+            authenticatedNetworkContainer.messageSyncApi,
+            rootPathsProvider,
+            kaliumFileSystem,
+            kaliumConfigs
         )
     }
     val conversations: ConversationScope by lazy {
@@ -2300,6 +2305,7 @@ class UserSessionScope internal constructor(
             messageSyncTracker,
             authenticatedNetworkContainer.messageSyncApi,
             userStorage.database.messageSyncDAO,
+            userStorage.database.conversationSyncDAO,
             kaliumConfigs.messageSynchronizationEnabled,
             qualifiedIdMapper,
             appVisibilityObserver,

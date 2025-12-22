@@ -66,6 +66,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
@@ -368,6 +369,7 @@ internal class ConversationDataSource internal constructor(
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
     private val metadataDAO: MetadataDAO,
+    private val conversationSyncDAO: ConversationSyncDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -641,7 +643,14 @@ internal class ConversationDataSource internal constructor(
      * Update the conversation seen date, which is a date when the user sees the content of the conversation.
      */
     override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit> =
-        wrapStorageRequest { conversationDAO.updateConversationReadDate(qualifiedID.toDao(), date) }
+        wrapStorageRequest {
+            conversationDAO.updateConversationReadDate(qualifiedID.toDao(), date)
+            // Also upsert to sync table for server synchronization
+            conversationSyncDAO.upsertConversationSync(
+                conversationId = qualifiedID.toDao(),
+                lastReadMessageId = date.toEpochMilliseconds().toString()
+            )
+        }
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client

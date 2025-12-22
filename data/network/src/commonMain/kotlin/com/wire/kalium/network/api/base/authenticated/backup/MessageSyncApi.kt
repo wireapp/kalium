@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mockable
+import okio.Sink
 import okio.Source
 
 /**
@@ -81,6 +82,18 @@ interface MessageSyncApi {
         userId: String,
         backupDataSource: () -> Source,
         backupSize: Long
+    ): NetworkResponse<Unit>
+
+    /**
+     * Downloads the cryptographic state backup for the specified user
+     * @param userId User ID to download state backup for
+     * @param tempFileSink Sink to write the downloaded backup data (ZIP file)
+     * @return Network response indicating download success
+     *         Returns 404 if no backup exists for the user
+     */
+    suspend fun downloadStateBackup(
+        userId: String,
+        tempFileSink: Sink
     ): NetworkResponse<Unit>
 
     companion object {

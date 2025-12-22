@@ -31,7 +31,9 @@ data class MessageSyncRequestDTO(
     @SerialName("upserts")
     val upserts: Map<String, List<MessageSyncUpsertDTO>>, // Map from conversation ID to list of upserts
     @SerialName("deletions")
-    val deletions: Map<String, List<String>> // Map from conversation ID to list of message IDs to delete
+    val deletions: Map<String, List<String>>, // Map from conversation ID to list of message IDs to delete
+    @SerialName("conversationsLastRead")
+    val conversationsLastRead: Map<String, String> = emptyMap() // Map from conversation ID to last read message ID
 )
 
 /**

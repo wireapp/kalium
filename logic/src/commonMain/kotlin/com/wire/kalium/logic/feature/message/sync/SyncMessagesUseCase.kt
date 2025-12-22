@@ -46,6 +46,7 @@ sealed class SyncMessagesResult {
  */
 class SyncMessagesUseCase internal constructor(
     private val messageSyncDAO: MessageSyncDAO,
+    private val conversationSyncDAO: com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO,
     private val messageSyncApi: MessageSyncApi,
     private val userId: com.wire.kalium.logic.data.user.UserId,
     private val isFeatureEnabled: Boolean,
@@ -66,12 +67,15 @@ class SyncMessagesUseCase internal constructor(
             // Fetch messages to sync (limit 100)
             val messagesToSync = messageSyncDAO.getMessagesToSync(limit = 100)
 
-            if (messagesToSync.isEmpty()) {
-                logger.i("No messages to sync")
+            // Fetch conversations with pending last read updates
+            val conversationsWithPendingSync = conversationSyncDAO.getConversationsWithPendingSync()
+
+            if (messagesToSync.isEmpty() && conversationsWithPendingSync.isEmpty()) {
+                logger.i("No messages or conversations to sync")
                 return SyncMessagesResult.NothingToSync
             }
 
-            logger.i("Syncing ${messagesToSync.size} messages for user ${userId.value}")
+            logger.i("Syncing ${messagesToSync.size} messages and ${conversationsWithPendingSync.size} conversation last reads for user ${userId.value}")
 
             // Separate messages by operation type
             val upsertMessages = messagesToSync.filter { it.operation == SyncOperationType.UPSERT }
@@ -97,17 +101,23 @@ class SyncMessagesUseCase internal constructor(
                     entities.map { it.messageNonce }
                 }
 
+            // Build conversationsLastRead map: conversation ID -> last read message ID
+            val conversationsLastRead = conversationsWithPendingSync.associate { conversation ->
+                conversation.conversationId.toModel().toString() to conversation.toUploadLastRead
+            }
+
             val request = MessageSyncRequestDTO(
                 userId = userId.value,
                 upserts = upserts,
-                deletions = deletions
+                deletions = deletions,
+                conversationsLastRead = conversationsLastRead
             )
 
             // POST to API
             // Handle response
             when (val response = messageSyncApi.syncMessages(request)) {
                 is NetworkResponse.Success -> {
-                    logger.i("Successfully synced ${messagesToSync.size} messages")
+                    logger.i("Successfully synced ${messagesToSync.size} messages and ${conversationsWithPendingSync.size} conversation last reads")
 
                     // Delete synced messages from database
                     // Group messages by conversation ID to ensure precise deletion
@@ -117,6 +127,11 @@ class SyncMessagesUseCase internal constructor(
                     )
 
                     messageSyncDAO.deleteSyncedMessages(messagesToDelete)
+
+                    // Mark conversations as uploaded
+                    conversationsWithPendingSync.forEach { conversation ->
+                        conversationSyncDAO.markAsUploaded(conversation.conversationId)
+                    }
 
                     SyncMessagesResult.Success
                 }

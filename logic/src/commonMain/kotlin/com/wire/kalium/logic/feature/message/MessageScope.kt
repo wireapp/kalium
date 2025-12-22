@@ -168,6 +168,7 @@ class MessageScope internal constructor(
     private val messageSyncTracker: MessageSyncTrackerUseCase,
     private val messageSyncApi: com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi,
     private val messageSyncDAO: com.wire.kalium.persistence.dao.message.MessageSyncDAO,
+    private val conversationSyncDAO: com.wire.kalium.persistence.dao.conversation.ConversationSyncDAO,
     private val messageSyncEnabled: Boolean,
     private val qualifiedIdMapper: com.wire.kalium.logic.data.id.QualifiedIdMapper,
     private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
@@ -595,6 +596,7 @@ class MessageScope internal constructor(
     val syncMessages: com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase
         get() = com.wire.kalium.logic.feature.message.sync.SyncMessagesUseCase(
             messageSyncDAO = messageSyncDAO,
+            conversationSyncDAO = conversationSyncDAO,
             messageSyncApi = messageSyncApi,
             userId = selfUserId,
             isFeatureEnabled = messageSyncEnabled,
