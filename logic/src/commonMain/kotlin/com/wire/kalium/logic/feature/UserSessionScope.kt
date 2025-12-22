@@ -252,6 +252,7 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -1316,6 +1317,17 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    private val mlsFaultyKeysConversationsRepairUseCase: MLSFaultyKeysConversationsRepairUseCaseImpl by lazy {
+        MLSFaultyKeysConversationsRepairUseCaseImpl(
+            selfUserId = userId,
+            syncStateObserver = syncStateObserver,
+            kaliumConfigs = kaliumConfigs,
+            userConfigRepository = userConfigRepository,
+            repairFaultyRemovalKeys = debug.repairFaultyRemovalKeysUseCase,
+            kaliumLogger = userScopedLogger
+        )
+    }
+
     private val conversationsRecoveryManager: ConversationsRecoveryManager by lazy {
         ConversationsRecoveryManagerImpl(
             incrementalSyncRepository,
@@ -2186,6 +2198,7 @@ public class UserSessionScope internal constructor(
             updateSelfClientCapabilityToConsumableNotifications,
             users.serverLinks,
             fetchConversationUseCase,
+            resetMlsConversation,
             cryptoTransactionProvider,
             client.refillKeyPackages,
             userScopedLogger,
@@ -2648,6 +2661,10 @@ public class UserSessionScope internal constructor(
             if (isAllowedToUseAsyncNotifications()) {
                 updateSelfClientCapabilityToConsumableNotifications()
             }
+        }
+
+        launch {
+            mlsFaultyKeysConversationsRepairUseCase.invoke()
         }
 
         launch {

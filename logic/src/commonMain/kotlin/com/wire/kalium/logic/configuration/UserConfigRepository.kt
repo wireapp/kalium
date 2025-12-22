@@ -166,7 +166,8 @@ internal interface UserConfigRepository {
     suspend fun isAssetAuditLogEnabled(): Boolean
     suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
     suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
-
+    suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
+    suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -631,4 +632,8 @@ internal class UserConfigDataSource internal constructor(
         }
     }
 
+    override suspend fun isMLSFaultyKeysRepairExecuted(): Boolean = userConfigDAO.isMlsFaultyKeysRepairExecuted()
+    override suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.setMlsFaultyKeysRepairExecuted(repaired)
+    }
 }

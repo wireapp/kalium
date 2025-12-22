@@ -1,4 +1,3 @@
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -36,6 +35,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.event.EventGenerator
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
@@ -118,6 +118,7 @@ public class DebugScope internal constructor(
     UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val selfServerConfig: SelfServerConfigUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
     logger: KaliumLogger,
@@ -281,6 +282,15 @@ public class DebugScope internal constructor(
 
     public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+
+    public val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase by lazy {
+        RepairFaultyRemovalKeysUseCaseImpl(
+            selfUserId = userId,
+            conversationRepository = conversationRepository,
+            resetMLSConversation = resetMLSConversationUseCase,
+            transactionProvider = transactionProvider
+        )
+    }
 
     /**
      * Refills MLS key packages on the backend.
