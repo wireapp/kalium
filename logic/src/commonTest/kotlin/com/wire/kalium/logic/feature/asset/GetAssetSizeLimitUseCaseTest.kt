@@ -94,7 +94,7 @@ class GetAssetSizeLimitUseCaseTest {
 
         val assetLimit = getAssetSizeLimit(isImage)
         advanceUntilIdle()
-c
+
         assertEquals(assetLimit, ASSET_SIZE_TEAM_USER_LIMIT_BYTES)
         coVerify {
             arrangement.isSelfATeamMember.invoke()
