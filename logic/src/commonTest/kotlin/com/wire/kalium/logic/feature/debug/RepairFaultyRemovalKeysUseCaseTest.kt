@@ -45,7 +45,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndDomainIsNotTheSameAsUser_thenRepairNotNeeded() = runTest {
         val (arrangement, useCase) = Arrangement().arrange()
 
-        val result = useCase.invoke(TargetedRepairParam("wire.com", "somekey"))
+        val result = useCase.invoke(TargetedRepairParam("wire.com", listOf("somekey")))
 
         coVerify { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }.wasNotInvoked()
         assertEquals(RepairResult.RepairNotNeeded, result)
@@ -57,7 +57,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
             .arrange()
 
-        val result = useCase.invoke(TargetedRepairParam("domain", "somekey"))
+        val result = useCase.invoke(TargetedRepairParam("domain", listOf("somekey")))
 
         coVerify { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }.wasInvoked(exactly = 1)
         assertEquals(RepairResult.NoConversationsToRepair, result)
@@ -67,7 +67,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndConversationsFound_thenPerformRepair() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
-            .withGetExternalKeyForConversation(FAULTY_KEY)
+            .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .withResetMLSConversationResult(Unit.right())
             .arrange()
 
@@ -84,7 +84,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
     fun givenRepairFaultRemovalKeysUseCase_whenInvokedAndConversationsFoundAndFail_thenPerformRepairCountingFailure() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
-            .withGetExternalKeyForConversation(FAULTY_KEY)
+            .withGetExternalKeyForConversation(FAULTY_KEY.first())
             .withResetMLSConversationResult(CoreFailure.MissingClientRegistration.left())
             .arrange()
 
@@ -127,7 +127,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
         }
 
         companion object {
-            const val FAULTY_KEY = "16665373b6bf396f75914a0bed297d44"
+            val FAULTY_KEY = listOf("16665373b6bf396f75914a0bed297d44")
         }
     }
 }

@@ -52,6 +52,7 @@ data class KaliumConfigs(
     val maxRemoteSearchResultCount: Int = 30,
     val enableCalling: Boolean = true,
     val isMlsResetEnabled: Boolean = false,
+    val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
 )
 
 sealed interface BuildFileRestrictionState {
