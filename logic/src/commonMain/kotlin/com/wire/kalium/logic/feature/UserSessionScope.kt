@@ -2602,7 +2602,7 @@ public class UserSessionScope internal constructor(
             kaliumConfigs = kaliumConfigs,
         )
 
-    val longWork: LongWorkScope = LongWorkScope(
+    public val longWork: LongWorkScope = LongWorkScope(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
