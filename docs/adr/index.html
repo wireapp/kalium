@@ -1034,6 +1034,79 @@ WHERE
                 </div>
             </div>
             
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse6">Explicit API Mode Migration for Logic Module</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse6" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>Explicit API Mode Migration for Logic Module</h1>
+<p>Date: 2025-12-23</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>The Kalium logic module serves as the main SDK entry point that client applications interact with. Without explicit visibility modifiers, it was difficult to distinguish between public API surface (intended for consumers) and internal implementation details. This led to several issues:</p>
+<ol>
+<li><strong>Accidental API Exposure</strong>: Internal implementation classes and functions were inadvertently exposed to consumers, creating unintended API contracts</li>
+<li><strong>API Maintenance Burden</strong>: Changes to internal implementations could break consumers who were using APIs that were never intended to be public</li>
+<li><strong>Unclear API Boundaries</strong>: Developers couldn't easily distinguish between stable public APIs and internal utilities</li>
+<li><strong>cryptoTransactionProvider Leakage</strong>: Critical internal components like <code>CryptoTransactionProvider</code> were being directly accessed by sample applications, bypassing proper API abstractions</li>
+</ol>
+<p>Kotlin's <code>explicitApi()</code> mode enforces that all public declarations have explicit visibility modifiers and return types, forcing intentional decisions about API surface.</p>
+<h2>Decision</h2>
+<p>We enabled <code>explicitApi()</code> mode for the <code>:logic</code> module and adopted an <strong>internal-first migration strategy</strong>:</p>
+<ol>
+<li><strong>Mark Everything as Internal</strong>: Used automated scripts to add <code>internal</code> visibility modifiers to all declarations lacking explicit visibility (~3,449 declarations)</li>
+<li><strong>Fix Interface Members</strong>: Removed incorrectly added <code>internal</code> modifiers from interface members (1,278 instances), as they inherit visibility from the interface</li>
+<li><strong>Selective Public Exposure</strong>: Only made APIs <code>public</code> when consumer modules failed to compile, ensuring minimal API surface</li>
+<li><strong>Create Public Wrappers</strong>: For internal components that needed controlled access (like <code>cryptoTransactionProvider</code>), created public wrapper methods in appropriate scopes (e.g., <code>DebugScope.refillKeyPackages()</code>, <code>DebugScope.generateEvents()</code>)</li>
+</ol>
+<h3>Implementation Details</h3>
+<ul>
+<li><p>Created Python scripts for automated migration to handle:</p>
+<ul>
+<li>Adding <code>internal</code> modifiers while skipping <code>override</code> functions</li>
+<li>Removing invalid <code>internal</code> from interface members</li>
+<li>Preserving proper indentation and code structure</li>
+</ul>
+</li>
+<li><p>Used <code>@InternalKaliumApi</code> opt-in annotation for:</p>
+<ul>
+<li>Test code accessing internal APIs within the same module</li>
+<li>Debug utilities that need controlled internal access</li>
+<li>Explicitly marking intentionally exposed internal APIs</li>
+</ul>
+</li>
+</ul>
+<h2>Consequences</h2>
+<ul>
+<li><strong>Minimal Public API</strong>: Only APIs that are actually used by consumers are public</li>
+<li><strong>Clear API Boundaries</strong>: Developers can immediately distinguish public SDK APIs from internal implementation details</li>
+<li><strong>Prevented Leakage</strong>: Critical internal components like <code>CryptoTransactionProvider</code> are now properly encapsulated behind public wrappers</li>
+<li><strong>Better Encapsulation</strong>: Internal implementations can be refactored without breaking consumers</li>
+<li><strong>Improved Documentation</strong>: The public API surface is now clearly defined and easier to document</li>
+<li><strong>Compiler-Enforced Contracts</strong>: Future additions must explicitly declare visibility, preventing accidental API exposure</li>
+</ul>
+<p>Costs:</p>
+<ul>
+<li><strong>Verbose Code</strong>: All declarations now require explicit visibility modifiers</li>
+</ul>
+<h3>Migration Notes</h3>
+<p>For consumers experiencing compilation errors:</p>
+<ol>
+<li>Check if the API should be public (common use case) - submit an issue/PR to expose it</li>
+<li>For sample/test code, use <code>@OptIn(InternalKaliumApi::class)</code> if the internal API is intentionally marked with <code>@InternalKaliumApi</code></li>
+</ol>
+</div>
+                </div>
+            </div>
+            
         </div>
         <footer>
             Generated with &lt;3 using ADR Viewer
