@@ -355,7 +355,13 @@ private class TestRepository : CellsRepository {
 
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
 
-    override suspend fun createFile(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
+    override suspend fun createFile(
+        folderName: String,
+        contentType: String,
+        templateUuid: String
+    ): Either<NetworkFailure, List<CellNode>> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
