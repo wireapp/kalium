@@ -121,6 +121,7 @@ class RestoreRemoteBackupUseCaseTest {
             .withUpdateConversationDatesReturning(Either.Right(Unit))
             .withGetConversationByIdReturning()
             .withUpdateConversationReadDateReturning(Either.Right(Unit))
+            .withPopulateUnreadEventsReturning(Either.Right(Unit))
             .arrange()
 
         // When
@@ -136,6 +137,10 @@ class RestoreRemoteBackupUseCaseTest {
 
         coVerify {
             arrangement.conversationRepository.updateConversationReadDate(any(), any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.conversationRepository.populateUnreadEventsForConversation(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -294,6 +299,7 @@ class RestoreRemoteBackupUseCaseTest {
             .withUpdateConversationDatesReturning(Either.Right(Unit))
             .withGetConversationByIdReturning()
             .withUpdateConversationReadDateReturning(Either.Right(Unit))
+            .withPopulateUnreadEventsReturning(Either.Right(Unit))
             .arrange()
 
         // When
@@ -308,6 +314,10 @@ class RestoreRemoteBackupUseCaseTest {
 
         coVerify {
             arrangement.conversationRepository.updateConversationReadDate(any(), any())
+        }.wasInvoked(exactly = twice)
+
+        coVerify {
+            arrangement.conversationRepository.populateUnreadEventsForConversation(any())
         }.wasInvoked(exactly = twice)
     }
 
@@ -413,6 +423,12 @@ class RestoreRemoteBackupUseCaseTest {
         suspend fun withUpdateConversationReadDateReturning(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
             coEvery {
                 conversationRepository.updateConversationReadDate(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withPopulateUnreadEventsReturning(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.populateUnreadEventsForConversation(any())
             }.returns(result)
         }
 

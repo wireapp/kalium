@@ -282,7 +282,7 @@ internal class MessageSyncDataSource(
         }
     }
 
-    private fun com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO.toDomain() = MessageSyncFetchResponse(
+    private fun MessageSyncFetchResponseDTO.toDomain() = MessageSyncFetchResponse(
         hasMore = hasMore,
         conversations = conversations.mapValues { (_, dto) ->
             ConversationMessages(

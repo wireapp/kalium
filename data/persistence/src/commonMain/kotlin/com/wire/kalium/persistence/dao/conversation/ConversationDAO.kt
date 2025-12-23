@@ -184,6 +184,12 @@ interface ConversationDAO {
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
     suspend fun hasConversationWithCell(): Boolean
     suspend fun updateReadDateAndGetHasUnreadEvents(conversationID: QualifiedIDEntity, date: Instant): Boolean
+
+    /**
+     * Populates unread events for messages in a conversation that are newer than the conversation's last read date.
+     * This is useful when restoring messages from backup where messages were inserted without unread events.
+     */
+    suspend fun populateUnreadEventsForConversation(conversationID: QualifiedIDEntity, selfUserId: UserIDEntity)
 }
 
 data class NameAndHandleEntity(

@@ -359,6 +359,12 @@ interface ConversationRepository {
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
     suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean>
+
+    /**
+     * Populates unread events for messages in a conversation that are newer than the conversation's last read date.
+     * This is useful when restoring messages from backup where messages were inserted without unread events.
+     */
+    suspend fun populateUnreadEventsForConversation(conversationId: ConversationId): Either<StorageFailure, Unit>
 }
 
 @OptIn(ConversationPersistenceApi::class)
@@ -867,6 +873,9 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean> =
         wrapStorageRequest { conversationDAO.updateReadDateAndGetHasUnreadEvents(qualifiedID.toDao(), date) }
+
+    override suspend fun populateUnreadEventsForConversation(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.populateUnreadEventsForConversation(conversationId.toDao(), selfUserId.toDao()) }
 
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,

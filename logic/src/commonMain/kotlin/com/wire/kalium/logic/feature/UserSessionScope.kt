@@ -557,7 +557,7 @@ class UserSessionScope internal constructor(
     authenticationScopeProvider: AuthenticationScopeProvider,
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
-    private val kaliumConfigs: KaliumConfigs,
+    val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
@@ -2074,7 +2074,7 @@ class UserSessionScope internal constructor(
             conversationSyncDAO = userStorage.database.conversationSyncDAO
         )
 
-    private val restoreRemoteBackup: RestoreRemoteBackupUseCase
+    val restoreRemoteBackup: RestoreRemoteBackupUseCase
         get() = RestoreRemoteBackupUseCaseImpl(
             selfUserId = userId,
             messageSyncRepository = messageSyncRepository,

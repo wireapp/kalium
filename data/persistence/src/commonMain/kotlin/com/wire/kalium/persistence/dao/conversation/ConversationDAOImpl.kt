@@ -692,4 +692,11 @@ internal class ConversationDAOImpl internal constructor(
             unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).executeAsOneOrNull() ?: false
         }
     }
+
+    override suspend fun populateUnreadEventsForConversation(
+        conversationID: QualifiedIDEntity,
+        selfUserId: UserIDEntity
+    ): Unit = withContext(writeDispatcher.value) {
+        unreadEventsQueries.populateUnreadEventsForConversation(conversationID, selfUserId)
+    }
 }

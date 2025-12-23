@@ -102,8 +102,6 @@ internal class RestoreRemoteBackupUseCaseImpl(
             paginationToken = paginationToken,
             size = DEFAULT_PAGE_SIZE
         ).flatMap { response ->
-            // Update conversation last_read timestamps
-            updateConversationLastRead(response)
 
             // Extract all messages from all conversations
             val allMessages = response.conversations.values.flatMap { conversationData ->
@@ -116,6 +114,9 @@ internal class RestoreRemoteBackupUseCaseImpl(
             }).fold(
                 { failure -> Either.Left(failure) },
                 { restoredCount ->
+                    // Update conversation last_read timestamps
+                    updateConversationLastRead(response)
+
                     Either.Right(PageResult(
                         restoredCount = restoredCount,
                         nextPaginationToken = response.paginationToken,
@@ -123,6 +124,8 @@ internal class RestoreRemoteBackupUseCaseImpl(
                     ))
                 }
             )
+
+
         }
     }
 
@@ -143,22 +146,28 @@ internal class RestoreRemoteBackupUseCaseImpl(
                         logger.w("Failed to get conversation $conversationIdStr: $failure")
                     },
                     { conversation ->
-                        // Only update if the backup timestamp is newer than the local one
-                        if (backupLastReadInstant > conversation.lastReadDate) {
-                            conversationRepository.updateConversationReadDate(
-                                qualifiedID = conversationId,
-                                date = backupLastReadInstant
-                            ).fold(
-                                { failure ->
-                                    logger.w("Failed to update last read for conversation $conversationIdStr: $failure")
-                                },
-                                {
-                                    logger.d("Updated last read for conversation $conversationIdStr to $backupLastReadInstant")
-                                }
-                            )
-                        } else {
-                            logger.d("Skipping last read update for conversation $conversationIdStr: backup timestamp $backupLastReadInstant is not newer than local ${conversation.lastReadDate}")
-                        }
+                        conversationRepository.updateConversationReadDate(
+                            qualifiedID = conversationId,
+                            date = backupLastReadInstant
+                        ).fold(
+                            { failure ->
+                                logger.w("Failed to update last read for conversation $conversationIdStr: $failure")
+                            },
+                            {
+                                logger.d("Updated last read for conversation $conversationIdStr to $backupLastReadInstant")
+
+                                // Populate unread events for messages that are newer than the last read date
+                                conversationRepository.populateUnreadEventsForConversation(conversationId).fold(
+                                    { failure ->
+                                        logger.w("Failed to populate unread events for conversation $conversationIdStr: $failure")
+                                    },
+                                    {
+                                        logger.d("Populated unread events for conversation $conversationIdStr")
+                                    }
+                                )
+                            }
+                        )
+
                     }
                 )
             }

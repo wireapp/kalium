@@ -58,3 +58,22 @@ getHasUnreadEventsForConversation:
 SELECT EXISTS(
     SELECT 1 FROM UnreadEvent WHERE conversation_id = ?
 );
+
+-- Populate unread events for messages newer than the conversation's last read date
+-- This is used when restoring messages from backup
+populateUnreadEventsForConversation:
+INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
+SELECT
+    m.id,
+    CASE
+        WHEN m.content_type = 'KNOCK' THEN 'KNOCK'
+        WHEN m.content_type = 'MISSED_CALL' THEN 'MISSED_CALL'
+        ELSE 'MESSAGE'
+    END,
+    m.conversation_id,
+    m.creation_date
+FROM Message m
+INNER JOIN Conversation c ON m.conversation_id = c.qualified_id
+WHERE m.conversation_id = ?
+  AND m.sender_user_id != ?
+  AND m.creation_date > c.last_read_date;
