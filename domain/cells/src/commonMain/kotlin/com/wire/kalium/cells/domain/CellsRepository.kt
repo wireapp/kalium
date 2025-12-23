@@ -64,7 +64,7 @@ internal interface CellsRepository {
     suspend fun updatePublicLinkPassword(linkUuid: String, password: String): Either<NetworkFailure, Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): Either<NetworkFailure, Unit>
     suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>>
-    suspend fun createFile(folderName: String, contentType: String): Either<NetworkFailure, List<CellNode>>
+    suspend fun createFile(folderName: String, contentType: String, templateUuid: String): Either<NetworkFailure, List<CellNode>>
     suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit>
     suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit>

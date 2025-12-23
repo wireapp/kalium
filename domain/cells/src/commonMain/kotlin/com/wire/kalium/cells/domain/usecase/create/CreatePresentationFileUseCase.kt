@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain.usecase.create
 
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCaseImpl.Companion.DOC_TEMPLATE_UUID
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -33,10 +34,15 @@ internal class CreatePresentationFileUseCaseImpl(
     private val cellsRepository: CellsRepository,
 ) : CreatePresentationFileUseCase {
     override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFile(path + EXTENSION, CONTENT_TYPE).map { }
+        cellsRepository.createFile(
+            folderName = path + EXTENSION,
+            contentType = CONTENT_TYPE,
+            templateUuid = PRESENTATION_TEMPLATE_UUID
+        ).map { }
 
     companion object {
         const val EXTENSION = ".pptx"
         const val CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        const val PRESENTATION_TEMPLATE_UUID = "03-Microsoft PowerPoint.pptx"
     }
 }

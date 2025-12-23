@@ -57,7 +57,7 @@ internal interface CellsApi {
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
 
     suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO>
-    suspend fun createFile(path: String, contentType: String): NetworkResponse<GetNodesResponseDTO>
+    suspend fun createFile(path: String, contentType: String, templateUuid: String): NetworkResponse<GetNodesResponseDTO>
     suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit>

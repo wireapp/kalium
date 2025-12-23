@@ -332,19 +332,21 @@ internal class CellsApiImpl(
         }.mapSuccess { response -> response.toDto() }
     }
 
-    override suspend fun createFile(path: String, contentType: String): NetworkResponse<GetNodesResponseDTO> = wrapCellsResponse {
-        nodeServiceApi.create(
-            RestCreateRequest(
-                inputs = listOf(
-                    RestIncomingNode(
-                        locator = RestNodeLocator(path = path),
-                        type = TreeNodeType.LEAF,
-                        contentType = contentType
+    override suspend fun createFile(path: String, contentType: String, templateUuid: String): NetworkResponse<GetNodesResponseDTO> =
+        wrapCellsResponse {
+            nodeServiceApi.create(
+                RestCreateRequest(
+                    inputs = listOf(
+                        RestIncomingNode(
+                            locator = RestNodeLocator(path = path),
+                            type = TreeNodeType.LEAF,
+                            contentType = contentType,
+                            templateUuid = templateUuid,
+                        )
                     )
                 )
             )
-        )
-    }.mapSuccess { response -> response.toDto() }
+        }.mapSuccess { response -> response.toDto() }
 
     override suspend fun moveNode(
         uuid: String,

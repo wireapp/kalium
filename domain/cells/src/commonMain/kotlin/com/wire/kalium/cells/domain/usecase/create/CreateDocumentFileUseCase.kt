@@ -33,10 +33,15 @@ internal class CreateDocumentFileUseCaseImpl(
     private val cellsRepository: CellsRepository,
 ) : CreateDocumentFileUseCase {
     override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFile(path + EXTENSION, CONTENT_TYPE).map { }
+        cellsRepository.createFile(
+            folderName = path + EXTENSION,
+            contentType = CONTENT_TYPE,
+            templateUuid = DOC_TEMPLATE_UUID
+        ).map { }
 
     companion object {
         const val EXTENSION = ".docx"
         const val CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        const val DOC_TEMPLATE_UUID = "01-Microsoft Word.docx"
     }
 }

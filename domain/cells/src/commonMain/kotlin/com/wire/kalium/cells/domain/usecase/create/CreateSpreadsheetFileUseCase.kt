@@ -33,10 +33,15 @@ internal class CreateSpreadsheetFileUseCaseImpl(
     private val cellsRepository: CellsRepository,
 ) : CreateSpreadsheetFileUseCase {
     override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFile(path + EXTENSION, CONTENT_TYPE).map { }
+        cellsRepository.createFile(
+            folderName = path + EXTENSION,
+            contentType = CONTENT_TYPE,
+            templateUuid = SPREADSHEET_TEMPLATE_UUID
+        ).map { }
 
     companion object {
         const val EXTENSION = ".xlsx"
         const val CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        const val SPREADSHEET_TEMPLATE_UUID = "02-Microsoft Excel.xlsx"
     }
 }
