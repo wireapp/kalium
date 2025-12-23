@@ -81,7 +81,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v6.0.0
+        uses: actions/download-artifact@v7.0.0
         continue-on-error: true
         with:
             name: test-results
