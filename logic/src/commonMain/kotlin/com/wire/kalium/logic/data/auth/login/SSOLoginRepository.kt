@@ -30,7 +30,7 @@ import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import io.mockative.Mockable
 
 @Mockable
-interface SSOLoginRepository {
+internal interface SSOLoginRepository {
 
     suspend fun initiate(
         uuid: String,
@@ -50,7 +50,7 @@ interface SSOLoginRepository {
     suspend fun domainLookup(domain: String): Either<NetworkFailure, DomainLookupResult>
 }
 
-class SSOLoginRepositoryImpl(
+internal class SSOLoginRepositoryImpl(
     private val ssoLogin: SSOLoginApi,
     private val domainLookup: DomainLookupApi
 ) : SSOLoginRepository {

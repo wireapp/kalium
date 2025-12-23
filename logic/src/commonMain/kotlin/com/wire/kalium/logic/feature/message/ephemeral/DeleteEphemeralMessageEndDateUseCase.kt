@@ -23,8 +23,8 @@ import io.mockative.Mockable
  * This use case deletes ephemeral [Message] that have an end date set and it has passed current time
  */
 @Mockable
-interface DeleteEphemeralMessagesAfterEndDateUseCase {
-    suspend operator fun invoke()
+public interface DeleteEphemeralMessagesAfterEndDateUseCase {
+    public suspend operator fun invoke()
 }
 
 internal class DeleteEphemeralMessagesAfterEndDateUseCaseImpl(

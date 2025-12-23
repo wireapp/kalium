@@ -27,11 +27,11 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import io.mockative.Mockable
 
 @Mockable
-interface FeatureConfigRepository {
+internal interface FeatureConfigRepository {
     suspend fun getFeatureConfigs(): Either<NetworkFailure, FeatureConfigModel>
 }
 
-class FeatureConfigDataSource(
+internal class FeatureConfigDataSource(
     private val featureConfigApi: FeatureConfigApi,
     private val featureConfigMapper: FeatureConfigMapper = MapperProvider.featureConfigMapper()
 ) : FeatureConfigRepository {

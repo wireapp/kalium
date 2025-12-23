@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.onEach
  * Gathers and processes IncrementalSync events.
  */
 @Mockable
-interface IncrementalSyncWorker {
+internal interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,
      * emitting the source of current events.

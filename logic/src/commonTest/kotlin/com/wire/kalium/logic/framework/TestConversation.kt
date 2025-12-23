@@ -58,7 +58,7 @@ import kotlinx.datetime.Instant
     "Data-mocks module should be used to share test mocks across modules.",
     ReplaceWith("com.wire.kalium.logic.data.MockConversation")
 )
-object TestConversation {
+internal object TestConversation {
     private const val conversationValue = "valueConvo"
     private const val conversationDomain = "domainConvo"
 

@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 
-interface MLSMissingUsersMessageRejectionHandler {
+internal interface MLSMissingUsersMessageRejectionHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,

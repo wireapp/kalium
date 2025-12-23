@@ -24,7 +24,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import io.mockative.Mockable
 
 @Mockable
-interface ConnectionStatusMapper {
+internal interface ConnectionStatusMapper {
     fun fromApiToDao(state: ConnectionStateDTO): ConnectionEntity.State
     fun fromDaoToApi(state: ConnectionEntity.State): ConnectionStateDTO?
     fun fromApiModel(state: ConnectionStateDTO): ConnectionState

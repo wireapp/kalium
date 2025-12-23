@@ -28,9 +28,9 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-class E2EIConfigHandler(private val userConfigRepository: UserConfigRepository) {
+internal class E2EIConfigHandler(private val userConfigRepository: UserConfigRepository) {
 
-    fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
+    internal fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
         setSettingsIfNeeded(e2eiConfig)
         return userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
     }

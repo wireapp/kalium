@@ -30,7 +30,7 @@ import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 
-interface CompositeMessageRepositoryArrangement {
+internal interface CompositeMessageRepositoryArrangement {
 
     val compositeMessageRepository: CompositeMessageRepository
 
@@ -48,7 +48,7 @@ interface CompositeMessageRepositoryArrangement {
     )
 }
 
-class CompositeMessageRepositoryArrangementImpl : CompositeMessageRepositoryArrangement {
+internal class CompositeMessageRepositoryArrangementImpl : CompositeMessageRepositoryArrangement {
 
     override val compositeMessageRepository: CompositeMessageRepository = mock(CompositeMessageRepository::class)
 

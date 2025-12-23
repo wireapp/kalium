@@ -37,7 +37,7 @@ import io.mockative.Mockable
  */
 
 @Mockable
-interface DeleteConversationUseCase {
+internal interface DeleteConversationUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 

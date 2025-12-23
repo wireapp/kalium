@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case observing statuses of assets when uploading and downloading.
  */
-interface ObserveAssetUploadStateUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+public interface ObserveAssetUploadStateUseCase {
+    public suspend operator fun invoke(): Flow<Boolean>
 }
 
 internal class ObserveAssetUploadStateUseCaseImpl(

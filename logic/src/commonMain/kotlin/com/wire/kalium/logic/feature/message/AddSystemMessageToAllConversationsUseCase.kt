@@ -31,11 +31,11 @@ import kotlinx.datetime.Clock
 /**
  * persist a local system message to all conversations
  */
-interface AddSystemMessageToAllConversationsUseCase {
+internal interface AddSystemMessageToAllConversationsUseCase {
     suspend operator fun invoke()
 }
 
-class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
+internal class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId
 ) : AddSystemMessageToAllConversationsUseCase {

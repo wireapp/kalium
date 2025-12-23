@@ -22,7 +22,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
 
 @Mockable
-interface KeyPackageLimitsProvider {
+internal interface KeyPackageLimitsProvider {
 
     fun needsRefill(keyPackageCount: Int): Boolean
 
@@ -30,7 +30,7 @@ interface KeyPackageLimitsProvider {
 
 }
 
-class KeyPackageLimitsProviderImpl(
+internal class KeyPackageLimitsProviderImpl(
     private val kaliumConfigs: KaliumConfigs
 ) : KeyPackageLimitsProvider {
 
@@ -46,7 +46,7 @@ class KeyPackageLimitsProviderImpl(
 
     override fun refillAmount() = keyPackageUploadLimit
 
-    companion object {
+    internal companion object {
         internal const val KEY_PACKAGE_LIMIT = 100
         internal const val KEY_PACKAGE_LIMIT_LOW = 10
         internal const val KEY_PACKAGE_THRESHOLD = 0.5F

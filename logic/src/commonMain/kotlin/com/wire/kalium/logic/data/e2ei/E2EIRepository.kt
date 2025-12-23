@@ -52,7 +52,7 @@ import io.mockative.Mockable
 import kotlinx.serialization.json.Json
 
 @Mockable
-interface E2EIRepository {
+internal interface E2EIRepository {
     suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
     suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit>
     suspend fun loadACMEDirectories(): Either<E2EIFailure, AcmeDirectory>

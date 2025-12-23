@@ -33,7 +33,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class IsEligibleToStartCallUseCaseTest {
+internal class IsEligibleToStartCallUseCaseTest {
 
         val userConfigRepository = mock(UserConfigRepository::class)
 

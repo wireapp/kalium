@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 @Mockable
-interface LogoutRepository {
+internal interface LogoutRepository {
 
     /**
      * Listen to a logout event.

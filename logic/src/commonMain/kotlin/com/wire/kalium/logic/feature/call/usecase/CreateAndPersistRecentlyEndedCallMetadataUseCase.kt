@@ -38,11 +38,11 @@ import kotlinx.coroutines.flow.first
  * a call.
  */
 @Mockable
-interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
+internal interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
     suspend operator fun invoke(conversationId: ConversationId, callEndedReason: Int)
 }
 
-class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
+internal class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val selfTeamIdProvider: SelfTeamIdProvider,

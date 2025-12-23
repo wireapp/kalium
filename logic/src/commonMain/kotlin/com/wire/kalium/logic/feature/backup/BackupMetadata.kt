@@ -24,7 +24,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Serializable
-data class BackupMetadata(
+internal data class BackupMetadata(
     @SerialName("platform")
     val platform: String,
     @SerialName("version")
@@ -39,4 +39,4 @@ data class BackupMetadata(
     override fun toString(): String = Json.encodeToString(this)
 }
 
-fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"
+internal fun BackupMetadata.isWebBackup(): Boolean = platform == "Web"

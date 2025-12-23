@@ -41,11 +41,11 @@ import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("TooManyFunctions")
-class ClientMapper(
+internal class ClientMapper(
     private val preyKeyMapper: PreKeyMapper
 ) {
 
-    fun toRegisterClientRequest(
+    internal fun toRegisterClientRequest(
         clientConfig: ClientConfig,
         param: RegisterClientParameters,
     ): RegisterClientRequest = RegisterClientRequest(
@@ -61,14 +61,14 @@ class ClientMapper(
         secondFactorVerificationCode = param.secondFactorVerificationCode,
     )
 
-    fun toUpdateClientCapabilitiesRequest(
+    internal fun toUpdateClientCapabilitiesRequest(
         updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
     ): UpdateClientCapabilitiesRequest = UpdateClientCapabilitiesRequest(
         capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) },
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
-    fun fromClientDto(client: ClientDTO): Client = Client(
+    internal fun fromClientDto(client: ClientDTO): Client = Client(
         id = ClientId(client.clientId),
         type = fromClientTypeDTO(client.type),
         registrationTime = Instant.parse(client.registrationTime),
@@ -83,7 +83,7 @@ class ClientMapper(
         isAsyncNotificationsCapable = client.capabilities.contains(ClientCapabilityDTO.ConsumableNotifications)
     )
 
-    fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
+    internal fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
         Client(
             id = ClientId(id),
             type = clientType?.let { fromClientTypeEntity(it) },
@@ -100,7 +100,7 @@ class ClientMapper(
         )
     }
 
-    fun fromNewClientEntity(clientEntity: NewClientEntity): Client = with(clientEntity) {
+    internal fun fromNewClientEntity(clientEntity: NewClientEntity): Client = with(clientEntity) {
         Client(
             id = ClientId(id),
             type = null,
@@ -117,7 +117,7 @@ class ClientMapper(
         )
     }
 
-    fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
+    internal fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
         simpleClientResponse.map {
             with(it) {
                 InsertClientParam(
@@ -136,7 +136,7 @@ class ClientMapper(
             }
         }
 
-    fun toInsertClientParam(client: ClientDTO, userIdDTO: UserIdDTO): InsertClientParam =
+    internal fun toInsertClientParam(client: ClientDTO, userIdDTO: UserIdDTO): InsertClientParam =
         with(client) {
             InsertClientParam(
                 userId = userIdDTO.toDao(),
@@ -153,7 +153,7 @@ class ClientMapper(
             )
         }
 
-    fun toInsertClientParam(userId: UserId, clientId: List<ClientId>): List<InsertClientParam> =
+    internal fun toInsertClientParam(userId: UserId, clientId: List<ClientId>): List<InsertClientParam> =
         clientId.map {
             InsertClientParam(
                 userId = userId.toDao(),
@@ -170,7 +170,7 @@ class ClientMapper(
             )
         }
 
-    fun toInsertClientParam(userId: UserId, event: Event.User.NewClient): InsertClientParam =
+    internal fun toInsertClientParam(userId: UserId, event: Event.User.NewClient): InsertClientParam =
         InsertClientParam(
             userId = userId.toDao(),
             id = event.client.id.value,
@@ -215,7 +215,7 @@ class ClientMapper(
         is ClientCapabilityDTO.Unknown -> ClientCapability.Unknown(clientCapabilityDTO.name)
     }
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
+    internal fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
         otherUsersClients.map {
             OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isProteusVerified)
         }
@@ -236,7 +236,7 @@ class ClientMapper(
         DeviceTypeDTO.Unknown -> DeviceType.Unknown
     }
 
-    fun fromDeviceTypeEntity(deviceTypeEntity: DeviceTypeEntity?): DeviceType = when (deviceTypeEntity) {
+    internal fun fromDeviceTypeEntity(deviceTypeEntity: DeviceTypeEntity?): DeviceType = when (deviceTypeEntity) {
         DeviceTypeEntity.Phone -> DeviceType.Phone
         DeviceTypeEntity.Tablet -> DeviceType.Tablet
         DeviceTypeEntity.Desktop -> DeviceType.Desktop
@@ -244,7 +244,7 @@ class ClientMapper(
         DeviceTypeEntity.Unknown, null -> DeviceType.Unknown
     }
 
-    fun toDeviceTypeEntity(deviceTypeEntity: DeviceType): DeviceTypeEntity = when (deviceTypeEntity) {
+    internal fun toDeviceTypeEntity(deviceTypeEntity: DeviceType): DeviceTypeEntity = when (deviceTypeEntity) {
         DeviceType.Phone -> DeviceTypeEntity.Phone
         DeviceType.Tablet -> DeviceTypeEntity.Tablet
         DeviceType.Desktop -> DeviceTypeEntity.Desktop
@@ -252,7 +252,7 @@ class ClientMapper(
         DeviceType.Unknown -> DeviceTypeEntity.Unknown
     }
 
-    fun toDeviceTypeEntity(deviceTypeDTO: DeviceTypeDTO): DeviceTypeEntity = when (deviceTypeDTO) {
+    internal fun toDeviceTypeEntity(deviceTypeDTO: DeviceTypeDTO): DeviceTypeEntity = when (deviceTypeDTO) {
         DeviceTypeDTO.Phone -> DeviceTypeEntity.Phone
         DeviceTypeDTO.Tablet -> DeviceTypeEntity.Tablet
         DeviceTypeDTO.Desktop -> DeviceTypeEntity.Desktop
@@ -260,13 +260,13 @@ class ClientMapper(
         DeviceTypeDTO.Unknown -> DeviceTypeEntity.Unknown
     }
 
-    fun toClientTypeEntity(clientTypeDTO: ClientTypeDTO): ClientTypeEntity = when (clientTypeDTO) {
+    internal fun toClientTypeEntity(clientTypeDTO: ClientTypeDTO): ClientTypeEntity = when (clientTypeDTO) {
         ClientTypeDTO.Temporary -> ClientTypeEntity.Temporary
         ClientTypeDTO.Permanent -> ClientTypeEntity.Permanent
         ClientTypeDTO.LegalHold -> ClientTypeEntity.LegalHold
     }
 
-    fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = when (clientType) {
+    internal fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = when (clientType) {
         ClientType.Temporary -> ClientTypeEntity.Temporary
         ClientType.Permanent -> ClientTypeEntity.Permanent
         ClientType.LegalHold -> ClientTypeEntity.LegalHold

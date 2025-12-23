@@ -29,16 +29,17 @@ import com.wire.kalium.common.functional.fold
  * @param serviceId the id of the service to add to the conversation
  * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
  */
-class AddServiceToConversationUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class AddServiceToConversationUseCase internal constructor(
     private val groupRepository: ConversationGroupRepository
 ) {
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         serviceId: ServiceId
     ): Result = groupRepository.addService(serviceId, conversationId).fold(Result::Failure, { Result.Success })
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }

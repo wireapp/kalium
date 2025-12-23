@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
 
-class SecondFactorPasswordChallengeConfigHandler(
+internal class SecondFactorPasswordChallengeConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    fun handle(secondFactorPasswordChallengeConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    internal fun handle(secondFactorPasswordChallengeConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
         val isRequired = secondFactorPasswordChallengeConfig.status == Status.ENABLED
         return userConfigRepository.setSecondFactorPasswordChallengeStatus(isRequired)
     }

@@ -19,23 +19,23 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.user.UserId
 
 /**
  * Use Case that allows a user to ignore a connection request from given user
  */
-fun interface IgnoreConnectionRequestUseCase {
+public interface IgnoreConnectionRequestUseCase {
     /**
      * Use case [IgnoreConnectionRequestUseCase] operation
      *
      * @param userId the target user with whom to ignore the connection request
      * @return a [IgnoreConnectionRequestUseCaseResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult
+    public suspend operator fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult
 }
 
 internal class IgnoreConnectionRequestUseCaseImpl(
@@ -60,7 +60,7 @@ internal class IgnoreConnectionRequestUseCaseImpl(
     }
 }
 
-sealed class IgnoreConnectionRequestUseCaseResult {
-    data object Success : IgnoreConnectionRequestUseCaseResult()
-    data class Failure(val coreFailure: CoreFailure) : IgnoreConnectionRequestUseCaseResult()
+public sealed class IgnoreConnectionRequestUseCaseResult {
+    public data object Success : IgnoreConnectionRequestUseCaseResult()
+    public data class Failure(val coreFailure: CoreFailure) : IgnoreConnectionRequestUseCaseResult()
 }

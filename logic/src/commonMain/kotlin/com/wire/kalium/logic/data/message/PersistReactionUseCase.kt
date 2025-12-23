@@ -27,7 +27,7 @@ import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
 @Mockable
-interface PersistReactionUseCase {
+internal interface PersistReactionUseCase {
     suspend operator fun invoke(
         reaction: MessageContent.Reaction,
         conversationId: ConversationId,

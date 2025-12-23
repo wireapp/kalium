@@ -70,21 +70,21 @@ internal interface SearchUserRepository {
 
 }
 
-data class SearchUsersOptions(
+internal data class SearchUsersOptions(
     val conversationExcluded: ConversationMemberExcludedOptions,
     val selfUserIncluded: Boolean
 ) {
-    companion object {
-        val Default = SearchUsersOptions(
+    internal companion object {
+        internal val Default = SearchUsersOptions(
             conversationExcluded = ConversationMemberExcludedOptions.None,
             selfUserIncluded = false
         )
     }
 }
 
-sealed class ConversationMemberExcludedOptions {
-    data object None : ConversationMemberExcludedOptions()
-    data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
+internal sealed class ConversationMemberExcludedOptions {
+    internal data object None : ConversationMemberExcludedOptions()
+    internal data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
 }
 
 @Suppress("LongParameterList")

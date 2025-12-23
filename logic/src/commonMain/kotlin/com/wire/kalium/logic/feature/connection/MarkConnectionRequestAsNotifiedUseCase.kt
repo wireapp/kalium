@@ -24,14 +24,14 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Use Case that listen to any user connection changes
  */
-fun interface MarkConnectionRequestAsNotifiedUseCase {
+public fun interface MarkConnectionRequestAsNotifiedUseCase {
     /**
      * Use case [MarkConnectionRequestAsNotifiedUseCase] operation
      *
      * marks specificConnectionRequest as notified, so user should not receive notification about it anymore
      * @param userId UserId ConnectionRequest from which should be marker, if null - mark all ConnectionRequests as notified
      */
-    suspend operator fun invoke(userId: UserId?)
+    public suspend operator fun invoke(userId: UserId?)
 }
 
 internal class MarkConnectionRequestAsNotifiedUseCaseImpl(

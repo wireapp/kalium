@@ -24,14 +24,14 @@ import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
 import pbandk.ByteArr
 
-interface LinkPreviewMapper {
+internal interface LinkPreviewMapper {
     fun fromDaoToModel(linkPreview: MessageEntity.LinkPreview): MessageLinkPreview
     fun fromModelToDao(linkPreview: MessageLinkPreview): MessageEntity.LinkPreview
     fun fromProtoToModel(linkPreview: LinkPreview): MessageLinkPreview?
     fun fromModelToProto(linkPreview: MessageLinkPreview): LinkPreview
 }
 
-class LinkPreviewMapperImpl(
+internal class LinkPreviewMapperImpl(
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
 ) : LinkPreviewMapper {
 

@@ -31,28 +31,28 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
-sealed class SSOLoginSessionResult {
-    data class Success(
+public sealed class SSOLoginSessionResult {
+    public data class Success(
         val accountTokens: AccountTokens,
         val ssoId: SsoId?,
         val proxyCredentials: ProxyCredentials?
     ) : SSOLoginSessionResult()
 
-    sealed class Failure : SSOLoginSessionResult() {
-        data object InvalidCookie : Failure()
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Failure : SSOLoginSessionResult() {
+        public data object InvalidCookie : Failure()
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
 /**
  * Obtains a session from the server using the provided cookie
  */
-interface GetSSOLoginSessionUseCase {
+public interface GetSSOLoginSessionUseCase {
     /**
      * @param cookie the cookie to use for the login
      * @return the [SSOLoginSessionResult] with tokens and proxy credentials
      */
-    suspend operator fun invoke(cookie: String): SSOLoginSessionResult
+    public suspend operator fun invoke(cookie: String): SSOLoginSessionResult
 }
 
 internal class GetSSOLoginSessionUseCaseImpl(

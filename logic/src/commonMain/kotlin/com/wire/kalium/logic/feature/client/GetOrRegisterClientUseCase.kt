@@ -37,8 +37,8 @@ import io.mockative.Mockable
  * If the client is not found, it will be registered.
  */
 @Mockable
-interface GetOrRegisterClientUseCase {
-    suspend operator fun invoke(
+public interface GetOrRegisterClientUseCase {
+    public suspend operator fun invoke(
         registerClientParam: RegisterClientParam
     ): RegisterClientResult
 }

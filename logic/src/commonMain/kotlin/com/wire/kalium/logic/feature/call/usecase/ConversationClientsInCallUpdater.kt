@@ -37,11 +37,11 @@ import kotlinx.coroutines.withContext
  * Usually called when a member is removed from conversation
  */
 @Mockable
-interface ConversationClientsInCallUpdater {
+internal interface ConversationClientsInCallUpdater {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 
-class ConversationClientsInCallUpdaterImpl(
+internal class ConversationClientsInCallUpdaterImpl(
     private val callManager: Lazy<CallManager>,
     private val conversationRepository: ConversationRepository,
     private val federatedIdMapper: FederatedIdMapper,

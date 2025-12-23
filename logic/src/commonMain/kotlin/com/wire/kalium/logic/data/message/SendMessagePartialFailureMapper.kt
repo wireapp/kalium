@@ -32,7 +32,7 @@ import kotlinx.datetime.Instant
  * users that failed to receive the message. ie: federated users and/or conversations.
  */
 @Mockable
-interface SendMessagePartialFailureMapper {
+internal interface SendMessagePartialFailureMapper {
     fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse): MessageSent
     fun fromMlsDTO(sendMLSMessageResponse: SendMLSMessageResponse): MessageSent
 }
@@ -75,7 +75,7 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
             }?.flatten().orEmpty()
 }
 
-data class MessageSent(
+internal data class MessageSent(
     val time: Instant,
     val failedToConfirmClients: List<UserId> = listOf(),
     val missing: List<UserId> = listOf()

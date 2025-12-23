@@ -38,7 +38,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 
-actual class GlobalCallManager {
+internal actual class GlobalCallManager {
     @Suppress("LongParameterList")
     internal actual fun getCallManagerForClient(
         userId: QualifiedID,

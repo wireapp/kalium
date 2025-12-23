@@ -41,8 +41,8 @@ import kotlinx.coroutines.withContext
 /**
  * If the Cryptobox session between two users is broken it can sometimes be repaired by calling this use case
  */
-interface ResetSessionUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): ResetSessionResult
+public interface ResetSessionUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): ResetSessionResult
 }
 
 internal class ResetSessionUseCaseImpl internal constructor(
@@ -95,7 +95,7 @@ internal class ResetSessionUseCaseImpl internal constructor(
     }
 }
 
-sealed class ResetSessionResult {
-    data object Success : ResetSessionResult()
-    data class Failure(val coreFailure: CoreFailure) : ResetSessionResult()
+public sealed class ResetSessionResult {
+    public data object Success : ResetSessionResult()
+    public data class Failure(val coreFailure: CoreFailure) : ResetSessionResult()
 }

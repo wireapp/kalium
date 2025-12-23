@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
@@ -108,7 +108,7 @@ class OnIncomingCallTest {
 
         val kaliumConfigs = KaliumConfigs()
 
-        val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
+        val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         val callMapper = CallMapperImpl(qualifiedIdMapper)
 

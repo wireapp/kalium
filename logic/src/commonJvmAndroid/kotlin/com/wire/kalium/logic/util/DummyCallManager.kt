@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.call.CallManager
 
 @Suppress("EmptyFunctionBlock", "TooManyFunctions")
-class DummyCallManager : CallManager {
+internal class DummyCallManager : CallManager {
     override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {}
 
     override suspend fun startCall(

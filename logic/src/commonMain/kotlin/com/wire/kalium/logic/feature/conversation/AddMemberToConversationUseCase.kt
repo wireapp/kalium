@@ -33,17 +33,17 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 /**
  * This use case will add a member(s) to a given conversation.
  */
-interface AddMemberToConversationUseCase {
+public interface AddMemberToConversationUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param userIdList the list of user ids to add to the conversation
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
+    public suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

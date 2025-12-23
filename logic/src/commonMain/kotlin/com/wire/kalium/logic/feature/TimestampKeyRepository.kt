@@ -32,13 +32,13 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 @Mockable
-interface TimestampKeyRepository {
+internal interface TimestampKeyRepository {
     suspend fun hasPassed(key: TimestampKeys, duration: Duration): Either<StorageFailure, Boolean>
     suspend fun reset(key: TimestampKeys): Either<StorageFailure, Unit>
     suspend fun update(key: TimestampKeys, timestamp: Instant): Either<StorageFailure, Unit>
 }
 
-class TimestampKeyRepositoryImpl(
+internal class TimestampKeyRepositoryImpl(
     private val metadataDAO: MetadataDAO
 ) : TimestampKeyRepository {
     override suspend fun hasPassed(key: TimestampKeys, duration: Duration): Either<StorageFailure, Boolean> =
@@ -57,7 +57,7 @@ class TimestampKeyRepositoryImpl(
         }
 }
 
-enum class TimestampKeys {
+internal enum class TimestampKeys {
     LAST_KEYING_MATERIAL_UPDATE_CHECK,
     LAST_KEY_PACKAGE_COUNT_CHECK,
     LAST_MISSING_METADATA_SYNC_CHECK,

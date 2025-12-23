@@ -45,8 +45,8 @@ import kotlinx.coroutines.withContext
  * This is an experimental feature to be trigger manually via debug options for now.
  */
 @Mockable
-interface RepairFaultyRemovalKeysUseCase {
-    suspend operator fun invoke(param: TargetedRepairParam): RepairResult
+public interface RepairFaultyRemovalKeysUseCase {
+    public suspend operator fun invoke(param: TargetedRepairParam): RepairResult
 }
 
 internal class RepairFaultyRemovalKeysUseCaseImpl(
@@ -142,7 +142,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
  * @property faultyKeys The faulty removal key to be repaired in hex string format.
  * @property domain The target domain in which the repair should be performed for the user and conversations.
  */
-data class TargetedRepairParam(
+public data class TargetedRepairParam(
     val domain: String,
     val faultyKeys: List<String>
 )
@@ -150,10 +150,10 @@ data class TargetedRepairParam(
 /**
  * Result of the repair operation for faulty removal keys.
  */
-sealed interface RepairResult {
-    data object Error : RepairResult
-    data object RepairNotNeeded : RepairResult
-    data object NoConversationsToRepair : RepairResult
+public sealed interface RepairResult {
+    public data object Error : RepairResult
+    public data object RepairNotNeeded : RepairResult
+    public data object NoConversationsToRepair : RepairResult
 
     /**
      * Result of the repair operation.
@@ -162,13 +162,13 @@ sealed interface RepairResult {
      * @property successfullyRepairedConversations Number of conversations that were successfully repaired.
      * @property failedRepairs List of conversation IDs where repair failed.
      */
-    data class RepairPerformed(
+    public data class RepairPerformed(
         val totalConversationsChecked: Int,
         val conversationsWithFaultyKeys: Int,
         val successfullyRepairedConversations: Int,
         val failedRepairs: List<String>
     ) : RepairResult {
-        fun toLogString(): String =
+        public fun toLogString(): String =
             "TotalChecked=$totalConversationsChecked, " +
                     "WithFaultyKeys=$conversationsWithFaultyKeys, " +
                     "SuccessfullyRepaired=$successfullyRepairedConversations, " +

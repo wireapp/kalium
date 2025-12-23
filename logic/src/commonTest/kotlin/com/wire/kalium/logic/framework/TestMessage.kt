@@ -33,7 +33,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-object TestMessage {
+internal object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
     val TEST_DATE = Instant.parse("2023-02-01T12:34:50Z")
     val TEST_MESSAGE_SENT = MessageSent(TEST_DATE)

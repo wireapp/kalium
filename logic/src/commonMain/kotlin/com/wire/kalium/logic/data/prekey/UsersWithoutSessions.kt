@@ -22,10 +22,10 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * Holder class for an optional list of users ids whose sessions are missing.
  */
-data class UsersWithoutSessions(val users: List<UserId>) {
-    fun hasMissingSessions() = users.isNotEmpty()
+internal data class UsersWithoutSessions(val users: List<UserId>) {
+    internal fun hasMissingSessions() = users.isNotEmpty()
 
-    companion object {
-        val EMPTY = UsersWithoutSessions(emptyList())
+    internal companion object {
+        internal val EMPTY = UsersWithoutSessions(emptyList())
     }
 }

@@ -39,7 +39,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface BackupRepository {
+internal interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
     suspend fun getMessages(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedMessages>
@@ -118,7 +118,7 @@ internal class BackupDataSource(
     }
 }
 
-data class PagedMessages(
+internal data class PagedMessages(
     val messages: List<Message.Standalone>,
     val totalPages: Int,
 )

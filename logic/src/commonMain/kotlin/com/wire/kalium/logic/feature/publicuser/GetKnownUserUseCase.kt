@@ -26,12 +26,12 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Gets the public user profile of a contact
  */
-interface GetKnownUserUseCase {
+public interface GetKnownUserUseCase {
     /**
      * @param userId the user id of the contact
      * @return the [Flow] of [OtherUser] if successful
      */
-    suspend operator fun invoke(userId: UserId): Flow<OtherUser?>
+    public suspend operator fun invoke(userId: UserId): Flow<OtherUser?>
 }
 
 internal class GetKnownUserUseCaseImpl internal constructor(
