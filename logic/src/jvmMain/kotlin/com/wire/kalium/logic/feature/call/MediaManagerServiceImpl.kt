@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Suppress("UnusedPrivateProperty")
-actual open class MediaManagerServiceImpl(
+internal actual open class MediaManagerServiceImpl(
     platformContext: PlatformContext,
     scope: CoroutineScope,
 ) : MediaManagerService {

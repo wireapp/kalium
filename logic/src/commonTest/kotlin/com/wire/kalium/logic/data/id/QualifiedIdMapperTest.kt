@@ -27,7 +27,7 @@ class QualifiedIdMapperTest {
 
     private val selfUserId = TestUser.USER_ID
 
-    private fun createMapper(selfUserId: QualifiedID = this.selfUserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
+    private fun createMapper(selfUserId: QualifiedID = this.selfUserId): QualifiedIdMapper = QualifiedIdMapper(selfUserId)
 
     @Test
     fun givenAValidString_whenMappingToQualifiedId_thenCreatesAQualifiedIdWithACorrectValues() = runTest {

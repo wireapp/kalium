@@ -67,7 +67,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
-class EnrollE2EICertificateUseCaseTest {
+internal class EnrollE2EICertificateUseCaseTest {
 
     private lateinit var coroutineScope: TestScope
 

@@ -21,13 +21,13 @@ import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface IsMlsEnabledUseCaseArrangement {
+internal interface IsMlsEnabledUseCaseArrangement {
     val isMlsEnabledUseCase: IsMLSEnabledUseCase
 
     suspend fun withMLSEnabled(result: Boolean)
 }
 
-class IsMlsEnabledUseCaseArrangementImpl : IsMlsEnabledUseCaseArrangement {
+internal class IsMlsEnabledUseCaseArrangementImpl : IsMlsEnabledUseCaseArrangement {
         override val isMlsEnabledUseCase: IsMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
 
     override suspend fun withMLSEnabled(result: Boolean) {

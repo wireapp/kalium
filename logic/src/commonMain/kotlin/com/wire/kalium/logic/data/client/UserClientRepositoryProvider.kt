@@ -25,11 +25,13 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import io.mockative.Mockable
 
 @Mockable
-interface UserClientRepositoryProvider {
+internal interface UserClientRepositoryProvider {
     fun provide(userId: UserId): ClientRepository
 }
 
-class UserClientRepositoryProviderImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : UserClientRepositoryProvider {
+internal class UserClientRepositoryProviderImpl(
+    private val userSessionScopeProvider: UserSessionScopeProvider
+) : UserClientRepositoryProvider {
     override fun provide(userId: UserId): ClientRepository =
         userSessionScopeProvider.getOrCreate(userId).clientRepository
 

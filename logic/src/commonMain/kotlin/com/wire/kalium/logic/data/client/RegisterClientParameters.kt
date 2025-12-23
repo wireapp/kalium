@@ -19,7 +19,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 
-data class RegisterClientParameters(
+internal data class RegisterClientParameters(
     val password: String?,
     val preKeys: List<PreKeyCrypto>,
     val lastKey: PreKeyCrypto,

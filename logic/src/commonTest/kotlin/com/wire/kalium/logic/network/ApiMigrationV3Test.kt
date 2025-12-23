@@ -37,7 +37,7 @@ import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class ApiMigrationV3Test {
+internal class ApiMigrationV3Test {
 
     @Test
     fun givenNoClientIsRegistered_whenInvokingMigration_thenMigrationIsSuccessful() = runTest {

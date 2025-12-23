@@ -25,13 +25,13 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mockable
 
 @Mockable
-interface ProtocolInfoMapper {
+internal interface ProtocolInfoMapper {
     fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo
     fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
 }
 
-class ProtocolInfoMapperImpl(
-    val idMapper: IdMapper = MapperProvider.idMapper()
+internal class ProtocolInfoMapperImpl(
+    internal val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ProtocolInfoMapper {
     override fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo) =
         when (protocolInfo) {

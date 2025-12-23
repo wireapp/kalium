@@ -21,14 +21,15 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
 import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
 
-val MessageScope.getPaginatedFlowOfMessagesByConversation
+public val MessageScope.getPaginatedFlowOfMessagesByConversation: GetPaginatedFlowOfMessagesByConversationUseCase
     get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
 
-val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation
+public val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation:
+        GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase
     get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
 
-val MessageScope.getPaginatedFlowOfAssetMessageByConversationId
+public val MessageScope.getPaginatedFlowOfAssetMessageByConversationId: GetPaginatedFlowOfAssetMessageByConversationIdUseCase
     get() = GetPaginatedFlowOfAssetMessageByConversationIdUseCase(dispatcher, messageRepository)
 
-val MessageScope.observePaginatedImageAssetMessageByConversationId
+public val MessageScope.observePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
     get() = ObservePaginatedAssetImageMessages(dispatcher, messageRepository)

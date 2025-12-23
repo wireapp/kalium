@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.util
 
-class RandomPassword {
-    operator fun invoke(): String {
+public class RandomPassword {
+    public operator fun invoke(): String {
 
         val secureRandom = SecureRandom()
 
@@ -36,17 +36,17 @@ class RandomPassword {
         }.shuffled().joinToString("")
     }
 
-    companion object Companion {
-        val lowercase: List<Char> = ('a'..'z').shuffled()
-        val uppercase: List<Char> = ('A'..'Z').shuffled()
-        val digits: List<Char> = ('0'..'9').shuffled()
-        val specialChars: List<Char> = "!@#$%^&*()_+[]{}|;:,.<>?-".toList().shuffled()
+    internal companion object Companion {
+        internal val lowercase: List<Char> = ('a'..'z').shuffled()
+        internal val uppercase: List<Char> = ('A'..'Z').shuffled()
+        internal val digits: List<Char> = ('0'..'9').shuffled()
+        internal val specialChars: List<Char> = "!@#$%^&*()_+[]{}|;:,.<>?-".toList().shuffled()
 
-        val allCharacters: List<Char> = (lowercase + uppercase + digits + specialChars).shuffled()
+        internal val allCharacters: List<Char> = (lowercase + uppercase + digits + specialChars).shuffled()
 
-        const val MIN_LENGTH = 15
-        const val MAX_LENGTH = 20
-        const val FIXED_CHAR_COUNT = 4
+        internal const val MIN_LENGTH = 15
+        internal const val MAX_LENGTH = 20
+        internal const val FIXED_CHAR_COUNT = 4
     }
 
 }

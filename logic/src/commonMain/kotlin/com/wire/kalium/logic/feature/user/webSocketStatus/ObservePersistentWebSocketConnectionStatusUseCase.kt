@@ -18,28 +18,28 @@
 
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.auth.PersistentWebSocketStatus
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.auth.PersistentWebSocketStatus
+import com.wire.kalium.logic.data.session.SessionRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Observes the persistent web socket connection configuration status, for all accounts.
  */
-interface ObservePersistentWebSocketConnectionStatusUseCase {
+public interface ObservePersistentWebSocketConnectionStatusUseCase {
     /**
      * @return [Result] containing the [Flow] of [PersistentWebSocketStatus] if successful, otherwise a mapped failure.
      */
-    suspend operator fun invoke(): Result
+    public suspend operator fun invoke(): Result
 
-    sealed class Result {
-        class Success(val persistentWebSocketStatusListFlow: Flow<List<PersistentWebSocketStatus>>) : Result()
-        sealed class Failure : Result() {
-            data object StorageFailure : Failure()
-            data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Result {
+        public class Success(public val persistentWebSocketStatusListFlow: Flow<List<PersistentWebSocketStatus>>) : Result()
+        public sealed class Failure : Result() {
+            public data object StorageFailure : Failure()
+            public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
     }
 }

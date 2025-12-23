@@ -40,9 +40,9 @@ import kotlinx.serialization.json.JsonPrimitive
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
  */
-interface EnrollE2EIUseCase {
-    suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): Either<E2EIFailure, E2EIEnrollmentResult.Initialized>
-    suspend fun finalizeEnrollment(
+public interface EnrollE2EIUseCase {
+    public suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): Either<E2EIFailure, E2EIEnrollmentResult.Initialized>
+    public suspend fun finalizeEnrollment(
         idToken: String,
         oAuthState: String,
         initializationResult: E2EIEnrollmentResult.Initialized
@@ -50,7 +50,7 @@ interface EnrollE2EIUseCase {
 }
 
 @Suppress("ReturnCount")
-class EnrollE2EIUseCaseImpl internal constructor(
+internal class EnrollE2EIUseCaseImpl internal constructor(
     private val e2EIRepository: E2EIRepository,
     private val userRepository: UserRepository,
     private val coroutineScope: CoroutineScope,
@@ -270,7 +270,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         )
     )
 
-    companion object {
+    internal companion object {
         private const val ID_TOKEN = "id_token"
         private const val KEY_AUTH = "keyauth"
         private const val ESSENTIAL = "essential"
@@ -281,9 +281,9 @@ class EnrollE2EIUseCaseImpl internal constructor(
     }
 }
 
-sealed interface E2EIEnrollmentResult {
+public sealed interface E2EIEnrollmentResult {
     @Suppress("LongParameterList")
-    data class Initialized(
+    public data class Initialized(
         val target: String,
         val oAuthClaims: JsonObject,
         val lastNonce: Nonce,
@@ -293,5 +293,5 @@ sealed interface E2EIEnrollmentResult {
         val isNewClientRegistration: Boolean = false
     ) : E2EIEnrollmentResult
 
-    class Finalized(val certificate: String) : E2EIEnrollmentResult
+    public class Finalized(public val certificate: String) : E2EIEnrollmentResult
 }

@@ -21,17 +21,17 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserRepository
 
-sealed class PersistSelfUserEmailResult {
-    data object Success : PersistSelfUserEmailResult()
-    data class Failure(val coreFailure: CoreFailure) : PersistSelfUserEmailResult()
+public sealed class PersistSelfUserEmailResult {
+    public data object Success : PersistSelfUserEmailResult()
+    public data class Failure(val coreFailure: CoreFailure) : PersistSelfUserEmailResult()
 }
 
-interface PersistSelfUserEmailUseCase {
+public interface PersistSelfUserEmailUseCase {
     /**
      * Persists the email of the self user before full data is fetched so that it can be used to complete the client registration with 2fa.
      * @param email The email address of the self user
      */
-    suspend operator fun invoke(email: String): PersistSelfUserEmailResult
+    public suspend operator fun invoke(email: String): PersistSelfUserEmailResult
 }
 
 internal class PersistSelfUserEmailUseCaseImpl(

@@ -25,7 +25,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlin.test.Test
 
-class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
+internal class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
 
     @Test
     fun givenAppLockStatusChanged_whenMarkingAsNotified_thenSetAppLockAsNotified() {

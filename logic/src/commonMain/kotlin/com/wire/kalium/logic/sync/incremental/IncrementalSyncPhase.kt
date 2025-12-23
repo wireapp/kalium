@@ -20,14 +20,14 @@ package com.wire.kalium.logic.sync.incremental
 /**
  * Incremental sync can be divided into two phases
  */
-sealed class IncrementalSyncPhase {
+internal sealed class IncrementalSyncPhase {
     /**
      * This means in the old or new system getting pending events while the client was offline.
      */
-    data object CatchingUp : IncrementalSyncPhase()
+    internal data object CatchingUp : IncrementalSyncPhase()
 
     /**
      * This means in the old or new system all pending events were fetched and stored locally and the client is ready to process them.
      */
-    data object ReadyToProcess : IncrementalSyncPhase()
+    internal data object ReadyToProcess : IncrementalSyncPhase()
 }

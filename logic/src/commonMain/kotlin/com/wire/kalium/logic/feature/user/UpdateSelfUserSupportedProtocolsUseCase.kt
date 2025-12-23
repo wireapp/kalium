@@ -43,8 +43,8 @@ import kotlinx.datetime.Instant
  * Updates the supported protocols of the current user.
  */
 @Mockable
-interface UpdateSelfUserSupportedProtocolsUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, Boolean>
+public interface UpdateSelfUserSupportedProtocolsUseCase {
+    public suspend operator fun invoke(): Either<CoreFailure, Boolean>
 }
 
 internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
@@ -62,37 +62,37 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
             Either.Right(false)
         } else {
             (
-                userRepository.getSelfUser().flatMap { selfUser ->
-                selfSupportedProtocols().flatMap { calculatedSupportedProtocols ->
-                    val finalizedSupportedProtocols = if (selfUser.supportedProtocols?.contains(SupportedProtocol.MLS) == true) {
-                        calculatedSupportedProtocols + SupportedProtocol.MLS
-                    } else {
-                        calculatedSupportedProtocols
-                    }
-                    logger.i(
-                        "Updating supported protocols = $calculatedSupportedProtocols " +
-                                "previously = ${selfUser.supportedProtocols}, " +
-                                "finalized = $finalizedSupportedProtocols"
-                    )
-                    if (finalizedSupportedProtocols != selfUser.supportedProtocols) {
-                        userRepository.updateSupportedProtocols(finalizedSupportedProtocols).map { true }
-                    } else {
-                        Either.Right(false)
-                    }
-                }.flatMapLeft {
-                    when (it) {
-                        is StorageFailure.DataNotFound -> {
-                            logger.w(
-                                "Skip updating supported protocols since additional protocols are not configured"
+                    userRepository.getSelfUser().flatMap { selfUser ->
+                        selfSupportedProtocols().flatMap { calculatedSupportedProtocols ->
+                            val finalizedSupportedProtocols = if (selfUser.supportedProtocols?.contains(SupportedProtocol.MLS) == true) {
+                                calculatedSupportedProtocols + SupportedProtocol.MLS
+                            } else {
+                                calculatedSupportedProtocols
+                            }
+                            logger.i(
+                                "Updating supported protocols = $calculatedSupportedProtocols " +
+                                        "previously = ${selfUser.supportedProtocols}, " +
+                                        "finalized = $finalizedSupportedProtocols"
                             )
-                            Either.Right(false)
-                        }
+                            if (finalizedSupportedProtocols != selfUser.supportedProtocols) {
+                                userRepository.updateSupportedProtocols(finalizedSupportedProtocols).map { true }
+                            } else {
+                                Either.Right(false)
+                            }
+                        }.flatMapLeft {
+                            when (it) {
+                                is StorageFailure.DataNotFound -> {
+                                    logger.w(
+                                        "Skip updating supported protocols since additional protocols are not configured"
+                                    )
+                                    Either.Right(false)
+                                }
 
-                        else -> Either.Left(it)
-                    }
-                }
-            } ?: Either.Left(StorageFailure.DataNotFound)
-            )
+                                else -> Either.Left(it)
+                            }
+                        }
+                    } ?: Either.Left(StorageFailure.DataNotFound)
+                    )
         }
     }
 

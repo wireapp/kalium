@@ -34,7 +34,7 @@ import io.mockative.Mockable
  * Upgrade the current login session to be associated with self user's client ID
  */
 @Mockable
-interface UpgradeCurrentSessionUseCase {
+internal interface UpgradeCurrentSessionUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
 }
 

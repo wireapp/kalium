@@ -34,7 +34,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveGuestRoomLinkUseCaseTest {
+internal class ObserveGuestRoomLinkUseCaseTest {
 
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
 

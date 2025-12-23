@@ -25,7 +25,7 @@ import com.wire.kalium.logic.feature.e2ei.MLSCredentialsType
 import com.wire.kalium.logic.feature.e2ei.X509Identity
 import kotlinx.datetime.Instant
 
-object TestMLSClientIdentity {
+internal object TestMLSClientIdentity {
     fun getMLSClientIdentityWithE2EI(clientId: QualifiedClientID, status: MLSClientE2EIStatus = MLSClientE2EIStatus.VALID) =
         MLSClientIdentity(
             clientId = clientId,

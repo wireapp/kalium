@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.Flow
  * @see ConversationDetails
  */
 @Mockable
-fun interface ObserveConversationListDetailsUseCase {
-    suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetails>>
+public fun interface ObserveConversationListDetailsUseCase {
+    public suspend operator fun invoke(fromArchive: Boolean): Flow<List<ConversationDetails>>
 }
 
 internal class ObserveConversationListDetailsUseCaseImpl(

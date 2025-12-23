@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
 @Mockable
-interface UserPropertyRepository {
+internal interface UserPropertyRepository {
     suspend fun getReadReceiptsStatus(): Boolean
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>

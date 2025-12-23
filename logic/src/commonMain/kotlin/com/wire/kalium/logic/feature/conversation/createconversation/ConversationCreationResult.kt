@@ -20,34 +20,34 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 
-sealed interface ConversationCreationResult {
+public sealed interface ConversationCreationResult {
     /**
      * Conversation created successfully.
      */
-    class Success(
+    public class Success(
         /**
          * Details of the newly created conversation
          */
-        val conversation: Conversation
+        public val conversation: Conversation
     ) : ConversationCreationResult
 
     /**
      * There was a failure trying to Sync with the server
      */
-    data object SyncFailure : ConversationCreationResult
-    data object Forbidden : ConversationCreationResult
+    public data object SyncFailure : ConversationCreationResult
+    public data object Forbidden : ConversationCreationResult
 
     /**
      * Other, unknown failure.
      */
-    class UnknownFailure(
+    public class UnknownFailure(
         /**
          * The root cause of the failure
          */
-        val cause: CoreFailure
+        public val cause: CoreFailure
     ) : ConversationCreationResult
 
-    class BackendConflictFailure(
-        val domains: List<String>
+    public class BackendConflictFailure(
+        public val domains: List<String>
     ) : ConversationCreationResult
 }

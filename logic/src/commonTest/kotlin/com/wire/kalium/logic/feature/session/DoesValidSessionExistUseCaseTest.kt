@@ -33,7 +33,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-class DoesValidSessionExistUseCaseTest {
+internal class DoesValidSessionExistUseCaseTest {
 
     @Test
     fun givenAUserId_whenValidSessionExists_thenReturnSuccessTrue() = runTest {

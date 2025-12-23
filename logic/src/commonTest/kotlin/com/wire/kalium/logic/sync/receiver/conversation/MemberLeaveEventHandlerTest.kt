@@ -60,7 +60,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-class MemberLeaveEventHandlerTest {
+internal class MemberLeaveEventHandlerTest {
 
     @Test
     fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessage() = runTest {

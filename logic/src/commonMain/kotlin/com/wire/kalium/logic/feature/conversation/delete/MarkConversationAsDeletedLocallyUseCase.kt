@@ -28,12 +28,12 @@ import com.wire.kalium.logic.data.id.ConversationId
  * After this call, the conversation will not be visible in the app.
  * To complete the local deletion, call [DeleteConversationUseCase], which can already be done asynchronously in the background.
  */
-interface MarkConversationAsDeletedLocallyUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+public interface MarkConversationAsDeletedLocallyUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 
-    sealed class Result {
-        data object Success : Result()
-        data class Failure(val failure: CoreFailure) : Result()
+    public sealed class Result {
+        public data object Success : Result()
+        public data class Failure(val failure: CoreFailure) : Result()
     }
 }
 

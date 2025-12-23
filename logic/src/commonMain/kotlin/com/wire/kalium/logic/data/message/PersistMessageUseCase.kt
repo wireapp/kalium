@@ -34,7 +34,7 @@ import io.mockative.Mockable
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
 @Mockable
-interface PersistMessageUseCase {
+internal interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 

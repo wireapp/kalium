@@ -20,4 +20,4 @@ package com.wire.kalium.logic.failure
 
 import com.wire.kalium.common.error.CoreFailure
 
-object SelfUserDeleted : CoreFailure.FeatureFailure()
+internal object SelfUserDeleted : CoreFailure.FeatureFailure()

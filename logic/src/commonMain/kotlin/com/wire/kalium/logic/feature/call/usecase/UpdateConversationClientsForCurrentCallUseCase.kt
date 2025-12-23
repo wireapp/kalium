@@ -28,8 +28,8 @@ import kotlinx.coroutines.flow.map
  * Usually called when a member is removed from conversation
  */
 @Mockable
-interface UpdateConversationClientsForCurrentCallUseCase {
-    suspend operator fun invoke(conversationId: ConversationId)
+public interface UpdateConversationClientsForCurrentCallUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId)
 }
 
 internal class UpdateConversationClientsForCurrentCallUseCaseImpl(

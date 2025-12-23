@@ -45,7 +45,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class IncrementalSyncRepositoryTest {
+internal class IncrementalSyncRepositoryTest {
 
     private lateinit var incrementalSyncRepository: IncrementalSyncRepository
 

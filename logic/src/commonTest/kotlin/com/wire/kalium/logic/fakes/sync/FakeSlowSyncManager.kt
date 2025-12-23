@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class FakeSlowSyncManager(
+internal class FakeSlowSyncManager(
     val fakeSyncFlow: MutableSharedFlow<SlowSyncStatus> = MutableStateFlow(SlowSyncStatus.Pending)
 ) : SlowSyncManager {
     override fun performSyncFlow(): Flow<SlowSyncStatus> = fakeSyncFlow

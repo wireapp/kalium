@@ -26,14 +26,15 @@ import com.wire.kalium.logic.data.id.ConversationId
  * This use case is responsible for updating and caching the video state of a call.
  * @see [VideoState]
  */
-class UpdateVideoStateUseCase(
+// todo(interface). extract interface for use case
+public class UpdateVideoStateUseCase internal constructor(
     private val callRepository: CallRepository
 ) {
     /**
      * @param conversationId the id of the conversation.
      * @param videoState the new video state of the call.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         videoState: VideoState
     ) {

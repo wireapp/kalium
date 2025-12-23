@@ -22,13 +22,13 @@ import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
 
-interface IsE2EIEnabledUseCaseArrangement {
+internal interface IsE2EIEnabledUseCaseArrangement {
     val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 
     suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean)
 }
 
-class IsE2EIEnabledUseCaseArrangementImpl : IsE2EIEnabledUseCaseArrangement {
+internal class IsE2EIEnabledUseCaseArrangementImpl : IsE2EIEnabledUseCaseArrangement {
         override val isE2EIEnabledUseCase: IsE2EIEnabledUseCase = mock(IsE2EIEnabledUseCase::class)
 
     override suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) {

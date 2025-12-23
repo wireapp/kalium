@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 
-fun SubconversationResponse.toModel(): SubConversation {
+internal fun SubconversationResponse.toModel(): SubConversation {
     return SubConversation(
         id = id.toModel(),
         parentId = parentId.toModel(),
@@ -34,7 +34,7 @@ fun SubconversationResponse.toModel(): SubConversation {
     )
 }
 
-fun SubconversationMemberDTO.toModel(): SubconversationMember {
+internal fun SubconversationMemberDTO.toModel(): SubconversationMember {
     return SubconversationMember(
         clientId = clientId,
         userId = userId,

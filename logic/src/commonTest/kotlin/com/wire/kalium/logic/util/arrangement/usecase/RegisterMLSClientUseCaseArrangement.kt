@@ -25,14 +25,14 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface RegisterMLSClientUseCaseArrangement {
+internal interface RegisterMLSClientUseCaseArrangement {
 
     val registerMLSClientUseCase: RegisterMLSClientUseCase
 
     suspend fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>)
 }
 
-class RegisterMLSClientUseCaseArrangementImpl : RegisterMLSClientUseCaseArrangement {
+internal class RegisterMLSClientUseCaseArrangementImpl : RegisterMLSClientUseCaseArrangement {
     override val registerMLSClientUseCase: RegisterMLSClientUseCase = mock(RegisterMLSClientUseCase::class)
 
     override suspend fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) {

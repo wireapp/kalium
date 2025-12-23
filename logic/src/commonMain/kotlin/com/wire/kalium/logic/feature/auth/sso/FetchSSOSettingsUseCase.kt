@@ -29,11 +29,12 @@ import io.ktor.http.HttpStatusCode
  * Fetches the SSO settings from the server.
  * @return [Result] with the default SSO code or [CoreFailure].
  */
-class FetchSSOSettingsUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class FetchSSOSettingsUseCase internal constructor(
     private val ssoLoginRepository: SSOLoginRepository
 ) {
 
-    suspend operator fun invoke(): Result = ssoLoginRepository.settings()
+    public suspend operator fun invoke(): Result = ssoLoginRepository.settings()
         .fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
@@ -45,8 +46,8 @@ class FetchSSOSettingsUseCase internal constructor(
             }
         }, { Result.Success(it.defaultCode) })
 
-    sealed interface Result {
-        data class Success(val defaultSSOCode: String?) : Result
-        data class Failure(val coreFailure: CoreFailure) : Result
+    public sealed interface Result {
+        public data class Success(val defaultSSOCode: String?) : Result
+        public data class Failure(val coreFailure: CoreFailure) : Result
     }
 }

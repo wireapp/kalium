@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface ServiceRepository {
+internal interface ServiceRepository {
     suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>>
     suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>>
     suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?>

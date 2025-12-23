@@ -20,12 +20,12 @@ package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
 
-class SessionScope(
+public class SessionScope internal constructor(
     private val sessionRepository: SessionRepository
 ) {
-    val allSessions get() = GetSessionsUseCase(sessionRepository)
-    val allSessionsFlow get() = ObserveSessionsUseCase(sessionRepository)
-    val currentSession get() = CurrentSessionUseCase(sessionRepository)
-    val currentSessionFlow get() = CurrentSessionFlowUseCase(sessionRepository)
-    val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
+    public val allSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    public val allSessionsFlow: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
+    public val currentSession: CurrentSessionUseCase get() = CurrentSessionUseCase(sessionRepository)
+    public val currentSessionFlow: CurrentSessionFlowUseCase get() = CurrentSessionFlowUseCase(sessionRepository)
+    public val updateCurrentSession: UpdateCurrentSessionUseCase get() = UpdateCurrentSessionUseCase(sessionRepository)
 }

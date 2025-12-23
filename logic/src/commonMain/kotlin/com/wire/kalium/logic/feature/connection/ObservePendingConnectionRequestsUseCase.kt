@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.map
     "Name is misleading and will be removed in the future",
     ReplaceWith("ObservePendingConnectionRequestsUseCase")
 )
-typealias ObserveConnectionListUseCase = ObservePendingConnectionRequestsUseCase
+internal typealias ObserveConnectionListUseCase = ObservePendingConnectionRequestsUseCase
 
 /**
  * Use Case that lists the current pending connection requests.
@@ -40,7 +40,7 @@ typealias ObserveConnectionListUseCase = ObservePendingConnectionRequestsUseCase
  * @see ConnectionState
  */
 @Mockable
-fun interface ObservePendingConnectionRequestsUseCase {
+internal fun interface ObservePendingConnectionRequestsUseCase {
     /**
      * Use case [ObservePendingConnectionRequestsUseCase] operation
      *

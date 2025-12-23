@@ -32,14 +32,14 @@ import io.mockative.Mockable
  * This use case will deregister the current push notification token.
  */
 @Mockable
-interface DeregisterTokenUseCase {
+internal interface DeregisterTokenUseCase {
     suspend operator fun invoke(): Result
 
     sealed class Result {
-        data object Success : Result()
-        sealed class Failure : Result() {
-            data object NotFound : Failure()
-            data class Generic(val coreFailure: CoreFailure) : Failure()
+        internal data object Success : Result()
+        internal sealed class Failure : Result() {
+            internal data object NotFound : Failure()
+            internal data class Generic(val coreFailure: CoreFailure) : Failure()
         }
     }
 }

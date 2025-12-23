@@ -33,7 +33,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
-actual open class FlowManagerServiceImpl(
+internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext,
     scope: CoroutineScope,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
