@@ -293,6 +293,7 @@ $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateEpochIn
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/index.html
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl/onLog/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/on-log.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/create/#[Error type: Unresolved type for UserId]/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]create.html
+$dokka.location:com.wire.kalium.logic.util//isInvalidEntryPathDestination/#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]is-invalid-entry-path-destination.html
 $dokka.location:com.wire.kalium.logic.util/CurrentPlatform/type/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-current-platform/[jvm]type.html
 $dokka.location:com.wire.kalium.logic.util/DummyCallManager///PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/index.html
 $dokka.location:com.wire.kalium.logic.util/DummyCallManager/DummyCallManager/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/-dummy-call-manager.html
