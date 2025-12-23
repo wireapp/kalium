@@ -1,4 +1,4 @@
-# Explicit API Mode Migration for Logic Module
+# 6. Explicit API Mode Migration for Logic Module
 
 Date: 2025-12-23
 
