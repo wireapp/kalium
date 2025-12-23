@@ -96,6 +96,32 @@ data class MessageSyncRequest(
 )
 
 /**
+ * Domain model for a message sync fetch response
+ */
+data class MessageSyncFetchResponse(
+    val hasMore: Boolean,
+    val conversations: Map<String, ConversationMessages>,
+    val paginationToken: String?
+)
+
+/**
+ * Domain model for messages and metadata for a single conversation
+ */
+data class ConversationMessages(
+    val lastRead: Long?, // Last read timestamp (epoch millis)
+    val messages: List<MessageSyncResult>
+)
+
+/**
+ * Domain model for an individual message result from fetch operation
+ */
+data class MessageSyncResult(
+    val timestamp: Long, // Unix timestamp in milliseconds
+    val messageId: String,
+    val payload: String // JSON-encoded string of BackupMessage
+)
+
+/**
  * Repository for remote message synchronization operations.
  * Abstracts access to MessageSyncApi and related DAOs.
  */
@@ -115,7 +141,7 @@ interface MessageSyncRepository {
         conversation: String?,
         paginationToken: String?,
         size: Int
-    ): Either<NetworkFailure, MessageSyncFetchResponseDTO>
+    ): Either<NetworkFailure, MessageSyncFetchResponse>
 
     /**
      * Delete messages from the remote backup service
@@ -234,7 +260,7 @@ internal class MessageSyncDataSource(
         conversation: String?,
         paginationToken: String?,
         size: Int
-    ): Either<NetworkFailure, MessageSyncFetchResponseDTO> {
+    ): Either<NetworkFailure, MessageSyncFetchResponse> {
         val result = wrapApiRequest {
             messageSyncApi.fetchMessages(user, since, conversation, paginationToken, size)
         }
@@ -243,7 +269,7 @@ internal class MessageSyncDataSource(
             is Either.Left -> {
                 // 404 means no messages found - return empty response instead of error
                 if (is404NotFound(result.value)) {
-                    Either.Right(MessageSyncFetchResponseDTO(
+                    Either.Right(MessageSyncFetchResponse(
                         hasMore = false,
                         conversations = emptyMap(),
                         paginationToken = null
@@ -252,9 +278,26 @@ internal class MessageSyncDataSource(
                     Either.Left(result.value)
                 }
             }
-            is Either.Right -> Either.Right(result.value)
+            is Either.Right -> Either.Right(result.value.toDomain())
         }
     }
+
+    private fun com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO.toDomain() = MessageSyncFetchResponse(
+        hasMore = hasMore,
+        conversations = conversations.mapValues { (_, dto) ->
+            ConversationMessages(
+                lastRead = dto.lastRead,
+                messages = dto.messages.map { messageDto ->
+                    MessageSyncResult(
+                        timestamp = messageDto.timestamp,
+                        messageId = messageDto.messageId,
+                        payload = messageDto.payload
+                    )
+                }
+            )
+        },
+        paginationToken = paginationToken
+    )
 
     override suspend fun deleteMessages(
         userId: String?,

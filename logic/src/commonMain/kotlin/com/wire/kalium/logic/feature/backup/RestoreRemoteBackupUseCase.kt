@@ -31,10 +31,10 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContentOrderPolicy
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.sync.MessageSyncFetchResponse
 import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
-import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
@@ -126,7 +126,7 @@ internal class RestoreRemoteBackupUseCaseImpl(
         }
     }
 
-    private suspend fun updateConversationLastRead(response: MessageSyncFetchResponseDTO) {
+    private suspend fun updateConversationLastRead(response: MessageSyncFetchResponse) {
         response.conversations.forEach { (conversationIdStr, conversationData) ->
             conversationData.lastRead?.let { lastReadTimestamp ->
                 val conversationId = QualifiedID(

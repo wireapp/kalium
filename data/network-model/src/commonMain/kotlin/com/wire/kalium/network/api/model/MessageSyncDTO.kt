@@ -79,7 +79,7 @@ data class ConversationMessagesDTO(
 @Serializable
 data class MessageSyncResultDTO(
     @SerialName("timestamp")
-    val timestamp: String,
+    val timestamp: Long,
     @SerialName("message_id")
     val messageId: String,
     @SerialName("payload")

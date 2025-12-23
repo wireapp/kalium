@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.toLongMilliseconds
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -28,11 +29,11 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.sync.ConversationMessages
+import com.wire.kalium.logic.data.sync.MessageSyncFetchResponse
 import com.wire.kalium.logic.data.sync.MessageSyncRepository
+import com.wire.kalium.logic.data.sync.MessageSyncResult
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.model.ConversationMessagesDTO
-import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
-import com.wire.kalium.network.api.model.MessageSyncResultDTO
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -55,7 +56,7 @@ class RestoreRemoteBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withFetchMessagesReturning(
                 Either.Right(
-                    MessageSyncFetchResponseDTO(
+                    MessageSyncFetchResponse(
                         hasMore = false,
                         conversations = emptyMap(),
                         paginationToken = null
@@ -99,14 +100,14 @@ class RestoreRemoteBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withFetchMessagesReturning(
                 Either.Right(
-                    MessageSyncFetchResponseDTO(
+                    MessageSyncFetchResponse(
                         hasMore = false,
                         conversations = mapOf(
-                            "conv1@domain.com" to ConversationMessagesDTO(
+                            "conv1@domain.com" to ConversationMessages(
                                 lastRead = 1234567891L, // Timestamp in epoch milliseconds
                                 messages = listOf(
-                                    MessageSyncResultDTO("msg-1", "1234567890", """{"id":"msg-1"}"""),
-                                    MessageSyncResultDTO("msg-2", "1234567891", """{"id":"msg-2"}""")
+                                    MessageSyncResult(1234567800L, "1234567890", """{"id":"msg-1"}"""),
+                                    MessageSyncResult(1234567805L, "1234567891", """{"id":"msg-2"}""")
                                 )
                             )
                         ),
@@ -203,13 +204,13 @@ class RestoreRemoteBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withFetchMessagesReturning(
                 Either.Right(
-                    MessageSyncFetchResponseDTO(
+                    MessageSyncFetchResponse(
                         hasMore = false,
                         conversations = mapOf(
-                            "conv1@domain.com" to ConversationMessagesDTO(
+                            "conv1@domain.com" to ConversationMessages(
                                 lastRead = null,
                                 messages = listOf(
-                                    MessageSyncResultDTO("msg-1", "1234567890", """{"id":"msg-1"}""")
+                                    MessageSyncResult(1234567891L, "1234567890", """{"id":"msg-1"}""")
                                 )
                             )
                         ),
@@ -271,16 +272,16 @@ class RestoreRemoteBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withFetchMessagesReturning(
                 Either.Right(
-                    MessageSyncFetchResponseDTO(
+                    MessageSyncFetchResponse(
                         hasMore = false,
                         conversations = mapOf(
-                            "conv1@domain.com" to ConversationMessagesDTO(
+                            "conv1@domain.com" to ConversationMessages(
                                 lastRead = 1234567890L, // Timestamp for msg-1
-                                messages = listOf(MessageSyncResultDTO("msg-1", "1234567890", """{"id":"msg-1"}"""))
+                                messages = listOf(MessageSyncResult(1234567890L, "1234567890", """{"id":"msg-1"}"""))
                             ),
-                            "conv2@domain.com" to ConversationMessagesDTO(
+                            "conv2@domain.com" to ConversationMessages(
                                 lastRead = 1234567891L, // Timestamp for msg-2
-                                messages = listOf(MessageSyncResultDTO("msg-2", "1234567891", """{"id":"msg-2"}"""))
+                                messages = listOf(MessageSyncResult(1234567891L, "1234567891", """{"id":"msg-2"}"""))
                             )
                         ),
                         paginationToken = null
@@ -321,7 +322,7 @@ class RestoreRemoteBackupUseCaseTest {
 
         val conversationRepository = mock(ConversationRepository::class)
 
-        suspend fun withFetchMessagesReturning(result: Either<com.wire.kalium.common.error.NetworkFailure, MessageSyncFetchResponseDTO>) = apply {
+        suspend fun withFetchMessagesReturning(result: Either<com.wire.kalium.common.error.NetworkFailure, MessageSyncFetchResponse>) = apply {
             coEvery {
                 messageSyncRepository.fetchMessages(any(), any(), any(), any(), any())
             }.returns(result)
@@ -333,12 +334,12 @@ class RestoreRemoteBackupUseCaseTest {
                 messageSyncRepository.fetchMessages(any(), any(), any(), eq(null), any())
             }.returns(
                 Either.Right(
-                    MessageSyncFetchResponseDTO(
+                    MessageSyncFetchResponse(
                         hasMore = true,
                         conversations = mapOf(
-                            "conv1@domain.com" to ConversationMessagesDTO(
+                            "conv1@domain.com" to ConversationMessages(
                                 lastRead = null,
-                                messages = listOf(MessageSyncResultDTO("msg-1", "1234567890", """{"id":"msg-1"}"""))
+                                messages = listOf(MessageSyncResult(backupMessage1.creationDate.toLongMilliseconds(), "1234567890", """{"id":"msg-1"}"""))
                             )
                         ),
                         paginationToken = "page-2-token"
@@ -351,12 +352,12 @@ class RestoreRemoteBackupUseCaseTest {
                 messageSyncRepository.fetchMessages(any(), any(), any(), eq("page-2-token"), any())
             }.returns(
                 Either.Right(
-                    MessageSyncFetchResponseDTO(
+                    MessageSyncFetchResponse(
                         hasMore = false,
                         conversations = mapOf(
-                            "conv1@domain.com" to ConversationMessagesDTO(
+                            "conv1@domain.com" to ConversationMessages(
                                 lastRead = null,
-                                messages = listOf(MessageSyncResultDTO("msg-2", "1234567891", """{"id":"msg-2"}"""))
+                                messages = listOf(MessageSyncResult(backupMessage2.creationDate.toLongMilliseconds(), "1234567891", """{"id":"msg-2"}"""))
                             )
                         ),
                         paginationToken = null
