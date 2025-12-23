@@ -121,7 +121,10 @@ class BackupCryptoStateUseCaseTest {
         }
 
         fun withMessageSyncEnabled(enabled: Boolean) = apply {
-            kaliumConfigs = kaliumConfigs.copy(messageSynchronizationEnabled = enabled)
+            kaliumConfigs = kaliumConfigs.copy(
+                messageSynchronizationEnabledFlag = enabled,
+                remoteBackupURL = "https://example.com"
+            )
         }
 
         suspend fun withClientId(clientId: ClientId?) = apply {

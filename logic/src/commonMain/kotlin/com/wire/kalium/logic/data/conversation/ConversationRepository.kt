@@ -664,7 +664,7 @@ internal class ConversationDataSource internal constructor(
             // Also upsert to sync table for server synchronization
             conversationSyncDAO.upsertConversationSync(
                 conversationId = qualifiedID.toDao(),
-                lastReadMessageId = date.toEpochMilliseconds().toString()
+                lastReadTimestamp = date.toEpochMilliseconds()
             )
         }
 

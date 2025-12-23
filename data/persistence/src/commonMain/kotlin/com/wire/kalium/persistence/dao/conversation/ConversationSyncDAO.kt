@@ -24,12 +24,12 @@ import io.mockative.Mockable
 @Mockable
 interface ConversationSyncDAO {
     /**
-     * Upserts a conversation sync entry with the last read message ID.
+     * Upserts a conversation sync entry with the last read timestamp.
      * Only sets toUploadLastRead if it's different from lastUploadedLastRead.
      */
     suspend fun upsertConversationSync(
         conversationId: QualifiedIDEntity,
-        lastReadMessageId: String
+        lastReadTimestamp: Long // Timestamp in epoch milliseconds
     )
 
     /**

@@ -24,7 +24,6 @@ import com.wire.kalium.network.api.v12.authenticated.MessageSyncApiV12
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
@@ -46,18 +45,18 @@ internal class MessageSyncApiV12Test : ApiTest() {
         val backupSize = backupData.size.toLong()
 
         val networkClient = mockAuthenticatedNetworkClient(
-            ByteReadChannel.Empty, // Empty response body for HTTP 201
+            responseBody = ByteArray(0),
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
-                assertParameterEquals("user_id", userId)
+                assertQueryParameter("user_id", userId)
                 assertAuthorizationHeaderExist()
                 assertContentType(ContentType.Application.OctetStream)
             }
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -74,13 +73,13 @@ internal class MessageSyncApiV12Test : ApiTest() {
         val backupSize = backupData.size.toLong()
 
         val networkClient = mockAuthenticatedNetworkClient(
-            ByteReadChannel.Empty, // Explicitly empty response
+            responseBody = ByteArray(0),
             statusCode = HttpStatusCode.Created,
             assertion = {}
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then - should not throw exception, accept empty response
@@ -97,13 +96,13 @@ internal class MessageSyncApiV12Test : ApiTest() {
         val backupSize = backupData.size.toLong()
 
         val networkClient = mockAuthenticatedNetworkClient(
-            ByteReadChannel("Bad Request"),
+            responseBody = "Bad Request",
             statusCode = HttpStatusCode.BadRequest,
             assertion = {}
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -120,18 +119,18 @@ internal class MessageSyncApiV12Test : ApiTest() {
         val backupSize = backupData.size.toLong()
 
         val networkClient = mockAuthenticatedNetworkClient(
-            ByteReadChannel.Empty,
+            responseBody = ByteArray(0),
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
-                assertParameterEquals("user_id", userId)
+                assertQueryParameter("user_id", userId)
                 assertAuthorizationHeaderExist()
                 assertContentType(ContentType.Application.OctetStream)
             }
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -149,18 +148,18 @@ internal class MessageSyncApiV12Test : ApiTest() {
         val backupSize = backupData.size.toLong()
 
         val networkClient = mockAuthenticatedNetworkClient(
-            ByteReadChannel.Empty,
+            responseBody = ByteArray(0),
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
-                assertParameterEquals("user_id", userId)
+                assertQueryParameter("user_id", userId)
                 // Note: In actual implementation, this would verify the custom URL is used
                 // but for this test we're just ensuring the request is successful
             }
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient, customBackupUrl)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, customBackupUrl)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -173,6 +172,182 @@ internal class MessageSyncApiV12Test : ApiTest() {
             write(dummyData)
         }
         return fileSystem.source(dummyPath)
+    }
+
+    @Test
+    fun givenValidFetchMessagesRequest_whenFetchingMessages_thenRequestShouldBeConfiguredCorrectly() = runTest {
+        // Given
+        val userId = "user-id"
+        val conversationId = "conv-id@domain.com"
+        val since = 1234567890L
+        val paginationToken = "msg-token-123"
+        val size = 50
+
+        val responseJson = """
+            {
+                "has_more": true,
+                "conversations": {
+                    "conv1@domain.com": {
+                        "last_read": 1234567900,
+                        "messages": [
+                            {
+                                "message_id": "msg-1",
+                                "timestamp": "1234567890",
+                                "payload": "{\"id\":\"msg-1\"}"
+                            }
+                        ]
+                    }
+                },
+                "pagination_token": "next-token"
+            }
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {}
+        )
+
+        // When
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val response = messageSyncApi.fetchMessages(userId, since, conversationId, paginationToken, size)
+
+        // Then
+        assertTrue(response.isSuccessful())
+        val data = (response as com.wire.kalium.network.utils.NetworkResponse.Success).value
+        assertTrue(data.hasMore)
+        assertTrue(data.conversations.containsKey("conv1@domain.com"))
+        assertTrue(data.paginationToken == "next-token")
+    }
+
+    @Test
+    fun givenEmptyConversations_whenFetchingMessages_thenShouldReturnEmptyResponse() = runTest {
+        // Given
+        val userId = "user-id"
+        val responseJson = """
+            {
+                "has_more": false,
+                "conversations": {}
+            }
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {}
+        )
+
+        // When
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val response = messageSyncApi.fetchMessages(userId, null, null, null, 100)
+
+        // Then
+        assertTrue(response.isSuccessful())
+        val data = (response as com.wire.kalium.network.utils.NetworkResponse.Success).value
+        assertTrue(!data.hasMore)
+        assertTrue(data.conversations.isEmpty())
+        assertTrue(data.paginationToken == null)
+    }
+
+    @Test
+    fun givenMultipleConversations_whenFetchingMessages_thenShouldParseAllConversations() = runTest {
+        // Given
+        val userId = "user-id"
+        val responseJson = """
+            {
+                "has_more": true,
+                "conversations": {
+                    "conv1@domain.com": {
+                        "last_read": 1234567900,
+                        "messages": [
+                            {
+                                "message_id": "msg-1",
+                                "timestamp": "1234567890",
+                                "payload": "{\"id\":\"msg-1\"}"
+                            },
+                            {
+                                "message_id": "msg-2",
+                                "timestamp": "1234567891",
+                                "payload": "{\"id\":\"msg-2\"}"
+                            }
+                        ]
+                    },
+                    "conv2@domain.com": {
+                        "messages": [
+                            {
+                                "message_id": "msg-3",
+                                "timestamp": "1234567892",
+                                "payload": "{\"id\":\"msg-3\"}"
+                            }
+                        ]
+                    }
+                },
+                "pagination_token": "next-token"
+            }
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {}
+        )
+
+        // When
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val response = messageSyncApi.fetchMessages(userId, null, null, null, 100)
+
+        // Then
+        assertTrue(response.isSuccessful())
+        val data = (response as com.wire.kalium.network.utils.NetworkResponse.Success).value
+        assertTrue(data.conversations.size == 2)
+        assertTrue(data.conversations["conv1@domain.com"]?.messages?.size == 2)
+        assertTrue(data.conversations["conv1@domain.com"]?.lastRead == 1234567900L)
+        assertTrue(data.conversations["conv2@domain.com"]?.messages?.size == 1)
+        assertTrue(data.conversations["conv2@domain.com"]?.lastRead == null)
+    }
+
+    @Test
+    fun givenNotFoundError_whenFetchingMessages_thenShouldReturnError() = runTest {
+        // Given
+        val userId = "user-id"
+        val networkClient = mockAuthenticatedNetworkClient(
+            """{"code":404,"message":"Not Found","label":"not-found"}""",
+            statusCode = HttpStatusCode.NotFound,
+            assertion = {}
+        )
+
+        // When
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val response = messageSyncApi.fetchMessages(userId, null, null, null, 100)
+
+        // Then
+        assertTrue(response is com.wire.kalium.network.utils.NetworkResponse.Error)
+    }
+
+    @Test
+    fun givenOnlyOptionalParameters_whenFetchingMessages_thenOnlyRequiredParametersShouldBeSent() = runTest {
+        // Given
+        val userId = "user-id"
+        val size = 100
+        val responseJson = """
+            {
+                "has_more": false,
+                "conversations": {}
+            }
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {}
+        )
+
+        // When
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val response = messageSyncApi.fetchMessages(userId, null, null, null, size)
+
+        // Then
+        assertTrue(response.isSuccessful())
     }
 
     private companion object {

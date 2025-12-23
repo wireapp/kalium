@@ -82,7 +82,6 @@ internal class SlowSyncWorkerImpl(
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val restoreRemoteBackup: RestoreRemoteBackupUseCase,
-    private val restoreConversationsLastRead: com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val transactionProvider: CryptoTransactionProvider,
     logger: KaliumLogger = kaliumLogger
@@ -134,28 +133,7 @@ internal class SlowSyncWorkerImpl(
                         Either.Right(Unit)
                     }
                 }
-                .continueWithStep(SlowSyncStep.RESTORE_CONVERSATIONS_LAST_READ) {
-                    if (kaliumConfigs.messageSynchronizationEnabled) {
-                        when (val result = restoreConversationsLastRead()) {
-                            is com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadResult.Success -> {
-                                logger.i("Restored last read status for ${result.conversationCount} conversations")
-                                Either.Right(Unit)
-                            }
-                            is com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadResult.NoDataFound -> {
-                                logger.i("No conversations last read data found on server")
-                                Either.Right(Unit)
-                            }
-                            is com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadResult.Failure -> {
-                                logger.w("Failed to restore conversations last read: ${result.error}")
-                                // Don't fail the entire slow sync if this fails
-                                Either.Right(Unit)
-                            }
-                        }
-                    } else {
-                        logger.i("Message synchronization is disabled or remote backup URL is not configured, skipping conversations last read restore")
-                        Either.Right(Unit)
-                    }
-                }
+
                 .flatMap {
                     saveLastSavedEventIdIfNeeded(lastSavedEventIdToSaveOnSuccess)
                 }

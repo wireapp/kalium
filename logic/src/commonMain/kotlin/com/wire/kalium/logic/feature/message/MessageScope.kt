@@ -171,7 +171,6 @@ class MessageScope internal constructor(
     private val messageSyncTracker: MessageSyncTracker,
     private val messageSyncRepository: MessageSyncRepository,
     private val messageSyncEnabled: Boolean,
-    private val qualifiedIdMapper: com.wire.kalium.logic.data.id.QualifiedIdMapper,
     private val appVisibilityObserver: com.wire.kalium.network.AppVisibilityObserver,
     private val userSessionWorkScheduler: com.wire.kalium.logic.sync.UserSessionWorkScheduler,
     private val userId: com.wire.kalium.logic.data.user.UserId,
@@ -599,16 +598,6 @@ class MessageScope internal constructor(
             messageSyncRepository = messageSyncRepository,
             userId = selfUserId,
             isFeatureEnabled = messageSyncEnabled,
-            kaliumLogger = kaliumLogger
-        )
-
-    val restoreConversationsLastRead: com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCase
-        get() = com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCaseImpl(
-            messageSyncRepository = messageSyncRepository,
-            conversationRepository = conversationRepository,
-            userId = selfUserId,
-            isFeatureEnabled = messageSyncEnabled,
-            qualifiedIdMapper = qualifiedIdMapper,
             kaliumLogger = kaliumLogger
         )
 

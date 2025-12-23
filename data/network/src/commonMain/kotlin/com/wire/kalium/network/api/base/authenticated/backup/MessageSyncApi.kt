@@ -42,18 +42,18 @@ interface MessageSyncApi {
 
     /**
      * Fetches messages from the backup service with filtering and pagination
-     * @param userId User ID to fetch messages for
-     * @param since Timestamp in epoch milliseconds for cursor-based pagination (optional)
-     * @param conversationId Filter by conversation ID (optional)
-     * @param order Sort order: "asc" or "desc" (default: "asc")
+     * @param user User ID to fetch messages for
+     * @param since Filter messages after timestamp in epoch milliseconds (optional)
+     * @param conversation Filter by conversation ID (optional)
+     * @param paginationToken Message ID for cursor-based pagination (optional)
      * @param size Page size: 1-1000 (default: 100)
-     * @return Network response containing paginated messages
+     * @return Network response containing paginated messages grouped by conversation
      */
     suspend fun fetchMessages(
-        userId: String,
+        user: String,
         since: Long? = null,
-        conversationId: String? = null,
-        order: String = "asc",
+        conversation: String? = null,
+        paginationToken: String? = null,
         size: Int = 100
     ): NetworkResponse<MessageSyncFetchResponseDTO>
 
@@ -96,14 +96,6 @@ interface MessageSyncApi {
         tempFileSink: Sink
     ): NetworkResponse<Unit>
 
-    /**
-     * Fetches conversation last read data for the specified user
-     * @param userId User ID to fetch conversation last read data for
-     * @return Network response containing map of conversation IDs to last read message IDs
-     */
-    suspend fun fetchConversationsLastRead(
-        userId: String
-    ): NetworkResponse<com.wire.kalium.network.api.model.ConversationsLastReadResponseDTO>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(

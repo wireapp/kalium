@@ -73,7 +73,7 @@ data class MessageToSync(
  */
 data class ConversationPendingSync(
     val conversationId: ConversationId,
-    val toUploadLastRead: String
+    val toUploadLastRead: Long // Last read timestamp (epoch millis)
 )
 
 /**
@@ -92,7 +92,7 @@ data class MessageSyncRequest(
     val userId: String,
     val upserts: Map<String, List<MessageSyncUpsert>>,
     val deletions: Map<String, List<String>>,
-    val conversationsLastRead: Map<String, String>
+    val conversationsLastRead: Map<String, Long> // Map from conversation ID to last read timestamp (epoch millis)
 )
 
 /**
@@ -110,10 +110,10 @@ interface MessageSyncRepository {
      * Fetch messages from the remote backup service
      */
     suspend fun fetchMessages(
-        userId: String,
+        user: String,
         since: Long?,
-        conversationId: String?,
-        order: String,
+        conversation: String?,
+        paginationToken: String?,
         size: Int
     ): Either<NetworkFailure, MessageSyncFetchResponseDTO>
 
@@ -143,13 +143,6 @@ interface MessageSyncRepository {
         userId: String,
         tempFileSink: Sink
     ): Either<CoreFailure, Unit>
-
-    /**
-     * Fetch conversation last read data
-     */
-    suspend fun fetchConversationsLastRead(
-        userId: String
-    ): Either<NetworkFailure, ConversationsLastReadResponseDTO>
 
     // Message sync DAO operations
     /**
@@ -203,7 +196,7 @@ interface MessageSyncRepository {
      */
     suspend fun upsertConversationSync(
         conversationId: ConversationId,
-        lastReadMessageId: String
+        lastReadTimestamp: Long // Timestamp in epoch milliseconds
     ): Either<CoreFailure, Unit>
 }
 
@@ -236,21 +229,25 @@ internal class MessageSyncDataSource(
     }
 
     override suspend fun fetchMessages(
-        userId: String,
+        user: String,
         since: Long?,
-        conversationId: String?,
-        order: String,
+        conversation: String?,
+        paginationToken: String?,
         size: Int
     ): Either<NetworkFailure, MessageSyncFetchResponseDTO> {
         val result = wrapApiRequest {
-            messageSyncApi.fetchMessages(userId, since, conversationId, order, size)
+            messageSyncApi.fetchMessages(user, since, conversation, paginationToken, size)
         }
 
         return when (result) {
             is Either.Left -> {
                 // 404 means no messages found - return empty response instead of error
                 if (is404NotFound(result.value)) {
-                    Either.Right(MessageSyncFetchResponseDTO(hasMore = false, results = emptyList()))
+                    Either.Right(MessageSyncFetchResponseDTO(
+                        hasMore = false,
+                        conversations = emptyMap(),
+                        paginationToken = null
+                    ))
                 } else {
                     Either.Left(result.value)
                 }
@@ -309,14 +306,6 @@ internal class MessageSyncDataSource(
                 (failure.kaliumException as com.wire.kalium.network.exceptions.KaliumException.InvalidRequestError).errorResponse.code == 404
     }
 
-    override suspend fun fetchConversationsLastRead(
-        userId: String
-    ): Either<NetworkFailure, ConversationsLastReadResponseDTO> {
-        return wrapApiRequest {
-            messageSyncApi.fetchConversationsLastRead(userId)
-        }
-    }
-
     override suspend fun getMessagesToSync(limit: Int): Either<CoreFailure, List<MessageToSync>> {
         return wrapStorageRequest {
             messageSyncDAO.getMessagesToSync(limit)
@@ -367,10 +356,10 @@ internal class MessageSyncDataSource(
 
     override suspend fun upsertConversationSync(
         conversationId: ConversationId,
-        lastReadMessageId: String
+        lastReadTimestamp: Long
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
-            conversationSyncDAO.upsertConversationSync(conversationId.toDao(), lastReadMessageId)
+            conversationSyncDAO.upsertConversationSync(conversationId.toDao(), lastReadTimestamp)
         }
     }
 

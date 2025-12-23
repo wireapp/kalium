@@ -32,11 +32,11 @@ internal class ConversationSyncDAOImpl(
 
     override suspend fun upsertConversationSync(
         conversationId: QualifiedIDEntity,
-        lastReadMessageId: String
+        lastReadTimestamp: Long
     ): Unit = withContext(writeDispatcher.value) {
         queries.upsertConversationSync(
             conversationId = conversationId,
-            lastReadMessageId = lastReadMessageId
+            lastReadTimestamp = lastReadTimestamp
         )
     }
 

@@ -1303,7 +1303,6 @@ class UserSessionScope internal constructor(
             fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver,
             restoreRemoteBackup,
-            messages.restoreConversationsLastRead,
             kaliumConfigs,
             cryptoTransactionProvider
         )
@@ -2314,7 +2313,6 @@ class UserSessionScope internal constructor(
             messageSyncTracker,
             messageSyncRepository,
             kaliumConfigs.messageSynchronizationEnabled,
-            qualifiedIdMapper,
             appVisibilityObserver,
             userSessionWorkScheduler,
             userId

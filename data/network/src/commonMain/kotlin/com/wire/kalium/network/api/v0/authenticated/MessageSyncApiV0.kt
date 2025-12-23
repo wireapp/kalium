@@ -33,10 +33,10 @@ internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
         MessageSyncApi.getApiNotSupportError(::syncMessages.name)
 
     override suspend fun fetchMessages(
-        userId: String,
+        user: String,
         since: Long?,
-        conversationId: String?,
-        order: String,
+        conversation: String?,
+        paginationToken: String?,
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
         MessageSyncApi.getApiNotSupportError(::fetchMessages.name)
@@ -60,9 +60,4 @@ internal open class MessageSyncApiV0 internal constructor() : MessageSyncApi {
         tempFileSink: Sink
     ): NetworkResponse<Unit> =
         MessageSyncApi.getApiNotSupportError(::downloadStateBackup.name)
-
-    override suspend fun fetchConversationsLastRead(
-        userId: String
-    ): NetworkResponse<ConversationsLastReadResponseDTO> =
-        MessageSyncApi.getApiNotSupportError(::fetchConversationsLastRead.name)
 }

@@ -33,7 +33,7 @@ data class MessageSyncRequestDTO(
     @SerialName("deletions")
     val deletions: Map<String, List<String>>, // Map from conversation ID to list of message IDs to delete
     @SerialName("conversations_last_read")
-    val conversationsLastRead: Map<String, String> = emptyMap() // Map from conversation ID to last read message ID
+    val conversationsLastRead: Map<String, Long> = emptyMap() // Map from conversation ID to last read timestamp (epoch millis)
 )
 
 /**
@@ -56,8 +56,21 @@ data class MessageSyncUpsertDTO(
 data class MessageSyncFetchResponseDTO(
     @SerialName("has_more")
     val hasMore: Boolean,
-    @SerialName("results")
-    val results: List<MessageSyncResultDTO>
+    @SerialName("conversations")
+    val conversations: Map<String, ConversationMessagesDTO>,
+    @SerialName("pagination_token")
+    val paginationToken: String? = null
+)
+
+/**
+ * Messages and metadata for a single conversation
+ */
+@Serializable
+data class ConversationMessagesDTO(
+    @SerialName("last_read")
+    val lastRead: Long? = null, // Last read timestamp (epoch millis)
+    @SerialName("messages")
+    val messages: List<MessageSyncResultDTO>
 )
 
 /**
@@ -67,8 +80,6 @@ data class MessageSyncFetchResponseDTO(
 data class MessageSyncResultDTO(
     @SerialName("timestamp")
     val timestamp: String,
-    @SerialName("conversation_id")
-    val conversationId: String,
     @SerialName("message_id")
     val messageId: String,
     @SerialName("payload")
@@ -99,5 +110,5 @@ data class StateBackupUploadResponse(
 @Serializable
 data class ConversationsLastReadResponseDTO(
     @SerialName("conversations_last_read")
-    val conversationsLastRead: Map<String, String> // Map from conversation ID to last read message ID
+    val conversationsLastRead: Map<String, Long> // Map from conversation ID to last read timestamp (epoch millis)
 )

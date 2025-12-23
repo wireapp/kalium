@@ -22,11 +22,11 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 data class ConversationSyncEntity(
     val conversationId: QualifiedIDEntity,
-    val lastUploadedLastRead: String?,
-    val toUploadLastRead: String?
+    val lastUploadedLastRead: Long?, // Last read timestamp (epoch millis)
+    val toUploadLastRead: Long? // Last read timestamp (epoch millis)
 )
 
 data class ConversationPendingSyncEntity(
     val conversationId: QualifiedIDEntity,
-    val toUploadLastRead: String
+    val toUploadLastRead: Long // Last read timestamp (epoch millis)
 )

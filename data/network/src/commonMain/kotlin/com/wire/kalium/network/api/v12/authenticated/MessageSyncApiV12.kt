@@ -60,18 +60,18 @@ internal open class MessageSyncApiV12(
         }
 
     override suspend fun fetchMessages(
-        userId: String,
+        user: String,
         since: Long?,
-        conversationId: String?,
-        order: String,
+        conversation: String?,
+        paginationToken: String?,
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
         wrapRequest {
             httpClient.get("$backupServiceUrl/messages") {
-                parameter("user", userId)
+                parameter("user", user)
                 since?.let { parameter("since", it) }
-                conversationId?.let { parameter("conversation", it) }
-                parameter("order", order)
+                conversation?.let { parameter("conversation", it) }
+                paginationToken?.let { parameter("pagination_token", it) }
                 parameter("size", size)
             }
         }
@@ -126,15 +126,6 @@ internal open class MessageSyncApiV12(
         }
         NetworkResponse.Error(com.wire.kalium.network.exceptions.KaliumException.GenericError(unhandledException))
     }
-
-    override suspend fun fetchConversationsLastRead(
-        userId: String
-    ): NetworkResponse<ConversationsLastReadResponseDTO> =
-        wrapRequest {
-            httpClient.get("$backupServiceUrl/conversations-last-read") {
-                parameter("user_id", userId)
-            }
-        }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun handleStateBackupDownload(httpResponse: HttpResponse, tempFileSink: Sink) = try {

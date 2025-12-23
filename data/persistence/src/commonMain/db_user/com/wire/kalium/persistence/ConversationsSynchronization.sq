@@ -2,8 +2,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 CREATE TABLE ConversationsSynchronization (
     conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
-    last_uploaded_last_read TEXT,
-    to_upload_last_read TEXT
+    last_uploaded_last_read INTEGER,
+    to_upload_last_read INTEGER
 );
 
 CREATE INDEX idx_conversations_sync_to_upload ON ConversationsSynchronization(to_upload_last_read) WHERE to_upload_last_read IS NOT NULL;
@@ -12,7 +12,7 @@ CREATE INDEX idx_conversations_sync_to_upload ON ConversationsSynchronization(to
 -- Only sets to_upload_last_read if it's different from last_uploaded_last_read
 upsertConversationSync:
 INSERT INTO ConversationsSynchronization(conversation_id, last_uploaded_last_read, to_upload_last_read)
-VALUES(:conversationId, NULL, :lastReadMessageId)
+VALUES(:conversationId, NULL, :lastReadTimestamp)
 ON CONFLICT(conversation_id) DO UPDATE SET
     to_upload_last_read = CASE
         WHEN excluded.to_upload_last_read != ConversationsSynchronization.last_uploaded_last_read

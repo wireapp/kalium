@@ -34,7 +34,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
+import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import io.mockative.Mockable
+import kotlinx.datetime.Instant
 
 private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
     value = id,
@@ -69,11 +71,11 @@ internal class RestoreRemoteBackupUseCaseImpl(
         logger.i("Starting remote backup restoration for user: ${selfUserId.value}")
 
         var totalRestored = 0
-        var since: Long? = null
+        var paginationToken: String? = null
         var hasMore = true
 
         while (hasMore) {
-            val result = fetchAndProcessPage(since)
+            val result = fetchAndProcessPage(paginationToken)
             result.fold(
                 { failure ->
                     logger.e("Failed to fetch or process page: $failure")
@@ -81,7 +83,7 @@ internal class RestoreRemoteBackupUseCaseImpl(
                 },
                 { page ->
                     totalRestored += page.restoredCount
-                    since = page.nextCursor
+                    paginationToken = page.nextPaginationToken
                     hasMore = page.hasMore
                     logger.i("Processed page: ${page.restoredCount} messages restored, hasMore: $hasMore")
                 }
@@ -92,23 +94,74 @@ internal class RestoreRemoteBackupUseCaseImpl(
         return Either.Right(totalRestored)
     }
 
-    private suspend fun fetchAndProcessPage(since: Long?): Either<CoreFailure, PageResult> {
+    private suspend fun fetchAndProcessPage(paginationToken: String?): Either<CoreFailure, PageResult> {
         return messageSyncRepository.fetchMessages(
-            userId = selfUserId.value,
-            since = since,
-            conversationId = null,
-            order = "asc",
+            user = selfUserId.value,
+            since = null,
+            conversation = null,
+            paginationToken = paginationToken,
             size = DEFAULT_PAGE_SIZE
         ).flatMap { response ->
-            processMessages(response.results.mapNotNull { result ->
+            // Update conversation last_read timestamps
+            updateConversationLastRead(response)
+
+            // Extract all messages from all conversations
+            val allMessages = response.conversations.values.flatMap { conversationData ->
+                conversationData.messages
+            }
+
+            // Parse and process the messages
+            processMessages(allMessages.mapNotNull { result ->
                 backupRepository.parseBackupMessage(result.payload)
             }).fold(
                 { failure -> Either.Left(failure) },
                 { restoredCount ->
-                    val nextCursor = response.results.lastOrNull()?.timestamp?.toLongOrNull()
-                    Either.Right(PageResult(restoredCount, nextCursor, response.hasMore))
+                    Either.Right(PageResult(
+                        restoredCount = restoredCount,
+                        nextPaginationToken = response.paginationToken,
+                        hasMore = response.hasMore
+                    ))
                 }
             )
+        }
+    }
+
+    private suspend fun updateConversationLastRead(response: MessageSyncFetchResponseDTO) {
+        response.conversations.forEach { (conversationIdStr, conversationData) ->
+            conversationData.lastRead?.let { lastReadTimestamp ->
+                val conversationId = QualifiedID(
+                    value = conversationIdStr.substringBefore('@'),
+                    domain = conversationIdStr.substringAfter('@')
+                )
+
+                // Convert the last read timestamp (epoch milliseconds) to Instant
+                val backupLastReadInstant = Instant.fromEpochMilliseconds(lastReadTimestamp)
+
+                // Get the current conversation to check its local last read timestamp
+                conversationRepository.getConversationById(conversationId).fold(
+                    { failure ->
+                        logger.w("Failed to get conversation $conversationIdStr: $failure")
+                    },
+                    { conversation ->
+                        // Only update if the backup timestamp is newer than the local one
+                        if (backupLastReadInstant > conversation.lastReadDate) {
+                            conversationRepository.updateConversationReadDate(
+                                qualifiedID = conversationId,
+                                date = backupLastReadInstant
+                            ).fold(
+                                { failure ->
+                                    logger.w("Failed to update last read for conversation $conversationIdStr: $failure")
+                                },
+                                {
+                                    logger.d("Updated last read for conversation $conversationIdStr to $backupLastReadInstant")
+                                }
+                            )
+                        } else {
+                            logger.d("Skipping last read update for conversation $conversationIdStr: backup timestamp $backupLastReadInstant is not newer than local ${conversation.lastReadDate}")
+                        }
+                    }
+                )
+            }
         }
     }
 
@@ -172,7 +225,7 @@ internal class RestoreRemoteBackupUseCaseImpl(
 
     private data class PageResult(
         val restoredCount: Int,
-        val nextCursor: Long?,
+        val nextPaginationToken: String?,
         val hasMore: Boolean
     )
 

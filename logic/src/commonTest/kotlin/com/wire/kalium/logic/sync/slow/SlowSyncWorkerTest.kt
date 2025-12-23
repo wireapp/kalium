@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvid
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.user.LegalHoldStatus
+import com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -512,10 +514,10 @@ class SlowSyncWorkerTest {
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
-        val restoreRemoteBackup = mock(com.wire.kalium.logic.feature.backup.RestoreRemoteBackupUseCase::class)
-        val restoreConversationsLastRead = mock(com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadUseCase::class)
-        val kaliumConfigs = com.wire.kalium.logic.featureFlags.KaliumConfigs(
-            messageSynchronizationEnabled = false
+        val restoreRemoteBackup = mock(RestoreRemoteBackupUseCase::class)
+        val kaliumConfigs = KaliumConfigs(
+            messageSynchronizationEnabledFlag = false,
+            remoteBackupURL = "https://example.com"
         )
 
         init {
@@ -524,9 +526,6 @@ class SlowSyncWorkerTest {
                 withIsClientAsyncNotificationsCapableReturning(false)
                 withTransactionReturning(Either.Right(Unit))
                 coEvery { restoreRemoteBackup.invoke() }.returns(Either.Right(0))
-                coEvery { restoreConversationsLastRead.invoke() }.returns(
-                    com.wire.kalium.logic.feature.message.sync.RestoreConversationsLastReadResult.NoDataFound
-                )
             }
         }
 
@@ -544,7 +543,6 @@ class SlowSyncWorkerTest {
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
             restoreRemoteBackup = restoreRemoteBackup,
-            restoreConversationsLastRead = restoreConversationsLastRead,
             kaliumConfigs = kaliumConfigs,
             transactionProvider = cryptoTransactionProvider
         )
