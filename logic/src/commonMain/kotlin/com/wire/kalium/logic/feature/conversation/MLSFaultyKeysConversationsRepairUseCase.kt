@@ -1,0 +1,96 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.feature.conversation
+
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCase
+import com.wire.kalium.logic.feature.debug.RepairResult
+import com.wire.kalium.logic.feature.debug.TargetedRepairParam
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.SyncStateObserver
+
+/**
+ * Internal use case to repair conversations with faulty MLS keys based on known faulty keys per domain.
+ * This is intended to be run once after an app update that includes the fix for the faulty keys.
+ */
+internal interface MLSFaultyKeysConversationsRepairUseCase {
+    suspend operator fun invoke()
+}
+
+internal class MLSFaultyKeysConversationsRepairUseCaseImpl(
+    private val selfUserId: UserId,
+    private val syncStateObserver: SyncStateObserver,
+    private val kaliumConfigs: KaliumConfigs,
+    private val userConfigRepository: UserConfigRepository,
+    private val repairFaultyRemovalKeys: RepairFaultyRemovalKeysUseCase,
+    kaliumLogger: KaliumLogger,
+) : MLSFaultyKeysConversationsRepairUseCase {
+    private val logger by lazy { kaliumLogger.withTextTag("MLSFaultyKeysConversationsRepairUseCase") }
+
+    override suspend fun invoke() {
+        val wasRepairPerformed = userConfigRepository.isMLSFaultyKeysRepairExecuted()
+        if (wasRepairPerformed) {
+            logger.d("Skipping MLS faulty keys repair - already executed for current user ${selfUserId.toLogString()}")
+            return
+        }
+
+        logger.d("Starting MLS faulty keys repair - for current user ${selfUserId.toLogString()}")
+        syncStateObserver.waitUntilLive()
+        val matched = kaliumConfigs.domainWithFaultyKeysMap.filter { (domain, _) -> selfUserId.domain == domain }
+        when {
+            matched.isEmpty() -> {
+                logger.d("Skipping MLS faulty keys repair - domain does not match current user ${selfUserId.toLogString()}")
+            }
+
+            else -> {
+                matched.forEach { (domain, faultyKey) ->
+                    val result = repairFaultyRemovalKeys(
+                        TargetedRepairParam(
+                            domain = domain,
+                            faultyKeys = faultyKey
+                        )
+                    )
+
+                    when (result) {
+                        RepairResult.Error ->
+                            logger.e("Error occurred during MLS faulty keys repair for user ${selfUserId.toLogString()}")
+
+                        RepairResult.NoConversationsToRepair ->
+                            logger.d("No conversations to repair for user ${selfUserId.toLogString()}")
+
+                        RepairResult.RepairNotNeeded ->
+                            logger.d("Repair not needed for user ${selfUserId.toLogString()}")
+
+                        is RepairResult.RepairPerformed -> {
+                            mapResultOfRepairPerformed(result)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun mapResultOfRepairPerformed(result: RepairResult.RepairPerformed) {
+        if (result.failedRepairs.isEmpty()) {
+            userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
+        }
+        logger.i("Repair was performed for user: ${selfUserId.toLogString()} with result: ${result.toLogString()}")
+    }
+}

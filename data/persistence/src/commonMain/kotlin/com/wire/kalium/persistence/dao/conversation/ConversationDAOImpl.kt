@@ -677,4 +677,9 @@ internal class ConversationDAOImpl internal constructor(
             unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).executeAsOneOrNull() ?: false
         }
     }
+
+    override suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity> =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectAllMLSConversationsByDomain(domain, conversationMapper::toConversationEntity).executeAsList()
+        }
 }
