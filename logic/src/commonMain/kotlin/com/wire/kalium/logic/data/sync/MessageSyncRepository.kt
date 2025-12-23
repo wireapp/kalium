@@ -137,11 +137,12 @@ interface MessageSyncRepository {
 
     /**
      * Download crypto state backup
+     * Returns StorageFailure.DataNotFound if no backup exists (404)
      */
     suspend fun downloadStateBackup(
         userId: String,
         tempFileSink: Sink
-    ): Either<NetworkFailure, Unit>
+    ): Either<CoreFailure, Unit>
 
     /**
      * Fetch conversation last read data
@@ -241,8 +242,20 @@ internal class MessageSyncDataSource(
         order: String,
         size: Int
     ): Either<NetworkFailure, MessageSyncFetchResponseDTO> {
-        return wrapApiRequest {
+        val result = wrapApiRequest {
             messageSyncApi.fetchMessages(userId, since, conversationId, order, size)
+        }
+
+        return when (result) {
+            is Either.Left -> {
+                // 404 means no messages found - return empty response instead of error
+                if (is404NotFound(result.value)) {
+                    Either.Right(MessageSyncFetchResponseDTO(hasMore = false, results = emptyList()))
+                } else {
+                    Either.Left(result.value)
+                }
+            }
+            is Either.Right -> Either.Right(result.value)
         }
     }
 
@@ -269,10 +282,31 @@ internal class MessageSyncDataSource(
     override suspend fun downloadStateBackup(
         userId: String,
         tempFileSink: Sink
-    ): Either<NetworkFailure, Unit> {
-        return wrapApiRequest {
+    ): Either<CoreFailure, Unit> {
+        val result = wrapApiRequest {
             messageSyncApi.downloadStateBackup(userId, tempFileSink)
-        }.map { Unit }
+        }
+
+        return when (result) {
+            is Either.Left -> {
+                // 404 means no backup found - return DataNotFound instead of network error
+                if (is404NotFound(result.value)) {
+                    Either.Left(com.wire.kalium.common.error.StorageFailure.DataNotFound)
+                } else {
+                    Either.Left(result.value)
+                }
+            }
+            is Either.Right -> Either.Right(Unit)
+        }
+    }
+
+    /**
+     * Helper function to detect 404 Not Found errors
+     */
+    private fun is404NotFound(failure: NetworkFailure): Boolean {
+        return failure is NetworkFailure.ServerMiscommunication &&
+                failure.kaliumException is com.wire.kalium.network.exceptions.KaliumException.InvalidRequestError &&
+                (failure.kaliumException as com.wire.kalium.network.exceptions.KaliumException.InvalidRequestError).errorResponse.code == 404
     }
 
     override suspend fun fetchConversationsLastRead(

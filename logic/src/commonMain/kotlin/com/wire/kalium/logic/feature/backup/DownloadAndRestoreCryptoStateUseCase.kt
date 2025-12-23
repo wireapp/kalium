@@ -29,7 +29,6 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.sync.remoteBackup.CryptoStateBackupMetadata
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
-import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mockable
 import kotlinx.serialization.json.Json
 import okio.Path
@@ -103,16 +102,10 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
             when (result) {
                 is Either.Left -> {
                     val failure = result.value
-                    // Check if it's a 404 (no backup found)
-                    if (failure is com.wire.kalium.common.error.NetworkFailure.ServerMiscommunication &&
-                        failure.kaliumException is KaliumException.InvalidRequestError
-                    ) {
-                        val statusCode =
-                            (failure.kaliumException as KaliumException.InvalidRequestError).errorResponse.code
-                        if (statusCode == 404) {
-                            logger.i("No backup found on server")
-                            return DownloadAndRestoreCryptoStateResult.NoBackupFound
-                        }
+                    // Check if no backup was found (404)
+                    if (failure is com.wire.kalium.common.error.StorageFailure.DataNotFound) {
+                        logger.i("No backup found on server")
+                        return DownloadAndRestoreCryptoStateResult.NoBackupFound
                     }
                     logger.e("Failed to download or restore backup: $failure")
                     DownloadAndRestoreCryptoStateResult.Failure(failure)
