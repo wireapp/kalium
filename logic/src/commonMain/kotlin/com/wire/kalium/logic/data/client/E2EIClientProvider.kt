@@ -44,7 +44,7 @@ import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.days
 
 @Mockable
-interface E2EIClientProvider {
+internal interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, E2EIClient>
     suspend fun nuke()
 }

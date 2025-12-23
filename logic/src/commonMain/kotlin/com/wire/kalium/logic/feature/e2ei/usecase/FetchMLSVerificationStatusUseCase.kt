@@ -47,7 +47,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
-typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
+internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 
 /**
  * Check and update MLS Conversations Verification status.
@@ -58,7 +58,7 @@ internal interface FetchMLSVerificationStatusUseCase {
     suspend operator fun invoke(mlsContext: MlsCoreCryptoContext, groupId: GroupID)
 }
 
-data class VerificationStatusData(
+internal data class VerificationStatusData(
     val conversationId: ConversationId,
     val currentPersistedStatus: VerificationStatus,
     val newStatus: VerificationStatus

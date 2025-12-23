@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface ClientRepository {
+internal interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(
         clientId: ClientId,
@@ -123,7 +123,7 @@ interface ClientRepository {
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
-class ClientDataSource(
+internal class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,

@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Mockable
-interface ReactionRepository {
+internal interface ReactionRepository {
     suspend fun persistReaction(
         originalMessageId: String,
         conversationId: ConversationId,
@@ -68,7 +68,7 @@ interface ReactionRepository {
     ): Flow<List<MessageReaction>>
 }
 
-class ReactionRepositoryImpl(
+internal class ReactionRepositoryImpl(
     private val selfUserId: UserId,
     private val reactionsDAO: ReactionDAO,
     private val reactionsMapper: ReactionsMapper = MapperProvider.reactionsMapper()

@@ -30,7 +30,7 @@ import io.mockative.Mockable
  * conversations.
  */
 @Mockable
-interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
+internal interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 
     /**
      * @param synchroniseUsers if true we synchronize all known users from backend

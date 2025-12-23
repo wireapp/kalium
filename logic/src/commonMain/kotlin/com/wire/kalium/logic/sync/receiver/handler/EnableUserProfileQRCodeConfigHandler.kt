@@ -23,10 +23,10 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.EnableUserProfileQRCodeConfigModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
-class EnableUserProfileQRCodeConfigHandler(
+internal class EnableUserProfileQRCodeConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(model: EnableUserProfileQRCodeConfigModel?): Either<CoreFailure, Unit> =
+    internal suspend fun handle(model: EnableUserProfileQRCodeConfigModel?): Either<CoreFailure, Unit> =
         when {
             model == null -> userConfigRepository.setProfileQRCodeEnabled(true)
             else -> userConfigRepository.setProfileQRCodeEnabled(model.status == Status.ENABLED)

@@ -23,7 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 
-suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+internal suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
     block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
 ): Either<CoreFailure, T> {
     return mls?.let {

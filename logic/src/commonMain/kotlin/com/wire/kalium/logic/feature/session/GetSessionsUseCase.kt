@@ -19,18 +19,19 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.session.SessionRepository
 
 /**
  * This use case will return all valid sessions.
  *
  * @see [GetAllSessionsResult.Success.sessions]
  */
-class GetSessionsUseCase(
+// todo(interface). extract interface for use case
+public class GetSessionsUseCase internal constructor(
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(): GetAllSessionsResult = sessionRepository.allValidSessions().fold(
+    public suspend operator fun invoke(): GetAllSessionsResult = sessionRepository.allValidSessions().fold(
         {
             when (it) {
                 StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound

@@ -29,10 +29,11 @@ import kotlinx.coroutines.flow.map
  *
  * @see [GetAllSessionsResult.Success.sessions]
  */
-class ObserveSessionsUseCase(
+// todo(interface). extract interface for use case
+public class ObserveSessionsUseCase internal constructor(
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(): Flow<GetAllSessionsResult> = sessionRepository.allValidSessionsFlow()
+    public suspend operator fun invoke(): Flow<GetAllSessionsResult> = sessionRepository.allValidSessionsFlow()
         .map {
             it.fold(
                 { failure ->

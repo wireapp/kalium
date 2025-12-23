@@ -17,6 +17,6 @@
  */
 package com.wire.kalium.logic.configuration
 
-data class WireCellsConfig(
+internal data class WireCellsConfig(
     val backendUrl: String?,
 )

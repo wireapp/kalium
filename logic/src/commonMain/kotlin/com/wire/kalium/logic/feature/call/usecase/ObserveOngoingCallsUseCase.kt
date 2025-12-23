@@ -25,12 +25,12 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case is responsible for observing the ongoing calls.
  */
-interface ObserveOngoingCallsUseCase {
+public interface ObserveOngoingCallsUseCase {
     /**
      * That Flow emits everytime when the list is changed
      * @return a [Flow] of the list of ongoing calls that should be shown to the user.
      */
-    suspend operator fun invoke(): Flow<List<Call>>
+    public suspend operator fun invoke(): Flow<List<Call>>
 }
 
 internal class ObserveOngoingCallsUseCaseImpl(

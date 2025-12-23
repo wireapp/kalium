@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.framework.TestCall
@@ -333,12 +333,13 @@ class OnCloseCallTest {
         val callRepository: CallRepository = mock(CallRepository::class)
         val networkStateObserver = mock(NetworkStateObserver::class)
         val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
-        val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
+        val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         init {
             withGetCallMetadata(callMetadata)
             withNetworkState(NetworkState.ConnectedWithInternet)
         }
+
         fun arrange() = this to OnCloseCall(
             callRepository = callRepository,
             scope = testScope,
@@ -346,11 +347,13 @@ class OnCloseCallTest {
             networkStateObserver = networkStateObserver,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
         )
+
         fun withNetworkState(networkState: NetworkState): Arrangement = apply {
             every {
                 networkStateObserver.observeNetworkState()
             }.returns(MutableStateFlow(networkState))
         }
+
         fun withGetCallMetadata(metadata: CallMetadata): Arrangement = apply {
             every {
                 callRepository.getCallMetadata(conversationId)

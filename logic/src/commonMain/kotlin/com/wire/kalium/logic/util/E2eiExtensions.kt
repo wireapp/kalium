@@ -23,7 +23,7 @@ package com.wire.kalium.logic.util
  * output will be in the format of 2 bytes separated by a colon.
  * e.g. 01:02:03:04:05:06:07:08:09:0A:0B:0C:0D:0E:0F:10
  */
-fun String.serialNumber() = this.chunked(CHUNK_SIZE)
+internal fun String.serialNumber() = this.chunked(CHUNK_SIZE)
     .joinToString(SEPARATOR)
     .uppercase()
 

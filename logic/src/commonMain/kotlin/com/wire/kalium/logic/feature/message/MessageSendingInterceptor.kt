@@ -26,7 +26,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
 
-interface MessageSendingInterceptor {
+internal interface MessageSendingInterceptor {
     suspend fun prepareMessage(originalMessage: Message.Sendable): Either<CoreFailure, Message.Sendable>
 }
 

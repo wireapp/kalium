@@ -52,7 +52,7 @@ import kotlinx.coroutines.flow.first
 import kotlin.io.encoding.Base64
 
 @Mockable
-interface MLSWelcomeEventHandler {
+internal interface MLSWelcomeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 }
 

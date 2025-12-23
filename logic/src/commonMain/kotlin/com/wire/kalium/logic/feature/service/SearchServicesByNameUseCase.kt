@@ -28,12 +28,12 @@ import kotlinx.coroutines.flow.map
  *
  * @param search The query to search for
  */
-interface SearchServicesByNameUseCase {
+public interface SearchServicesByNameUseCase {
 
-    suspend operator fun invoke(search: String): Flow<List<ServiceDetails>>
+    public suspend operator fun invoke(search: String): Flow<List<ServiceDetails>>
 }
 
-class SearchServicesByNameUseCaseImpl internal constructor(
+internal class SearchServicesByNameUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : SearchServicesByNameUseCase {
 

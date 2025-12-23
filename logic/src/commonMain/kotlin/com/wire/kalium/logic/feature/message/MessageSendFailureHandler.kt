@@ -42,7 +42,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mockable
 
 @Mockable
-interface MessageSendFailureHandler {
+internal interface MessageSendFailureHandler {
     /**
      * Handle a failure when attempting to send a message
      * due to contacts and/or clients being removed from conversation and/or added to them.
@@ -74,7 +74,7 @@ interface MessageSendFailureHandler {
 }
 
 @Suppress("LongParameterList")
-class MessageSendFailureHandlerImpl internal constructor(
+internal class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,

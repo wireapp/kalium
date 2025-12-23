@@ -33,7 +33,7 @@ import com.wire.kalium.messaging.sending.MessageTarget
  * @property avsSelfClientId The self client ID used by AVS.
  * @property messageTarget The target for sending the message.
  */
-data class CallingMessageInstructions(
+internal data class CallingMessageInstructions(
     val context: Pointer?,
     val callHostConversationId: ConversationId,
     val messageString: String,
@@ -42,7 +42,7 @@ data class CallingMessageInstructions(
     val messageTarget: CallingMessageTarget
 )
 
-sealed interface CallingMessageTarget {
+internal sealed interface CallingMessageTarget {
     val specificTarget: MessageTarget
 
     /**

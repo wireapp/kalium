@@ -18,22 +18,22 @@
 package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
-import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -133,7 +133,7 @@ class OnParticipantListChangedTest {
 
         var isEndCallInvoked = false
 
-        private val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
+        private val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         fun arrange() = this to OnParticipantListChanged(
             callRepository = callRepository,

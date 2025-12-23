@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -30,8 +30,8 @@ import kotlinx.coroutines.withContext
 /**
  * @return the [Boolean] for if the user's team has conference calling enabled in its plan.
  */
-interface IsEligibleToStartCallUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult
+public interface IsEligibleToStartCallUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult
 }
 
 internal class IsEligibleToStartCallUseCaseImpl(
@@ -45,9 +45,9 @@ internal class IsEligibleToStartCallUseCaseImpl(
             val establishedCallConversationId = callRepository.establishedCallConversationId()
 
             val canStartCall = (
-                conversationType == Conversation.Type.OneOnOne ||
-                    (conversationType is Conversation.Type.Group && isConferenceCallingEnabled())
-            )
+                    conversationType == Conversation.Type.OneOnOne ||
+                            (conversationType is Conversation.Type.Group && isConferenceCallingEnabled())
+                    )
 
             establishedCallConversationId?.let {
                 callIsEstablished(it, conversationId, canStartCall)
@@ -80,29 +80,29 @@ internal class IsEligibleToStartCallUseCaseImpl(
     }
 }
 
-sealed interface ConferenceCallingResult {
+public sealed interface ConferenceCallingResult {
     /**
      * Eligible to start conference/one on one calls
      */
-    data object Enabled : ConferenceCallingResult
+    public data object Enabled : ConferenceCallingResult
 
     /**
      * Not eligible to start a conference/one on one calls
      */
-    sealed interface Disabled : ConferenceCallingResult {
+    public sealed interface Disabled : ConferenceCallingResult {
         /**
          * Established call is ongoing
          */
-        data object Established : Disabled
+        public data object Established : Disabled
 
         /**
          * There is an Ongoing Call
          */
-        data object OngoingCall : Disabled
+        public data object OngoingCall : Disabled
 
         /**
          * Conference Calling is unavailable due to team not having the paid plan
          */
-        data object Unavailable : Disabled
+        public data object Unavailable : Disabled
     }
 }

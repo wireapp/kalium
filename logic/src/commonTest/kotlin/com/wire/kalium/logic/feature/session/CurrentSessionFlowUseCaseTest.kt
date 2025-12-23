@@ -35,7 +35,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class CurrentSessionFlowUseCaseTest {
+internal class CurrentSessionFlowUseCaseTest {
 
     val sessionRepository = mock(SessionRepository::class)
 

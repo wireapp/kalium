@@ -39,7 +39,7 @@ import io.mockative.Mockable
  * @return [Either.Right] with `true` if the update was successful, or [Either.Left] if an error occurred.
  */
 @Mockable
-interface UpdateConversationProtocolUseCase {
+internal interface UpdateConversationProtocolUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,

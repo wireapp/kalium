@@ -19,24 +19,24 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserId
 
 /**
  * Use Case that allows a user to block user
  */
-fun interface BlockUserUseCase {
+public fun interface BlockUserUseCase {
     /**
      * Use case [BlockUserUseCase] operation
      *
      * @param userId the target user whom to block
      * @return a [BlockUserResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): BlockUserResult
+    public suspend operator fun invoke(userId: UserId): BlockUserResult
 }
 
 internal class BlockUserUseCaseImpl(
@@ -62,7 +62,7 @@ internal class BlockUserUseCaseImpl(
     }
 }
 
-sealed class BlockUserResult {
-    data object Success : BlockUserResult()
-    data class Failure(val coreFailure: CoreFailure) : BlockUserResult()
+public sealed class BlockUserResult {
+    public data object Success : BlockUserResult()
+    public data class Failure(public val coreFailure: CoreFailure) : BlockUserResult()
 }

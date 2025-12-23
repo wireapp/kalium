@@ -27,7 +27,7 @@ package com.wire.kalium.logic.sync.periodic
  *    in the foreground.
  *
  */
-interface UserConfigSyncScheduler {
+internal interface UserConfigSyncScheduler {
 
     /**
      *  Schedules a periodic execution of [UserConfigSyncWorker] that is responsible for syncing/refreshing user configurations:

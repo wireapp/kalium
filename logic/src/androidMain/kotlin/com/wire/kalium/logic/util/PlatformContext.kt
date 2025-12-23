@@ -20,6 +20,6 @@ package com.wire.kalium.logic.util
 
 import android.content.Context
 
-actual class PlatformContext(
-    val context: Context
+internal actual class PlatformContext(
+    internal val context: Context
 )

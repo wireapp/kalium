@@ -25,19 +25,19 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
-sealed class SSOFinalizeLoginResult {
-    data class Success(val requestUrl: String) : SSOFinalizeLoginResult()
+internal sealed class SSOFinalizeLoginResult {
+    internal data class Success(val requestUrl: String) : SSOFinalizeLoginResult()
 
-    sealed class Failure : SSOFinalizeLoginResult() {
-        data object InvalidCookie : SSOFinalizeLoginResult.Failure()
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+    internal sealed class Failure : SSOFinalizeLoginResult() {
+        internal data object InvalidCookie : SSOFinalizeLoginResult.Failure()
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
 /**
  * Finalizes a login using SSO
  */
-interface SSOFinalizeLoginUseCase {
+internal interface SSOFinalizeLoginUseCase {
     /**
      * @param cookie the cookie to use for the login
      * @return the [SSOFinalizeLoginResult] with the request url if successful

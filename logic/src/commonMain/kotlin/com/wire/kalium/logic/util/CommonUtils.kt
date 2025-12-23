@@ -26,11 +26,11 @@ import kotlin.time.Duration.Companion.ZERO
 
 private const val DAYS_IN_WEEK = 7
 
-val Duration.inWholeWeeks: Long
+public val Duration.inWholeWeeks: Long
     get() = inWholeDays / DAYS_IN_WEEK
 
 @OptIn(ExperimentalContracts::class)
-fun Duration?.isPositiveNotNull(): Boolean {
+public fun Duration?.isPositiveNotNull(): Boolean {
     contract {
         returns(true) implies (this@isPositiveNotNull != null)
     }
@@ -44,12 +44,12 @@ internal fun Boolean.toInt() = if (this) 1 else 0
     a space then it's considered a part of its name: copy of "file_name(1).jpg" will be "file_name(1) (1).jpg".
     This is how it usually works on many operating systems.
  */
-fun buildFileName(name: String, extension: String? = null, copyCounter: Int = 0): String {
+public fun buildFileName(name: String, extension: String? = null, copyCounter: Int = 0): String {
     val nameWithCopyCounter = if (copyCounter <= 0) name else "$name ($copyCounter)"
     return extension?.let { "$nameWithCopyCounter.$extension" } ?: nameWithCopyCounter
 }
 
-fun String.splitFileExtension(): Pair<String, String?> {
+public fun String.splitFileExtension(): Pair<String, String?> {
     val splitElements = split(".")
     val startsWithADot = splitElements.isNotEmpty() && splitElements.first().isEmpty()
     // Most authors define extension in a way that doesn't allow more than one in the same file name,
@@ -63,7 +63,7 @@ fun String.splitFileExtension(): Pair<String, String?> {
     return (name to extension)
 }
 
-fun String.splitFileExtensionAndCopyCounter(): Triple<String, Int, String?> {
+public fun String.splitFileExtensionAndCopyCounter(): Triple<String, Int, String?> {
     val (name, extension) = this.splitFileExtension()
     val copyCounterRegex = " \\(\\d+\\)\$".toRegex()
     val (nameWithoutCopyCounter, copyCounter) = copyCounterRegex.find(name)?.let {
@@ -74,10 +74,10 @@ fun String.splitFileExtensionAndCopyCounter(): Triple<String, Int, String?> {
     return Triple(nameWithoutCopyCounter, copyCounter, extension)
 }
 
-fun String.fileExtension(): String? = splitFileExtension().second
+public fun String.fileExtension(): String? = splitFileExtension().second
 
 @OptIn(ExperimentalContracts::class)
-fun Int?.isGreaterThan(other: Int?): Boolean {
+public fun Int?.isGreaterThan(other: Int?): Boolean {
     contract {
         returns(true) implies (this@isGreaterThan != null)
         returns(true) implies (other != null)
@@ -88,7 +88,7 @@ fun Int?.isGreaterThan(other: Int?): Boolean {
 /**
  * Convenience method to compute a {K, Set<V>} map mutating the collection with f() if the key is present.
  */
-fun <K, V> ConcurrentMutableMap<K, MutableSet<V>>.safeComputeAndMutateSetValue(key: K, f: () -> V): MutableSet<V> {
+internal fun <K, V> ConcurrentMutableMap<K, MutableSet<V>>.safeComputeAndMutateSetValue(key: K, f: () -> V): MutableSet<V> {
     return this.block {
         val values = if (this.containsKey(key)) this[key]!! else mutableSetOf()
 

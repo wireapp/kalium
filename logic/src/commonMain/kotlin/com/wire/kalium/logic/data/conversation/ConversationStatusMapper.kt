@@ -29,7 +29,7 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mockable
 
 @Mockable
-interface ConversationStatusMapper {
+internal interface ConversationStatusMapper {
     fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO
     fun toMutedStatusDaoModel(mutedStatus: MutedConversationStatus): ConversationEntity.MutedStatus
     fun fromMutedStatusDaoModel(mutedStatus: ConversationEntity.MutedStatus): MutedConversationStatus
@@ -38,7 +38,7 @@ interface ConversationStatusMapper {
     fun toArchivedStatusApiModel(isArchived: Boolean, archivedStatusTimestamp: Long): MemberUpdateDTO
 }
 
-class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusMapper {
+internal class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusMapper {
     override fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO {
         return MemberUpdateDTO(
             otrMutedStatus = MutedStatus.fromOrdinal(mutedStatus.status),

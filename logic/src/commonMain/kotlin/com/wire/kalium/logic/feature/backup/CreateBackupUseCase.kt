@@ -48,7 +48,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.FileNotFoundException
 import okio.Path
@@ -58,13 +57,13 @@ import okio.Source
 import okio.buffer
 import okio.use
 
-interface CreateBackupUseCase {
+public interface CreateBackupUseCase {
     /**
      * Creates a compressed backup file, containing a metadata json file and the current state of the database. This file can be encrypted
      * with the provided password if it is not empty. Otherwise, the file will be unencrypted.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String): CreateBackupResult
+    public suspend operator fun invoke(password: String): CreateBackupResult
 }
 
 @Suppress("LongParameterList")
@@ -189,7 +188,7 @@ internal class CreateBackupUseCaseImpl(
     }
 }
 
-sealed class CreateBackupResult {
-    data class Failure(val coreFailure: CoreFailure) : CreateBackupResult()
-    data class Success(val backupFilePath: Path, val backupFileName: String) : CreateBackupResult()
+public sealed class CreateBackupResult {
+    public data class Failure(public val coreFailure: CoreFailure) : CreateBackupResult()
+    public data class Success(public val backupFilePath: Path, public val backupFileName: String) : CreateBackupResult()
 }

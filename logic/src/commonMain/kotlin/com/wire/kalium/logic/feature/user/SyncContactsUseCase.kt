@@ -34,7 +34,7 @@ internal interface SyncContactsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
-class SyncContactsUseCaseImpl internal constructor(
+internal class SyncContactsUseCaseImpl internal constructor(
     private val userDataSource: UserRepository
 ) : SyncContactsUseCase {
 

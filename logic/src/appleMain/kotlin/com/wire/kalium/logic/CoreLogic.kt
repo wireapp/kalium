@@ -38,7 +38,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
@@ -66,7 +66,7 @@ actual class CoreLogic(
         passphrase = null
     )
 
-    actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
+    public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -83,7 +83,7 @@ actual class CoreLogic(
         )
     }
 
-    actual override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
@@ -93,9 +93,9 @@ actual class CoreLogic(
 
     actual override val globalCallManager: GlobalCallManager = GlobalCallManager()
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "ios"
+internal actual val clientPlatform: String = "ios"

@@ -21,12 +21,12 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 
-interface MLSCommitBundleMapper {
+internal interface MLSCommitBundleMapper {
 
     fun toDTO(bundle: CommitBundle): MLSMessageApi.CommitBundle
 }
 
-class MLSCommitBundleMapperImpl : MLSCommitBundleMapper {
+internal class MLSCommitBundleMapperImpl : MLSCommitBundleMapper {
 
 override fun toDTO(bundle: CommitBundle) = MLSMessageApi.CommitBundle(
     bundle.commit + bundle.groupInfoBundle.payload + (bundle.welcome ?: ByteArray(0))

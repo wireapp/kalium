@@ -22,8 +22,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 /**
  * Use case that marks that the user should not be notified about revoked E2Ei certificate.
  */
-interface MarkNotifyForRevokedCertificateAsNotifiedUseCase {
-    suspend operator fun invoke()
+public interface MarkNotifyForRevokedCertificateAsNotifiedUseCase {
+    public suspend operator fun invoke()
 }
 
 internal class MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(

@@ -18,11 +18,11 @@
 package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -31,14 +31,14 @@ import kotlinx.coroutines.flow.Flow
  * @param conversationId ID of the conversation service will be seen, added or removed.
  * @return Qualified ID of Service in User table or NULL.
  */
-interface ObserveIsServiceMemberUseCase {
-    suspend operator fun invoke(
+public interface ObserveIsServiceMemberUseCase {
+    public suspend operator fun invoke(
         serviceId: ServiceId,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>>
 }
 
-class ObserveIsServiceMemberUseCaseImpl internal constructor(
+internal class ObserveIsServiceMemberUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : ObserveIsServiceMemberUseCase {
 

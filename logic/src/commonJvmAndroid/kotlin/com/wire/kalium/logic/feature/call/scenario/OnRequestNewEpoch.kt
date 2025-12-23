@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-class OnRequestNewEpoch(
+internal class OnRequestNewEpoch(
     private val scope: CoroutineScope,
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,

@@ -22,18 +22,18 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.fold
 
-sealed class SSOMetaDataResult {
-    data class Success(val metaData: String) : SSOMetaDataResult()
+internal sealed class SSOMetaDataResult {
+    internal data class Success(val metaData: String) : SSOMetaDataResult()
 
-    sealed class Failure : SSOMetaDataResult() {
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+    internal sealed class Failure : SSOMetaDataResult() {
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
 /**
  * Gets the SSO metadata
  */
-interface SSOMetaDataUseCase {
+internal interface SSOMetaDataUseCase {
     /**
      * @return the [SSOMetaDataResult] with the metadata content if successful
      */

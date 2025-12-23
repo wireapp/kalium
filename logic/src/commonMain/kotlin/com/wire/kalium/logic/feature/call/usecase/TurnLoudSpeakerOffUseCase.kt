@@ -26,11 +26,12 @@ import kotlinx.coroutines.withContext
 /**
  * This use case is responsible for setting the speaker state to off.
  */
-class TurnLoudSpeakerOffUseCase(
+// todo(interface). extract interface for use case
+public class TurnLoudSpeakerOffUseCase internal constructor(
     private val mediaManagerService: MediaManagerService,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    suspend operator fun invoke() {
+    public suspend operator fun invoke() {
         withContext(dispatcher.default) {
             mediaManagerService.turnLoudSpeakerOff()
         }

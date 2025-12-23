@@ -30,26 +30,26 @@ import com.wire.kalium.network.exceptions.KaliumException
  * Use case to migrate user personal account to team account.
  * This needs at least API V7 to work.
  */
-interface MigrateFromPersonalToTeamUseCase {
-    suspend operator fun invoke(teamName: String): MigrateFromPersonalToTeamResult
+public interface MigrateFromPersonalToTeamUseCase {
+    public suspend operator fun invoke(teamName: String): MigrateFromPersonalToTeamResult
 }
 
-sealed class MigrateFromPersonalToTeamResult {
-    data object Success : MigrateFromPersonalToTeamResult()
-    data class Error(val failure: MigrateFromPersonalToTeamFailure) :
+public sealed class MigrateFromPersonalToTeamResult {
+    public data object Success : MigrateFromPersonalToTeamResult()
+    public data class Error(val failure: MigrateFromPersonalToTeamFailure) :
         MigrateFromPersonalToTeamResult()
 }
 
-sealed class MigrateFromPersonalToTeamFailure {
+public sealed class MigrateFromPersonalToTeamFailure {
 
-    data class UnknownError(val coreFailure: CoreFailure) : MigrateFromPersonalToTeamFailure()
-    class UserAlreadyInTeam : MigrateFromPersonalToTeamFailure() {
-        companion object {
-            const val ERROR_LABEL = "user-already-in-a-team"
+    public data class UnknownError(val coreFailure: CoreFailure) : MigrateFromPersonalToTeamFailure()
+    public class UserAlreadyInTeam : MigrateFromPersonalToTeamFailure() {
+        public companion object {
+            public const val ERROR_LABEL: String = "user-already-in-a-team"
         }
     }
 
-    data object NoNetwork : MigrateFromPersonalToTeamFailure()
+    public data object NoNetwork : MigrateFromPersonalToTeamFailure()
 }
 
 internal class MigrateFromPersonalToTeamUseCaseImpl internal constructor(

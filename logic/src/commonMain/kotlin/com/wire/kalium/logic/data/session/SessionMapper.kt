@@ -39,7 +39,7 @@ import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface SessionMapper {
+internal interface SessionMapper {
     fun toSessionDTO(authSession: AccountTokens): SessionDTO
     fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO
     fun fromSessionDTO(sessionDTO: SessionDTO): AccountTokens

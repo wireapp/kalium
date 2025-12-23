@@ -25,12 +25,12 @@ import com.wire.kalium.common.functional.getOrNull
 /**
  * This use case is responsible for retrieving the current user.
  */
-interface GetSelfUserUseCase {
+public interface GetSelfUserUseCase {
 
     /**
      * @return current user [SelfUser]
      */
-    suspend operator fun invoke(): SelfUser?
+    public suspend operator fun invoke(): SelfUser?
 
 }
 

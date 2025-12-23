@@ -25,11 +25,11 @@ import com.wire.kalium.common.functional.fold
 /**
  * A use case used to revoke a guest room link
  */
-interface RevokeGuestRoomLinkUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): RevokeGuestRoomLinkResult
+public interface RevokeGuestRoomLinkUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): RevokeGuestRoomLinkResult
 }
 
-class RevokeGuestRoomLinkUseCaseImpl internal constructor(
+internal class RevokeGuestRoomLinkUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : RevokeGuestRoomLinkUseCase {
     override suspend fun invoke(conversationId: ConversationId): RevokeGuestRoomLinkResult =
@@ -39,7 +39,7 @@ class RevokeGuestRoomLinkUseCaseImpl internal constructor(
         )
 }
 
-sealed interface RevokeGuestRoomLinkResult {
-    data object Success : RevokeGuestRoomLinkResult
-    data class Failure(val cause: CoreFailure) : RevokeGuestRoomLinkResult
+public sealed interface RevokeGuestRoomLinkResult {
+    public data object Success : RevokeGuestRoomLinkResult
+    public data class Failure(val cause: CoreFailure) : RevokeGuestRoomLinkResult
 }
