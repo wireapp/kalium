@@ -41,7 +41,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mockable
 
 @Mockable
-interface CallMapper {
+internal interface CallMapper {
     fun toCallTypeCalling(callType: CallType): CallTypeCalling
     fun toConversationTypeCalling(conversationTypeForCall: ConversationTypeForCall): ConversationTypeCalling
     fun toConversationType(conversationTypeCalling: ConversationTypeCalling): ConversationTypeForCall
@@ -76,7 +76,7 @@ interface CallMapper {
 }
 
 @Suppress("TooManyFunctions")
-class CallMapperImpl(
+internal class CallMapperImpl(
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : CallMapper {
 

@@ -40,7 +40,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-abstract class CoreLogicCommon internal constructor(
+public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
     protected val kaliumConfigs: KaliumConfigs,
@@ -48,11 +48,11 @@ abstract class CoreLogicCommon internal constructor(
 ) {
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
-    protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-    protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
+    internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    internal val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
-    val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
-    protected val authenticationScopeProvider: AuthenticationScopeProvider =
+    internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
+    internal val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
     private val globalKaliumScope by lazy {
@@ -69,10 +69,10 @@ abstract class CoreLogicCommon internal constructor(
         )
     }
 
-    fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
+    public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(
+    internal fun getAuthenticationScope(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?
     ): AuthenticationScope =
@@ -84,35 +84,35 @@ abstract class CoreLogicCommon internal constructor(
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    abstract fun getSessionScope(userId: UserId): UserSessionScope
+    public abstract fun getSessionScope(userId: UserId): UserSessionScope
 
-    abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
+    internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
     // TODO: make globalScope a singleton
-    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
+    public inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(
+    internal inline fun <T> authenticationScope(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         action: AuthenticationScope.() -> T
     ): T =
         getAuthenticationScope(serverConfig, proxyCredentials).action()
 
-    inline fun <T> sessionScope(
+    public inline fun <T> sessionScope(
         userId: UserId,
         action: UserSessionScope.() -> T
     ): T = getSessionScope(userId).action()
 
-    protected abstract val globalCallManager: GlobalCallManager
+    internal abstract val globalCallManager: GlobalCallManager
 
-    protected abstract val workSchedulerProvider: WorkSchedulerProvider
+    internal abstract val workSchedulerProvider: WorkSchedulerProvider
 
-    fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
+    public fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
-    abstract val networkStateObserver: NetworkStateObserver
+    internal abstract val networkStateObserver: NetworkStateObserver
 
     internal val logoutCallbackManager = LogoutCallbackManagerImpl()
 
-    abstract val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+    internal abstract val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 }

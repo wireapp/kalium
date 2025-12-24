@@ -18,9 +18,9 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
@@ -29,7 +29,7 @@ import kotlinx.datetime.Instant
  * Use case to determine if the call feedback should be asked.
  */
 @Mockable
-interface ShouldAskCallFeedbackUseCase {
+internal interface ShouldAskCallFeedbackUseCase {
     suspend operator fun invoke(
         establishedTime: Instant?,
         currentTime: Instant = DateTimeUtil.currentInstant()
@@ -71,13 +71,13 @@ internal fun ShouldAskCallFeedbackUseCase(
     }
 }
 
-sealed class ShouldAskCallFeedbackUseCaseResult {
-    data class ShouldAskCallFeedback(val callDurationInSeconds: Long) : ShouldAskCallFeedbackUseCaseResult()
-    sealed class ShouldNotAskCallFeedback(val reason: String) : ShouldAskCallFeedbackUseCaseResult() {
-        data class CallDurationIsLessThanOneMinute(val callDurationInSeconds: Long) :
+public sealed class ShouldAskCallFeedbackUseCaseResult {
+    public data class ShouldAskCallFeedback(val callDurationInSeconds: Long) : ShouldAskCallFeedbackUseCaseResult()
+    public sealed class ShouldNotAskCallFeedback(public val reason: String) : ShouldAskCallFeedbackUseCaseResult() {
+        public data class CallDurationIsLessThanOneMinute(val callDurationInSeconds: Long) :
             ShouldNotAskCallFeedback("Call duration is less than 1 minute")
 
-        data class NextTimeForCallFeedbackIsNotReached(val callDurationInSeconds: Long) :
+        public data class NextTimeForCallFeedbackIsNotReached(val callDurationInSeconds: Long) :
             ShouldNotAskCallFeedback("Next time for call feedback is not reached")
     }
 }

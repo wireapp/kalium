@@ -23,7 +23,7 @@ import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.logger.callingLogger
 
-class OnNetworkQualityChanged : NetworkQualityChangedHandler {
+internal class OnNetworkQualityChanged : NetworkQualityChangedHandler {
 
     override fun onNetworkQualityChanged(
         conversationId: String,

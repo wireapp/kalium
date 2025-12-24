@@ -19,24 +19,24 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserId
 
 /**
  * Use Case that allows the current self user to unblock another previously blocked user
  */
-fun interface UnblockUserUseCase {
+public fun interface UnblockUserUseCase {
     /**
      * Use case [UnblockUserUseCase] operation
      *
      * @param userId the target user whom to unblock
      * @return a [UnblockUserResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): UnblockUserResult
+    public suspend operator fun invoke(userId: UserId): UnblockUserResult
 }
 
 internal class UnblockUserUseCaseImpl(
@@ -55,7 +55,7 @@ internal class UnblockUserUseCaseImpl(
         })
 }
 
-sealed class UnblockUserResult {
-    data object Success : UnblockUserResult()
-    data class Failure(val coreFailure: CoreFailure) : UnblockUserResult()
+public sealed class UnblockUserResult {
+    public data object Success : UnblockUserResult()
+    public data class Failure(public val coreFailure: CoreFailure) : UnblockUserResult()
 }

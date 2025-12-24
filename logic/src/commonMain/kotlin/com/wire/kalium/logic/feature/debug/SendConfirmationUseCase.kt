@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
@@ -40,14 +41,15 @@ import kotlinx.datetime.Clock
  * This use case can be used by QA to send read and delivery receipts. This debug function can be used to test correct
  * client behaviour. It should not be used by clients itself.
  */
-class SendConfirmationUseCase internal constructor(
+@InternalKaliumApi
+public class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val selfUserId: UserId
 ) {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         type: ReceiptType,
         firstMessageId: String,

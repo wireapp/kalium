@@ -49,22 +49,22 @@ import kotlinx.coroutines.flow.first
  * @see Conversation.Access
  */
 @Mockable
-interface UpdateConversationAccessRoleUseCase {
+public interface UpdateConversationAccessRoleUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param accessRoles the set of access roles to set
      * @param access the set of access to set
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         accessRoles: Set<Conversation.AccessRole>,
         access: Set<Conversation.Access>,
     ): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

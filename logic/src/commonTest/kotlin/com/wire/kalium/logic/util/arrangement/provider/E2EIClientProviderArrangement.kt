@@ -38,7 +38,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface E2EIClientProviderArrangement {
+internal interface E2EIClientProviderArrangement {
 
     val mlsClientProvider: MLSClientProvider
     val mlsClient: MLSClient
@@ -65,7 +65,7 @@ interface E2EIClientProviderArrangement {
     suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
 }
 
-class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
+internal class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
     override val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
     override val e2eiClient: E2EIClient = mock(E2EIClient::class)
     override val userRepository: UserRepository = mock(UserRepository::class)
@@ -123,7 +123,7 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
 
 }
 
-class E2EIClientProviderArrangementMokkeryImpl : E2EIClientProviderArrangement {
+internal class E2EIClientProviderArrangementMokkeryImpl : E2EIClientProviderArrangement {
     override val mlsClientProvider: MLSClientProvider = mokkeryMock<MLSClientProvider>()
     override val e2eiClient: E2EIClient = mokkeryMock<E2EIClient>()
     override val userRepository: UserRepository = mokkeryMock<UserRepository>()

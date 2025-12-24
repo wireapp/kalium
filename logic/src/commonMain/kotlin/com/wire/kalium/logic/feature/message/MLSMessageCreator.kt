@@ -43,7 +43,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 @Mockable
-interface MLSMessageCreator {
+internal interface MLSMessageCreator {
 
     suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,

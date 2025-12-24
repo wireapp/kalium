@@ -50,7 +50,7 @@ import io.mockative.Mockable
  * ```
  */
 @Mockable
-interface CryptoTransactionProvider {
+internal interface CryptoTransactionProvider {
     val mlsClientProvider: MLSClientProvider
     val proteusClientProvider: ProteusClientProvider
     suspend fun <R> proteusTransaction(
@@ -69,7 +69,7 @@ interface CryptoTransactionProvider {
     ): Either<CoreFailure, R>
 }
 
-class CryptoTransactionProviderImpl(
+internal class CryptoTransactionProviderImpl(
     override val mlsClientProvider: MLSClientProvider,
     override val proteusClientProvider: ProteusClientProvider
 ) : CryptoTransactionProvider {

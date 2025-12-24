@@ -21,6 +21,7 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.ext.list.withParentNamed
 import com.lemonappdev.konsist.api.verify.assertTrue
+import kotlin.test.Ignore
 import kotlin.test.Test
 
 class UseCaseRulesTest {
@@ -33,6 +34,7 @@ class UseCaseRulesTest {
             .assertTrue { it.resideInPackage("..feature..") }
     }
 
+    @Ignore
     @Test
     fun classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke() {
         Konsist

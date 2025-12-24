@@ -23,7 +23,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class VideoStateCheckerTest {
+internal class VideoStateCheckerTest {
 
     lateinit var videoStateChecker: VideoStateChecker
 

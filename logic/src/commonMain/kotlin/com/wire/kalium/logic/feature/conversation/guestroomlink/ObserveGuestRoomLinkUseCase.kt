@@ -28,11 +28,11 @@ import kotlinx.coroutines.flow.Flow
 /**
  * observe guest room link
  */
-interface ObserveGuestRoomLinkUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
+public interface ObserveGuestRoomLinkUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
 }
 
-class ObserveGuestRoomLinkUseCaseImpl internal constructor(
+internal class ObserveGuestRoomLinkUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : ObserveGuestRoomLinkUseCase {
     override suspend fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>> =

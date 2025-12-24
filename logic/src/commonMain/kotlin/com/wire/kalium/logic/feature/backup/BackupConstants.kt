@@ -18,26 +18,26 @@
 
 package com.wire.kalium.logic.feature.backup
 
-object BackupConstants {
-    const val BACKUP_FILE_NAME_PREFIX = "Wire"
-    const val BACKUP_ENCRYPTED_FILE_NAME = "user-backup.cc20"
+internal object BackupConstants {
+    internal const val BACKUP_FILE_NAME_PREFIX = "Wire"
+    internal const val BACKUP_ENCRYPTED_FILE_NAME = "user-backup.cc20"
 
     // BACKUP_METADATA_FILE_NAME and BACKUP_USER_DB_NAME must not be changed
     // if there is a need to change them, please create a new file names and add it to the list of acceptedFileNames()
-    const val BACKUP_USER_DB_NAME = "user-backup-database.db"
-    const val BACKUP_METADATA_FILE_NAME = "export.json"
-    const val BACKUP_ENCRYPTED_EXTENSION = "cc20"
-    const val BACKUP_DB_EXTENSION = "db"
-    const val BACKUP_METADATA_EXTENSION = "json"
-    const val BACKUP_WEB_EXTENSION = "desktop_wbu"
-    const val BACKUP_WEB_EVENTS_FILE_NAME = "events.json"
-    const val BACKUP_WEB_CONVERSATIONS_FILE_NAME = "conversations.json"
+    internal const val BACKUP_USER_DB_NAME = "user-backup-database.db"
+    internal const val BACKUP_METADATA_FILE_NAME = "export.json"
+    internal const val BACKUP_ENCRYPTED_EXTENSION = "cc20"
+    internal const val BACKUP_DB_EXTENSION = "db"
+    internal const val BACKUP_METADATA_EXTENSION = "json"
+    internal const val BACKUP_WEB_EXTENSION = "desktop_wbu"
+    internal const val BACKUP_WEB_EVENTS_FILE_NAME = "events.json"
+    internal const val BACKUP_WEB_CONVERSATIONS_FILE_NAME = "conversations.json"
 
     /**
      * list of accepted file names for the backup file
      * this is used when extracting data from the zip file
      */
-    fun acceptedFileNames() = setOf(
+    internal fun acceptedFileNames() = setOf(
         BACKUP_USER_DB_NAME,
         BACKUP_METADATA_FILE_NAME,
         BACKUP_ENCRYPTED_FILE_NAME,
@@ -45,12 +45,12 @@ object BackupConstants {
         BACKUP_WEB_CONVERSATIONS_FILE_NAME
     )
 
-    fun createBackupFileName(userHandle: String?, timestampIso: String, multiplatform: Boolean = true): String {
+    internal fun createBackupFileName(userHandle: String?, timestampIso: String, multiplatform: Boolean = true): String {
         val extension = if (multiplatform) "wbu" else "zip"
         return "$BACKUP_FILE_NAME_PREFIX-$userHandle-${timestampIso.replace(":", "-")}.$extension"
     }
 
-    val ACCEPTED_EXTENSIONS = listOf(
+    internal val ACCEPTED_EXTENSIONS = listOf(
         BACKUP_ENCRYPTED_EXTENSION,
         BACKUP_DB_EXTENSION,
         BACKUP_METADATA_EXTENSION,

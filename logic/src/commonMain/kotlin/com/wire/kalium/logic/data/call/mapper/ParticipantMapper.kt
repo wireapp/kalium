@@ -26,11 +26,11 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import io.mockative.Mockable
 
 @Mockable
-interface ParticipantMapper {
+internal interface ParticipantMapper {
     fun fromCallMemberToParticipantMinimized(member: CallMember): ParticipantMinimized
 }
 
-class ParticipantMapperImpl(
+internal class ParticipantMapperImpl(
     private val videoStateChecker: VideoStateChecker,
     private val callMapper: CallMapper,
     private val qualifiedIdMapper: QualifiedIdMapper

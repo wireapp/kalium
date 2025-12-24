@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import kotlinx.serialization.json.Json
 
-class OnActiveSpeakers(
+internal class OnActiveSpeakers(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : ActiveSpeakersHandler {

@@ -29,7 +29,8 @@ import kotlinx.coroutines.flow.first
 /**
  * Gets the recent messages from the conversation
  */
-class GetRecentMessagesUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetRecentMessagesUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val slowSyncRepository: SlowSyncRepository
 ) {
@@ -41,11 +42,11 @@ class GetRecentMessagesUseCase internal constructor(
      * @param visibility the visibility of the messages to return @see [Message.Visibility]
      * @return the [Flow] of [List] of [Message] if successful
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         limit: Int = 100,
         offset: Int = 0,
-        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+        visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Flow<List<Message>> {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete

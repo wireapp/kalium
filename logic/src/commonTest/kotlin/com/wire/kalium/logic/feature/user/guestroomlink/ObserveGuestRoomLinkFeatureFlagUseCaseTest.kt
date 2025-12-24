@@ -32,7 +32,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
+internal class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
 
     val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 

@@ -49,7 +49,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
-class MLSMessageUnpackerTest {
+internal class MLSMessageUnpackerTest {
 
     @Test
     fun givenConversationWithProteusProtocol_whenUnpacking_thenFailWithNotSupportedByProteus() = runTest {

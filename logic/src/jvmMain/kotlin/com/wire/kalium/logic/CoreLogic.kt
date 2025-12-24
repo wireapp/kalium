@@ -44,7 +44,7 @@ import java.io.File
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
@@ -73,7 +73,7 @@ actual class CoreLogic(
         queriesContext = KaliumDispatcherImpl.io
     )
 
-    actual override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
@@ -87,7 +87,8 @@ actual class CoreLogic(
     )
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    actual override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+    public actual override val networkStateObserver: NetworkStateObserver =
+        kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -104,8 +105,8 @@ actual class CoreLogic(
             useInMemoryStorage
         )
     }
-    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "jvm"
+internal actual val clientPlatform: String = "jvm"

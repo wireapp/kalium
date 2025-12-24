@@ -23,7 +23,7 @@ import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logger.obfuscateId
 
-class OnParticipantsVideoStateChanged : VideoReceiveStateHandler {
+internal class OnParticipantsVideoStateChanged : VideoReceiveStateHandler {
     override fun onVideoReceiveStateChanged(conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer?) {
         callingLogger.i(
             "[onVideoReceiveStateChanged] - conversationId: ${conversationId.obfuscateId()}" +

@@ -35,13 +35,13 @@ import kotlinx.coroutines.flow.map
  * changes, due to receiving a new identifier from another client
  * or when it's user's first interaction with analytics.
  */
-interface ObserveAnalyticsTrackingIdentifierStatusUseCase {
+public interface ObserveAnalyticsTrackingIdentifierStatusUseCase {
     /**
      * Use case [ObserveAnalyticsTrackingIdentifierStatusUseCase] operation
      *
      * @return a [AnalyticsIdentifierResult]
      */
-    suspend operator fun invoke(): Flow<AnalyticsIdentifierResult>
+    public suspend operator fun invoke(): Flow<AnalyticsIdentifierResult>
 }
 
 @Suppress("FunctionNaming")

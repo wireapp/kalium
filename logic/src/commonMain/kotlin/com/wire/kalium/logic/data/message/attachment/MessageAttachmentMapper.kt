@@ -29,12 +29,12 @@ import com.wire.kalium.logic.data.message.width
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.protobuf.messages.Attachment
 
-interface MessageAttachmentMapper {
+internal interface MessageAttachmentMapper {
     fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity?
     fun fromProtoToModel(attachment: Attachment): MessageAttachment?
 }
 
-class MessageAttachmentMapperImpl : MessageAttachmentMapper {
+internal class MessageAttachmentMapperImpl : MessageAttachmentMapper {
 
     override fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity? {
         return when (attachment) {
@@ -79,7 +79,7 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
     }
 }
 
-fun MessageAttachmentEntity.toModel() =
+internal fun MessageAttachmentEntity.toModel() =
     if (cellAsset) {
         CellAssetContent(
             id = assetId,
@@ -102,7 +102,7 @@ fun MessageAttachmentEntity.toModel() =
     }
 
 @Suppress("CyclomaticComplexMethod")
-fun MessageAttachmentEntity.metadata(): AssetContent.AssetMetadata? {
+internal fun MessageAttachmentEntity.metadata(): AssetContent.AssetMetadata? {
 
     val type = AttachmentType.fromMimeTypeString(mimeType)
 

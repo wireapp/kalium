@@ -69,7 +69,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AssetRepositoryTest {
+internal class AssetRepositoryTest {
 
     private lateinit var testScope: TestDispatcher
     private lateinit var fakeKaliumFileSystem: FakeKaliumFileSystem

@@ -38,7 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Suppress("LongParameterList")
-class OnCloseCall(
+internal class OnCloseCall(
     private val callRepository: CallRepository,
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper,

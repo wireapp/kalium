@@ -23,11 +23,12 @@ import com.wire.kalium.logic.feature.call.CallManager
 /**
  * This use case is responsible for enabling the test preview.
  */
-class SetTestVideoTypeUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class SetTestVideoTypeUseCase internal constructor(
     private val callManager: Lazy<CallManager>
 ) {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         testVideoType: TestVideoType
     ) {
         callManager.value.setTestVideoType(testVideoType)

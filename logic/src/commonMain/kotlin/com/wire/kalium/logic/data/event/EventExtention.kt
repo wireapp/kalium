@@ -21,7 +21,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.tools.KtxSerializer
 
-fun EventResponse.toEventResponseToStore(): EventResponseToStore = EventResponseToStore(
+public fun EventResponse.toEventResponseToStore(): EventResponseToStore = EventResponseToStore(
     id = id,
     payload = KtxSerializer.json.encodeToString(payload),
     transient = transient,

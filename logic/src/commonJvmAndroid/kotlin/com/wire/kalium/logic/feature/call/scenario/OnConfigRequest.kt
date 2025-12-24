@@ -30,7 +30,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 // TODO(testing): create unit test
-class OnConfigRequest(
+internal class OnConfigRequest(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val callingScope: CoroutineScope

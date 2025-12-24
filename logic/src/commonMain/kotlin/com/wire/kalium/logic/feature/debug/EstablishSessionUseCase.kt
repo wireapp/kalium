@@ -17,17 +17,19 @@
  */
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.util.InternalKaliumApi
 
-interface EstablishSessionUseCase {
+@InternalKaliumApi
+public interface EstablishSessionUseCase {
 
     /**
      * Establish a proteus session with another client
@@ -37,14 +39,15 @@ interface EstablishSessionUseCase {
      * @return an [EstablishSessionResult] containing a [CoreFailure] in case anything goes wrong
      * and [EstablishSessionResult.Success] in case everything succeeds
      */
-    suspend operator fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult
+    public suspend operator fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult
 }
 
-sealed class EstablishSessionResult {
-    data object Success : EstablishSessionResult()
-    data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
+public sealed class EstablishSessionResult {
+    public data object Success : EstablishSessionResult()
+    public data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
 }
 
+@OptIn(InternalKaliumApi::class)
 internal class EstablishSessionUseCaseImpl(
     private val sessionEstablisher: SessionEstablisher,
     private val transactionProvider: CryptoTransactionProvider

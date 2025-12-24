@@ -28,18 +28,18 @@ import okio.FileSystem
 import okio.SYSTEM
 
 @Mockable
-interface BackupImporter {
+internal interface BackupImporter {
     suspend fun peekBackupFile(pathToBackupFile: String): BackupPeekResult
     suspend fun importFromFile(multiplatformBackupFilePath: String, passphrase: String?): ImportResult
 }
 
-sealed class ImportResult {
-    class Success(val pager: ImportResultPager) : ImportResult()
-    sealed class Failure : ImportResult() {
-        data object ParsingFailure : Failure()
-        data object MissingOrWrongPassphrase : Failure()
-        data class UnzippingError(val message: String) : Failure()
-        data class UnknownError(val message: String) : Failure()
+internal sealed class ImportResult {
+    internal class Success(val pager: ImportResultPager) : ImportResult()
+    internal sealed class Failure : ImportResult() {
+        internal data object ParsingFailure : Failure()
+        internal data object MissingOrWrongPassphrase : Failure()
+        internal data class UnzippingError(val message: String) : Failure()
+        internal data class UnknownError(val message: String) : Failure()
     }
 }
 
@@ -54,7 +54,7 @@ private fun BackupImportResult.toImportResult() = when (this) {
 }
 
 @Mockable
-interface MPBackupImporterProvider {
+internal interface MPBackupImporterProvider {
     fun provideImporter(
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
@@ -109,8 +109,8 @@ internal class MPBackupImporterProviderImpl(
 
 @Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @Mockable
-interface ImportDataPagerMockable<T> : ImportDataPager<T>
+internal interface ImportDataPagerMockable<T> : ImportDataPager<T>
 
 @Suppress("OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 @Mockable
-interface ImportResultPagerMockable : ImportResultPager
+internal interface ImportResultPagerMockable : ImportResultPager

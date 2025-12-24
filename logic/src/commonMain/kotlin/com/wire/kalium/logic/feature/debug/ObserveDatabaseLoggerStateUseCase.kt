@@ -23,8 +23,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Use case to observe the state of the database logger.
  */
-class ObserveDatabaseLoggerStateUseCase(
+// todo(interface). extract interface for use case
+public class ObserveDatabaseLoggerStateUseCase internal constructor(
     private val userStorage: UserStorage,
 ) {
-    suspend operator fun invoke(): Flow<Boolean> = userStorage.database.debugExtension.observeIsProfilingEnabled()
+    public suspend operator fun invoke(): Flow<Boolean> = userStorage.database.debugExtension.observeIsProfilingEnabled()
 }

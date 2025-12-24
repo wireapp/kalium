@@ -29,7 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-class UpdateCurrentSessionUseCaseTest {
+internal class UpdateCurrentSessionUseCaseTest {
 
     val sessionRepository: SessionRepository = mock(SessionRepository::class)
 

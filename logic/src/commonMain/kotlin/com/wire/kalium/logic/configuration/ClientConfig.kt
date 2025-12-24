@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.client.DeviceType
 import io.mockative.Mockable
 
 @Mockable
-interface ClientConfig {
+internal interface ClientConfig {
     fun deviceType(): DeviceType
     fun deviceModelName(): String
     fun deviceName(): String

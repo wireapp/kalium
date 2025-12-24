@@ -19,7 +19,7 @@ package com.wire.kalium.logic.data.session.token
 
 import kotlin.jvm.JvmInline
 
-internal data class AccessTokenRefreshResult(
+public data class AccessTokenRefreshResult(
     val accessToken: AccessToken,
     val refreshToken: RefreshToken
 )
@@ -30,10 +30,10 @@ internal data class AccessTokenRefreshResult(
  * @property value The value of the access token.
  * @property tokenType The type of the access token. _e.g._ "Bearer"
  */
-data class AccessToken(
+public data class AccessToken(
     val value: String,
     val tokenType: String
 )
 
 @JvmInline
-value class RefreshToken(val value: String)
+public value class RefreshToken(public val value: String)

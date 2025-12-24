@@ -28,14 +28,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-interface ObserveOtherUserSecurityClassificationLabelUseCase {
+public interface ObserveOtherUserSecurityClassificationLabelUseCase {
     /**
      * This operation will observe if a given user [otherUserId] is classified or not.
      *
      * @param otherUserId to classify
      * @return [SecurityClassificationType] with classification type
      */
-    suspend operator fun invoke(otherUserId: UserId): Flow<SecurityClassificationType>
+    public suspend operator fun invoke(otherUserId: UserId): Flow<SecurityClassificationType>
 }
 
 internal class ObserveOtherUserSecurityClassificationLabelUseCaseImpl(

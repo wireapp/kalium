@@ -21,7 +21,7 @@ import com.wire.kalium.cryptography.MLSCiphersuite
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
-fun CipherSuite.toCrypto(): MLSCiphersuite = when (this) {
+internal fun CipherSuite.toCrypto(): MLSCiphersuite = when (this) {
     CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> MLSCiphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> MLSCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
@@ -32,7 +32,7 @@ fun CipherSuite.toCrypto(): MLSCiphersuite = when (this) {
     is CipherSuite.UNKNOWN -> MLSCiphersuite.DEFAULT
 }
 
-fun MLSCiphersuite.toModel(): CipherSuite = when (this) {
+internal fun MLSCiphersuite.toModel(): CipherSuite = when (this) {
     MLSCiphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     MLSCiphersuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
@@ -43,7 +43,7 @@ fun MLSCiphersuite.toModel(): CipherSuite = when (this) {
     else -> CipherSuite.UNKNOWN(0)
 }
 
-fun MLSCiphersuite.toDao(): ConversationEntity.CipherSuite = when (this) {
+internal fun MLSCiphersuite.toDao(): ConversationEntity.CipherSuite = when (this) {
     MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 ->
         ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 

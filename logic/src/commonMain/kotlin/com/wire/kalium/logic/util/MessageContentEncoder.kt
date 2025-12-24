@@ -29,8 +29,8 @@ import com.wire.kalium.util.string.toUTF16BEByteArray
 import kotlinx.datetime.Instant
 import kotlin.math.roundToLong
 
-class MessageContentEncoder {
-    fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
+internal class MessageContentEncoder {
+    internal fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
         return when (messageContent) {
             is MessageContent.Asset ->
                 encodeMessageAsset(
@@ -122,7 +122,7 @@ class MessageContentEncoder {
     }
 }
 
-class EncodedMessageContent(val byteArray: ByteArray) {
-    val asHexString = byteArray.toHexString()
-    val sha256Digest = calcSHA256(byteArray)
+internal class EncodedMessageContent(val byteArray: ByteArray) {
+    internal val asHexString = byteArray.toHexString()
+    internal val sha256Digest = calcSHA256(byteArray)
 }

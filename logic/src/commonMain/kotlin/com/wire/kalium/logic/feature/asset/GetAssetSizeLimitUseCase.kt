@@ -18,35 +18,36 @@
 
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCase.AssetSizeLimits
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-interface GetAssetSizeLimitUseCase {
+public interface GetAssetSizeLimitUseCase {
     /**
      * Returns the maximum size in Bytes of an asset that can be uploaded to the Wire backend.
      * @param isImage whether the asset to upload is an image or not
      */
-    suspend operator fun invoke(isImage: Boolean): Long
+    public suspend operator fun invoke(isImage: Boolean): Long
+
+    public object AssetSizeLimits {
+        public const val IMAGE_SIZE_LIMIT_BYTES: Long = 15L * 1024 * 1024 // 15 MB limit for images
+        public const val ASSET_SIZE_DEFAULT_LIMIT_BYTES: Long = 25L * 1024 * 1024 // 25 MB asset default user limit size
+        public const val ASSET_SIZE_TEAM_USER_LIMIT_BYTES: Long = 100L * 1024 * 1024 // 100 MB asset team user limit size
+    }
 }
 
-class GetAssetSizeLimitUseCaseImpl internal constructor(
+internal class GetAssetSizeLimitUseCaseImpl internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetAssetSizeLimitUseCase {
     override suspend operator fun invoke(isImage: Boolean): Long = withContext(dispatchers.default) {
         val hasUserTeam = isSelfATeamMember()
         return@withContext when {
-            isImage -> IMAGE_SIZE_LIMIT_BYTES
-            hasUserTeam -> ASSET_SIZE_TEAM_USER_LIMIT_BYTES
-            else -> ASSET_SIZE_DEFAULT_LIMIT_BYTES
+            isImage -> AssetSizeLimits.IMAGE_SIZE_LIMIT_BYTES
+            hasUserTeam -> AssetSizeLimits.ASSET_SIZE_TEAM_USER_LIMIT_BYTES
+            else -> AssetSizeLimits.ASSET_SIZE_DEFAULT_LIMIT_BYTES
         }
-    }
-
-    companion object {
-        const val IMAGE_SIZE_LIMIT_BYTES = 15L * 1024 * 1024 // 15 MB limit for images
-        const val ASSET_SIZE_DEFAULT_LIMIT_BYTES = 25L * 1024 * 1024 // 25 MB asset default user limit size
-        const val ASSET_SIZE_TEAM_USER_LIMIT_BYTES = 100L * 1024 * 1024 // 100 MB asset team user limit size
     }
 }

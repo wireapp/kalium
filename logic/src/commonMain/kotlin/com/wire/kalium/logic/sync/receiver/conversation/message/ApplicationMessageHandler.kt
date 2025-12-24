@@ -360,10 +360,10 @@ internal class ApplicationMessageHandlerImpl(
     "This will be moved to another package",
     ReplaceWith("com.wire.kalium.logic.data.message.hasValidRemoteData")
 )
-fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
+internal fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
 
 @Deprecated(
     "This will be moved to another package",
     ReplaceWith("com.wire.kalium.logic.data.message.hasValidData")
 )
-fun AssetContent.RemoteData.hasValidData() = hasValidData()
+internal fun AssetContent.RemoteData.hasValidData() = hasValidData()

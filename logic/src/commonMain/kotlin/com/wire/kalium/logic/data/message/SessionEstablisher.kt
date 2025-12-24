@@ -115,7 +115,7 @@ internal interface CryptoSessionMapper {
     ): FilteredRecipient
 }
 
-data class FilteredRecipient(
+internal data class FilteredRecipient(
     val valid: Map<String, Map<String, Map<String, PreKeyCrypto>>>,
     val invalid: List<Pair<QualifiedIDEntity, List<String>>>
 )

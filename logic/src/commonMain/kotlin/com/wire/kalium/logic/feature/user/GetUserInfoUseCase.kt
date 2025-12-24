@@ -34,14 +34,14 @@ import kotlinx.coroutines.flow.firstOrNull
 /**
  * Use case that allows getting the user details of a user, either locally or externally
  */
-fun interface GetUserInfoUseCase {
+public interface GetUserInfoUseCase {
     /**
      * Use case [GetUserInfoUseCase] operation
      *
      * @param userId the target user identifier
      * @return a [GetUserInfoResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): GetUserInfoResult
+    public suspend operator fun invoke(userId: UserId): GetUserInfoResult
 }
 
 internal class GetUserInfoUseCaseImpl(
@@ -94,7 +94,7 @@ internal class GetUserInfoUseCaseImpl(
 
 }
 
-sealed class GetUserInfoResult {
-    class Success(val otherUser: OtherUser, val team: Team?) : GetUserInfoResult()
-    data object Failure : GetUserInfoResult()
+public sealed class GetUserInfoResult {
+    public class Success(public val otherUser: OtherUser, public val team: Team?) : GetUserInfoResult()
+    public data object Failure : GetUserInfoResult()
 }

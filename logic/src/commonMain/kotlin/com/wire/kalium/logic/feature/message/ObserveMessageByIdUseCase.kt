@@ -33,23 +33,24 @@ import kotlinx.coroutines.flow.map
 /**
  * This use case will observe and return the [Flow] of [Message] for a specific [ConversationId] and messageId.
  */
-class ObserveMessageByIdUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class ObserveMessageByIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String): Flow<Result> =
+    public suspend operator fun invoke(conversationId: ConversationId, messageId: String): Flow<Result> =
         messageRepository.observeMessageById(conversationId, messageId)
             .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
             .flowOn(dispatchers.io)
 
-    sealed interface Result {
+    public sealed interface Result {
 
-        data class Success(val message: Message) : Result
+        public data class Success(val message: Message) : Result
 
         /**
          * [StorageFailure.DataNotFound] or some other generic error.
          */
-        data class Failure(val cause: CoreFailure) : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }

@@ -22,7 +22,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 
-interface ImportClientUseCase {
+internal interface ImportClientUseCase {
 
     /**
      * @param clientId client id of client

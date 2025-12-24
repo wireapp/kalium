@@ -29,11 +29,11 @@ import io.mockative.Mockable
  * Use case that allows to fetch and persist the legal hold state for the self user.
  */
 @Mockable
-interface FetchLegalHoldForSelfUserFromRemoteUseCase {
+internal interface FetchLegalHoldForSelfUserFromRemoteUseCase {
     suspend operator fun invoke(): Either<CoreFailure, LegalHoldStatus>
 }
 
-class FetchLegalHoldForSelfUserFromRemoteUseCaseImpl internal constructor(
+internal class FetchLegalHoldForSelfUserFromRemoteUseCaseImpl internal constructor(
     private val teamRepository: TeamRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : FetchLegalHoldForSelfUserFromRemoteUseCase {
