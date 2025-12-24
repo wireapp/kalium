@@ -28,6 +28,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
@@ -59,7 +60,9 @@ data class CryptoStateBackupMetadata(
     @SerialName("mls_db_passphrase")
     val mlsDbPassphrase: String,
     @SerialName("proteus_db_passphrase")
-    val proteusDbPassphrase: String
+    val proteusDbPassphrase: String,
+    @SerialName("last_event_id")
+    val lastEventId: String? = null
 ) {
     companion object {
         const val CURRENT_VERSION = 1
@@ -88,7 +91,8 @@ internal class BackupCryptoStateUseCaseImpl(
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val kaliumConfigs: KaliumConfigs,
-    private val securityHelper: com.wire.kalium.logic.util.SecurityHelper
+    private val securityHelper: com.wire.kalium.logic.util.SecurityHelper,
+    private val eventRepository: EventRepository
 ) : BackupCryptoStateUseCase {
 
     private val logger = kaliumLogger.withTextTag("BackupCryptoState")
@@ -196,12 +200,31 @@ internal class BackupCryptoStateUseCaseImpl(
 
         logger.i("Backing up database passphrases: MLS='$mlsPassphrase', Proteus='$proteusPassphrase'")
 
+        // Retrieve last saved event ID (non-critical - continue on failure)
+        val lastEventId = when (val result = eventRepository.lastSavedEventId()) {
+            is Either.Left -> {
+                logger.w("Failed to retrieve last event ID for backup: ${result.value}")
+                null
+            }
+            is Either.Right -> {
+                val eventId = result.value
+                if (eventId.isNotBlank()) {
+                    logger.i("Including last event ID in backup: ${eventId.take(8)}...")
+                    eventId
+                } else {
+                    logger.d("No last event ID found")
+                    null
+                }
+            }
+        }
+
         // Add metadata JSON file to the zip
         val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
             clientId = clientId,
             mlsDbPassphrase = mlsPassphrase,
-            proteusDbPassphrase = proteusPassphrase
+            proteusDbPassphrase = proteusPassphrase,
+            lastEventId = lastEventId
         )
         val metadataJson = Json.encodeToString(metadata)
         val metadataSource = Buffer().writeUtf8(metadataJson)

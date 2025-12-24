@@ -54,6 +54,7 @@ import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
@@ -88,6 +89,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val kaliumFileSystem: KaliumFileSystem,
     private val kaliumConfigs: KaliumConfigs,
     private val passphraseStorage: com.wire.kalium.persistence.dbPassphrase.PassphraseStorage,
+    private val metadataDAO: MetadataDAO,
 ) {
 
     @OptIn(DelicateKaliumApi::class)
@@ -167,7 +169,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             rootPathsProvider = rootPathsProvider,
             kaliumFileSystem = kaliumFileSystem,
             passphraseStorage = passphraseStorage,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            metadataDAO = metadataDAO
         )
 
     val getOrRegister: GetOrRegisterClientUseCase

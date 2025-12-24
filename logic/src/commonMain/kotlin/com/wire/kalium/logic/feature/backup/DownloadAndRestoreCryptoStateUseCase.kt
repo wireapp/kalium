@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.sync.remoteBackup.CryptoStateBackupMetadata
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
 import io.mockative.Mockable
@@ -84,6 +85,7 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val passphraseStorage: com.wire.kalium.persistence.dbPassphrase.PassphraseStorage,
     private val clientRepository: com.wire.kalium.logic.data.client.ClientRepository,
+    private val metadataDAO: MetadataDAO,
     kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
 ) : DownloadAndRestoreCryptoStateUseCase {
 
@@ -172,6 +174,18 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
                 passphraseStorage.setPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
 
                 logger.i("Successfully stored passphrases to PassphraseStorage")
+
+                // Restore last event ID if present (non-critical - continue on failure)
+                metadata.lastEventId?.let { eventId ->
+                    if (eventId.isNotBlank()) {
+                        try {
+                            metadataDAO.insertValue(eventId, "last_processed_event_id")
+                            logger.i("Restored last event ID: ${eventId.take(8)}...")
+                        } catch (e: Exception) {
+                            logger.w("Failed to restore last event ID: ${e.message}")
+                        }
+                    }
+                } ?: logger.d("Backup does not contain last event ID")
 
                 // Copy extracted files to final locations
                 val tempProteusPath = tempExtractPath / "proteus"

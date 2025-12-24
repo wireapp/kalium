@@ -2091,7 +2091,8 @@ class UserSessionScope internal constructor(
             rootPathsProvider = rootPathsProvider,
             kaliumFileSystem = kaliumFileSystem,
             kaliumConfigs = kaliumConfigs,
-            securityHelper = com.wire.kalium.logic.util.SecurityHelperImpl(globalPreferences.passphraseStorage)
+            securityHelper = com.wire.kalium.logic.util.SecurityHelperImpl(globalPreferences.passphraseStorage),
+            eventRepository = eventRepository
         )
 
     private val backupStateVisibilityCoordinator: BackupStateVisibilityCoordinator by lazy {
@@ -2182,7 +2183,8 @@ class UserSessionScope internal constructor(
             rootPathsProvider,
             kaliumFileSystem,
             kaliumConfigs,
-            globalPreferences.passphraseStorage
+            globalPreferences.passphraseStorage,
+            userStorage.database.metadataDAO
         )
     }
     val conversations: ConversationScope by lazy {
