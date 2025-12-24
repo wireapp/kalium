@@ -104,11 +104,11 @@ Always pass `-Djava.library.path=./native/libs` when running JVM tests or CLI.
 Modules are organized by layer with colon-separated paths:
 
 **Core (`core:*`):**
-- `:core:common` - Shared data models and utilities
+- `:core:common` - Shared data models, utilities, and `Either<Failure, Success>` error handling
 - `:core:data` - Data layer abstractions and DTOs
 - `:core:cryptography` - Encryption using libsodium and CoreCrypto
 - `:core:logger` - Logging infrastructure (Kermit-based)
-- `:core:util` - General utilities, `Either<Failure, Success>` error handling
+- `:core:util` - General utilities
 
 **Data (`data:*`):**
 - `:data:network` - HTTP client (Ktor) with retry logic and authentication
@@ -165,7 +165,7 @@ Place common tests in `commonTest` when possible.
 ## Code Conventions
 
 - `suspend` functions for async, `Flow` for reactive streams
-- `Either<Failure, Success>` pattern for error handling (from `:core:util`)
+- `Either<Failure, Success>` pattern for error handling (from `:core:common`)
 - `kotlinx-datetime` types (`Instant`, `LocalDateTime`) for dates
 - `kotlinx.serialization` with `@Serializable` annotation
 - Repository pattern in `:data:*`, use cases in `:logic`
