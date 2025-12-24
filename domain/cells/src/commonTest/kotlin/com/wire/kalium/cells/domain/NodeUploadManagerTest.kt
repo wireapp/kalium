@@ -22,6 +22,7 @@ import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
+import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -51,7 +52,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import com.wire.kalium.cells.domain.model.NodeVersion
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NodeUploadManagerTest {
@@ -354,6 +354,15 @@ private class TestRepository : CellsRepository {
     override suspend fun removePublicLinkPassword(linkUuid: String): Either<NetworkFailure, Unit> = Unit.right()
 
     override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = listOf<CellNode>().right()
+
+    override suspend fun createFile(
+        folderName: String,
+        contentType: String,
+        templateUuid: String
+    ): Either<NetworkFailure, List<CellNode>> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> = Unit.right()

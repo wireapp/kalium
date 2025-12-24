@@ -19,6 +19,7 @@ package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.isLeft

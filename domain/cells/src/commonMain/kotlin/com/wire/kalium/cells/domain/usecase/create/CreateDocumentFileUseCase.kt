@@ -15,20 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
+package com.wire.kalium.cells.domain.usecase.create
 
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
-public interface CreateFolderUseCase {
+/**
+ * Create a document file(.docx) in the wire cell server.
+ */
+public interface CreateDocumentFileUseCase {
     public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
 }
 
-internal class CreateFolderUseCaseImpl(
+internal class CreateDocumentFileUseCaseImpl(
     private val cellsRepository: CellsRepository,
-) : CreateFolderUseCase {
+) : CreateDocumentFileUseCase {
     override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFolder(path).map { }
+        cellsRepository.createFile(
+            folderName = path + EXTENSION,
+            contentType = CONTENT_TYPE,
+            templateUuid = DOC_TEMPLATE_UUID
+        ).map { }
+
+    companion object {
+        const val EXTENSION = ".docx"
+        const val CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        const val DOC_TEMPLATE_UUID = "01-Microsoft Word.docx"
+    }
 }
