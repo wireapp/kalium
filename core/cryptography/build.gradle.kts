@@ -30,7 +30,7 @@ kaliumLibrary {
     multiplatform {
         includeNativeInterop.set(true)
         enableApple.set(false)
-        enableJs.set(false) // Using wasmJs instead via core-crypto-kmp
+//         enableJs.set(false) // Using wasmJs instead via core-crypto-kmp
     }
 }
 
@@ -113,6 +113,9 @@ kotlin {
                 implementation(libs.coreCryptoKmp)
             }
         }
+
+        val jsMain by getting
+        val jsTest by getting
     }
 }
 
