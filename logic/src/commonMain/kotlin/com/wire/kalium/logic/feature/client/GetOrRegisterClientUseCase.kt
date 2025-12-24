@@ -161,7 +161,6 @@ internal class GetOrRegisterClientUseCaseImpl(
                 }
             }
         } else {
-            kaliumLogger.d("Crypto state backup disabled, proceeding with normal client registration")
             // Feature disabled, proceed with normal registration
             return registerClient(registerClientParam)
         }

@@ -34,6 +34,7 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
+import io.ktor.util.encodeBase64
 import io.mockative.Mockable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -42,7 +43,9 @@ import okio.Buffer
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.SYSTEM
 import okio.Source
+import okio.use
 
 /**
  * Metadata included in the crypto state backup zip file.
@@ -52,7 +55,11 @@ data class CryptoStateBackupMetadata(
     @SerialName("version")
     val version: Int,
     @SerialName("client_id")
-    val clientId: String
+    val clientId: String,
+    @SerialName("mls_db_passphrase")
+    val mlsDbPassphrase: String,
+    @SerialName("proteus_db_passphrase")
+    val proteusDbPassphrase: String
 ) {
     companion object {
         const val CURRENT_VERSION = 1
@@ -80,7 +87,8 @@ internal class BackupCryptoStateUseCaseImpl(
     private val messageSyncApi: MessageSyncApi,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val securityHelper: com.wire.kalium.logic.util.SecurityHelper
 ) : BackupCryptoStateUseCase {
 
     private val logger = kaliumLogger.withTextTag("BackupCryptoState")
@@ -131,7 +139,6 @@ internal class BackupCryptoStateUseCaseImpl(
     private suspend fun validatePreconditionsAndGetClientId(): Either<CoreFailure, ClientId> {
         // 1. Check if feature flag is enabled and remote backup URL is configured
         if (!kaliumConfigs.cryptoStateBackupEnabled) {
-            logger.d("Crypto state backup disabled or remote backup URL not configured, skipping crypto state backup")
             return Either.Left(CoreFailure.Unknown(IllegalStateException("Feature disabled")))
         }
 
@@ -183,10 +190,16 @@ internal class BackupCryptoStateUseCaseImpl(
             return Either.Left(CoreFailure.Unknown(IllegalStateException("No crypto data to backup")))
         }
 
+        // Retrieve database passphrases
+        val mlsPassphrase = securityHelper.mlsDBSecret(selfUserId, mlsPath.toString()).passphrase.encodeBase64()
+        val proteusPassphrase = securityHelper.proteusDBSecret(selfUserId, proteusPath.toString()).passphrase.encodeBase64()
+
         // Add metadata JSON file to the zip
         val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
-            clientId = clientId
+            clientId = clientId,
+            mlsDbPassphrase = mlsPassphrase,
+            proteusDbPassphrase = proteusPassphrase
         )
         val metadataJson = Json.encodeToString(metadata)
         val metadataSource = Buffer().writeUtf8(metadataJson)

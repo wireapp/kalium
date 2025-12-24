@@ -23,6 +23,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.utils.TestRequestHandler
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @ConsistentCopyVisibility
 data class KaliumConfigs(
@@ -58,7 +59,8 @@ data class KaliumConfigs(
     val dbInvalidationControlEnabled: Boolean = false,
     private val messageSynchronizationEnabledFlag: Boolean = false,
     private val cryptoStateBackupEnabledFlag: Boolean = false,
-    val remoteBackupURL: String? = null
+    val remoteBackupURL: String? = null,
+    val cryptoStateBackupInterval: Duration = 5.minutes
 ) {
     val messageSynchronizationEnabled = messageSynchronizationEnabledFlag && remoteBackupURL != null
     val cryptoStateBackupEnabled = cryptoStateBackupEnabledFlag && remoteBackupURL != null

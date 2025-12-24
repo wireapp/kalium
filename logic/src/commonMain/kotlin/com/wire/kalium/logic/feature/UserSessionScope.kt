@@ -2090,7 +2090,8 @@ class UserSessionScope internal constructor(
             messageSyncApi = authenticatedNetworkContainer.messageSyncApi,
             rootPathsProvider = rootPathsProvider,
             kaliumFileSystem = kaliumFileSystem,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            securityHelper = com.wire.kalium.logic.util.SecurityHelperImpl(globalPreferences.passphraseStorage)
         )
 
     private val backupStateVisibilityCoordinator: BackupStateVisibilityCoordinator by lazy {

@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.MlsDBSecret
+import com.wire.kalium.cryptography.ProteusDBSecret
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -29,6 +31,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.remoteBackup.BackupCryptoStateUseCase
 import com.wire.kalium.logic.sync.remoteBackup.BackupCryptoStateUseCaseImpl
 import com.wire.kalium.logic.util.IgnoreIOS
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
 import io.mockative.any
 import io.mockative.coEvery
@@ -50,6 +53,7 @@ class BackupCryptoStateUseCaseTest {
         val (arrangement, backupCryptoStateUseCase) = Arrangement()
             .withMessageSyncEnabled(false)
             .withClientId(ClientId("test-client-id"))
+            .withDefaultPassphrases()
             .arrange()
 
         // When
@@ -69,6 +73,7 @@ class BackupCryptoStateUseCaseTest {
         val (arrangement, backupCryptoStateUseCase) = Arrangement()
             .withMessageSyncEnabled(true)
             .withClientId(null)
+            .withDefaultPassphrases()
             .arrange()
 
         // When
@@ -88,6 +93,7 @@ class BackupCryptoStateUseCaseTest {
         val (arrangement, backupCryptoStateUseCase) = Arrangement()
             .withMessageSyncEnabled(true)
             .withClientId(ClientId("test-client-id"))
+            .withDefaultPassphrases()
             .withCryptoFolders(hasProteusContent = false, hasMlsContent = false)
             .arrange()
 
@@ -109,6 +115,7 @@ class BackupCryptoStateUseCaseTest {
         val messageSyncApi = mock(MessageSyncApi::class)
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val rootPathsProvider = mock(RootPathsProvider::class)
+        val securityHelper = mock(SecurityHelper::class)
         var kaliumConfigs = KaliumConfigs()
 
         val proteusPath: Path = fakeFileSystem.rootCachePath / "proteus"
@@ -118,6 +125,14 @@ class BackupCryptoStateUseCaseTest {
             // Setup default paths
             every { rootPathsProvider.rootProteusPath(userId) }.returns(proteusPath.toString())
             every { rootPathsProvider.rootMLSPath(userId) }.returns(mlsPath.toString())
+        }
+
+        suspend fun withDefaultPassphrases() = apply {
+            // Setup default passphrase responses
+            coEvery { securityHelper.mlsDBSecret(any(), any()) }
+                .returns(MlsDBSecret(ByteArray(32) { it.toByte() }))
+            coEvery { securityHelper.proteusDBSecret(any(), any()) }
+                .returns(ProteusDBSecret(ByteArray(32) { it.toByte() }))
         }
 
         fun withMessageSyncEnabled(enabled: Boolean) = apply {
@@ -156,7 +171,8 @@ class BackupCryptoStateUseCaseTest {
                 messageSyncApi = messageSyncApi,
                 rootPathsProvider = rootPathsProvider,
                 kaliumFileSystem = fakeFileSystem,
-                kaliumConfigs = kaliumConfigs
+                kaliumConfigs = kaliumConfigs,
+                securityHelper = securityHelper
             )
     }
 }

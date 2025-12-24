@@ -30,14 +30,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * Coordinates cryptographic state backup based on app visibility changes and server event processing.
  *
  * Triggers backup in two scenarios:
- * 1. When app transitions to/from background
- * 2. After processing server events while in background (debounced by 5 minutes)
+ * 1. Immediately when app transitions to/from background
+ * 2. After processing server events (debounced by cryptoStateBackupInterval from KaliumConfigs)
  */
 @Mockable
 interface BackupStateVisibilityCoordinator : EventProcessingCallback {
@@ -55,7 +54,7 @@ interface BackupStateVisibilityCoordinator : EventProcessingCallback {
 
     /**
      * Notifies the coordinator that a server event was processed.
-     * If app is in background, schedules a debounced backup (5 minutes).
+     * Schedules a debounced backup (based on cryptoStateBackupInterval config), cancelling any existing debounce timer.
      */
     override fun onEventProcessed()
 }
@@ -73,15 +72,9 @@ internal class BackupStateVisibilityCoordinatorImpl(
     private var previousVisibility: Boolean? = null
     private var lastUploadedHash: String? = null
     private var debouncedBackupJob: Job? = null
-    private var currentVisibility: Boolean = true // Assume foreground initially
-
-    companion object {
-        private val DEBOUNCE_DURATION = 5.minutes
-    }
 
     override fun start() {
-        if (!kaliumConfigs.messageSynchronizationEnabled) {
-            logger.d("Message synchronization disabled or remote backup URL not configured, skipping backup state coordinator")
+        if (!kaliumConfigs.cryptoStateBackupEnabled) {
             return
         }
 
@@ -101,7 +94,6 @@ internal class BackupStateVisibilityCoordinatorImpl(
     }
 
     override fun stop() {
-        logger.i("Stopping backup state visibility coordinator")
         observerJob?.cancel()
         observerJob = null
         debouncedBackupJob?.cancel()
@@ -111,24 +103,22 @@ internal class BackupStateVisibilityCoordinatorImpl(
     }
 
     override fun onEventProcessed() {
-        if (!kaliumConfigs.messageSynchronizationEnabled) {
+        if (!kaliumConfigs.cryptoStateBackupEnabled) {
             return
         }
 
-        // Only schedule debounced backup if app is in background
-        if (!currentVisibility) {
-            scheduleDebouncedBackup()
-        }
+        // Schedule debounced backup after processing any event
+        scheduleDebouncedBackup()
     }
 
     private fun scheduleDebouncedBackup() {
         // Cancel any existing debounced backup
         debouncedBackupJob?.cancel()
 
-        logger.d("Scheduling debounced backup in ${DEBOUNCE_DURATION.inWholeMinutes} minutes")
+        logger.d("Scheduling debounced backup in ${kaliumConfigs.cryptoStateBackupInterval.inWholeMinutes} minutes")
 
         debouncedBackupJob = scope.launch {
-            delay(DEBOUNCE_DURATION)
+            delay(kaliumConfigs.cryptoStateBackupInterval)
             logger.i("Debounced backup timer expired, triggering crypto state backup")
             performBackup("debounced timer")
         }
@@ -145,7 +135,6 @@ internal class BackupStateVisibilityCoordinatorImpl(
     private suspend fun handleVisibilityChange(isVisible: Boolean) {
         val previous = previousVisibility
         previousVisibility = isVisible
-        currentVisibility = isVisible
 
         // Only trigger on actual transitions, not initial state
         if (previous == null || previous == isVisible) {
