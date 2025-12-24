@@ -29,8 +29,6 @@ plugins {
 kaliumLibrary {
     multiplatform {
         includeNativeInterop.set(true)
-        enableApple.set(false)
-//         enableJs.set(false) // Using wasmJs instead via core-crypto-kmp
     }
 }
 
