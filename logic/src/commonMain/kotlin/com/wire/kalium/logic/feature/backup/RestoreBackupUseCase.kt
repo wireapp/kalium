@@ -60,7 +60,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 
-interface RestoreBackupUseCase {
+public interface RestoreBackupUseCase {
 
     /**
      * Restores a valid previously created backup file into the current database, respecting the current data if there is any overlap.
@@ -68,7 +68,7 @@ interface RestoreBackupUseCase {
      * @param password the password used to encrypt the original backup file. Null if the file was not encrypted.
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
      */
-    suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult
+    public suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")

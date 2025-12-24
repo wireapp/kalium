@@ -17,20 +17,20 @@
  */
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.common.functional.fold
 import io.mockative.Mockable
 
 /**
  * Get the Default Protocol [SupportedProtocol]
  */
 @Mockable
-interface GetDefaultProtocolUseCase {
+public interface GetDefaultProtocolUseCase {
     /**
      * @return [SupportedProtocol.MLS] or [SupportedProtocol.PROTEUS]
      */
-    operator fun invoke(): SupportedProtocol
+    public operator fun invoke(): SupportedProtocol
 }
 
 internal class GetDefaultProtocolUseCaseImpl(

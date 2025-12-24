@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
 import io.mockative.Mockable
 
 @Mockable
-interface CompositeMessageRepository {
+internal interface CompositeMessageRepository {
     suspend fun markSelected(
         messageId: MessageId,
         conversationId: ConversationId,

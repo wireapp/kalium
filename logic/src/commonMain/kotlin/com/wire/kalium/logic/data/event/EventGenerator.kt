@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 
-class EventGenerator(
+internal class EventGenerator(
     private val selfClient: QualifiedClientID,
     targetClient: QualifiedClientID
 ) {
@@ -58,7 +58,7 @@ class EventGenerator(
         CryptoClientId(selfClient.clientId.value)
     )
 
-    fun generateEvents(
+    internal fun generateEvents(
         transactionProvider: CryptoTransactionProvider,
         limit: Int,
         conversationId: ConversationId,

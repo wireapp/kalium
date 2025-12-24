@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
 import io.mockative.Mockable
 
 @Mockable
-interface ServerConfigRepository {
+internal interface ServerConfigRepository {
     val minimumApiVersionForPersonalToTeamAccountMigration: Int
 
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>

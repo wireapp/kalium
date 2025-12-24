@@ -32,7 +32,7 @@ import io.mockative.verify
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
-class AppLockConfigHandlerTest {
+internal class AppLockConfigHandlerTest {
 
     @Test
     fun givenConfigRepositoryReturnsFailureWithStatusDisabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {

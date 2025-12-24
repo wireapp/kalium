@@ -105,7 +105,7 @@ internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface CallRepository {
+internal interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
     fun getCallMetadata(conversationId: ConversationId): CallMetadata?

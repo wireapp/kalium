@@ -21,12 +21,12 @@ import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
 import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
 
-interface AcmeMapper {
+internal interface AcmeMapper {
     fun fromDto(dto: ACMEAuthorizationResponse, newAcmeAuthz: NewAcmeAuthz): AcmeAuthorization
     fun fromDto(dto: DtoAuthorizationChallengeType): AuthorizationChallengeType
 }
 
-class AcmeMapperImpl : AcmeMapper {
+internal class AcmeMapperImpl : AcmeMapper {
     override fun fromDto(dto: ACMEAuthorizationResponse, newAcmeAuthz: NewAcmeAuthz) = AcmeAuthorization(
         nonce = Nonce(dto.nonce),
         location = dto.location,

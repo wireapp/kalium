@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface SessionRepository {
+internal interface SessionRepository {
     suspend fun storeSession(
         serverConfigId: String,
         ssoId: SsoId?,

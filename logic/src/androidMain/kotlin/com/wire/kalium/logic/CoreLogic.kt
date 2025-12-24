@@ -45,7 +45,7 @@ import kotlinx.coroutines.cancel
  * This class is only for platform specific variables,
  * and it should only override functions/variables from CoreLogicCommon
  */
-actual class CoreLogic(
+public actual class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,
@@ -68,7 +68,7 @@ actual class CoreLogic(
         enableWAL = true
     )
 
-    actual override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
@@ -76,7 +76,7 @@ actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    actual override val globalCallManager: GlobalCallManager by lazy {
+    internal actual override val globalCallManager: GlobalCallManager by lazy {
         GlobalCallManager(
             appContext = PlatformContext(appContext),
             scope = getGlobalScope()
@@ -85,7 +85,7 @@ actual class CoreLogic(
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl(appContext)
 
-    actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
+    public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
         appContext = appContext
     )
 
@@ -106,11 +106,11 @@ actual class CoreLogic(
         )
     }
 
-    actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
         dispatcher = KaliumDispatcherImpl.io,
         audioEffect = AudioEffect(appContext),
     )
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "android"
+internal actual val clientPlatform: String = "android"

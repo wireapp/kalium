@@ -32,7 +32,7 @@ import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 
-interface ConversationGroupRepositoryArrangement {
+internal interface ConversationGroupRepositoryArrangement {
     val conversationGroupRepository: ConversationGroupRepository
 
     suspend fun withGenerateGuestRoomLink(
@@ -51,7 +51,7 @@ interface ConversationGroupRepositoryArrangement {
     }
 }
 
-class ConversationGroupRepositoryArrangementImpl : ConversationGroupRepositoryArrangement {
+internal class ConversationGroupRepositoryArrangementImpl : ConversationGroupRepositoryArrangement {
 
     override val conversationGroupRepository = mock(ConversationGroupRepository::class)
 }

@@ -21,15 +21,15 @@ import com.sun.jna.Memory
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -124,7 +124,7 @@ class OnSendOTRTest {
         val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
         val messageSender = mock(CallingMessageSender::class)
 
-        val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
+        val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         val callMapper = CallMapperImpl(qualifiedIdMapper)
 

@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
-class OnParticipantListChanged internal constructor(
+internal class OnParticipantListChanged internal constructor(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,

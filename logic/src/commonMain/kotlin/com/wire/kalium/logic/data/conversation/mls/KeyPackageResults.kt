@@ -20,12 +20,12 @@ package com.wire.kalium.logic.data.conversation.mls
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 
-data class KeyPackageClaimResult(
+internal data class KeyPackageClaimResult(
     val successfullyFetchedKeyPackages: List<KeyPackageDTO>,
     val usersWithoutKeyPackagesAvailable: Set<UserId>
 )
 
-data class MLSAdditionResult(
+internal data class MLSAdditionResult(
     val successfullyAddedUsers: Set<UserId>,
     val notAddedUsers: Set<UserId>
 )

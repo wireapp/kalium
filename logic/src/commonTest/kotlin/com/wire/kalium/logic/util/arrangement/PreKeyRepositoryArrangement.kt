@@ -28,7 +28,7 @@ import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
-interface PreKeyRepositoryArrangement {
+internal interface PreKeyRepositoryArrangement {
     val preKeyRepository: PreKeyRepository
 
     suspend fun withRemotelyAvailablePreKeysReturning(result: Either<CoreFailure, List<Int>>)

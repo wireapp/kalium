@@ -101,7 +101,7 @@ import kotlinx.serialization.json.Json
 import java.util.Collections
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class CallManagerImpl internal constructor(
+internal class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -715,11 +715,11 @@ class CallManagerImpl internal constructor(
         job.cancel()
     }
 
-    companion object {
+    internal companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
-        const val TAG = "CallManager"
-        const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
-        const val UTF8_ENCODING = "UTF-8"
-        const val REMOTE_MUTE_TYPE = "REMOTEMUTE"
+        internal const val TAG = "CallManager"
+        internal const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
+        internal const val UTF8_ENCODING = "UTF-8"
+        internal const val REMOTE_MUTE_TYPE = "REMOTEMUTE"
     }
 }

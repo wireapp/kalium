@@ -46,7 +46,7 @@ import okio.Path
 import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
-interface AssetMapper {
+internal interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
@@ -60,7 +60,7 @@ interface AssetMapper {
     ): Asset
 }
 
-class AssetMapperImpl(
+internal class AssetMapperImpl(
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : AssetMapper {
@@ -247,7 +247,7 @@ class AssetMapperImpl(
     }
 }
 
-fun AssetTransferStatus.toDao(): AssetTransferStatusEntity {
+internal fun AssetTransferStatus.toDao(): AssetTransferStatusEntity {
     return when (this) {
         AssetTransferStatus.NOT_DOWNLOADED -> AssetTransferStatusEntity.NOT_DOWNLOADED
         AssetTransferStatus.UPLOAD_IN_PROGRESS -> AssetTransferStatusEntity.UPLOAD_IN_PROGRESS
@@ -261,7 +261,7 @@ fun AssetTransferStatus.toDao(): AssetTransferStatusEntity {
     }
 }
 
-fun AssetTransferStatusEntity.toModel(): AssetTransferStatus {
+internal fun AssetTransferStatusEntity.toModel(): AssetTransferStatus {
     return when (this) {
         AssetTransferStatusEntity.NOT_DOWNLOADED -> AssetTransferStatus.NOT_DOWNLOADED
         AssetTransferStatusEntity.UPLOAD_IN_PROGRESS -> AssetTransferStatus.UPLOAD_IN_PROGRESS
@@ -275,7 +275,7 @@ fun AssetTransferStatusEntity.toModel(): AssetTransferStatus {
     }
 }
 
-fun AssetMessageEntity.toModel(): AssetMessage {
+internal fun AssetMessageEntity.toModel(): AssetMessage {
     return AssetMessage(
         time,
         username,
@@ -289,7 +289,7 @@ fun AssetMessageEntity.toModel(): AssetMessage {
     )
 }
 
-fun AssetContent.AssetMetadata.toProto(): CellAsset.InitialMetaData<*> =
+internal fun AssetContent.AssetMetadata.toProto(): CellAsset.InitialMetaData<*> =
     when (this) {
         is Image -> CellAsset.InitialMetaData.Image(
             image = CellAsset.ImageMetaData(
@@ -309,7 +309,7 @@ fun AssetContent.AssetMetadata.toProto(): CellAsset.InitialMetaData<*> =
         )
     }
 
-fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
+internal fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
     when (this) {
         is CellAsset.InitialMetaData.Image -> Image(
             width = value.width,

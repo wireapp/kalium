@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -31,13 +31,13 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case that observes if the legal hold change should be notified to the user or if it has been already notified.
  */
-interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
-    suspend operator fun invoke(): Flow<Result>
+public interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
+    public suspend operator fun invoke(): Flow<Result>
 
-    sealed class Result {
-        data class ShouldNotify(val legalHoldState: LegalHoldState) : Result()
-        data object AlreadyNotified : Result()
-        data class Failure(val failure: CoreFailure) : Result()
+    public sealed class Result {
+        public data class ShouldNotify(val legalHoldState: LegalHoldState) : Result()
+        public data object AlreadyNotified : Result()
+        public data class Failure(val failure: CoreFailure) : Result()
     }
 }
 

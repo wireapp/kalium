@@ -29,7 +29,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import io.mockative.Mockable
 
 @Mockable
-interface MLSMigrationWorker {
+internal interface MLSMigrationWorker {
     suspend fun runMigration(): Either<CoreFailure, Unit>
 }
 

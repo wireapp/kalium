@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
 @Mockable
-interface AssetAuditFeatureHandler {
+internal interface AssetAuditFeatureHandler {
     suspend fun isAssetAuditLogEnabled(): Boolean
 }
 

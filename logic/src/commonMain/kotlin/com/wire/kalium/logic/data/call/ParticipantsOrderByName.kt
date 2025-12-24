@@ -21,10 +21,10 @@ package com.wire.kalium.logic.data.call
 import io.mockative.Mockable
 
 @Mockable
-interface ParticipantsOrderByName {
+internal interface ParticipantsOrderByName {
     fun sortItems(participants: List<Participant>): List<Participant>
 }
 
-class ParticipantsOrderByNameImpl : ParticipantsOrderByName {
+internal class ParticipantsOrderByNameImpl : ParticipantsOrderByName {
     override fun sortItems(participants: List<Participant>) = participants.sortedBy { it.name?.uppercase() }
 }

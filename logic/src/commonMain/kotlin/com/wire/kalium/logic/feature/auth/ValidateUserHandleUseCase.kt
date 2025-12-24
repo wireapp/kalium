@@ -24,13 +24,13 @@ import io.mockative.Mockable
  * Validates a user handle
  */
 @Mockable
-interface ValidateUserHandleUseCase {
+public interface ValidateUserHandleUseCase {
     /**
      * Validates a user handle
      * @param handle The user handle to validate
      * @return [ValidateUserHandleResult] if user's handle is [ValidateUserHandleResult.Valid] or [ValidateUserHandleResult.Invalid]
      */
-    operator fun invoke(handle: String): ValidateUserHandleResult
+    public operator fun invoke(handle: String): ValidateUserHandleResult
 }
 
 internal class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
@@ -61,17 +61,17 @@ internal class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
     }
 }
 
-sealed class ValidateUserHandleResult(val handle: String) {
-    class Valid(handle: String) : ValidateUserHandleResult(handle)
-    sealed class Invalid(handleWithoutInvalidCharacters: String) : ValidateUserHandleResult(handleWithoutInvalidCharacters) {
-        class InvalidCharacters(
+public sealed class ValidateUserHandleResult(public val handle: String) {
+    public class Valid(handle: String) : ValidateUserHandleResult(handle)
+    public sealed class Invalid(handleWithoutInvalidCharacters: String) : ValidateUserHandleResult(handleWithoutInvalidCharacters) {
+        public class InvalidCharacters(
             handleWithoutInvalidCharacters: String,
-            val invalidCharactersUsed: List<Char>
+            public val invalidCharactersUsed: List<Char>
         ) : Invalid(handleWithoutInvalidCharacters)
 
-        class TooShort(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
-        class TooLong(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+        public class TooShort(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+        public class TooLong(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
     }
 
-    val isValid: Boolean get() = this is Valid
+    public val isValid: Boolean get() = this is Valid
 }

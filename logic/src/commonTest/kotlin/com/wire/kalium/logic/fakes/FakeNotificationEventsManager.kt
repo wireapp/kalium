@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
-open class FakeNotificationEventsManager : NotificationEventsManager {
+internal open class FakeNotificationEventsManager : NotificationEventsManager {
 
     override suspend fun observeEphemeralNotifications(): Flow<LocalNotification> = emptyFlow()
 

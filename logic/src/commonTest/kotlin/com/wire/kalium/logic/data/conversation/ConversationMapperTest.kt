@@ -57,7 +57,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class ConversationMapperTest {
+internal class ConversationMapperTest {
 
     val protocolInfoMapper = mock(ProtocolInfoMapper::class)
     val conversationStatusMapper = mock(ConversationStatusMapper::class)

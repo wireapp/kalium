@@ -27,9 +27,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
-import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.logic.framework.TestCall
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.test.runTest
@@ -45,7 +44,7 @@ class CallMapperTest {
 
     @BeforeTest
     fun setUp() {
-        qualifiedIdMapper = QualifiedIdMapperImpl(selfUserId = TestCall.CALLER_ID)
+        qualifiedIdMapper = QualifiedIdMapper(selfUserId = TestCall.CALLER_ID)
         callMapper = CallMapperImpl(qualifiedIdMapper = qualifiedIdMapper)
     }
 

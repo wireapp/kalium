@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -31,7 +30,6 @@ import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
-import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
@@ -45,6 +43,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 
 /**
  * Starts and Stops Incremental Sync.
@@ -97,7 +96,7 @@ internal fun IncrementalSyncManager(
     networkStateObserver: NetworkStateObserver,
     userScopedLogger: KaliumLogger,
     userSessionWorkScheduler: UserSessionWorkScheduler,
-    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
+    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelper(
         IncrementalSyncManager.MIN_RETRY_DELAY,
         IncrementalSyncManager.MAX_RETRY_DELAY
     )

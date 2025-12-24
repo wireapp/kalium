@@ -30,11 +30,11 @@ import kotlinx.coroutines.flow.map
  * with sorted participants according to the [CallingParticipantsOrder].
  * The call is active when it's one of the following states: STARTED, INCOMING, ANSWERED, ESTABLISHED, STILL_ONGOING.
  */
-interface ObserveLastActiveCallWithSortedParticipantsUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Call?>
+public interface ObserveLastActiveCallWithSortedParticipantsUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<Call?>
 }
 
-class ObserveLastActiveCallWithSortedParticipantsUseCaseImpl internal constructor(
+internal class ObserveLastActiveCallWithSortedParticipantsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val callingParticipantsOrder: CallingParticipantsOrder
 ) : ObserveLastActiveCallWithSortedParticipantsUseCase {

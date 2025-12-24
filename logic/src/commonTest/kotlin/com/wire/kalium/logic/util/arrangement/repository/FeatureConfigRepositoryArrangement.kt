@@ -24,14 +24,14 @@ import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface FeatureConfigRepositoryArrangement {
+internal interface FeatureConfigRepositoryArrangement {
 
     val featureConfigRepository: FeatureConfigRepository
 
     suspend fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>)
 }
 
-class FeatureConfigRepositoryArrangementImpl : FeatureConfigRepositoryArrangement {
+internal class FeatureConfigRepositoryArrangementImpl : FeatureConfigRepositoryArrangement {
 
     override val featureConfigRepository: FeatureConfigRepository = mock(FeatureConfigRepository::class)
 

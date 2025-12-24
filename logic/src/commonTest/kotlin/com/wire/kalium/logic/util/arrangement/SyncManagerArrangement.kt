@@ -23,13 +23,13 @@ import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface SyncManagerArrangement {
+internal interface SyncManagerArrangement {
         val syncManager: SyncManager
 
     suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>)
 }
 
-class SyncManagerArrangementImpl : SyncManagerArrangement {
+internal class SyncManagerArrangementImpl : SyncManagerArrangement {
         override val syncManager: SyncManager = mock(SyncManager::class)
     override suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) {
         coEvery {

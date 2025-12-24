@@ -30,11 +30,12 @@ import kotlinx.coroutines.withContext
  * Provides a way to get a name of user that sent a message
  * using its [ConversationId] and message ID coordinates.
  */
-class GetSenderNameByMessageIdUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetSenderNameByMessageIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
     ): Result = withContext(dispatchers.io) {
@@ -45,13 +46,13 @@ class GetSenderNameByMessageIdUseCase internal constructor(
         })
     }
 
-    sealed interface Result {
+    public sealed interface Result {
 
-        data class Success(val name: String) : Result
+        public data class Success(val name: String) : Result
 
         /**
          * [StorageFailure.DataNotFound] or some other generic error.
          */
-        data class Failure(val cause: CoreFailure) : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }

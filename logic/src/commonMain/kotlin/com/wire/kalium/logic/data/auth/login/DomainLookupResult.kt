@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.auth.login
 
-data class DomainLookupResult(
+internal data class DomainLookupResult(
     val configJsonUrl: String,
     val webappWelcomeUrl: String
 )

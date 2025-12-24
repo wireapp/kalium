@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.data.client.ClientRepository
 import kotlinx.coroutines.flow.Flow
 
-interface ObserveIsE2EIRequiredState {
+internal interface ObserveIsE2EIRequiredState {
     suspend operator fun invoke(): Flow<Boolean?>
 }
 internal class ObserveIsE2EIRequiredStateImpl(val clientRepository: ClientRepository) : ObserveIsE2EIRequiredState {

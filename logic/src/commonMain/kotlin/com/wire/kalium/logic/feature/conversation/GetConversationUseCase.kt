@@ -31,15 +31,15 @@ import kotlinx.coroutines.flow.map
  * @see Conversation
  * @see ObserveConversationDetailsUseCase
  */
-class GetConversationUseCase(
+internal class GetConversationUseCase(
     private val conversationRepository: ConversationRepository
 ) {
-    sealed class Result {
-        data class Success(val conversation: Conversation) : Result()
-        data class Failure(val storageFailure: StorageFailure) : Result()
+    internal sealed class Result {
+        internal data class Success(val conversation: Conversation) : Result()
+        internal data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
-    suspend operator fun invoke(conversationId: QualifiedID): Flow<Result> {
+    internal suspend operator fun invoke(conversationId: QualifiedID): Flow<Result> {
         return conversationRepository.observeConversationById(conversationId)
             .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
     }

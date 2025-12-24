@@ -29,7 +29,7 @@ import io.mockative.Mockable
  * This use case is responsible for observing the ongoing and incoming calls.
  */
 @Mockable
-interface ObserveOngoingAndIncomingCallsUseCase {
+internal interface ObserveOngoingAndIncomingCallsUseCase {
     suspend operator fun invoke(): Flow<List<Call>>
 }
 

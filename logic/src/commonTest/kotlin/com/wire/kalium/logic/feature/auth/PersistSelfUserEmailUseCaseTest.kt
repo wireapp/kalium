@@ -29,7 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-class PersistSelfUserEmailUseCaseTest {
+internal class PersistSelfUserEmailUseCaseTest {
 
     @Test
     fun givenEmail_whenPersistSelfUserEmailSucceeds_thenReturnSuccess() = runTest {

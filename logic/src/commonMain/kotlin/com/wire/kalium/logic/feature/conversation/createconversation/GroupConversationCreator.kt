@@ -44,7 +44,7 @@ import io.mockative.Mockable
  */
 @Suppress("LongParameterList")
 @Mockable
-interface GroupConversationCreator {
+internal interface GroupConversationCreator {
 
     /**
      * @param name the name of the conversation

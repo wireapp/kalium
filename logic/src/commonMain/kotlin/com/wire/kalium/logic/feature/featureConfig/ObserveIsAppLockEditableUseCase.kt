@@ -32,11 +32,11 @@ import kotlinx.coroutines.flow.map
  * The app lock is editable if there is no enforced app lock on any of the user's accounts.
  * If there is an enforced app lock on any of the user's accounts, the app lock is not editable.
  */
-interface ObserveIsAppLockEditableUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+public interface ObserveIsAppLockEditableUseCase {
+    public suspend operator fun invoke(): Flow<Boolean>
 }
 
-class ObserveIsAppLockEditableUseCaseImpl internal constructor(
+internal class ObserveIsAppLockEditableUseCaseImpl internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val sessionRepository: SessionRepository
 ) : ObserveIsAppLockEditableUseCase {

@@ -26,7 +26,7 @@ import com.wire.kalium.common.functional.flatMap
 import io.mockative.Mockable
 
 @Mockable
-interface ClearConversationAssetsLocallyUseCase {
+internal interface ClearConversationAssetsLocallyUseCase {
     /**
      * Clear all conversation assets from local storage
      *

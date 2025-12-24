@@ -23,7 +23,7 @@ import io.mockative.coEvery
 import io.mockative.mock
 
 @OptIn(DelicateKaliumApi::class)
-interface IsAllowedToRegisterMLSClientUseCaseArrangement {
+internal interface IsAllowedToRegisterMLSClientUseCaseArrangement {
 
     val isAllowedToRegisterMLSClientUseCase: IsAllowedToRegisterMLSClientUseCase
 
@@ -31,7 +31,7 @@ interface IsAllowedToRegisterMLSClientUseCaseArrangement {
 }
 
 @OptIn(DelicateKaliumApi::class)
-class IsAllowedToRegisterMLSClientUseCaseArrangementImpl : IsAllowedToRegisterMLSClientUseCaseArrangement {
+internal class IsAllowedToRegisterMLSClientUseCaseArrangementImpl : IsAllowedToRegisterMLSClientUseCaseArrangement {
 
     override val isAllowedToRegisterMLSClientUseCase: IsAllowedToRegisterMLSClientUseCase = mock(IsAllowedToRegisterMLSClientUseCase::class)
 

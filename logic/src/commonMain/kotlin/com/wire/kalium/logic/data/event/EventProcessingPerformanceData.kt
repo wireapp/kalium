@@ -23,7 +23,7 @@ import kotlin.time.Duration
  * Hierarchy to represent possible ways of recording the
  * performance of event processing.
  */
-sealed interface EventProcessingPerformanceData {
+internal sealed interface EventProcessingPerformanceData {
 
     /**
      * Map containing information about the performance,

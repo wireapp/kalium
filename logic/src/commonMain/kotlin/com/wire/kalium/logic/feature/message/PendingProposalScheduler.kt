@@ -52,7 +52,7 @@ import kotlinx.datetime.Instant
  * committing pending proposals at same time.
  */
 @Mockable
-interface PendingProposalScheduler {
+internal interface PendingProposalScheduler {
 
     /**
      * Schedule to commit pending proposals in a given MLS group.

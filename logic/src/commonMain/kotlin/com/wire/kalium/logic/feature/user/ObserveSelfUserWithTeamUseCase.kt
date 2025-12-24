@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case is responsible for retrieving the current user and his/her team.
  */
-interface ObserveSelfUserWithTeamUseCase {
+internal interface ObserveSelfUserWithTeamUseCase {
 
     /**
      * @return a [Flow] of Pair, where [Pair.first] is the current user [SelfUser] and [Pair.second] is the Team of the current User [Team]

@@ -58,7 +58,6 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -157,7 +156,7 @@ internal object MapperProvider {
     fun clientMapper(): ClientMapper = ClientMapper(preyKeyMapper())
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(selfUserId: UserId): ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
-    fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
+    fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapper(selfUserId)
     fun callMapper(selfUserId: UserId): CallMapper = CallMapperImpl(qualifiedIdMapper(selfUserId))
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()

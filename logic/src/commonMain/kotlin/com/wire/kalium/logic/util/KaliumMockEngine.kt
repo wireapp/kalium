@@ -19,6 +19,6 @@ package com.wire.kalium.logic.util
 
 import io.ktor.client.engine.HttpClientEngine
 
-data class KaliumMockEngine(
+internal data class KaliumMockEngine(
     val mockEngine: HttpClientEngine
 )

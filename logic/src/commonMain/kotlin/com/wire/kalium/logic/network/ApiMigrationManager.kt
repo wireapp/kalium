@@ -28,14 +28,14 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.MetadataDAO
 
-interface ApiMigration {
+internal interface ApiMigration {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
 /**
  * Manages a list migrations for each API version.
  */
-class ApiMigrationManager(
+internal class ApiMigrationManager(
     private val apiVersion: Int,
     private val metadataDAO: MetadataDAO,
     private val migrations: List<Pair<Int, ApiMigration>>
@@ -45,7 +45,7 @@ class ApiMigrationManager(
      * Perform any necessary migrations if API version has increased since the
      * last time the application launched.
      */
-    suspend fun performMigrations() {
+    internal suspend fun performMigrations() {
         getLastUsedApiVersion()?.let { lastUsedApiVersion ->
             kaliumLogger.i("Migrating from API version $lastUsedApiVersion to $apiVersion")
             migrations.filter { it.first in (lastUsedApiVersion + 1)..apiVersion }.foldToEitherWhileRight(Unit) { migration, _ ->
@@ -70,7 +70,7 @@ class ApiMigrationManager(
         }
     }
 
-    companion object {
-        const val LAST_API_VERSION_IN_USE_KEY = "lastApiVersionInUse"
+    internal companion object {
+        internal const val LAST_API_VERSION_IN_USE_KEY = "lastApiVersionInUse"
     }
 }

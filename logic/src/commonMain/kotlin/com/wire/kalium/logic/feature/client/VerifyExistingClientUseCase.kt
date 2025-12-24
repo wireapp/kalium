@@ -31,7 +31,7 @@ import io.mockative.Mockable
  * Checks if the given client is still exists on the backend, otherwise returns failure.
  */
 @Mockable
-interface VerifyExistingClientUseCase {
+internal interface VerifyExistingClientUseCase {
 
     /**
      * @param clientId client id of client
@@ -73,12 +73,12 @@ internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) 
     }
 }
 
-sealed class VerifyExistingClientResult {
-    data class Success(val client: Client) : VerifyExistingClientResult()
+internal sealed class VerifyExistingClientResult {
+    internal data class Success(val client: Client) : VerifyExistingClientResult()
 
-    sealed class Failure : VerifyExistingClientResult() {
-        data object ClientNotRegistered : Failure()
-        data class Generic(val genericFailure: CoreFailure) : Failure()
-        class E2EICertificateRequired(val client: Client, val userId: UserId) : Failure()
+    internal sealed class Failure : VerifyExistingClientResult() {
+        internal data object ClientNotRegistered : Failure()
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
+        internal class E2EICertificateRequired(val client: Client, val userId: UserId) : Failure()
     }
 }

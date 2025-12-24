@@ -25,7 +25,7 @@ import io.mockative.Mockable
  * Helper class to handle call related operations.
  */
 @Mockable
-interface CallHelper {
+internal interface CallHelper {
 
     /**
      * Check if the OneOnOne call that uses SFT should be ended.
@@ -48,7 +48,7 @@ interface CallHelper {
     ): Boolean
 }
 
-class CallHelperImpl : CallHelper {
+internal class CallHelperImpl : CallHelper {
 
     override fun shouldEndSFTOneOnOneCall(
         conversationId: ConversationId,
@@ -69,8 +69,8 @@ class CallHelperImpl : CallHelper {
         }
     }
 
-    companion object {
-        const val TWO_PARTICIPANTS = 2
-        const val ONE_PARTICIPANTS = 1
+    internal companion object {
+        internal const val TWO_PARTICIPANTS = 2
+        internal const val ONE_PARTICIPANTS = 1
     }
 }

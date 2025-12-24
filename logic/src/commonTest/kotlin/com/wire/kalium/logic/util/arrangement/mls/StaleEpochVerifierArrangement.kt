@@ -24,7 +24,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface StaleEpochVerifierArrangement {
+internal interface StaleEpochVerifierArrangement {
 
     val staleEpochVerifier: StaleEpochVerifier
 
@@ -32,7 +32,7 @@ interface StaleEpochVerifierArrangement {
 
 }
 
-class StaleEpochVerifierArrangementImpl : StaleEpochVerifierArrangement {
+internal class StaleEpochVerifierArrangementImpl : StaleEpochVerifierArrangement {
 
     override val staleEpochVerifier = mock(StaleEpochVerifier::class)
 

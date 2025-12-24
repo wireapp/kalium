@@ -33,7 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 // TODO(testing): create unit test
-class OnIncomingCall(
+internal class OnIncomingCall(
     private val callRepository: CallRepository,
     private val callMapper: CallMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,

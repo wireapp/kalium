@@ -41,7 +41,7 @@ import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
 
-object TestEvent {
+internal object TestEvent {
 
     fun memberJoin(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberJoin(
         eventId,

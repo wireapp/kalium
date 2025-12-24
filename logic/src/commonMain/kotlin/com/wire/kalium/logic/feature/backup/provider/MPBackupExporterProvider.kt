@@ -30,7 +30,7 @@ import okio.FileSystem
 import okio.SYSTEM
 
 @Mockable
-interface BackupExporter {
+internal interface BackupExporter {
     fun add(user: BackupUser)
     fun add(conversation: BackupConversation)
     fun add(message: BackupMessage)
@@ -38,7 +38,7 @@ interface BackupExporter {
 }
 
 @Mockable
-interface MPBackupExporterProvider {
+internal interface MPBackupExporterProvider {
     fun provideExporter(
         selfUserId: BackupQualifiedId,
         workDirectory: String,

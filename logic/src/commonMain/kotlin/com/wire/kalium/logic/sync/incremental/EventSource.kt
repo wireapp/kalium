@@ -21,7 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 /**
  * Informs where an event came from.
  */
-enum class EventSource {
+internal enum class EventSource {
     /**
      * Event happened while this client was offline.
      */

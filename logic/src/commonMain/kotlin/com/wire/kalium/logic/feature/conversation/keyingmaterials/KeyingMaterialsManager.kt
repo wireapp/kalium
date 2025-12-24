@@ -40,11 +40,11 @@ import kotlin.time.Duration.Companion.hours
  * it'll send a new UpdateCommit for that conversation.
  */
 @Mockable
-interface KeyingMaterialsManager {
+internal interface KeyingMaterialsManager {
     suspend operator fun invoke()
 }
 
-class KeyingMaterialsManagerImpl internal constructor(
+internal class KeyingMaterialsManagerImpl internal constructor(
     private val featureSupport: FeatureSupport,
     private val syncStateObserver: SyncStateObserver,
     private val clientRepository: Lazy<ClientRepository>,

@@ -30,16 +30,16 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will add a conversation to the favorites folder.
  */
-interface AddConversationToFavoritesUseCase {
+public interface AddConversationToFavoritesUseCase {
     /**
      * @param conversationId the id of the conversation
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(conversationId: ConversationId): Result
+    public suspend operator fun invoke(conversationId: ConversationId): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

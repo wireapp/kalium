@@ -25,15 +25,13 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.toEventResponseToStore
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.data.event.EventGenerator
-import com.wire.kalium.common.functional.getOrFail
-import com.wire.kalium.logic.data.event.toEventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -41,10 +39,9 @@ import kotlinx.datetime.Clock
 import kotlinx.io.Buffer
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
+import kotlinx.serialization.json.Json
 
 class GenerateEventsCommand : CliktCommand(name = "generate-events") {
 
@@ -61,28 +58,21 @@ class GenerateEventsCommand : CliktCommand(name = "generate-events") {
 
     override fun run() = runBlocking {
         val selfUserId = userSession.users.getSelfUser()?.id ?: throw PrintMessage("No self user is registered")
-        val selfClientId = userSession.clientIdProvider().getOrFail { throw PrintMessage("No self client is registered") }
         val targetUserId = UserId(value = targetUserId, domain = selfUserId.domain)
         val targetClientId = ClientId(targetClientId)
 
+        @OptIn(InternalKaliumApi::class)
+        val events: Flow<EventResponse> = userSession.debug.generateEvents(
+            targetUserId = targetUserId,
+            targetClientId = targetClientId,
+            conversationId = ConversationId(conversationId, domain = selfUserId.domain),
+            limit = eventLimit
+        )
+
+        @OptIn(InternalKaliumApi::class)
         userSession.debug.establishSession(
             userId = targetUserId,
             clientId = targetClientId
-        )
-        val generator = EventGenerator(
-            selfClient = QualifiedClientID(
-                clientId = selfClientId,
-                userId = selfUserId
-            ),
-            targetClient = QualifiedClientID(
-                clientId = targetClientId,
-                userId = targetUserId
-            )
-        )
-        val events: Flow<EventResponse> = generator.generateEvents(
-            userSession.cryptoTransactionProvider,
-            limit = eventLimit,
-            conversationId = ConversationId(conversationId, domain = selfUserId.domain)
         )
         val response = NotificationResponse(
             time = Clock.System.now().toString(),

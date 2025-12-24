@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.message.mention.toDao
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 
-fun MessageDraftEntity.toModel(): MessageDraft = MessageDraft(
+internal fun MessageDraftEntity.toModel(): MessageDraft = MessageDraft(
     conversationId = conversationId.toModel(),
     text = text,
     editMessageId = editMessageId,
@@ -34,7 +34,7 @@ fun MessageDraftEntity.toModel(): MessageDraft = MessageDraft(
     }
 )
 
-fun MessageDraft.toDao(): MessageDraftEntity = MessageDraftEntity(
+internal fun MessageDraft.toDao(): MessageDraftEntity = MessageDraftEntity(
     conversationId = conversationId.toDao(),
     text = text,
     editMessageId = editMessageId,
