@@ -2181,7 +2181,8 @@ class UserSessionScope internal constructor(
             messageSyncRepository,
             rootPathsProvider,
             kaliumFileSystem,
-            kaliumConfigs
+            kaliumConfigs,
+            globalPreferences.passphraseStorage
         )
     }
     val conversations: ConversationScope by lazy {

@@ -62,6 +62,7 @@ interface ClientRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
+    suspend fun markMLSClientAsRegisteredLocally(): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun persistClientHasConsumableNotifications(hasConsumableNotifications: Boolean): Either<CoreFailure, Unit>
 
@@ -263,6 +264,11 @@ class ClientDataSource(
     override suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean> =
         wrapStorageRequest {
             clientRegistrationStorage.hasRegisteredMLSClient()
+        }
+
+    override suspend fun markMLSClientAsRegisteredLocally(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.setHasRegisteredMLSClient()
         }
 
     override suspend fun storeUserClientIdList(

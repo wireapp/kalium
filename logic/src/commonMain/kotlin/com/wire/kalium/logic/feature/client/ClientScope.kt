@@ -87,6 +87,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val kaliumConfigs: KaliumConfigs,
+    private val passphraseStorage: com.wire.kalium.persistence.dbPassphrase.PassphraseStorage,
 ) {
 
     @OptIn(DelicateKaliumApi::class)
@@ -164,7 +165,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             selfUserId = selfUserId,
             messageSyncRepository = messageSyncRepository,
             rootPathsProvider = rootPathsProvider,
-            kaliumFileSystem = kaliumFileSystem
+            kaliumFileSystem = kaliumFileSystem,
+            passphraseStorage = passphraseStorage,
+            clientRepository = clientRepository
         )
 
     val getOrRegister: GetOrRegisterClientUseCase

@@ -194,6 +194,8 @@ internal class BackupCryptoStateUseCaseImpl(
         val mlsPassphrase = securityHelper.mlsDBSecret(selfUserId, mlsPath.toString()).passphrase.encodeBase64()
         val proteusPassphrase = securityHelper.proteusDBSecret(selfUserId, proteusPath.toString()).passphrase.encodeBase64()
 
+        logger.i("Backing up database passphrases: MLS='$mlsPassphrase', Proteus='$proteusPassphrase'")
+
         // Add metadata JSON file to the zip
         val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,

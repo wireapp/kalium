@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.cryptography.ProteusDBSecret
 import com.wire.kalium.cryptography.migrateDatabaseKey
@@ -63,20 +64,30 @@ internal class SecurityHelperImpl(
     override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
         // Step 1: Try current format (v2) - return if found
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId")
-            ?.let { return MlsDBSecret(Base64.decode(it)) }
+            ?.let { base64String ->
+                kaliumLogger.i("SecurityHelper: Retrieved existing MLS DB passphrase (v2) for user=$userId, passphrase='$base64String'")
+                val decoded = Base64.decode(base64String)
+                return MlsDBSecret(decoded)
+            }
 
         // Step 2: Try legacy format (v1) - migrate to v2 if found
         getStoredDbPassword("${MLS_DB_PASSPHRASE_PREFIX}_$userId")
             ?.let { legacyPassphrase ->
+                kaliumLogger.i("SecurityHelper: Migrating legacy MLS DB passphrase (v1) to v2 for user=$userId")
                 return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
                     databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
-                    passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
+                    val newBase64 = newKeyBytes.encodeBase64()
+                    passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newBase64)
+                    kaliumLogger.i("SecurityHelper: Migrated MLS DB passphrase, new passphrase='$newBase64'")
                 }.let { MlsDBSecret(it) }
             }
 
         // Step 3: Generate new secret as fallback
-        return getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
-            MlsDBSecret(Base64.decode(it))
+        kaliumLogger.w("SecurityHelper: No stored MLS DB passphrase found for user=$userId, generating NEW passphrase")
+        return getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId").let { base64String ->
+            kaliumLogger.i("SecurityHelper: Generated new MLS DB passphrase for user=$userId, passphrase='$base64String'")
+            val decoded = Base64.decode(base64String)
+            MlsDBSecret(decoded)
         }
     }
 
@@ -84,20 +95,30 @@ internal class SecurityHelperImpl(
     override suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret {
             // Step 1: Try current format (v2) - return if found
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId")
-                ?.let { return ProteusDBSecret(Base64.decode(it)) }
+                ?.let { base64String ->
+                    kaliumLogger.i("SecurityHelper: Retrieved existing Proteus DB passphrase (v2) for user=$userId, passphrase='$base64String'")
+                    val decoded = Base64.decode(base64String)
+                    return ProteusDBSecret(decoded)
+                }
 
             // Step 2: Try legacy format (v1) - migrate to v2 if found
             getStoredDbPassword("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId")
                 ?.let { legacyPassphrase ->
+                    kaliumLogger.i("SecurityHelper: Migrating legacy Proteus DB passphrase (v1) to v2 for user=$userId")
                     return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
                         databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
-                        passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
+                        val newBase64 = newKeyBytes.encodeBase64()
+                        passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newBase64)
+                        kaliumLogger.i("SecurityHelper: Migrated Proteus DB passphrase, new passphrase='$newBase64'")
                     }.let { ProteusDBSecret(it) }
                 }
 
             // Step 3: Generate new secret as fallback
-            return getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId").let {
-                ProteusDBSecret(Base64.decode(it))
+            kaliumLogger.w("SecurityHelper: No stored Proteus DB passphrase found for user=$userId, generating NEW passphrase")
+            return getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId").let { base64String ->
+                kaliumLogger.i("SecurityHelper: Generated new Proteus DB passphrase for user=$userId, passphrase='$base64String'")
+                val decoded = Base64.decode(base64String)
+                ProteusDBSecret(decoded)
             }
         }
 

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -64,7 +65,13 @@ sealed class DownloadAndRestoreCryptoStateResult {
 @Mockable
 interface DownloadAndRestoreCryptoStateUseCase {
     /**
-     * Downloads and restores the crypto state backup for the user
+     * Downloads and restores the crypto state backup for the user.
+     * This includes:
+     * - Downloading the backup ZIP from the server
+     * - Extracting MLS and Proteus crypto databases
+     * - Restoring database passphrases to PassphraseStorage
+     * - Marking MLS client as registered locally (to prevent duplicate registration)
+     *
      * @return Result indicating whether a backup was found and restored, or if there was no backup
      */
     suspend operator fun invoke(): DownloadAndRestoreCryptoStateResult
@@ -75,6 +82,8 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
     private val messageSyncRepository: MessageSyncRepository,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
+    private val passphraseStorage: com.wire.kalium.persistence.dbPassphrase.PassphraseStorage,
+    private val clientRepository: com.wire.kalium.logic.data.client.ClientRepository,
     kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
 ) : DownloadAndRestoreCryptoStateUseCase {
 
@@ -139,7 +148,7 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
             }
 
             extractResult.flatMap {
-                // Read metadata to get client ID
+                // Read metadata to get client ID and passphrases
                 val metadataPath = tempExtractPath / CryptoStateBackupMetadata.METADATA_FILE_NAME
                 val metadata = if (kaliumFileSystem.exists(metadataPath)) {
                     kaliumFileSystem.source(metadataPath).buffer().use { source ->
@@ -151,6 +160,18 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
                 }
 
                 val clientId = ClientId(metadata.clientId)
+
+                // Restore database passphrases to PassphraseStorage
+                // These are already Base64 encoded in the metadata
+                val mlsPassphraseKey = "mls_db_secret_alias_v2_$selfUserId"
+                val proteusPassphraseKey = "proteus_db_secret_alias_v2_$selfUserId"
+
+                logger.i("Restoring database passphrases from metadata: MLS='${metadata.mlsDbPassphrase}', Proteus='${metadata.proteusDbPassphrase}'")
+
+                passphraseStorage.setPassphrase(mlsPassphraseKey, metadata.mlsDbPassphrase)
+                passphraseStorage.setPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
+
+                logger.i("Successfully stored passphrases to PassphraseStorage")
 
                 // Copy extracted files to final locations
                 val tempProteusPath = tempExtractPath / "proteus"
@@ -169,9 +190,23 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
                 }
 
                 // Copy MLS directory
-                if (kaliumFileSystem.exists(tempMlsPath)) {
+                val mlsRestored = kaliumFileSystem.exists(tempMlsPath)
+                if (mlsRestored) {
                     copyDirectoryRecursively(tempMlsPath, finalMlsPath)
                     logger.i("Restored MLS directory")
+                }
+
+                // Mark MLS client as registered to prevent duplicate registration attempts
+                // The restored MLS keystore contains existing key pairs that are already registered on the backend
+                if (mlsRestored) {
+                    clientRepository.markMLSClientAsRegisteredLocally().fold(
+                        { failure ->
+                            logger.w("Failed to mark MLS client as registered locally: $failure")
+                        },
+                        {
+                            logger.i("Marked MLS client as registered locally (restored from backup)")
+                        }
+                    )
                 }
 
                 // Clean up temp extraction directory

@@ -52,6 +52,7 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.util.encodeBase64
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
@@ -173,6 +174,11 @@ class MLSClientProviderImpl(
             }
             val rootDir = "$location/$KEYSTORE_NAME"
             val dbSecret = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId, rootDir)
+
+            // Debug: Log the passphrase being used (Base64 format)
+            val passphraseBase64 = dbSecret.passphrase.encodeBase64()
+            kaliumLogger.i("$TAG: Initializing CoreCrypto with MLS DB passphrase='$passphraseBase64' for user=${userId.value}")
+
             return@withContext coreCryptoCentral?.let {
                 Either.Right(it)
             } ?: run {
