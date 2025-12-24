@@ -136,7 +136,6 @@ fun inMemoryDatabase(
 fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
     return InMemoryDatabaseCache.clearEntry(userId)
 }
-
 internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData

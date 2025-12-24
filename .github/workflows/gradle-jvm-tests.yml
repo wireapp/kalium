@@ -63,7 +63,7 @@ jobs:
       - name: Test with Gradle
         run: |
           ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
-          ./gradlew jsTest
+          ./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true
 
       - name: Archive Test Reports
         if: always()
