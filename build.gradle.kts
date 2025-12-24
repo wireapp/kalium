@@ -99,7 +99,6 @@ subprojects {
 
 allprojects {
     repositories {
-        mavenLocal()
         google()
         mavenCentral()
     }

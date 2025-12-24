@@ -136,19 +136,6 @@ fun inMemoryDatabase(
 fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
     return InMemoryDatabaseCache.clearEntry(userId)
 }
-
-/**
- * Clears the in-memory database for the given user.
- * This closes the database connection and removes it from the cache,
- * causing SQLite to delete the shared in-memory database.
- *
- * @param userId The ID of the user whose database should be cleared.
- * @return `true` if the database was cleared, `false` if it didn't exist.
- */
-fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
-    return InMemoryDatabaseCache.clearEntry(userId)
-}
-
 internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData

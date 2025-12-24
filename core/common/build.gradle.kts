@@ -24,7 +24,8 @@ kaliumLibrary {
     multiplatform()
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean() ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
+    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
 
 kotlin {
     sourceSets {
