@@ -22,11 +22,11 @@ import com.wire.kalium.logic.feature.call.CallBackgroundManager
 /**
  * This use case is responsible for informing AVS about the app being in the background.
  */
-interface SetBackgroundUseCase {
+public interface SetBackgroundUseCase {
     /**
      * @param background true if the app is in the background, false otherwise.
      */
-    suspend operator fun invoke(background: Boolean)
+    public suspend operator fun invoke(background: Boolean)
 }
 
 internal class SetBackgroundUseCaseImpl(

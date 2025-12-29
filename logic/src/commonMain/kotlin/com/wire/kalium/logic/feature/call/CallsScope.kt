@@ -267,6 +267,6 @@ public class CallsScope internal constructor(
     public val observeLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
         get() = ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
 
-    val setBackground: SetBackgroundUseCase
+    public val setBackground: SetBackgroundUseCase
         get() = SetBackgroundUseCaseImpl(callBackgroundManager = callBackgroundManager)
 }
