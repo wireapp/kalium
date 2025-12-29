@@ -262,7 +262,7 @@ class CallBackgroundManagerTest {
     }
 
     inner class Arrangement() {
-        val callManager = mock(CallManager::class)
+        internal val callManager = mock(CallManager::class)
         val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
 
         internal fun withSyncStateFlow(syncStateFlow: StateFlow<SyncState>) = apply {
