@@ -24,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
+@Deprecated("Use TestDispatcher.testKaliumDispatcher() instead")
 object TestKaliumDispatcher : KaliumDispatcher {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -42,6 +43,7 @@ object TestKaliumDispatcher : KaliumDispatcher {
 
 }
 
+@Deprecated("Use TestDispatcher.testKaliumDispatcher() instead")
 @OptIn(ExperimentalStdlibApi::class)
 val CoroutineScope.testKaliumDispatcher: KaliumDispatcher
     get() = object : KaliumDispatcher {
@@ -54,3 +56,14 @@ val CoroutineScope.testKaliumDispatcher: KaliumDispatcher
         override val io: CoroutineDispatcher
             get() = coroutineContext[CoroutineDispatcher]!!
     }
+
+fun TestDispatcher.testKaliumDispatcher() = object : KaliumDispatcher {
+    override val default: CoroutineDispatcher
+        get() = this@testKaliumDispatcher
+    override val main: CoroutineDispatcher
+        get() = this@testKaliumDispatcher
+    override val unconfined: CoroutineDispatcher
+        get() = this@testKaliumDispatcher
+    override val io: CoroutineDispatcher
+        get() = this@testKaliumDispatcher
+}

@@ -27,7 +27,7 @@ import io.ktor.http.URLBuilder
 /**
  * Stores the server configuration metadata, like main urls and flags for this server.
  */
-fun interface StoreServerConfigUseCase {
+internal fun interface StoreServerConfigUseCase {
     /**
      * @param links the server configuration links to store @see [ServerConfig.Links]
      * @param versionInfo the server configuration version to store @see [ServerConfig.VersionInfo]
@@ -53,11 +53,11 @@ internal class StoreServerConfigUseCaseImpl(
     }
 }
 
-sealed class StoreServerConfigResult {
+internal sealed class StoreServerConfigResult {
     // TODO: change to return the id only so we are now passing the whole config object around in the app
-    class Success(val serverConfig: ServerConfig) : StoreServerConfigResult()
+    internal class Success(val serverConfig: ServerConfig) : StoreServerConfigResult()
 
-    sealed class Failure : StoreServerConfigResult() {
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+    internal sealed class Failure : StoreServerConfigResult() {
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

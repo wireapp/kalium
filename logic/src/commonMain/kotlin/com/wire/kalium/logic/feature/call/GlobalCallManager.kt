@@ -38,7 +38,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 
-expect class GlobalCallManager {
+internal expect class GlobalCallManager {
 
     @Suppress("LongParameterList")
     internal fun getCallManagerForClient(
@@ -60,7 +60,7 @@ expect class GlobalCallManager {
         createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
     ): CallManager
 
-    suspend fun removeInMemoryCallingManagerForUser(userId: UserId)
-    fun getFlowManager(): FlowManagerService
-    fun getMediaManager(): MediaManagerService
+    internal suspend fun removeInMemoryCallingManagerForUser(userId: UserId)
+    internal fun getFlowManager(): FlowManagerService
+    internal fun getMediaManager(): MediaManagerService
 }

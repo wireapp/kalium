@@ -21,16 +21,16 @@ package com.wire.kalium.logic.feature.channels
  * Represents the permission state for channel creation in the system.
  * This sealed interface defines whether channel creation is allowed or forbidden for users.
  */
-sealed interface ChannelCreationPermission {
+public sealed interface ChannelCreationPermission {
     /**
      * Represents a state where channel creation is not permitted for the user.
      */
-    data object Forbidden : ChannelCreationPermission
+    public data object Forbidden : ChannelCreationPermission
 
     /**
      * Represents a state where channel creation is permitted with specific public channel creation rights.
      *
      * @property canSelfUserCreatePublicChannels Indicates whether the current user can create public channels
      */
-    data class Allowed(val canSelfUserCreatePublicChannels: Boolean) : ChannelCreationPermission
+    public data class Allowed(val canSelfUserCreatePublicChannels: Boolean) : ChannelCreationPermission
 }

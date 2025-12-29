@@ -42,7 +42,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SessionResetSenderTest {
+internal class SessionResetSenderTest {
 
         private val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 

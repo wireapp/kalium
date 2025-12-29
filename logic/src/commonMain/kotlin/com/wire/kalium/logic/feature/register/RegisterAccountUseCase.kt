@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.register
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
@@ -36,19 +35,20 @@ import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
 import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
+import kotlin.uuid.Uuid
 
-sealed class RegisterParam(
-    open val name: String,
-    open val email: String,
-    open val password: String,
-    open val emailActivationCode: String,
-    open val cookieLabel: String?
+public sealed class RegisterParam(
+    public open val name: String,
+    public open val email: String,
+    public open val password: String,
+    public open val emailActivationCode: String,
+    public open val cookieLabel: String?
 ) {
 
     @Deprecated("This belongs to the old flow, it is overridden by [PersonalAccount] it will be deleted when enabling the new flow")
-    class PrivateAccount(
-        val firstName: String,
-        val lastName: String,
+    public class PrivateAccount(
+        public val firstName: String,
+        public val lastName: String,
         email: String,
         password: String,
         emailActivationCode: String,
@@ -61,14 +61,14 @@ sealed class RegisterParam(
 
     @Deprecated("This belongs to the old flow, it will be deleted when enabling the new flow")
     @Suppress("LongParameterList")
-    class Team(
-        val firstName: String,
-        val lastName: String,
+    public class Team(
+        public val firstName: String,
+        public val lastName: String,
         email: String,
         password: String,
         emailActivationCode: String,
-        val teamName: String,
-        val teamIcon: String,
+        public val teamName: String,
+        public val teamIcon: String,
         cookieLabel: String? = Uuid.random().toString()
     ) : RegisterParam("$firstName $lastName", email, password, emailActivationCode, cookieLabel) {
 
@@ -76,7 +76,7 @@ sealed class RegisterParam(
             get() = "$firstName $lastName"
     }
 
-    data class PersonalAccount(
+    public data class PersonalAccount(
         override val name: String,
         override val email: String,
         override val password: String,
@@ -88,7 +88,8 @@ sealed class RegisterParam(
 /**
  * This use case is responsible for registering a new account.
  */
-class RegisterAccountUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?
@@ -99,7 +100,7 @@ class RegisterAccountUseCase internal constructor(
      *
      * @return [RegisterResult] with credentials if successful or [RegisterResult.Failure] with the specific error
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         param: RegisterParam
     ): RegisterResult = when (param) {
         is RegisterParam.PersonalAccount,
@@ -154,22 +155,22 @@ class RegisterAccountUseCase internal constructor(
     }
 }
 
-sealed class RegisterResult {
-    data class Success(
+public sealed class RegisterResult {
+    public data class Success(
         val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : RegisterResult()
 
-    sealed class Failure : RegisterResult() {
-        data object EmailDomainBlocked : Failure()
-        data object AccountAlreadyExists : Failure()
-        data object InvalidActivationCode : Failure()
-        data object UserCreationRestricted : Failure()
-        data object TeamMembersLimitReached : Failure()
-        data object BlackListed : Failure()
-        data object InvalidEmail : Failure()
-        data class Generic(val failure: CoreFailure) : Failure()
+    public sealed class Failure : RegisterResult() {
+        public data object EmailDomainBlocked : Failure()
+        public data object AccountAlreadyExists : Failure()
+        public data object InvalidActivationCode : Failure()
+        public data object UserCreationRestricted : Failure()
+        public data object TeamMembersLimitReached : Failure()
+        public data object BlackListed : Failure()
+        public data object InvalidEmail : Failure()
+        public data class Generic(val failure: CoreFailure) : Failure()
     }
 }

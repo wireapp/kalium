@@ -68,7 +68,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface ConversationGroupRepository {
+internal interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,

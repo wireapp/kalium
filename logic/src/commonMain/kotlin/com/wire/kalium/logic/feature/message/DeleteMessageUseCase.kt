@@ -50,8 +50,9 @@ import kotlinx.datetime.Clock
 /**
  * Deletes a message from the conversation
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class DeleteMessageUseCase internal constructor(
+public class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val slowSyncRepository: SlowSyncRepository,
@@ -71,7 +72,7 @@ class DeleteMessageUseCase internal constructor(
      * @param deleteForEveryone either delete the message for everyone or just for the current user
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         deleteForEveryone: Boolean,

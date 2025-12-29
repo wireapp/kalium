@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import io.mockative.Mockable
 
 @Mockable
-interface ConversationMetaDataRepository {
+internal interface ConversationMetaDataRepository {
     suspend fun getConversationTypeAndProtocolInfo(
         conversationId: ConversationId
     ): Either<StorageFailure, Pair<Conversation.Type, Conversation.ProtocolInfo>>

@@ -33,7 +33,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SSOSettingsUseCaseTest {
+internal class SSOSettingsUseCaseTest {
 
         val ssoLoginRepository = mock(SSOLoginRepository::class)
     lateinit var ssoSettingsUseCase: SSOSettingsUseCase

@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.datetime.Instant
 
-open class FakeSlowSyncRepository(
+internal open class FakeSlowSyncRepository(
     override val slowSyncStatus: StateFlow<SlowSyncStatus> = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 ) : SlowSyncRepository {
     override suspend fun setLastSlowSyncCompletionInstant(instant: Instant) {}

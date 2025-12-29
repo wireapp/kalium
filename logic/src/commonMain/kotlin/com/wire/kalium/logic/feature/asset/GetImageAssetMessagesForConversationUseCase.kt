@@ -24,20 +24,20 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
 
-interface GetImageAssetMessagesForConversationUseCase {
+public interface GetImageAssetMessagesForConversationUseCase {
     /**
      * This use case will return image asset messages for a given [conversationId]
      * paginated by [limit] and [offset]
      * @see AssetMessage
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
     ): List<AssetMessage>
 }
 
-class GetImageAssetMessagesForConversationUseCaseImpl internal constructor(
+internal class GetImageAssetMessagesForConversationUseCaseImpl internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository,
 ) : GetImageAssetMessagesForConversationUseCase {

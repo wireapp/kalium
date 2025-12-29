@@ -33,7 +33,7 @@ import kotlin.test.Test
 
 private val dispatchers = TestKaliumDispatcher
 
-class ForegroundActionsUseCaseTest {
+internal class ForegroundActionsUseCaseTest {
 
     @Test
     fun givenAllActionsSucceed_whenInvoked_thenAllActionsAreExecuted() = runTest(dispatchers.io) {

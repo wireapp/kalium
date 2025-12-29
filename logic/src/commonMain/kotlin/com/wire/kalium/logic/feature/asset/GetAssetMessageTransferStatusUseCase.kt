@@ -28,7 +28,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 @Mockable
-interface GetAssetMessageTransferStatusUseCase {
+internal interface GetAssetMessageTransferStatusUseCase {
     /**
      * Function that gets [AssetTransferStatus]. If status does not exist then it returns [AssetTransferStatus.NOT_DOWNLOADED]
      *

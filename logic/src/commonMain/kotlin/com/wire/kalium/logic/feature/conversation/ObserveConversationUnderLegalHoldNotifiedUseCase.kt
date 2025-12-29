@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 /**
  * UseCase for observing if User was notified about conversation being subject of legal hold
  */
-interface ObserveConversationUnderLegalHoldNotifiedUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean>
+public interface ObserveConversationUnderLegalHoldNotifiedUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean>
 }
 
 internal class ObserveConversationUnderLegalHoldNotifiedUseCaseImpl internal constructor(

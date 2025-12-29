@@ -31,10 +31,10 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import io.mockative.Mockable
 
-sealed class RefillKeyPackagesResult {
+internal sealed class RefillKeyPackagesResult {
 
-    data object Success : RefillKeyPackagesResult()
-    data class Failure(val failure: CoreFailure) : RefillKeyPackagesResult()
+    internal data object Success : RefillKeyPackagesResult()
+    internal data class Failure(val failure: CoreFailure) : RefillKeyPackagesResult()
 
 }
 
@@ -43,7 +43,7 @@ sealed class RefillKeyPackagesResult {
  * upload new key packages if needed.
  */
 @Mockable
-interface RefillKeyPackagesUseCase {
+internal interface RefillKeyPackagesUseCase {
 
     suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult
 

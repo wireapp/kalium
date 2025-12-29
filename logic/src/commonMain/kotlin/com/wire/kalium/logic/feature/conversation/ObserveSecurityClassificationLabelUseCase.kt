@@ -18,19 +18,19 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.common.functional.mapToRightOr
 import com.wire.kalium.common.functional.onlyRight
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
-interface ObserveSecurityClassificationLabelUseCase {
+public interface ObserveSecurityClassificationLabelUseCase {
     /**
      * Operation that lets compute if a given conversation [conversationId] in terms of compromising security or not.
      * This will observe the conversation and its participants and will return a [Flow] of [SecurityClassificationType]
@@ -38,7 +38,7 @@ interface ObserveSecurityClassificationLabelUseCase {
      * @param conversationId to classify
      * @return [Flow] of [SecurityClassificationType] with classification type
      */
-    suspend operator fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType>
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType>
 }
 
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
@@ -60,10 +60,10 @@ internal class ObserveSecurityClassificationLabelUseCaseImpl(
                     // check if conversation domain is trusted even it doesn't contain members from it
                     trustedDomains.contains(conversation.id.domain)
                             &&
-                    conversationMembers.all { memberDetails ->
-                        memberDetails.user.expiresAt == null
-                                && trustedDomains.contains(memberDetails.user.id.domain)
-                    }
+                            conversationMembers.all { memberDetails ->
+                                memberDetails.user.expiresAt == null
+                                        && trustedDomains.contains(memberDetails.user.id.domain)
+                            }
                 }
             }
             .mapToRightOr(null)
@@ -86,6 +86,6 @@ internal class ObserveSecurityClassificationLabelUseCaseImpl(
     }
 }
 
-enum class SecurityClassificationType {
+public enum class SecurityClassificationType {
     CLASSIFIED, NOT_CLASSIFIED, NONE
 }

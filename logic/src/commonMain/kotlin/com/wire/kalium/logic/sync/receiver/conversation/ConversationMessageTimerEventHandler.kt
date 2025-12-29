@@ -34,7 +34,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mockable
 
 @Mockable
-interface ConversationMessageTimerEventHandler {
+internal interface ConversationMessageTimerEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationMessageTimer): Either<CoreFailure, Unit>
 }
 

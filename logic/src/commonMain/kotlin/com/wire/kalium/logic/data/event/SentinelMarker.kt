@@ -20,21 +20,21 @@ package com.wire.kalium.logic.data.event
 /**
  * Sentinel marker, that serves as an indicator that the current initial sync has finished for this websocket session.
  */
-sealed class SentinelMarker {
+internal sealed class SentinelMarker {
     /**
      * No current marker, used for the legacy system or when the initial sync is finished.
      */
-    data object None : SentinelMarker()
+    internal data object None : SentinelMarker()
 
     /**
      * A marker for the current initial sync, with a uuid [value] that will be compared against the sentinel event sent by the server.
      */
-    data class Marker(val value: String) : SentinelMarker()
+    internal data class Marker(val value: String) : SentinelMarker()
 
     /**
      * Returns the marker, if any, otherwise an empty string.
      */
-    fun getMarker(): String {
+    internal fun getMarker(): String {
         return when (this) {
             is Marker -> value
             else -> ""

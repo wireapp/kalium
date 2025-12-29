@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
-import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
@@ -50,6 +49,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -59,8 +59,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseImpl
-import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCase
-import com.wire.kalium.logic.feature.asset.GetAudioAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -71,6 +69,8 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetUploadStateUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.PersistNewAssetMessageUseCase
@@ -79,9 +79,6 @@ import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCaseImpl
-import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
@@ -105,7 +102,6 @@ import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletio
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
@@ -115,12 +111,13 @@ import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessSchedule
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
-class MessageScope internal constructor(
+public class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageDraftRepository: MessageDraftRepository,
     private val selfUserId: QualifiedID,
@@ -128,7 +125,7 @@ class MessageScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
-    private val attachmentsRepository: MessageAttachmentDraftRepository,
+    private val attachmentsRepository: Lazy<MessageAttachmentDraftRepository>,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
@@ -149,15 +146,13 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
-    private val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase,
-    private val publishAttachmentsUseCase: PublishAttachmentsUseCase,
-    private val removeAttachmentDraftsUseCase: RemoveAttachmentDraftsUseCase,
-    private val deleteMessageAttachmentsUseCase: DeleteMessageAttachmentsUseCase,
-    private val getMessageAttachment: GetMessageAttachmentUseCase,
+    private val getMessageAttachmentsUseCase: Lazy<GetMessageAttachmentsUseCase>,
+    private val publishAttachmentsUseCase: Lazy<PublishAttachmentsUseCase>,
+    private val removeAttachmentDraftsUseCase: Lazy<RemoveAttachmentDraftsUseCase>,
+    private val deleteMessageAttachmentsUseCase: Lazy<DeleteMessageAttachmentsUseCase>,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val compositeMessageRepository: CompositeMessageRepository,
-    private val isWireCellsEnabledForConversationUseCase: IsWireCellsEnabledForConversationUseCase,
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
@@ -229,11 +224,11 @@ class MessageScope internal constructor(
         kaliumLogger = kaliumLogger,
     )
 
-    val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+    public val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
-    val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase = DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
+    public val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase = DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
@@ -256,10 +251,10 @@ class MessageScope internal constructor(
             scope
         )
 
-    val persistMessage: PersistMessageUseCase
+    internal val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl)
 
-    val sendTextMessage: SendTextMessageUseCase
+    public val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
             persistMessage = persistMessage,
             selfUserId = selfUserId,
@@ -273,7 +268,7 @@ class MessageScope internal constructor(
             scope = scope
         )
 
-    val sendMultipartMessage: SendMultipartMessageUseCase
+    public val sendMultipartMessage: SendMultipartMessageUseCase
         get() = SendMultipartMessageUseCase(
             persistMessage = persistMessage,
             selfUserId = selfUserId,
@@ -284,15 +279,15 @@ class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             conversationRepository = conversationRepository,
-            attachmentsRepository = attachmentsRepository,
+            attachmentsRepository = attachmentsRepository.value,
             selfDeleteTimer = observeSelfDeletingMessages,
-            publishAttachments = publishAttachmentsUseCase,
-            removeAttachmentDrafts = removeAttachmentDraftsUseCase,
+            publishAttachments = publishAttachmentsUseCase.value,
+            removeAttachmentDrafts = removeAttachmentDraftsUseCase.value,
             sendAssetMessage = sendAssetMessage,
             scope = scope
         )
 
-    val sendEditTextMessage: SendEditTextMessageUseCase
+    public val sendEditTextMessage: SendEditTextMessageUseCase
         get() = SendEditTextMessageUseCase(
             messageRepository,
             selfUserId,
@@ -302,7 +297,7 @@ class MessageScope internal constructor(
             messageSendFailureHandler
         )
 
-    val sendEditMultipartMessage: SendEditMultipartMessageUseCase
+    public val sendEditMultipartMessage: SendEditMultipartMessageUseCase
         get() = SendEditMultipartMessageUseCase(
             messageRepository = messageRepository,
             selfUserId = selfUserId,
@@ -310,7 +305,7 @@ class MessageScope internal constructor(
             slowSyncRepository = slowSyncRepository,
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
-            getMessageAttachments = getMessageAttachmentsUseCase,
+            getMessageAttachments = getMessageAttachmentsUseCase.value,
         )
 
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
@@ -319,14 +314,14 @@ class MessageScope internal constructor(
             dispatcher
         )
 
-    val retryFailedMessage: RetryFailedMessageUseCase
+    public val retryFailedMessage: RetryFailedMessageUseCase
         get() = RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
             conversationRepository,
-            attachmentsRepository,
+            attachmentsRepository.value,
             persistMessage,
-            publishAttachmentsUseCase,
+            publishAttachmentsUseCase.value,
             scope,
             dispatcher,
             messageSender,
@@ -335,10 +330,10 @@ class MessageScope internal constructor(
             messageSendFailureHandler
         )
 
-    val getMessageById: GetMessageByIdUseCase
+    public val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
 
-    val observeMessageById: ObserveMessageByIdUseCase
+    public val observeMessageById: ObserveMessageByIdUseCase
         get() = ObserveMessageByIdUseCase(messageRepository)
 
     private val persistNewAssetMessageUseCase: PersistNewAssetMessageUseCase
@@ -362,7 +357,7 @@ class MessageScope internal constructor(
             dispatcher,
         )
 
-    val sendAssetMessage: ScheduleNewAssetMessageUseCase
+    public val sendAssetMessage: ScheduleNewAssetMessageUseCase
         get() = ScheduleNewAssetMessageUseCaseImpl(
             persistNewAssetMessageUseCase,
             uploadAssetUseCase,
@@ -377,7 +372,7 @@ class MessageScope internal constructor(
             dispatcher,
         )
 
-    val getAssetMessage: GetMessageAssetUseCase
+    public val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository,
@@ -388,27 +383,19 @@ class MessageScope internal constructor(
             dispatcher
         )
 
-    val getAudioAssetUseCase: GetAudioAssetUseCase by lazy {
-        GetAudioAssetUseCaseImpl(
-            isWireCellsEnabledForConversation = isWireCellsEnabledForConversationUseCase,
-            getMessageAsset = getAssetMessage,
-            getMessageAttachment = getMessageAttachment
-        )
-    }
-
-    val getImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
+    public val getImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
         get() = GetImageAssetMessagesForConversationUseCaseImpl(
             dispatcher,
             messageRepository
         )
 
-    val getRecentMessages: GetRecentMessagesUseCase
+    public val getRecentMessages: GetRecentMessagesUseCase
         get() = GetRecentMessagesUseCase(
             messageRepository,
             slowSyncRepository
         )
 
-    val deleteMessage: DeleteMessageUseCase
+    public val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(
             messageRepository,
             assetRepository,
@@ -417,10 +404,10 @@ class MessageScope internal constructor(
             selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider,
-            deleteMessageAttachmentsUseCase,
+            deleteMessageAttachmentsUseCase.value,
         )
 
-    val toggleReaction: ToggleReactionUseCase
+    public val toggleReaction: ToggleReactionUseCase
         get() = ToggleReactionUseCase(
             currentClientIdProvider,
             selfUserId,
@@ -429,17 +416,17 @@ class MessageScope internal constructor(
             messageSender
         )
 
-    val observeMessageReactions: ObserveMessageReactionsUseCase
+    public val observeMessageReactions: ObserveMessageReactionsUseCase
         get() = ObserveMessageReactionsUseCaseImpl(
             reactionRepository = reactionRepository
         )
 
-    val observeMessageReceipts: ObserveMessageReceiptsUseCase
+    public val observeMessageReceipts: ObserveMessageReceiptsUseCase
         get() = ObserveMessageReceiptsUseCaseImpl(
             receiptRepository = receiptRepository
         )
 
-    val sendKnock: SendKnockUseCase
+    public val sendKnock: SendKnockUseCase
         get() = SendKnockUseCase(
             persistMessage,
             selfUserId,
@@ -450,7 +437,7 @@ class MessageScope internal constructor(
             observeSelfDeletingMessages
         )
 
-    val sendLocation: SendLocationUseCase
+    public val sendLocation: SendLocationUseCase
         get() = SendLocationUseCase(
             persistMessage,
             selfUserId,
@@ -461,15 +448,15 @@ class MessageScope internal constructor(
             observeSelfDeletingMessages
         )
 
-    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
+    public val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
         get() = MarkMessagesAsNotifiedUseCase(conversationRepository)
 
-    val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase
+    public val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase
         get() = UpdateAssetMessageTransferStatusUseCaseImpl(
             messageRepository
         )
 
-    val getNotifications: GetNotificationsUseCase
+    public val getNotifications: GetNotificationsUseCase
         get() = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
@@ -491,10 +478,10 @@ class MessageScope internal constructor(
     private val sessionResetSender: SessionResetSender
         get() = SessionResetSenderImpl(slowSyncRepository, selfUserId, currentClientIdProvider, messageSender, dispatcher)
 
-    val resetSession: ResetSessionUseCase
+    public val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(transactionProvider, sessionResetSender, messageRepository)
 
-    val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
+    public val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
         get() = SendButtonActionConfirmationMessageUseCase(
             syncManager = syncManager,
             messageSender = messageSender,
@@ -502,7 +489,7 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider
         )
 
-    val sendButtonActionMessage: SendButtonActionMessageUseCase
+    public val sendButtonActionMessage: SendButtonActionMessageUseCase
         get() = SendButtonActionMessageUseCase(
             syncManager = syncManager,
             messageSender = messageSender,
@@ -512,7 +499,8 @@ class MessageScope internal constructor(
             compositeMessageRepository = compositeMessageRepository
         )
 
-    val sendButtonMessage: SendButtonMessageUseCase
+    @OptIn(InternalKaliumApi::class)
+    public val sendButtonMessage: SendButtonMessageUseCase
         get() = SendButtonMessageUseCase(
             persistMessage = persistMessage,
             selfUserId = selfUserId,
@@ -541,23 +529,23 @@ class MessageScope internal constructor(
             syncManager = syncManager,
         )
 
-    val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
+    public val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
         get() = GetSearchedConversationMessagePositionUseCaseImpl(
             messageRepository = messageRepository
         )
 
-    val observeAssetStatuses: ObserveAssetStatusesUseCase get() = ObserveAssetStatusesUseCaseImpl(messageRepository)
+    public val observeAssetStatuses: ObserveAssetStatusesUseCase get() = ObserveAssetStatusesUseCaseImpl(messageRepository)
 
-    val saveMessageDraftUseCase: SaveMessageDraftUseCase
+    public val saveMessageDraftUseCase: SaveMessageDraftUseCase
         get() = SaveMessageDraftUseCaseImpl(messageDraftRepository)
 
-    val getMessageDraftUseCase: GetMessageDraftUseCase
+    public val getMessageDraftUseCase: GetMessageDraftUseCase
         get() = GetMessageDraftUseCaseImpl(messageRepository, messageDraftRepository)
 
-    val removeMessageDraftUseCase: RemoveMessageDraftUseCase
+    public val removeMessageDraftUseCase: RemoveMessageDraftUseCase
         get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
 
-    val sendInCallReactionUseCase: SendInCallReactionUseCase
+    public val sendInCallReactionUseCase: SendInCallReactionUseCase
         get() = SendInCallReactionUseCase(
             selfUserId = selfUserId,
             provideClientId = currentClientIdProvider,
@@ -566,15 +554,15 @@ class MessageScope internal constructor(
             scope = scope,
         )
 
-    val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
+    public val getSenderNameByMessageId: GetSenderNameByMessageIdUseCase
         get() = GetSenderNameByMessageIdUseCase(messageRepository)
 
-    val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
+    public val getNextAudioMessageInConversation: GetNextAudioMessageInConversationUseCase
         get() = GetNextAudioMessageInConversationUseCase(messageRepository)
 
-    val observeAssetUploadState: ObserveAssetUploadStateUseCase
-        get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository)
+    public val observeAssetUploadState: ObserveAssetUploadStateUseCase
+        get() = ObserveAssetUploadStateUseCaseImpl(messageRepository, attachmentsRepository.value)
 
-    val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
+    public val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
         get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
 }

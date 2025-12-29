@@ -30,7 +30,8 @@ import kotlinx.coroutines.withContext
 /**
  * This use case is responsible for requesting video streams for a call to avs.
  */
-class RequestVideoStreamsUseCase(
+// todo(interface). extract interface for use case
+public class RequestVideoStreamsUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -38,10 +39,10 @@ class RequestVideoStreamsUseCase(
      * @param conversationId the id of the conversation.
      * @param clients the list of clients that should be requested for video streams.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         clients: List<CallClient>
-    ) = withContext(dispatchers.io) {
+    ): Unit = withContext(dispatchers.io) {
         callingLogger.i("Requesting video streams for conversationId: ${conversationId.toLogString()}")
         val callClients = CallClientList(clients = clients)
         callManager.value.requestVideoStreams(conversationId, callClients)

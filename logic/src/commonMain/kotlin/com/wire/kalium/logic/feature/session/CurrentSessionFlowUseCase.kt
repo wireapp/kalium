@@ -30,8 +30,9 @@ import kotlinx.coroutines.flow.map
  * fixme: rename to ObserveCurrentSessionUseCase
  * @see [CurrentSessionResult.Success.accountInfo]
  */
-class CurrentSessionFlowUseCase(private val sessionRepository: SessionRepository) {
-    operator fun invoke(): Flow<CurrentSessionResult> =
+// todo(interface). extract interface for use case
+public class CurrentSessionFlowUseCase internal constructor(private val sessionRepository: SessionRepository) {
+    public operator fun invoke(): Flow<CurrentSessionResult> =
         sessionRepository.currentSessionFlow().map {
             it.fold({
                 when (it) {

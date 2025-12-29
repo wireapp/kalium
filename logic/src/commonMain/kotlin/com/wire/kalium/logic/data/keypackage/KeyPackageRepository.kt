@@ -40,7 +40,7 @@ import io.ktor.util.encodeBase64
 import io.mockative.Mockable
 
 @Mockable
-interface KeyPackageRepository {
+internal interface KeyPackageRepository {
 
     /**
      * Claims the key packages for the specified user IDs.
@@ -77,7 +77,7 @@ interface KeyPackageRepository {
     ): Either<CoreFailure, Int>
 }
 
-class KeyPackageDataSource(
+internal class KeyPackageDataSource(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageApi: KeyPackageApi,
     private val selfUserId: UserId,

@@ -33,10 +33,12 @@ kaliumLibrary {
 }
 
 kotlin {
+    explicitApi()
     sourceSets {
         val commonMain by getting {
             dependencies {
                 api(projects.core.common)
+                api(projects.domain.work)
                 implementation(projects.data.network)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)

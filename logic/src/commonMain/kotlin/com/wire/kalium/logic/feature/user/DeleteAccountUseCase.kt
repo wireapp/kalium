@@ -24,15 +24,16 @@ import com.wire.kalium.common.functional.fold
 /**
  * Use case for deleting the user account.
  */
-class DeleteAccountUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class DeleteAccountUseCase internal constructor(
     private val accountRepository: AccountRepository
 ) {
-    suspend operator fun invoke(password: String?): Result =
+    public suspend operator fun invoke(password: String?): Result =
         accountRepository.deleteAccount(password)
             .fold(Result::Failure, { Result.Success })
 
-    sealed class Result {
-        data object Success : Result()
-        data class Failure(val networkFailure: NetworkFailure) : Result()
+    public sealed class Result {
+        public data object Success : Result()
+        public data class Failure(val networkFailure: NetworkFailure) : Result()
     }
 }

@@ -21,4 +21,4 @@ package com.wire.kalium.logic.failure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.MessageId
 
-data class LegalHoldEnabledForConversationFailure(val messageId: MessageId) : CoreFailure.FeatureFailure()
+public data class LegalHoldEnabledForConversationFailure(val messageId: MessageId) : CoreFailure.FeatureFailure()

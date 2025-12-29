@@ -27,17 +27,17 @@ import com.wire.kalium.logic.sync.periodic.UserConfigSyncScheduler
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import io.mockative.Mockable
 
-interface WorkSchedulerProvider {
+internal interface WorkSchedulerProvider {
     fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler
     fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler
 }
 
-interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
+internal interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
     val scope: GlobalKaliumScope
 }
 
 @Mockable
-interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler, AudioNormalizedLoudnessScheduler {
+internal interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler, AudioNormalizedLoudnessScheduler {
     val scope: UserSessionScope
 }
 

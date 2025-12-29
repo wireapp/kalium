@@ -84,6 +84,10 @@ object FeatureConfigResponseJson {
         ),
         FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
         FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
+        FeatureConfigData.CellsInternal(
+            FeatureFlagStatusDTO.DISABLED,
+            FeatureConfigData.CellsInternalConfigDTO(null),
+        ),
         FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
         FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),
         FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.ENABLED),

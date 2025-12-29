@@ -30,7 +30,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConf
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 
 @Suppress("TooManyFunctions")
-interface FeatureConfigMapper {
+internal interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
     fun fromDTO(status: FeatureFlagStatusDTO): Status
     fun fromDTO(data: FeatureConfigData.MLS?): MLSModel
@@ -45,21 +45,22 @@ interface FeatureConfigMapper {
     fun fromModel(status: Status): FeatureFlagStatusDTO
     fun fromModel(model: MLSMigrationModel): FeatureConfigData.MLSMigration
     fun fromDTO(data: FeatureConfigData.AllowedGlobalOperations): AllowedGlobalOperationsModel
-    fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel
+    fun fromDTO(data: FeatureConfigData.Cells): CellsModel
+    fun fromDTO(data: FeatureConfigData.CellsInternal): CellsInternalModel
     fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode): EnableUserProfileQRCodeConfigModel
     fun fromDTO(data: FeatureConfigData.AssetAuditLog): AssetAuditLogConfigModel
 }
 
-fun FeatureFlagStatusDTO.toModel(): Status =
+internal fun FeatureFlagStatusDTO.toModel(): Status =
     when (this) {
         FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
         FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
     }
 
-fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
+internal fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
 
 @Suppress("TooManyFunctions")
-class FeatureConfigMapperImpl : FeatureConfigMapper {
+internal class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
         with(featureConfigResponse) {
             FeatureConfigModel(
@@ -85,6 +86,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 consumableNotificationsModel = consumableNotifications?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 allowedGlobalOperationsModel = allowedGlobalOperations?.let { fromDTO(it) },
                 cellsModel = cells?.let { fromDTO(it) },
+                cellsInternalModel = cellsInternal?.let { fromDTO(it) },
                 appsModel = apps?.let { ConfigsStatusModel(fromDTO(it.status)) },
                 enableUserProfileQRCodeConfigModel = enableUserProfileQRCode?.let {
                     fromDTO(it)
@@ -201,8 +203,17 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             status = fromDTO(data.status)
         )
 
-    override fun fromDTO(data: FeatureConfigData.Cells): CellsConfigModel = CellsConfigModel(
+    override fun fromDTO(data: FeatureConfigData.Cells): CellsModel = CellsModel(
         status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.CellsInternal) = CellsInternalModel(
+        status = fromDTO(data.status),
+        config = CellsInternalConfigModel(
+            backend = data.config.backend?.url?.let {
+                CellsInternalBackendConfigModel(it)
+            }
+        ),
     )
 
     override fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode) = EnableUserProfileQRCodeConfigModel(
@@ -229,14 +240,14 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 }
 
-fun MLSMigrationModel.toEntity(): MLSMigrationEntity =
+internal fun MLSMigrationModel.toEntity(): MLSMigrationEntity =
     MLSMigrationEntity(
         status = status.equals(Status.ENABLED),
         startTime = startTime,
         endTime = endTime
     )
 
-fun MLSMigrationEntity.toModel(): MLSMigrationModel =
+internal fun MLSMigrationEntity.toModel(): MLSMigrationModel =
     MLSMigrationModel(
         status = if (status) Status.ENABLED else Status.DISABLED,
         startTime = startTime,

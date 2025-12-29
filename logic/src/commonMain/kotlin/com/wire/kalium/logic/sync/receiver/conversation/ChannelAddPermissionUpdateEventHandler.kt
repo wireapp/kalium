@@ -32,7 +32,7 @@ import io.mockative.Mockable
  * Handles the [Event.Conversation.ConversationChannelAddPermission] event.
  */
 @Mockable
-interface ChannelAddPermissionUpdateEventHandler {
+internal interface ChannelAddPermissionUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit>
 }
 

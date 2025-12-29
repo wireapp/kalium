@@ -35,7 +35,7 @@ import io.mockative.Mockable
  */
 @DelicateKaliumApi("This use case performs network calls, consider using IsMLSEnabledUseCase.")
 @Mockable
-interface IsAllowedToRegisterMLSClientUseCase {
+internal interface IsAllowedToRegisterMLSClientUseCase {
     suspend operator fun invoke(): Boolean
 }
 

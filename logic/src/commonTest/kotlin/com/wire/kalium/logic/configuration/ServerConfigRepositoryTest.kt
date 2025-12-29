@@ -43,20 +43,42 @@ import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 class ServerConfigRepositoryTest {
+
+    private lateinit var testDispatcher: TestDispatcher
+
+    @BeforeTest
+    fun setup() {
+        testDispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun breakDown() {
+        Dispatchers.resetMain()
+    }
+
     @Test
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
         val expected = newServerConfig(1)
         val expectedDTO = newServerConfigDTO(1)
 
         val expectedEntity = newServerConfigEntity(1)
-        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withApiAversionResponse(expectedDTO.metaData)
             .withConfigById(expectedEntity)
             .withConfigByLinks(null)
@@ -85,7 +107,7 @@ class ServerConfigRepositoryTest {
         val expectedMetaDataDTO = ServerConfigDTO.MetaData(false, ApiVersionDTO.Invalid.Unknown, "domain")
         val expectedEntity = newServerConfigEntity(1).copy(metaData = ServerConfigEntity.MetaData(false, -2, "domain"))
 
-        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withApiAversionResponse(expectedMetaDataDTO)
             .withConfigByLinks(expectedEntity)
             .arrange()
@@ -113,7 +135,7 @@ class ServerConfigRepositoryTest {
 
     @Test
     fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() = runTest {
-        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withUpdatedServerConfig()
             .arrange()
 
@@ -141,7 +163,7 @@ class ServerConfigRepositoryTest {
     @Test
     fun givenStoredConfig_whenAddingNewOne_thenNewOneShouldBeInsertedAndReturned() = runTest {
         val expected = newServerConfig(1)
-        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
+        val (arrangement, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withConfigForNewRequest(newServerConfigEntity(1))
             .arrange()
 

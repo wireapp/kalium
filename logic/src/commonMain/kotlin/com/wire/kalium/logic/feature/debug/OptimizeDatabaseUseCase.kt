@@ -32,13 +32,13 @@ import com.wire.kalium.util.DelicateKaliumApi
  *
  * Intended for use in debugging or diagnostic tools (e.g., developer-only settings screens).
  */
-interface OptimizeDatabaseUseCase {
+internal interface OptimizeDatabaseUseCase {
     suspend operator fun invoke(): OptimizeDatabaseResult
 }
 
-sealed class OptimizeDatabaseResult {
-    data object Success : OptimizeDatabaseResult()
-    data class Failure(val coreFailure: CoreFailure) : OptimizeDatabaseResult()
+internal sealed class OptimizeDatabaseResult {
+    internal data object Success : OptimizeDatabaseResult()
+    internal data class Failure(val coreFailure: CoreFailure) : OptimizeDatabaseResult()
 }
 
 @DelicateKaliumApi(

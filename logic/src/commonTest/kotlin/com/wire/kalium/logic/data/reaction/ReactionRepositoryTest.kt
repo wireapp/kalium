@@ -63,7 +63,6 @@ class ReactionRepositoryTest {
     fun tearDown() {
         userDatabase.delete()
         Dispatchers.resetMain()
-        testDispatcher.cancel()
     }
 
     @Test

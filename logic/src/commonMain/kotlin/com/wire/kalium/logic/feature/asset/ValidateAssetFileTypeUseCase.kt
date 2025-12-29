@@ -26,7 +26,7 @@ import io.mockative.Mockable
  * @param allowedExtension the list of allowed extension.
  */
 @Mockable
-interface ValidateAssetFileTypeUseCase {
+internal interface ValidateAssetFileTypeUseCase {
     operator fun invoke(
         fileName: String?,
         mimeType: String,

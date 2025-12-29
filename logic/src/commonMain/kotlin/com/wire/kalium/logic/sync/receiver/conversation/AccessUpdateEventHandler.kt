@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mockable
 
 @Mockable
-interface AccessUpdateEventHandler {
+internal interface AccessUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit>
 }
 

@@ -35,7 +35,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
 @Mockable
-interface DeletedConversationEventHandler {
+internal interface DeletedConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
 }
 

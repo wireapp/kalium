@@ -21,11 +21,11 @@ package com.wire.kalium.logic.feature.publicuser.search
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 
-sealed class SearchUsersResult {
-    data class Success(val userSearchResult: UserSearchResult) : SearchUsersResult()
-    sealed class Failure : SearchUsersResult() {
-        data object InvalidQuery : Failure()
-        data object InvalidRequest : Failure()
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+internal sealed class SearchUsersResult {
+    internal data class Success(val userSearchResult: UserSearchResult) : SearchUsersResult()
+    internal sealed class Failure : SearchUsersResult() {
+        internal data object InvalidQuery : Failure()
+        internal data object InvalidRequest : Failure()
+        internal data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

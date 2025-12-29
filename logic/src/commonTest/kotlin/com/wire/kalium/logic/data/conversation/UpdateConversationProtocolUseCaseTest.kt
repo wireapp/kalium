@@ -33,7 +33,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ConversationPersistenceApi::class)
-class UpdateConversationProtocolUseCaseTest {
+internal class UpdateConversationProtocolUseCaseTest {
 
     @Test
     fun whenLocalOnlyTrue_callsUpdateProtocolLocally_andReturnsTrue() = runTest {

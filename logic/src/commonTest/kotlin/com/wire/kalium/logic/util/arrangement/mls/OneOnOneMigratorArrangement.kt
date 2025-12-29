@@ -25,7 +25,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface OneOnOneMigratorArrangement {
+internal interface OneOnOneMigratorArrangement {
 
     val oneOnOneMigrator: OneOnOneMigrator
 
@@ -36,7 +36,7 @@ interface OneOnOneMigratorArrangement {
     suspend fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>)
 }
 
-class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
+internal class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
 
     override val oneOnOneMigrator = mock(OneOnOneMigrator::class)
 

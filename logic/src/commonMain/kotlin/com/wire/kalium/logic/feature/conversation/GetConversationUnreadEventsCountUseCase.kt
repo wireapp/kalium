@@ -28,13 +28,13 @@ import kotlinx.coroutines.withContext
 /**
  * UseCase for getting once the amount of unread events (all: messages, pings, missed calls, etc.) in a specific conversation.
  */
-interface GetConversationUnreadEventsCountUseCase {
+public interface GetConversationUnreadEventsCountUseCase {
 
-    suspend operator fun invoke(conversationId: ConversationId): Result
+    public suspend operator fun invoke(conversationId: ConversationId): Result
 
-    sealed class Result {
-        data class Success(val amount: Long) : Result()
-        data class Failure(val storageFailure: StorageFailure) : Result()
+    public sealed class Result {
+        public data class Success(val amount: Long) : Result()
+        public data class Failure(val storageFailure: StorageFailure) : Result()
     }
 }
 

@@ -25,7 +25,7 @@ import com.wire.kalium.network.api.base.unauthenticated.verification.Verificatio
 import io.mockative.Mockable
 
 @Mockable
-interface SecondFactorVerificationRepository {
+internal interface SecondFactorVerificationRepository {
 
     suspend fun requestVerificationCode(
         email: String,

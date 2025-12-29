@@ -23,7 +23,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
-interface ReceiptModeMapper {
+internal interface ReceiptModeMapper {
     fun toDaoModel(receiptMode: Conversation.ReceiptMode): ConversationEntity.ReceiptMode
     fun fromApiToModel(receiptMode: ReceiptMode): Conversation.ReceiptMode
     fun fromApiToDaoModel(receiptMode: ReceiptMode): ConversationEntity.ReceiptMode
@@ -31,8 +31,8 @@ interface ReceiptModeMapper {
     fun fromModelToApi(receiptMode: Conversation.ReceiptMode): ReceiptMode
 }
 
-class ReceiptModeMapperImpl(
-    val idMapper: IdMapper = MapperProvider.idMapper()
+internal class ReceiptModeMapperImpl(
+    internal val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ReceiptModeMapper {
     override fun fromApiToDaoModel(receiptMode: ReceiptMode): ConversationEntity.ReceiptMode = when (receiptMode) {
         ReceiptMode.DISABLED -> ConversationEntity.ReceiptMode.DISABLED

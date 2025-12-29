@@ -19,12 +19,22 @@ package com.wire.kalium.cells
 
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 
 /**
  * Provides credentials for Cells API based on current environment.
  * Temporary solution until we make we way to get the serverUrl and gateway secret.
  */
-internal object CellsCredentialsProvider {
+internal class CellsCredentialsProvider(
+    private val userConfigDAO: UserConfigDAO
+) {
+    internal suspend fun getCredentials() = CellsCredentials(
+        // Url is required and supposed to be configured if Cells Feature is enabled
+        // Setting empty URL will fail all network requests "turning off" the feature
+        serverUrl = userConfigDAO.getWireCellsConfig()?.backendUrl ?: "",
+        gatewaySecret = "gatewaysecret"
+    )
+
     internal fun getCredentials(serverConfig: ServerConfigDTO) =
         when {
             serverConfig.links.api.endsWith("imai.wire.link") ->

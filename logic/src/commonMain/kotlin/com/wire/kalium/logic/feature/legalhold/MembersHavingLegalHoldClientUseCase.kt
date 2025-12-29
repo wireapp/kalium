@@ -30,8 +30,8 @@ import io.mockative.Mockable
  * Returns list of ids of conversation members having a legal hold client.
  */
 @Mockable
-interface MembersHavingLegalHoldClientUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>>
+public interface MembersHavingLegalHoldClientUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>>
 }
 
 internal class MembersHavingLegalHoldClientUseCaseImpl(

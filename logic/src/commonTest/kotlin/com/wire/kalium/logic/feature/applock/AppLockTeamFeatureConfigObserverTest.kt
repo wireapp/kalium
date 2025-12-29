@@ -35,7 +35,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.seconds
 
-class AppLockTeamFeatureConfigObserverTest {
+internal class AppLockTeamFeatureConfigObserverTest {
 
     @Test
     fun givenRepositoryFailure_whenObservingAppLock_thenEmitNull() =

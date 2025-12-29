@@ -45,6 +45,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -60,7 +61,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface UserConfigRepository {
+internal interface UserConfigRepository {
     fun setAppLockStatus(
         isAppLocked: Boolean,
         timeout: Int,
@@ -163,6 +164,10 @@ interface UserConfigRepository {
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
+    suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
+    suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
+    suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -606,4 +611,29 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
 
+    override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            config?.let {
+                userConfigDAO.setWireCellsConfig(
+                    WireCellsConfigEntity(
+                        backendUrl = config.backendUrl
+                    )
+                )
+            } ?: run {
+                userConfigDAO.removeWireCellsConfig()
+            }
+        }
+
+    override suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?> = wrapStorageRequest {
+        userConfigDAO.getWireCellsConfig()?.let {
+            WireCellsConfig(
+                backendUrl = it.backendUrl
+            )
+        }
+    }
+
+    override suspend fun isMLSFaultyKeysRepairExecuted(): Boolean = userConfigDAO.isMlsFaultyKeysRepairExecuted()
+    override suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.setMlsFaultyKeysRepairExecuted(repaired)
+    }
 }

@@ -60,7 +60,6 @@ class ReceiptRepositoryTest {
     fun tearDown() {
         userDatabase.delete()
         Dispatchers.resetMain()
-        testDispatcher.cancel()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

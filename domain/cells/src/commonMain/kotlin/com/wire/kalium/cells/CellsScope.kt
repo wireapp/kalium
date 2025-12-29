@@ -116,10 +116,12 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.SYSTEM
 import kotlin.coroutines.CoroutineContext
@@ -129,7 +131,7 @@ public class CellsScope(
     private val dao: CellScopeDao,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
-) : CoroutineScope {
+    ) : CoroutineScope {
 
     public data class CellScopeDao(
         val attachmentDraftDao: MessageAttachmentDraftDao,
@@ -138,6 +140,7 @@ public class CellsScope(
         val assetsDao: AssetDAO,
         val userDao: UserDAO,
         val publicLinkDao: PublicLinkDao,
+        val userConfigDAO: UserConfigDAO,
     )
 
     /**
@@ -153,16 +156,22 @@ public class CellsScope(
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    private val cellClientCredentials: CellsCredentials
-        get() = CellsCredentialsProvider.getCredentials(sessionManager.serverConfig())
+    private val cellsCredentialsProvider: CellsCredentialsProvider
+        get() = CellsCredentialsProvider(dao.userConfigDAO)
+
+    private val cellClientCredentials: Lazy<CellsCredentials> = lazy {
+        runBlocking {
+            cellsCredentialsProvider.getCredentials(sessionManager.serverConfig())
+        }
+    }
 
     private val cellAwsClient: CellsAwsClient
-        get() = cellsAwsClient(cellClientCredentials, sessionManager, accessTokenApi)
+        get() = cellsAwsClient(cellClientCredentials.value, sessionManager, accessTokenApi)
 
     private val nodeServiceApi: NodeServiceApi
         get() = NodeServiceBuilder
             .withHttpClient(cellsClient)
-            .withCredentials(cellClientCredentials)
+            .withCredentials(cellClientCredentials.value)
             .build()
 
     private val cellsApi: CellsApi
@@ -232,10 +241,10 @@ public class CellsScope(
         get() = DeleteCellAssetUseCaseImpl(cellsRepository, cellAttachmentsRepository)
 
     public val createPublicLinkUseCase: CreatePublicLinkUseCase
-        get() = CreatePublicLinkUseCaseImpl(cellClientCredentials, cellsRepository)
+        get() = CreatePublicLinkUseCaseImpl(cellClientCredentials.value, cellsRepository)
 
     public val getPublicLinkUseCase: GetPublicLinkUseCase
-        get() = GetPublicLinkUseCaseImpl(cellClientCredentials, cellsRepository)
+        get() = GetPublicLinkUseCaseImpl(cellClientCredentials.value, cellsRepository)
 
     public val deletePublicLinkUseCase: DeletePublicLinkUseCase
         get() = DeletePublicLinkUseCaseImpl(cellsRepository)

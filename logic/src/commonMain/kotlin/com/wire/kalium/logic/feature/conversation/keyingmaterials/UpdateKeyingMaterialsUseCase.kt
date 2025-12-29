@@ -33,10 +33,10 @@ import com.wire.kalium.logic.data.id.GroupID
 import io.mockative.Mockable
 import kotlin.time.Duration.Companion.days
 
-sealed class UpdateKeyingMaterialsResult {
+internal sealed class UpdateKeyingMaterialsResult {
 
-    data object Success : UpdateKeyingMaterialsResult()
-    data class Failure(val failure: CoreFailure) : UpdateKeyingMaterialsResult()
+    internal data object Success : UpdateKeyingMaterialsResult()
+    internal data class Failure(val failure: CoreFailure) : UpdateKeyingMaterialsResult()
 
 }
 
@@ -45,7 +45,7 @@ sealed class UpdateKeyingMaterialsResult {
  * upload new keying materials if needed for the mls conversations of the user.
  */
 @Mockable
-interface UpdateKeyingMaterialsUseCase {
+internal interface UpdateKeyingMaterialsUseCase {
     suspend operator fun invoke(): UpdateKeyingMaterialsResult
 }
 

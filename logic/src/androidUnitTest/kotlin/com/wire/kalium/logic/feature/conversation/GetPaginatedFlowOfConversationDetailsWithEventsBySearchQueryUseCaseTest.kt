@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCaseTest {
+internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCaseTest {
     private val dispatcher = TestKaliumDispatcher
 
     @Test

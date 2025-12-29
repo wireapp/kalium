@@ -19,7 +19,7 @@ package com.wire.kalium.logic.sync.receiver.asset
 
 import com.wire.kalium.logic.data.id.ConversationId
 
-interface AudioNormalizedLoudnessScheduler {
+internal interface AudioNormalizedLoudnessScheduler {
 
     /**
      *  Schedules an execution of [AudioNormalizedLoudnessWorker], which attempts to build

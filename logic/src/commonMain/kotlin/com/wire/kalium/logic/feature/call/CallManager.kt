@@ -32,7 +32,7 @@ import io.mockative.Mockable
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface CallManager {
+internal interface CallManager {
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,
         content: MessageContent.Calling,

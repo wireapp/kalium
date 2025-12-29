@@ -34,16 +34,16 @@ import kotlinx.coroutines.withContext
  *
  * @result [Result] Success with Int position. Failure with StorageFailure.
  */
-interface GetSearchedConversationMessagePositionUseCase {
+public interface GetSearchedConversationMessagePositionUseCase {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
     ): Result
 
-    sealed interface Result {
-        data class Success(val position: Int) : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data class Success(val position: Int) : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

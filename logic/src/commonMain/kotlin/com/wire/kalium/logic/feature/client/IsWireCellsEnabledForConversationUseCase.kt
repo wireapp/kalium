@@ -26,8 +26,8 @@ import io.mockative.Mockable
  * Use case to check if Wire Cells feature is enabled for a specific conversation.
  */
 @Mockable
-interface IsWireCellsEnabledForConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Boolean
+public interface IsWireCellsEnabledForConversationUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Boolean
 }
 
 internal class IsWireCellsEnabledForConversationUseCaseImpl(

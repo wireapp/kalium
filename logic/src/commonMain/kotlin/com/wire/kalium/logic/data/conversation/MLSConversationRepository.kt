@@ -86,7 +86,7 @@ import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-data class ApplicationMessage(
+internal data class ApplicationMessage(
     val message: ByteArray,
     val senderID: UserId,
     val senderClientID: ClientId
@@ -112,7 +112,7 @@ data class ApplicationMessage(
     }
 }
 
-data class DecryptedMessageBundle(
+internal data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?,

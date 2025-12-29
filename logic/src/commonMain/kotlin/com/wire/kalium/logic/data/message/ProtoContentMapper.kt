@@ -79,13 +79,13 @@ import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
 @Mockable
-interface ProtoContentMapper {
+internal interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
-class ProtoContentMapperImpl(
+internal class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),

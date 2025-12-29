@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface PushTokenRepository {
+internal interface PushTokenRepository {
     /**
      * Method responsible to observe the flag indicating if the firebase token should be registered via the ClientRepository.registerToken
      * next time the token changes.
@@ -41,7 +41,7 @@ interface PushTokenRepository {
     suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean): Either<StorageFailure, Unit>
 }
 
-class PushTokenDataSource internal constructor(private val metadataDAO: MetadataDAO) : PushTokenRepository {
+internal class PushTokenDataSource internal constructor(private val metadataDAO: MetadataDAO) : PushTokenRepository {
 
     override suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean) =
         wrapStorageRequest { metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_FIREBASE_TOKEN_KEY) }
@@ -53,7 +53,7 @@ class PushTokenDataSource internal constructor(private val metadataDAO: Metadata
             it == null || it.isEmpty() || it.toBoolean()
         }
 
-    companion object {
-        const val SHOULD_UPDATE_FIREBASE_TOKEN_KEY = "shouldUpdateFirebaseCloudToken"
+    internal companion object {
+        internal const val SHOULD_UPDATE_FIREBASE_TOKEN_KEY = "shouldUpdateFirebaseCloudToken"
     }
 }

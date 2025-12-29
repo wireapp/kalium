@@ -13,7 +13,7 @@ Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging plat
 - Gradle with Kotlin DSL
 - SQLDelight 2.2.1 for database layer (SQLCipher encrypted)
 - Ktor 3.3.2 for HTTP networking
-- CoreCrypto 9.1.1 + libsodium for cryptography (MLS protocol)
+- CoreCrypto 9.1.3 + libsodium for cryptography (MLS protocol)
 - AVS 10.1.33 for audio/video calling
 - Protocol Buffers (pbandk) for serialization
 
@@ -42,6 +42,10 @@ Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging plat
 
 # Code coverage
 ./gradlew jvmTest koverXmlReport -Djava.library.path=./native/libs
+
+# Run all unit tests and aggregate reports
+./gradlew runAllUnitTests
+./gradlew aggregateTestResults              # Creates combined HTML report
 ```
 
 ### CLI Application
@@ -91,10 +95,11 @@ Modules are organized by layer with colon-separated paths:
 **Domain (`domain:*`):**
 - `:domain:backup` - Backup and restore with encryption
 - `:domain:calling` - Voice/video calling via AVS library
-- `:domain:cells` - Cell-based storage system
+- `:domain:cells` - Cell-based storage system (Wire Cells integration)
 - `:domain:conversation-history` - Conversation history management
 - `:domain:messaging:sending` - Message sending pipeline
 - `:domain:messaging:receiving` - Message receiving and processing
+- `:domain:work` - Background work management
 
 **Logic:**
 - `:logic` - Main SDK entry point, orchestrates all other modules, contains use cases
@@ -155,4 +160,15 @@ Config: `detekt/detekt.yml`, Baseline: `detekt/baseline.xml`
 
 IDE Setup: Settings → Tools → Detekt:
 - Configuration Files: `$PROJECT_ROOT/detekt/detekt.yml`
+- Baseline File: `$PROJECT_ROOT/detekt/baseline.xml`
 - Plugin Jars: `$PROJECT_ROOT/detekt-rules/build/libs/detekt-rules.jar`
+
+## Module Dependencies
+
+The project follows a strict layered architecture:
+- **Core** modules only depend on other core modules or external libraries
+- **Data** modules depend on core modules
+- **Domain** modules depend on core and data modules
+- **Logic** depends on all layers and orchestrates them
+
+The `:logic` module is the main SDK entry point that clients interact with.

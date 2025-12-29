@@ -51,7 +51,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("LongParameterList")
-class SessionManagerImpl internal constructor(
+internal class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val accessTokenRefresherFactory: AccessTokenRefresherFactory,
     private val userId: QualifiedID,

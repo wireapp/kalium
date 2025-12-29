@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.client.DeviceType
 import android.provider.Settings
 import com.wire.kalium.logic.data.client.ClientType
 
-actual open class ClientConfigImpl(private val context: Context) : ClientConfig {
+internal actual open class ClientConfigImpl(private val context: Context) : ClientConfig {
 
     actual override fun deviceType(): DeviceType {
         val screenSize = context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK

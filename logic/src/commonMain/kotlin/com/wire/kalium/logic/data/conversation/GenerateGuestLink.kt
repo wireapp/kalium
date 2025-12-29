@@ -32,6 +32,6 @@ private fun generateGuestLink(
     }.build()
 }.buildString()
 
-fun Event.Conversation.CodeUpdated.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)
+internal fun Event.Conversation.CodeUpdated.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)
 
-fun ConversationInviteLinkResponse.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)
+internal fun ConversationInviteLinkResponse.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)

@@ -54,7 +54,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 @Mockable
-interface MessageEnvelopeCreator {
+internal interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
         proteusContext: ProteusCoreCryptoContext,
@@ -70,7 +70,7 @@ interface MessageEnvelopeCreator {
 
 }
 
-class MessageEnvelopeCreatorImpl(
+internal class MessageEnvelopeCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val legalHoldStatusMapper: LegalHoldStatusMapper,
     private val selfUserId: UserId,

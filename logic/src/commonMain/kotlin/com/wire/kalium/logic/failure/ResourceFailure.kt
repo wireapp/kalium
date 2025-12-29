@@ -20,4 +20,4 @@ package com.wire.kalium.logic.failure
 
 import com.wire.kalium.common.error.CoreFailure
 
-sealed class ResourceFailure : CoreFailure.FeatureFailure()
+internal sealed class ResourceFailure : CoreFailure.FeatureFailure()

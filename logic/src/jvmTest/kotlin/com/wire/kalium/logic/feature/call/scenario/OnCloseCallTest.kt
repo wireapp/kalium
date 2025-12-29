@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.framework.TestCall
@@ -100,6 +100,42 @@ class OnCloseCallTest {
 
             coVerify {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+            }.wasInvoked(once)
+
+            coVerify {
+                arrangement.callRepository.leaveMlsConference(eq(conversationId))
+            }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenAStartedGroupCall_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
+        testScope.runTest {
+            val groupCall = callMetadata.copy(
+                callStatus = CallStatus.STARTED,
+                conversationType = Conversation.Type.Group.Regular,
+                establishedTime = null,
+            )
+            val (arrangement, onCloseCall) = Arrangement(testScope)
+                .withGetCallMetadata(groupCall)
+                .arrange()
+            val reason = CallClosedReason.TIMEOUT_ECONN.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            coVerify {
+                arrangement.callRepository.persistMissedCall(eq(conversationId))
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
             }.wasInvoked(once)
 
             coVerify {
@@ -297,12 +333,13 @@ class OnCloseCallTest {
         val callRepository: CallRepository = mock(CallRepository::class)
         val networkStateObserver = mock(NetworkStateObserver::class)
         val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
-        val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
+        val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         init {
             withGetCallMetadata(callMetadata)
             withNetworkState(NetworkState.ConnectedWithInternet)
         }
+
         fun arrange() = this to OnCloseCall(
             callRepository = callRepository,
             scope = testScope,
@@ -310,11 +347,13 @@ class OnCloseCallTest {
             networkStateObserver = networkStateObserver,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
         )
+
         fun withNetworkState(networkState: NetworkState): Arrangement = apply {
             every {
                 networkStateObserver.observeNetworkState()
             }.returns(MutableStateFlow(networkState))
         }
+
         fun withGetCallMetadata(metadata: CallMetadata): Arrangement = apply {
             every {
                 callRepository.getCallMetadata(conversationId)

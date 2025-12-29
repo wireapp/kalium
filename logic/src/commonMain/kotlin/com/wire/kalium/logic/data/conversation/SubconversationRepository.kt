@@ -37,7 +37,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 @Mockable
-interface SubconversationRepository {
+internal interface SubconversationRepository {
 
     suspend fun insertSubconversation(
         conversationId: ConversationId,
@@ -73,7 +73,7 @@ interface SubconversationRepository {
     ): Either<NetworkFailure, SubConversation>
 }
 
-class SubconversationRepositoryImpl(
+internal class SubconversationRepositoryImpl(
     private val conversationApi: ConversationApi
 ) : SubconversationRepository {
 

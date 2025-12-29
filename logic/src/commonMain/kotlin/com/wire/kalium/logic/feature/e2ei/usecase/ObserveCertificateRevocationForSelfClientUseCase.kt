@@ -28,7 +28,7 @@ import io.mockative.Mockable
  * Use case to observe certificate revocation for self client.
  */
 @Mockable
-interface ObserveCertificateRevocationForSelfClientUseCase {
+internal interface ObserveCertificateRevocationForSelfClientUseCase {
     suspend operator fun invoke()
 }
 

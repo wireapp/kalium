@@ -27,7 +27,7 @@ import com.wire.kalium.network.exceptions.isInvalidCode
 /**
  * Use case to validate an activation code for a given email address.
  */
-class VerifyActivationCodeUseCase internal constructor(
+internal class VerifyActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
     /**
@@ -35,7 +35,7 @@ class VerifyActivationCodeUseCase internal constructor(
      * @param code [String] the activation code to validate
      * @return [VerifyActivationCodeResult.Success] or [VerifyActivationCodeResult.Failure] with the specific error.
      */
-    suspend operator fun invoke(email: String, code: String): VerifyActivationCodeResult =
+    internal suspend operator fun invoke(email: String, code: String): VerifyActivationCodeResult =
         registerAccountRepository.verifyActivationCode(email, code)
             .fold({
                 if (
@@ -53,10 +53,10 @@ class VerifyActivationCodeUseCase internal constructor(
 
 }
 
-sealed class VerifyActivationCodeResult {
-    data object Success : VerifyActivationCodeResult()
-    sealed class Failure : VerifyActivationCodeResult() {
-        data object InvalidCode : Failure()
-        data class Generic(val failure: NetworkFailure) : Failure()
+internal sealed class VerifyActivationCodeResult {
+    internal data object Success : VerifyActivationCodeResult()
+    internal sealed class Failure : VerifyActivationCodeResult() {
+        internal data object InvalidCode : Failure()
+        internal data class Generic(val failure: NetworkFailure) : Failure()
     }
 }

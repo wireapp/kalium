@@ -24,8 +24,8 @@ import io.mockative.Mockable
  * Use case to check if Wire Cells feature is enabled.
  */
 @Mockable
-interface IsWireCellsEnabledUseCase {
-    suspend operator fun invoke(): Boolean
+public interface IsWireCellsEnabledUseCase {
+    public suspend operator fun invoke(): Boolean
 }
 
 internal class IsWireCellsEnabledUseCaseImpl(

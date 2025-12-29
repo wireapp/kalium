@@ -65,6 +65,8 @@ data class FeatureConfigResponse(
     val consumableNotifications: FeatureConfigData.ConsumableNotifications?,
     @SerialName("cells")
     val cells: FeatureConfigData.Cells?,
+    @SerialName("cellsInternal")
+    val cellsInternal: FeatureConfigData.CellsInternal?,
     @SerialName("apps")
     val apps: FeatureConfigData.Apps?,
     @SerialName("simplifiedUserConnectionRequestQRCode")
@@ -330,6 +332,15 @@ sealed class FeatureConfigData {
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
 
+    @SerialName("cellsInternal")
+    @Serializable
+    data class CellsInternal(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO,
+        @SerialName("config")
+        val config: CellsInternalConfigDTO,
+    ) : FeatureConfigData()
+
     @SerialName("apps")
     @Serializable
     data class Apps(
@@ -351,4 +362,15 @@ sealed class FeatureConfigData {
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
 
+    @Serializable
+    data class CellsInternalConfigDTO(
+        @SerialName("backend")
+        val backend: CellsInternalBackendConfigDTO?
+    )
+
+    @Serializable
+    data class CellsInternalBackendConfigDTO(
+        @SerialName("url")
+        val url: String
+    )
 }

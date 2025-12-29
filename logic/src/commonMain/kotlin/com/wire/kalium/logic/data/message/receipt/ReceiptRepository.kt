@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
-interface ReceiptRepository {
+internal interface ReceiptRepository {
     suspend fun persistReceipts(
         userId: UserId,
         conversationId: ConversationId,
@@ -44,7 +44,7 @@ interface ReceiptRepository {
     ): Flow<List<DetailedReceipt>>
 }
 
-class ReceiptRepositoryImpl(
+internal class ReceiptRepositoryImpl(
     private val receiptDAO: ReceiptDAO,
     private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()

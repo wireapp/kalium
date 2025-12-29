@@ -49,7 +49,7 @@ import okio.Sink
 import okio.use
 
 @Mockable
-interface AssetRepository {
+internal interface AssetRepository {
     /**
      * Method used to upload and persist to local memory a public asset
      * @param mimeType type of the asset to be uploaded
@@ -471,4 +471,4 @@ internal class AssetDataSource(
 private fun buildFileName(name: String, extension: String?): String =
     extension?.let { "$name.$extension" } ?: name
 
-data class FetchedAssetData(val path: Path, val justDownloaded: Boolean)
+internal data class FetchedAssetData(val path: Path, val justDownloaded: Boolean)

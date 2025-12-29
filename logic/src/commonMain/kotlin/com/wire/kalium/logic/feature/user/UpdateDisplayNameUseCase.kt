@@ -28,12 +28,12 @@ import kotlinx.coroutines.withContext
 /**
  * Updates the display name of the current user.
  */
-fun interface UpdateDisplayNameUseCase {
+public fun interface UpdateDisplayNameUseCase {
     /**
      * @param displayName The new display name.
      * @return The result of the operation [DisplayNameUpdateResult.Success] or a mapped [CoreFailure].
      */
-    suspend operator fun invoke(displayName: String): DisplayNameUpdateResult
+    public suspend operator fun invoke(displayName: String): DisplayNameUpdateResult
 }
 
 internal class UpdateDisplayNameUseCaseImpl(
@@ -49,7 +49,7 @@ internal class UpdateDisplayNameUseCaseImpl(
     }
 }
 
-sealed class DisplayNameUpdateResult {
-    data object Success : DisplayNameUpdateResult()
-    data class Failure(val coreFailure: CoreFailure) : DisplayNameUpdateResult()
+public sealed class DisplayNameUpdateResult {
+    public data object Success : DisplayNameUpdateResult()
+    public data class Failure(val coreFailure: CoreFailure) : DisplayNameUpdateResult()
 }

@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import io.mockative.Mockable
 
 @Mockable
-interface MessageMetadataRepository {
+internal interface MessageMetadataRepository {
     suspend fun originalSenderId(
         conversationId: ConversationId,
         messageId: MessageId

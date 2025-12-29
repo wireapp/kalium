@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.common.logger.kaliumLogger
 
 @Suppress("TooManyFunctions")
-class CallManagerImpl : CallManager {
+internal class CallManagerImpl : CallManager {
     override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {
         kaliumLogger.w("Ignoring call message since calling is not supported")
     }

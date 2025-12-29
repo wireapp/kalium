@@ -59,7 +59,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
-class MessageSendFailureHandlerTest {
+internal class MessageSendFailureHandlerTest {
 
     @Test
     fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenUsersThatControlTheseClientsShouldBeFetched() = runTest {

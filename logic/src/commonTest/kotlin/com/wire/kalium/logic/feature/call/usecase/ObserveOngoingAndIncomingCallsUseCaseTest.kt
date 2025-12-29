@@ -32,7 +32,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveOngoingAndIncomingCallsUseCaseTest {
+internal class ObserveOngoingAndIncomingCallsUseCaseTest {
 
     val callRepository = mock(CallRepository::class)
 

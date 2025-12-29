@@ -26,10 +26,10 @@ import com.wire.kalium.logic.data.featureConfig.Status
 /**
  * Consumable Notifications Config Handler aka. Async Notifications.
  */
-class ConsumableNotificationsConfigHandler(
+internal class ConsumableNotificationsConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(consumableNotificationsConfigModel: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    internal suspend fun handle(consumableNotificationsConfigModel: ConfigsStatusModel): Either<CoreFailure, Unit> {
         val isAsyncNotificationsEnabled = consumableNotificationsConfigModel.status == Status.ENABLED
         return userConfigRepository.setAsyncNotificationsEnabled(isAsyncNotificationsEnabled)
     }

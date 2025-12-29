@@ -18,6 +18,6 @@
 
 package com.wire.kalium.logic.util
 
-actual class CurrentPlatform(
+internal actual class CurrentPlatform(
     val type: PlatformType = PlatformType.JVM
 )

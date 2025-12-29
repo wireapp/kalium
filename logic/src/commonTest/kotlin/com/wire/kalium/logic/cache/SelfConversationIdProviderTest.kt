@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.IgnoreIOS
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock

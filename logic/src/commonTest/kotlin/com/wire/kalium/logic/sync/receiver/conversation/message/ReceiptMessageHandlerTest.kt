@@ -87,7 +87,6 @@ class ReceiptMessageHandlerTest {
     fun tearDown() {
         userDatabase.delete()
         Dispatchers.resetMain()
-        testDispatcher.cancel()
     }
     @Test
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainTheNewReceipt() = runTest {

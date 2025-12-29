@@ -51,7 +51,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface TeamRepository {
+internal interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun fetchMembersByTeamId(
         teamId: TeamId,
