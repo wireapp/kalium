@@ -241,6 +241,18 @@ internal class CellsDataSource internal constructor(
         }
     }
 
+    override suspend fun createFile(
+        folderName: String,
+        contentType: String,
+        templateUuid: String
+    ): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
+        wrapApiRequest {
+            cellsApi.createFile(folderName, contentType, templateUuid)
+        }.map { response ->
+            response.nodes.map { it.toModel() }
+        }
+    }
+
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> =
         withContext(dispatchers.io) {
             wrapApiRequest {
