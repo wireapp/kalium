@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.architecture
 
 import com.lemonappdev.konsist.api.Konsist
+import com.lemonappdev.konsist.api.ext.list.returnTypes
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.ext.list.withParentNamed
 import com.lemonappdev.konsist.api.verify.assertTrue
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 class UseCaseRulesTest {
@@ -34,7 +34,21 @@ class UseCaseRulesTest {
             .assertTrue { it.resideInPackage("..feature..") }
     }
 
-    @Ignore
+    @Test
+    fun useCasesShouldNotReturnEitherTypes() {
+        Konsist
+            .scopeFromProduction()
+            .interfaces()
+            .withNameEndingWith("UseCase")
+            .assertTrue {
+                val hasEitherReturnType = it.functions().returnTypes
+                    .any { returnType ->
+                        returnType.sourceType.startsWith("Either<")
+                    }
+                !hasEitherReturnType
+            }
+    }
+
     @Test
     fun classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke() {
         Konsist
