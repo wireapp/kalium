@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,16 @@
  */
 package com.wire.kalium.cryptography
 
-actual suspend fun coreCryptoCentral(
-    rootDir: String,
-    passphrase: ByteArray
-): CoreCryptoCentral = TODO("Not yet implemented")
+import platform.Foundation.NSFileManager
+
+internal actual fun createDirectory(path: String): Boolean {
+    return NSFileManager.defaultManager.createDirectoryAtPath(path, true, null, null)
+}
+
+internal actual fun fileExists(path: String): Boolean {
+    return NSFileManager.defaultManager.fileExistsAtPath(path)
+}
+
+internal actual fun deleteFile(path: String): Boolean {
+    return NSFileManager.defaultManager.removeItemAtPath(path, null)
+}

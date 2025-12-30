@@ -32,6 +32,9 @@ kaliumLibrary {
     }
 }
 
+val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
+    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+
 kotlin {
     explicitApi()
     sourceSets {
@@ -74,6 +77,9 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
+                if (useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoKmp)
+                }
             }
         }
         val commonTest by getting {
@@ -101,7 +107,9 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-                implementation(libs.coreCryptoJvm)
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoJvm)
+                }
             }
         }
         val jvmTest by getting {
@@ -113,9 +121,11 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                        exclude("androidx.core")
+                        exclude("androidx.appcompat")
+                    }
                 }
             }
         }

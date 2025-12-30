@@ -29,9 +29,11 @@ plugins {
 kaliumLibrary {
     multiplatform {
         includeNativeInterop.set(true)
-        enableApple.set(false)
     }
 }
+
+val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
+    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
 
 kotlin {
     iosArm64 {
@@ -66,6 +68,10 @@ kotlin {
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
+
+                if (useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoKmp)
+                }
             }
         }
         val commonTest by getting {
@@ -78,32 +84,36 @@ kotlin {
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
-        val jsMain by getting {
-            dependencies {
-                implementation(npm("@wireapp/store-engine", "4.9.9"))
-            }
-        }
-
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.coreCryptoJvm)
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoJvm)
+                }
             }
         }
-        val jsTest by getting
 
         val jvmTest by getting
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.androidCrypto)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                        exclude("androidx.core")
+                        exclude("androidx.appcompat")
+                    }
                 }
             }
         }
-        val appleMain by getting
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCryptoKmp)
+            }
+        }
+
+        val jsMain by getting
+        val jsTest by getting
     }
 }
 

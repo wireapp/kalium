@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging platform. It handles end-to-end encryption, messaging protocols, voice/video calling, and backup functionality across JVM, Android, iOS, and JavaScript platforms.
 
-**Requirements:** JDK 21
+**Requirements:** JDK 21, macOS Apple Silicon for iOS builds
 
 **Key Technologies:**
 - Kotlin 2.2.21 with Kotlin Multiplatform
@@ -34,6 +34,17 @@ Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging plat
 # Run single test class
 ./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest"
 
+# Run single test method
+./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest.givenEmailHasLeadingOrTrailingSpaces*"
+
+# iOS tests (requires Apple Silicon Mac and unified CoreCrypto)
+./gradlew iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :core:cryptography:iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew iOSOnlyAffectedTest -PUSE_UNIFIED_CORE_CRYPTO=true
+
+# JavaScript tests (requires unified CoreCrypto)
+./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true
+
 # Linting
 ./gradlew detekt
 
@@ -47,6 +58,22 @@ Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging plat
 ./gradlew runAllUnitTests
 ./gradlew aggregateTestResults              # Creates combined HTML report
 ```
+
+### iOS Framework Builds
+
+```bash
+# Build for iOS Simulator (Apple Silicon)
+./gradlew :logic:linkDebugFrameworkIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+
+# Build for physical iOS devices
+./gradlew :logic:linkDebugFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+
+# Build release frameworks
+./gradlew :logic:linkReleaseFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :logic:linkReleaseFrameworkIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+```
+
+**Note:** iOS and JS builds require `USE_UNIFIED_CORE_CRYPTO=true`. Either set it in gradle.properties or pass `-PUSE_UNIFIED_CORE_CRYPTO=true` on the command line.
 
 ### CLI Application
 
@@ -77,11 +104,11 @@ Always pass `-Djava.library.path=./native/libs` when running JVM tests or CLI.
 Modules are organized by layer with colon-separated paths:
 
 **Core (`core:*`):**
-- `:core:common` - Shared data models and utilities
+- `:core:common` - Shared data models, utilities, and `Either<Failure, Success>` error handling
 - `:core:data` - Data layer abstractions and DTOs
 - `:core:cryptography` - Encryption using libsodium and CoreCrypto
 - `:core:logger` - Logging infrastructure (Kermit-based)
-- `:core:util` - General utilities, `Either<Failure, Success>` error handling
+- `:core:util` - General utilities
 
 **Data (`data:*`):**
 - `:data:network` - HTTP client (Ktor) with retry logic and authentication
@@ -123,7 +150,7 @@ Each module has platform-specific source sets:
 - `jvmMain/jvmTest` - JVM-specific code
 - `androidMain/androidUnitTest` - Android-specific code
 - `iosMain/iosTest` - iOS (partial support)
-- `jsMain/jsTest` - JavaScript (minimal support)
+- `jsMain/jsTest -PUSE_UNIFIED_CORE_CRYPTO=true` - JavaScript (minimal support)
 
 ## Testing
 
@@ -138,7 +165,7 @@ Place common tests in `commonTest` when possible.
 ## Code Conventions
 
 - `suspend` functions for async, `Flow` for reactive streams
-- `Either<Failure, Success>` pattern for error handling (from `:core:util`)
+- `Either<Failure, Success>` pattern for error handling (from `:core:common`)
 - `kotlinx-datetime` types (`Instant`, `LocalDateTime`) for dates
 - `kotlinx.serialization` with `@Serializable` annotation
 - Repository pattern in `:data:*`, use cases in `:logic`
