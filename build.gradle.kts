@@ -26,6 +26,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        mavenLocal()
     }
 
     dependencies {
@@ -39,6 +40,7 @@ buildscript {
 }
 
 repositories {
+    mavenLocal()
     wireDetektRulesRepo()
     google()
     mavenCentral()
@@ -77,6 +79,7 @@ subprojects {
 
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
     }
