@@ -56,5 +56,6 @@ internal interface CallManager {
     suspend fun setTestVideoType(testVideoType: TestVideoType)
     suspend fun setTestPreviewActive(shouldEnable: Boolean)
     suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
+    suspend fun setBackground(background: Boolean)
     suspend fun cancelJobs()
 }
