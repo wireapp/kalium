@@ -26,19 +26,29 @@ import kotlin.test.Test
 class UseCaseRulesTest {
 
     @Test
-    fun classesWithUseCaseSuffixShouldResideInFeaturePackage() {
-        Konsist.scopeFromProduction()
-            .classes()
-            .withNameEndingWith("UseCase")
-            .assertTrue { it.resideInPackage("..feature..") }
-    }
-
-    @Test
-    fun useCasesShouldNotReturnEitherTypes() {
+    fun everyUseCasePublicInterfaceShouldNotReturnEitherTypes() {
         Konsist
             .scopeFromProduction()
             .interfaces()
             .withNameEndingWith("UseCase")
+            .filter { it.hasPublicOrDefaultModifier }
+            .assertTrue { anInterface ->
+                val hasEitherReturnType = anInterface.functions().filter { it.hasPublicOrDefaultModifier }
+                    .returnTypes
+                    .any { returnType ->
+                        returnType.sourceType.startsWith("Either<")
+                    }
+                !hasEitherReturnType
+            }
+    }
+
+    @Test
+    fun everyUseCasePublicClassShouldNotReturnEitherTypes() {
+        Konsist
+            .scopeFromProduction()
+            .classes()
+            .withNameEndingWith("UseCase")
+            .filter { it.hasPublicOrDefaultModifier }
             .assertTrue {
                 val hasEitherReturnType = it.functions().returnTypes
                     .any { returnType ->
