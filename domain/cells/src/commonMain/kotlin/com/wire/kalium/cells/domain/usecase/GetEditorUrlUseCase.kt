@@ -23,6 +23,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
 public fun interface GetEditorUrlUseCase {
+    /**
+     * Use case to get the editor URL for a given [com.wire.kalium.cells.domain.model.Node].
+     * @param nodeUuid The unique identifier of the node.
+     * @return the result of the get editor URL operation, or null if no URL is available.
+     */
     public suspend operator fun invoke(nodeUuid: String): Either<CoreFailure, String?>
 }
 

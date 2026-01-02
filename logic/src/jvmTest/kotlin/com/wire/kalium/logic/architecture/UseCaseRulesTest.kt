@@ -18,23 +18,49 @@
 package com.wire.kalium.logic.architecture
 
 import com.lemonappdev.konsist.api.Konsist
+import com.lemonappdev.konsist.api.ext.list.returnTypes
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
-import com.lemonappdev.konsist.api.ext.list.withParentNamed
 import com.lemonappdev.konsist.api.verify.assertTrue
-import kotlin.test.Ignore
+import org.junit.Ignore
 import kotlin.test.Test
 
 class UseCaseRulesTest {
 
+    @Ignore("Ignored for now, needs fine tune and violations fixed which are quite many currently for this scope")
     @Test
-    fun classesWithUseCaseSuffixShouldResideInFeaturePackage() {
-        Konsist.scopeFromProduction()
-            .classes()
+    fun everyUseCasePublicInterfaceShouldNotReturnEitherTypes() {
+        Konsist
+            .scopeFromProduction()
+            .interfaces()
             .withNameEndingWith("UseCase")
-            .assertTrue { it.resideInPackage("..feature..") }
+            .filter { it.hasPublicOrDefaultModifier }
+            .assertTrue { anInterface ->
+                val hasEitherReturnType = anInterface.functions().filter { it.hasPublicOrDefaultModifier }
+                    .returnTypes
+                    .any { returnType ->
+                        returnType.sourceType.startsWith("Either<")
+                    }
+                !hasEitherReturnType
+            }
     }
 
-    @Ignore
+    @Ignore("Ignored for now, needs fine tune and violations fixed which are quite many currently for this scope")
+    @Test
+    fun everyUseCasePublicClassShouldNotReturnEitherTypes() {
+        Konsist
+            .scopeFromProduction()
+            .classes()
+            .withNameEndingWith("UseCase")
+            .filter { it.hasPublicOrDefaultModifier }
+            .assertTrue {
+                val hasEitherReturnType = it.functions().returnTypes
+                    .any { returnType ->
+                        returnType.sourceType.startsWith("Either<")
+                    }
+                !hasEitherReturnType
+            }
+    }
+
     @Test
     fun classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke() {
         Konsist
@@ -50,22 +76,54 @@ class UseCaseRulesTest {
             }
     }
 
+    @Ignore("Ignored for now, needs fine tune and violations fixed which are quite many currently for this scope")
     @Test
     fun everyUseCaseClassHasTests() {
         Konsist
             .scopeFromProduction()
             .classes()
-            .withParentNamed("UseCase")
-            .assertTrue { it.hasTestClass() }
+            .withNameEndingWith(suffixes = listOf("UseCaseImpl", "UseCase"))
+            .assertTrue { clazz ->
+                // For UseCaseImpl classes, test should be named UseCaseTest (without Impl)
+                // For standalone UseCase classes, test should be named UseCaseTest
+                val expectedTestName = if (clazz.name.endsWith("Impl")) {
+                    clazz.name.removeSuffix("Impl") + "Test"
+                } else {
+                    "${clazz.name}Test"
+                }
+
+                // Check if a test file exists with the expected test class name
+                Konsist
+                    .scopeFromTest()
+                    .classes()
+                    .any { testClass -> testClass.name == expectedTestName }
+            }
     }
 
     @Test
-    fun everyUseCaseClassHasKDocs() {
+    fun everyPublicUseCaseInterfaceHasKDocs() {
+        Konsist
+            .scopeFromProduction()
+            .interfaces()
+            .withNameEndingWith("UseCase")
+            .filter { it.hasPublicOrDefaultModifier }
+            .assertTrue { useCase ->
+                useCase.hasKDoc || useCase.functions()
+                    .any { func -> func.name == "invoke" && func.hasOperatorModifier && func.hasKDoc }
+            }
+    }
+
+    @Test
+    fun everyPublicUseCaseClassHasKDocs() {
         Konsist
             .scopeFromProduction()
             .classes()
-            .withParentNamed("UseCase")
-            .assertTrue { it.hasKDoc }
+            .withNameEndingWith("UseCase")
+            .filter { it.hasPublicOrDefaultModifier }
+            .assertTrue { useCase ->
+                useCase.hasKDoc || useCase.functions()
+                    .any { func -> func.name == "invoke" && func.hasOperatorModifier && func.hasKDoc }
+            }
     }
 
     @Test

@@ -22,6 +22,14 @@ import com.wire.kalium.cells.domain.model.Node
 import kotlinx.coroutines.flow.Flow
 
 public interface GetPaginatedFilesFlowUseCase {
+    /**
+     * Use case to get a paginated flow of file [Node]s from cells.
+     * @param conversationId The unique identifier of the conversation to filter files by (optional).
+     * @param query The search query to filter files.
+     * @param onlyDeleted Flag to indicate whether to fetch only deleted files.
+     * @param tags List of tags to filter files.
+     * @return a flow of paginated file nodes.
+     */
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,

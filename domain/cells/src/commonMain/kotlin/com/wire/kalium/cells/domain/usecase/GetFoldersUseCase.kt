@@ -25,6 +25,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
 public interface GetFoldersUseCase {
+    /**
+     * Use case to get folders [com.wire.kalium.cells.domain.model.Node]s within a specific conversation.
+     * @param conversationId The unique identifier of the conversation.
+     * @return the result of the rename operation.
+     */
     public suspend operator fun invoke(
         conversationId: String,
     ): Either<CoreFailure, List<Node.Folder>>

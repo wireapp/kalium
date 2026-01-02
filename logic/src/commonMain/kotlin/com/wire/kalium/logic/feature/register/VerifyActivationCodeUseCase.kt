@@ -35,7 +35,7 @@ internal class VerifyActivationCodeUseCase internal constructor(
      * @param code [String] the activation code to validate
      * @return [VerifyActivationCodeResult.Success] or [VerifyActivationCodeResult.Failure] with the specific error.
      */
-    internal suspend operator fun invoke(email: String, code: String): VerifyActivationCodeResult =
+    suspend operator fun invoke(email: String, code: String): VerifyActivationCodeResult =
         registerAccountRepository.verifyActivationCode(email, code)
             .fold({
                 if (

@@ -23,6 +23,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
 public interface MoveNodeUseCase {
+    /**
+     * Use case to move a [com.wire.kalium.cells.domain.model.Node] from one path to another within a specific cell.
+     * @param uuid The unique identifier of the cell.
+     * @param path The current path of the node to be moved.
+     * @param targetPath The target path where the node should be moved.
+     * @return the result of the rename operation.
+     */
     public suspend operator fun invoke(uuid: String, path: String, targetPath: String): Either<CoreFailure, Unit>
 }
 

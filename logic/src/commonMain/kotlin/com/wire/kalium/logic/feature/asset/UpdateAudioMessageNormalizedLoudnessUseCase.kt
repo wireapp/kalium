@@ -18,12 +18,17 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+
+public sealed class UpdateAudioMessageNormalizedLoudnessResult {
+    public object Success : UpdateAudioMessageNormalizedLoudnessResult()
+    public data class Failure(val error: CoreFailure) : UpdateAudioMessageNormalizedLoudnessResult()
+}
 
 public interface UpdateAudioMessageNormalizedLoudnessUseCase {
     /**
@@ -31,13 +36,13 @@ public interface UpdateAudioMessageNormalizedLoudnessUseCase {
      * @param conversationId The ID of the conversation containing the message.
      * @param messageId The ID of the message to update.
      * @param normalizedLoudness The new normalized loudness data to set.
-     * @return Either a CoreFailure on failure or Unit on success.
+     * @return [UpdateAudioMessageNormalizedLoudnessResult] indicating success or failure of the operation.
      */
     public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         normalizedLoudness: ByteArray
-    ): Either<CoreFailure, Unit>
+    ): UpdateAudioMessageNormalizedLoudnessResult
 }
 
 internal class UpdateAudioMessageNormalizedLoudnessUseCaseImpl(
@@ -48,11 +53,14 @@ internal class UpdateAudioMessageNormalizedLoudnessUseCaseImpl(
         conversationId: ConversationId,
         messageId: String,
         normalizedLoudness: ByteArray
-    ): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
+    ): UpdateAudioMessageNormalizedLoudnessResult = withContext(dispatcher.io) {
         messageRepository.updateAudioMessageNormalizedLoudness(
             conversationId = conversationId,
             messageId = messageId,
             normalizedLoudness = normalizedLoudness
+        ).fold(
+            { error -> UpdateAudioMessageNormalizedLoudnessResult.Failure(error) },
+            { UpdateAudioMessageNormalizedLoudnessResult.Success }
         )
     }
 }

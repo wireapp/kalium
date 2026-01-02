@@ -21,6 +21,11 @@ import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.functional.getOrNull
 
 public interface GetPublicLinkPasswordUseCase {
+    /**
+     * Use case to get the password of a public link.
+     * @param linkUuid The unique identifier of the public link.
+     * @return the password of the public link, or null if it doesn't have one.
+     */
     public suspend operator fun invoke(linkUuid: String): String?
 }
 

@@ -23,6 +23,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 
 public interface GetNodeVersionsUseCase {
+    /**
+     * Use case to get the versions of a [com.wire.kalium.cells.domain.model.Node] within a specific cell.
+     * @param uuid The unique identifier of the cell.
+     * @return the result of the get node versions operation.
+     */
     public suspend operator fun invoke(uuid: String): Either<CoreFailure, List<NodeVersion>>
 }
 
