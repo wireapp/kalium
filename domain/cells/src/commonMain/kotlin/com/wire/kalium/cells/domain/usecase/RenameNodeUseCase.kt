@@ -28,6 +28,13 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.mapLeft
 
 public interface RenameNodeUseCase {
+    /**
+     * Use case to rename a [com.wire.kalium.cells.domain.model.Node] within a specific cell.
+     * @param uuid The unique identifier of the cell.
+     * @param path The current path of the node to be renamed.
+     * @param newName The new name for the node.
+     * @return the result of the rename operation.
+     */
     public suspend operator fun invoke(uuid: String, path: String, newName: String): Either<RenameNodeFailure, Unit>
 }
 

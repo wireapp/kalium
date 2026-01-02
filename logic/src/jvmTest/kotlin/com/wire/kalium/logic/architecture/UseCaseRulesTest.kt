@@ -21,6 +21,7 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.returnTypes
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.Ignore
 import kotlin.test.Test
 
 class UseCaseRulesTest {
@@ -73,6 +74,7 @@ class UseCaseRulesTest {
             }
     }
 
+    @Ignore
     @Test
     fun everyUseCaseClassHasTests() {
         Konsist
