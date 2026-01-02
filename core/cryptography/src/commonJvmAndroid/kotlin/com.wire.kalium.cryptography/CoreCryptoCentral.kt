@@ -31,7 +31,9 @@ import com.wire.crypto.HistorySecret
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
+import com.wire.crypto.exportDatabaseCopy
 import com.wire.crypto.invoke
+import com.wire.crypto.openDatabase
 import com.wire.crypto.setLogger
 import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
@@ -60,7 +62,8 @@ actual suspend fun coreCryptoCentral(
 
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
-        rootDir = rootDir
+        rootDir = rootDir,
+        databaseKey = databaseKey
     )
 }
 
@@ -81,7 +84,8 @@ private object CoreCryptoLoggerImpl : CoreCryptoLogger {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCryptoClient,
-    private val rootDir: String
+    private val rootDir: String,
+    private val databaseKey: DatabaseKey? = null
 ) : CoreCryptoCentral {
 
     suspend fun transaction(block: suspend (context: CoreCryptoContext) -> Unit) = cc.transaction {
@@ -238,6 +242,21 @@ class CoreCryptoCentralImpl(
             }
         } catch (exception: Exception) {
             kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
+        }
+    }
+
+    override suspend fun exportDatabaseCopy(destinationPath: String) {
+        val path = "$rootDir/${KEYSTORE_NAME}"
+        val key = databaseKey ?: throw IllegalStateException("Database key not available for export")
+
+        // Open the database
+        val database = openDatabase(path, key)
+        try {
+            // Export the database copy
+            exportDatabaseCopy(database, destinationPath)
+        } finally {
+            // Close the database
+            database.close()
         }
     }
 

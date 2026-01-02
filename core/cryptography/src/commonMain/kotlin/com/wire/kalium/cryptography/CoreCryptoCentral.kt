@@ -78,6 +78,12 @@ interface CoreCryptoCentral {
      * @param pem fetched certificate chain in pem format from the CA
      */
     suspend fun registerIntermediateCa(pem: CertificateChain)
+
+    /**
+     * Export a copy of the crypto database for backup purposes
+     * @param destinationPath the file path where the database copy should be created
+     */
+    suspend fun exportDatabaseCopy(destinationPath: String)
 }
 
 expect suspend fun coreCryptoCentral(

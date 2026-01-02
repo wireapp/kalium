@@ -21,12 +21,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.sync.MessageSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.sync.remoteBackup.BackupStateVisibilityCoordinator
 import com.wire.kalium.logic.sync.remoteBackup.CryptoStateBackupMetadata
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.logic.util.ExtractFilesParam
@@ -86,6 +88,7 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
     private val passphraseStorage: com.wire.kalium.persistence.dbPassphrase.PassphraseStorage,
     private val clientRepository: com.wire.kalium.logic.data.client.ClientRepository,
     private val metadataDAO: MetadataDAO,
+    private val backupStateVisibilityCoordinator: BackupStateVisibilityCoordinator,
     kaliumLogger: KaliumLogger = com.wire.kalium.common.logger.kaliumLogger
 ) : DownloadAndRestoreCryptoStateUseCase {
 
@@ -104,6 +107,13 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
             }
 
             val result: Either<CoreFailure, ClientId> = downloadResult.flatMap {
+                // Calculate hash of downloaded backup before extracting
+                val backupHash = calculateBackupHash(tempZipPath)
+                logger.i("Downloaded backup hash: ${backupHash.take(8)}...")
+
+                // Store the hash so we don't re-upload the same backup
+                backupStateVisibilityCoordinator.setLastUploadedHash(backupHash)
+
                 // Extract and restore
                 extractAndRestoreCryptoState(tempZipPath)
             }
@@ -233,6 +243,11 @@ internal class DownloadAndRestoreCryptoStateUseCaseImpl(
             logger.e("Failed to extract and restore backup: ${e.message}", e)
             Either.Left(CoreFailure.Unknown(e))
         }
+    }
+
+    private fun calculateBackupHash(zipPath: Path): String {
+        val hashBytes = calcFileSHA256(kaliumFileSystem.source(zipPath))
+        return hashBytes?.toHexString() ?: throw IllegalStateException("Failed to calculate backup hash")
     }
 
     private fun createTempZipFile(): Path {

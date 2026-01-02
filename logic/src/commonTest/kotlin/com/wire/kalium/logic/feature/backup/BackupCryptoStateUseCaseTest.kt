@@ -20,10 +20,13 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.cryptography.ProteusDBSecret
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
@@ -40,6 +43,7 @@ import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.buffer
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -53,6 +57,7 @@ class BackupCryptoStateUseCaseTest {
         val (arrangement, backupCryptoStateUseCase) = Arrangement()
             .withMessageSyncEnabled(false)
             .withClientId(ClientId("test-client-id"))
+            .withDefaultMocks()
             .withDefaultPassphrases()
             .arrange()
 
@@ -73,6 +78,7 @@ class BackupCryptoStateUseCaseTest {
         val (arrangement, backupCryptoStateUseCase) = Arrangement()
             .withMessageSyncEnabled(true)
             .withClientId(null)
+            .withDefaultMocks()
             .withDefaultPassphrases()
             .arrange()
 
@@ -93,6 +99,7 @@ class BackupCryptoStateUseCaseTest {
         val (arrangement, backupCryptoStateUseCase) = Arrangement()
             .withMessageSyncEnabled(true)
             .withClientId(ClientId("test-client-id"))
+            .withDefaultMocks()
             .withDefaultPassphrases()
             .withCryptoFolders(hasProteusContent = false, hasMlsContent = false)
             .arrange()
@@ -116,6 +123,9 @@ class BackupCryptoStateUseCaseTest {
         val clientIdProvider = mock(CurrentClientIdProvider::class)
         val rootPathsProvider = mock(RootPathsProvider::class)
         val securityHelper = mock(SecurityHelper::class)
+        val eventRepository = mock(EventRepository::class)
+        val mlsClientProvider = mock(MLSClientProvider::class)
+        val coreCrypto = mock(CoreCryptoCentral::class)
         var kaliumConfigs = KaliumConfigs()
 
         val proteusPath: Path = fakeFileSystem.rootCachePath / "proteus"
@@ -125,6 +135,22 @@ class BackupCryptoStateUseCaseTest {
             // Setup default paths
             every { rootPathsProvider.rootProteusPath(userId) }.returns(proteusPath.toString())
             every { rootPathsProvider.rootMLSPath(userId) }.returns(mlsPath.toString())
+        }
+
+        suspend fun withDefaultMocks() = apply {
+            // Setup default event repository behavior
+            coEvery { eventRepository.lastSavedEventId() }.returns(Either.Right(""))
+
+            // Setup default mlsClientProvider behavior
+            coEvery { mlsClientProvider.getCoreCrypto(any()) }.returns(Either.Right(coreCrypto))
+
+            // Setup default exportDatabaseCopy behavior
+            coEvery { coreCrypto.exportDatabaseCopy(any()) }.invokes { path ->
+                // Create a dummy database export file
+                fakeFileSystem.sink((path as String).toPath()).buffer().use {
+                    it.writeUtf8("exported crypto database")
+                }
+            }
         }
 
         suspend fun withDefaultPassphrases() = apply {
@@ -172,7 +198,9 @@ class BackupCryptoStateUseCaseTest {
                 rootPathsProvider = rootPathsProvider,
                 kaliumFileSystem = fakeFileSystem,
                 kaliumConfigs = kaliumConfigs,
-                securityHelper = securityHelper
+                securityHelper = securityHelper,
+                eventRepository = eventRepository,
+                mlsClientProvider = mlsClientProvider
             )
     }
 }

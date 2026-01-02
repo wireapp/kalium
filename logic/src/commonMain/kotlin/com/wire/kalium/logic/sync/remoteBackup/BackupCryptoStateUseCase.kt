@@ -23,10 +23,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -92,7 +95,8 @@ internal class BackupCryptoStateUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val kaliumConfigs: KaliumConfigs,
     private val securityHelper: com.wire.kalium.logic.util.SecurityHelper,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    private val mlsClientProvider: MLSClientProvider
 ) : BackupCryptoStateUseCase {
 
     private val logger = kaliumLogger.withTextTag("BackupCryptoState")
@@ -176,21 +180,50 @@ internal class BackupCryptoStateUseCaseImpl(
         val proteusPath = rootPathsProvider.rootProteusPath(selfUserId).toPath()
         val mlsPath = rootPathsProvider.rootMLSPath(selfUserId).toPath()
 
-        // Collect all files from both directories
+        // Collect exported database files
         val filesToZip = mutableListOf<Pair<Source, String>>()
 
-        // Add Proteus files with "proteus/" prefix
-        if (kaliumFileSystem.exists(proteusPath)) {
-            collectFilesRecursively(proteusPath, "proteus", filesToZip)
+        // Export MLS database copy
+        if (kaliumFileSystem.exists(mlsPath)) {
+            val mlsExportPath = kaliumFileSystem.rootCachePath / "mls_export.db"
+            // Get CoreCrypto instance for MLS
+            val mlsCoreCrypto = mlsClientProvider.getCoreCrypto().getOrElse {
+                logger.e("Failed to get MLS CoreCrypto instance: $it")
+                return Either.Left(it)
+            }
+            try {
+                mlsCoreCrypto.exportDatabaseCopy(mlsExportPath.toString())
+                val mlsSource = kaliumFileSystem.source(mlsExportPath)
+                filesToZip.add(mlsSource to "mls/mls.db")
+                logger.d("Exported MLS database")
+            } catch (e: Exception) {
+                logger.e("Failed to export MLS database: ${e.message}", e)
+                return Either.Left(CoreFailure.Unknown(e))
+            }
         }
 
-        // Add MLS files with "mls/" prefix
-        if (kaliumFileSystem.exists(mlsPath)) {
-            collectFilesRecursively(mlsPath, "mls", filesToZip)
+        // Export Proteus database copy
+        if (kaliumFileSystem.exists(proteusPath)) {
+            val proteusExportPath = kaliumFileSystem.rootCachePath / "proteus_export.db"
+            try {
+                // Create a temporary CoreCryptoCentral instance for Proteus export
+                val proteusDbSecret = securityHelper.proteusDBSecret(selfUserId, proteusPath.toString())
+                val proteusCoreCrypto = com.wire.kalium.cryptography.coreCryptoCentral(
+                    rootDir = proteusPath.toString(),
+                    passphrase = proteusDbSecret.passphrase
+                )
+                proteusCoreCrypto.exportDatabaseCopy(proteusExportPath.toString())
+                val proteusSource = kaliumFileSystem.source(proteusExportPath)
+                filesToZip.add(proteusSource to "proteus/proteus.db")
+                logger.d("Exported Proteus database")
+            } catch (e: Exception) {
+                logger.e("Failed to export Proteus database: ${e.message}", e)
+                return Either.Left(CoreFailure.Unknown(e))
+            }
         }
 
         if (filesToZip.isEmpty()) {
-            logger.w("No crypto files found to backup")
+            logger.w("No crypto databases found to backup")
             return Either.Left(CoreFailure.Unknown(IllegalStateException("No crypto data to backup")))
         }
 
@@ -236,48 +269,21 @@ internal class BackupCryptoStateUseCaseImpl(
         return kaliumFileSystem.sink(outputPath).use { sink ->
             createCompressedFile(filesToZip, sink).map { size ->
                 logger.i("Created crypto state zip: $size bytes")
+                // Clean up the temporary exported databases
+                try {
+                    val mlsExportPath = kaliumFileSystem.rootCachePath / "mls_export.db"
+                    if (kaliumFileSystem.exists(mlsExportPath)) {
+                        kaliumFileSystem.delete(mlsExportPath)
+                    }
+                    val proteusExportPath = kaliumFileSystem.rootCachePath / "proteus_export.db"
+                    if (kaliumFileSystem.exists(proteusExportPath)) {
+                        kaliumFileSystem.delete(proteusExportPath)
+                    }
+                } catch (e: Exception) {
+                    logger.w("Failed to cleanup exported databases: ${e.message}")
+                }
                 outputPath
             }
-        }
-    }
-
-    private suspend fun collectFilesRecursively(
-        directory: Path,
-        prefix: String,
-        output: MutableList<Pair<Source, String>>
-    ) {
-        try {
-            // Use kaliumFileSystem.listDirectories which actually lists all entries (despite the name)
-            val entries = kaliumFileSystem.listDirectories(directory)
-
-            entries.forEach { entry ->
-                val fileName = entry.name
-
-                // Try to determine if it's a directory by attempting to list its contents
-                val isDirectory = try {
-                    kaliumFileSystem.listDirectories(entry)
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-
-                if (!isDirectory) {
-                    // It's a file - add it to output
-                    try {
-                        val source = kaliumFileSystem.source(entry)
-                        val relativeName = "$prefix/$fileName"
-                        output.add(source to relativeName)
-                        logger.d("Collected file: $relativeName")
-                    } catch (e: Exception) {
-                        logger.w("Failed to read file $entry: ${e.message}")
-                    }
-                } else {
-                    // It's a directory - recurse into it
-                    collectFilesRecursively(entry, "$prefix/$fileName", output)
-                }
-            }
-        } catch (e: Exception) {
-            logger.w("Failed to collect files from $directory: ${e.message}")
         }
     }
 

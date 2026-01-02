@@ -111,3 +111,5 @@ libs/
 
 # kotlin files generated from proto
 generated/
+darwin-aarch64
+linux-x86-64

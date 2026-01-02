@@ -57,6 +57,13 @@ interface BackupStateVisibilityCoordinator : EventProcessingCallback {
      * Schedules a debounced backup (based on cryptoStateBackupInterval config), cancelling any existing debounce timer.
      */
     override fun onEventProcessed()
+
+    /**
+     * Sets the hash of the last uploaded/restored crypto state backup.
+     * This is used to avoid re-uploading the same backup.
+     * @param hash The SHA-256 hash (hex encoded) of the backup
+     */
+    fun setLastUploadedHash(hash: String)
 }
 
 internal class BackupStateVisibilityCoordinatorImpl(
@@ -109,6 +116,11 @@ internal class BackupStateVisibilityCoordinatorImpl(
 
         // Schedule debounced backup after processing any event
         scheduleDebouncedBackup()
+    }
+
+    override fun setLastUploadedHash(hash: String) {
+        logger.d("Setting last uploaded hash: ${hash.take(8)}...")
+        lastUploadedHash = hash
     }
 
     private fun scheduleDebouncedBackup() {
