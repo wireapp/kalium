@@ -74,7 +74,7 @@ class UseCaseRulesTest {
             }
     }
 
-    @Ignore
+    @Ignore("Ignored for now, needs fine tune and violations fixed which are quite many currently for this scope")
     @Test
     fun everyUseCaseClassHasTests() {
         Konsist
