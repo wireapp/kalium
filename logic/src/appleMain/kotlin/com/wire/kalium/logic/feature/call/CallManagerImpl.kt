@@ -93,6 +93,10 @@ internal class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
+    override suspend fun setBackground(background: Boolean) {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun cancelJobs() {
         TODO("Not yet implemented")
     }
