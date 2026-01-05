@@ -144,12 +144,12 @@ tasks.register("runAllUnitTests") {
     description = "Runs all Unit Tests."
 
     rootProject.subprojects {
-        if (tasks.findByName("testDebugUnitTest") != null) {
-            dependsOn(":$name:testDebugUnitTest")
+        tasks.findByName("testDebugUnitTest")?.let {
+            dependsOn(it)
         }
         if (name != "cryptography") {
-            if (tasks.findByName("jvmTest") != null) {
-                dependsOn(":$name:jvmTest")
+            tasks.findByName("jvmTest")?.let {
+                dependsOn(it)
             }
         }
     }
