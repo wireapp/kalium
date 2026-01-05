@@ -25,6 +25,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
 public interface GetCellFileUseCase {
+    /**
+     * Use case to get a [com.wire.kalium.cells.domain.model.Node] from cells by its asset ID.
+     * @param assetId The unique asset identifier of the file.
+     * @return the result of the get file operation.
+     */
     public suspend operator fun invoke(assetId: String): Either<CoreFailure, Node.File>
 }
 

@@ -39,7 +39,7 @@ internal class GetConversationUseCase(
         internal data class Failure(val storageFailure: StorageFailure) : Result()
     }
 
-    internal suspend operator fun invoke(conversationId: QualifiedID): Flow<Result> {
+    suspend operator fun invoke(conversationId: QualifiedID): Flow<Result> {
         return conversationRepository.observeConversationById(conversationId)
             .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
     }
