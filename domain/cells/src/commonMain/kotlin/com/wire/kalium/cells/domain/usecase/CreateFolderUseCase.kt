@@ -23,6 +23,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
 public interface CreateFolderUseCase {
+    /**
+     * Use case to create a folder [com.wire.kalium.cells.domain.model.Node] at the specified path.
+     * @param path The path where the folder should be created.
+     * @return the result of the create folder operation.
+     */
     public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
 }
 
