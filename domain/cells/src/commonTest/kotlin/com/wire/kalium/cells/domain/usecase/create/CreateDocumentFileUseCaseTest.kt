@@ -32,7 +32,7 @@ import kotlin.test.assertEquals
 class CreateDocumentFileUseCaseTest {
 
     @Test
-    fun `given path, when invoke is called, then it calls repository with correct parameters`() = runTest {
+    fun given_pathWhen_invoke_is_calledThen_it_calls_repository_with_correct_parameters() = runTest {
         // Given
         val path = "some/document/path"
         val (arrangement, useCase) = Arrangement()
@@ -53,7 +53,7 @@ class CreateDocumentFileUseCaseTest {
     }
 
     @Test
-    fun `given failure from repository, when invoke is called, then it returns failure`() = runTest {
+    fun given_failure_from_repositoryWhen_invoke_isCalledThen_it_returns_failure() = runTest {
         // Given
         val path = "some/document/path"
         val expectedFailure = NetworkFailure.FeatureNotSupported
