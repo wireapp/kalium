@@ -17,7 +17,4 @@
  */
 package com.wire.kalium.persistence.util
 
-/**
- * Flag to indicate whether the app is running in debug mode
- */
-expect val isDebug: Boolean
+actual val isDebug: Boolean = true
