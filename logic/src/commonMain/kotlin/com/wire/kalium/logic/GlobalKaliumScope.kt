@@ -57,6 +57,7 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
+import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
@@ -142,8 +143,14 @@ public class GlobalKaliumScope internal constructor(
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
     public val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
-    public val observeValidAccounts: ObserveValidAccountsUseCase
-        get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
+    public val observeValidAccounts: ObserveValidAccountsUseCase by lazy {
+        ObserveValidAccountsUseCaseImpl(
+            sessionRepository,
+            userSessionScopeProvider.value
+        )
+    }
+
+    public val observeAllValidSessionsFlow: ObserveSessionsUseCase by lazy { ObserveSessionsUseCase(sessionRepository) }
 
     public val session: SessionScope get() = SessionScope(sessionRepository)
     public val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
