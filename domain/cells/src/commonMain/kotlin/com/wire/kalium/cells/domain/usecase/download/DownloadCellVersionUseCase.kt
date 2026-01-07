@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
+package com.wire.kalium.cells.domain.usecase.download
 
 import com.wire.kalium.cells.data.FileDownloader
 import com.wire.kalium.common.error.CoreFailure
