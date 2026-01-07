@@ -15,13 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
+package com.wire.kalium.cells.domain.usecase.create
 
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 
+/**
+ * Create a folder in the wire cell server.
+ */
 public interface CreateFolderUseCase {
     /**
      * Use case to create a folder [com.wire.kalium.cells.domain.model.Node] at the specified path.
