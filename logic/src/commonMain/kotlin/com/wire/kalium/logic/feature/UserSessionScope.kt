@@ -1882,7 +1882,7 @@ public class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
-    public val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
+    internal val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
     private val updateSelfClientCapabilityToConsumableNotifications by lazy {
