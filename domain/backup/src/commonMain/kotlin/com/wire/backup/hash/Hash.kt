@@ -20,7 +20,7 @@ package com.wire.backup.hash
 import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.wire.backup.data.BackupQualifiedId
-import com.wire.backup.encryption.initializeLibSodiumIfNeeded
+import com.wire.kalium.cryptography.LibsodiumInitializer.initializeLibsodiumIfNeeded
 
 internal const val USER_ID_HASH_SIZE = 32
 
@@ -36,7 +36,7 @@ internal suspend fun hashUserId(
     memoryLimit: Int,
     opsLimit: ULong
 ): UByteArray {
-    initializeLibSodiumIfNeeded()
+    initializeLibsodiumIfNeeded()
     return PasswordHash.pwhash(
         USER_ID_HASH_SIZE,
         qualifiedUserId.toString(),

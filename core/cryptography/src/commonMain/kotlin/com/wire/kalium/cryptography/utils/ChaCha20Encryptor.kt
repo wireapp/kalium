@@ -23,10 +23,10 @@ import com.ionspin.kotlin.crypto.secretstream.SecretStreamCorruptedOrTamperedDat
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.LibsodiumInitializer.initializeLibsodiumIfNeeded
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.kaliumLogger
-import com.wire.kalium.cryptography.utils.LibsodiumInitializer.initializeLibsodiumIfNeeded
 import okio.Buffer
 import okio.IOException
 import okio.Sink
