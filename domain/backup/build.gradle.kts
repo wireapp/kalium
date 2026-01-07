@@ -69,6 +69,7 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
+                implementation(projects.core.libsodium)
                 implementation(projects.data.protobuf)
                 implementation(libs.pbandk.runtime.common)
 
@@ -77,9 +78,6 @@ kotlin {
                 implementation(libs.ktxSerialization)
 
                 implementation(libs.okio.core)
-
-                // Libsodium
-                implementation(libs.libsodiumBindingsMP)
             }
         }
         val commonTest by getting {
