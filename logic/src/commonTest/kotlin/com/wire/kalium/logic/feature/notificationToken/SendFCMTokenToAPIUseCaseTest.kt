@@ -33,6 +33,7 @@ import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class SendFCMTokenToAPIUseCaseTest {
     @Test
@@ -58,8 +59,8 @@ class SendFCMTokenToAPIUseCaseTest {
             .arrange()
 
         val failReason = useCase.invoke()
-        assertEquals(SendFCMTokenResult.Failure(SendFCMTokenError(SendFCMTokenError.Reason.CANT_GET_CLIENT_ID)), failReason)
-
+        assertIs<SendFCMTokenResult.Failure>(failReason)
+        assertEquals(SendFCMTokenError.Reason.CANT_GET_CLIENT_ID, failReason.error.status)
     }
 
     @Test
@@ -71,7 +72,8 @@ class SendFCMTokenToAPIUseCaseTest {
             .arrange()
 
         val failReason = useCase.invoke()
-        assertEquals(SendFCMTokenResult.Failure(SendFCMTokenError(SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN)), failReason)
+        assertIs<SendFCMTokenResult.Failure>(failReason)
+        assertEquals(SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN, failReason.error.status)
     }
 
     @Test
@@ -84,9 +86,9 @@ class SendFCMTokenToAPIUseCaseTest {
             .arrange()
 
         val failReason = useCase.invoke()
-        assertEquals(SendFCMTokenResult.Failure(SendFCMTokenError(SendFCMTokenError.Reason.CANT_REGISTER_TOKEN)), failReason)
+        assertIs<SendFCMTokenResult.Failure>(failReason)
+        assertEquals(SendFCMTokenError.Reason.CANT_REGISTER_TOKEN, failReason.error.status)
     }
-
 
     private class Arrangement {
 

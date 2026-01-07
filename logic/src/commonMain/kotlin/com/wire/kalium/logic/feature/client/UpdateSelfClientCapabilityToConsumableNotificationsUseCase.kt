@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logger.KaliumLogger
@@ -32,6 +33,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
+import com.wire.kalium.logic.sync.SyncRequestResult
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -50,7 +52,7 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
     private val clientRemoteRepository: ClientRemoteRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val selfServerConfig: SelfServerConfigUseCase,
-    private val syncRequester: suspend () -> Either<CoreFailure, Unit>,
+    private val syncRequester: suspend () -> SyncRequestResult,
     private val slowSyncRepository: SlowSyncRepository,
     private val logger: KaliumLogger
 ) : UpdateSelfClientCapabilityToConsumableNotificationsUseCase {
@@ -96,12 +98,12 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
                 clientID = clientId.value
             ).flatMap {
                 when (val incrementalSyncResult = syncRequester()) {
-                    is Either.Left -> {
+                    is SyncRequestResult.Failure -> {
                         logger.w("Error requesting sync after updating client capabilities, will retry later: $incrementalSyncResult")
-                        incrementalSyncResult
+                        incrementalSyncResult.left()
                     }
 
-                    is Either.Right -> {
+                    SyncRequestResult.Success -> {
                         logger.d("Successfully requested sync after updating client capabilities")
                         finishClientCapabilityUpgrade()
                     }
@@ -120,7 +122,18 @@ internal class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl in
         clientRepository.setShouldUpdateClientConsumableNotificationsCapability(false)
         clientRepository.persistClientHasConsumableNotifications(true)
         slowSyncRepository.clearLastSlowSyncCompletionInstant()
-        return syncRequester()
+        val result = syncRequester()
+        when (result) {
+            is SyncRequestResult.Failure -> {
+                logger.w("Error requesting sync after finishing client capability upgrade, will retry later: $result")
+                return result.error.left()
+            }
+
+            SyncRequestResult.Success -> {
+                logger.d("Successfully finished client capability upgrade and requested sync")
+                return Unit.right()
+            }
+        }
     }
 }
 
