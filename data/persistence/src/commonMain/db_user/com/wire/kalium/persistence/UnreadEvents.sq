@@ -61,6 +61,7 @@ SELECT EXISTS(
 
 -- Populate unread events for messages newer than the conversation's last read date
 -- This is used when restoring messages from backup
+-- Only includes user-generated content types, excludes system messages
 populateUnreadEventsForConversation:
 INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
 SELECT
@@ -76,4 +77,6 @@ FROM Message m
 INNER JOIN Conversation c ON m.conversation_id = c.qualified_id
 WHERE m.conversation_id = ?
   AND m.sender_user_id != ?
-  AND m.creation_date > c.last_read_date;
+  AND m.creation_date > c.last_read_date
+  AND m.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'RESTRICTED_ASSET',
+                         'COMPOSITE', 'LOCATION', 'MULTIPART', 'FAILED_DECRYPTION');
