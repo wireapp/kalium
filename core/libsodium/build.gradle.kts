@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+plugins {
+    id(libs.plugins.kalium.library.get().pluginId)
+}
 
-package com.wire.kalium.cryptography.utils
+kaliumLibrary {
+    multiplatform { }
+}
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
-
-object LibsodiumInitializer {
-    internal suspend fun initializeLibsodiumIfNeeded() {
-        if (!LibsodiumInitializer.isInitialized()) {
-            LibsodiumInitializer.initialize()
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                // coroutines
+                implementation(libs.coroutines.core)
+                // Libsodium
+                api(libs.libsodiumBindingsMP)
+            }
         }
     }
 }

@@ -55,6 +55,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(projects.core.libsodium)
                 api(projects.core.logger)
                 // coroutines
                 implementation(libs.coroutines.core)
@@ -65,9 +66,6 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
-
-                // Libsodium
-                implementation(libs.libsodiumBindingsMP)
 
                 if (useUnifiedCoreCrypto) {
                     implementation(libs.coreCryptoKmp)

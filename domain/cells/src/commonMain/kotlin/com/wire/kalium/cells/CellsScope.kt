@@ -39,16 +39,10 @@ import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.CreateFolderUseCase
-import com.wire.kalium.cells.domain.usecase.CreateFolderUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
-import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.DownloadCellVersionUseCase
-import com.wire.kalium.cells.domain.usecase.DownloadCellVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
@@ -89,6 +83,18 @@ import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateFolderUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateFolderUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreatePresentationFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreatePresentationFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateSpreadsheetFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateSpreadsheetFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellVersionUseCase
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
@@ -131,7 +137,7 @@ public class CellsScope(
     private val dao: CellScopeDao,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
-    ) : CoroutineScope {
+) : CoroutineScope {
 
     public data class CellScopeDao(
         val attachmentDraftDao: MessageAttachmentDraftDao,
@@ -254,6 +260,15 @@ public class CellsScope(
 
     public val createFolderUseCase: CreateFolderUseCase by lazy {
         CreateFolderUseCaseImpl(cellsRepository)
+    }
+    public val createSpreadsheetFileUseCase: CreateSpreadsheetFileUseCase by lazy {
+        CreateSpreadsheetFileUseCaseImpl(cellsRepository)
+    }
+    public val createPresentationFileUseCase: CreatePresentationFileUseCase by lazy {
+        CreatePresentationFileUseCaseImpl(cellsRepository)
+    }
+    public val createDocumentFileUseCase: CreateDocumentFileUseCase by lazy {
+        CreateDocumentFileUseCaseImpl(cellsRepository)
     }
     public val moveNodeUseCase: MoveNodeUseCase by lazy {
         MoveNodeUseCaseImpl(cellsRepository)
