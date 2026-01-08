@@ -90,7 +90,7 @@ internal class OnSFTRequest(
     }
 
     private suspend fun onSFTResponse(data: ByteArray?, context: Pointer?) {
-        callingLogger.i("[OnSFTRequest] -> Sending SFT Response")
+        callingLogger.i("[OnSFTRequest] -> Sending SFT Response (${data?.size} bytes)")
         val responseData = data ?: byteArrayOf()
         calling.wcall_sft_resp(
             inst = handle.await(),
