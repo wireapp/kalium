@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.util.DelicateKaliumApi
 

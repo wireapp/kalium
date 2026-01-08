@@ -42,7 +42,8 @@ internal class MarkConversationAsDeletedLocallyUseCaseImpl(
 
     override suspend fun invoke(conversationId: ConversationId): MarkConversationAsDeletedResult =
         conversationRepository.markConversationAsDeletedLocally(conversationId).fold(
-            { failure -> MarkConversationAsDeletedResult.Failure(failure) }, {
+            { failure -> MarkConversationAsDeletedResult.Failure(failure) },
+            {
                 MarkConversationAsDeletedResult.Success
             }
         )
