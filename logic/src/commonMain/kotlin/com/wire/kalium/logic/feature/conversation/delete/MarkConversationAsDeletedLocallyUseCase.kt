@@ -18,8 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
@@ -29,18 +28,22 @@ import com.wire.kalium.logic.data.id.ConversationId
  * To complete the local deletion, call [DeleteConversationUseCase], which can already be done asynchronously in the background.
  */
 public interface MarkConversationAsDeletedLocallyUseCase {
-    public suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(conversationId: ConversationId): MarkConversationAsDeletedResult
+}
 
-    public sealed class Result {
-        public data object Success : Result()
-        public data class Failure(val failure: CoreFailure) : Result()
-    }
+public sealed class MarkConversationAsDeletedResult {
+    public data object Success : MarkConversationAsDeletedResult()
+    public data class Failure(val failure: CoreFailure) : MarkConversationAsDeletedResult()
 }
 
 internal class MarkConversationAsDeletedLocallyUseCaseImpl(
     private val conversationRepository: ConversationRepository,
 ) : MarkConversationAsDeletedLocallyUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> =
-        conversationRepository.markConversationAsDeletedLocally(conversationId).map {}
+    override suspend fun invoke(conversationId: ConversationId): MarkConversationAsDeletedResult =
+        conversationRepository.markConversationAsDeletedLocally(conversationId).fold(
+            { failure -> MarkConversationAsDeletedResult.Failure(failure) }, {
+                MarkConversationAsDeletedResult.Success
+            }
+        )
 }
