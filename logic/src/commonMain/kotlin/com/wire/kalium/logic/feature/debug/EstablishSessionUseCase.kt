@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -59,7 +58,7 @@ internal class EstablishSessionUseCaseImpl(
             kaliumLogger.e("Failed to get establish session $it")
             EstablishSessionResult.Failure(it)
         }, {
-            kaliumLogger.d("Established session with ${userId.toLogString()} with ${clientId.value.obfuscateId()}")
+            kaliumLogger.d("Established session with ${userId.toLogString()} with ${clientId.toLogString()}")
             EstablishSessionResult.Success
         })
     }
