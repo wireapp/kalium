@@ -59,19 +59,38 @@ Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging plat
 ./gradlew aggregateTestResults              # Creates combined HTML report
 ```
 
-### iOS Framework Builds
+### iOS Builds
+
+See [docs/IOS_BUILD.md](docs/IOS_BUILD.md) for comprehensive iOS build documentation.
+
+**Requirements:** macOS Apple Silicon (Intel not supported), Xcode with command-line tools
+
+**Supported targets:**
+- `iosArm64` - Physical iOS devices (iPhone, iPad)
+- `iosSimulatorArm64` - iOS Simulator on Apple Silicon Macs
+- `macosArm64` - macOS on Apple Silicon
 
 ```bash
-# Build for iOS Simulator (Apple Silicon)
-./gradlew :logic:linkDebugFrameworkIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+# Build libraries
+./gradlew :logic:compileKotlinIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :logic:compileKotlinIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
 
-# Build for physical iOS devices
+# Build debug frameworks
 ./gradlew :logic:linkDebugFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :logic:linkDebugFrameworkIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
 
 # Build release frameworks
 ./gradlew :logic:linkReleaseFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
 ./gradlew :logic:linkReleaseFrameworkIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+
+# Create XCFramework for distribution
+xcodebuild -create-xcframework \
+    -framework logic/build/bin/iosArm64/releaseFramework/logic.framework \
+    -framework logic/build/bin/iosSimulatorArm64/releaseFramework/logic.framework \
+    -output logic/build/logic.xcframework
 ```
+
+Framework output location: `logic/build/bin/<target>/debugFramework/logic.framework`
 
 **Note:** iOS and JS builds require `USE_UNIFIED_CORE_CRYPTO=true`. Either set it in gradle.properties or pass `-PUSE_UNIFIED_CORE_CRYPTO=true` on the command line.
 
