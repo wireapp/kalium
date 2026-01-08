@@ -17,6 +17,6 @@
  */
 package com.wire.kalium.persistence.util
 
-import com.russhwolf.settings.BuildConfig
+import com.wire.kalium.persistence.BuildConfig
 
 actual val isDebug: Boolean = BuildConfig.DEBUG
