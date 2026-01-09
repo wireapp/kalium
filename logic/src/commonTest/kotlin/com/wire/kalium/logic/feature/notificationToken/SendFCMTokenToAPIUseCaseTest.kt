@@ -20,13 +20,12 @@ package com.wire.kalium.logic.feature.notificationToken
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.notification.NotificationToken
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.fold
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -34,7 +33,7 @@ import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
+import kotlin.test.assertIs
 
 class SendFCMTokenToAPIUseCaseTest {
     @Test
@@ -48,7 +47,7 @@ class SendFCMTokenToAPIUseCaseTest {
                 .arrange()
 
         val result = useCase.invoke()
-        assertEquals(Either.Right(Unit), result)
+        assertEquals(SendFCMTokenResult.Success, result)
     }
 
     @Test
@@ -59,12 +58,9 @@ class SendFCMTokenToAPIUseCaseTest {
             .withNotificationToken()
             .arrange()
 
-        val failReason = useCase.invoke().fold(
-            { it.status },
-            { fail("Expected failure, but got success") }
-        )
-        assertEquals(SendFCMTokenError.Reason.CANT_GET_CLIENT_ID, failReason)
-
+        val failReason = useCase.invoke()
+        assertIs<SendFCMTokenResult.Failure>(failReason)
+        assertEquals(SendFCMTokenError.Reason.CANT_GET_CLIENT_ID, failReason.error.status)
     }
 
     @Test
@@ -75,11 +71,9 @@ class SendFCMTokenToAPIUseCaseTest {
             .withNotificationTokenFailure()
             .arrange()
 
-        val failReason = useCase.invoke().fold(
-            { it.status },
-            { fail("Expected failure, but got success") }
-        )
-        assertEquals(SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN, failReason)
+        val failReason = useCase.invoke()
+        assertIs<SendFCMTokenResult.Failure>(failReason)
+        assertEquals(SendFCMTokenError.Reason.CANT_GET_NOTIFICATION_TOKEN, failReason.error.status)
     }
 
     @Test
@@ -91,13 +85,10 @@ class SendFCMTokenToAPIUseCaseTest {
             .withClientRepositoryRegisterTokenFailure()
             .arrange()
 
-        val failReason = useCase.invoke().fold(
-            { it.status },
-            { fail("Expected failure, but got success") }
-        )
-        assertEquals(SendFCMTokenError.Reason.CANT_REGISTER_TOKEN, failReason)
+        val failReason = useCase.invoke()
+        assertIs<SendFCMTokenResult.Failure>(failReason)
+        assertEquals(SendFCMTokenError.Reason.CANT_REGISTER_TOKEN, failReason.error.status)
     }
-
 
     private class Arrangement {
 

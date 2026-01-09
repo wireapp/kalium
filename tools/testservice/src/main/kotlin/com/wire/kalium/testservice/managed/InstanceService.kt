@@ -41,6 +41,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientParam
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.SyncRequestResult
 import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
@@ -236,13 +237,13 @@ class InstanceService(
                 if (client.needsToRegisterClient()) {
                     when (
                         val result = client.getOrRegister(
-                        RegisterClientParam(
-                            password = instanceRequest.password,
-                            capabilities = emptyList(),
-                            clientType = ClientType.Permanent,
-                            model = instanceRequest.deviceName
+                            RegisterClientParam(
+                                password = instanceRequest.password,
+                                capabilities = emptyList(),
+                                clientType = ClientType.Permanent,
+                                model = instanceRequest.deviceName
+                            )
                         )
-                    )
                     ) {
                         is RegisterClientResult.Success -> {
                             val clientId = result.client.id.value
@@ -266,8 +267,9 @@ class InstanceService(
 
                             syncExecutor.request {
                                 keepSyncAlwaysOn()
-                                waitUntilLiveOrFailure().onFailure {
-                                    log.error("Instance $instanceId: Sync failed with $it")
+                                val result = waitUntilLiveOrFailure()
+                                if (result is SyncRequestResult.Failure) {
+                                    log.error("Instance $instanceId: Sync failed with ${result.error}")
                                 }
                             }
                             return@runBlocking instance

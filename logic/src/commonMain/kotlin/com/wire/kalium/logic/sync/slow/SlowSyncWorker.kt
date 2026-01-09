@@ -43,6 +43,7 @@ import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
+import com.wire.kalium.logic.feature.user.toEither
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import io.mockative.Mockable
@@ -107,7 +108,7 @@ internal class SlowSyncWorkerImpl(
             }
                 .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
                 .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
-                .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
+                .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().toEither().map { } }
                 .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
                 .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)

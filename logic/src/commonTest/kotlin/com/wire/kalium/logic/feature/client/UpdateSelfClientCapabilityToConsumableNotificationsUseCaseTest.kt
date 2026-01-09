@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
@@ -34,6 +33,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import com.wire.kalium.logic.framework.TestClient.CLIENT
+import com.wire.kalium.logic.sync.SyncRequestResult
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -135,7 +135,8 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
                 .withShouldUpdateClientConsumableNotificationsCapabilityResult(false)
                 .withPersistClientHasConsumableNotificationsResult(true)
                 .withClearLastSlowSyncCompletionInstantResult()
-                .arrange(withSyncRequester = { CoreFailure.Unknown(RuntimeException("Failure")).left() })
+                .arrange { SyncRequestResult.Failure(CoreFailure.Unknown(RuntimeException("Failure"))) }
+
 
             useCase.invoke()
 
@@ -230,7 +231,7 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
                 .returns(Unit)
         }
 
-        fun arrange(withSyncRequester: suspend () -> Either<CoreFailure, Unit> = { Unit.right() }) =
+        fun arrange(withSyncRequester: suspend () -> SyncRequestResult = { SyncRequestResult.Success }) =
             this@Arrangement to UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
                 selfClientIdProvider = selfClientIdProvider,
                 clientRepository = clientRepository,

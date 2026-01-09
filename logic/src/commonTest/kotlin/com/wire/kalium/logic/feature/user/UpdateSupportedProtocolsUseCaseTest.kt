@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -33,11 +35,8 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Ar
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -49,6 +48,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class UpdateSupportedProtocolsUseCaseTest {
 
@@ -59,8 +59,9 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withIsMLSSupported(false)
             }
 
-        useCase.invoke().shouldSucceed()
+        val result = useCase.invoke()
 
+        assertTrue(result is UpdateSelfUserSupportedProtocolsResult.NotUpdated)
         coVerify {
             arrangement.userRepository.updateSupportedProtocols(any())
         }.wasNotInvoked()
@@ -306,8 +307,9 @@ class UpdateSupportedProtocolsUseCaseTest {
                 withUpdateSupportedProtocolsSuccessful()
             }
 
-        useCase.invoke().shouldSucceed()
+        val result = useCase.invoke()
 
+        assertTrue(result is UpdateSelfUserSupportedProtocolsResult.NotUpdated)
         coVerify {
             arrangement.userRepository.updateSupportedProtocols(any())
         }.wasNotInvoked()
@@ -334,12 +336,16 @@ class UpdateSupportedProtocolsUseCaseTest {
         useCase()
 
         coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) && it.contains(SupportedProtocol.PROTEUS) })
+            arrangement.userRepository.updateSupportedProtocols(matches {
+                it.contains(SupportedProtocol.MLS) && it.contains(
+                    SupportedProtocol.PROTEUS
+                )
+            })
         }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
-                val clientRepository = mock(ClientRepository::class)
+        val clientRepository = mock(ClientRepository::class)
         val userRepository = mock(UserRepository::class)
         val userConfigRepository = mock(UserConfigRepository::class)
         val featureSupport = mock(FeatureSupport::class)
