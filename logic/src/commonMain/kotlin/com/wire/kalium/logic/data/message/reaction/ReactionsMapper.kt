@@ -29,7 +29,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.MessageDetailsReactions
 import com.wire.kalium.persistence.dao.reaction.MessageReactionEntity
 
-interface ReactionsMapper {
+internal interface ReactionsMapper {
     fun fromDAOToEntity(messageReaction: MessageDetailsReactions): MessageReactionEntity
     fun fromEntityToModel(selfUserId: UserId, messageReactionEntity: MessageReactionEntity): MessageReaction
 }

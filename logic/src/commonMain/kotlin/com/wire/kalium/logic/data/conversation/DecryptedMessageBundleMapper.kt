@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toModel
 
-fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID): DecryptedMessageBundle =
+internal fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID): DecryptedMessageBundle =
     DecryptedMessageBundle(
         groupID,
         message?.let { message ->

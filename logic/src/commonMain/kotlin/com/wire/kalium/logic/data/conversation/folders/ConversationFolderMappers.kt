@@ -30,14 +30,14 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEnt
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.conversation.folder.FolderWithConversationsEntity
 
-fun LabelDTO.toFolder(selfDomain: String) = FolderWithConversations(
+internal fun LabelDTO.toFolder(selfDomain: String) = FolderWithConversations(
     conversationIdList = qualifiedConversations?.map { it.toModel() } ?: conversations.map { QualifiedID(it, selfDomain) },
     id = id,
     name = name,
     type = type.toFolderType()
 )
 
-fun FolderWithConversations.toLabel() = LabelDTO(
+internal fun FolderWithConversations.toLabel() = LabelDTO(
     id = id,
     name = name,
     qualifiedConversations = conversationIdList.map { it.toApi() },
@@ -45,47 +45,47 @@ fun FolderWithConversations.toLabel() = LabelDTO(
     type = type.toLabel()
 )
 
-fun LabelTypeDTO.toFolderType() = when (this) {
+internal fun LabelTypeDTO.toFolderType() = when (this) {
     LabelTypeDTO.USER -> FolderType.USER
     LabelTypeDTO.FAVORITE -> FolderType.FAVORITE
 }
 
-fun FolderType.toLabel() = when (this) {
+internal fun FolderType.toLabel() = when (this) {
     FolderType.USER -> LabelTypeDTO.USER
     FolderType.FAVORITE -> LabelTypeDTO.FAVORITE
 }
 
-fun ConversationFolderEntity.toModel() = ConversationFolder(
+internal fun ConversationFolderEntity.toModel() = ConversationFolder(
     id = id,
     name = name,
     type = type.toModel()
 )
 
-fun FolderWithConversationsEntity.toModel() = FolderWithConversations(
+internal fun FolderWithConversationsEntity.toModel() = FolderWithConversations(
     id = id,
     name = name,
     type = type.toModel(),
     conversationIdList = conversationIdList.map { it.toModel() }
 )
 
-fun FolderWithConversations.toDao() = FolderWithConversationsEntity(
+internal fun FolderWithConversations.toDao() = FolderWithConversationsEntity(
     id = id,
     name = name,
     type = type.toDao(),
     conversationIdList = conversationIdList.map { it.toDao() }
 )
 
-fun FolderType.toDao() = when (this) {
+internal fun FolderType.toDao() = when (this) {
     FolderType.USER -> ConversationFolderTypeEntity.USER
     FolderType.FAVORITE -> ConversationFolderTypeEntity.FAVORITE
 }
 
-fun ConversationFolderTypeEntity.toModel(): FolderType = when (this) {
+internal fun ConversationFolderTypeEntity.toModel(): FolderType = when (this) {
     ConversationFolderTypeEntity.USER -> FolderType.USER
     ConversationFolderTypeEntity.FAVORITE -> FolderType.FAVORITE
 }
 
-fun ConversationFolder.toDao() = ConversationFolderEntity(
+internal fun ConversationFolder.toDao() = ConversationFolderEntity(
     id = id,
     name = name,
     type = type.toDao()

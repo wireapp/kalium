@@ -37,16 +37,16 @@ import kotlinx.datetime.Instant
  * This class is useful for performance analysis and optimization by providing a simple way to track
  * execution times for different parts of code.
  */
-class TimeLogger(private val processName: String) {
+internal class TimeLogger(private val processName: String) {
 
     private lateinit var startTime: Instant
-    fun start() {
+    internal fun start() {
         println("$processName starting")
         startTime = Clock.System.now()
 
     }
 
-    fun finish() {
+    internal fun finish() {
         val endTime = Clock.System.now()
         val duration = endTime - startTime
         println("$processName finished after: ${duration.inWholeMilliseconds} milliseconds")

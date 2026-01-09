@@ -27,8 +27,8 @@ import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
  * Forces the usage of async notifications system.
  * This will register the client capability to consume async notifications.
  */
-interface StartUsingAsyncNotificationsUseCase {
-    suspend operator fun invoke(): StartUsingAsyncNotificationsResult
+public interface StartUsingAsyncNotificationsUseCase {
+    public suspend operator fun invoke(): StartUsingAsyncNotificationsResult
 }
 
 internal class StartUsingAsyncNotificationsUseCaseImpl(
@@ -53,7 +53,7 @@ internal class StartUsingAsyncNotificationsUseCaseImpl(
     }
 }
 
-sealed class StartUsingAsyncNotificationsResult {
-    data object Success : StartUsingAsyncNotificationsResult()
-    data class Failure(val coreFailure: CoreFailure) : StartUsingAsyncNotificationsResult()
+public sealed class StartUsingAsyncNotificationsResult {
+    public data object Success : StartUsingAsyncNotificationsResult()
+    public data class Failure(val coreFailure: CoreFailure) : StartUsingAsyncNotificationsResult()
 }

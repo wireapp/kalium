@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.call.CallManager
 
 @Suppress("EmptyFunctionBlock", "TooManyFunctions")
-class DummyCallManager : CallManager {
+internal class DummyCallManager : CallManager {
     override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {}
 
     override suspend fun startCall(
@@ -64,6 +64,8 @@ class DummyCallManager : CallManager {
     override suspend fun setTestPreviewActive(shouldEnable: Boolean) {}
 
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {}
+
+    override suspend fun setBackground(background: Boolean) {}
 
     override suspend fun cancelJobs() {}
 }

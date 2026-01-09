@@ -24,22 +24,22 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 
-data class NameAndHandle(
+internal data class NameAndHandle(
     val name: String?,
     val handle: String?
 ) {
-    companion object {
-        fun fromEntity(entity: NameAndHandleEntity) = NameAndHandle(entity.name, entity.handle)
+    internal companion object {
+        internal fun fromEntity(entity: NameAndHandleEntity) = NameAndHandle(entity.name, entity.handle)
     }
 }
 
-data class EpochChangesData(
+internal data class EpochChangesData(
     val conversationId: QualifiedID,
     val mlsVerificationStatus: Conversation.VerificationStatus,
     val members: Map<QualifiedID, NameAndHandle>
 ) {
-    companion object {
-        fun fromEntity(entity: EpochChangesDataEntity) = EpochChangesData(
+    internal companion object {
+        internal fun fromEntity(entity: EpochChangesDataEntity) = EpochChangesData(
             entity.conversationId.toModel(),
             entity.mlsVerificationStatus.toModel(),
             entity.members.map { (key, value) -> key.toModel() to NameAndHandle.fromEntity(value) }.toMap()

@@ -78,7 +78,7 @@ import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
 
 @Mockable
-interface EventRepository {
+internal interface EventRepository {
 
     /**
      * Performs an acknowledgment of the missed event after performing a slow sync.

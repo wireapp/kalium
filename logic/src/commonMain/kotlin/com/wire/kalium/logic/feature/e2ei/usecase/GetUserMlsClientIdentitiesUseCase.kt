@@ -30,11 +30,11 @@ import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
  * This use case is used to get all MLSClientIdentities of the user.
  * Returns Map<String, MLSClientIdentity> where key is value of [ClientId] and [MLSClientIdentity] is certificate itself
  */
-interface GetUserMlsClientIdentitiesUseCase {
-    suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity>
+public interface GetUserMlsClientIdentitiesUseCase {
+    public suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity>
 }
 
-class GetUserMlsClientIdentitiesUseCaseImpl internal constructor(
+internal class GetUserMlsClientIdentitiesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val isMlsEnabledUseCase: IsMLSEnabledUseCase,
     private val transactionProvider: CryptoTransactionProvider

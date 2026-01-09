@@ -41,12 +41,12 @@ import kotlinx.datetime.Clock
  * Orchestrates the migration from proteus to MLS.
  */
 @Mockable
-interface MLSMigrationManager {
+internal interface MLSMigrationManager {
     suspend operator fun invoke()
 }
 
 @Suppress("LongParameterList")
-class MLSMigrationManagerImpl internal constructor(
+internal class MLSMigrationManagerImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
     private val syncStateObserver: SyncStateObserver,
@@ -94,10 +94,10 @@ class MLSMigrationManagerImpl internal constructor(
         }
 }
 
-fun MLSMigrationModel.hasMigrationStarted(): Boolean {
+internal fun MLSMigrationModel.hasMigrationStarted(): Boolean {
     return status == Status.ENABLED && startTime?.let { Clock.System.now() > it } ?: false
 }
 
-fun MLSMigrationModel.hasMigrationEnded(): Boolean {
+internal fun MLSMigrationModel.hasMigrationEnded(): Boolean {
     return status == Status.ENABLED && endTime?.let { Clock.System.now() > it } ?: false
 }

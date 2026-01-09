@@ -27,6 +27,6 @@ import io.mockative.Mockable
  * This achieves that the client data is cleared and the user is logged out without losing content.
  */
 @Mockable
-interface ProteusMigrationRecoveryHandler {
+internal interface ProteusMigrationRecoveryHandler {
     suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }

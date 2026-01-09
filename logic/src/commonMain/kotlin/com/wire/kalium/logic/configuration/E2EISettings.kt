@@ -20,7 +20,7 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.persistence.config.E2EISettingsEntity
 import kotlinx.datetime.Instant
 
-data class E2EISettings(
+internal data class E2EISettings(
     val isRequired: Boolean,
     val discoverUrl: String?,
     val gracePeriodEnd: Instant?,
@@ -28,7 +28,7 @@ data class E2EISettings(
     val crlProxy: String?,
 ) {
 
-    fun toEntity() = E2EISettingsEntity(
+    internal fun toEntity() = E2EISettingsEntity(
         isRequired,
         discoverUrl,
         gracePeriodEnd?.toEpochMilliseconds(),
@@ -36,8 +36,8 @@ data class E2EISettings(
         crlProxy
     )
 
-    companion object {
-        fun fromEntity(entity: E2EISettingsEntity) = E2EISettings(
+    internal companion object {
+        internal fun fromEntity(entity: E2EISettingsEntity) = E2EISettings(
             entity.status,
             entity.discoverUrl,
             entity.gracePeriodEndMs?.let { Instant.fromEpochMilliseconds(it) },

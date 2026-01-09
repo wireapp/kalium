@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import kotlinx.datetime.Instant
 
-interface LocalNotificationMessageMapper {
+internal interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
     fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotification
     fun fromConversationEventToLocalNotification(
@@ -51,7 +51,7 @@ interface LocalNotificationMessageMapper {
     ): List<LocalNotification.Conversation>
 }
 
-class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
+internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
 
     override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =
         LocalNotificationMessageAuthor(author?.name ?: "", null)

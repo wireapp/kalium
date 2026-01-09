@@ -43,7 +43,7 @@ import kotlin.reflect.KClass
 import androidx.work.ListenableWorker.Result as AndroidResult
 import com.wire.kalium.logic.sync.Result as KaliumResult
 
-class WrapperWorker(
+public class WrapperWorker internal constructor(
     private val innerWorker: DefaultWorker,
     appContext: Context,
     params: WorkerParameters,
@@ -86,7 +86,7 @@ class WrapperWorker(
     }
 }
 
-class WrapperWorkerFactory(
+public class WrapperWorkerFactory(
     private val coreLogic: CoreLogic,
     private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
 ) : WorkerFactory() {

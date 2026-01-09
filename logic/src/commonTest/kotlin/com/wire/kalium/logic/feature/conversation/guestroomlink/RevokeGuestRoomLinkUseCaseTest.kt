@@ -31,7 +31,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-class RevokeGuestRoomLinkUseCaseTest {
+internal class RevokeGuestRoomLinkUseCaseTest {
 
     val conversationGroupRepository = mock(ConversationGroupRepository::class)
 

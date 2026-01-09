@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class FakeIncrementalSyncManager(
+internal class FakeIncrementalSyncManager(
     val fakeSyncFlow: MutableSharedFlow<IncrementalSyncStatus> = MutableStateFlow(IncrementalSyncStatus.Pending)
 ) : IncrementalSyncManager {
     override fun performSyncFlow(): Flow<IncrementalSyncStatus> = fakeSyncFlow

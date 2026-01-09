@@ -23,14 +23,14 @@ import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
 @Mockable
-interface ParticipantsFilter {
+internal interface ParticipantsFilter {
     fun otherParticipants(participants: List<Participant>, clientId: String): List<Participant>
     fun selfParticipant(participants: List<Participant>, userId: UserId, clientId: String): Participant
     fun participantsByCamera(participants: List<Participant>, isCameraOn: Boolean): List<Participant>
     fun participantsSharingScreen(participants: List<Participant>, isSharingScreen: Boolean): List<Participant>
 }
 
-class ParticipantsFilterImpl(val qualifiedIdMapper: QualifiedIdMapper) : ParticipantsFilter {
+internal class ParticipantsFilterImpl(val qualifiedIdMapper: QualifiedIdMapper) : ParticipantsFilter {
     override fun otherParticipants(participants: List<Participant>, clientId: String) = participants.filter {
         it.clientId != clientId
     }

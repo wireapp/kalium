@@ -40,7 +40,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 @Mockable
-interface StaleEpochVerifier {
+internal interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,

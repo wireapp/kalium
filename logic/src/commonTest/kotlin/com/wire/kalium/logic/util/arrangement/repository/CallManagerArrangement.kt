@@ -22,7 +22,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface CallManagerArrangement {
+internal interface CallManagerArrangement {
 
     val callManager: CallManager
 

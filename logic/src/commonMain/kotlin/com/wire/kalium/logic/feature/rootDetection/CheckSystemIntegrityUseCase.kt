@@ -36,11 +36,11 @@ import com.wire.kalium.common.logger.kaliumLogger
  * If `wipeOnRootedDevice` is true  all account data will be deleted when
  * this check fails.
  */
-interface CheckSystemIntegrityUseCase {
+internal interface CheckSystemIntegrityUseCase {
 
     sealed class Result {
-        data object Success : Result()
-        data object Failed : Result()
+        internal data object Success : Result()
+        internal data object Failed : Result()
     }
 
     suspend fun invoke(): Result

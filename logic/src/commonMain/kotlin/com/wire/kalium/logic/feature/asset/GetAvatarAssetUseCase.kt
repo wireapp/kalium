@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.fold
 import okio.Path
 
-interface GetAvatarAssetUseCase {
+public interface GetAvatarAssetUseCase {
     /**
      * Function that enables downloading a public asset by its asset-key, mostly used for avatar pictures
      * Internally, if the asset doesn't exist locally, this will download it first and then return it
@@ -34,7 +34,7 @@ interface GetAvatarAssetUseCase {
      * @param assetKey the asset identifier
      * @return PublicAssetResult with a [ByteArray] in case of success or [CoreFailure] on failure
      */
-    suspend operator fun invoke(assetKey: UserAssetId): PublicAssetResult
+    public suspend operator fun invoke(assetKey: UserAssetId): PublicAssetResult
 }
 
 internal class GetAvatarAssetUseCaseImpl(
@@ -58,7 +58,7 @@ internal class GetAvatarAssetUseCaseImpl(
         }
 }
 
-sealed class PublicAssetResult {
-    class Success(val assetPath: Path) : PublicAssetResult()
-    class Failure(val coreFailure: CoreFailure, val isRetryNeeded: Boolean) : PublicAssetResult()
+public sealed class PublicAssetResult {
+    public class Success(public val assetPath: Path) : PublicAssetResult()
+    public class Failure(public val coreFailure: CoreFailure, public val isRetryNeeded: Boolean) : PublicAssetResult()
 }

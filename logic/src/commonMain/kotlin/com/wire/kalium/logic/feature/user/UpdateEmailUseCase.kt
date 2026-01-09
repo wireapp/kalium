@@ -18,10 +18,9 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.user.UpdateEmailUseCase.Result
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
@@ -37,10 +36,11 @@ import com.wire.kalium.network.exceptions.isKeyExists
  * @return [Result.Failure.EmailAlreadyInUse] if the email is already in use.
  * @return [Result.Failure.GenericFailure] if the email update failed for any other reason.
  */
-class UpdateEmailUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class UpdateEmailUseCase internal constructor(
     private val accountRepository: AccountRepository
 ) {
-    suspend operator fun invoke(email: String): Result = accountRepository.updateSelfEmail(email)
+    public suspend operator fun invoke(email: String): Result = accountRepository.updateSelfEmail(email)
         .fold(::onError, ::onSuccess)
 
     private fun onError(error: NetworkFailure): Result.Failure {
@@ -64,16 +64,16 @@ class UpdateEmailUseCase internal constructor(
         }
     }
 
-    sealed interface Result {
-        sealed interface Success : Result {
-            data object VerificationEmailSent : Success
-            data object NoChange : Success
+    public sealed interface Result {
+        public sealed interface Success : Result {
+            public data object VerificationEmailSent : Success
+            public data object NoChange : Success
         }
 
-        sealed interface Failure : Result {
-            data object InvalidEmail : Failure
-            data object EmailAlreadyInUse : Failure
-            data class GenericFailure(val error: NetworkFailure) : Failure
+        public sealed interface Failure : Result {
+            public data object InvalidEmail : Failure
+            public data object EmailAlreadyInUse : Failure
+            public data class GenericFailure(val error: NetworkFailure) : Failure
         }
     }
 }

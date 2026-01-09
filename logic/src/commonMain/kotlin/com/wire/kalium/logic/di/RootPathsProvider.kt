@@ -20,8 +20,8 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
 
-abstract class RootPathsProvider(val rootPath: String) {
-    abstract fun rootAccountPath(userId: UserId): String
-    abstract fun rootProteusPath(userId: UserId): String
-    abstract fun rootMLSPath(userId: UserId): String
+internal abstract class RootPathsProvider(val rootPath: String) {
+    internal abstract fun rootAccountPath(userId: UserId): String
+    internal abstract fun rootProteusPath(userId: UserId): String
+    internal abstract fun rootMLSPath(userId: UserId): String
 }

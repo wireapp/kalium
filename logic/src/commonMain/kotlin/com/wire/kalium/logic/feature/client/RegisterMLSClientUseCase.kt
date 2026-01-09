@@ -35,17 +35,17 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import io.mockative.Mockable
 
-sealed class RegisterMLSClientResult {
-    data object Success : RegisterMLSClientResult()
+internal sealed class RegisterMLSClientResult {
+    internal data object Success : RegisterMLSClientResult()
 
-    data object E2EICertificateRequired : RegisterMLSClientResult()
+    internal data object E2EICertificateRequired : RegisterMLSClientResult()
 }
 
 /**
  * Register an MLS client with an existing client already registered on the backend.
  */
 @Mockable
-interface RegisterMLSClientUseCase {
+internal interface RegisterMLSClientUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }
 

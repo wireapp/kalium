@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-enum class CertificateStatus {
+internal enum class CertificateStatus {
     REVOKED,
     EXPIRED,
     VALID
 }
 
-enum class UserVerificationStatus {
+internal enum class UserVerificationStatus {
     Verified,
     NotVerified
 }

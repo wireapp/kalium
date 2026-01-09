@@ -47,8 +47,9 @@ import kotlin.uuid.Uuid
 /**
  * Edits a multipart message
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class SendEditMultipartMessageUseCase internal constructor(
+public class SendEditMultipartMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -68,7 +69,7 @@ class SendEditMultipartMessageUseCase internal constructor(
      * @param mentions the edited mentions in the message
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         originalMessageId: String,
         text: String,
@@ -126,7 +127,7 @@ class SendEditMultipartMessageUseCase internal constructor(
         }
     }
 
-    companion object {
-        const val TYPE = "MultipartEdited"
+    internal companion object {
+        internal const val TYPE = "MultipartEdited"
     }
 }

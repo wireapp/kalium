@@ -27,7 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 /**
  * Persist migrated users from old datasource
  */
-fun interface PersistMigratedUsersUseCase {
+internal fun interface PersistMigratedUsersUseCase {
     suspend operator fun invoke(users: List<User>): Boolean
 }
 

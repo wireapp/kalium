@@ -21,7 +21,7 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 
-expect open class ClientConfigImpl : ClientConfig {
+internal expect open class ClientConfigImpl : ClientConfig {
     override fun deviceType(): DeviceType
     override fun deviceModelName(): String
     override fun deviceName(): String

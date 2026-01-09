@@ -20,11 +20,11 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isWrongConversationPassword
@@ -36,11 +36,12 @@ import com.wire.kalium.network.exceptions.isWrongConversationPassword
  * @param key The key of the conversation to join.
  * @param domain optional domain of the conversation to join.
  */
-class JoinConversationViaCodeUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         code: String,
         key: String,
         domain: String?,
@@ -94,23 +95,23 @@ class JoinConversationViaCodeUseCase internal constructor(
                 }
             })
 
-    sealed interface Result {
-        sealed interface Success : Result {
-            val conversationId: ConversationId?
+    public sealed interface Result {
+        public sealed interface Success : Result {
+            public val conversationId: ConversationId?
 
-            data class Changed(
+            public data class Changed(
                 override val conversationId: ConversationId,
             ) : Success
 
-            data class Unchanged(
+            public data class Unchanged(
                 override val conversationId: ConversationId?,
             ) : Success
         }
 
-        sealed interface Failure : Result {
+        public sealed interface Failure : Result {
 
-            data object IncorrectPassword : Failure
-            data class Generic(
+            public data object IncorrectPassword : Failure
+            public data class Generic(
                 val failure: NetworkFailure
             ) : Failure
         }

@@ -25,11 +25,11 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 
-class GuestRoomConfigHandler(
+internal class GuestRoomConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    fun handle(guestRoomConfig: ConfigsStatusModel): Either<CoreFailure, Unit> =
+    internal fun handle(guestRoomConfig: ConfigsStatusModel): Either<CoreFailure, Unit> =
         if (!kaliumConfigs.guestRoomLink) {
             userConfigRepository.setGuestRoomStatus(false, null)
         } else {

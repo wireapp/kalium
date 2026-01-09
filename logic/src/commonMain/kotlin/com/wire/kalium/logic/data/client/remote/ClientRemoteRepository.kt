@@ -44,7 +44,7 @@ import io.mockative.Mockable
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Mockable
-interface ClientRemoteRepository {
+internal interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(
         clientId: ClientId,
@@ -65,7 +65,7 @@ interface ClientRemoteRepository {
     ): Either<NetworkFailure, Unit>
 }
 
-class ClientRemoteDataSource(
+internal class ClientRemoteDataSource(
     private val clientApi: ClientApi,
     private val clientConfig: ClientConfig,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),

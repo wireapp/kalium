@@ -36,7 +36,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 @Mockable
-interface ProtocolUpdateEventHandler {
+internal interface ProtocolUpdateEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.ConversationProtocol

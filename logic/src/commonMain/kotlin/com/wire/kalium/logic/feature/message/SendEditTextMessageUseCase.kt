@@ -46,8 +46,9 @@ import kotlinx.datetime.Clock
  *
  * @sample samples.logic.MessageUseCases.sendingEditBasicTextMessage
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class SendEditTextMessageUseCase internal constructor(
+public class SendEditTextMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -66,7 +67,7 @@ class SendEditTextMessageUseCase internal constructor(
      * @param mentions the edited mentions in the message
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         originalMessageId: String,
         text: String,
@@ -116,7 +117,7 @@ class SendEditTextMessageUseCase internal constructor(
         }
     }
 
-    companion object {
-        const val TYPE = "TextEdited"
+    internal companion object {
+        internal const val TYPE = "TextEdited"
     }
 }

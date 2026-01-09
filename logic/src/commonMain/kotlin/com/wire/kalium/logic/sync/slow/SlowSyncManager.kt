@@ -32,7 +32,6 @@ import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.util.ExponentialDurationHelper
-import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.NonCancellable
@@ -96,7 +95,7 @@ internal fun SlowSyncManager(
     networkStateObserver: NetworkStateObserver,
     syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
     userScopedLogger: KaliumLogger,
-    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
+    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelper(
         SlowSyncManager.MIN_RETRY_DELAY,
         SlowSyncManager.MAX_RETRY_DELAY
     )

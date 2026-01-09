@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.framework.TestCall.oneOnOneCallMetadata
@@ -44,9 +44,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import org.junit.Test
-import kotlin.apply
-import kotlin.to
-import kotlin.toULong
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnClientsRequestTest {
@@ -113,7 +110,7 @@ class OnClientsRequestTest {
         val callRepository: CallRepository = mock(CallRepository::class)
         val conversationClientsInCallUpdater: ConversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
         val epochInfoUpdater: EpochInfoUpdater = mock(EpochInfoUpdater::class)
-        val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
+        val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         fun withCallMetadata(id: ConversationId, metadata: CallMetadata): Arrangement = apply {
             every {

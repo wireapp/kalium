@@ -44,7 +44,7 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.use
 
-interface RestoreMPBackupUseCase {
+public interface RestoreMPBackupUseCase {
     /**
      * Restores a valid previously created backup file in multiplatform format into the current database, respecting the current data
      * if there is any overlap.
@@ -52,7 +52,7 @@ interface RestoreMPBackupUseCase {
      * @param password the password used to encrypt the original backup file. Null if the file was not encrypted.
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
      */
-    suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
+    public suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
 }
 
 internal class RestoreMPBackupUseCaseImpl(

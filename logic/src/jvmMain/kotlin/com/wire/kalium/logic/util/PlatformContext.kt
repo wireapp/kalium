@@ -18,4 +18,4 @@
 
 package com.wire.kalium.logic.util
 
-actual class PlatformContext
+internal actual class PlatformContext

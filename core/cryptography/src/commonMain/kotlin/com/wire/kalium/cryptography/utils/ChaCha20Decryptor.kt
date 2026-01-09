@@ -28,7 +28,7 @@ import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.BackupHeader
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.kaliumLogger
-import com.wire.kalium.cryptography.utils.LibsodiumInitializer.initializeLibsodiumIfNeeded
+import com.wire.kalium.cryptography.LibsodiumInitializer.initializeLibsodiumIfNeeded
 import okio.Buffer
 import okio.IOException
 import okio.Sink

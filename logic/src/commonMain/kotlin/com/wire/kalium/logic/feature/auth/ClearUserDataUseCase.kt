@@ -25,7 +25,7 @@ import io.mockative.Mockable
  * Clears the user data from the local storage, except for the client id
  */
 @Mockable
-interface ClearUserDataUseCase {
+internal interface ClearUserDataUseCase {
     suspend operator fun invoke()
 }
 

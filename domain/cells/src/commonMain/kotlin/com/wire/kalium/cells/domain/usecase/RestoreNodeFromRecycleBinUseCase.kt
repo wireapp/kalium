@@ -27,6 +27,11 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
 
 public interface RestoreNodeFromRecycleBinUseCase {
+    /**
+     * Restore a [com.wire.kalium.cells.domain.model.Node] from the recycle bin.
+     * @param uuid The unique identifier of the node to be restored.
+     * @return the result of the restore operation.
+     */
     public suspend operator fun invoke(uuid: String): Either<CoreFailure, Unit>
 }
 

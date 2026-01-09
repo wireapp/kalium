@@ -22,10 +22,11 @@ import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.domain.model.PublicLink
+import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
 import com.wire.kalium.cells.sdk.kmp.model.RestPromoteParameters
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.cells.sdk.kmp.model.RestFlag
+
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
@@ -56,6 +57,7 @@ internal interface CellsApi {
     suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit>
 
     suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO>
+    suspend fun createFile(path: String, contentType: String, templateUuid: String): NetworkResponse<GetNodesResponseDTO>
     suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit>
     suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit>
@@ -77,6 +79,7 @@ internal interface CellsApi {
         versionId: String,
         restPromoteParameters: RestPromoteParameters = RestPromoteParameters()
     ): NetworkResponse<Unit>
+
     suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit>
     suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit>
     suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit>

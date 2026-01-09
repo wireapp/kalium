@@ -26,9 +26,9 @@ import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlin.jvm.JvmInline
 
 @JvmInline
-value class UserSearchResult(val result: List<OtherUser>)
+public value class UserSearchResult(public val result: List<OtherUser>)
 
-data class UserSearchDetails(
+public data class UserSearchDetails(
     val id: UserId,
     val name: String?,
     val handle: String?,

@@ -30,11 +30,11 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-class SelfDeletingMessagesConfigHandler(
+internal class SelfDeletingMessagesConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    suspend fun handle(selfDeletingMessagesConfig: SelfDeletingMessagesModel): Either<CoreFailure, Unit> =
+    internal suspend fun handle(selfDeletingMessagesConfig: SelfDeletingMessagesModel): Either<CoreFailure, Unit> =
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
