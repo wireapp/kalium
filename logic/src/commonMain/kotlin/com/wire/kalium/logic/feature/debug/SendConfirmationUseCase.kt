@@ -18,31 +18,31 @@
 
 package com.wire.kalium.logic.feature.debug
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * This use case can be used by QA to send read and delivery receipts. This debug function can be used to test correct
  * client behaviour. It should not be used by clients itself.
  */
 @InternalKaliumApi
-public class SendConfirmationUseCase internal constructor(
+public class cSendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
@@ -54,7 +54,7 @@ public class SendConfirmationUseCase internal constructor(
         type: ReceiptType,
         firstMessageId: String,
         moreMessageIds: List<String>
-    ): Either<CoreFailure, Unit> {
+    ): SendConfirmationResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -81,6 +81,18 @@ public class SendConfirmationUseCase internal constructor(
             } else {
                 kaliumLogger.e("There was an error trying to send the message $it")
             }
-        }
+        }.fold(
+            {
+                SendConfirmationResult.Failure(it)
+            },
+            {
+                SendConfirmationResult.Success
+            }
+        )
     }
+}
+
+public sealed class SendConfirmationResult {
+    public data object Success : SendConfirmationResult()
+    public data class Failure(val failure: CoreFailure) : SendConfirmationResult()
 }
