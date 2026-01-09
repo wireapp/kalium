@@ -31,6 +31,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentLength
+import io.ktor.http.contentType
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Job
 
@@ -55,34 +57,13 @@ internal class KaliumHttpLogger(
 
         val content = request.body as OutgoingContent
 
-        when {
-            level.info -> {
-                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
-                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
-                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
-                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
+        if (level.headers) {
+            val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
+            content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+            content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+            obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
 
-                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
-            }
-
-            level.headers -> {
-
-                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
-                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
-                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
-                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
-
-                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
-            }
-
-            level.body -> {
-                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
-                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
-                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
-                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
-
-                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
-            }
+            requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
         }
 
         return null
@@ -93,15 +74,11 @@ internal class KaliumHttpLogger(
         responseLog["endpoint"] = obfuscatePath(response.call.request.url)
         responseLog["status"] = response.status.value
 
-        when {
-            level.info -> {
-                // Intentionally left empty
-            }
-
-            level.headers -> {
-                val obfuscatedHeaders = obfuscatedHeaders(response.headers.entries().map { it.key to it.value }).toMutableMap()
-                responseLog["headers"] = obfuscatedHeaders.toMap()
-            }
+        if (level.headers) {
+            val obfuscatedHeaders = obfuscatedHeaders(response.headers.entries().map { it.key to it.value }).toMutableMap()
+            response.contentLength()?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+            response.contentType()?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+            responseLog["headers"] = obfuscatedHeaders.toMap()
         }
 
         responseLogLevel = if (response.status.value < HttpStatusCode.BadRequest.value) {
