@@ -190,4 +190,26 @@ object ListUsersResponseJson {
             validUserInfoProviderV12(it)
         }
     }
+    val v13: (UserTypeDTO?) -> ValidJsonProvider<UserProfileDTO> = { type ->
+        ValidJsonProvider(
+            UserProfileDTO(
+                id = USER_1,
+                name = "user a",
+                handle = "user_a",
+                accentId = 2147483647,
+                legalHoldStatus = LegalHoldStatusDTO.ENABLED,
+                teamId = null,
+                assets = emptyList(),
+                deleted = false,
+                email = null,
+                expiresAt = null,
+                service = null,
+                nonQualifiedId = USER_1.value,
+                supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
+                type = type
+            )
+        ) {
+            validUserInfoProviderV12(it)
+        }
+    }
 }
