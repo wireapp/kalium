@@ -124,6 +124,26 @@ object ListUsersResponseJson {
         """.trimMargin()
     }
 
+    private val validUserInfoProviderV13 = { userInfo: UserProfileDTO ->
+        val typeField = userInfo.type?.let { """, "type": "${it.name.lowercase()}" """ } ?: ""
+        """
+        |{
+        | "accent_id": ${userInfo.accentId},
+        | "handle": "${userInfo.handle}",
+        | "legalhold_status": "enabled",
+        | "name": "${userInfo.name}",
+        | "assets": ${userInfo.assets},
+        | "id": "${userInfo.id.value}",
+        | "deleted": "false",
+        | "supported_protocols": ${Json.encodeToString(userInfo.supportedProtocols)},
+        | "qualified_id": {
+        |   "domain": "${userInfo.id.domain}",
+        |   "id": "${userInfo.id.value}"
+        | }$typeField
+        |}
+        """.trimMargin()
+    }
+
     private val listProvider = { list: List<String> ->
         """
         |[
@@ -209,7 +229,7 @@ object ListUsersResponseJson {
                 type = type
             )
         ) {
-            validUserInfoProviderV12(it)
+            validUserInfoProviderV13(it)
         }
     }
 }
