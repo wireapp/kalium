@@ -33,7 +33,6 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
@@ -155,7 +154,11 @@ internal class EventDataSource(
         var lastEmittedEventId: String? = null
         return eventDAO.observeUnprocessedEvents().transform { eventEntities ->
             logger.d("got ${eventEntities.size} unprocessed events")
-            logger.d("current last emitted event id: ${lastEmittedEventId?.obfuscateId()}")
+            if (eventEntities.isNotEmpty()) {
+                logger.d("first unprocessed event ${eventEntities.firstOrNull()?.eventId}")
+                logger.d("last unprocessed event ${eventEntities.lastOrNull()?.eventId}")
+            }
+            logger.d("current last emitted event id: $lastEmittedEventId")
 
             val emittedEventIndex = eventEntities.indexOfFirst { entity -> entity.eventId == lastEmittedEventId }
 
@@ -267,11 +270,11 @@ internal class EventDataSource(
                             }
                             if (clearOnFirstWSMessage.value) {
                                 clearOnFirstWSMessage.emit(false)
-                                logger.d("clear processed events before ${event.data.event.id.obfuscateId()}")
+                                logger.d("clear processed events before ${event.data.event.id}")
                                 clearProcessedEvents(event.data.event.id)
                             }
                             event.data.event.let { eventResponse ->
-                                logger.d("insert event ${eventResponse.id.obfuscateId()} from WS")
+                                logger.d("insert event ${eventResponse.id} from WS")
                                 wrapStorageRequest {
                                     eventDAO.insertEvents(
                                         listOf(

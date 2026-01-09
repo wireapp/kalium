@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.serialization.SerialName
@@ -37,9 +35,9 @@ data class QualifiedID(
         if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
     fun toLogString(): String = if (domain.isEmpty()) {
-        value.obfuscateId()
+        value
     } else {
-        "${value.obfuscateId()}$VALUE_DOMAIN_SEPARATOR${domain.obfuscateDomain()}"
+        "$value$VALUE_DOMAIN_SEPARATOR$domain"
     }
 
     fun toPlainID(): PlainId = PlainId(value)
@@ -52,12 +50,12 @@ typealias ConversationId = QualifiedID
 
 @JvmInline
 value class GroupID(val value: String) {
-    fun toLogString() = value.obfuscateId()
+    fun toLogString() = value
 }
 
 @JvmInline
 value class SubconversationId(val value: String) {
-    fun toLogString() = value.obfuscateId()
+    fun toLogString() = value
 }
 
 @Serializable

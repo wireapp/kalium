@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -69,7 +68,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
             wrapProteusRequest {
                 proteusContext.createSession(proteusContext.newLastResortPreKey(), cryptoSessionId)
             }.onSuccess {
-                kaliumLogger.i("Created new session for ${userId.toLogString()} with ${clientId.value.obfuscateId()}")
+                kaliumLogger.i("Created new session for ${userId.toLogString()} with ${clientId.toLogString()}")
             }
 
         }

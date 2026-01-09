@@ -20,11 +20,9 @@
 
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logger.obfuscateUrlPath
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.http.Url
+import io.ktor.http.encodeURLParameter
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -48,7 +46,7 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
     when (element) {
         is JsonPrimitive, JsonNull -> element
         is JsonArray -> {
-            if (element.jsonArray.size > 0) {
+            if (element.jsonArray.isNotEmpty()) {
                 element.jsonArray.map { obfuscatedJsonElement(it) }.toJsonElement()
             } else {
                 element
@@ -56,64 +54,115 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
         }
 
         is JsonObject -> {
-            element.jsonObject.entries.associate {
+            element.jsonObject.entries.associate { entry ->
+                val key = entry.key
+                val lowerKey = key.lowercase()
+
                 when {
-                    sensitiveJsonKeys.contains(it.key.lowercase()) -> {
-                        val value = "${it.value}".trim('"')
-                        it.key to "${value.obfuscateId()}"
+                    /**
+                     * Secrets: always redact, never log in clear (tokens, cookies, auth, etc.)
+                     */
+                    sensitiveJsonKeys.contains(lowerKey) -> {
+                        key to "***"
                     }
 
-                    domainJsonKeys.contains(it.key.lowercase()) -> {
-                        val value = "${it.value}".trim('"')
-                        it.key to "${value.obfuscateDomain()}"
-                    }
+                    /**
+                     * NOTE:
+                     * IDs are allowed to be logged in clear according to the agreed policy,
+                     * so we do NOT obfuscate them here anymore.
+                     *
+                     * If you ever need to change this policy, do it centrally (redactor),
+                     * not by sprinkling obfuscation across models.
+                     */
 
-                    sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
-                        val value = "${it.value}".trim('"')
-                        it.key to "${value.obfuscateId()}"
-                    }
-
-                    sensitiveJsonObjects.contains(it.key.lowercase()) -> {
-                        it.key to obfuscatedJsonElement(it.value)
+                    /**
+                     * Some nested objects may still contain secrets (payload/content/etc.) - recurse.
+                     */
+                    sensitiveJsonObjects.contains(lowerKey) -> {
+                        key to obfuscatedJsonElement(entry.value)
                     }
 
                     else -> {
-                        it.key to it.value
+                        key to entry.value
                     }
                 }
             }.toJsonElement()
         }
     }
 
+/**
+ * Request path can be logged in clear, but query parameter values must be obfuscated.
+ *
+ * Example:
+ *   host/path/segment?q=abc... -> host/path/segment?q=abc*** (etc.)
+ */
+private const val KEEP_QUERY_PREFIX = 3
+
+/**
+ * Allowlist for query keys which are safe to log in clear.
+ * Everything else will have the VALUE obfuscated.
+ */
+private val safeQueryKeys = setOf(
+    "size",
+    "page",
+    "limit",
+    "offset",
+    "cursor",
+    "sort",
+    "order",
+    "client"
+)
+
+/**
+ * Obfuscate only the VALUE of query params. Keep the PATH in clear.
+ */
 fun obfuscatePath(url: Url): String {
-
-    var requestToLog = url.host
-
-    requestToLog += url.pathSegments.joinToString("/") {
-        it.obfuscateUrlPath()
+    val base = buildString {
+        append(url.host)
+        append(url.encodedPath)
     }
 
-    if (url.parameters.entries().isNotEmpty()) {
-        requestToLog += "?"
-        requestToLog += url.parameters.entries()
-            .filter { it.value.isNotEmpty() }.joinToString("&") { (key, value) ->
-                "$key=${value[0].obfuscateUrlPath()}"
-            }
+    val params = url.parameters.entries().filter { it.value.isNotEmpty() }
+    if (params.isEmpty()) return base
+
+    val query = params.joinToString("&") { (key, values) ->
+        val rawValue = values.first()
+        val lowerKey = key.lowercase()
+
+        val valueToLog = if (lowerKey in safeQueryKeys) {
+            rawValue.encodeURLParameter()
+        } else {
+            rawValue.obfuscateQueryValue().encodeURLParameterKeepingAsterisks()
+        }
+
+        "$key=$valueToLog"
     }
 
-    return requestToLog
+    return "$base?$query"
+}
+
+private fun String.encodeURLParameterKeepingAsterisks(): String =
+    encodeURLParameter()
+        .replace("%2A", "*")
+        .replace("%2a", "*")
+
+private fun String.obfuscateQueryValue(): String = when {
+    this.isBlank() -> "***"
+    this.endsWith("***") -> this
+    (this.length > KEEP_QUERY_PREFIX) -> this.take(KEEP_QUERY_PREFIX) + "***"
+    else -> "***"
 }
 
 fun deleteSensitiveItemsFromJson(text: String): String {
     var logMessage = ""
     try {
         val obj = (Json.decodeFromString(text) as JsonElement)
-        obj.jsonObject.entries.toMutableSet().map {
-            if (notSensitiveJsonArray.contains(it.key.lowercase())) {
-                if (it.value.jsonArray.size > 0) {
-                    it.value.jsonArray[0].jsonObject.entries.toMutableSet().map {
-                        if (notSensitiveJsonKeys.contains(it.key.lowercase())) {
-                            logMessage += " ${it.key} : ${it.value}"
+        obj.jsonObject.entries.toMutableSet().map { entry ->
+            if (notSensitiveJsonArray.contains(entry.key.lowercase())) {
+                if (entry.value.jsonArray.isNotEmpty()) {
+                    entry.value.jsonArray[0].jsonObject.entries.toMutableSet().map { inner ->
+                        if (notSensitiveJsonKeys.contains(inner.key.lowercase())) {
+                            logMessage += " ${inner.key} : ${inner.value}"
                         }
                     }
                 }
@@ -139,11 +188,12 @@ val sensitiveJsonKeys by lazy {
         "sec-websocket-key",
         "sec-websocket-accept",
         "sec-websocket-version",
-        "access_token"
+        "access_token",
+        "refresh_token",
+        "token"
     )
 }
-private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team", "creator_client") }
-private val domainJsonKeys by lazy { listOf("domain") }
+
 private val sensitiveJsonObjects by lazy {
     listOf("qualified_id", "qualified_ids", "qualified_users", "content", "payload")
 }

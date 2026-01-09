@@ -24,6 +24,10 @@ import kotlin.jvm.JvmInline
 
 @JvmInline
 @Serializable
-value class PlainId(@SerialName("value") val value: String)
+value class PlainId(@SerialName("value") val value: String) {
+    override fun toString(): String = value
+
+    fun toLogString(): String = value
+}
 
 typealias TeamId = PlainId

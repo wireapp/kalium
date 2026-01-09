@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -132,12 +131,12 @@ internal class SessionManagerImpl internal constructor(
     }
 
     private suspend fun onSessionExpired() {
-        kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.value.obfuscateId()}")
+        kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.toLogString()}")
         logout(LogoutReason.SESSION_EXPIRED)
     }
 
     private suspend fun onClientRemoved() {
-        kaliumLogger.d("SESSION MANAGER: onClientRemoved is called for user ${userId.value.obfuscateId()}")
+        kaliumLogger.d("SESSION MANAGER: onClientRemoved is called for user ${userId.toLogString()}")
         logout(LogoutReason.REMOVED_CLIENT)
     }
 

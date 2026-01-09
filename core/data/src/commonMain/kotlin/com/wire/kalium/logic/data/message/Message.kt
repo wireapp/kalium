@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -150,13 +148,13 @@ sealed interface Message {
             }
 
             val standardProperties = mapOf(
-                "id" to id.obfuscateId(),
+                "id" to id,
                 "conversationId" to conversationId.toLogString(),
-                "date" to date,
-                "senderUserId" to senderUserId.value.obfuscateId(),
+                "date" to date.toString(),
+                "senderUserId" to senderUserId.value,
                 "status" to "$status",
                 "visibility" to "$visibility",
-                "senderClientId" to senderClientId.value.obfuscateId(),
+                "senderClientId" to senderClientId.value,
                 "editStatus" to editStatus.toLogMap(),
                 "expectsReadConfirmation" to "$expectsReadConfirmation",
                 "deliveryStatus" to deliveryStatus.toLogMap(),
@@ -214,7 +212,7 @@ sealed interface Message {
 
                 is MessageContent.DeleteForMe -> mutableMapOf(
                     typeKey to "deleteForMe",
-                    "messageId" to content.messageId.obfuscateId(),
+                    "messageId" to content.messageId,
                 )
 
                 is MessageContent.LastRead -> mutableMapOf(
@@ -281,11 +279,11 @@ sealed interface Message {
             }
 
             val standardProperties = mapOf(
-                "id" to id.obfuscateId(),
+                "id" to id,
                 "conversationId" to conversationId.toLogString(),
                 "date" to date,
-                "senderUserId" to senderUserId.value.obfuscateId(),
-                "senderClientId" to senderClientId.value.obfuscateId(),
+                "senderUserId" to senderUserId.toLogString(),
+                "senderClientId" to senderClientId.toLogString(),
             )
 
             properties.putAll(standardProperties)
@@ -319,7 +317,7 @@ sealed interface Message {
                 is MessageContent.MemberChange -> mutableMapOf(
                     typeKey to "memberChange",
                     "members" to content.members.fold("") { acc, member ->
-                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                        "$acc, ${member.toLogString()}"
                     }
                 )
 
@@ -414,14 +412,14 @@ sealed interface Message {
                 is MessageContent.LegalHold.ForMembers.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForMembers",
                     "members" to content.members.fold("") { acc, member ->
-                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                        "$acc, ${member.toLogString()}"
                     }
                 )
 
                 is MessageContent.LegalHold.ForMembers.Enabled -> mutableMapOf(
                     typeKey to "legalHoldEnabledForMembers",
                     "members" to content.members.fold("") { acc, member ->
-                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                        "$acc, ${member.toLogString()}"
                     }
                 )
 
@@ -440,10 +438,10 @@ sealed interface Message {
             }
 
             val standardProperties = mapOf(
-                "id" to id.obfuscateId(),
+                "id" to id,
                 "conversationId" to conversationId.toLogString(),
                 "date" to date.toIsoDateTimeString(),
-                "senderUserId" to senderUserId.value.obfuscateId(),
+                "senderUserId" to senderUserId.toLogString(),
                 "status" to "$status",
                 "visibility" to "$visibility",
             )

@@ -20,8 +20,6 @@ package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
@@ -51,7 +49,7 @@ internal class FederatedIdMapperImpl internal constructor(
 
     override suspend fun parseToFederatedId(qualifiedID: QualifiedID): String {
         kaliumLogger.v(
-            "Parsing stringId: ${qualifiedID.value.obfuscateId()}@${qualifiedID.domain.obfuscateDomain()} " +
+            "Parsing stringId: ${qualifiedID.toLogString()} " +
                     "| FederationEnabled? ${isFederationEnabled()}"
         )
         return if (isFederationEnabled() && qualifiedID.domain.isNotEmpty()) {
@@ -64,8 +62,7 @@ internal class FederatedIdMapperImpl internal constructor(
     override suspend fun parseToFederatedId(qualifiedStringID: String): String {
         val parsedQualifiedID = qualifiedIdMapper.fromStringToQualifiedID(qualifiedStringID)
         kaliumLogger.v(
-            "Parsing stringId: ${parsedQualifiedID.value.obfuscateId()}" +
-                    "@${parsedQualifiedID.domain.obfuscateDomain()} |" +
+            "Parsing stringId: ${parsedQualifiedID.toLogString()} |" +
                     " FederationEnabled? ${isFederationEnabled()}"
         )
         return if (isFederationEnabled() && parsedQualifiedID.domain.isNotEmpty()) {

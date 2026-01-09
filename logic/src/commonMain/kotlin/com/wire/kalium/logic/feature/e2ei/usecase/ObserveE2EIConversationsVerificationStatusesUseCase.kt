@@ -43,7 +43,7 @@ internal class ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
         logger.d("Starting to monitor")
         epochChangesObserver.observe()
             .collect { groupWithEpoch ->
-                logger.d("Epoch changed for group ${groupWithEpoch.epoch}")
+                logger.d("Epoch for group ${groupWithEpoch.groupId.toLogString()} changed ${groupWithEpoch.epoch}")
                 transactionProvider.mlsTransaction("ObserveE2EIConversationsVerificationStatuses") { mlsContext ->
                     fetchMLSVerificationStatus(mlsContext, groupWithEpoch.groupId)
                     Unit.right()
