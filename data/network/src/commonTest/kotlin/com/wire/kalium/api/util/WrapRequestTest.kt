@@ -24,11 +24,13 @@ import com.wire.kalium.mocks.responses.QualifiedSendMessageResponseJson
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.MLSErrorResponse
+import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.MLSError
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptorConflictWithMissingUsers
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.request
@@ -164,6 +166,22 @@ internal class WrapRequestTest : ApiTest() {
         val client =
             mockUnboundNetworkClient(ErrorResponseJson.validFederationConflictingBackends(expectedError).rawJson, HttpStatusCode.Conflict)
         val result = wrapRequest<Unit> {
+            client.httpClient.request()
+        }
+        assertIs<NetworkResponse.Error>(result)
+        assertIs<FederationError>(result.kException)
+        assertEquals(expectedError, result.kException.errorResponse)
+    }
+
+
+    @Test
+    fun given409FederationError_whenWrappingRequest_thenShouldReturnFederationError2() = runTest {
+        val expectedError = FederationErrorResponse.ConflictWithMissingUsers(listOf(QualifiedID("id", "domain")))
+        val client =
+            mockUnboundNetworkClient(ErrorResponseJson.validFederationConflictingBackendsWithMissingUsers(expectedError).rawJson, HttpStatusCode.Conflict)
+        val result = wrapRequest<Unit>(
+            federationErrorResponseInterceptor = FederationErrorResponseInterceptorConflictWithMissingUsers
+        ) {
             client.httpClient.request()
         }
         assertIs<NetworkResponse.Error>(result)

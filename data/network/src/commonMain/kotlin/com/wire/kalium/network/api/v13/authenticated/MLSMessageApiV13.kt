@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,13 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v5.authenticated
+package com.wire.kalium.network.api.v13.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.v4.authenticated.MLSMessageApiV4
+import com.wire.kalium.network.api.v12.authenticated.MLSMessageApiV12
 import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptorConflictWithMissingUsers
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
@@ -30,13 +31,16 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
-internal open class MLSMessageApiV5 internal constructor(
+internal open class MLSMessageApiV13 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
-) : MLSMessageApiV4() {
+) : MLSMessageApiV12(authenticatedNetworkClient) {
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse> =
-        wrapRequest {
+        wrapRequest(
+            customErrorInterceptor = { null },
+            federationErrorResponseInterceptor = FederationErrorResponseInterceptorConflictWithMissingUsers
+        ) {
             httpClient.post(PATH_MESSAGE) {
                 setBody(message)
                 contentType(ContentType.Message.Mls)
@@ -44,7 +48,10 @@ internal open class MLSMessageApiV5 internal constructor(
         }
 
     override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
-        wrapRequest {
+        wrapRequest(
+            customErrorInterceptor = { null },
+            federationErrorResponseInterceptor = FederationErrorResponseInterceptorConflictWithMissingUsers
+        ) {
             httpClient.post(PATH_COMMIT_BUNDLES) {
                 setBody(bundle.value)
                 contentType(ContentType.Message.Mls)

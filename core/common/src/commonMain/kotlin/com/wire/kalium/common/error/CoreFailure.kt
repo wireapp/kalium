@@ -21,6 +21,7 @@ package com.wire.kalium.common.error
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.model.MLSErrorResponse
+import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 import kotlinx.serialization.SerialName
@@ -171,8 +172,10 @@ sealed class NetworkFailure : CoreFailure {
         data class General(val label: String) : FederatedBackendFailure()
         data class FederationDenied(val label: String) : FederatedBackendFailure()
         data class FederationNotEnabled(val label: String) : FederatedBackendFailure()
+        data class FederationNotImplemented(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
+        data class ConflictingBackendsWithMissingUsers(val users: List<QualifiedID>) : FederatedBackendFailure()
 
         data class FailedDomains(override val domains: List<String> = emptyList()) : FederatedBackendFailure(), RetryableFailure
 
