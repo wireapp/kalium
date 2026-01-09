@@ -42,7 +42,7 @@ import kotlin.uuid.Uuid
  * client behaviour. It should not be used by clients itself.
  */
 @InternalKaliumApi
-public class cSendConfirmationUseCase internal constructor(
+public class SendConfirmationUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
