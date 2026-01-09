@@ -36,7 +36,7 @@ internal open class MLSMessageApiV5 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun sendMessage(message: ByteArray): NetworkResponse<SendMLSMessageResponse> =
-        wrapRequest({ null }) {
+        wrapRequest {
             httpClient.post(PATH_MESSAGE) {
                 setBody(message)
                 contentType(ContentType.Message.Mls)
@@ -44,7 +44,7 @@ internal open class MLSMessageApiV5 internal constructor(
         }
 
     override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
-        wrapRequest({ null }) {
+        wrapRequest {
             httpClient.post(PATH_COMMIT_BUNDLES) {
                 setBody(bundle.value)
                 contentType(ContentType.Message.Mls)
