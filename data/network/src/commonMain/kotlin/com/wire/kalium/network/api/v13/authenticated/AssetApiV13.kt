@@ -24,5 +24,5 @@ import com.wire.kalium.network.api.v12.authenticated.AssetApiV12
 
 internal open class AssetApiV13 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
-    selfUserId: UserId
-) : AssetApiV12(authenticatedNetworkClient, selfUserId) 
+    selfUserId: UserId,
+) : AssetApiV12(authenticatedNetworkClient, selfUserId)
