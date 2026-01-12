@@ -15,8 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.cells.domain
 
-internal data class WireCellsConfig(
-    val backendUrl: String?,
-)
+import com.wire.kalium.cells.domain.model.WireCellsConfig
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+
+public interface CellConfigRepository {
+    public suspend fun loadConfiguration(): Either<StorageFailure, WireCellsConfig?>
+}

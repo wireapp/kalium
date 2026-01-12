@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.featureConfig.CollaboraEdition.Companion.fromString
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
@@ -210,9 +211,9 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.CellsInternal) = CellsInternalModel(
         status = fromDTO(data.status),
         config = CellsInternalConfigModel(
-            backend = data.config.backend?.url?.let {
-                CellsInternalBackendConfigModel(it)
-            }
+            backendUrl = data.config.backend?.url,
+            collaboraEdition = data.config.collabora?.edition.fromString(),
+            teamQuotaBytes = data.config.storage?.teamQuotaBytes,
         ),
     )
 
