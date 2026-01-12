@@ -24,7 +24,7 @@ import io.mockative.Mockable
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
-val SupportedApiVersions: Set<Int> = setOf(0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+val SupportedApiVersions: Set<Int> = setOf(0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
 
 // They are not truly constants as set is not a primitive type, yet are treated as one in this context
 @Suppress("MagicNumber")
