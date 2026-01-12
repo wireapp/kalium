@@ -22,4 +22,4 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v13.authenticated.ConversationHistoryApiV13
 
 internal open class ConversationHistoryApiV14 internal constructor(networkClient: AuthenticatedNetworkClient) :
-    ConversationHistoryApiV12(networkClient)
+    ConversationHistoryApiV13(networkClient)

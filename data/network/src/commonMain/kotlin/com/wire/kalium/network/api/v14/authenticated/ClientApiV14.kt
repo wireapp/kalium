@@ -22,4 +22,4 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v13.authenticated.ClientApiV13
 
 internal open class ClientApiV14 internal constructor(authenticatedNetworkClient: AuthenticatedNetworkClient) :
-    ClientApiV12(authenticatedNetworkClient)
+    ClientApiV13(authenticatedNetworkClient)

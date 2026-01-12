@@ -21,4 +21,4 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v13.authenticated.ServerTimeApiV13
 
 internal open class ServerTimeApiV14(authenticatedNetworkClient: AuthenticatedNetworkClient) :
-    ServerTimeApiV12(authenticatedNetworkClient)
+    ServerTimeApiV13(authenticatedNetworkClient)
