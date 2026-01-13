@@ -15,8 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
 
-internal data class WireCellsConfig(
-    val backendUrl: String?,
-)
+package com.wire.kalium.network.api.v13.unauthenticated
+
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v12.unauthenticated.SSOLoginApiV12
+
+internal open class SSOLoginApiV13 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : SSOLoginApiV12(unauthenticatedNetworkClient)

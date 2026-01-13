@@ -24,11 +24,9 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
-import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpHeaders.Connection
 import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 
@@ -52,10 +50,6 @@ internal open class CallApiV0 internal constructor(private val authenticatedNetw
                 }
             }.build().let { parsedUrl ->
                 httpClient.post(url = parsedUrl) {
-                    headers {
-                        append(Connection, "close")
-                    }
-
                     // We are parsing the data string to json due to Ktor serialization escaping the string
                     // and thus backend not recognizing and returning a 400 - Bad Request
                     val json = KtxSerializer.json.parseToJsonElement(data)

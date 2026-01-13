@@ -55,18 +55,32 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
                             Either.Left(NetworkFailure.FederatedBackendFailure.ConflictingBackends(errorResponse.nonFederatingBackends))
                         }
 
+                        is FederationErrorResponse.ConflictWithMissingUsers -> {
+                            Either.Left(
+                                NetworkFailure.FederatedBackendFailure.ConflictingBackendsWithMissingUsers(errorResponse.missingUsers)
+                            )
+                        }
+
                         is FederationErrorResponse.Unreachable -> {
                             Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(errorResponse.unreachableBackends))
                         }
 
                         is FederationErrorResponse.Generic -> {
-                            if (errorResponse.isFederationDenied()) {
-                                Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(errorResponse.label))
-                            } else if (errorResponse.isFederationNotEnabled()) {
-                                Either.Left(NetworkFailure.FederatedBackendFailure.FederationNotEnabled(errorResponse.label))
-                            } else {
-                                Either.Left(NetworkFailure.FederatedBackendFailure.General(errorResponse.label))
+                            val failure = when {
+                                errorResponse.isFederationDenied() ->
+                                    NetworkFailure.FederatedBackendFailure.FederationDenied(errorResponse.label)
+
+                                errorResponse.isFederationNotEnabled() ->
+                                    NetworkFailure.FederatedBackendFailure.FederationNotEnabled(errorResponse.label)
+
+                                errorResponse.isFederationNotImplemented() ->
+                                    NetworkFailure.FederatedBackendFailure.FederationNotImplemented(errorResponse.label)
+
+                                else ->
+                                    NetworkFailure.FederatedBackendFailure.General(errorResponse.label)
                             }
+
+                            Either.Left(failure)
                         }
                     }
                 }

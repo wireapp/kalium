@@ -22,9 +22,9 @@ import com.wire.kalium.network.api.model.Cause
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.utils.FederationErrorResponseInterceptor
-import com.wire.kalium.network.utils.FederationErrorResponseInterceptor.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.FederationErrorResponseInterceptorConflict
 import com.wire.kalium.network.utils.HttpResponseData
+import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -33,9 +33,9 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-class FederationErrorResponseInterceptorTest {
+class FederationErrorResponseInterceptorConflictTest {
 
-    private val subject = FederationErrorResponseInterceptor
+    private val subject = FederationErrorResponseInterceptorConflict
 
     @Test
     fun givenNonFederationIssues_whenIntercepting_thenShouldReturnNull() = runTest {

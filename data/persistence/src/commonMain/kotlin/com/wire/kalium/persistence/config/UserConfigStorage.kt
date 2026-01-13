@@ -274,6 +274,8 @@ data class MLSMigrationEntity(
 @Serializable
 data class WireCellsConfigEntity(
     @Serializable val backendUrl: String?,
+    @Serializable val collabora: String,
+    @Serializable val teamQuotaBytes: Long?,
 )
 
 @Suppress("TooManyFunctions")

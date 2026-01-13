@@ -20,6 +20,7 @@ package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
+import kotlinx.serialization.json.Json
 
 object ErrorResponseJson {
     private val jsonProvider = { serializable: GenericAPIErrorResponse ->
@@ -35,7 +36,15 @@ object ErrorResponseJson {
     private val federationConflictJsonProvider = { serializable: FederationErrorResponse.Conflict ->
         """
         |{
-        |  "non_federating_backends": ${serializable.nonFederatingBackends}
+        |  "non_federating_backends": ${Json.encodeToString(serializable.nonFederatingBackends)}
+        |}
+        """.trimMargin()
+    }
+
+    private val federationConflictWithMissingUsersJsonProvider = { serializable: FederationErrorResponse.ConflictWithMissingUsers ->
+        """
+        |{
+        |  "missing_users": ${Json.encodeToString(serializable.missingUsers)}
         |}
         """.trimMargin()
     }
@@ -76,6 +85,11 @@ object ErrorResponseJson {
     fun validFederationConflictingBackends(error: FederationErrorResponse.Conflict) = ValidJsonProvider(
         error,
         federationConflictJsonProvider
+    )
+
+    fun validFederationConflictingBackendsWithMissingUsers(error: FederationErrorResponse.ConflictWithMissingUsers) = ValidJsonProvider(
+        error,
+        federationConflictWithMissingUsersJsonProvider
     )
 
     fun validFederationUnreachableBackends(error: FederationErrorResponse.Unreachable) = ValidJsonProvider(
