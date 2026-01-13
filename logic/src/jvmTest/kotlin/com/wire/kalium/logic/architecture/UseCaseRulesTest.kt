@@ -101,7 +101,7 @@ class UseCaseRulesTest {
     }
 
     @Test
-    @Ignore("Ignored for now, this is being resolved incrementally, enable when all of the violations are fixed")
+//     @Ignore("Ignored for now, this is being resolved incrementally, enable when all of the violations are fixed")
     fun kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI() {
         val scope = Konsist.scopeFromProduction()
         val violations = mutableListOf<String>()
