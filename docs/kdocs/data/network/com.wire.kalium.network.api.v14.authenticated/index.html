@@ -1,0 +1,467 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.kalium.network.api.v14.authenticated</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":data:network:dokkaHtmlPartial/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:network:dokkaHtmlPartial/commonMain" data-filter=":data:network:dokkaHtmlPartial/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="package" id="content" pageids="network::com.wire.kalium.network.api.v14.authenticated////PointingToDeclaration//-46256843">
+  <div class="breadcrumbs"><a href="../index.html">network</a><span class="delimiter">/</span><span class="current">com.wire.kalium.network.api.v14.authenticated</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-1417989299%2FClasslikes%2F-46256843" anchor-label="AccessTokenApiV14" id="-1417989299%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-access-token-api-v14/index.html"><span>Access</span><wbr><span>Token</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1417989299%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-access-token-api-v14/index.html">AccessTokenApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">httpClient<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-access-token-api-v13/index.html">AccessTokenApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="38537202%2FClasslikes%2F-46256843" anchor-label="AssetApiV14" id="38537202%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-asset-api-v14/index.html"><span>Asset</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="38537202%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-asset-api-v14/index.html">AssetApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-asset-api-v13/index.html">AssetApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1188957276%2FClasslikes%2F-46256843" anchor-label="CallApiV14" id="-1188957276%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-call-api-v14/index.html"><span>Call</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1188957276%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-call-api-v14/index.html">CallApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-call-api-v13/index.html">CallApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1388081303%2FClasslikes%2F-46256843" anchor-label="ClientApiV14" id="1388081303%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-client-api-v14/index.html"><span>Client</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1388081303%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-client-api-v14/index.html">ClientApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-client-api-v13/index.html">ClientApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="863570724%2FClasslikes%2F-46256843" anchor-label="ConnectionApiV14" id="863570724%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-connection-api-v14/index.html"><span>Connection</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="863570724%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-connection-api-v14/index.html">ConnectionApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-connection-api-v13/index.html">ConnectionApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1238703327%2FClasslikes%2F-46256843" anchor-label="ConversationApiV14" id="1238703327%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-conversation-api-v14/index.html"><span>Conversation</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1238703327%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-conversation-api-v14/index.html">ConversationApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-conversation-api-v13/index.html">ConversationApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="739699761%2FClasslikes%2F-46256843" anchor-label="ConversationHistoryApiV14" id="739699761%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-conversation-history-api-v14/index.html"><span>Conversation</span><wbr><span>History</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="739699761%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-conversation-history-api-v14/index.html">ConversationHistoryApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">networkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-conversation-history-api-v13/index.html">ConversationHistoryApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2088234543%2FClasslikes%2F-46256843" anchor-label="E2EIApiV14" id="-2088234543%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e2-e-i-api-v14/index.html"><span>E2EIApi</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2088234543%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-e2-e-i-api-v14/index.html">E2EIApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-e2-e-i-api-v13/index.html">E2EIApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-570348534%2FClasslikes%2F-46256843" anchor-label="FeatureConfigApiV14" id="-570348534%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-feature-config-api-v14/index.html"><span>Feature</span><wbr><span>Config</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-570348534%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-feature-config-api-v14/index.html">FeatureConfigApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-feature-config-api-v13/index.html">FeatureConfigApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-553716741%2FClasslikes%2F-46256843" anchor-label="KeyPackageApiV14" id="-553716741%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-key-package-api-v14/index.html"><span>Key</span><wbr><span>Package</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-553716741%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-key-package-api-v14/index.html">KeyPackageApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-key-package-api-v13/index.html">KeyPackageApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1725093624%2FClasslikes%2F-46256843" anchor-label="LogoutApiV14" id="1725093624%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-logout-api-v14/index.html"><span>Logout</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1725093624%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-logout-api-v14/index.html">LogoutApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="token punctuation">, </span></span><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../com.wire.kalium.network.session/-session-manager/index.html">SessionManager</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-logout-api-v13/index.html">LogoutApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="47885307%2FClasslikes%2F-46256843" anchor-label="MessageApiV14" id="47885307%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-api-v14/index.html"><span>Message</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="47885307%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-message-api-v14/index.html">MessageApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="token punctuation">, </span></span><span class="parameter ">envelopeProtoMapper<span class="token operator">: </span><a href="../com.wire.kalium.network.api.base.authenticated.message/-envelope-proto-mapper/index.html">EnvelopeProtoMapper</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-message-api-v13/index.html">MessageApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1167002799%2FClasslikes%2F-46256843" anchor-label="MLSMessageApiV14" id="1167002799%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-message-api-v14/index.html"><span>MLSMessage</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1167002799%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-m-l-s-message-api-v14/index.html">MLSMessageApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-m-l-s-message-api-v13/index.html">MLSMessageApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-49858912%2FClasslikes%2F-46256843" anchor-label="MLSPublicKeyApiV14" id="-49858912%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-public-key-api-v14/index.html"><span>MLSPublic</span><wbr><span>Key</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-49858912%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-m-l-s-public-key-api-v14/index.html">MLSPublicKeyApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-m-l-s-public-key-api-v13/index.html">MLSPublicKeyApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="628941687%2FClasslikes%2F-46256843" anchor-label="NotificationApiV14" id="628941687%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-notification-api-v14/index.html"><span>Notification</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="628941687%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-notification-api-v14/index.html">NotificationApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="token punctuation">, </span></span><span class="parameter ">authenticatedWebSocketClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-web-socket-client/index.html">AuthenticatedWebSocketClient</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>serverLinks<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-notification-api-v13/index.html">NotificationApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2004629894%2FClasslikes%2F-46256843" anchor-label="PreKeyApiV14" id="2004629894%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pre-key-api-v14/index.html"><span>Pre</span><wbr><span>Key</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2004629894%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-pre-key-api-v14/index.html">PreKeyApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-pre-key-api-v13/index.html">PreKeyApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1993568815%2FClasslikes%2F-46256843" anchor-label="PropertiesApiV14" id="1993568815%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-properties-api-v14/index.html"><span>Properties</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1993568815%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-properties-api-v14/index.html">PropertiesApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-properties-api-v13/index.html">PropertiesApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-368344842%2FClasslikes%2F-46256843" anchor-label="SelfApiV14" id="-368344842%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-self-api-v14/index.html"><span>Self</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-368344842%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-self-api-v14/index.html">SelfApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="token punctuation">, </span></span><span class="parameter ">sessionManager<span class="token operator">: </span><a href="../com.wire.kalium.network.session/-session-manager/index.html">SessionManager</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-self-api-v13/index.html">SelfApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-198986990%2FClasslikes%2F-46256843" anchor-label="ServerTimeApiV14" id="-198986990%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-server-time-api-v14/index.html"><span>Server</span><wbr><span>Time</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-198986990%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-server-time-api-v14/index.html">ServerTimeApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-server-time-api-v13/index.html">ServerTimeApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="494178412%2FClasslikes%2F-46256843" anchor-label="TeamsApiV14" id="494178412%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-teams-api-v14/index.html"><span>Teams</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="494178412%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-teams-api-v14/index.html">TeamsApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-teams-api-v13/index.html">TeamsApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-929015986%2FClasslikes%2F-46256843" anchor-label="UpgradePersonalToTeamApiV14" id="-929015986%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-upgrade-personal-to-team-api-v14/index.html"><span>Upgrade</span><wbr><span>Personal</span><wbr><span>To</span><wbr><span>Team</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-929015986%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-upgrade-personal-to-team-api-v14/index.html">UpgradePersonalToTeamApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-upgrade-personal-to-team-api-v13/index.html">UpgradePersonalToTeamApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2097507829%2FClasslikes%2F-46256843" anchor-label="UserDetailsApiV14" id="-2097507829%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-user-details-api-v14/index.html"><span>User</span><wbr><span>Details</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2097507829%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-user-details-api-v14/index.html">UserDetailsApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-user-details-api-v13/index.html">UserDetailsApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-621772273%2FClasslikes%2F-46256843" anchor-label="UserSearchApiV14" id="-621772273%2FClasslikes%2F-46256843" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":data:network:dokkaHtmlPartial/commonMain" data-filterable-set=":data:network:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-user-search-api-v14/index.html"><span>User</span><wbr><span>Search</span><wbr><span>Api</span><wbr><span><span>V14</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-621772273%2FClasslikes%2F-46256843"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">open </span><span class="token keyword">class </span><a href="-user-search-api-v14/index.html">UserSearchApiV14</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">authenticatedNetworkClient<span class="token operator">: </span><a href="../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a></span></span><span class="token punctuation">)</span> : <a href="../com.wire.kalium.network.api.v13.authenticated/-user-search-api-v13/index.html">UserSearchApiV13</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
