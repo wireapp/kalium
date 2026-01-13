@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.util.DelicateKaliumApi
 
@@ -29,16 +28,16 @@ public interface SyncRequest {
      *
      * @see
      * @param syncState The desired [SyncState] to wait for.
-     * @return An [Either] containing [CoreFailure] if [SyncState.Failed] is encountered,
-     * or [Unit] if the specified [syncState] is reached.
+     * @return [SyncRequestResult] that it's either a [SyncRequestResult.Failure] if [SyncState.Failed] is encountered,
+     * or [SyncRequestResult.Success] if the specified [syncState] is reached.
      */
-    public suspend fun waitUntilOrFailure(syncState: SyncState): Either<CoreFailure, Unit>
+    public suspend fun waitUntilOrFailure(syncState: SyncState): SyncRequestResult
 
     /**
      * Shortcut for [waitUntilOrFailure] with Live state.
      * @see waitUntilOrFailure
      */
-    public suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
+    public suspend fun waitUntilLiveOrFailure(): SyncRequestResult
 
     /**
      * When called, the sync process continues without being released.
@@ -48,4 +47,9 @@ public interface SyncRequest {
      */
     @DelicateKaliumApi("By calling this, Sync will run indefinitely.")
     public fun keepSyncAlwaysOn()
+}
+
+public sealed class SyncRequestResult {
+    public object Success : SyncRequestResult()
+    public data class Failure(val error: CoreFailure) : SyncRequestResult()
 }

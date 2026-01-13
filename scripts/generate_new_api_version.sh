@@ -1,3 +1,4 @@
+set -x
 #!/bin/bash
 
 # Makes all paths relative to project root so it can be run from anywhere
@@ -61,11 +62,11 @@ copy_api_files() {
   done
 }
 
-SOURCE_DIR_UNAUTH="network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/unauthenticated"
-TARGET_DIR_UNAUTH="network/src/commonMain/kotlin/com/wire/kalium/network/api/$newApiVersionLower/unauthenticated"
+SOURCE_DIR_UNAUTH="data/network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/unauthenticated"
+TARGET_DIR_UNAUTH="data/network/src/commonMain/kotlin/com/wire/kalium/network/api/$newApiVersionLower/unauthenticated"
 
-SOURCE_DIR_AUTH="network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/authenticated"
-TARGET_DIR_AUTH="network/src/commonMain/kotlin/com/wire/kalium/network/api/$newApiVersionLower/authenticated"
+SOURCE_DIR_AUTH="data/network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/authenticated"
+TARGET_DIR_AUTH="data/network/src/commonMain/kotlin/com/wire/kalium/network/api/$newApiVersionLower/authenticated"
 
 copy_api_files "$SOURCE_DIR_UNAUTH" "$TARGET_DIR_UNAUTH"
 copy_api_files "$SOURCE_DIR_AUTH" "$TARGET_DIR_AUTH"
@@ -93,8 +94,8 @@ copy_container_files() {
   fi
 }
 
-copy_container_files "network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/authenticated/networkContainer/AuthenticatedNetworkContainer$currentApiVersionUpper.kt"
-copy_container_files "network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/unauthenticated/networkContainer/UnauthenticatedNetworkContainer$currentApiVersionUpper.kt"
+copy_container_files "data/network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/authenticated/networkContainer/AuthenticatedNetworkContainer$currentApiVersionUpper.kt"
+copy_container_files "data/network/src/commonMain/kotlin/com/wire/kalium/network/api/$currentApiVersionLower/unauthenticated/networkContainer/UnauthenticatedNetworkContainer$currentApiVersionUpper.kt"
 
 echo
 

@@ -23,7 +23,6 @@ import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
-import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -34,10 +33,12 @@ import kotlin.coroutines.cancellation.CancellationException
 
 internal suspend inline fun <reified ResponseType : Any> wrapRequest(
     customErrorInterceptor: ErrorResponseInterceptor<ResponseType>? = null,
+    federationErrorResponseInterceptor: BaseFederationErrorResponseInterceptor<*> = FederationErrorResponseInterceptorConflict,
     json: Json = KtxSerializer.json,
     performRequest: () -> HttpResponse,
 ): NetworkResponse<ResponseType> = wrapRequest(
     customErrorInterceptor = customErrorInterceptor,
+    federationErrorResponseInterceptor = federationErrorResponseInterceptor,
     successHandler = { response ->
         NetworkResponse.Success(
             response.body<ResponseType>(),
@@ -53,14 +54,15 @@ internal suspend inline fun <reified ResponseType : Any> wrapRequest(
  *
  * @param performRequest An HTTP response producer
  * @param customErrorInterceptor An optional interceptor for custom error responses.
- * This interceptor will be executed **after** more critical interceptors, like [UnauthorizedResponseInterceptor] and
- * [FederationErrorResponseInterceptor], but **before** the [BaseErrorResponseInterceptor].
+ * This interceptor will be executed **after** [UnauthorizedResponseInterceptor] but **before** other default interceptors
+ * like [FederationErrorResponseInterceptorConflictWithMissingUsers]. This allows overriding the default error handling for specific cases.
  * @param successHandler A handler for successful HTTP responses (status codes 200..299).
  * By default, it will deserialize the body to the wanted [ResponseType].
  * @return A NetworkResponse representing the error, which may either include specific error details or a generic error object.
  */
 internal suspend inline fun <reified ResponseType : Any> wrapRequest(
     customErrorInterceptor: ErrorResponseInterceptor<ResponseType>? = null,
+    federationErrorResponseInterceptor: BaseFederationErrorResponseInterceptor<*> = FederationErrorResponseInterceptorConflict,
     successHandler: suspend (HttpResponse) -> NetworkResponse<ResponseType>,
     json: Json = KtxSerializer.json,
     performRequest: () -> HttpResponse,
@@ -77,7 +79,7 @@ internal suspend inline fun <reified ResponseType : Any> wrapRequest(
         )
 
         UnauthorizedResponseInterceptor.intercept(responseData)
-            ?: FederationErrorResponseInterceptor.intercept(responseData)
+            ?: federationErrorResponseInterceptor.intercept(responseData)
             ?: MLSErrorResponseHandler.intercept(responseData)
             ?: customErrorInterceptor?.intercept(responseData)
             ?: BaseErrorResponseInterceptor.intercept(responseData)
@@ -176,53 +178,77 @@ internal object BaseErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
  * (HTTP Status: [HttpStatusCode.Companion.UnreachableRemoteBackends])
  *
  */
-internal object FederationErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
+internal abstract class BaseFederationErrorResponseInterceptor<T : Any> : ErrorResponseInterceptor<T> {
 
     override suspend fun intercept(httpResponseData: HttpResponseData): NetworkResponse.Error? {
-        val genericFederationResponse = try {
-            // Attempts to parse the generic federation error, to check for labels and data.type
-            httpResponseData.parseBody<FederationErrorResponse.Generic>()
-        } catch (e: IllegalArgumentException) {
-            null
+
+        parseGenericFederationError(httpResponseData)?.let {
+            return NetworkResponse.Error(FederationError(it))
         }
 
-        val isGenericFederationError = genericFederationResponse?.cause?.type == FEDERATION_ERROR_TYPE ||
-                genericFederationResponse?.label?.contains(FEDERATION_ERROR_TYPE) == true
-        if (isGenericFederationError) {
-            return NetworkResponse.Error(FederationError(genericFederationResponse))
-        }
-
-        // If the error doesn't match the generic federation error response,
-        // check for the special cases that follow different JSON schemas
         return when (httpResponseData.status.value) {
-            HttpStatusCode.Conflict.value -> {
-                try {
-                    val errorResponse = httpResponseData.parseBody<FederationErrorResponse.Conflict>()
-                    NetworkResponse.Error(FederationError(errorResponse))
-                } catch (_: IllegalArgumentException) {
-                    null
-                }
-            }
+            HttpStatusCode.Conflict.value ->
+                parseConflictError(httpResponseData)
 
-            HttpStatusCode.UnreachableRemoteBackends.value -> {
-                val errorResponse = try {
-                    httpResponseData.parseBody<FederationErrorResponse.Unreachable>()
-                } catch (_: NoTransformationFoundException) {
-                    FederationErrorResponse.Unreachable(emptyList())
-                }
-                NetworkResponse.Error(FederationError(errorResponse))
-            }
+            HttpStatusCode.UnreachableRemoteBackends.value ->
+                NetworkResponse.Error(
+                    FederationError(parseUnreachableError(httpResponseData))
+                )
 
             else -> null
         }
     }
 
-    private const val FEDERATION_ERROR_TYPE = "federation"
+    protected abstract suspend fun parseConflictError(
+        httpResponseData: HttpResponseData
+    ): NetworkResponse.Error?
 
-    /**
-     * Custom [HttpStatusCode] to handle when one or more federated remote servers are unreachable.
-     */
-    @Suppress("MagicNumber")
-    val HttpStatusCode.Companion.UnreachableRemoteBackends: HttpStatusCode
-        get() = HttpStatusCode(533, "Unreachable remote backends")
+    private fun parseGenericFederationError(
+        httpResponseData: HttpResponseData
+    ): FederationErrorResponse.Generic? =
+        runCatching {
+            httpResponseData.parseBody<FederationErrorResponse.Generic>()
+        }.getOrNull()
+            ?.takeIf {
+                it.cause?.type == FEDERATION_ERROR_TYPE || it.label.contains(FEDERATION_ERROR_TYPE)
+            }
+
+    private fun parseUnreachableError(
+        httpResponseData: HttpResponseData
+    ): FederationErrorResponse.Unreachable =
+        runCatching {
+            httpResponseData.parseBody<FederationErrorResponse.Unreachable>()
+        }.getOrElse {
+            FederationErrorResponse.Unreachable(emptyList())
+        }
+
+    protected companion object {
+        const val FEDERATION_ERROR_TYPE = "federation"
+    }
 }
+
+internal object FederationErrorResponseInterceptorConflict : BaseFederationErrorResponseInterceptor<Nothing>() {
+
+    override suspend fun parseConflictError(
+        httpResponseData: HttpResponseData
+    ): NetworkResponse.Error? =
+        runCatching {
+            httpResponseData.parseBody<FederationErrorResponse.Conflict>()
+        }.getOrNull()
+            ?.let { NetworkResponse.Error(FederationError(it)) }
+}
+
+internal object FederationErrorResponseInterceptorConflictWithMissingUsers : BaseFederationErrorResponseInterceptor<Nothing>() {
+
+    override suspend fun parseConflictError(
+        httpResponseData: HttpResponseData
+    ): NetworkResponse.Error? =
+        runCatching {
+            httpResponseData.parseBody<FederationErrorResponse.ConflictWithMissingUsers>()
+        }.getOrNull()
+            ?.let { NetworkResponse.Error(FederationError(it)) }
+}
+
+@Suppress("MagicNumber")
+val HttpStatusCode.Companion.UnreachableRemoteBackends: HttpStatusCode
+    get() = HttpStatusCode(533, "Unreachable remote backends")

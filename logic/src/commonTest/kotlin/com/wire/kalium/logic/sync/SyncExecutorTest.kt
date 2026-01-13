@@ -25,8 +25,6 @@ import com.wire.kalium.logic.fakes.sync.FakeIncrementalSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSlowSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -36,6 +34,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
@@ -80,7 +79,8 @@ class SyncExecutorTest {
         val waitJob = backgroundScope.launch {
             syncExecutor.request {
                 advanceUntilIdle()
-                waitUntilLiveOrFailure().shouldSucceed()
+                val result = waitUntilLiveOrFailure()
+                assertEquals(SyncRequestResult.Success, result)
                 didContinue = true
             }
         }
@@ -104,7 +104,8 @@ class SyncExecutorTest {
         val waitingJob = backgroundScope.launch {
             syncExecutor.request {
                 advanceUntilIdle()
-                waitUntilOrFailure(SyncState.GatheringPendingEvents).shouldSucceed()
+                val result = waitUntilOrFailure(SyncState.GatheringPendingEvents)
+                assertEquals(SyncRequestResult.Success, result)
                 didContinue = true
             }
         }
@@ -131,9 +132,8 @@ class SyncExecutorTest {
             syncExecutor.request {
                 advanceUntilIdle()
                 val result = waitUntilOrFailure(SyncState.GatheringPendingEvents)
-                result.shouldFail { coreFailure ->
-                    actualFailure = coreFailure
-                }
+                assertIs<SyncRequestResult.Failure>(result)
+                actualFailure = result.error
                 didContinue = true
             }
         }

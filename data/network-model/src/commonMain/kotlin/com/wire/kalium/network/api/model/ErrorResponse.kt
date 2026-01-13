@@ -47,6 +47,11 @@ sealed interface FederationErrorResponse : APIErrorResponseBody {
     ) : FederationErrorResponse
 
     @Serializable
+    data class ConflictWithMissingUsers(
+        @SerialName("missing_users") val missingUsers: List<QualifiedID>
+    ) : FederationErrorResponse
+
+    @Serializable
     data class Unreachable(
         @SerialName("unreachable_backends") val unreachableBackends: List<String> = emptyList()
     ) : FederationErrorResponse
@@ -61,10 +66,12 @@ sealed interface FederationErrorResponse : APIErrorResponseBody {
         companion object {
             const val FEDERATION_DENIED = "federation-denied"
             const val FEDERATION_NOT_ENABLED = "federation-not-enabled"
+            const val FEDERATION_NOT_IMPLEMENTED = "federation-not-implemented"
         }
 
         fun isFederationDenied() = label == FEDERATION_DENIED
         fun isFederationNotEnabled() = label == FEDERATION_NOT_ENABLED
+        fun isFederationNotImplemented() = label == FEDERATION_NOT_IMPLEMENTED
     }
 }
 
