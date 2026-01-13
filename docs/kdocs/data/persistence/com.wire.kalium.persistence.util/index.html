@@ -45,7 +45,11 @@
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/androidMain">android</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/appleMain">apple</button>
                 <button class="platform-tag platform-selector common-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector js-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/jsMain">js</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":data:persistence:dokkaHtmlPartial/jvmMain">jvm</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
@@ -54,11 +58,39 @@
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/androidMain" data-filter=":data:persistence:dokkaHtmlPartial/androidMain">
+                                <span class="checkbox--icon"></span>
+                                android
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/appleMain" data-filter=":data:persistence:dokkaHtmlPartial/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
                         <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
                             <label class="checkbox">
                                 <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/commonMain" data-filter=":data:persistence:dokkaHtmlPartial/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option js-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/jsMain" data-filter=":data:persistence:dokkaHtmlPartial/jsMain">
+                                <span class="checkbox--icon"></span>
+                                js
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence:dokkaHtmlPartial/jvmMain" data-filter=":data:persistence:dokkaHtmlPartial/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
                             </label>
                         </li>
                 </ul>
@@ -90,13 +122,13 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="package" id="content" pageids="persistence::com.wire.kalium.persistence.util////PointingToDeclaration//-794769692">
+<div class="main-content" data-page-type="package" id="content" pageids="persistence::com.wire.kalium.persistence.util////PointingToDeclaration//-1230139612">
   <div class="breadcrumbs"><a href="../index.html">persistence</a><span class="delimiter">/</span><span class="current">com.wire.kalium.persistence.util</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button><button class="section-tab" data-togglable="PROPERTY,EXTENSION_PROPERTY">Properties</button></div>
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
         <h2 class="">Types</h2>
@@ -126,6 +158,27 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-json-serializer/index.html">JsonSerializer</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1158840748%2FProperties%2F-1230139612" anchor-label="isDebug" id="1158840748%2FProperties%2F-1230139612" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain,:data:persistence:dokkaHtmlPartial/androidMain,:data:persistence:dokkaHtmlPartial/appleMain,:data:persistence:dokkaHtmlPartial/jsMain,:data:persistence:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain,:data:persistence:dokkaHtmlPartial/androidMain,:data:persistence:dokkaHtmlPartial/appleMain,:data:persistence:dokkaHtmlPartial/jsMain,:data:persistence:dokkaHtmlPartial/jvmMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain,:data:persistence:dokkaHtmlPartial/androidMain,:data:persistence:dokkaHtmlPartial/appleMain,:data:persistence:dokkaHtmlPartial/jsMain,:data:persistence:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-debug.html"><span>is</span><wbr><span><span>Debug</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1158840748%2FProperties%2F-1230139612"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence:dokkaHtmlPartial/androidMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":data:persistence:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":data:persistence:dokkaHtmlPartial/appleMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/appleMain" data-toggle=":data:persistence:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":data:persistence:dokkaHtmlPartial/commonMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/commonMain" data-toggle=":data:persistence:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":data:persistence:dokkaHtmlPartial/jsMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/jsMain" data-toggle=":data:persistence:dokkaHtmlPartial/jsMain">js</button><button class="platform-bookmark" data-filterable-current=":data:persistence:dokkaHtmlPartial/jvmMain" data-filterable-set=":data:persistence:dokkaHtmlPartial/jvmMain" data-toggle=":data:persistence:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":data:persistence:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">val </span><a href="is-debug.html">isDebug</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">val </span><a href="is-debug.html">isDebug</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">val </span><a href="is-debug.html">isDebug</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div><div class="brief "><p class="paragraph">Flag to indicate whether the app is running in debug mode</p></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence:dokkaHtmlPartial/jsMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">val </span><a href="is-debug.html">isDebug</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">true</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">val </span><a href="is-debug.html">isDebug</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">true</span></div></div>                  </div>
                 </div>
               </div>
             </div>
