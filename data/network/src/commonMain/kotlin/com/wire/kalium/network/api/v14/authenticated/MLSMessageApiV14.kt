@@ -19,18 +19,8 @@
 package com.wire.kalium.network.api.v14.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.v13.authenticated.MLSMessageApiV13
-import com.wire.kalium.network.serialization.Mls
-import com.wire.kalium.network.utils.FederationErrorResponseInterceptorConflictWithMissingUsers
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapRequest
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 
 internal open class MLSMessageApiV14 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
-) : MLSMessageApiV13(authenticatedNetworkClient) 
+) : MLSMessageApiV13(authenticatedNetworkClient)
