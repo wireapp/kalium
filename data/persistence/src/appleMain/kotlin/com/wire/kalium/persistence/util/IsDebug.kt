@@ -17,4 +17,7 @@
  */
 package com.wire.kalium.persistence.util
 
-actual val isDebug: Boolean = true
+import kotlin.experimental.ExperimentalNativeApi
+
+@OptIn(ExperimentalNativeApi::class)
+actual val isDebug: Boolean = Platform.osFamily == OsFamily.IOS && Platform.isDebugBinary
