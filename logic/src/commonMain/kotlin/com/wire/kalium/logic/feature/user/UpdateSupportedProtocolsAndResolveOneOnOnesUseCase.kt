@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import io.mockative.Mockable
 
 /**
@@ -45,7 +45,7 @@ internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
 ) : UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 
     override suspend operator fun invoke(transactionContext: CryptoTransactionContext, synchroniseUsers: Boolean) =
-        updateSupportedProtocols().flatMap { updated ->
+        updateSupportedProtocols().toEither().flatMap { updated ->
             if (updated) {
                 oneOnOneResolver.resolveAllOneOnOneConversations(transactionContext, synchronizeUsers = synchroniseUsers)
             } else {

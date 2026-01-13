@@ -36,12 +36,24 @@ data class CellsInternalModel(
 
 @Serializable
 data class CellsInternalConfigModel(
-    @SerialName("backend")
-    val backend: CellsInternalBackendConfigModel?,
+    @SerialName("backendUrl")
+    val backendUrl: String?,
+    @SerialName("collabora")
+    val collaboraEdition: CollaboraEdition,
+    @SerialName("teamQuotaBytes")
+    val teamQuotaBytes: Long?,
 )
 
-@Serializable
-data class CellsInternalBackendConfigModel(
-    @SerialName("url")
-    val url: String,
-)
+enum class CollaboraEdition {
+    NO, CODE, COOL;
+
+    companion object {
+        fun String?.fromString(): CollaboraEdition =
+            when (this?.lowercase()) {
+                "no" -> NO
+                "code" -> CODE
+                "cool" -> COOL
+                else -> NO
+        }
+    }
+}

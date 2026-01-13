@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemo
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsResult
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
@@ -564,13 +565,13 @@ class SlowSyncWorkerTest {
         suspend fun withUpdateSupportedProtocolsSuccess() = apply {
             coEvery {
                 updateSupportedProtocols.invoke()
-            }.returns(Either.Right(true))
+            }.returns(UpdateSelfUserSupportedProtocolsResult.Updated)
         }
 
         suspend fun withUpdateSupportedProtocolsFailure() = apply {
             coEvery {
                 updateSupportedProtocols.invoke()
-            }.returns(failure)
+            }.returns(UpdateSelfUserSupportedProtocolsResult.Failure(failure.value))
         }
 
         suspend fun withSyncConversationsFailure() = apply {

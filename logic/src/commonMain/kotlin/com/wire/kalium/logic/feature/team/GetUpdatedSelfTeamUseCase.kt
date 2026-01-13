@@ -17,12 +17,11 @@
  */
 package com.wire.kalium.logic.feature.team
 
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 
 /**
  * This use case is responsible for getting the updated team information of the self user.
@@ -33,10 +32,16 @@ public class GetUpdatedSelfTeamUseCase internal constructor(
     private val teamRepository: TeamRepository,
 ) {
 
-    public suspend operator fun invoke(): Either<CoreFailure, Team?> {
-        return selfTeamIdProvider().flatMap { teamId ->
+    public suspend operator fun invoke(): Team? {
+        return selfTeamIdProvider().nullableFold({
+            kaliumLogger.w("GetUpdatedSelfTeamUseCase - self team id not found")
+            null
+        }, { teamId ->
             teamId?.let { teamRepository.syncTeam(it) }
-                ?: Either.Right(null)
-        }
+                ?.nullableFold(
+                    { failure -> null },
+                    { team -> team }
+                )
+        })
     }
 }
