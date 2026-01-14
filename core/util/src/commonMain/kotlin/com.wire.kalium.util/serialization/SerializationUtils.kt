@@ -18,6 +18,7 @@
 
 package com.wire.kalium.util.serialization
 
+import kotlinx.datetime.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -40,6 +41,7 @@ fun Any?.toJsonElement(): JsonElement {
         is Number -> JsonPrimitive(this)
         is Boolean -> JsonPrimitive(this)
         is String -> JsonPrimitive(this)
+        is Instant -> JsonPrimitive(this.toString())
         is Array<*> -> this.toJsonArray()
         is List<*> -> this.toJsonArray()
         is Map<*, *> -> this.toJsonObject()

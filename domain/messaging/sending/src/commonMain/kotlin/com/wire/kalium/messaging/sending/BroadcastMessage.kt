@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.messaging.sending
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -39,7 +38,7 @@ data class BroadcastMessage(
     fun toLogString(): String {
         val extraProperties: MutableMap<String, Any> = when (content) {
             is MessageContent.DeleteForMe -> mutableMapOf(
-                "messageId" to content.messageId.obfuscateId(),
+                "messageId" to content.messageId,
             )
 
             is MessageContent.LastRead -> mutableMapOf(
@@ -54,11 +53,11 @@ data class BroadcastMessage(
         }
 
         val standardProperties = mapOf(
-            "id" to id.obfuscateId(),
+            "id" to id,
             "date" to date,
-            "senderUserId" to senderUserId.value.obfuscateId(),
+            "senderUserId" to senderUserId.toLogString(),
             "status" to "$status",
-            "senderClientId" to senderClientId.value.obfuscateId(),
+            "senderClientId" to senderClientId.toLogString(),
             "type" to content.typeDescription(),
         )
 
