@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.configuration.WireCellsConfig
+import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
 import com.wire.kalium.logic.data.featureConfig.CellsModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -38,7 +38,9 @@ internal class CellsConfigHandler(
         userConfigRepository.setWireCellsConfig(
             config = model?.let {
                 WireCellsConfig(
-                    backendUrl = it.config.backend?.url
+                    backendUrl = it.config.backendUrl,
+                    collabora = it.config.collaboraEdition,
+                    teamQuotaBytes = it.config.perUserQuotaBytes,
                 )
             }
         )

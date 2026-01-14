@@ -365,12 +365,28 @@ sealed class FeatureConfigData {
     @Serializable
     data class CellsInternalConfigDTO(
         @SerialName("backend")
-        val backend: CellsInternalBackendConfigDTO?
+        val backend: CellsInternalBackendConfigDTO?,
+        @SerialName("collabora")
+        val collabora: CellsInternalCollaboraConfigDTO?,
+        @SerialName("storage")
+        val storage: CellsInternalStorageConfigDTO?,
     )
 
     @Serializable
     data class CellsInternalBackendConfigDTO(
         @SerialName("url")
-        val url: String
+        val url: String,
+    )
+
+    @Serializable
+    data class CellsInternalCollaboraConfigDTO(
+        @SerialName("edition")
+        val edition: String,
+    )
+
+    @Serializable
+    data class CellsInternalStorageConfigDTO(
+        @SerialName("perUserQuotaBytes")
+        val perUserQuotaBytes: Long,
     )
 }

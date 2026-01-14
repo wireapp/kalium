@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logger.obfuscateDomain
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
@@ -66,16 +64,15 @@ data class Connection(
     }
 
     fun toMap(): Map<String, String> {
-        val qId = qualifiedConversationId
         return mapOf(
-            "conversationId" to conversationId.obfuscateId(),
-            "from" to from.obfuscateId(),
+            "conversationId" to conversationId,
+            "from" to from,
             "lastUpdate" to lastUpdate.toIsoDateTimeString(),
-            "qualifiedConversationId" to "${qId.value.obfuscateId()}@${qId.domain.obfuscateDomain()}",
-            "qualifiedToId" to "${qualifiedToId.value.obfuscateId()}@${qualifiedToId.domain.obfuscateDomain()}",
+            "qualifiedConversationId" to qualifiedConversationId.toLogString(),
+            "qualifiedToId" to qualifiedToId.toLogString(),
             "status" to status.name,
-            "toId" to toId.obfuscateId(),
-            "fromUser" to "${fromUser?.id?.value?.obfuscateId() ?: "null"}@${fromUser?.id?.domain?.obfuscateDomain() ?: "null"}"
+            "toId" to toId,
+            "fromUser" to (fromUser?.id?.toLogString() ?: "null")
         )
     }
 }

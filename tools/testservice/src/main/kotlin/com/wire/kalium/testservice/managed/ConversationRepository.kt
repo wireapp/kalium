@@ -38,6 +38,7 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
+import com.wire.kalium.logic.feature.debug.SendConfirmationResult
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
@@ -121,15 +122,15 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info(
                             "Instance ${instance.instanceId}: Create conversation \"$name\" with ${
-                                    userIds.joinToString { user -> user.value + "@" + user.domain }
-                                }"
+                                userIds.joinToString { user -> user.value + "@" + user.domain }
+                            }"
                         )
                         when (
                             val result = conversations.createRegularGroup(
-                            name,
-                            userIds,
-                            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
-                        )
+                                name,
+                                userIds,
+                                CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+                            )
                         ) {
                             is ConversationCreationResult.Success -> {
                                 Response.status(Response.Status.OK).build()
@@ -155,12 +156,15 @@ sealed class ConversationRepository {
                     is CurrentSessionResult.Success -> {
                         instance.coreLogic.sessionScope(session.accountInfo.userId) {
                             log.info("Instance ${instance.instanceId}: Send $type confirmation")
-                            debug.sendConfirmation(conversationId, type, messageId, listOf()).fold({
-                                Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                    .entity("Instance ${instance.instanceId}: $it").build()
-                            }, {
-                                Response.status(Response.Status.OK).build()
-                            })
+                            val result = debug.sendConfirmation(conversationId, type, messageId, listOf())
+                            when (result) {
+                                is SendConfirmationResult.Failure ->
+                                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                        .entity("Instance ${instance.instanceId}: ${result.failure}").build()
+
+                                is SendConfirmationResult.Success ->
+                                    Response.status(Response.Status.OK).build()
+                            }
                         }
                     }
 
@@ -211,15 +215,15 @@ sealed class ConversationRepository {
                         log.info("Instance ${instance.instanceId}: Send button action confirmation for button $buttonId")
                         when (
                             val result = messages.sendButtonActionConfirmationMessage(
-                            conversationId,
-                            referenceMessageId,
-                            buttonId,
-                            userIds
-                        )
+                                conversationId,
+                                referenceMessageId,
+                                buttonId,
+                                userIds
+                            )
                         ) {
                             is SendButtonActionConfirmationMessageUseCase.Result.Failure ->
                                 Response
-                                .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+                                    .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
 
                             else -> {
                                 Response.status(Response.Status.OK).entity(SendTextResponse(instance.instanceId, "", "")).build()
@@ -639,7 +643,7 @@ sealed class ConversationRepository {
                                     temp.toOkioPath(),
                                     byteArray.size.toLong(),
                                     "image",
-                                type,
+                                    type,
                                     width,
                                     height,
                                     0L,
