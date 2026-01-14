@@ -133,6 +133,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
 import okio.SYSTEM
 import kotlin.coroutines.CoroutineContext
@@ -179,15 +181,25 @@ public class CellsScope(
         cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
     }
 
-    private suspend fun getNodeServiceApi(): NodeServiceApi {
-        return NodeServiceBuilder
-            .withHttpClient(cellsClient)
-            .withCredentials(cellClientCredentialsDeferred)
-            .build()
+    private val nodeServiceApiMutex = Mutex()
+    private var _nodeServiceApi: NodeServiceApi? = null
+
+    private suspend fun getNodeServiceApiCached(): NodeServiceApi {
+        // If already initialized, return it
+        _nodeServiceApi?.let { return it }
+
+        // Lock to ensure only one coroutine initializes
+        return nodeServiceApiMutex.withLock {
+            _nodeServiceApi ?: NodeServiceBuilder
+                .withHttpClient(cellsClient)
+                .withCredentials(cellClientCredentialsDeferred)
+                .build()
+                .also { _nodeServiceApi = it }
+        }
     }
 
     private val cellsApi: CellsApi by lazy {
-        CellsApiImpl(getNodeServiceApi = { getNodeServiceApi() })
+        CellsApiImpl(getNodeServiceApi = { getNodeServiceApiCached() })
     }
 
     private val cellsRepository: CellsRepository by lazy {

@@ -35,7 +35,6 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -187,17 +186,16 @@ private class CellsAwsClientJvm(
         uploadProgressListener: ((Long) -> Unit)? = null,
         downloadProgressListener: ((Long) -> Unit)? = null,
         block: suspend S3Client.() -> T,
-    ): T =
-        getS3Client().withConfig {
-            if (uploadProgressListener != null) {
-                interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
-            }
-            if (downloadProgressListener != null) {
-                interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
-            }
-        }.use {
-            block(it)
+    ): T = getS3Client().withConfig {
+        if (uploadProgressListener != null) {
+            interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
         }
+        if (downloadProgressListener != null) {
+            interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
+        }
+    }.use {
+        block(it)
+    }
 }
 
 private fun CellNodeDTO.createDraftNodeMetaData() = mapOf(
