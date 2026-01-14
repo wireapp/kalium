@@ -1114,7 +1114,6 @@ public class UserSessionScope internal constructor(
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
-            eventRepository = eventRepository,
             conversationEventReceiver = conversationEventReceiver,
             userEventReceiver = userEventReceiver,
             teamEventReceiver = teamEventReceiver,
@@ -1352,6 +1351,7 @@ public class UserSessionScope internal constructor(
             eventProcessor,
             cryptoTransactionProvider,
             userStorage.database,
+            eventRepository,
             userScopedLogger,
         )
     }
