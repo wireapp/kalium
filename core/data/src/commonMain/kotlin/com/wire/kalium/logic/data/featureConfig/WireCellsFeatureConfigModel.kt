@@ -40,8 +40,8 @@ data class CellsInternalConfigModel(
     val backendUrl: String?,
     @SerialName("collabora")
     val collaboraEdition: CollaboraEdition,
-    @SerialName("teamQuotaBytes")
-    val teamQuotaBytes: Long?,
+    @SerialName("perUserQuotaBytes")
+    val perUserQuotaBytes: Long?,
 )
 
 enum class CollaboraEdition {

@@ -40,7 +40,7 @@ internal class CellsConfigHandler(
                 WireCellsConfig(
                     backendUrl = it.config.backendUrl,
                     collabora = it.config.collaboraEdition,
-                    teamQuotaBytes = it.config.teamQuotaBytes,
+                    teamQuotaBytes = it.config.perUserQuotaBytes,
                 )
             }
         )
