@@ -130,8 +130,9 @@ import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
 import okio.FileSystem
 import okio.SYSTEM
 import kotlin.coroutines.CoroutineContext
@@ -170,25 +171,23 @@ public class CellsScope(
         CellsCredentialsProvider(getCellConfig)
     }
 
-    private val cellClientCredentials: CellsCredentials by lazy {
-        runBlocking {
-            cellsCredentialsProvider.getCredentials(sessionManager.serverConfig())
-        }
+    private val cellClientCredentialsDeferred: Deferred<CellsCredentials> by lazy {
+        async { cellsCredentialsProvider.getCredentials() }
     }
 
     private val cellAwsClient: CellsAwsClient by lazy {
-        cellsAwsClient(cellClientCredentials, sessionManager, accessTokenApi)
+        cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
     }
 
-    private val nodeServiceApi: NodeServiceApi by lazy {
-        NodeServiceBuilder
+    private suspend fun getNodeServiceApi(): NodeServiceApi {
+        return NodeServiceBuilder
             .withHttpClient(cellsClient)
-            .withCredentials(cellClientCredentials)
+            .withCredentials(cellClientCredentialsDeferred)
             .build()
     }
 
     private val cellsApi: CellsApi by lazy {
-        CellsApiImpl(nodeServiceApi = nodeServiceApi)
+        CellsApiImpl(getNodeServiceApi = { getNodeServiceApi() })
     }
 
     private val cellsRepository: CellsRepository by lazy {
@@ -275,11 +274,11 @@ public class CellsScope(
     }
 
     public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
-        CreatePublicLinkUseCaseImpl(cellClientCredentials, cellsRepository)
+        CreatePublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
     }
 
     public val getPublicLinkUseCase: GetPublicLinkUseCase by lazy {
-        GetPublicLinkUseCaseImpl(cellClientCredentials, cellsRepository)
+        GetPublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
     }
 
     public val deletePublicLinkUseCase: DeletePublicLinkUseCase by lazy {

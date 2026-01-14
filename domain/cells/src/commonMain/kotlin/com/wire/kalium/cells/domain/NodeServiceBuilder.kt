@@ -20,6 +20,7 @@ package com.wire.kalium.cells.domain
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.Deferred
 
 internal object NodeServiceBuilder {
 
@@ -28,8 +29,8 @@ internal object NodeServiceBuilder {
     private var httpClient: HttpClient? = null
     private var baseUrl: String? = null
 
-    fun withCredentials(credentials: CellsCredentials?): NodeServiceBuilder {
-        baseUrl = "${credentials?.serverUrl}/$API_VERSION"
+    suspend fun withCredentials(credentials: Deferred<CellsCredentials?>): NodeServiceBuilder {
+        baseUrl = "${credentials.await()?.serverUrl}/$API_VERSION"
         return this
     }
 
