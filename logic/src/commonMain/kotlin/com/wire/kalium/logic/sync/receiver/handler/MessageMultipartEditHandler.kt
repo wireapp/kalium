@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.message.Message
@@ -50,7 +49,7 @@ internal class MessageMultipartEditHandlerImpl internal constructor(
     ) = messageRepository.getMessageById(message.conversationId, messageContent.editMessageId).flatMap { currentMessage ->
 
         if (currentMessage.senderUserId != message.senderUserId) {
-            val obfuscatedId = message.senderUserId.toString().obfuscateId()
+            val obfuscatedId = message.senderUserId.toLogString()
             kaliumLogger.w(
                 message = "User '$obfuscatedId' attempted to edit a message from another user. Ignoring the edit completely"
             )
