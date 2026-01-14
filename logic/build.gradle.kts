@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 import org.jetbrains.kotlin.util.suffixIfNot
 
 @Suppress("DSL_SCOPE_VIOLATION")
@@ -24,6 +25,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.mockative)
     alias(libs.plugins.mokkery)
+    alias(libs.plugins.skie)
 }
 
 kaliumLibrary {
@@ -34,6 +36,18 @@ kaliumLibrary {
 
 kotlin {
     explicitApi()
+
+    val xcf = XCFramework("KaliumLogic")
+    val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64())
+    appleTargets.forEach {
+        it.binaries.framework {
+            baseName = "KaliumLogic"
+            freeCompilerArgs += "-Xbinary=bundleId=com.wire.kalium.logic"
+            linkerOpts.add("-lsqlite3")
+            xcf.add(this)
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
