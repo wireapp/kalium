@@ -213,7 +213,7 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
         config = CellsInternalConfigModel(
             backendUrl = data.config.backend?.url,
             collaboraEdition = data.config.collabora?.edition.fromString(),
-            teamQuotaBytes = data.config.storage?.teamQuotaBytes,
+            perUserQuotaBytes = data.config.storage?.perUserQuotaBytes,
         ),
     )
 

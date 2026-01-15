@@ -19,10 +19,10 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 
 internal open class FeatureConfigApiV0 internal constructor(
@@ -31,7 +31,7 @@ internal open class FeatureConfigApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun featureConfigs(): NetworkResponse<FeatureConfigResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get(FEATURE_CONFIG)
         }
 

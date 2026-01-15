@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 
@@ -54,7 +55,7 @@ internal class SynchronizeExternalDataUseCaseImpl(
     ): SynchronizeExternalDataResult {
         return transactionProvider.transaction("SynchronizeExternalData") { transactionContext ->
             eventRepository.parseExternalEvents(data).foldToEitherWhileRight(Unit) { event, _ ->
-                eventProcessor.processEvent(transactionContext, event)
+                eventProcessor.processEvent(transactionContext, event).map { Unit }
             }
         }
             .fold({

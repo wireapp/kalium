@@ -386,7 +386,7 @@ sealed class FeatureConfigData {
 
     @Serializable
     data class CellsInternalStorageConfigDTO(
-        @SerialName("teamQuotaBytes")
-        val teamQuotaBytes: Long,
+        @SerialName("perUserQuotaBytes")
+        val perUserQuotaBytes: Long,
     )
 }

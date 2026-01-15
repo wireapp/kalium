@@ -19,11 +19,14 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import io.mockative.Mockable
@@ -50,6 +53,7 @@ internal class IncrementalSyncWorkerImpl(
     private val eventProcessor: EventProcessor,
     private val transactionProvider: CryptoTransactionProvider,
     private val databaseBuilder: UserDatabaseBuilder,
+    private val eventRepository: EventRepository,
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncWorker {
 
@@ -73,11 +77,26 @@ internal class IncrementalSyncWorkerImpl(
                 kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
                 transactionProvider.transaction("processEvents") { context ->
                     databaseBuilder.dbInvalidationController.runMuted {
-                        envelopes.map { envelope ->
-                            eventProcessor.processEvent(context, envelope)
-                        }.foldToEitherWhileRight(Unit) { value, _ -> value }
+                        envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
+                            .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
+                                eventEither.map { eventId ->
+                                    eventId?.let(acc::add)
+                                    acc
+                                }
+                            }
                     }
                 }
+                    .onSuccess { eventIds ->
+                        if (eventIds.isEmpty()) {
+                            logger.i("No events to mark as processed")
+                            return@onSuccess
+                        }
+
+                        eventRepository.setEventsAsProcessed(eventIds)
+                            .onSuccess {
+                                logger.i("${eventIds.size} events set as processed")
+                            }
+                    }
                     .onFailure {
                         throw KaliumSyncException("Processing failed", it)
                     }

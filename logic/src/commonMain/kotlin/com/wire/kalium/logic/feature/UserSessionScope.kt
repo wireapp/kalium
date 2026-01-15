@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProviderImpl
@@ -581,7 +580,7 @@ public class UserSessionScope internal constructor(
         }
 
     private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
-        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.value?.obfuscateId() ?: "")
+        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.toLogString() ?: "")
     }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
@@ -1115,7 +1114,6 @@ public class UserSessionScope internal constructor(
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
-            eventRepository = eventRepository,
             conversationEventReceiver = conversationEventReceiver,
             userEventReceiver = userEventReceiver,
             teamEventReceiver = teamEventReceiver,
@@ -1353,6 +1351,7 @@ public class UserSessionScope internal constructor(
             eventProcessor,
             cryptoTransactionProvider,
             userStorage.database,
+            eventRepository,
             userScopedLogger,
         )
     }

@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
@@ -68,23 +68,29 @@ internal interface EventProcessor {
      * Processes a single [eventEnvelope] using the provided [transactionContext].
      *
      * The underlying event is dispatched to the appropriate domain receiver (e.g., conversations, users).
-     * If the event is not transient, it is marked as processed via [EventRepository].
      *
-     * If processing fails, no updates will be persisted to the event store.
+     * This method does **not** mark the event as processed in the local store. Instead, on successful
+     * processing it returns the processed event id so the caller can mark it as processed **after**
+     * the surrounding crypto transaction has been successfully committed.
+     *
+     * When [disableEventProcessing] is enabled, the event is consumed but no processing is performed,
+     * and `null` is returned.
+     *
+     * If processing fails, no "processed" marker should be persisted by the caller.
      *
      * @param transactionContext Contains access to Proteus or MLS cryptographic context.
      * @param eventEnvelope The envelope containing the event and its metadata.
-     * @return Either a [CoreFailure] if processing failed, or [Unit] if processing succeeded.
+     * @return Either a [CoreFailure] if processing failed, or the processed event id (`String`) on success.
+     *         If processing is intentionally skipped (e.g. [disableEventProcessing]), returns `Right(null)`.
      */
     suspend fun processEvent(
         transactionContext: CryptoTransactionContext,
         eventEnvelope: EventEnvelope
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, String?>
 }
 
 @Suppress("LongParameterList")
 internal class EventProcessorImpl(
-    private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: UserEventReceiver,
     private val teamEventReceiver: TeamEventReceiver,
@@ -104,15 +110,15 @@ internal class EventProcessorImpl(
     override suspend fun processEvent(
         transactionContext: CryptoTransactionContext,
         eventEnvelope: EventEnvelope
-    ): Either<CoreFailure, Unit> = processingScope.async {
+    ): Either<CoreFailure, String?> = processingScope.async {
         val (event, deliveryInfo) = eventEnvelope
         if (disableEventProcessing) {
             logger.w("Skipping processing of ${event.toLogString()} due to debug option")
-            Either.Right(Unit)
+            Either.Right(null)
         } else {
             logger.i("Starting processing of event: ${event.toLogString()}")
             withContext(NonCancellable) {
-                doProcess(transactionContext, event, deliveryInfo, eventEnvelope)
+                doProcess(transactionContext, event, deliveryInfo)
             }
         }
     }.await()
@@ -120,9 +126,8 @@ internal class EventProcessorImpl(
     private suspend fun doProcess(
         transactionContext: CryptoTransactionContext,
         event: Event,
-        deliveryInfo: EventDeliveryInfo,
-        eventEnvelope: EventEnvelope
-    ): Either<CoreFailure, Unit> {
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, String> {
         return when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.User -> userEventReceiver.onEvent(transactionContext, event, deliveryInfo)
@@ -137,10 +142,6 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(transactionContext, event, deliveryInfo)
-        }.onSuccess {
-            eventRepository.setEventAsProcessed(event.id).onSuccess {
-                logger.i("Event set as processed: ${eventEnvelope.toLogString()}")
-            }
-        }
+        }.map { event.id }
     }
 }

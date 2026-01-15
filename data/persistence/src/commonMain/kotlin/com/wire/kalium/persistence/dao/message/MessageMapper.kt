@@ -33,9 +33,12 @@ import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.JsonSerializer
+import com.wire.kalium.persistence.util.isDebug
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 
 @Suppress("LongParameterList", "LargeClass")
 object MessageMapper {
@@ -812,10 +815,22 @@ object MessageMapper {
     }
 
     private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> = messageMentions?.let {
-        serializer.decodeFromString(it)
+        try {
+            serializer.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (isDebug) throw e
+            kaliumLogger.e("messageMentionsFromJsonString: Invalid JSON received", e)
+            emptyList()
+        }
     } ?: emptyList()
 
     private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> = messageAttachments?.let {
-        serializer.decodeFromString(it)
+        try {
+            serializer.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (isDebug) throw e
+            kaliumLogger.e("messageAttachmentsFromJsonString: Invalid JSON received", e)
+            emptyList()
+        }
     } ?: emptyList()
 }

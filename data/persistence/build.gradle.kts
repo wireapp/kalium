@@ -123,4 +123,7 @@ android {
     testOptions.unitTests.all {
         it.enabled = false
     }
+    buildFeatures {
+        buildConfig = true
+    }
 }
