@@ -33,7 +33,7 @@ internal actual fun cellsAwsClient(
 
 @Suppress("UnusedPrivateProperty")
 private class CellsAwsClientApple(
-    private val credentials: CellsCredentials?,
+    private val credentials: Deferred<CellsCredentials?>,
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi
 ) : CellsAwsClient {
