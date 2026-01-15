@@ -828,7 +828,7 @@ object MessageMapper {
         try {
             serializer.decodeFromString(it)
         } catch (e: SerializationException) {
-            if (!isDebug) throw e
+            if (isDebug) throw e
             kaliumLogger.e("messageAttachmentsFromJsonString: Invalid JSON received", e)
             emptyList()
         }
