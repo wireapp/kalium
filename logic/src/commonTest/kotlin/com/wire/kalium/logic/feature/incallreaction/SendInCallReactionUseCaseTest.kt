@@ -18,16 +18,14 @@
 package com.wire.kalium.logic.feature.incallreaction
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -36,6 +34,7 @@ import io.mockative.once
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 class SendInCallReactionUseCaseTest {
 
@@ -52,7 +51,7 @@ class SendInCallReactionUseCaseTest {
         val result = sendReactionUseCase(ConversationId("id", "domain"), "reaction")
 
         // Then
-        result.shouldSucceed()
+        assertIs<SendInCallReactionResult.Success>(result)
 
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
@@ -72,7 +71,7 @@ class SendInCallReactionUseCaseTest {
         val result = sendReactionUseCase(ConversationId("id", "domain"), "reaction")
 
         // Then
-        result.shouldFail()
+        assertIs<SendInCallReactionResult.Failure>(result)
 
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
