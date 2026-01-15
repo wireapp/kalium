@@ -130,6 +130,7 @@ internal interface EventRepository {
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
     suspend fun observeEvents(): Flow<List<EventEnvelope>>
+    suspend fun setEventsAsProcessed(eventIds: List<String>): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -481,6 +482,10 @@ internal class EventDataSource(
 
     override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {
         eventDAO.markEventAsProcessed(eventId)
+    }
+
+    override suspend fun setEventsAsProcessed(eventIds: List<String>): Either<StorageFailure, Unit> = wrapStorageRequest {
+        eventDAO.markEventsAsProcessed(eventIds)
     }
 
     private suspend fun getNextPendingEventsPage(
