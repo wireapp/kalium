@@ -80,15 +80,15 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
     }
-
+    public actual override val networkStateObserver: NetworkStateObserver =
+        kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        PlatformContext(),
-        CoroutineScope(KaliumDispatcherImpl.io)
+        appContext = PlatformContext(),
+        scope = CoroutineScope(KaliumDispatcherImpl.io),
+        networkStateObserver = networkStateObserver,
     )
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    public actual override val networkStateObserver: NetworkStateObserver =
-        kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
