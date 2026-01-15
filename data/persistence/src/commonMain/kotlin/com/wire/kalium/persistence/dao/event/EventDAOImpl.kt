@@ -99,6 +99,18 @@ class EventDAOImpl(
         }
     }
 
+    override suspend fun markEventsAsProcessed(
+        eventIds: List<String>,
+    ) {
+        withContext(writeDispatcher.value) {
+            eventsQueries.transaction {
+                eventIds.forEach { eventId ->
+                    eventsQueries.markEventAsProcessed(eventId)
+                }
+            }
+        }
+    }
+
     override suspend fun setAllUnprocessedEventsAsPending() {
         withContext(writeDispatcher.value) {
             eventsQueries.setAllUnprocessedEventsAsPending()
