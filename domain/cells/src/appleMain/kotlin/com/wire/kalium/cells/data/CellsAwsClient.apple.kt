@@ -21,18 +21,19 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import kotlinx.coroutines.Deferred
 import okio.Path
 import okio.Sink
 
 internal actual fun cellsAwsClient(
-    credentials: CellsCredentials?,
+    credentials: Deferred<CellsCredentials?>,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
 ): CellsAwsClient = CellsAwsClientApple(credentials, sessionManager, accessTokenApi)
 
 @Suppress("UnusedPrivateProperty")
 private class CellsAwsClientApple(
-    private val credentials: CellsCredentials?,
+    private val credentials: Deferred<CellsCredentials?>,
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi
 ) : CellsAwsClient {

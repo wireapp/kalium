@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import kotlinx.coroutines.Deferred
 import okio.Path
 import okio.Sink
 
@@ -36,7 +37,7 @@ internal interface CellsAwsClient {
 }
 
 internal expect fun cellsAwsClient(
-    credentials: CellsCredentials?,
+    credentials: Deferred<CellsCredentials?>,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
 ): CellsAwsClient

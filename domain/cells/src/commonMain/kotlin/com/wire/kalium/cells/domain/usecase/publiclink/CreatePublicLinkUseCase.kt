@@ -23,6 +23,7 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
+import kotlinx.coroutines.Deferred
 
 /**
  * Create new public link for given asset id. Created Public link is stored on the Wire Cell server.
@@ -33,14 +34,14 @@ public interface CreatePublicLinkUseCase {
 }
 
 internal class CreatePublicLinkUseCaseImpl(
-    private val cellsCredentials: CellsCredentials?,
+    private val cellsCredentials: Deferred<CellsCredentials?>,
     private val cellsRepository: CellsRepository,
 ) : CreatePublicLinkUseCase {
     override suspend fun invoke(assetId: String, fileName: String): Either<CoreFailure, PublicLink> {
         return cellsRepository.createPublicLink(assetId, fileName)
             .map { link ->
                 link.copy(
-                    url = "${cellsCredentials?.serverUrl}${link.url}"
+                    url = "${cellsCredentials.await()?.serverUrl}${link.url}"
                 )
             }
     }
