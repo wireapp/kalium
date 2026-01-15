@@ -108,9 +108,10 @@ private fun getOrCreateMasterKey(
         .build()
 }
 
-private fun supportsStrongBox(context: Context): Boolean {
-    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
-}
+private fun supportsStrongBox(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
+
 
 private fun recoverFromInvalidKey(
     options: SettingOptions,
