@@ -19,11 +19,11 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.authenticated.search.UserSearchRequest
 import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
@@ -34,7 +34,7 @@ internal open class UserSearchApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun search(userSearchRequest: UserSearchRequest): NetworkResponse<UserSearchResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get(PATH_CONTACT_SEARCH) {
                 with(userSearchRequest) {
                     parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)

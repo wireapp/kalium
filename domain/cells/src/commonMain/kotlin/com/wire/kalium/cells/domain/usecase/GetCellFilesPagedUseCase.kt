@@ -25,6 +25,16 @@ import com.wire.kalium.cells.domain.paging.FilePagingSource
 import kotlinx.coroutines.flow.Flow
 
 public interface GetCellFilesPagedUseCase {
+    /**
+     * Use case to get paged files from a cell, optionally filtered by conversation ID, search query,
+     * deletion status, and tags.
+     *
+     * @param conversationId The ID of the conversation to filter files by (optional).
+     * @param query The search query to filter files.
+     * @param onlyDeleted Whether to include only deleted files.
+     * @param tags A list of tags to filter files by.
+     * @return A flow of paged data containing the filtered files.
+     */
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,

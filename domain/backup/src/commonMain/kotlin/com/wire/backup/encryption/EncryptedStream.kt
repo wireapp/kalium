@@ -26,8 +26,12 @@ import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.ionspin.kotlin.crypto.stream.crypto_stream_chacha20_KEYBYTES
+import com.wire.backup.encryption.EncryptedStream.XChaCha20Poly1305.INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE
+import com.wire.backup.encryption.EncryptedStream.XChaCha20Poly1305.decrypt
+import com.wire.backup.encryption.EncryptedStream.XChaCha20Poly1305.encrypt
 import com.wire.backup.hash.HASH_MEM_LIMIT
 import com.wire.backup.hash.HASH_OPS_LIMIT
+import com.wire.kalium.cryptography.LibsodiumInitializer.initializeLibsodiumIfNeeded
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -73,7 +77,7 @@ internal interface EncryptedStream<AuthenticationData> {
         private val INDIVIDUAL_ENCRYPTED_MESSAGE_SIZE = INDIVIDUAL_PLAINTEXT_MESSAGE_SIZE + crypto_secretstream_xchacha20poly1305_ABYTES
 
         override suspend fun encrypt(source: Source, outputSink: Sink, authenticationData: XChaChaPoly1305AuthenticationData) {
-            initializeLibSodiumIfNeeded()
+            initializeLibsodiumIfNeeded()
             val key = generateChaCha20Key(authenticationData)
             val stateHeader = SecretStream.xChaCha20Poly1305InitPush(key)
             val state = stateHeader.state
@@ -115,7 +119,7 @@ internal interface EncryptedStream<AuthenticationData> {
             outputSink: Sink,
             authenticationData: XChaChaPoly1305AuthenticationData,
         ): DecryptionResult {
-            initializeLibSodiumIfNeeded()
+            initializeLibsodiumIfNeeded()
             var decryptedDataSize = 0L
             val outputBuffer = outputSink.buffer()
             val readBuffer = Buffer()

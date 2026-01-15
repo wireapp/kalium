@@ -35,6 +35,9 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.Path
 import okio.Sink
 import okio.buffer
@@ -44,13 +47,13 @@ import java.nio.ByteBuffer
 import kotlin.time.Duration.Companion.hours
 
 internal actual fun cellsAwsClient(
-    credentials: CellsCredentials?,
+    credentials: Deferred<CellsCredentials?>,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
 ): CellsAwsClient = CellsAwsClientJvm(credentials, sessionManager, accessTokenApi)
 
 private class CellsAwsClientJvm(
-    private val credentials: CellsCredentials?,
+    private val credentials: Deferred<CellsCredentials?>,
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi,
 ) : CellsAwsClient {
@@ -62,9 +65,17 @@ private class CellsAwsClientJvm(
         const val MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024
     }
 
-    private val s3Client: S3Client by lazy { buildS3Client() }
+    private var s3Client: S3Client? = null
+    private val mutex = Mutex()
 
-    private fun buildS3Client() = with(credentials) {
+    suspend fun getS3Client(): S3Client {
+        s3Client?.let { return it }
+
+        return mutex.withLock {
+            s3Client ?: buildS3Client().also { s3Client = it }
+        }
+    }
+    private suspend fun buildS3Client() = with(credentials.await()) {
         S3Client {
             region = DEFAULT_REGION
             enableAwsChunked = true
@@ -175,17 +186,16 @@ private class CellsAwsClientJvm(
         uploadProgressListener: ((Long) -> Unit)? = null,
         downloadProgressListener: ((Long) -> Unit)? = null,
         block: suspend S3Client.() -> T,
-    ): T =
-        s3Client.withConfig {
-            if (uploadProgressListener != null) {
-                interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
-            }
-            if (downloadProgressListener != null) {
-                interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
-            }
-        }.use {
-            block(it)
+    ): T = getS3Client().withConfig {
+        if (uploadProgressListener != null) {
+            interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
         }
+        if (downloadProgressListener != null) {
+            interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
+        }
+    }.use {
+        block(it)
+    }
 }
 
 private fun CellNodeDTO.createDraftNodeMetaData() = mapOf(

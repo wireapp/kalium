@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.backup.encryption
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
+package com.wire.kalium.network.api.v13.authenticated
 
-internal suspend fun initializeLibSodiumIfNeeded() {
-    if (!LibsodiumInitializer.isInitialized()) {
-        LibsodiumInitializer.initialize()
-    }
-}
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v12.authenticated.KeyPackageApiV12
+
+internal open class KeyPackageApiV13 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : KeyPackageApiV12(authenticatedNetworkClient)

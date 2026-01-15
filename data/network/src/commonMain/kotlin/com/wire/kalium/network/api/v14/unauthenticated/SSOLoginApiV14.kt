@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.cryptography.utils
+package com.wire.kalium.network.api.v14.unauthenticated
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v13.unauthenticated.SSOLoginApiV13
 
-object LibsodiumInitializer {
-    internal suspend fun initializeLibsodiumIfNeeded() {
-        if (!LibsodiumInitializer.isInitialized()) {
-            LibsodiumInitializer.initialize()
-        }
-    }
-}
+internal open class SSOLoginApiV14 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : SSOLoginApiV13(unauthenticatedNetworkClient)

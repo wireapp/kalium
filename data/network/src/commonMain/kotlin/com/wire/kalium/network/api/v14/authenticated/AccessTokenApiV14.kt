@@ -15,8 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
 
-internal data class WireCellsConfig(
-    val backendUrl: String?,
-)
+package com.wire.kalium.network.api.v14.authenticated
+
+import com.wire.kalium.network.api.v13.authenticated.AccessTokenApiV13
+import io.ktor.client.HttpClient
+
+internal open class AccessTokenApiV14 internal constructor(
+    httpClient: HttpClient
+) : AccessTokenApiV13(httpClient)

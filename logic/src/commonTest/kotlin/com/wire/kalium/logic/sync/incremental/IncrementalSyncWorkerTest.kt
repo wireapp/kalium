@@ -21,7 +21,9 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
@@ -140,9 +142,44 @@ class IncrementalSyncWorkerTest {
         assertEquals(coreFailureCause, resultException.coreFailureCause)
     }
 
+    @Test
+    fun givenProcessorReturnsEventId_whenPerformingIncrementalSync_thenWorkerMarksEventAsProcessed() = runTest {
+        val envelope = TestEvent.memberJoin().wrapInEnvelope()
+        val eventId = envelope.event.id
+
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
+            .withEventProcessorReturning(Either.Right(eventId))
+            .withSetEventsAsProcessedReturning(Either.Right(Unit))
+            .arrange()
+
+        worker.processEventsFlow().collect()
+
+        coVerify {
+            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProcessorReturnsNull_whenPerformingIncrementalSync_thenWorkerDoesNotMarkEventsAsProcessed() = runTest {
+        val envelope = TestEvent.memberJoin().wrapInEnvelope()
+
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
+            .withEventProcessorReturning(Either.Right(null))
+            .arrange()
+
+        worker.processEventsFlow().collect()
+
+        coVerify {
+            arrangement.eventRepository.setEventsAsProcessed(any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
+        val eventRepository: EventRepository = mock(EventRepository::class)
         val database = TestUserDatabase(
             userId = QualifiedID("value", "domain").toDao(),
             dispatcher = TestKaliumDispatcher.default
@@ -151,6 +188,7 @@ class IncrementalSyncWorkerTest {
         init {
             runBlocking {
                 withEventProcessorSucceeding()
+                withSetEventsAsProcessedReturning(Either.Right(Unit))
             }
         }
 
@@ -160,21 +198,25 @@ class IncrementalSyncWorkerTest {
             }.returns(eventFlow)
         }
 
-        suspend fun withEventProcessorReturning(result: Either<CoreFailure, Unit>) = apply {
+        suspend fun withEventProcessorReturning(result: Either<CoreFailure, String?>) = apply {
             coEvery {
                 eventProcessor.processEvent(any(), any())
             }.returns(result)
         }
 
-        suspend fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(Unit))
+        suspend fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(null))
 
         suspend fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
+
+        suspend fun withSetEventsAsProcessedReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery { eventRepository.setEventsAsProcessed(any()) }.returns(result)
+        }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
             block()
             withTransactionReturning(Either.Right(Unit))
             this to IncrementalSyncWorkerImpl(
-                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder
+                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository
             )
         }
     }

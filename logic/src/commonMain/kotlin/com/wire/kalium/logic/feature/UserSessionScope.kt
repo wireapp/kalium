@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProviderImpl
@@ -216,6 +215,8 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
+import com.wire.kalium.logic.feature.call.CallBackgroundManager
+import com.wire.kalium.logic.feature.call.CallBackgroundManagerImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -532,6 +533,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -577,12 +580,18 @@ public class UserSessionScope internal constructor(
         }
 
     private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
-        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.value?.obfuscateId() ?: "")
+        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.toLogString() ?: "")
     }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
             _clientId = null
+        }
+    }
+
+    private suspend fun waitUntilClientIdIsAvailable() {
+        if (_clientId == null) {
+            clientRepository.observeCurrentClientId().filterNotNull().first()
         }
     }
 
@@ -1105,7 +1114,6 @@ public class UserSessionScope internal constructor(
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
-            eventRepository = eventRepository,
             conversationEventReceiver = conversationEventReceiver,
             userEventReceiver = userEventReceiver,
             teamEventReceiver = teamEventReceiver,
@@ -1122,9 +1130,9 @@ public class UserSessionScope internal constructor(
 
     @Deprecated("Use syncStateObserver instead", ReplaceWith("syncStateObserver"))
     public val syncManager: SyncManager
-        get() = syncStateObserver
+        get() = syncStateObserver.value
 
-    internal val syncStateObserver: SyncStateObserver by lazy {
+    internal val syncStateObserver: Lazy<SyncStateObserver> = lazy {
         SyncStateObserverImpl(
             slowSyncRepository = slowSyncRepository,
             incrementalSyncRepository = incrementalSyncRepository,
@@ -1135,7 +1143,7 @@ public class UserSessionScope internal constructor(
 
     public val syncExecutor: SyncExecutor by lazy {
         SyncExecutorImpl(
-            syncStateObserver,
+            syncStateObserver.value,
             slowSyncManager,
             incrementalSyncManager,
             this,
@@ -1320,7 +1328,7 @@ public class UserSessionScope internal constructor(
     private val mlsFaultyKeysConversationsRepairUseCase: MLSFaultyKeysConversationsRepairUseCaseImpl by lazy {
         MLSFaultyKeysConversationsRepairUseCaseImpl(
             selfUserId = userId,
-            syncStateObserver = syncStateObserver,
+            syncStateObserver = syncStateObserver.value,
             kaliumConfigs = kaliumConfigs,
             userConfigRepository = userConfigRepository,
             repairFaultyRemovalKeys = debug.repairFaultyRemovalKeysUseCase,
@@ -1343,6 +1351,7 @@ public class UserSessionScope internal constructor(
             eventProcessor,
             cryptoTransactionProvider,
             userStorage.database,
+            eventRepository,
             userScopedLogger,
         )
     }
@@ -1429,7 +1438,7 @@ public class UserSessionScope internal constructor(
     internal val keyingMaterialsManager: KeyingMaterialsManager
         get() = KeyingMaterialsManagerImpl(
             featureSupport,
-            syncStateObserver,
+            syncStateObserver.value,
             lazy { clientRepository },
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository },
@@ -1440,7 +1449,7 @@ public class UserSessionScope internal constructor(
         get() = MLSClientManagerImpl(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
-            syncStateObserver,
+            syncStateObserver.value,
             lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy {
@@ -1468,7 +1477,7 @@ public class UserSessionScope internal constructor(
         get() = MLSMigrationManagerImpl(
             kaliumConfigs,
             isMLSEnabled,
-            syncStateObserver,
+            syncStateObserver.value,
             lazy { clientRepository },
             lazy { users.timestampKeyRepository },
             lazy { mlsMigrationWorker },
@@ -1510,6 +1519,13 @@ public class UserSessionScope internal constructor(
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
         )
     }
+
+    internal val callBackgroundManager: CallBackgroundManager = CallBackgroundManagerImpl(
+        callManager = callManager,
+        syncStateObserver = syncStateObserver,
+        selfUserId = userId,
+        logger = userScopedLogger
+    )
 
     private val flowManagerService by lazy {
         globalCallManager.getFlowManager()
@@ -1865,7 +1881,7 @@ public class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
-    public val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
+    internal val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
     private val updateSelfClientCapabilityToConsumableNotifications by lazy {
@@ -2444,11 +2460,12 @@ public class UserSessionScope internal constructor(
     public val calls: CallsScope
         get() = CallsScope(
             callManager = callManager,
+            callBackgroundManager = callBackgroundManager,
             callRepository = callRepository,
             conversationRepository = conversationRepository,
             flowManagerService = flowManagerService,
             mediaManagerService = mediaManagerService,
-            syncManager = lazy { syncManager },
+            syncStateObserver = syncStateObserver,
             qualifiedIdMapper = qualifiedIdMapper,
             currentClientIdProvider = clientIdProvider,
             userConfigRepository = userConfigRepository,
@@ -2668,9 +2685,8 @@ public class UserSessionScope internal constructor(
         }
 
         launch {
-            clientIdProvider().map {
-                avsSyncStateReporter.execute()
-            }
+            waitUntilClientIdIsAvailable()
+            avsSyncStateReporter.execute()
         }
 
         launch {
@@ -2684,6 +2700,11 @@ public class UserSessionScope internal constructor(
         }
 
         userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+
+        launch {
+            waitUntilClientIdIsAvailable()
+            callBackgroundManager.startProcessing()
+        }
     }
 }
 

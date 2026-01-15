@@ -74,6 +74,8 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveRecentlyEndedCallMetada
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.RequestVideoStreamsUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetBackgroundUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetBackgroundUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.SetTestPreviewActiveUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestRemoteVideoStatesUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestVideoTypeUseCase
@@ -92,19 +94,20 @@ import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.user.UpdateNextTimeCallFeedbackUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
 public class CallsScope internal constructor(
     private val callManager: Lazy<CallManager>,
+    private val callBackgroundManager: CallBackgroundManager,
     private val callRepository: CallRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
-    private val syncManager: Lazy<SyncManager>,
+    private val syncStateObserver: Lazy<SyncStateObserver>,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
@@ -158,7 +161,7 @@ public class CallsScope internal constructor(
     public val startCall: StartCallUseCase
         get() = StartCallUseCase(
             callManager = callManager,
-            syncManager = syncManager.value,
+            syncStateObserver = syncStateObserver.value,
             callRepository = callRepository,
             answerCall = answerCall,
             getCallConversationType = getCallConversationType,
@@ -263,4 +266,7 @@ public class CallsScope internal constructor(
 
     public val observeLastActiveCallWithSortedParticipants: ObserveLastActiveCallWithSortedParticipantsUseCase
         get() = ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(callRepository, callingParticipantsOrder)
+
+    public val setBackground: SetBackgroundUseCase
+        get() = SetBackgroundUseCaseImpl(callBackgroundManager = callBackgroundManager)
 }

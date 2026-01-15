@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -77,15 +75,15 @@ public abstract class SyncExecutor {
 
         override suspend fun waitUntilOrFailure(
             syncState: SyncState
-        ): Either<CoreFailure, Unit> = syncStateFlow.map { state ->
+        ): SyncRequestResult = syncStateFlow.map { state ->
             when (state) {
-                is SyncState.Failed -> Either.Left(state.cause)
-                syncState -> Either.Right(Unit)
+                is SyncState.Failed -> SyncRequestResult.Failure(state.cause)
+                syncState -> SyncRequestResult.Success
                 else -> null
             }
         }.filterNotNull().first()
 
-        override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = waitUntilOrFailure(SyncState.Live)
+        override suspend fun waitUntilLiveOrFailure(): SyncRequestResult = waitUntilOrFailure(SyncState.Live)
 
         override fun keepSyncAlwaysOn() {
             isEndless = true

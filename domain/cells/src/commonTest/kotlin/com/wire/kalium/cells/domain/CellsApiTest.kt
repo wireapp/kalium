@@ -104,7 +104,7 @@ class CellsApiTest {
             }
         }
 
-        fun arrange() = this to CellsApiImpl(nodeService)
+        fun arrange() = this to CellsApiImpl { nodeService }
     }
 }
 

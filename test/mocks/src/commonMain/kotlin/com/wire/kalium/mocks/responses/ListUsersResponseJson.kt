@@ -124,6 +124,26 @@ object ListUsersResponseJson {
         """.trimMargin()
     }
 
+    private val validUserInfoProviderV13 = { userInfo: UserProfileDTO ->
+        val typeField = userInfo.type?.let { """, "type": "${it.name.lowercase()}" """ } ?: ""
+        """
+        |{
+        | "accent_id": ${userInfo.accentId},
+        | "handle": "${userInfo.handle}",
+        | "legalhold_status": "enabled",
+        | "name": "${userInfo.name}",
+        | "assets": ${userInfo.assets},
+        | "id": "${userInfo.id.value}",
+        | "deleted": "false",
+        | "supported_protocols": ${Json.encodeToString(userInfo.supportedProtocols)},
+        | "qualified_id": {
+        |   "domain": "${userInfo.id.domain}",
+        |   "id": "${userInfo.id.value}"
+        | }$typeField
+        |}
+        """.trimMargin()
+    }
+
     private val listProvider = { list: List<String> ->
         """
         |[
@@ -188,6 +208,28 @@ object ListUsersResponseJson {
             )
         ) {
             validUserInfoProviderV12(it)
+        }
+    }
+    val v13: (UserTypeDTO?) -> ValidJsonProvider<UserProfileDTO> = { type ->
+        ValidJsonProvider(
+            UserProfileDTO(
+                id = USER_1,
+                name = "user a",
+                handle = "user_a",
+                accentId = 2147483647,
+                legalHoldStatus = LegalHoldStatusDTO.ENABLED,
+                teamId = null,
+                assets = emptyList(),
+                deleted = false,
+                email = null,
+                expiresAt = null,
+                service = null,
+                nonQualifiedId = USER_1.value,
+                supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
+                type = type
+            )
+        ) {
+            validUserInfoProviderV13(it)
         }
     }
 }

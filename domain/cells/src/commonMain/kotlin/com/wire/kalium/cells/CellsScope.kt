@@ -18,6 +18,7 @@
 package com.wire.kalium.cells
 
 import com.wire.kalium.cells.data.CellAttachmentsDataSource
+import com.wire.kalium.cells.data.CellConfigDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellUsersDataSource
@@ -29,6 +30,7 @@ import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
 import com.wire.kalium.cells.data.fileDownloader
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
+import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUsersRepository
@@ -39,16 +41,10 @@ import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.CreateFolderUseCase
-import com.wire.kalium.cells.domain.usecase.CreateFolderUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCase
-import com.wire.kalium.cells.domain.usecase.DownloadCellFileUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.DownloadCellVersionUseCase
-import com.wire.kalium.cells.domain.usecase.DownloadCellVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
 import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
@@ -65,6 +61,8 @@ import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCase
+import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCase
 import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.MoveNodeUseCase
@@ -89,6 +87,18 @@ import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
 import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
 import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateFolderUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateFolderUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreatePresentationFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreatePresentationFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateSpreadsheetFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateSpreadsheetFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellVersionUseCase
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCase
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
@@ -120,8 +130,11 @@ import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
 import okio.SYSTEM
 import kotlin.coroutines.CoroutineContext
@@ -131,7 +144,7 @@ public class CellsScope(
     private val dao: CellScopeDao,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
-    ) : CoroutineScope {
+) : CoroutineScope {
 
     public data class CellScopeDao(
         val attachmentDraftDao: MessageAttachmentDraftDao,
@@ -156,46 +169,67 @@ public class CellsScope(
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    private val cellsCredentialsProvider: CellsCredentialsProvider
-        get() = CellsCredentialsProvider(dao.userConfigDAO)
+    private val cellsCredentialsProvider: CellsCredentialsProvider by lazy {
+        CellsCredentialsProvider(getCellConfig)
+    }
 
-    private val cellClientCredentials: Lazy<CellsCredentials> = lazy {
-        runBlocking {
-            cellsCredentialsProvider.getCredentials(sessionManager.serverConfig())
+    private val cellClientCredentialsDeferred: Deferred<CellsCredentials> by lazy {
+        async { cellsCredentialsProvider.getCredentials() }
+    }
+
+    private val cellAwsClient: CellsAwsClient by lazy {
+        cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
+    }
+
+    private val nodeServiceApiMutex = Mutex()
+    private var _nodeServiceApi: NodeServiceApi? = null
+
+    private suspend fun getNodeServiceApiCached(): NodeServiceApi {
+        // If already initialized, return it
+        _nodeServiceApi?.let { return it }
+
+        // Lock to ensure only one coroutine initializes
+        return nodeServiceApiMutex.withLock {
+            _nodeServiceApi ?: NodeServiceBuilder
+                .withHttpClient(cellsClient)
+                .withCredentials(cellClientCredentialsDeferred)
+                .build()
+                .also { _nodeServiceApi = it }
         }
     }
 
-    private val cellAwsClient: CellsAwsClient
-        get() = cellsAwsClient(cellClientCredentials.value, sessionManager, accessTokenApi)
+    private val cellsApi: CellsApi by lazy {
+        CellsApiImpl(getNodeServiceApi = { getNodeServiceApiCached() })
+    }
 
-    private val nodeServiceApi: NodeServiceApi
-        get() = NodeServiceBuilder
-            .withHttpClient(cellsClient)
-            .withCredentials(cellClientCredentials.value)
-            .build()
-
-    private val cellsApi: CellsApi
-        get() = CellsApiImpl(nodeServiceApi = nodeServiceApi)
-
-    private val cellsRepository: CellsRepository
-        get() = CellsDataSource(
+    private val cellsRepository: CellsRepository by lazy {
+        CellsDataSource(
             cellsApi = cellsApi,
             publicLinkDao = dao.publicLinkDao,
             awsClient = cellAwsClient,
             fileSystem = FileSystem.SYSTEM
         )
+    }
 
-    private val cellsConversationRepository: CellConversationRepository
-        get() = CellConversationDataSource(dao.conversationsDao)
+    private val cellsConversationRepository: CellConversationRepository by lazy {
+        CellConversationDataSource(dao.conversationsDao)
+    }
 
-    private val cellAttachmentsRepository: CellAttachmentsRepository
-        get() = CellAttachmentsDataSource(dao.attachmentsDao, dao.assetsDao)
+    private val cellAttachmentsRepository: CellAttachmentsRepository by lazy {
+        CellAttachmentsDataSource(dao.attachmentsDao, dao.assetsDao)
+    }
 
-    public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository
-        get() = MessageAttachmentDraftDataSource(dao.attachmentDraftDao)
+    public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository by lazy {
+        MessageAttachmentDraftDataSource(dao.attachmentDraftDao)
+    }
 
-    private val usersRepository: CellUsersRepository
-        get() = CellUsersDataSource(dao.userDao)
+    private val usersRepository: CellUsersRepository by lazy {
+        CellUsersDataSource(dao.userDao)
+    }
+
+    private val cellConfigRepository: CellConfigRepository by lazy {
+        CellConfigDataSource(dao.userConfigDAO)
+    }
 
     public val uploadManager: CellUploadManager by lazy {
         CellUploadManagerImpl(
@@ -204,56 +238,80 @@ public class CellsScope(
         )
     }
 
-    public val addAttachment: AddAttachmentDraftUseCase
-        get() = AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this)
+    public val addAttachment: AddAttachmentDraftUseCase by lazy {
+        AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this)
+    }
 
-    public val removeAttachment: RemoveAttachmentDraftUseCase
-        get() = RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
+    public val removeAttachment: RemoveAttachmentDraftUseCase by lazy {
+        RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
+    }
 
-    public val removeAttachments: RemoveAttachmentDraftsUseCase
-        get() = RemoveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository)
+    public val removeAttachments: RemoveAttachmentDraftsUseCase by lazy {
+        RemoveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository)
+    }
 
-    public val observeAttachments: ObserveAttachmentDraftsUseCase
-        get() = ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
+    public val observeAttachments: ObserveAttachmentDraftsUseCase by lazy {
+        ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
+    }
 
-    public val publishAttachments: PublishAttachmentsUseCase
-        get() = PublishAttachmentsUseCaseImpl(cellsRepository)
+    public val publishAttachments: PublishAttachmentsUseCase by lazy {
+        PublishAttachmentsUseCaseImpl(cellsRepository)
+    }
 
-    public val observeFiles: GetPaginatedNodesUseCase
-        get() = GetPaginatedNodesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
+    public val observeFiles: GetPaginatedNodesUseCase by lazy {
+        GetPaginatedNodesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
+    }
 
-    public val observePagedFiles: GetCellFilesPagedUseCase
-        get() = GetCellFilesPagedUseCaseImpl(observeFiles)
+    public val observePagedFiles: GetCellFilesPagedUseCase by lazy {
+        GetCellFilesPagedUseCaseImpl(observeFiles)
+    }
 
-    public val downloadCellFile: DownloadCellFileUseCase
-        get() = DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    public val downloadCellFile: DownloadCellFileUseCase by lazy {
+        DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
 
     private val fileDownloader: FileDownloader
         get() = fileDownloader(httpClient = downloadHttpClient)
 
-    public val refreshAsset: RefreshCellAssetStateUseCase
-        get() = RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    public val refreshAsset: RefreshCellAssetStateUseCase by lazy {
+        RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
 
-    public val deleteAttachmentsUseCase: DeleteMessageAttachmentsUseCase
-        get() = DeleteMessageAttachmentsUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    public val deleteAttachmentsUseCase: DeleteMessageAttachmentsUseCase by lazy {
+        DeleteMessageAttachmentsUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
 
-    public val deleteCellAssetUseCase: DeleteCellAssetUseCase
-        get() = DeleteCellAssetUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    public val deleteCellAssetUseCase: DeleteCellAssetUseCase by lazy {
+        DeleteCellAssetUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
 
-    public val createPublicLinkUseCase: CreatePublicLinkUseCase
-        get() = CreatePublicLinkUseCaseImpl(cellClientCredentials.value, cellsRepository)
+    public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
+        CreatePublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+    }
 
-    public val getPublicLinkUseCase: GetPublicLinkUseCase
-        get() = GetPublicLinkUseCaseImpl(cellClientCredentials.value, cellsRepository)
+    public val getPublicLinkUseCase: GetPublicLinkUseCase by lazy {
+        GetPublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+    }
 
-    public val deletePublicLinkUseCase: DeletePublicLinkUseCase
-        get() = DeletePublicLinkUseCaseImpl(cellsRepository)
+    public val deletePublicLinkUseCase: DeletePublicLinkUseCase by lazy {
+        DeletePublicLinkUseCaseImpl(cellsRepository)
+    }
 
-    public val retryAttachmentUpload: RetryAttachmentUploadUseCase
-        get() = RetryAttachmentUploadUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
+    public val retryAttachmentUpload: RetryAttachmentUploadUseCase by lazy {
+        RetryAttachmentUploadUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
+    }
 
     public val createFolderUseCase: CreateFolderUseCase by lazy {
         CreateFolderUseCaseImpl(cellsRepository)
+    }
+    public val createSpreadsheetFileUseCase: CreateSpreadsheetFileUseCase by lazy {
+        CreateSpreadsheetFileUseCaseImpl(cellsRepository)
+    }
+    public val createPresentationFileUseCase: CreatePresentationFileUseCase by lazy {
+        CreatePresentationFileUseCaseImpl(cellsRepository)
+    }
+    public val createDocumentFileUseCase: CreateDocumentFileUseCase by lazy {
+        CreateDocumentFileUseCaseImpl(cellsRepository)
     }
     public val moveNodeUseCase: MoveNodeUseCase by lazy {
         MoveNodeUseCaseImpl(cellsRepository)
@@ -322,5 +380,9 @@ public class CellsScope(
     }
     public val downloadCellVersion: DownloadCellVersionUseCase by lazy {
         DownloadCellVersionUseCaseImpl(fileDownloader)
+    }
+
+    public val getCellConfig: GetWireCellConfigurationUseCase by lazy {
+        GetWireCellConfigurationUseCaseImpl(cellConfigRepository)
     }
 }

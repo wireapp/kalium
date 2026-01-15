@@ -18,14 +18,12 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestTeam
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -33,6 +31,8 @@ import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class GetUpdatedSelfTeamUseCaseTest {
 
@@ -48,9 +48,9 @@ class GetUpdatedSelfTeamUseCaseTest {
         val result = sut.invoke()
 
         // then
-        result.shouldSucceed()
+        assertNull(result)
         coVerify {
-            arrangement.teamRepository.fetchTeamById(eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
         }.wasNotInvoked()
     }
 
@@ -66,9 +66,9 @@ class GetUpdatedSelfTeamUseCaseTest {
         val result = sut.invoke()
 
         // then
-        result.shouldFail()
+        assertNull(result)
         coVerify {
-            arrangement.teamRepository.fetchTeamById(eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
         }.wasNotInvoked()
     }
 
@@ -84,14 +84,14 @@ class GetUpdatedSelfTeamUseCaseTest {
         val result = sut.invoke()
 
         // then
-        result.shouldSucceed()
+        assertNotNull(result)
         coVerify {
             arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
         }.wasInvoked()
     }
 
     private class Arrangement {
-                val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
         suspend fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {

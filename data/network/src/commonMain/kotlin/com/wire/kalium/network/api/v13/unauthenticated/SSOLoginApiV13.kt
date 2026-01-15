@@ -15,20 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
+package com.wire.kalium.network.api.v13.unauthenticated
 
-public interface CreateFolderUseCase {
-    public suspend operator fun invoke(path: String): Either<CoreFailure, Unit>
-}
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v12.unauthenticated.SSOLoginApiV12
 
-internal class CreateFolderUseCaseImpl(
-    private val cellsRepository: CellsRepository,
-) : CreateFolderUseCase {
-    override suspend fun invoke(path: String): Either<CoreFailure, Unit> =
-        cellsRepository.createFolder(path).map { }
-}
+internal open class SSOLoginApiV13 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : SSOLoginApiV12(unauthenticatedNetworkClient)
