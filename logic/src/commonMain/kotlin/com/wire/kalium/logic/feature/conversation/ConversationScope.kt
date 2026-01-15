@@ -319,11 +319,7 @@ public class ConversationScope internal constructor(
         get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
 
     public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
-        get() = DeleteConversationLocallyUseCaseImpl(
-            clearConversationContent,
-            deleteConversationUseCase,
-            transactionProvider
-        )
+        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
 
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
