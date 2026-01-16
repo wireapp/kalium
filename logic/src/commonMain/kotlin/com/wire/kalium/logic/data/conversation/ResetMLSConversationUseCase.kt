@@ -34,6 +34,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
 
@@ -61,8 +62,9 @@ public interface ResetMLSConversationUseCase {
     ): Either<CoreFailure, Unit>
 }
 
-@Suppress("ReturnCount")
+@Suppress("ReturnCount", "LongParameterList")
 internal class ResetMLSConversationUseCaseImpl(
+    private val selfUserId: UserId,
     private val userConfig: UserConfigRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val conversationRepository: ConversationRepository,
@@ -90,6 +92,11 @@ internal class ResetMLSConversationUseCaseImpl(
 
         if (!userConfig.isMlsConversationsResetEnabled()) {
             logger.i("MLS conversation reset feature is disabled.")
+            return Unit.right()
+        }
+
+        if (selfUserId.domain != conversationId.domain) {
+            logger.i("Federated conversation. Do not reset conversation for another backend.")
             return Unit.right()
         }
 
