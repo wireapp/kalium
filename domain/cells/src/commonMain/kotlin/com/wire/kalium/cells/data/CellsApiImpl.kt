@@ -64,7 +64,7 @@ import kotlinx.coroutines.CancellationException
 
 @Suppress("TooManyFunctions")
 internal class CellsApiImpl(
-    private val nodeServiceApi: NodeServiceApi,
+    private val getNodeServiceApi: suspend () -> NodeServiceApi,
 ) : CellsApi {
 
     @Suppress("MagicNumber")
@@ -78,12 +78,12 @@ internal class CellsApiImpl(
 
     override suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO> =
         wrapCellsResponse {
-            nodeServiceApi.getByUuid(uuid)
+            getNodeServiceApi().getByUuid(uuid)
         }.mapSuccess { response -> response.toDto() }
 
     override suspend fun getNodeEditorUrl(uuid: String, urlKey: String): NetworkResponse<String> =
         wrapCellsResponse {
-            nodeServiceApi.getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
+            getNodeServiceApi().getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
         }.mapSuccess { response -> response.editorUrl(urlKey) ?: "" }
 
     override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
@@ -94,7 +94,7 @@ internal class CellsApiImpl(
                     term = "\"$it\"",
                 )
             }
-            nodeServiceApi.lookup(
+            getNodeServiceApi().lookup(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
@@ -130,7 +130,7 @@ internal class CellsApiImpl(
                     term = "\"$it\"",
                 )
             }
-            nodeServiceApi.lookup(
+            getNodeServiceApi().lookup(
                 RestLookupRequest(
                     limit = limit?.toString(),
                     offset = offset?.toString(),
@@ -159,7 +159,7 @@ internal class CellsApiImpl(
 
     override suspend fun delete(nodeUuid: String, permanentDelete: Boolean): NetworkResponse<Unit> =
         wrapCellsResponse {
-            nodeServiceApi.performAction(
+            getNodeServiceApi().performAction(
                 name = NodeServiceApi.NamePerformAction.delete,
                 parameters = RestActionParameters(
                     nodes = listOf(RestNodeLocator(uuid = nodeUuid)),
@@ -170,7 +170,7 @@ internal class CellsApiImpl(
 
     override suspend fun delete(paths: List<String>, permanentDelete: Boolean): NetworkResponse<Unit> =
         wrapCellsResponse {
-            nodeServiceApi.performAction(
+            getNodeServiceApi().performAction(
                 name = NodeServiceApi.NamePerformAction.delete,
                 parameters = RestActionParameters(
                     nodes = paths.map { RestNodeLocator(it) },
@@ -181,17 +181,17 @@ internal class CellsApiImpl(
 
     override suspend fun publishDraft(nodeUuid: String, versionId: String): NetworkResponse<Unit> =
         wrapCellsResponse {
-            nodeServiceApi.promoteVersion(nodeUuid, versionId, RestPromoteParameters(publish = true))
+            getNodeServiceApi().promoteVersion(nodeUuid, versionId, RestPromoteParameters(publish = true))
         }.mapSuccess {}
 
     override suspend fun cancelDraft(nodeUuid: String, versionUuid: String): NetworkResponse<Unit> =
         wrapCellsResponse {
-            nodeServiceApi.deleteVersion(nodeUuid, versionUuid)
+            getNodeServiceApi().deleteVersion(nodeUuid, versionUuid)
         }.mapSuccess {}
 
     override suspend fun preCheck(path: String): NetworkResponse<PreCheckResultDTO> =
         wrapCellsResponse {
-            nodeServiceApi.createCheck(
+            getNodeServiceApi().createCheck(
                 RestCreateCheckRequest(
                     inputs = listOf(RestIncomingNode(locator = RestNodeLocator(path))),
                     findAvailablePath = true
@@ -209,7 +209,7 @@ internal class CellsApiImpl(
     @Suppress("ReturnCount")
     override suspend fun getPublicLink(linkUuid: String): NetworkResponse<PublicLink> =
         wrapCellsResponse {
-            nodeServiceApi.getPublicLink(linkUuid)
+            getNodeServiceApi().getPublicLink(linkUuid)
         }.mapSuccess { response ->
             PublicLink(
                 uuid = response.uuid ?: return networkError("UUID is null"),
@@ -222,7 +222,7 @@ internal class CellsApiImpl(
     @Suppress("ReturnCount")
     override suspend fun createPublicLink(uuid: String, fileName: String): NetworkResponse<PublicLink> {
         return wrapCellsResponse {
-            nodeServiceApi.createPublicLink(
+            getNodeServiceApi().createPublicLink(
                 uuid = uuid,
                 publicLinkRequest = RestPublicLinkRequest(
                     link = RestShareLink(
@@ -245,7 +245,7 @@ internal class CellsApiImpl(
     // Helper function to fetch public link before updating it
     private suspend fun withPublicLink(uuid: String, block: suspend (RestShareLink) -> Unit) =
         wrapCellsResponse {
-            nodeServiceApi.getPublicLink(uuid)
+            getNodeServiceApi().getPublicLink(uuid)
         }.mapSuccess { link ->
             block(link)
         }
@@ -253,7 +253,7 @@ internal class CellsApiImpl(
     override suspend fun createPublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit> =
         withPublicLink(linkUuid) { link ->
             wrapCellsResponse {
-                nodeServiceApi.updatePublicLink(
+                getNodeServiceApi().updatePublicLink(
                     linkUuid = linkUuid,
                     publicLinkRequest = RestPublicLinkRequest(
                         link = link.copy(
@@ -269,7 +269,7 @@ internal class CellsApiImpl(
     override suspend fun updatePublicLinkPassword(linkUuid: String, password: String): NetworkResponse<Unit> =
         withPublicLink(linkUuid) { link ->
             wrapCellsResponse {
-                nodeServiceApi.updatePublicLink(
+                getNodeServiceApi().updatePublicLink(
                     linkUuid = linkUuid,
                     publicLinkRequest = RestPublicLinkRequest(
                         link = link.copy(
@@ -285,7 +285,7 @@ internal class CellsApiImpl(
     override suspend fun removePublicLinkPassword(linkUuid: String): NetworkResponse<Unit> =
         withPublicLink(linkUuid) { link ->
             wrapCellsResponse {
-                nodeServiceApi.updatePublicLink(
+                getNodeServiceApi().updatePublicLink(
                     linkUuid = linkUuid,
                     publicLinkRequest = RestPublicLinkRequest(
                         link = link.copy(
@@ -300,7 +300,7 @@ internal class CellsApiImpl(
     override suspend fun setPublicLinkExpiration(linkUuid: String, expireAt: Long?): NetworkResponse<Unit> =
         withPublicLink(linkUuid) { link ->
             wrapCellsResponse {
-                nodeServiceApi.updatePublicLink(
+                getNodeServiceApi().updatePublicLink(
                     linkUuid = linkUuid,
                     publicLinkRequest = RestPublicLinkRequest(
                         link = link.copy(
@@ -314,12 +314,12 @@ internal class CellsApiImpl(
 
     override suspend fun deletePublicLink(linkUuid: String): NetworkResponse<Unit> =
         wrapCellsResponse {
-            nodeServiceApi.deletePublicLink(linkUuid)
+            getNodeServiceApi().deletePublicLink(linkUuid)
         }.mapSuccess {}
 
     override suspend fun createFolder(path: String): NetworkResponse<GetNodesResponseDTO> {
         return wrapCellsResponse {
-            nodeServiceApi.create(
+            getNodeServiceApi().create(
                 RestCreateRequest(
                     inputs = listOf(
                         RestIncomingNode(
@@ -334,7 +334,7 @@ internal class CellsApiImpl(
 
     override suspend fun createFile(path: String, contentType: String, templateUuid: String): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
-            nodeServiceApi.create(
+            getNodeServiceApi().create(
                 RestCreateRequest(
                     inputs = listOf(
                         RestIncomingNode(
@@ -353,7 +353,7 @@ internal class CellsApiImpl(
         path: String,
         targetPath: String,
     ): NetworkResponse<Unit> = wrapCellsResponse {
-        nodeServiceApi.performAction(
+        getNodeServiceApi().performAction(
             name = NodeServiceApi.NamePerformAction.move,
             parameters = RestActionParameters(
                 nodes = listOf(RestNodeLocator(path, uuid)),
@@ -372,7 +372,7 @@ internal class CellsApiImpl(
         path: String,
         targetPath: String,
     ): NetworkResponse<Unit> = wrapCellsResponse {
-        nodeServiceApi.performAction(
+        getNodeServiceApi().performAction(
             name = NodeServiceApi.NamePerformAction.move,
             parameters = RestActionParameters(
                 nodes = listOf(RestNodeLocator(path, uuid)),
@@ -387,7 +387,7 @@ internal class CellsApiImpl(
     }.mapSuccess {}
 
     override suspend fun restoreNode(uuid: String): NetworkResponse<Unit> = wrapCellsResponse {
-        nodeServiceApi.performAction(
+        getNodeServiceApi().performAction(
             name = NodeServiceApi.NamePerformAction.restore,
             parameters = RestActionParameters(
                 nodes = listOf(RestNodeLocator(uuid = uuid)),
@@ -398,7 +398,7 @@ internal class CellsApiImpl(
     }.mapSuccess {}
 
     override suspend fun updateNodeTags(uuid: String, tags: List<String>): NetworkResponse<Unit> = wrapCellsResponse {
-        nodeServiceApi.patchNode(
+        getNodeServiceApi().patchNode(
             uuid = uuid,
             nodeUpdates = RestNodeUpdates(
                 metaUpdates = listOf(
@@ -415,7 +415,7 @@ internal class CellsApiImpl(
     }.mapSuccess { }
 
     override suspend fun removeTagsFromNode(uuid: String): NetworkResponse<Unit> = wrapCellsResponse {
-        nodeServiceApi.patchNode(
+        getNodeServiceApi().patchNode(
             uuid = uuid,
             nodeUpdates = RestNodeUpdates(
                 metaUpdates = listOf(
@@ -432,14 +432,14 @@ internal class CellsApiImpl(
     }.mapSuccess { }
 
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
-        nodeServiceApi.listNamespaceValues(namespace = TAGS_METADATA)
+        getNodeServiceApi().listNamespaceValues(namespace = TAGS_METADATA)
     }.mapSuccess { it.propertyValues ?: emptyList() }
 
     override suspend fun getNodeVersions(
         uuid: String,
         query: RestNodeVersionsFilter
     ): NetworkResponse<List<NodeVersionDTO>> = wrapCellsResponse {
-        nodeServiceApi.nodeVersions(
+        getNodeServiceApi().nodeVersions(
             uuid = uuid,
             query = query
         )
@@ -452,7 +452,7 @@ internal class CellsApiImpl(
         versionId: String,
         restPromoteParameters: RestPromoteParameters
     ): NetworkResponse<Unit> = wrapCellsResponse {
-        nodeServiceApi.promoteVersion(
+        getNodeServiceApi().promoteVersion(
             uuid = uuid,
             versionId = versionId,
             parameters = restPromoteParameters

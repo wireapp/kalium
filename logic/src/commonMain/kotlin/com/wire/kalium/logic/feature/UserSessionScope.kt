@@ -2625,6 +2625,7 @@ public class UserSessionScope internal constructor(
 
     public val resetMlsConversation: ResetMLSConversationUseCase
         get() = ResetMLSConversationUseCaseImpl(
+            selfUserId = userId,
             userConfig = userConfigRepository,
             transactionProvider = cryptoTransactionProvider,
             conversationRepository = conversationRepository,
