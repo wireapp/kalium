@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
+import kotlin.experimental.ExperimentalObjCRefinement
+import kotlin.native.HiddenFromObjC
 
 /**
  * Reset an MLS conversation which cannot be recovered by any other means.
@@ -174,4 +176,32 @@ private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLSCapable
         is Conversation.ProtocolInfo.MLSCapable -> this.protocol as Conversation.ProtocolInfo.MLSCapable
         else -> null
     }
+}
+
+public sealed class ResetMLSConversationResult {
+    /**
+     * Indicates the reset MLS conversation operation completed successfully or no further action is needed.
+     */
+    public data object Success : ResetMLSConversationResult()
+
+    /**
+     * Indicates the reset MLS conversation operation failed.
+     * @param error The error that occurred during the operation.
+     */
+    public data class Failure(val error: CoreFailure) : ResetMLSConversationResult()
+
+    /**
+     * Converts this result to an Either type for internal Kalium use or JVM/Android clients.
+     * This function is hidden from iOS/Swift to maintain a clean Swift API.
+     *
+     * @return Either.Right(Unit) for Success, Either.Left(error) for Failure
+     */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
+    public fun toEither(): Either<CoreFailure, Unit> =
+        when (this) {
+            is Success -> Either.Right(Unit)
+            is Failure -> Either.Left(error)
+        }
 }
