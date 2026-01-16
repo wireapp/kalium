@@ -85,14 +85,14 @@ public class RetryFailedMessageUseCase internal constructor(
      *
      * @param messageId the id of the failed message to be resent
      * @param conversationId the id of the conversation where the failed message wants to be resent
-     * @return [RetryFailedMessageResult] with a [RetryFailedMessageResult.Failure]
-     * in case the message could not be found or has invalid status, [RetryFailedMessageResult.Success] otherwise. Note that this doesn't
+     * @return [MessageOperationResult] with a [MessageOperationResult.Failure]
+     * in case the message could not be found or has invalid status, [MessageOperationResult.Success] otherwise. Note that this doesn't
      * imply that send will succeed, it just confirms that resending is the valid action for this message, and it has been started.
      */
     public suspend operator fun invoke(
         messageId: String,
         conversationId: ConversationId
-    ): RetryFailedMessageResult =
+    ): MessageOperationResult =
         messageRepository.getMessageById(conversationId, messageId)
             .flatMap { message ->
                 when (message.status) {
@@ -125,8 +125,8 @@ public class RetryFailedMessageUseCase internal constructor(
                     else -> handleError("Message with status ${message.status} cannot be retried")
                 }
             }.fold(
-                { RetryFailedMessageResult.Failure(it) },
-                { RetryFailedMessageResult.Success }
+                { MessageOperationResult.Failure(it) },
+                { MessageOperationResult.Success }
             )
 
     private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =
@@ -274,9 +274,4 @@ public class RetryFailedMessageUseCase internal constructor(
     private fun handleError(message: String): Either.Left<CoreFailure> =
         Either.Left(CoreFailure.Unknown(IllegalStateException(message)))
             .also { kaliumLogger.e(message) }
-}
-
-public sealed class RetryFailedMessageResult {
-    public data object Success : RetryFailedMessageResult()
-    public data class Failure(val error: CoreFailure) : RetryFailedMessageResult()
 }

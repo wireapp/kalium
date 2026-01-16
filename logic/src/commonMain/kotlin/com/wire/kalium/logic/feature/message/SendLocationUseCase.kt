@@ -29,8 +29,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
@@ -65,7 +65,7 @@ public class SendLocationUseCase internal constructor(
      * @param name the address line or name of the location to send
      * @param zoom the zoom level of the location
      *
-     * @return [Either] [CoreFailure] or [Unit]
+     * @return [MessageOperationResult] indicating success or failure.
      */
     public suspend operator fun invoke(
         conversationId: ConversationId,
@@ -73,7 +73,7 @@ public class SendLocationUseCase internal constructor(
         longitude: Float,
         name: String?,
         zoom: Int
-    ): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
+    ): MessageOperationResult = withContext(dispatcher.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -103,9 +103,15 @@ public class SendLocationUseCase internal constructor(
             )
             persistMessage(message)
                 .flatMap { messageSender.sendMessage(message) }
-        }.onFailure {
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
-        }
+        }.fold(
+            {
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
+                MessageOperationResult.Failure(it)
+            },
+            {
+                MessageOperationResult.Success
+            }
+        )
     }
 
     internal companion object {

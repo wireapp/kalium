@@ -18,17 +18,17 @@
 package com.wire.kalium.logic.feature.message.confirmation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.message.MessageOperationResult
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.any
 import io.mockative.coEvery
@@ -48,6 +48,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 
 class ConfirmationDeliveryHandlerTest {
 
@@ -119,7 +120,13 @@ class ConfirmationDeliveryHandlerTest {
     fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenMessagesShouldPersist() = runTest {
         val (arrangement, sut) = Arrangement()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))
-            .withSendDeliverSignalResult(Either.Left(CoreFailure.Unknown(RuntimeException("Something went wrong"))))
+            .withSendDeliverSignalResult(
+                MessageOperationResult.Failure(
+                    CoreFailure.Unknown(
+                        RuntimeException("Something went wrong")
+                    )
+                )
+            )
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -246,7 +253,7 @@ class ConfirmationDeliveryHandlerTest {
             coEvery { conversationRepository.observeConversationById(any()) }.returns(result)
         }
 
-        suspend fun withSendDeliverSignalResult(result: Either<CoreFailure, Unit> = Unit.right()) = apply {
+        suspend fun withSendDeliverSignalResult(result: MessageOperationResult = MessageOperationResult.Success) = apply {
             coEvery { sendDeliverSignal(any(), any()) }.returns(result)
         }
 

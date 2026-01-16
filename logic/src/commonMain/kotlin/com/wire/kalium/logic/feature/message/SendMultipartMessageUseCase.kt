@@ -25,10 +25,10 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -107,7 +107,7 @@ public class SendMultipartMessageUseCase internal constructor(
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
+    ): MessageOperationResult = scope.async(dispatchers.io) {
 
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -116,7 +116,7 @@ public class SendMultipartMessageUseCase internal constructor(
         val generatedMessageUuid = Uuid.random().toString()
 
         val isCellEnabled = conversationRepository.isCellEnabled(conversationId).getOrFail { error ->
-            return@async error.left()
+            return@async MessageOperationResult.Failure(error)
         }
 
         val attachments: List<MessageAttachment> = attachmentsRepository.getAll(conversationId)
@@ -163,7 +163,10 @@ public class SendMultipartMessageUseCase internal constructor(
                 messageId = generatedMessageUuid,
                 messageType = MSG_TYPE_TEXT
             )
-        }
+        }.fold(
+            { MessageOperationResult.Failure(it) },
+            { MessageOperationResult.Success }
+        )
     }.await()
 
     private suspend fun buildMessage(

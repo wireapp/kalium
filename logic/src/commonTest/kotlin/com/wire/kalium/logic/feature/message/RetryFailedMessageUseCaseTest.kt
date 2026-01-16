@@ -86,8 +86,8 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            if (shouldSucceed) assertIs<Either.Right<Unit>>(result)
-            else assertIs<Either.Left<CoreFailure>>(result)
+            if (shouldSucceed) assertIs<MessageOperationResult.Success>(result)
+            else assertIs<MessageOperationResult.Failure>(result)
         }
 
     @Test
@@ -127,7 +127,11 @@ class RetryFailedMessageUseCaseTest {
 
             // then
             coVerify {
-                arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), eq(message.conversationId), eq(message.id))
+                arrangement.messageRepository.updateMessageStatus(
+                    eq(MessageEntity.Status.PENDING),
+                    eq(message.conversationId),
+                    eq(message.id)
+                )
             }.wasInvoked(exactly = once)
             coVerify {
                 arrangement.messageSender.sendMessage(eq(message), any())
@@ -317,7 +321,7 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            assertIs<Either.Right<Unit>>(result)
+            assertIs<MessageOperationResult.Success>(result)
         }
 
     @Test

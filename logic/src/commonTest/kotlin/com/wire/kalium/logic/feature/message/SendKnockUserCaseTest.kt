@@ -71,7 +71,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertIs<SendKnockResult.Success>(result)
+        assertIs<MessageOperationResult.Success>(result)
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(once)
@@ -97,7 +97,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertIs<SendKnockResult.Failure>(result)
+        assertIs<MessageOperationResult.Failure>(result)
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(once)
@@ -124,7 +124,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertIs<SendKnockResult.Success>(result)
+        assertIs<MessageOperationResult.Success>(result)
         coVerify {
             arrangement.messageSender.sendMessage(
                 message = matches {

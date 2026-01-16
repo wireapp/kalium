@@ -22,6 +22,7 @@ import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
@@ -76,7 +77,7 @@ public class SendTextMessageUseCase internal constructor(
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
+    ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -124,7 +125,10 @@ public class SendTextMessageUseCase internal constructor(
                 messageId = generatedMessageUuid,
                 messageType = TYPE
             )
-        }
+        }.fold(
+            { MessageOperationResult.Failure(it) },
+            { MessageOperationResult.Success }
+        )
     }.await()
 
     internal companion object {

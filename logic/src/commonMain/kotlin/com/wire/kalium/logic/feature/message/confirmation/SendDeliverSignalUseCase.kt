@@ -32,9 +32,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
@@ -43,7 +45,7 @@ import kotlinx.datetime.Clock
  */
 @Mockable
 internal interface SendDeliverSignalUseCase {
-    suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): MessageOperationResult
 }
 
 internal class SendDeliverSignalUseCaseImpl(
@@ -55,7 +57,7 @@ internal class SendDeliverSignalUseCaseImpl(
     override suspend fun invoke(
         conversation: Conversation,
         messages: List<MessageId>
-    ): Either<CoreFailure, Unit> = currentClientIdProvider()
+    ): MessageOperationResult = currentClientIdProvider()
         .flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = Uuid.random().toString(),
@@ -69,28 +71,31 @@ internal class SendDeliverSignalUseCaseImpl(
                 expirationData = null
             )
             messageSender.sendMessage(message)
-                .onFailure { error ->
-                    kaliumLogger.logStructuredJson(
-                        level = KaliumLogLevel.ERROR,
-                        leadingMessage = "Error while sending delivery confirmation for ${conversation.id.toLogString()}",
-                        jsonStringKeyValues = mapOf(
-                            "conversationId" to conversation.id.toLogString(),
-                            "messages" to messages.joinToString { it.obfuscateId() },
-                            "error" to error.toString()
-                        )
+        }.fold(
+            { error ->
+                kaliumLogger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "Error while sending delivery confirmation for ${conversation.id.toLogString()}",
+                    jsonStringKeyValues = mapOf(
+                        "conversationId" to conversation.id.toLogString(),
+                        "messages" to messages.joinToString { it.obfuscateId() },
+                        "error" to error.toString()
                     )
-                }
-                .onSuccess {
-                    kaliumLogger.logStructuredJson(
-                        level = KaliumLogLevel.DEBUG,
-                        leadingMessage = "Delivery confirmation sent for ${conversation.id.toLogString()}" +
-                                " and message count: ${messages.size}",
-                        jsonStringKeyValues = mapOf(
-                            "conversationId" to conversation.id.toLogString(),
-                            "messages" to messages.joinToString { it.obfuscateId() },
-                            "messageCount" to messages.size
-                        )
+                )
+                MessageOperationResult.Failure(error)
+            },
+            {
+                kaliumLogger.logStructuredJson(
+                    level = KaliumLogLevel.DEBUG,
+                    leadingMessage = "Delivery confirmation sent for ${conversation.id.toLogString()}" +
+                            " and message count: ${messages.size}",
+                    jsonStringKeyValues = mapOf(
+                        "conversationId" to conversation.id.toLogString(),
+                        "messages" to messages.joinToString { it.obfuscateId() },
+                        "messageCount" to messages.size
                     )
-                }
-        }
+                )
+                MessageOperationResult.Success
+            }
+        )
 }

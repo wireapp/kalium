@@ -73,7 +73,7 @@ class SendLocationUseCaseTest {
         val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(once)
@@ -99,7 +99,7 @@ class SendLocationUseCaseTest {
         val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
-        result.shouldFail()
+        result.toEither().shouldFail()
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(once)
@@ -126,7 +126,7 @@ class SendLocationUseCaseTest {
         val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
         coVerify {
             arrangement.messageSender.sendMessage(
                 message = matches {

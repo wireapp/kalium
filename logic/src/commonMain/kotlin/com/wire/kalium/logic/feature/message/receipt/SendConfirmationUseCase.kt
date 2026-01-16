@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.feature.message.receipt
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -29,24 +31,19 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.util.serialization.toJsonElement
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.uuid.Uuid
 
 /**
  * This use case allows to send a confirmation type [ReceiptType.READ]
@@ -60,7 +57,7 @@ internal interface SendConfirmationUseCase {
         conversationId: ConversationId,
         afterDateTime: Instant,
         untilDateTime: Instant
-    ): Either<CoreFailure, Unit>
+    ): MessageOperationResult
 }
 
 @Suppress("LongParameterList", "FunctionNaming")
@@ -84,7 +81,7 @@ internal fun SendConfirmationUseCase(
         conversationId: ConversationId,
         afterDateTime: Instant,
         untilDateTime: Instant
-    ): Either<CoreFailure, Unit> {
+    ): MessageOperationResult {
         syncManager.waitUntilLive()
 
         val messageIds = getPendingUnreadMessagesIds(
@@ -94,7 +91,7 @@ internal fun SendConfirmationUseCase(
         )
         if (messageIds.isEmpty()) {
             logConfirmationNothingToSend(conversationId)
-            return Either.Right(Unit)
+            return MessageOperationResult.Success
         }
 
         return currentClientIdProvider().flatMap { currentClientId ->
@@ -111,11 +108,16 @@ internal fun SendConfirmationUseCase(
             )
 
             messageSender.sendMessage(message, messageTarget = MessageTarget.Conversation(setOf(selfUserId)))
-        }.onFailure {
-            logConfirmationError(conversationId, messageIds, it)
-        }.onSuccess {
-            logConfirmationSuccess(conversationId, messageIds)
-        }
+        }.fold(
+            {
+                logConfirmationError(conversationId, messageIds, it)
+                MessageOperationResult.Failure(it)
+            },
+            {
+                logConfirmationSuccess(conversationId, messageIds)
+                MessageOperationResult.Success
+            }
+        )
     }
 
     private suspend fun getPendingUnreadMessagesIds(

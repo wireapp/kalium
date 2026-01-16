@@ -66,7 +66,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        assertIs<SendEditTextMessageResult.Success>(result)
+        assertIs<MessageOperationResult.Success>(result)
         coVerify {
             arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
         }.wasInvoked(once)
@@ -99,7 +99,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        assertIs<SendEditTextMessageResult.Failure>(result)
+        assertIs<MessageOperationResult.Failure>(result)
         coVerify {
             arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
         }.wasInvoked(once)

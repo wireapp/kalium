@@ -66,7 +66,7 @@ public class SendEditTextMessageUseCase internal constructor(
      * @param mentions the edited mentions in the message
      * @param editedMessageId optional edited message id, generated if not provided
      *
-     * @return [SendEditTextMessageResult] indicating success or failure.
+     * @return [MessageOperationResult] indicating success or failure.
      */
     public suspend operator fun invoke(
         conversationId: ConversationId,
@@ -74,7 +74,7 @@ public class SendEditTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         editedMessageId: String = Uuid.random().toString()
-    ): SendEditTextMessageResult = withContext(dispatchers.io) {
+    ): MessageOperationResult = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -116,10 +116,10 @@ public class SendEditTextMessageUseCase internal constructor(
         }.fold(
             {
                 messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE)
-                SendEditTextMessageResult.Failure(it)
+                MessageOperationResult.Failure(it)
             },
             {
-                SendEditTextMessageResult.Success
+                MessageOperationResult.Success
             }
         )
     }
@@ -127,9 +127,4 @@ public class SendEditTextMessageUseCase internal constructor(
     internal companion object {
         internal const val TYPE = "TextEdited"
     }
-}
-
-public sealed class SendEditTextMessageResult {
-    public data object Success : SendEditTextMessageResult()
-    public data class Failure(val error: CoreFailure) : SendEditTextMessageResult()
 }
