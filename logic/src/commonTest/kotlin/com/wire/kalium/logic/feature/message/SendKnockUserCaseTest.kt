@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -29,13 +30,10 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
@@ -73,7 +71,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        result.shouldSucceed()
+        assertIs<SendKnockResult.Success>(result)
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(once)
@@ -99,7 +97,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        result.shouldFail()
+        assertIs<SendKnockResult.Failure>(result)
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(once)
@@ -126,7 +124,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        result.shouldSucceed()
+        assertIs<SendKnockResult.Success>(result)
         coVerify {
             arrangement.messageSender.sendMessage(
                 message = matches {
