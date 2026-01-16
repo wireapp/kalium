@@ -82,6 +82,7 @@ public interface SyncStateObserver {
 
     public suspend fun isSlowSyncOngoing(): Boolean
     public suspend fun isSlowSyncCompleted(): Boolean
+
     @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
 }
