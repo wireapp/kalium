@@ -48,7 +48,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagEnabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -64,7 +64,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagDisabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -80,7 +80,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagEnabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -96,7 +96,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureDisabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -168,7 +168,7 @@ class ResetMLSConversationUseCaseTest {
             .withConversation(TestConversation.MLS_CONVERSATION)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -184,7 +184,7 @@ class ResetMLSConversationUseCaseTest {
             .withConversation(TestConversation.MIXED_CONVERSATION)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -200,7 +200,7 @@ class ResetMLSConversationUseCaseTest {
             .withLeaveGroupFailing()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -219,7 +219,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TestConversation.ID).toEither()
 
         assertTrue(result.isRight())
 

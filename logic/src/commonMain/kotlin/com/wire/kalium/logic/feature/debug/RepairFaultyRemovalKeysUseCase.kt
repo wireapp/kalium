@@ -106,7 +106,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
     ): Either<CoreFailure, Unit> = try {
-        resetMLSConversation(conversationId, transactionContext)
+        resetMLSConversation(conversationId, transactionContext).toEither()
     } catch (exception: Exception) {
         logger.e("Exception during resetting MLS conversation ${conversationId.toLogString()}", exception)
         CoreFailure.Unknown(exception).left()

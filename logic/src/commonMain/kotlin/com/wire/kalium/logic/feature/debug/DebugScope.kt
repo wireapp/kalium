@@ -298,6 +298,7 @@ public class DebugScope internal constructor(
      * This is a debug utility that wraps the internal crypto transaction logic.
      */
     @OptIn(InternalKaliumApi::class)
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun refillKeyPackages(): Either<CoreFailure, Unit> {
         return transactionProvider.transaction { transactionContext ->
             transactionContext.wrapInMLSContext { mlsContext ->

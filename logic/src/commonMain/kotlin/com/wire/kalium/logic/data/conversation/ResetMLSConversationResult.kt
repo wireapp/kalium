@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
@@ -23,20 +23,20 @@ import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
 
 /**
- * Common result type for message operations (sending, editing, deleting) that return Unit on success.
+ * Result type for MLS conversation reset operations that return Unit on success.
  * This provides a Swift-friendly API while maintaining backward compatibility with Either for internal use.
  */
-public sealed class MessageOperationResult {
+public sealed class ResetMLSConversationResult {
     /**
-     * Indicates the message operation completed successfully.
+     * Indicates the reset MLS conversation operation completed successfully.
      */
-    public data object Success : MessageOperationResult()
+    public data object Success : ResetMLSConversationResult()
 
     /**
-     * Indicates the message operation failed.
+     * Indicates the reset MLS conversation operation failed.
      * @param error The error that occurred during the operation.
      */
-    public data class Failure(val error: CoreFailure) : MessageOperationResult()
+    public data class Failure(val error: CoreFailure) : ResetMLSConversationResult()
 
     /**
      * Converts this result to an Either type for internal Kalium use or JVM/Android clients.

@@ -77,10 +77,12 @@ public interface SyncStateObserver {
      * @return [CoreFailure] in case Sync was not started or reached a failure, or
      * [Unit] in case [IncrementalSyncStatus.Live] is reached.
      */
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
 
     public suspend fun isSlowSyncOngoing(): Boolean
     public suspend fun isSlowSyncCompleted(): Boolean
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
 }
 

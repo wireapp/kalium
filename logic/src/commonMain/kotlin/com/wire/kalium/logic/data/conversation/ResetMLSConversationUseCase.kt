@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
@@ -53,12 +54,12 @@ public interface ResetMLSConversationUseCase {
     @Deprecated("Transaction provider should be provided")
     public suspend operator fun invoke(
         conversationId: ConversationId
-    ): Either<CoreFailure, Unit>
+    ): ResetMLSConversationResult
 
     public suspend operator fun invoke(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
-    ): Either<CoreFailure, Unit>
+    ): ResetMLSConversationResult
 }
 
 @Suppress("ReturnCount")
@@ -73,27 +74,34 @@ internal class ResetMLSConversationUseCaseImpl(
 
     private val logger by lazy { kaliumLogger.withTextTag("ResetMLSConversationUseCase") }
 
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(conversationId: ConversationId): ResetMLSConversationResult {
         return transactionProvider.transaction("ResetMLSConversation") {
-            invoke(conversationId, it)
-        }
+            invoke(conversationId, it).toEither()
+        }.fold(
+            { ResetMLSConversationResult.Failure(it) },
+            { ResetMLSConversationResult.Success }
+        )
     }
 
     override suspend operator fun invoke(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
-    ): Either<CoreFailure, Unit> {
+    ): ResetMLSConversationResult {
         if (!kaliumConfigs.isMlsResetEnabled) {
             logger.i("MLS conversation reset feature is disabled via compile time flag.")
-            return Unit.right()
+            return ResetMLSConversationResult.Success
         }
 
         if (!userConfig.isMlsConversationsResetEnabled()) {
             logger.i("MLS conversation reset feature is disabled.")
-            return Unit.right()
+            return ResetMLSConversationResult.Success
         }
 
         return transactionContext.resetConversation(conversationId)
+            .fold(
+                { ResetMLSConversationResult.Failure(it) },
+                { ResetMLSConversationResult.Success }
+            )
     }
 
     private suspend fun CryptoTransactionContext.resetConversation(

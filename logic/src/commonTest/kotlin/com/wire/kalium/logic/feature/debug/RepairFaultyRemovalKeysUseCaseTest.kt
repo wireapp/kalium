@@ -113,7 +113,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
         }
 
         suspend fun withResetMLSConversationResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { resetMLSConversationUseCase.invoke(any(), any()) } returns result
+            coEvery { resetMLSConversationUseCase.invoke(any(), any()).toEither() } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, RepairFaultyRemovalKeysUseCaseImpl> {
