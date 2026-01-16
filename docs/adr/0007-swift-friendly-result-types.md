@@ -38,7 +38,7 @@ public sealed class MessageOperationResult {
 - Hidden `toEither()` bridge function for internal Kotlin code, for backward compatibility with
   Android and internals. Specifically for MessageOperationResult, covering most of our Message
   sending APIs.
-- Use `@HiddenFromObjC` to hide complexity from Swift
+- Use `@HiddenFromObjC` to avoid exposing the bridge function to Objective-C/Swift consumers.
 
 ## Consequences
 
@@ -59,3 +59,4 @@ public sealed class MessageOperationResult {
 - Create specific result types (avoid generics)
 - Use action-specific names
 - Case by case, include hidden `toEither()` for backward compatibility
+- Annotate with `@HiddenFromObjC` to avoid exposing to Swift/ObjC
