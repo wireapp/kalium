@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.incallreaction
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
@@ -25,6 +24,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -46,9 +46,9 @@ public class SendInCallReactionUseCase internal constructor(
      * Sends in-call reaction to the call with the conversationId
      * @param conversationId the id of the conversation representing the call
      * @param reaction the reaction to send (e.g., emoji)
-     * @return [SendInCallReactionResult] indicating success or failure
+     * @return [MessageOperationResult] indicating success or failure
      */
-    public suspend operator fun invoke(conversationId: ConversationId, reaction: String): SendInCallReactionResult {
+    public suspend operator fun invoke(conversationId: ConversationId, reaction: String): MessageOperationResult {
         val result = scope.async(dispatchers.io) {
             val generatedMessageUuid = Uuid.random().toString()
 
@@ -71,11 +71,6 @@ public class SendInCallReactionUseCase internal constructor(
             }
         }.await()
 
-        return result.fold({ SendInCallReactionResult.Failure(it) }, { SendInCallReactionResult.Success })
+        return result.fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
     }
-}
-
-public sealed class SendInCallReactionResult {
-    public object Success : SendInCallReactionResult()
-    public data class Failure(val failure: CoreFailure) : SendInCallReactionResult()
 }

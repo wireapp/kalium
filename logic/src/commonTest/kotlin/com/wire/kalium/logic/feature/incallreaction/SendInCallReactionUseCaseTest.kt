@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -51,7 +52,7 @@ class SendInCallReactionUseCaseTest {
         val result = sendReactionUseCase(ConversationId("id", "domain"), "reaction")
 
         // Then
-        assertIs<SendInCallReactionResult.Success>(result)
+        assertIs<MessageOperationResult.Success>(result)
 
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
@@ -71,7 +72,7 @@ class SendInCallReactionUseCaseTest {
         val result = sendReactionUseCase(ConversationId("id", "domain"), "reaction")
 
         // Then
-        assertIs<SendInCallReactionResult.Failure>(result)
+        assertIs<MessageOperationResult.Failure>(result)
 
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
