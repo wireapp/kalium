@@ -18,10 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
@@ -46,6 +44,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * Deletes a message from the conversation
@@ -114,8 +113,8 @@ public class DeleteMessageUseCase internal constructor(
                             }.onSuccess {
                                 deleteMessageAsset(message, deleteForEveryone)
                             }.flatMap {
-                                // in case of ephemeral message, we want to delete it completely from the device, not just mark it as deleted
-                                // as this can only happen when the user decides to delete the message, before the self-deletion timer expired
+                                // in case of ephemeral message, we want to delete it completely from the device, not just mark it deleted.
+                                // Since can only happen when the user decides to delete the message, before the self-deletion timer expired
                                 val isEphemeralMessage = message is Message.Regular && message.expirationData != null
                                 if (isEphemeralMessage) {
                                     messageRepository.deleteMessage(messageId, conversationId)

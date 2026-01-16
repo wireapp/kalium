@@ -18,9 +18,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
@@ -50,6 +47,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage

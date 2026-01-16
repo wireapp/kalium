@@ -17,11 +17,12 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.MessageId
@@ -29,16 +30,11 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.feature.message.MessageOperationResult
+import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * Use case for sending a delivery confirmation signal for a list of messages in a conversation.

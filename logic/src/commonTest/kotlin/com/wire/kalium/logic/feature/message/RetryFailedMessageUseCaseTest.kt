@@ -302,7 +302,7 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            assertIs<Either.Right<Unit>>(result)
+            assertIs<MessageOperationResult.Success>(result)
         }
 
     @Test
@@ -346,7 +346,7 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            assertIs<Either.Right<Unit>>(result)
+            assertIs<MessageOperationResult.Success>(result)
         }
 
     @Test

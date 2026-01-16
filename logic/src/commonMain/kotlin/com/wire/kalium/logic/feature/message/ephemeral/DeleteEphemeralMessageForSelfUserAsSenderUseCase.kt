@@ -17,19 +17,17 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
+import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import io.mockative.Mockable
 

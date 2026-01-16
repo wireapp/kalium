@@ -17,13 +17,10 @@
  */
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
@@ -70,6 +67,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import okio.Path.Companion.toPath
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * Use case to send a multipart message.

@@ -19,7 +19,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
