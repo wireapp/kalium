@@ -267,6 +267,19 @@ internal interface MessageRepository {
         offset: Int
     ): Either<StorageFailure, List<Message.Standalone>>
 
+    /**
+     * Search messages across all conversations by text content.
+     * @param searchQuery The text to search for (case-insensitive, partial match)
+     * @param limit Maximum number of results to return
+     * @param offset Offset for pagination
+     * @return List of messages matching the search query, ordered by date descending
+     */
+    suspend fun searchMessagesByTextGlobally(
+        searchQuery: String,
+        limit: Int,
+        offset: Int
+    ): Either<StorageFailure, List<Message.Standalone>>
+
     val extensions: MessageRepositoryExtensions
     suspend fun getImageAssetMessagesByConversationId(
         conversationId: ConversationId,
@@ -784,6 +797,18 @@ internal class MessageDataSource internal constructor(
     ): Either<StorageFailure, List<Message.Standalone>> = wrapStorageRequest {
         messageDAO.searchMessagesByText(
             conversationId = conversationId.toDao(),
+            searchQuery = searchQuery,
+            limit = limit,
+            offset = offset
+        ).map { messageMapper.fromEntityToMessage(it) }
+    }
+
+    override suspend fun searchMessagesByTextGlobally(
+        searchQuery: String,
+        limit: Int,
+        offset: Int
+    ): Either<StorageFailure, List<Message.Standalone>> = wrapStorageRequest {
+        messageDAO.searchMessagesByTextGlobally(
             searchQuery = searchQuery,
             limit = limit,
             offset = offset
