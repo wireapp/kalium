@@ -534,6 +534,11 @@ public class MessageScope internal constructor(
             messageRepository = messageRepository
         )
 
+    public val searchMessagesInConversation: SearchMessagesInConversationUseCase
+        get() = SearchMessagesInConversationUseCaseImpl(
+            messageRepository = messageRepository
+        )
+
     public val observeAssetStatuses: ObserveAssetStatusesUseCase get() = ObserveAssetStatusesUseCaseImpl(messageRepository)
 
     public val saveMessageDraftUseCase: SaveMessageDraftUseCase
