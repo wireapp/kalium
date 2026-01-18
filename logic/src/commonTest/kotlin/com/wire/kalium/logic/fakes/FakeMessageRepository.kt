@@ -267,4 +267,11 @@ internal open class FakeMessageRepository : MessageRepository {
         messageId: String,
         normalizedLoudness: ByteArray
     ): Either<CoreFailure, Unit> = Unit.right()
+
+    override suspend fun searchMessagesByText(
+        conversationId: ConversationId,
+        searchQuery: String,
+        limit: Int,
+        offset: Int
+    ): Either<StorageFailure, List<Message.Standalone>> = emptyList<Message.Standalone>().right()
 }
