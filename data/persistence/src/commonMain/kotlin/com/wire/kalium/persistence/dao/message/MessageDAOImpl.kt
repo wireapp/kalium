@@ -610,6 +610,21 @@ internal class MessageDAOImpl internal constructor(
             .executeAsList()
     }
 
+    override suspend fun searchMessagesByTextGlobally(
+        searchQuery: String,
+        limit: Int,
+        offset: Int
+    ): List<MessageEntity> = withContext(readDispatcher.value) {
+        queries
+            .selectAllMessagesFromSearch(
+                searchQuery = searchQuery,
+                limit = limit.toLong(),
+                offset = offset.toLong(),
+                mapper = mapper::toEntityMessageFromView
+            )
+            .executeAsList()
+    }
+
     override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
         assetStatusQueries.selectConversationAssetStatus(conversationId, mapper::fromAssetStatus)
             .asFlow()
