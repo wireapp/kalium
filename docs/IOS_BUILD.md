@@ -348,7 +348,7 @@ let package = Package(
 Once integrated, import and use Kalium in your Swift code:
 
 ```swift
-import logic
+import KaliumLogic
 
 // Use Kalium classes and functions
 // Note: Kotlin classes are accessible with their full package path
