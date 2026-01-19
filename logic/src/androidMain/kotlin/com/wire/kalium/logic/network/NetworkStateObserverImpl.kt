@@ -159,8 +159,7 @@ internal actual class NetworkStateObserverImpl(
         return hasInternet && isValidated
     }
 
-    private fun NetworkCapabilities?.toCurrentNetworkType(): CurrentNetwork.Type = when {
-        this == null -> CurrentNetwork.Type.UNKNOWN
+    private fun NetworkCapabilities.toCurrentNetworkType(): CurrentNetwork.Type = when {
         this.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> CurrentNetwork.Type.WIFI
         this.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> CurrentNetwork.Type.CELLULAR
         else -> CurrentNetwork.Type.OTHER
@@ -183,7 +182,7 @@ internal actual class NetworkStateObserverImpl(
         is DefaultNetworkData.NotConnected -> null
         is DefaultNetworkData.Connected -> CurrentNetwork(
             this.network.networkHandle.toString(),
-            this.networkCapabilities.toCurrentNetworkType(),
+            this.networkCapabilities?.toCurrentNetworkType(),
             !this.isBlocked && this.networkCapabilities.hasInternetValidated()
         )
     }

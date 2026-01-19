@@ -55,6 +55,6 @@ sealed class NetworkState {
     data object NotConnected : NetworkState()
 }
 
-data class CurrentNetwork(val id: String, val type: Type, val hasInternetAccess: Boolean) {
-    enum class Type { WIFI, CELLULAR, OTHER, UNKNOWN }
+data class CurrentNetwork(val id: String, val type: Type?, val hasInternetAccess: Boolean) {
+    enum class Type { WIFI, CELLULAR, OTHER }
 }
