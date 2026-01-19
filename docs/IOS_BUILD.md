@@ -4,10 +4,36 @@ This guide covers building Kalium for iOS targets using Kotlin Multiplatform.
 
 ## Requirements
 
-- **macOS** (required for iOS development)
+- **macOS on Apple Silicon** (Intel Macs are not supported)
 - **JDK 21** (e.g., openjdk-21-jdk)
 - **Xcode** with command-line tools installed
 - **CocoaPods** (optional, for framework integration)
+
+## Build Configuration
+
+iOS builds require the unified CoreCrypto KMP library. You must ensure the `USE_UNIFIED_CORE_CRYPTO` property is set to `true`.
+
+### Setting the Property
+
+**Option 1: In `gradle.properties`**
+
+Ensure your `gradle.properties` file contains:
+
+```properties
+USE_UNIFIED_CORE_CRYPTO=true
+```
+
+**Option 2: Via command line**
+
+Pass the property when running Gradle commands:
+
+```bash
+./gradlew :logic:linkDebugFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+```
+
+### Why This Is Required
+
+The unified CoreCrypto KMP library (`com.wire:core-crypto-kmp`) provides multiplatform support including iOS targets. The legacy non-unified library (`com.wire:core-crypto-android`) only supports Android and will cause iOS builds to fail.
 
 ## Supported iOS Targets
 
@@ -16,10 +42,8 @@ Kalium supports the following Apple targets:
 | Target | Architecture | Description |
 |--------|-------------|-------------|
 | `iosArm64` | ARM64 | Physical iOS devices (iPhone, iPad) |
-| `iosX64` | x86_64 | iOS Simulator on Intel Macs |
 | `iosSimulatorArm64` | ARM64 | iOS Simulator on Apple Silicon Macs |
 | `macosArm64` | ARM64 | macOS on Apple Silicon |
-| `macosX64` | x86_64 | macOS on Intel |
 
 ## Build Commands
 
@@ -33,9 +57,6 @@ Build the Kotlin library for a specific iOS target:
 
 # For iOS Simulator on Apple Silicon Mac
 ./gradlew :logic:compileKotlinIosSimulatorArm64
-
-# For iOS Simulator on Intel Mac
-./gradlew :logic:compileKotlinIosX64
 ```
 
 ### Building All iOS Targets
@@ -43,7 +64,7 @@ Build the Kotlin library for a specific iOS target:
 To compile all iOS targets for a module:
 
 ```bash
-./gradlew :logic:compileKotlinIosArm64 :logic:compileKotlinIosSimulatorArm64 :logic:compileKotlinIosX64
+./gradlew :logic:compileKotlinIosArm64 :logic:compileKotlinIosSimulatorArm64
 ```
 
 ### Running iOS Tests
@@ -53,9 +74,6 @@ Run tests on the iOS simulator:
 ```bash
 # On Apple Silicon Mac (recommended)
 ./gradlew iosSimulatorArm64Test
-
-# On Intel Mac
-./gradlew iosX64Test
 
 # Run tests for a specific module
 ./gradlew :core:cryptography:iosSimulatorArm64Test
@@ -73,8 +91,6 @@ Build a debug framework for integration with Xcode projects:
 # For iOS Simulator (Apple Silicon)
 ./gradlew :logic:linkDebugFrameworkIosSimulatorArm64
 
-# For iOS Simulator (Intel)
-./gradlew :logic:linkDebugFrameworkIosX64
 ```
 
 Build a release framework:
@@ -121,7 +137,6 @@ module/
 │   ├── appleMain/        # Shared code for all Apple platforms (iOS + macOS)
 │   ├── iosMain/          # iOS-specific code (all iOS targets)
 │   ├── iosArm64Main/     # iOS device-specific code
-│   ├── iosX64Main/       # iOS Simulator (Intel) specific code
 │   ├── iosSimulatorArm64Main/  # iOS Simulator (Apple Silicon) specific code
 │   └── iosTest/          # iOS-specific tests
 ```
@@ -232,11 +247,7 @@ cd "$KALIUM_DIR"
 
 # Determine which target to build based on the SDK
 if [ "$PLATFORM_NAME" = "iphonesimulator" ]; then
-    if [ "$NATIVE_ARCH" = "arm64" ]; then
-        TARGET="iosSimulatorArm64"
-    else
-        TARGET="iosX64"
-    fi
+    TARGET="iosSimulatorArm64"
 else
     TARGET="iosArm64"
 fi
@@ -282,32 +293,11 @@ cd Frameworks/kalium
 # Build all iOS frameworks
 ./gradlew :logic:linkReleaseFrameworkIosArm64
 ./gradlew :logic:linkReleaseFrameworkIosSimulatorArm64
-./gradlew :logic:linkReleaseFrameworkIosX64
 
 # Create XCFramework
 xcodebuild -create-xcframework \
     -framework logic/build/bin/iosArm64/releaseFramework/logic.framework \
     -framework logic/build/bin/iosSimulatorArm64/releaseFramework/logic.framework \
-    -output logic/build/logic.xcframework
-```
-
-For a universal simulator framework (combining Intel and Apple Silicon):
-
-```bash
-# First, create a fat framework for simulators
-mkdir -p logic/build/bin/iosSimulatorUniversal/releaseFramework
-cp -R logic/build/bin/iosSimulatorArm64/releaseFramework/logic.framework \
-      logic/build/bin/iosSimulatorUniversal/releaseFramework/
-
-lipo -create \
-    logic/build/bin/iosSimulatorArm64/releaseFramework/logic.framework/logic \
-    logic/build/bin/iosX64/releaseFramework/logic.framework/logic \
-    -output logic/build/bin/iosSimulatorUniversal/releaseFramework/logic.framework/logic
-
-# Then create XCFramework
-xcodebuild -create-xcframework \
-    -framework logic/build/bin/iosArm64/releaseFramework/logic.framework \
-    -framework logic/build/bin/iosSimulatorUniversal/releaseFramework/logic.framework \
     -output logic/build/logic.xcframework
 ```
 
@@ -384,7 +374,7 @@ xcode-select --install
 
 1. Verify the framework was built successfully
 2. Check the framework search paths in Xcode build settings
-3. Ensure you're using the correct architecture (arm64 vs x86_64)
+3. Ensure you're building on Apple Silicon (Intel Macs are not supported)
 
 ### Checking Available Tasks
 
