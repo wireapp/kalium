@@ -41,7 +41,7 @@ import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.feature.debug.SendConfirmationResult
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
-import com.wire.kalium.locic.feature.message.ToggleReactionResult
+import com.wire.kalium.logic.feature.message.ToggleReactionResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.LinkPreview
