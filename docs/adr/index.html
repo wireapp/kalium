@@ -1107,6 +1107,75 @@ WHERE
                 </div>
             </div>
             
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse7">7. Swift-Friendly Result Types for Public APIs</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse7" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>7. Swift-Friendly Result Types for Public APIs</h1>
+<p>Date: 2026-01-16</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>Kalium's public APIs extensively used <code>Either&lt;CoreFailure, Unit&gt;</code> for error handling. This created
+poor Swift interop:</p>
+<ul>
+<li>Generic <code>Either</code> types translate poorly to Swift/OjbC, resulting in complex, unidiomatic APIs</li>
+<li>Swift developers couldn't easily pattern match or understand error cases</li>
+</ul>
+<h2>Decision</h2>
+<p>Replace <code>Either&lt;CoreFailure, Unit&gt;</code> with <strong>non-generic, action-specific sealed classes</strong> for public
+APIs:</p>
+<pre><code class="language-kotlin">public sealed class MessageOperationResult {
+    public data object Success : MessageOperationResult()
+    public data class Failure(val error: CoreFailure) : MessageOperationResult()
+
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
+    @Suppress(&quot;konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI&quot;)
+    public fun toEither(): Either&lt;CoreFailure, Unit&gt; = ...
+}
+</code></pre>
+<p><strong>Key principles:</strong></p>
+<ul>
+<li>No generics (concrete types per domain)</li>
+<li>Action-specific naming (<code>MessageOperationResult</code>, <code>FetchConversationResult</code>)</li>
+<li>Hidden <code>toEither()</code> bridge function for internal Kotlin code, for backward compatibility with
+Android and internals. Specifically for MessageOperationResult, covering most of our Message
+sending APIs.</li>
+<li>Use <code>@HiddenFromObjC</code> to avoid exposing the bridge function to Objective-C/Swift consumers.</li>
+</ul>
+<h2>Consequences</h2>
+<p><strong>Easier:</strong></p>
+<ul>
+<li>Idiomatic Swift API with clean enum pattern matching</li>
+<li>Better type safety and discoverability for Swift consumers</li>
+<li>Gradual migration without breaking internal code</li>
+</ul>
+<p><strong>More difficult:</strong></p>
+<ul>
+<li>More boilerplate (one result type per domain vs single generic)</li>
+<li>Need <code>.toEither()</code> bridge calls in internal code, use as needed.</li>
+<li>More types to maintain</li>
+</ul>
+<p><strong>Future pattern:</strong></p>
+<ul>
+<li>Create specific result types (avoid generics)</li>
+<li>Use action-specific names</li>
+<li>Case by case, include hidden <code>toEither()</code> for backward compatibility</li>
+<li>Annotate with <code>@HiddenFromObjC</code> to avoid exposing to Swift/ObjC</li>
+</ul>
+</div>
+                </div>
+            </div>
+            
         </div>
         <footer>
             Generated with &lt;3 using ADR Viewer
