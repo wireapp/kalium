@@ -32,12 +32,14 @@ import io.mockative.Mockable
  */
 @Mockable
 public interface FetchConversationUseCase {
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         reason: ConversationSyncReason = ConversationSyncReason.Other,
     ): Either<CoreFailure, Unit>
 
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend fun fetchWithTransaction(
         conversationId: ConversationId,
         reason: ConversationSyncReason = ConversationSyncReason.Other,

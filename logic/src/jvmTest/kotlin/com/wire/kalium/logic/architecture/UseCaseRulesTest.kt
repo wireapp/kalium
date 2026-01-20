@@ -101,7 +101,6 @@ class UseCaseRulesTest {
     }
 
     @Test
-    @Ignore("Ignored for now, this is being resolved incrementally, enable when all of the violations are fixed")
     fun kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI() {
         val scope = Konsist.scopeFromProduction()
         val violations = mutableListOf<String>()
@@ -114,6 +113,15 @@ class UseCaseRulesTest {
                 iface.functions()
                     .filter { it.hasPublicOrDefaultModifier }
                     .filter { it.returnType?.sourceType?.contains("Either<") == true }
+                    .filter { func ->
+                        // Exclude functions with the suppression annotation
+                        !func.hasAnnotation { it.name == "Suppress" } ||
+                                !func.annotations.any {
+                                    it.arguments.any { arg ->
+                                        arg.value?.contains("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI") == true
+                                    }
+                                }
+                    }
                     .forEach { func ->
                         violations.add(
                             "Public interface '${iface.name}' in ${iface.containingFile.name} " +
@@ -130,6 +138,15 @@ class UseCaseRulesTest {
                 clazz.functions()
                     .filter { it.hasPublicOrDefaultModifier }
                     .filter { it.returnType?.sourceType?.contains("Either<") == true }
+                    .filter { func ->
+                        // Exclude functions with the suppression annotation
+                        !func.hasAnnotation { it.name == "Suppress" } ||
+                                !func.annotations.any {
+                                    it.arguments.any { arg ->
+                                        arg.value?.contains("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI") == true
+                                    }
+                                }
+                    }
                     .forEach { func ->
                         violations.add(
                             "Public class '${clazz.name}' in ${clazz.containingFile.name} " +

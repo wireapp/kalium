@@ -19,11 +19,11 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.feature.debug.RepairFaultyRemovalKeysUseCaseTest.Arrangement.Companion.FAULTY_KEY
 import com.wire.kalium.logic.framework.TestConversation
@@ -68,7 +68,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
             .withGetExternalKeyForConversation(FAULTY_KEY.first())
-            .withResetMLSConversationResult(Unit.right())
+            .withResetMLSConversationResult(ResetMLSConversationResult.Success)
             .arrange()
 
         val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
@@ -85,7 +85,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withMlsConversations(listOf(TestConversation.MLS_CONVERSATION).right())
             .withGetExternalKeyForConversation(FAULTY_KEY.first())
-            .withResetMLSConversationResult(CoreFailure.MissingClientRegistration.left())
+            .withResetMLSConversationResult(ResetMLSConversationResult.Failure(CoreFailure.MissingClientRegistration))
             .arrange()
 
         val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
@@ -112,7 +112,7 @@ class RepairFaultyRemovalKeysUseCaseTest {
                     ExternalSenderKey(key.hexToByteArray())
         }
 
-        suspend fun withResetMLSConversationResult(result: Either<CoreFailure, Unit>) = apply {
+        suspend fun withResetMLSConversationResult(result: ResetMLSConversationResult) = apply {
             coEvery { resetMLSConversationUseCase.invoke(any(), any()) } returns result
         }
 

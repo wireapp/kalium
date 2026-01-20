@@ -82,7 +82,7 @@ class SendEditMultipartMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
 
         assertEquals(1, updateCalled)
         assertEquals(1, updateStatusCalled)
@@ -126,7 +126,7 @@ class SendEditMultipartMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        result.shouldFail()
+        result.toEither().shouldFail()
 
         assertEquals(1, updateCalled)
         assertEquals(1, updateStatusCalled)
