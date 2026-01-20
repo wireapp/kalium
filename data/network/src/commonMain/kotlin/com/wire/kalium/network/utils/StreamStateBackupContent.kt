@@ -27,6 +27,12 @@ import okio.Source
 import okio.use
 
 /**
+ * Buffer size for streaming backup content (8KB).
+ * Used consistently for both upload and download operations.
+ */
+internal const val BACKUP_STREAM_BUFFER_SIZE = 8 * 1024
+
+/**
  * Streaming content handler for uploading cryptographic state backups.
  * Streams binary data from an Okio Source without loading the entire file into memory.
  */
@@ -41,16 +47,12 @@ internal class StreamStateBackupContent(
     override suspend fun writeTo(channel: ByteWriteChannel) {
         backupDataSource().use { source ->
             val buffer = Buffer()
-            while (source.read(buffer, BUFFER_SIZE) != -1L) {
+            while (source.read(buffer, BACKUP_STREAM_BUFFER_SIZE.toLong()) != -1L) {
                 val byteArray = buffer.readByteArray()
                 channel.writeFully(byteArray)
             }
         }
         channel.flush()
         channel.flushAndClose()
-    }
-
-    private companion object {
-        const val BUFFER_SIZE = 8192L
     }
 }

@@ -22,10 +22,11 @@ import com.wire.kalium.network.api.authenticated.remoteBackup.DeleteMessagesResp
 import com.wire.kalium.network.api.authenticated.remoteBackup.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.authenticated.remoteBackup.MessageSyncRequestDTO
 import com.wire.kalium.network.api.v0.authenticated.RemoteBackupApiV0
+import com.wire.kalium.network.utils.BACKUP_STREAM_BUFFER_SIZE
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.StreamStateBackupContent
-import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
+import com.wire.kalium.network.utils.wrapStreamingRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -40,7 +41,6 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readAvailable
-import kotlinx.coroutines.CancellationException
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -109,40 +109,23 @@ internal open class RemoteBackupApiV12(
     override suspend fun downloadStateBackup(
         userId: String,
         tempFileSink: Sink
-    ): NetworkResponse<Unit> = runCatching {
+    ): NetworkResponse<Unit> = wrapStreamingRequest { handleError ->
         httpClient.prepareGet("$backupServiceUrl/state") {
             parameter("user_id", userId)
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
-                handleStateBackupDownload(httpResponse, tempFileSink)
+                val channel = httpResponse.body<ByteReadChannel>()
+                writeChannelToSink(channel, tempFileSink)
+                NetworkResponse.Success(Unit, httpResponse)
             } else {
-                wrapKaliumResponse { httpResponse }
+                handleError(httpResponse)
             }
         }
-    }.getOrElse { unhandledException ->
-        if (unhandledException is CancellationException) {
-            throw unhandledException
-        }
-        NetworkResponse.Error(com.wire.kalium.network.exceptions.KaliumException.GenericError(unhandledException))
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun handleStateBackupDownload(
-        httpResponse: HttpResponse,
-        tempFileSink: Sink
-    ): NetworkResponse<Unit> = try {
-        val channel = httpResponse.body<ByteReadChannel>()
-        writeChannelToSink(channel, tempFileSink)
-        NetworkResponse.Success(Unit, httpResponse)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        NetworkResponse.Error(com.wire.kalium.network.exceptions.KaliumException.GenericError(e))
     }
 
     private suspend fun writeChannelToSink(channel: ByteReadChannel, sink: Sink) {
         sink.buffer().use { bufferedSink ->
-            val buffer = ByteArray(BUFFER_SIZE)
+            val buffer = ByteArray(BACKUP_STREAM_BUFFER_SIZE)
             while (!channel.isClosedForRead) {
                 val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
                 if (bytesRead <= 0) break
@@ -150,9 +133,4 @@ internal open class RemoteBackupApiV12(
             }
         }
     }
-
-    private companion object {
-        const val BUFFER_SIZE = 16 * 1024
-    }
-
 }
