@@ -93,7 +93,7 @@ interface RemoteBackupApi {
     ): NetworkResponse<Unit>
 
     companion object {
-        fun getApiNotSupportError(apiName: String, apiVersion: String = "13") = NetworkResponse.Error(
+        fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(
             APINotSupported("RemoteBackupApi: $apiName api is only available on API V$apiVersion")
         )
     }
