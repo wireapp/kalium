@@ -252,7 +252,7 @@ sealed class ConversationRepository {
                         val result = messages.toggleReaction(conversationId, originalMessageId, type)
                         when (result) {
                             is ToggleReactionResult.Failure ->
-                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result.failure).build()
 
                             is ToggleReactionResult.Success ->
                                 Response.status(Response.Status.OK)
