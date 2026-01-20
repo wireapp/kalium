@@ -133,6 +133,9 @@ fun com.wire.crypto.X509Identity.toCryptography() = WireIdentity.X509Identity(
     notAfter = notAfter.epochSecond
 )
 
+private val kotlinx.datetime.Instant.epochSecond: Long
+    get() = this.epochSeconds
+
 private fun DeviceStatus.toCryptography(): CryptoCertificateStatus = when (this) {
     DeviceStatus.VALID -> CryptoCertificateStatus.VALID
     DeviceStatus.EXPIRED -> CryptoCertificateStatus.EXPIRED

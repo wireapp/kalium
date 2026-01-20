@@ -40,6 +40,7 @@ turbine = "1.1.0"
 avs = "10.1.41"
 jna = "5.17.0"
 core-crypto = "9.1.3"
+core-crypto-kmp = "9.1.3.5-kmp"
 desugar-jdk = "2.1.3"
 kermit = "2.0.3"
 detekt = "1.23.8"
@@ -147,6 +148,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 androidCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "android-security" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
+coreCryptoKmp = { module = "io.github.mohamadjaara:core-crypto-kmp", version.ref = "core-crypto-kmp" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
 
 # Compose Desktop / Multiplatform
