@@ -41,6 +41,7 @@ import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.feature.debug.SendConfirmationResult
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
+import com.wire.kalium.locic.feature.message.ToggleReactionResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.LinkPreview
@@ -98,7 +99,7 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Delete message everywhere")
-                        messages.deleteMessage(conversationId, messageId, deleteForEveryone).fold({
+                        messages.deleteMessage(conversationId, messageId, deleteForEveryone).toEither().fold({
                             Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                         }, {
                             Response.status(Response.Status.OK).build()
@@ -248,12 +249,15 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send reaction $type")
-                        messages.toggleReaction(conversationId, originalMessageId, type).fold({
-                            Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
-                        }, {
-                            Response.status(Response.Status.OK)
-                                .entity(SendTextResponse(instance.instanceId, "", "")).build()
-                        })
+                        val result = messages.toggleReaction(conversationId, originalMessageId, type)
+                        when (result) {
+                            is ToggleReactionResult.Failure ->
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+
+                            is ToggleReactionResult.Success ->
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                        }
                     }
                 }
 
@@ -306,7 +310,7 @@ sealed class ConversationRepository {
                                     buttons
                                 )
                             }
-                            result.fold({
+                            result.toEither().fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
                                 Response.status(Response.Status.OK)
@@ -370,7 +374,7 @@ sealed class ConversationRepository {
                                 firstMessageId,
                                 text,
                                 mentions
-                            ).fold({
+                            ).toEither().fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
                                 Response.status(Response.Status.OK)
@@ -427,7 +431,7 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         setMessageTimer(instance, conversationId, messageTimer)
                         log.info("Instance ${instance.instanceId}: Send ping")
-                        messages.sendLocation(conversationId, latitude, longitude, name, zoom).fold({
+                        messages.sendLocation(conversationId, latitude, longitude, name, zoom).toEither().fold({
                             Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                         }, {
                             Response.status(Response.Status.OK).build()
@@ -446,7 +450,7 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send ping")
-                        messages.sendKnock(conversationId, false).fold({
+                        messages.sendKnock(conversationId, false).toEither().fold({
                             Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                         }, {
                             Response.status(Response.Status.OK).build()
