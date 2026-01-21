@@ -51,3 +51,17 @@ data class MessageReactionEntity(
 
 typealias ReactionsCountEntity = Map<String, Int>
 typealias UserReactionsEntity = Set<String>
+
+//
+// Entities for multiplatform backup
+//
+data class MessageReactionsEntity(
+    val messageId: String,
+    val conversationId: QualifiedIDEntity,
+    val reactions: List<MessageReactionUserEntity>,
+)
+
+data class MessageReactionUserEntity(
+    val emoji: String,
+    val userId: QualifiedIDEntity,
+)

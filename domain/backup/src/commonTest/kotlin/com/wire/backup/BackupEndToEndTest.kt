@@ -133,6 +133,7 @@ class BackupEndToEndTest {
     fun givenBackedUpReactions_whenRestoring_thenShouldReadTheSameContent() = runTest {
         val reaction0 = BackupReaction(
             messageId = "message-id-0",
+            conversationId = BackupQualifiedId("conv_id", "domain"),
             emojiReactions = listOf(
                 BackupEmojiReaction("👍", listOf(BackupQualifiedId("u0", "d"), BackupQualifiedId("u1", "d"))),
                 BackupEmojiReaction("🔥", listOf(BackupQualifiedId("u2", "d")))
@@ -140,6 +141,7 @@ class BackupEndToEndTest {
         )
         val reaction1 = BackupReaction(
             messageId = "message-id-1",
+            conversationId = BackupQualifiedId("conv_id", "domain"),
             emojiReactions = listOf(
                 BackupEmojiReaction("❤️", listOf(BackupQualifiedId("u3", "d")))
             )

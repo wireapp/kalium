@@ -56,3 +56,17 @@ FROM MessageDetailsReactions
 WHERE
 	messageId = ?
 	AND conversationId = ?;
+
+countReactionsForBackup:
+SELECT COUNT(DISTINCT message_id)
+FROM Reaction;
+
+selectReactionsByMessagePaged:
+SELECT
+    message_id,
+    conversation_id,
+    GROUP_CONCAT(emoji || ':' || sender_id, '|') AS aggregated_reactions
+FROM Reaction
+GROUP BY message_id, conversation_id
+ORDER BY message_id
+LIMIT :limit OFFSET :offset;

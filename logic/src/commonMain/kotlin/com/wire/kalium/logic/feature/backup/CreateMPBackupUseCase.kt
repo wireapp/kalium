@@ -26,12 +26,14 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.feature.backup.CreateBackupResult.Failure
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
+import com.wire.kalium.logic.feature.backup.mapper.toBackupReaction
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupExporter
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
@@ -99,6 +101,12 @@ internal class CreateMPBackupUseCaseImpl(
                             page.mapNotNull(Message::toBackupMessage)
                                 .forEach { mpBackupExporter.add(it) }
                             onProgress(pageIndex++.toFloat() / totalPages)
+                        }
+                    }
+                    async {
+                        getReactions().buffer().collect { (page, _) ->
+                            page.map(MessageReactions::toBackupReaction)
+                                .forEach { mpBackupExporter.add(it) }
                         }
                     }
                 }
