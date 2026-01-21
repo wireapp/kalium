@@ -20,14 +20,16 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.SsoManagedBy
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
@@ -35,7 +37,8 @@ public sealed class SSOLoginSessionResult {
     public data class Success(
         val accountTokens: AccountTokens,
         val ssoId: SsoId?,
-        val proxyCredentials: ProxyCredentials?
+        val proxyCredentials: ProxyCredentials?,
+        val managedBy: SsoManagedBy?,
     ) : SSOLoginSessionResult()
 
     public sealed class Failure : SSOLoginSessionResult() {
@@ -59,7 +62,8 @@ internal class GetSSOLoginSessionUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
     private val proxyCredentials: ProxyCredentials?,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : GetSSOLoginSessionUseCase {
 
     override suspend fun invoke(cookie: String): SSOLoginSessionResult =
@@ -73,8 +77,8 @@ internal class GetSSOLoginSessionUseCaseImpl(
             SSOLoginSessionResult.Success(
                 accountTokens = sessionMapper.fromSessionDTO(it.sessionDTO),
                 ssoId = idMapper.toSsoId(it.userDTO.ssoID),
-                proxyCredentials = proxyCredentials
+                proxyCredentials = proxyCredentials,
+                managedBy = userMapper.fromManagedByDtoToSsoManagedBy(it.userDTO.managedByDTO)
             )
         })
-
 }

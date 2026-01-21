@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -42,6 +43,7 @@ public sealed class AuthenticationResult {
     public data class Success(
         val authData: AccountTokens,
         val ssoID: SsoId?,
+        val managedBy: SsoManagedBy?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : AuthenticationResult()
@@ -145,22 +147,23 @@ internal class LoginUseCaseImpl internal constructor(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials) }
-            .fold({
-                when (it) {
-                    is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
-                    is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it, isEmail, cleanUserIdentifier)
-                    is NetworkFailure.NoNetworkConnection,
-                    is NetworkFailure.FederatedBackendFailure,
-                    is NetworkFailure.FeatureNotSupported,
-                    is NetworkFailure.MlsMessageRejectedFailure -> AuthenticationResult.Failure.Generic(it)
-                }
-            }, {
-                if (isEmail && clean2FACode != null) {
-                    secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, clean2FACode)
-                }
-                it
-            })
+        }.map { result ->
+            AuthenticationResult.Success(result.accountTokens, result.ssoId, result.managedBy, serverConfig.id, proxyCredentials)
+        }.fold({
+            when (it) {
+                is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
+                is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it, isEmail, cleanUserIdentifier)
+                is NetworkFailure.NoNetworkConnection,
+                is NetworkFailure.FederatedBackendFailure,
+                is NetworkFailure.FeatureNotSupported,
+                is NetworkFailure.MlsMessageRejectedFailure -> AuthenticationResult.Failure.Generic(it)
+            }
+        }, {
+            if (isEmail && clean2FACode != null) {
+                secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, clean2FACode)
+            }
+            it
+        })
     }
 
     private suspend fun handleServerMiscommunication(
