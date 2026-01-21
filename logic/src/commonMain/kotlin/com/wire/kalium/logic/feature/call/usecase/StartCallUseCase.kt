@@ -18,14 +18,13 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase.Result
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
@@ -36,10 +35,11 @@ import kotlinx.coroutines.withContext
  * Will wait for sync to finish or fail if it is pending,
  * and return one [Result].
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class StartCallUseCase internal constructor(
+public class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
-    private val syncManager: SyncManager,
+    private val syncStateObserver: SyncStateObserver,
     private val kaliumConfigs: KaliumConfigs,
     private val callRepository: CallRepository,
     private val getCallConversationType: GetCallConversationTypeProvider,
@@ -47,11 +47,11 @@ class StartCallUseCase internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
-    ) = withContext(dispatchers.default) {
-        syncManager.waitUntilLiveOrFailure().fold({
+    ): Result = withContext(dispatchers.default) {
+        syncStateObserver.waitUntilLiveOrFailure().fold({
             return@withContext Result.SyncFailure
         }, {
             callRepository.incomingCallsFlow().first().run {
@@ -75,15 +75,15 @@ class StartCallUseCase internal constructor(
         })
     }
 
-    sealed interface Result {
+    public sealed interface Result {
         /**
          * Call started successfully
          */
-        data object Success : Result
+        public data object Success : Result
 
         /**
          * Failed to start a call as Sync is not yet performed
          */
-        data object SyncFailure : Result
+        public data object SyncFailure : Result
     }
 }

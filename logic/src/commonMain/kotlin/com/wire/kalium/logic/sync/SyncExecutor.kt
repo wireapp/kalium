@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -43,9 +41,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
-abstract class SyncExecutor {
+public abstract class SyncExecutor {
 
-    abstract fun startAndStopSyncAsNeeded()
+    public abstract fun startAndStopSyncAsNeeded()
 
     /**
      * Requests Sync to be performed, fetching new events, etc. bringing the user to an online status.
@@ -53,9 +51,9 @@ abstract class SyncExecutor {
      *
      * Sync will keep ongoing if at least one request is still active (not released).
      */
-    abstract suspend fun <T> request(executorAction: suspend SyncRequest.() -> T): T
+    public abstract suspend fun <T> request(executorAction: suspend SyncRequest.() -> T): T
 
-    inner class Request internal constructor(
+    internal inner class Request internal constructor(
         private val syncStateFlow: StateFlow<SyncState>,
         private val job: Job,
         private val logger: KaliumLogger
@@ -77,15 +75,15 @@ abstract class SyncExecutor {
 
         override suspend fun waitUntilOrFailure(
             syncState: SyncState
-        ): Either<CoreFailure, Unit> = syncStateFlow.map { state ->
+        ): SyncRequestResult = syncStateFlow.map { state ->
             when (state) {
-                is SyncState.Failed -> Either.Left(state.cause)
-                syncState -> Either.Right(Unit)
+                is SyncState.Failed -> SyncRequestResult.Failure(state.cause)
+                syncState -> SyncRequestResult.Success
                 else -> null
             }
         }.filterNotNull().first()
 
-        override suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit> = waitUntilOrFailure(SyncState.Live)
+        override suspend fun waitUntilLiveOrFailure(): SyncRequestResult = waitUntilOrFailure(SyncState.Live)
 
         override fun keepSyncAlwaysOn() {
             isEndless = true

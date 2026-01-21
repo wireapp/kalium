@@ -16,6 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
@@ -48,7 +51,6 @@ plugins {
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
-    alias(libs.plugins.completeKotlin)
     alias(libs.plugins.dagCommand)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.jetbrains) apply false
@@ -64,13 +66,41 @@ tasks.withType<Test> {
     }
 }
 
+// Workaround for Kotlin Native test report writing issue
+// For some reason xml and html generation is failing, looks like tests running in parallel
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+        reports.junitXml.required.set(false)
+        reports.html.required.set(false)
+
+        // workaround for knowing which tests passed failed since HTML reporting is disabled for native tests
+        // can be removed once HTML reporting is working
+        testLogging {
+            events("failed")
+            showStandardStreams = true
+        }
+    }
+
+    // Configure GC for iOS Simulator ARM64 tests only
+    pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>()
+                .matching { it.name == "iosSimulatorArm64" }
+                .configureEach {
+                    binaries.all {
+                        if (this is org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable) {
+                            binaryOptions["gc"] = "stwms"
+                        }
+                    }
+                }
+        }
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
-        // temporary repo containing mockative 3.0.1 with a fix for a bug https://github.com/mockative/mockative/issues/143 is uploaded
-        // until mockative releases a new version with a proper fix
-        maven(url = "https://raw.githubusercontent.com/saleniuk/mockative/fix/duplicates-while-merging-dex-archives-mvn/release")
     }
 }
 
@@ -127,8 +157,10 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
         YarnLockMismatchReport.WARNING
 }
 
-rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
+rootProject.plugins.withType<NodeJsPlugin> {
+    rootProject.the<NodeJsEnvSpec>().version = "18.18.0"
+    // If we want to use the downloaded Node instead of system Node:
+    // rootProject.the<NodeJsEnvSpec>().download.set(true)
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
@@ -138,18 +170,20 @@ moduleGraphConfig {
     heading.set("#### Dependency Graph")
     nestingEnabled.set(true)
     rootModulesRegex.set(":logic")
+    setStyleByModuleType.set(true)
+    showFullPath.set(true)
 }
 
 tasks.register("runAllUnitTests") {
     description = "Runs all Unit Tests."
 
     rootProject.subprojects {
-        if (tasks.findByName("testDebugUnitTest") != null) {
-            dependsOn(":$name:testDebugUnitTest")
+        tasks.findByName("testDebugUnitTest")?.let {
+            dependsOn(it)
         }
         if (name != "cryptography") {
-            if (tasks.findByName("jvmTest") != null) {
-                dependsOn(":$name:jvmTest")
+            tasks.findByName("jvmTest")?.let {
+                dependsOn(it)
             }
         }
     }

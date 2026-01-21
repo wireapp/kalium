@@ -47,12 +47,14 @@ import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 
-class AuthenticationScopeProvider internal constructor(
+internal class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
 ) {
 
-    private val authenticationScopeStorage: ConcurrentMutableMap<Pair<ServerConfig, ProxyCredentials?>,
-            AuthenticationScope> by lazy {
+    private val authenticationScopeStorage: ConcurrentMutableMap<
+            Pair<ServerConfig, ProxyCredentials?>,
+            AuthenticationScope
+            > by lazy {
         ConcurrentMutableMap()
     }
 
@@ -74,7 +76,7 @@ class AuthenticationScopeProvider internal constructor(
         }
 }
 
-class AuthenticationScope internal constructor(
+public class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
@@ -127,10 +129,10 @@ class AuthenticationScope internal constructor(
     private val appVersionRepository: AppVersionRepository
         get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
 
-    val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
+    public val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
         get() = GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)
 
-    val login: LoginUseCase
+    public val login: LoginUseCase
         get() = LoginUseCaseImpl(
             loginRepository,
             validateEmailUseCase,
@@ -139,22 +141,22 @@ class AuthenticationScope internal constructor(
             proxyCredentials,
             secondFactorVerificationRepository
         )
-    val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
+    public val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
-    val registerScope: RegisterScope
+    public val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
-    val ssoLoginScope: SSOLoginScope
+    public val ssoLoginScope: SSOLoginScope
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
-    val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
+    internal val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
 
-    val domainLookup: DomainLookupUseCase
+    public val domainLookup: DomainLookupUseCase
         get() = DomainLookupUseCase(
             customServerConfigRepository = customServerConfigRepository,
             ssoLoginRepository = ssoLoginRepository
         )
 
-    val currentServerConfig: () -> ServerConfig = {
+    public val currentServerConfig: () -> ServerConfig = {
         serverConfig
     }
 }

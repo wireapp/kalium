@@ -43,7 +43,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 @Mockable
-interface MLSMigrator {
+internal interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseAllProteusConversations(): Either<CoreFailure, Unit>
@@ -115,7 +115,9 @@ internal class MLSMigratorImpl(
             .flatMap { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
-                        conversationId, selfUserId, Protocol.MIXED
+                        conversationId,
+                        selfUserId,
+                        Protocol.MIXED
                     )
                     if (callRepository.establishedCallsFlow().first().isNotEmpty()) {
                         systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(
@@ -141,7 +143,9 @@ internal class MLSMigratorImpl(
             }, { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
-                        conversationId, selfUserId, Protocol.MLS
+                        conversationId,
+                        selfUserId,
+                        Protocol.MLS
                     )
                 }
                 Either.Right(Unit)

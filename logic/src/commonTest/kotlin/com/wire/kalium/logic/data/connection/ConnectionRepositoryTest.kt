@@ -46,11 +46,12 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationUnreachableResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -405,7 +406,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withErrorUpdatingConnectionStatusResponse(
                 userId,
-                KaliumException.FederationUnreachableException(FederationUnreachableResponse())
+                FederationError(FederationErrorResponse.Unreachable())
             )
             .withConnectionEntityByUser()
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
@@ -428,7 +429,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withErrorUpdatingConnectionStatusResponse(
                 userId,
-                KaliumException.FederationUnreachableException(FederationUnreachableResponse())
+                FederationError(FederationErrorResponse.Unreachable())
             )
             .withConnectionEntityByUser()
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)

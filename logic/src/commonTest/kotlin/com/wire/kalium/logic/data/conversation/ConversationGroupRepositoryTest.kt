@@ -22,6 +22,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -40,7 +42,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -68,8 +69,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.api.model.FederationConflictResponse
-import com.wire.kalium.network.api.model.FederationUnreachableResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -109,6 +110,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -141,6 +143,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -173,6 +176,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -185,6 +189,33 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.legalHoldHandler.handleConversationMembersChanged(any())
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccess_whenCallingCreateGroupConversation_AndsAppsEnabledPersistSystemMessage() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -205,6 +236,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withInsertFailedToAddSystemMessageSuccess()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
@@ -349,6 +381,7 @@ class ConversationGroupRepositoryTest {
             .withInsertFailedToAddSystemMessageSuccess()
             .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -446,6 +479,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -489,6 +523,7 @@ class ConversationGroupRepositoryTest {
                 .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
                 .withSuccessfulLegalHoldHandleConversationMembersChanged()
                 .withInsertFailedToAddSystemMessageSuccess()
+                .withConversationAppsAccessIfEnabled()
                 .arrange()
 
             val result = conversationGroupRepository.createGroupConversation(
@@ -1458,6 +1493,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -1781,6 +1817,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -2091,6 +2128,12 @@ class ConversationGroupRepositoryTest {
             }.returns(result)
         }
 
+        suspend fun withConversationAppsAccessIfEnabled() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+            }.returns(Unit.right())
+        }
+
         suspend fun withSuccessfulNewConversationGroupStartedHandled() = apply {
             coEvery {
                 newGroupConversationSystemMessagesCreator.conversationStarted(any(), any(), any())
@@ -2237,8 +2280,8 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_UNREACHABLE_DOMAINS = NetworkResponse.Error(
-            KaliumException.FederationUnreachableException(
-                FederationUnreachableResponse(
+            FederationError(
+                FederationErrorResponse.Unreachable(
                     listOf(
                         "unstableDomain1.com",
                         "unstableDomain2.com"
@@ -2248,8 +2291,8 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_CONFLICTING_BACKENDS = NetworkResponse.Error(
-            KaliumException.FederationConflictException(
-                FederationConflictResponse(
+            FederationError(
+                FederationErrorResponse.Conflict(
                     listOf(
                         "conflictingDomain1.com",
                         "conflictingDomain2.com"
@@ -2259,7 +2302,7 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_GENERAL = NetworkResponse.Error(
-            KaliumException.FederationError(ErrorResponse(422, "", "federation-remote-error"))
+            FederationError(FederationErrorResponse.Generic(422, "", "federation-remote-error", null))
         )
 
         val ERROR_MISSING_LEGALHOLD_CONSENT = NetworkResponse.Error(

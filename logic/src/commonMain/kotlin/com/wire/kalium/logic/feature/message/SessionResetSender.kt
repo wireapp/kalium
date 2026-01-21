@@ -42,11 +42,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
 @Mockable
-interface SessionResetSender {
+internal interface SessionResetSender {
     suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): Either<CoreFailure, Unit>
 }
 
-class SessionResetSenderImpl internal constructor(
+internal class SessionResetSenderImpl internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,

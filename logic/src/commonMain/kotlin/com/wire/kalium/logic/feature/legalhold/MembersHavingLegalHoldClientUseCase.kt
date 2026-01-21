@@ -18,19 +18,19 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
 import io.mockative.Mockable
 
 /**
  * Returns list of ids of conversation members having a legal hold client.
  */
 @Mockable
-interface MembersHavingLegalHoldClientUseCase {
+internal interface MembersHavingLegalHoldClientUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>>
 }
 

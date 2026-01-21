@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
@@ -37,12 +38,9 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailur
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.time.Duration
 
 /**
@@ -146,13 +144,9 @@ internal class JoinSubconversationUseCaseImpl(
     ): Either<CoreFailure, Unit> =
         joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
             .flatMapLeft { failure ->
-                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if ((failure.kaliumException as KaliumException.InvalidRequestError).isMlsStaleMessage()) {
-                        kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
-                        joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
-                    } else {
-                        Either.Left(failure)
-                    }
+                if (failure is MLSFailure.MessageRejected && failure.cause is NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
+                    kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
+                    joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
                 } else {
                     Either.Left(failure)
                 }
@@ -169,4 +163,4 @@ private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
 
 private fun SubconversationResponse.timeElapsedSinceLastEpochChange(): Duration =
-    epochTimestamp?.toInstant()?.timeElapsedUntilNow() ?: Duration.ZERO
+    epochTimestamp?.let { Instant.parse(it) }?.timeElapsedUntilNow() ?: Duration.ZERO

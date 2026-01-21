@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -51,7 +50,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("LongParameterList")
-class SessionManagerImpl internal constructor(
+internal class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val accessTokenRefresherFactory: AccessTokenRefresherFactory,
     private val userId: QualifiedID,
@@ -72,7 +71,8 @@ class SessionManagerImpl internal constructor(
                 {
                     logout(LogoutReason.SESSION_EXPIRED)
                     null
-                }, { session ->
+                },
+                { session ->
                     session
                 }
             )
@@ -88,8 +88,10 @@ class SessionManagerImpl internal constructor(
 
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
-        oldRefreshToken: String
+        oldRefreshToken: String?
     ): SessionDTO {
+        require(!oldRefreshToken.isNullOrEmpty()) { "Refresh token is missing" }
+
         val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {
             val currentClientId = currentClientIdProvider().nullableFold({ null }, { it })
@@ -129,12 +131,12 @@ class SessionManagerImpl internal constructor(
     }
 
     private suspend fun onSessionExpired() {
-        kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.value.obfuscateId()}")
+        kaliumLogger.d("SESSION MANAGER: onSessionExpired is called for user ${userId.toLogString()}")
         logout(LogoutReason.SESSION_EXPIRED)
     }
 
     private suspend fun onClientRemoved() {
-        kaliumLogger.d("SESSION MANAGER: onClientRemoved is called for user ${userId.value.obfuscateId()}")
+        kaliumLogger.d("SESSION MANAGER: onClientRemoved is called for user ${userId.toLogString()}")
         logout(LogoutReason.REMOVED_CLIENT)
     }
 

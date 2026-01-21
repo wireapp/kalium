@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.util
 
-expect class CurrentPlatform
+internal expect class CurrentPlatform
 
-enum class PlatformType(val value: String) {
+internal enum class PlatformType(val value: String) {
     ANDROID("Android"),
     JVM("Jvm"),
     APPLE("Apple")

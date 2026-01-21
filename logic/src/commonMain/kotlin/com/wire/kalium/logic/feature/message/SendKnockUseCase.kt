@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -29,9 +29,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -39,12 +36,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
-@Suppress("LongParameterList")
 /**
  * Sending a ping/knock message to a conversation
  */
-class SendKnockUseCase internal constructor(
+// todo(interface). extract interface for use case
+@Suppress("LongParameterList")
+public class SendKnockUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -60,37 +59,48 @@ class SendKnockUseCase internal constructor(
      *
      * @param conversationId the id of the conversation to send the ping to
      * @param hotKnock whether to send this as a hot knock or not @see [MessageContent.Knock]
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @return [MessageOperationResult] with a success or failure.
      */
-    suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
+    public suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): MessageOperationResult =
+        withContext(dispatcher.io) {
+            slowSyncRepository.slowSyncStatus.first {
+                it is SlowSyncStatus.Complete
+            }
+
+            val generatedMessageUuid = Uuid.random().toString()
+            val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
+                .first()
+                .duration
+
+            return@withContext currentClientIdProvider().flatMap { currentClientId ->
+                val message = Message.Regular(
+                    id = generatedMessageUuid,
+                    content = MessageContent.Knock(hotKnock),
+                    conversationId = conversationId,
+                    date = Clock.System.now(),
+                    senderUserId = selfUserId,
+                    senderClientId = currentClientId,
+                    status = Message.Status.Pending,
+                    editStatus = Message.EditStatus.NotEdited,
+                    isSelfMessage = true,
+                    expirationData = messageTimer?.let { Message.ExpirationData(it) }
+                )
+                persistMessage(message)
+                    .flatMap { messageSender.sendMessage(message) }
+            }.fold({
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    it,
+                    conversationId,
+                    generatedMessageUuid,
+                    TYPE,
+                )
+                MessageOperationResult.Failure(it)
+            }, {
+                MessageOperationResult.Success
+            })
         }
 
-        val generatedMessageUuid = Uuid.random().toString()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
-            .first()
-            .duration
-
-        return@withContext currentClientIdProvider().flatMap { currentClientId ->
-            val message = Message.Regular(
-                id = generatedMessageUuid,
-                content = MessageContent.Knock(hotKnock),
-                conversationId = conversationId,
-                date = Clock.System.now(),
-                senderUserId = selfUserId,
-                senderClientId = currentClientId,
-                status = Message.Status.Pending,
-                editStatus = Message.EditStatus.NotEdited,
-                isSelfMessage = true,
-                expirationData = messageTimer?.let { Message.ExpirationData(it) }
-            )
-            persistMessage(message)
-                .flatMap { messageSender.sendMessage(message) }
-        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
-    }
-
-    companion object {
-        const val TYPE = "Knock"
+    internal companion object {
+        internal const val TYPE = "Knock"
     }
 }

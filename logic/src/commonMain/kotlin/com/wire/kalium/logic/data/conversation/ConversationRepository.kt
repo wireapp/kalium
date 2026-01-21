@@ -85,7 +85,7 @@ import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface ConversationRepository {
+internal interface ConversationRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
@@ -352,6 +352,8 @@ interface ConversationRepository {
     suspend fun getConversationIdsWithoutMetadata(): Either<CoreFailure, List<QualifiedID>>
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
+    suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean>
+    suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>>
 }
 
 @OptIn(ConversationPersistenceApi::class)
@@ -563,7 +565,8 @@ internal class ConversationDataSource internal constructor(
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         memberDAO.insertMembersWithQualifiedId(
-            members.map(memberMapper::toDaoModel), conversationID.toDao()
+            members.map(memberMapper::toDaoModel),
+            conversationID.toDao()
         )
     }
 
@@ -838,6 +841,9 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
         wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
 
+    override suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { conversationDAO.updateReadDateAndGetHasUnreadEvents(qualifiedID.toDao(), date) }
+
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,
         selfDeletionTimer: SelfDeletionTimer
@@ -947,9 +953,11 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             if (conversationsFailed.isNotEmpty()) {
-                conversationDAO.insertConversations(conversationsFailed.map { conversationId ->
-                    conversationMapper.fromFailedGroupConversationToEntity(conversationId)
-                })
+                conversationDAO.insertConversations(
+                    conversationsFailed.map { conversationId ->
+                        conversationMapper.fromFailedGroupConversationToEntity(conversationId)
+                    }
+                )
             }
         }
     }
@@ -1090,6 +1098,11 @@ internal class ConversationDataSource internal constructor(
                 updateChannelAddPermissionLocally(conversationId, channelAddPermission)
             }
         }
+    }
+
+    override suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>> = wrapStorageRequest {
+        conversationDAO.getMLSConversationsByDomain(domain)
+            .map(conversationMapper::fromDaoModel)
     }
 
     companion object {

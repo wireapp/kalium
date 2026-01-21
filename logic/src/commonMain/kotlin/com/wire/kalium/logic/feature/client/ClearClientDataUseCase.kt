@@ -38,7 +38,7 @@ import kotlinx.coroutines.withContext
  * The proteus client will be cleared and the MLS client will be cleared.
  */
 @Mockable
-interface ClearClientDataUseCase {
+internal interface ClearClientDataUseCase {
     suspend operator fun invoke()
 }
 

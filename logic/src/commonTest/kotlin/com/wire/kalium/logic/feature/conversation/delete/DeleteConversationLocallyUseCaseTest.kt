@@ -37,7 +37,6 @@ import kotlin.test.assertIs
 class DeleteConversationLocallyUseCaseTest {
 
     companion object {
-        val SUCCESS = Either.Right(Unit)
         val ERROR = Either.Left(CoreFailure.Unknown(null))
         val CONVERSATION_ID = ConversationId("someValue", "someDomain")
     }
@@ -55,27 +54,8 @@ class DeleteConversationLocallyUseCaseTest {
         val result = useCase(CONVERSATION_ID)
 
         // then
-        assertIs<Either.Right<Unit>>(result)
+        assertIs<ClearConversationContentUseCase.Result.Success>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = 1)
-    }
-
-    @Test
-    fun givenDeleteLocalConversationInvoked_whenDeleteConversationIsUnsuccessful_thenErrorResultIsPropagated() = runTest {
-        // given
-        val (arrangement, useCase) = Arrangement()
-            .withClearLocalAsset(true)
-            .arrange {
-                withDeletingConversationFailing()
-            }
-
-        // when
-        val result = useCase(CONVERSATION_ID)
-
-        // then
-        assertIs<Either.Left<Unit>>(result)
-        coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -91,9 +71,8 @@ class DeleteConversationLocallyUseCaseTest {
         val result = useCase(CONVERSATION_ID)
 
         // then
-        assertIs<Either.Left<Unit>>(result)
+        assertIs<ClearConversationContentUseCase.Result.Failure>(result)
         coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
     }
 
     private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl(),
@@ -109,13 +88,8 @@ class DeleteConversationLocallyUseCaseTest {
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
-            val useCase = DeleteConversationLocallyUseCaseImpl(
-                clearConversationContent = clearConversationContent,
-                deleteConversation = deleteConversation,
-                transactionProvider = cryptoTransactionProvider
-            )
+            val useCase = DeleteConversationLocallyUseCaseImpl(clearConversationContent = clearConversationContent)
             block()
-            withTransactionReturning(Either.Right(Unit))
             this to useCase
         }
     }

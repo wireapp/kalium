@@ -26,7 +26,7 @@ import com.wire.kalium.logic.util.PlatformView
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("UnusedPrivateProperty")
-actual class FlowManagerServiceImpl(
+internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext,
     scope: CoroutineScope
 ) : FlowManagerService {

@@ -86,7 +86,7 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface UserRepository : SelfUserObservationProvider {
+internal interface UserRepository : SelfUserObservationProvider {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
@@ -272,8 +272,10 @@ internal class UserDataSource internal constructor(
                         kaliumLogger.e("User ids contains different domains when federation is not enabled by backend: $domainNames")
                         wrapApiRequest {
                             userDetailsApi.getMultipleUsers(
-                                ListUserRequest.qualifiedIds(qualifiedUserIdList.filter { it.domain == selfUserId.domain }
-                                    .map { userId -> userId.toApi() })
+                                ListUserRequest.qualifiedIds(
+                                    qualifiedUserIdList.filter { it.domain == selfUserId.domain }
+                                    .map { userId -> userId.toApi() }
+                                )
                             )
                         }
                     } else {
@@ -297,7 +299,9 @@ internal class UserDataSource internal constructor(
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
-        val teamMemberIds = userProfileList.filter { it.isTeamMember(selfUserTeamId?.value, selfUserDomain) }.map { it.id.value }
+        val teamMemberIds = userProfileList.filter {
+            it.isTeamMember(selfUserTeamId?.value, selfUserDomain)
+        }.map { it.id.value }
         return if (selfUserTeamId == null || teamMemberIds.isEmpty()) Either.Right(emptyList())
         else teamMemberIds
             .chunked(BATCH_SIZE)

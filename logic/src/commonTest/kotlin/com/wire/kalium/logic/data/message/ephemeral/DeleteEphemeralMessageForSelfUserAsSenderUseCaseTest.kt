@@ -57,7 +57,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
                 withGetMessageById(Either.Right(message), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
             }
 
-        useCase(message.conversationId, message.id).shouldSucceed()
+        useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
         coVerify {
             arrangement.messageRepository.markMessageAsDeleted(any(), any())
@@ -77,7 +77,7 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
                 withDeleteAssetLocally(Either.Right(Unit), EqualsMatcher(assetContent.remoteData.assetId))
             }
 
-        useCase(message.conversationId, message.id).shouldSucceed()
+        useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
         coVerify {
             arrangement.assetRepository.deleteAssetLocally(assetContent.remoteData.assetId)

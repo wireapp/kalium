@@ -22,13 +22,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 /**
  * Use case that returns the current analytics tracking identifier
  */
-interface GetCurrentAnalyticsTrackingIdentifierUseCase {
+public interface GetCurrentAnalyticsTrackingIdentifierUseCase {
     /**
      * Use case [GetCurrentAnalyticsTrackingIdentifierUseCase] operation
      *
      * @return a [String] containing the current tracking identifier
      */
-    suspend operator fun invoke(): String?
+    public suspend operator fun invoke(): String?
 }
 
 @Suppress("FunctionNaming")

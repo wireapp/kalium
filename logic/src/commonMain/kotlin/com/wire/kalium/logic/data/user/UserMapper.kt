@@ -50,10 +50,10 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
-interface UserMapper {
+internal interface UserMapper {
     fun fromSelfUserToUserEntity(selfUser: SelfUser): UserEntity
     fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity
     fun fromUserEntityToSelfUser(userEntity: UserEntity): SelfUser
@@ -289,7 +289,7 @@ internal class UserMapperImpl(
             userType = userTypeEntity,
             botService = null,
             deleted = userDTO.deleted ?: false,
-            expiresAt = expiresAt?.toInstant(),
+            expiresAt = expiresAt?.let { Instant.parse(it) },
             defederated = false,
             supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
             activeOneOnOneConversationId = null,
@@ -302,7 +302,9 @@ internal class UserMapperImpl(
         newAssetId: String?
     ): UserUpdateRequest {
         return UserUpdateRequest(
-            name = newName, accentId = newAccent, assets = if (newAssetId != null) {
+            name = newName,
+            accentId = newAccent,
+                assets = if (newAssetId != null) {
                 listOf(
                     UserAssetDTO(newAssetId, AssetSizeDTO.COMPLETE, UserAssetTypeDTO.IMAGE),
                     UserAssetDTO(newAssetId, AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE)
@@ -345,7 +347,7 @@ internal class UserMapperImpl(
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
-        expiresAt = userProfile.expiresAt?.toInstant(),
+        expiresAt = userProfile.expiresAt?.let { Instant.parse(it) },
         defederated = false,
         supportedProtocols = userProfile.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
         activeOneOnOneConversationId = null
@@ -382,7 +384,7 @@ internal class UserMapperImpl(
             ),
             botService = userProfile.service?.let { BotService(it.id, it.provider) },
             deleted = userProfile.deleted ?: false,
-            expiresAt = userProfile.expiresAt?.toInstant(),
+            expiresAt = userProfile.expiresAt?.let { Instant.parse(it) },
             defederated = false,
             isProteusVerified = false,
             supportedProtocols = userProfile.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS),
@@ -439,32 +441,32 @@ internal class UserMapperImpl(
     )
 }
 
-fun SupportedProtocol.toApi() = when (this) {
+internal fun SupportedProtocol.toApi() = when (this) {
     SupportedProtocol.MLS -> SupportedProtocolDTO.MLS
     SupportedProtocol.PROTEUS -> SupportedProtocolDTO.PROTEUS
 }
 
-fun SupportedProtocol.toDao() = when (this) {
+internal fun SupportedProtocol.toDao() = when (this) {
     SupportedProtocol.MLS -> SupportedProtocolEntity.MLS
     SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
-fun SupportedProtocolDTO.toModel() = when (this) {
+internal fun SupportedProtocolDTO.toModel() = when (this) {
     SupportedProtocolDTO.MLS -> SupportedProtocol.MLS
     SupportedProtocolDTO.PROTEUS -> SupportedProtocol.PROTEUS
 }
 
-fun SupportedProtocolDTO.toDao() = when (this) {
+internal fun SupportedProtocolDTO.toDao() = when (this) {
     SupportedProtocolDTO.MLS -> SupportedProtocolEntity.MLS
     SupportedProtocolDTO.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
-fun SupportedProtocolEntity.toModel() = when (this) {
+internal fun SupportedProtocolEntity.toModel() = when (this) {
     SupportedProtocolEntity.MLS -> SupportedProtocol.MLS
     SupportedProtocolEntity.PROTEUS -> SupportedProtocol.PROTEUS
 }
 
-fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
-fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
-fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
-fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()
+internal fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
+internal fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
+internal fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
+internal fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()

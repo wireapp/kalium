@@ -17,7 +17,11 @@
  */
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.common.error.MLSTransportFailureSerialization
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -35,7 +39,7 @@ import com.wire.kalium.persistence.dao.message.LocalId
 import io.mockative.Mockable
 
 @Mockable
-interface MLSTransportProvider : MLSTransporter
+internal interface MLSTransportProvider : MLSTransporter
 
 internal class MLSTransportProviderImpl(
     private val selfUserId: UserId,
@@ -66,14 +70,15 @@ internal class MLSTransportProviderImpl(
     override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
         return wrapApiRequest {
             mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(commitBundle))
-        }
-            .onSuccess {
-                processCommitBundleEvents(it.events)
-            }.fold({
-                MlsTransportResponse.Abort(it.toString())
-            }, {
-                MlsTransportResponse.Success
-            })
+        }.flatMapLeft { networkFailure ->
+            Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
+        }.onSuccess {
+            processCommitBundleEvents(it.events)
+        }.fold({
+            MlsTransportResponse.Abort(MLSTransportFailureSerialization.serialize(it))
+        }, {
+            MlsTransportResponse.Success
+        })
     }
 
     private fun processCommitBundleEvents(events: List<EventContentDTO>) {

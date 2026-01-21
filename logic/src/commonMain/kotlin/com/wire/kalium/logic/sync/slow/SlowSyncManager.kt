@@ -32,7 +32,6 @@ import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.util.ExponentialDurationHelper
-import com.wire.kalium.logic.util.ExponentialDurationHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.NonCancellable
@@ -45,7 +44,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -73,7 +71,6 @@ internal interface SlowSyncManager {
 
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
-        val MIN_TIME_BETWEEN_SLOW_SYNCS = 31.days
     }
 }
 
@@ -98,7 +95,7 @@ internal fun SlowSyncManager(
     networkStateObserver: NetworkStateObserver,
     syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
     userScopedLogger: KaliumLogger,
-    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
+    exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelper(
         SlowSyncManager.MIN_RETRY_DELAY,
         SlowSyncManager.MAX_RETRY_DELAY
     )
@@ -146,11 +143,6 @@ internal fun SlowSyncManager(
                         SlowSyncParam.NotPerformedBefore
                     }
 
-                    DateTimeUtil.currentInstant() > (latestSlowSync + SlowSyncManager.MIN_TIME_BETWEEN_SLOW_SYNCS) -> {
-                        logger.i("Slow sync too old - last slow sync was performed on '$latestSlowSync'")
-                        SlowSyncParam.LastSlowSyncTooOld
-                    }
-
                     else -> {
                         SlowSyncParam.Success
                     }
@@ -192,7 +184,6 @@ internal fun SlowSyncManager(
             logger.i("SlowSync criteria ready, checking if SlowSync is needed or already performed")
 
             when (isSlowSyncNeeded) {
-                SlowSyncParam.LastSlowSyncTooOld,
                 SlowSyncParam.NotPerformedBefore -> {
                     performSlowSync(emptyList())
                 }

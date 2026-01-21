@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -27,6 +28,7 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.featureConfig.CollaboraEdition.Companion.fromString
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toEntity
 import com.wire.kalium.logic.data.featureConfig.toModel
@@ -45,6 +47,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -60,7 +63,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface UserConfigRepository {
+internal interface UserConfigRepository {
     fun setAppLockStatus(
         isAppLocked: Boolean,
         timeout: Int,
@@ -159,12 +162,14 @@ interface UserConfigRepository {
     suspend fun setAppsEnabled(isAppsEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAppsEnabled(): Boolean
     suspend fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>>
-    suspend fun setChatBubblesEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    suspend fun isChatBubblesEnabled(): Boolean
     suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
+    suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
+    suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
+    suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -594,12 +599,6 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeAppsEnabled().wrapStorageRequest()
 
-    override suspend fun setChatBubblesEnabled(enabled: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigDAO.setChatBubblesEnabled(enabled)
-    }
-
-    override suspend fun isChatBubblesEnabled(): Boolean = userConfigDAO.isChatBubblesEnabled()
-
     override suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigDAO.setProfileQRCodeEnabled(enabled)
@@ -614,4 +613,33 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
 
+    override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            config?.let {
+                userConfigDAO.setWireCellsConfig(
+                    WireCellsConfigEntity(
+                        backendUrl = config.backendUrl,
+                        collabora = config.collabora.name,
+                        teamQuotaBytes = config.teamQuotaBytes,
+                    )
+                )
+            } ?: run {
+                userConfigDAO.removeWireCellsConfig()
+            }
+        }
+
+    override suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?> = wrapStorageRequest {
+        userConfigDAO.getWireCellsConfig()?.let { config ->
+            WireCellsConfig(
+                backendUrl = config.backendUrl,
+                collabora = config.collabora.fromString(),
+                teamQuotaBytes = config.teamQuotaBytes,
+            )
+        }
+    }
+
+    override suspend fun isMLSFaultyKeysRepairExecuted(): Boolean = userConfigDAO.isMlsFaultyKeysRepairExecuted()
+    override suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.setMlsFaultyKeysRepairExecuted(repaired)
+    }
 }

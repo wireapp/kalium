@@ -61,11 +61,14 @@ object FeatureConfigTest {
             status = Status.ENABLED,
             mlsConversationsReset = false,
         ),
-        cellsConfigModel: CellsConfigModel? = CellsConfigModel(
+        cellsModel: CellsModel? = CellsModel(
             status = Status.ENABLED,
         ),
+        cellsInternalModel: CellsInternalModel? = CellsInternalModel(
+            status = Status.ENABLED,
+            config = CellsInternalConfigModel(null, CollaboraEdition.NO, null),
+        ),
         appsModel: ConfigsStatusModel? = ConfigsStatusModel(Status.ENABLED),
-        chatBubblesConfigModel: ChatBubblesConfigModel? = ChatBubblesConfigModel(Status.ENABLED),
         enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel? = EnableUserProfileQRCodeConfigModel(
             status = Status.ENABLED,
         ),
@@ -92,9 +95,9 @@ object FeatureConfigTest {
         channelFeatureConfiguration,
         asyncNotificationsModel,
         allowedGlobalOperationsModel,
-        cellsConfigModel,
+        cellsModel,
+        cellsInternalModel,
         appsModel,
-        chatBubblesConfigModel,
         enableUserProfileQRCodeConfigModel,
         assetAuditLogConfigModel,
     )

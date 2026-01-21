@@ -20,9 +20,24 @@ jobs:
         api-level: [ 31 ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      # trying https://github.com/actions/runner-images/issues/10386#issuecomment-2271613335
+      - name: Free Disk Space Before Build
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -57,7 +72,7 @@ jobs:
 
       - name: Build the samples
         run: |
-          ./gradlew :samples:compileDebugSources
+          ./gradlew :sample:samples:compileDebugSources
 
         # API 30+ emulators only have x86_64 system images.
       - name: Get AVD info
@@ -73,7 +88,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@v2.35.0
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -89,14 +104,14 @@ jobs:
 
       - name: Archive Test Reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-reports
           path: ./**/build/reports/tests/**
 
       - name: Archive Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results
           path: |
@@ -125,7 +140,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@v7.0.0
         continue-on-error: true
         with:
           name: test-results

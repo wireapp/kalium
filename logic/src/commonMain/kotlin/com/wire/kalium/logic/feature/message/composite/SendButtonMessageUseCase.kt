@@ -17,10 +17,8 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -33,21 +31,25 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
-@Suppress("LongParameterList")
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
-class SendButtonMessageUseCase internal constructor(
+@InternalKaliumApi
+@Suppress("LongParameterList")
+public class SendButtonMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -59,13 +61,13 @@ class SendButtonMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null,
         buttons: List<String> = listOf()
-    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
+    ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -114,10 +116,13 @@ class SendButtonMessageUseCase internal constructor(
                 messageId = generatedMessageUuid,
                 messageType = TYPE
             )
-        }
+        }.fold(
+            { MessageOperationResult.Failure(it) },
+            { MessageOperationResult.Success }
+        )
     }.await()
 
-    companion object {
-        const val TYPE = "Text"
+    internal companion object {
+        internal const val TYPE = "Text"
     }
 }

@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case observing statuses of assets when uploading and downloading.
  */
-interface ObserveAssetStatusesUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Map<String, MessageAssetStatus>>
+public interface ObserveAssetStatusesUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<Map<String, MessageAssetStatus>>
 }
 
 internal class ObserveAssetStatusesUseCaseImpl(
@@ -45,7 +45,8 @@ internal class ObserveAssetStatusesUseCaseImpl(
             .map {
                 it.fold(
                     { mapOf() },
-                    { assetList -> assetList.associateBy { assetStatus -> assetStatus.id } })
+                    { assetList -> assetList.associateBy { assetStatus -> assetStatus.id } }
+                )
             }
             .flowOn(dispatcher.io)
     }

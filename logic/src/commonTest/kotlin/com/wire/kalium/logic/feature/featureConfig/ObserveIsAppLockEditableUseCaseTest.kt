@@ -43,7 +43,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
 
-class ObserveIsAppLockEditableUseCaseTest {
+internal class ObserveIsAppLockEditableUseCaseTest {
 
     @Test
     fun givenTwoAccountAllWithoutEnforcedAppLock_whenInvoked_thenEmitTrue() = runTest {

@@ -18,4 +18,4 @@
 
 package com.wire.kalium.logic.util
 
-expect class PlatformContext
+internal expect class PlatformContext

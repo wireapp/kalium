@@ -61,7 +61,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-class CallManagerTest {
+internal class CallManagerTest {
     private val dispatcher = TestKaliumDispatcher
 
     @Test

@@ -68,7 +68,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface ConversationGroupRepository {
+internal interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -178,6 +178,12 @@ internal class ConversationGroupRepositoryImpl(
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationCellStatus(conversationEntity)
         }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationAppsAccessIfEnabled(
+                conversationId = conversationEntity.id.toModel(),
+                hasAppsAccessEnabled = conversationResponse.hasAppsAccessEnabled(),
+                creatorId = selfUserId,
+            )
+        }.flatMap {
             when (protocol) {
                 is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
                 is Conversation.ProtocolInfo.MLSCapable ->
@@ -193,7 +199,8 @@ internal class ConversationGroupRepositoryImpl(
             }
         }.flatMap { protocolSpecificAdditionFailures ->
             newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                conversationEntity.id, conversationResponse
+                conversationEntity.id,
+                conversationResponse
             ).flatMap {
                 if (protocolSpecificAdditionFailures.isEmpty()) {
                     Either.Right(Unit)
@@ -209,7 +216,9 @@ internal class ConversationGroupRepositoryImpl(
                     is LastUsersAttempt.None -> Either.Right(Unit)
                     is LastUsersAttempt.Failed ->
                         newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                            conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+                            conversationEntity.id.toModel(),
+                            lastUsersAttempt.failedUsers,
+                            lastUsersAttempt.failType
                         )
                 }
             }
@@ -404,7 +413,9 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, Unit> =
         when (lastUsersAttempt) {
             is LastUsersAttempt.Failed -> newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+                conversationId,
+                lastUsersAttempt.failedUsers,
+                lastUsersAttempt.failType
             )
 
             is LastUsersAttempt.None -> Either.Right(Unit)
@@ -470,7 +481,9 @@ internal class ConversationGroupRepositoryImpl(
 
         if (lastUsersAttempt is LastUsersAttempt.Failed && lastUsersAttempt.failedUsers.isNotEmpty()) {
             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+                conversationId,
+                lastUsersAttempt.failedUsers,
+                lastUsersAttempt.failType
             )
         }
         Either.Right(Unit)
@@ -492,7 +505,9 @@ internal class ConversationGroupRepositoryImpl(
                         true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, LastUsersAttempt.Failed(failedUsers, failType))
                         false -> {
                             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                                conversationId, (validUsers + failedUsers), failType
+                                conversationId,
+                                (validUsers + failedUsers),
+                                failType
                             ).flatMap {
                                 Either.Left(apiResult.value)
                             }
@@ -502,7 +517,9 @@ internal class ConversationGroupRepositoryImpl(
         } else {
             val failType = apiResult.value.toFailedToAddType()
             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                conversationId, userIdList + lastUsersAttempt.failedUsers, failType
+                conversationId,
+                userIdList + lastUsersAttempt.failedUsers,
+                failType
             ).flatMap {
                 Either.Left(apiResult.value)
             }

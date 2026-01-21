@@ -40,8 +40,8 @@ import com.wire.kalium.network.exceptions.isEnterpriseServiceNotEnabled
  *
  * @param [email] the email to look up the domain registration for
  */
-interface GetLoginFlowForDomainUseCase {
-    suspend operator fun invoke(email: String): EnterpriseLoginResult
+public interface GetLoginFlowForDomainUseCase {
+    public suspend operator fun invoke(email: String): EnterpriseLoginResult
 }
 
 @Suppress("FunctionNaming")
@@ -127,15 +127,15 @@ internal fun GetLoginFlowForDomainUseCase(
  * Result of the [GetLoginFlowForDomainUseCase].
  * Indicating error cases or the actual login path for the domain.
  */
-sealed interface EnterpriseLoginResult {
-    sealed class Failure : EnterpriseLoginResult {
+public sealed interface EnterpriseLoginResult {
+   public sealed class Failure : EnterpriseLoginResult {
 
-        abstract fun toLogString(): String
+        public abstract fun toLogString(): String
 
         /**
          * The feature is not supported by this backend/client version
          */
-        data object NotSupported : Failure() {
+        public data object NotSupported : Failure() {
             override fun toLogString(): String {
                 return "NotSupported"
             }
@@ -144,7 +144,7 @@ sealed interface EnterpriseLoginResult {
         /**
          * Generic failure case.
          */
-        data class Generic(val coreFailure: CoreFailure) : Failure() {
+        public data class Generic(val coreFailure: CoreFailure) : Failure() {
             override fun toLogString(): String {
                 return "Generic"
             }
@@ -154,7 +154,7 @@ sealed interface EnterpriseLoginResult {
     /**
      * Enterprise Login is supported for the domain.
      */
-    data class Success(val loginRedirectPath: LoginRedirectPath) : EnterpriseLoginResult
+    public data class Success(val loginRedirectPath: LoginRedirectPath) : EnterpriseLoginResult
 }
 
 private const val TAG = "GetLoginFlowForDomainUseCase"

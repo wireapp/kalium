@@ -33,7 +33,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class CurrentSessionUseCaseTest {
+internal class CurrentSessionUseCaseTest {
 
     val sessionRepository = mock(SessionRepository::class)
 

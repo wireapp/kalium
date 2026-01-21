@@ -38,8 +38,8 @@ import kotlinx.coroutines.flow.scan
 /**
  * End call when conversation is deleted, user is not a member anymore or user is deleted.
  */
-interface EndCallOnConversationChangeUseCase {
-    suspend operator fun invoke()
+public interface EndCallOnConversationChangeUseCase {
+    public suspend operator fun invoke()
 }
 
 internal class EndCallOnConversationChangeUseCaseImpl(

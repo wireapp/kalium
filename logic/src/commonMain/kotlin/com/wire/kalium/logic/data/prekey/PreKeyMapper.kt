@@ -23,12 +23,12 @@ import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import io.mockative.Mockable
 
 @Mockable
-interface PreKeyMapper {
+internal interface PreKeyMapper {
     fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto
     fun toPreKeyDTO(preKey: PreKeyCrypto): PreKeyDTO
 }
 
-class PreKeyMapperImpl : PreKeyMapper {
+internal class PreKeyMapperImpl : PreKeyMapper {
     override fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto =
         PreKeyCrypto(id = preyKeyDTO.id, pkb = preyKeyDTO.key)
 

@@ -95,13 +95,16 @@ class FeatureConfigRepositoryTest {
                 status = Status.DISABLED,
                 mlsConversationsReset = false,
             ),
-            cellsModel = CellsConfigModel(
+            cellsModel = CellsModel(
                 status = Status.DISABLED,
             ),
             appsModel = ConfigsStatusModel(Status.DISABLED),
-            chatBubblesModel = ChatBubblesConfigModel(Status.DISABLED),
             enableUserProfileQRCodeConfigModel = EnableUserProfileQRCodeConfigModel(Status.DISABLED),
             assetAuditLogConfigModel = AssetAuditLogConfigModel(Status.DISABLED),
+            cellsInternalModel = CellsInternalModel(
+                status = Status.DISABLED,
+                config = CellsInternalConfigModel(null, CollaboraEdition.NO, null)
+            )
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -192,8 +195,11 @@ class FeatureConfigRepositoryTest {
             ),
             FeatureConfigData.ConsumableNotifications(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.Cells(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.CellsInternal(
+                FeatureFlagStatusDTO.DISABLED,
+                FeatureConfigData.CellsInternalConfigDTO(null, null, null)
+            ),
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
-            FeatureConfigData.ChatBubbles(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
         )

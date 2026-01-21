@@ -18,27 +18,26 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.util.DelicateKaliumApi
 
-interface SyncRequest {
+public interface SyncRequest {
 
     /**
      * Suspends execution until the specified [syncState] is reached or a failure occurs.
      *
      * @see
      * @param syncState The desired [SyncState] to wait for.
-     * @return An [Either] containing [CoreFailure] if [SyncState.Failed] is encountered,
-     * or [Unit] if the specified [syncState] is reached.
+     * @return [SyncRequestResult] that it's either a [SyncRequestResult.Failure] if [SyncState.Failed] is encountered,
+     * or [SyncRequestResult.Success] if the specified [syncState] is reached.
      */
-    suspend fun waitUntilOrFailure(syncState: SyncState): Either<CoreFailure, Unit>
+    public suspend fun waitUntilOrFailure(syncState: SyncState): SyncRequestResult
 
     /**
      * Shortcut for [waitUntilOrFailure] with Live state.
      * @see waitUntilOrFailure
      */
-    suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
+    public suspend fun waitUntilLiveOrFailure(): SyncRequestResult
 
     /**
      * When called, the sync process continues without being released.
@@ -47,5 +46,10 @@ interface SyncRequest {
      * be used by applications that turn sync on/off, like Mobile apps.
      */
     @DelicateKaliumApi("By calling this, Sync will run indefinitely.")
-    fun keepSyncAlwaysOn()
+    public fun keepSyncAlwaysOn()
+}
+
+public sealed class SyncRequestResult {
+    public object Success : SyncRequestResult()
+    public data class Failure(val error: CoreFailure) : SyncRequestResult()
 }

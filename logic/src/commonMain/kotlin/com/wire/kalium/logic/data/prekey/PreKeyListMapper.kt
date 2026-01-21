@@ -25,9 +25,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 
-class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
+internal class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
 
-    fun toRemoteClientPreKeyInfoTo(
+    internal fun toRemoteClientPreKeyInfoTo(
         clientPreKeyInfo: Map<UserId, List<ClientId>>
     ): Map<String, Map<String, List<String>>> =
         clientPreKeyInfo.entries.groupBy { it.key.domain }
@@ -37,7 +37,7 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
                 }
             }
 
-    fun fromRemoteQualifiedPreKeyInfoMap(
+    internal fun fromRemoteQualifiedPreKeyInfoMap(
         qualifiedPreKeyListResponse: Map<String, Map<String, Map<String, PreKeyDTO?>>>
     ): List<QualifiedUserPreKeyInfo> =
         qualifiedPreKeyListResponse.entries.flatMap { domainEntry ->
@@ -54,8 +54,10 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
             }
         }
 
-    fun fromListPrekeyResponseToUsersWithoutSessions(listPrekeysResponse: ListPrekeysResponse) =
-        UsersWithoutSessions(listPrekeysResponse.failedToList
+    internal fun fromListPrekeyResponseToUsersWithoutSessions(listPrekeysResponse: ListPrekeysResponse) =
+        UsersWithoutSessions(
+            listPrekeysResponse.failedToList
             ?.map { it.toModel() }
-            ?: listOf())
+            ?: listOf()
+        )
 }

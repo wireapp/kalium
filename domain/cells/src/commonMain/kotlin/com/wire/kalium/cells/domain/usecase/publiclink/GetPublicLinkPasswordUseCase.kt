@@ -1,0 +1,38 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.cells.domain.usecase.publiclink
+
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.functional.getOrNull
+
+public interface GetPublicLinkPasswordUseCase {
+    /**
+     * Use case to get the password of a public link.
+     * @param linkUuid The unique identifier of the public link.
+     * @return the password of the public link, or null if it doesn't have one.
+     */
+    public suspend operator fun invoke(linkUuid: String): String?
+}
+
+internal class GetPublicLinkPasswordUseCaseImpl(
+    private val repository: CellsRepository
+) : GetPublicLinkPasswordUseCase {
+
+    override suspend fun invoke(linkUuid: String): String? =
+        repository.getPublicLinkPassword(linkUuid).getOrNull()
+}

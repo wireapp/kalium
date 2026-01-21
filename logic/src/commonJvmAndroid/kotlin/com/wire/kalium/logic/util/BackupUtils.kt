@@ -20,10 +20,10 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.web.KtxWebSerializer
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.web.KtxWebSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.DecodeSequenceMode
 import kotlinx.serialization.json.decodeToSequence
@@ -39,7 +39,7 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 @Suppress("TooGenericExceptionCaught")
-actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
+internal actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
     var compressedFileSize = 0L
     ZipOutputStream(outputSink.buffer().outputStream()).use { zipOutputStream ->
         files.forEach { (fileSource, fileName) ->
@@ -69,7 +69,7 @@ private fun addToCompressedFile(zipOutputStream: ZipOutputStream, fileSource: So
 }
 
 @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
-actual fun extractCompressedFile(
+internal actual fun extractCompressedFile(
     inputSource: Source,
     outputRootPath: Path,
     param: ExtractFilesParam,
@@ -110,7 +110,7 @@ private fun readAndExtractIfMatch(
 }
 
 @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
-actual fun checkIfCompressedFileContainsFileTypes(
+internal actual fun checkIfCompressedFileContainsFileTypes(
     compressedFilePath: Path,
     fileSystem: KaliumFileSystem,
     expectedFileExtensions: List<String>
@@ -133,7 +133,7 @@ actual fun checkIfCompressedFileContainsFileTypes(
     }
 
 @OptIn(ExperimentalSerializationApi::class)
-actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> {
+internal actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> {
     return KtxWebSerializer.json.decodeToSequence(
         bufferedSource.inputStream(),
         DecodeSequenceMode.ARRAY_WRAPPED
@@ -159,6 +159,6 @@ private fun readCompressedEntry(
 /**
  * Verification that the entry path is valid and does not contain any invalid characters leading to write in undesired directories.
  */
-private fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
+internal fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
 
 private const val BUFFER_SIZE = 8192L

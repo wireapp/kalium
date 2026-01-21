@@ -99,10 +99,10 @@ class MessageDraftRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withGetMessageDraft(result: MessageDraftEntity?) = apply {
+        suspend fun withGetMessageDraft(result: MessageDraftEntity) = apply {
             coEvery {
                 messageDraftDAO.getMessageDraft(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpsertMessageDraft() = apply {

@@ -21,12 +21,13 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class InCallReactionsRepositoryTest {
     @Test
-    fun whenNewReactionIsAdded_thenRepositoryEmitsNewReactionMessage() = runBlocking {
+    fun whenNewReactionIsAdded_thenRepositoryEmitsNewReactionMessage() = runTest {
 
         // given
         val repository: InCallReactionsRepository = InCallReactionsDataSource()

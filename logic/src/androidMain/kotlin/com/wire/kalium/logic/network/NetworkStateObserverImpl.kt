@@ -23,9 +23,10 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.network.CurrentNetwork
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
@@ -35,7 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -55,6 +56,7 @@ internal actual class NetworkStateObserverImpl(
 
     private val defaultNetworkDataStateFlow: MutableStateFlow<DefaultNetworkData>
     private val networkStateFlow: StateFlow<NetworkState>
+    private val currentNetworkFlow: StateFlow<CurrentNetwork?>
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default)
 
     init {
@@ -64,19 +66,14 @@ internal actual class NetworkStateObserverImpl(
             DefaultNetworkData.Connected(it, defaultNetworkCapabilities)
         } ?: DefaultNetworkData.NotConnected
         defaultNetworkDataStateFlow = MutableStateFlow(initialDefaultNetworkData)
-        val initialState = when (initialDefaultNetworkData) {
-            is DefaultNetworkData.Connected -> initialDefaultNetworkData.networkCapabilities.toState()
-            is DefaultNetworkData.NotConnected -> NetworkState.NotConnected
-        }
         networkStateFlow = defaultNetworkDataStateFlow
-            .map { networkData ->
-                if (networkData is DefaultNetworkData.Connected) {
-                    if (networkData.isBlocked) NetworkState.ConnectedWithoutInternet
-                    else networkData.networkCapabilities.toState()
-                } else NetworkState.NotConnected
-            }
-            .buffer(capacity = 0)
-            .stateIn(scope, SharingStarted.Eagerly, initialState)
+            .map { networkData -> networkData.toState() }
+            .conflate()
+            .stateIn(scope, SharingStarted.Eagerly, initialDefaultNetworkData.toState())
+        currentNetworkFlow = defaultNetworkDataStateFlow
+            .map { networkData -> networkData.toCurrentNetwork() }
+            .conflate()
+            .stateIn(scope, SharingStarted.Eagerly, initialDefaultNetworkData.toCurrentNetwork())
 
         val callback = object : ConnectivityManager.NetworkCallback() {
 
@@ -154,18 +151,44 @@ internal actual class NetworkStateObserverImpl(
         connectivityManager.registerDefaultNetworkCallback(callback)
     }
 
-    private fun NetworkCapabilities?.toState(): NetworkState {
+    private fun NetworkCapabilities?.hasInternetValidated(): Boolean {
         val hasInternet = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         // There may be some edge cases where on-premise environments could be considered "not validated"
         // and should still be able to make requests.
         val isValidated = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-        return when {
-            hasInternet && isValidated -> NetworkState.ConnectedWithInternet
-            else -> NetworkState.ConnectedWithoutInternet
-        }
+        return hasInternet && isValidated
     }
 
-    override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
+    private fun NetworkCapabilities.toCurrentNetworkType(): CurrentNetwork.Type = when {
+        this.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> CurrentNetwork.Type.WIFI
+        this.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> CurrentNetwork.Type.CELLULAR
+        else -> CurrentNetwork.Type.OTHER
+    }
+
+    private fun NetworkCapabilities?.toState(): NetworkState = when {
+        this.hasInternetValidated() -> NetworkState.ConnectedWithInternet
+        else -> NetworkState.ConnectedWithoutInternet
+    }
+
+    private fun DefaultNetworkData.toState(): NetworkState = when (this) {
+        is DefaultNetworkData.Connected -> when (this.isBlocked) {
+            true -> NetworkState.ConnectedWithoutInternet
+            false -> this.networkCapabilities.toState()
+        }
+        else -> NetworkState.NotConnected
+    }
+
+    private fun DefaultNetworkData.toCurrentNetwork(): CurrentNetwork? = when (this) {
+        is DefaultNetworkData.NotConnected -> null
+        is DefaultNetworkData.Connected -> CurrentNetwork(
+            this.network.networkHandle.toString(),
+            this.networkCapabilities?.toCurrentNetworkType(),
+            !this.isBlocked && this.networkCapabilities.hasInternetValidated()
+        )
+    }
+
+    actual override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
+    actual override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> = currentNetworkFlow
 
     private sealed class DefaultNetworkData {
         data object NotConnected : DefaultNetworkData()

@@ -30,11 +30,15 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.MLSCiphersuite
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock as mokkeryMock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface E2EIClientProviderArrangement {
+internal interface E2EIClientProviderArrangement {
 
     val mlsClientProvider: MLSClientProvider
     val mlsClient: MLSClient
@@ -61,7 +65,7 @@ interface E2EIClientProviderArrangement {
     suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
 }
 
-class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
+internal class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
     override val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
     override val e2eiClient: E2EIClient = mock(E2EIClient::class)
     override val userRepository: UserRepository = mock(UserRepository::class)
@@ -117,6 +121,64 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
         }.returns(result.right())
     }
 
+}
+
+internal class E2EIClientProviderArrangementMokkeryImpl : E2EIClientProviderArrangement {
+    override val mlsClientProvider: MLSClientProvider = mokkeryMock<MLSClientProvider>()
+    override val e2eiClient: E2EIClient = mokkeryMock<E2EIClient>()
+    override val userRepository: UserRepository = mokkeryMock<UserRepository>()
+    override val currentClientIdProvider: CurrentClientIdProvider = mokkeryMock<CurrentClientIdProvider>()
+    override val coreCryptoCentral: CoreCryptoCentral = mokkeryMock<CoreCryptoCentral>()
+    override val mlsContext: MlsCoreCryptoContext = mokkeryMock<MlsCoreCryptoContext>()
+    override val mlsClient: MLSClient = DummyMLSClient(mlsContext)
+
+    override suspend fun withGettingCoreCryptoSuccessful() {
+        everySuspend {
+            mlsClientProvider.getCoreCrypto(mokkeryAny())
+        } returns Either.Right(coreCryptoCentral)
+    }
+
+    override suspend fun withGetNewAcmeEnrollmentSuccessful() {
+        everySuspend {
+            coreCryptoCentral.newAcmeEnrollment(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+        } returns e2eiClient
+    }
+
+    override suspend fun withGetMLSClientSuccessful() {
+        everySuspend {
+            mlsClientProvider.getMLSClient(mokkeryAny())
+        } returns Either.Right(mlsClient)
+    }
+
+    override suspend fun withE2EINewActivationEnrollmentSuccessful() {
+        everySuspend {
+            mlsContext.e2eiNewActivationEnrollment(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+        } returns e2eiClient
+    }
+
+    override suspend fun withE2EINewRotationEnrollmentSuccessful() {
+        everySuspend {
+            mlsContext.e2eiNewRotateEnrollment(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+        } returns e2eiClient
+    }
+
+    override suspend fun withE2EIEnabled(isEnabled: Boolean) {
+        everySuspend {
+            mlsContext.isE2EIEnabled()
+        } returns isEnabled
+    }
+
+    override suspend fun withSelfUser(result: Either<StorageFailure, SelfUser>) {
+        everySuspend {
+            userRepository.getSelfUser()
+        } returns result
+    }
+
+    override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+        everySuspend {
+            mlsClientProvider.getOrFetchMLSConfig()
+        } returns result.right()
+    }
 }
 
 class DummyMLSClient(

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
@@ -76,7 +76,7 @@ class DeleteMessageUseCaseTest {
             .arrange()
 
         // when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
         // then
         coVerify {
@@ -108,7 +108,7 @@ class DeleteMessageUseCaseTest {
             .arrange()
 
         // when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
         // then
         coVerify {
@@ -137,7 +137,7 @@ class DeleteMessageUseCaseTest {
             .arrange()
 
         // when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID,
@@ -176,7 +176,7 @@ class DeleteMessageUseCaseTest {
             .arrange()
 
         // when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).shouldSucceed()
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID,
             TEST_CONVERSATION_ID
@@ -223,7 +223,7 @@ class DeleteMessageUseCaseTest {
             .arrange()
 
         // when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
         // then
         coVerify {

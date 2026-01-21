@@ -31,7 +31,7 @@ import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
+internal class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
 
     val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 

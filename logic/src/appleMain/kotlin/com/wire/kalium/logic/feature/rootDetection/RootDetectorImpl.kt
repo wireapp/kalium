@@ -17,6 +17,6 @@
  */
 package com.wire.kalium.logic.feature.rootDetection
 
-actual class RootDetectorImpl actual constructor() : RootDetector {
+internal actual open class RootDetectorImpl actual constructor() : RootDetector {
     actual override fun isSystemRooted(): Boolean = false
 }

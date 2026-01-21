@@ -21,11 +21,8 @@ import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrFail
-import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.user.UserRepository
@@ -40,17 +37,37 @@ import kotlinx.serialization.json.JsonPrimitive
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
  */
-interface EnrollE2EIUseCase {
-    suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): Either<E2EIFailure, E2EIEnrollmentResult.Initialized>
-    suspend fun finalizeEnrollment(
+public interface EnrollE2EIUseCase {
+    public suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): InitialEnrollmentResult
+    public suspend fun finalizeEnrollment(
         idToken: String,
         oAuthState: String,
         initializationResult: E2EIEnrollmentResult.Initialized
-    ): Either<E2EIFailure, E2EIEnrollmentResult.Finalized>
+    ): FinalizeEnrollmentResult
+}
+
+public sealed class InitialEnrollmentResult {
+    public data class Success(val initializationResult: E2EIEnrollmentResult.Initialized) : InitialEnrollmentResult()
+
+    public sealed class Failure : InitialEnrollmentResult() {
+        public data object E2EIDisabled : Failure()
+        public data object MissingTeamSettings : Failure()
+        public data class Generic(val e2EIFailure: E2EIFailure) : Failure()
+    }
+}
+
+public sealed class FinalizeEnrollmentResult {
+    public data class Success(val certificate: String) : FinalizeEnrollmentResult()
+
+    public sealed class Failure : FinalizeEnrollmentResult() {
+        public data class OAuthError(val reason: String) : Failure()
+        public data object InvalidChallenge : Failure()
+        public data class Generic(val e2EIFailure: E2EIFailure) : Failure()
+    }
 }
 
 @Suppress("ReturnCount")
-class EnrollE2EIUseCaseImpl internal constructor(
+internal class EnrollE2EIUseCaseImpl internal constructor(
     private val e2EIRepository: E2EIRepository,
     private val userRepository: UserRepository,
     private val coroutineScope: CoroutineScope,
@@ -60,10 +77,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
     /**
      * Operation to initial E2EI certificate enrollment
      *
-     * @return [Either] [E2EIFailure] or [E2EIEnrollmentResult]
+     * @return [InitialEnrollmentResult]
      */
     @Suppress("LongMethod")
-    override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<E2EIFailure, E2EIEnrollmentResult.Initialized> {
+    override suspend fun initialEnrollment(isNewClientRegistration: Boolean): InitialEnrollmentResult {
 
         if (isNewClientRegistration) {
             coroutineScope.launch {
@@ -75,37 +92,37 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration).getOrFail {
             kaliumLogger.e("Failure initializing fresh E2EI client during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         e2EIRepository.fetchAndSetTrustAnchors().getOrFail {
             kaliumLogger.e("Failure fetching and setting trust anchors during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         e2EIRepository.fetchFederationCertificates().getOrFail {
             kaliumLogger.e("Failure fetching federation certificates during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             kaliumLogger.d("Failure loading ACMEDirectories during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
             kaliumLogger.d("Failure getting ACMENonce during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
             kaliumLogger.d("Failure creating new account during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
             kaliumLogger.d("Failure creating new order during E2EI Enrolling!. Failure:$it")
-            return it.left()
+            return it.toInitialEnrollmentFailure()
         }
 
         prevNonce = newOrderResponse.second
@@ -113,7 +130,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val authorizations =
             e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations).getOrFail {
                 kaliumLogger.d("Failure getting authorizations during E2EI Enrolling!. Failure:$it")
-                return it.left()
+                return it.toInitialEnrollmentFailure()
             }
 
         prevNonce = authorizations.nonce
@@ -135,7 +152,13 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         kaliumLogger.i("E2EI Enrollment Initialization Result: $initializationResult")
 
-        return initializationResult.right()
+        return InitialEnrollmentResult.Success(initializationResult)
+    }
+
+    private fun E2EIFailure.toInitialEnrollmentFailure(): InitialEnrollmentResult.Failure = when (this) {
+        is E2EIFailure.Disabled -> InitialEnrollmentResult.Failure.E2EIDisabled
+        is E2EIFailure.MissingTeamSettings -> InitialEnrollmentResult.Failure.MissingTeamSettings
+        else -> InitialEnrollmentResult.Failure.Generic(this)
     }
 
     /**
@@ -144,14 +167,14 @@ class EnrollE2EIUseCaseImpl internal constructor(
      * @param idToken id token generated by the IdP
      * @param initializationResult e2ei initialization result
      *
-     * @return [Either] [E2EIFailure] or [E2EIEnrollmentResult]
+     * @return [FinalizeEnrollmentResult]
      */
     @Suppress("LongMethod")
     override suspend fun finalizeEnrollment(
         idToken: String,
         oAuthState: String,
         initializationResult: E2EIEnrollmentResult.Initialized
-    ): Either<E2EIFailure, E2EIEnrollmentResult.Finalized> {
+    ): FinalizeEnrollmentResult {
 
         var prevNonce = initializationResult.lastNonce
         val dPopAuthorizations = initializationResult.dPopAuthorizations
@@ -160,53 +183,58 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val isNewClientRegistration = initializationResult.isNewClientRegistration
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         val dpopToken = e2EIRepository.getDPoPToken(wireNonce).getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
-            wireAccessToken.token, prevNonce, dPopAuthorizations.challenge
+            wireAccessToken.token,
+            prevNonce,
+            dPopAuthorizations.challenge
         ).getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         prevNonce = Nonce(dpopChallengeResponse.nonce)
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, oAuthState, prevNonce, oidcAuthorizations.challenge
+            idToken,
+            oAuthState,
+            prevNonce,
+            oidcAuthorizations.challenge
         ).getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         prevNonce = Nonce(oidcChallengeResponse.nonce)
 
         val orderResponse = e2EIRepository.checkOrderRequest(orderLocation, prevNonce).getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         prevNonce = Nonce(orderResponse.first.nonce)
 
         val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).getOrFail {
-            return it.left()
+            return it.toFinalizeEnrollmentFailure()
         }
 
         prevNonce = Nonce(finalizeResponse.first.nonce)
 
         val certificateRequest =
             e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).getOrFail {
-                return it.left()
+                return it.toFinalizeEnrollmentFailure()
             }
 
         if (isNewClientRegistration) {
             e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString()).onFailure {
-                return it.left()
+                return it.toFinalizeEnrollmentFailure()
             }
         } else {
             val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
@@ -226,10 +254,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 )
             }
                 .onFailure {
-                    if (it is E2EIFailure) {
-                        return it.left()
+                    return if (it is E2EIFailure) {
+                        it.toFinalizeEnrollmentFailure()
                     } else {
-                        E2EIFailure.RotationAndMigration(it).left()
+                        FinalizeEnrollmentResult.Failure.Generic(E2EIFailure.RotationAndMigration(it))
                     }
                 }
         }
@@ -244,7 +272,13 @@ class EnrollE2EIUseCaseImpl internal constructor(
             }
         }
 
-        return E2EIEnrollmentResult.Finalized(e2eiCert).right()
+        return FinalizeEnrollmentResult.Success(e2eiCert)
+    }
+
+    private fun E2EIFailure.toFinalizeEnrollmentFailure(): FinalizeEnrollmentResult.Failure = when (this) {
+        is E2EIFailure.OAuth -> FinalizeEnrollmentResult.Failure.OAuthError(this.reason)
+        is E2EIFailure.InvalidChallenge -> FinalizeEnrollmentResult.Failure.InvalidChallenge
+        else -> FinalizeEnrollmentResult.Failure.Generic(this)
     }
 
     private fun getOAuthClaims(keyAuth: String, acmeAud: String) = JsonObject(
@@ -265,7 +299,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         )
     )
 
-    companion object {
+    internal companion object {
         private const val ID_TOKEN = "id_token"
         private const val KEY_AUTH = "keyauth"
         private const val ESSENTIAL = "essential"
@@ -276,9 +310,9 @@ class EnrollE2EIUseCaseImpl internal constructor(
     }
 }
 
-sealed interface E2EIEnrollmentResult {
+public sealed interface E2EIEnrollmentResult {
     @Suppress("LongParameterList")
-    data class Initialized(
+    public data class Initialized(
         val target: String,
         val oAuthClaims: JsonObject,
         val lastNonce: Nonce,
@@ -288,5 +322,5 @@ sealed interface E2EIEnrollmentResult {
         val isNewClientRegistration: Boolean = false
     ) : E2EIEnrollmentResult
 
-    class Finalized(val certificate: String) : E2EIEnrollmentResult
+    public class Finalized(public val certificate: String) : E2EIEnrollmentResult
 }

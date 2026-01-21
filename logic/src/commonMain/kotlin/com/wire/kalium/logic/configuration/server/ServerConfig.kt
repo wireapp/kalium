@@ -39,19 +39,19 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-data class ServerConfigWithUserId(
+public data class ServerConfigWithUserId(
     val serverConfig: ServerConfig,
     val userId: UserId
 )
 
 @Serializable
-data class ServerConfig(
+public data class ServerConfig(
     @SerialName("config_id") val id: String,
     @SerialName("links") val links: Links,
     @SerialName("metadata") val metaData: MetaData
 ) {
     @Serializable
-    data class Links(
+    public data class Links(
         @SerialName("apiBaseUrl") val api: String,
         @SerialName("accountsBaseUrl") val accounts: String,
         @SerialName("webSocketBaseUrl") val webSocket: String,
@@ -88,7 +88,7 @@ data class ServerConfig(
     }
 
     @Serializable
-    data class MetaData(
+    public data class MetaData(
         @SerialName("federation") val federation: Boolean,
         @SerialName("commonApiVersion")
         @Serializable(CommonApiVersionTypeSerializer::class)
@@ -97,7 +97,7 @@ data class ServerConfig(
     )
 
     @Serializable
-    data class VersionInfo(
+    public data class VersionInfo(
         @SerialName("federation") val federation: Boolean,
         @SerialName("supported") val supported: List<Int>,
         @SerialName("domain") val domain: String? = null,
@@ -105,14 +105,14 @@ data class ServerConfig(
     )
 
     @Serializable
-    data class ApiProxy(
+    public data class ApiProxy(
         @SerialName("needsAuthentication") val needsAuthentication: Boolean,
         @SerialName("host") val host: String,
         @SerialName("port") val port: Int
     )
 
-    companion object {
-        val PRODUCTION = Links(
+    public companion object {
+        public val PRODUCTION: Links = Links(
             api = """https://prod-nginz-https.wire.com""",
             accounts = """https://account.wire.com""",
             webSocket = """https://prod-nginz-ssl.wire.com""",
@@ -124,7 +124,7 @@ data class ServerConfig(
             apiProxy = null
         )
 
-        val STAGING = Links(
+        public val STAGING: Links = Links(
             api = """https://staging-nginz-https.zinfra.io""",
             accounts = """https://wire-account-staging.zinfra.io""",
             webSocket = """https://staging-nginz-ssl.zinfra.io""",
@@ -136,7 +136,7 @@ data class ServerConfig(
             apiProxy = null
         )
 
-        val DUMMY = Links(
+        public val DUMMY: Links = Links(
             api = """https://dummy-nginz-https.zinfra.io""",
             accounts = """https://wire-account-dummy.zinfra.io""",
             webSocket = """https://dummy-nginz-ssl.zinfra.io""",
@@ -148,7 +148,7 @@ data class ServerConfig(
             apiProxy = null
         )
 
-        val DEFAULT = PRODUCTION
+        public val DEFAULT: Links = PRODUCTION
 
         private const val FORGOT_PASSWORD_PATH = "forgot"
         private const val PRICING_PATH = "pricing"
@@ -156,13 +156,13 @@ data class ServerConfig(
     }
 }
 
-fun ServerConfig.isProductionApi() =
+internal fun ServerConfig.isProductionApi() =
     Url(links.api).host.let { host ->
         ServerConfig.PRODUCTION.api.contains(host)
     }
 
 @Mockable
-interface ServerConfigMapper {
+internal interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
     fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
@@ -181,7 +181,7 @@ interface ServerConfigMapper {
     fun fromEntity(serverConfigEntity: ServerConfigWithUserIdEntity): ServerConfigWithUserId
 }
 
-class ServerConfigMapperImpl(
+internal class ServerConfigMapperImpl(
     private val apiVersionMapper: ApiVersionMapper
 ) : ServerConfigMapper {
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO = with(serverConfig) {
@@ -235,7 +235,9 @@ class ServerConfigMapperImpl(
                 apiProxy = links.apiProxy?.let { toDTO(it) }
             ),
             metaData = ServerConfigDTO.MetaData(
-                federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
+                federation = metaData.federation,
+                commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion),
+                domain = metaData.domain
             )
         )
     }
@@ -277,7 +279,9 @@ class ServerConfigMapperImpl(
             id = id,
             links = toEntity(links),
             metaData = ServerConfigEntity.MetaData(
-                federation = metaData.federation, apiVersion = metaData.commonApiVersion.version, domain = metaData.domain
+                federation = metaData.federation,
+                apiVersion = metaData.commonApiVersion.version,
+                domain = metaData.domain
             )
         )
     }
@@ -341,29 +345,29 @@ class ServerConfigMapperImpl(
         )
 }
 
-sealed interface CommonApiVersionType {
-    val version: Int
+public sealed interface CommonApiVersionType {
+    public val version: Int
 
-    data object New : CommonApiVersionType {
+    public data object New : CommonApiVersionType {
         override val version: Int
             get() = NEW_API_VERSION_NUMBER
     }
 
-    data object Unknown : CommonApiVersionType {
+    public data object Unknown : CommonApiVersionType {
         override val version: Int
             get() = UNKNOWN_API_VERSION_NUMBER
     }
 
-    data class Valid(override val version: Int) : CommonApiVersionType
+    public data class Valid(override val version: Int) : CommonApiVersionType
 
-    companion object {
-        const val NEW_API_VERSION_NUMBER = -1
-        const val UNKNOWN_API_VERSION_NUMBER = -2
-        const val MINIMUM_VALID_API_VERSION = 0
+    public companion object {
+        public const val NEW_API_VERSION_NUMBER: Int = -1
+        public const val UNKNOWN_API_VERSION_NUMBER: Int = -2
+        public const val MINIMUM_VALID_API_VERSION: Int = 0
     }
 }
 
-fun Int?.toCommonApiVersionType() = when {
+internal fun Int?.toCommonApiVersionType() = when {
     this != null && this >= CommonApiVersionType.MINIMUM_VALID_API_VERSION -> CommonApiVersionType.Valid(this)
     this == CommonApiVersionType.NEW_API_VERSION_NUMBER -> CommonApiVersionType.New
     else -> CommonApiVersionType.Unknown
@@ -371,7 +375,7 @@ fun Int?.toCommonApiVersionType() = when {
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializer(CommonApiVersionType::class)
-class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
+internal class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
     override val descriptor = PrimitiveSerialDescriptor("common_api_version", PrimitiveKind.INT)
     override fun serialize(encoder: Encoder, value: CommonApiVersionType) {
         encoder.encodeInt(value.version)
@@ -381,14 +385,14 @@ class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
 }
 
 @Mockable
-interface ApiVersionMapper {
+internal interface ApiVersionMapper {
     fun fromDTO(apiVersionDTO: ApiVersionDTO): CommonApiVersionType
     fun toDTO(commonApiVersion: CommonApiVersionType): ApiVersionDTO
     fun toDTO(commonApiVersion: Int): ApiVersionDTO
 
 }
 
-class ApiVersionMapperImpl : ApiVersionMapper {
+internal class ApiVersionMapperImpl : ApiVersionMapper {
     override fun fromDTO(apiVersionDTO: ApiVersionDTO): CommonApiVersionType = when (apiVersionDTO) {
         ApiVersionDTO.Invalid.New -> CommonApiVersionType.New
         ApiVersionDTO.Invalid.Unknown -> CommonApiVersionType.Unknown

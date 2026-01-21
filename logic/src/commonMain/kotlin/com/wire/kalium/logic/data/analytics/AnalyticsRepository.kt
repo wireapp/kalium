@@ -30,7 +30,7 @@ import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
 @Mockable
-interface AnalyticsRepository {
+internal interface AnalyticsRepository {
     suspend fun getContactsAmountCached(): Either<StorageFailure, Int>
     suspend fun getTeamMembersAmountCached(): Either<CoreFailure, Int>
     suspend fun setContactsAmountCached(amount: Int)

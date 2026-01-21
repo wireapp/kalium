@@ -60,7 +60,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 @Mockable
-interface MLSClientProvider {
+internal interface MLSClientProvider {
     suspend fun isMLSClientInitialised(): Boolean
 
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
@@ -78,7 +78,7 @@ interface MLSClientProvider {
 }
 
 @Suppress("LongParameterList")
-class MLSClientProviderImpl(
+internal class MLSClientProviderImpl(
     private val rootKeyStorePath: String,
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -142,7 +142,7 @@ class MLSClientProviderImpl(
             kaliumLogger.w("$TAG: Cannot fetch MLS config, MLS is disabled.")
             return MLSFailure.Disabled.left()
         }
-        return userConfigRepository.getSupportedCipherSuite().flatMapLeft<CoreFailure, SupportedCipherSuite> {
+        return userConfigRepository.getSupportedCipherSuite().flatMapLeft {
             featureConfigRepository.getFeatureConfigs().map {
                 it.mlsModel.supportedCipherSuite
             }.flatMap {

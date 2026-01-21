@@ -42,11 +42,11 @@ import kotlinx.coroutines.launch
  * Iterates over all locally stored server configs and update each api version
  */
 @Mockable
-interface UpdateApiVersionsUseCase {
+internal interface UpdateApiVersionsUseCase {
     suspend operator fun invoke()
 }
 
-class UpdateApiVersionsUseCaseImpl internal constructor(
+internal class UpdateApiVersionsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val tokenStorage: AuthTokenStorage,
     private val serverConfigRepoProvider: (serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?) -> ServerConfigRepository,

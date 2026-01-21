@@ -48,7 +48,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class KeyPackageRepositoryTest {
+internal class KeyPackageRepositoryTest {
 
     @Test
     fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeGeneratedAndPassedToApi() = runTest {

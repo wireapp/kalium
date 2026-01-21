@@ -33,10 +33,12 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
@@ -53,7 +55,7 @@ internal interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
      * @param conversationId the conversation id that contains the self-deleting message
      * @param messageId the id of the self-deleting message
      */
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String): MessageOperationResult
 }
 
 @Suppress("LongParameterList")
@@ -67,7 +69,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val syncManager: SyncManager,
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
+    override suspend fun invoke(conversationId: ConversationId, messageId: String): MessageOperationResult =
         messageRepository.getMessageById(conversationId, messageId)
             .onSuccess { message ->
                 deleteMessageAssetLocallyIfExists(message)
@@ -98,7 +100,10 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                                 }
                             }
                     }
-            }
+            }.fold(
+                { MessageOperationResult.Failure(it) },
+                { MessageOperationResult.Success }
+            )
 
     private suspend fun sendDeleteMessageToSelf(
         messageToDelete: String,

@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 /**
  * This singleton allow us to queue checking for new regular notifications AND queue ephemeral notifications from different user flows.
  */
-object NotificationEventsManagerImpl : NotificationEventsManager {
+internal object NotificationEventsManagerImpl : NotificationEventsManager {
 
     private val mapper by lazy { MapperProvider.localNotificationMessageMapper() }
 
@@ -60,6 +60,14 @@ object NotificationEventsManagerImpl : NotificationEventsManager {
         ephemeralNotifications.emit(localNotification)
     }
 
+    override suspend fun scheduleEditMessageNotification(
+        message: Message,
+        messageContent: MessageContent.MultipartEdited
+    ) {
+        val localNotification = mapper.fromMessageToMessageEditedLocalNotification(message, messageContent)
+        ephemeralNotifications.emit(localNotification)
+    }
+
     override suspend fun scheduleConversationSeenNotification(conversationId: ConversationId) {
         val localNotification = mapper.toConversationSeen(conversationId)
         ephemeralNotifications.emit(localNotification)
@@ -73,7 +81,7 @@ object NotificationEventsManagerImpl : NotificationEventsManager {
 }
 
 @Mockable
-interface NotificationEventsManager {
+internal interface NotificationEventsManager {
     /**
      * Ideally we should have logic that allows to mark messages as notified,
      * but this will act for cases when we need to notify the user on
@@ -100,6 +108,8 @@ interface NotificationEventsManager {
      */
     suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.TextEdited)
 
+    suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.MultipartEdited)
+
     /**
      * Schedule the notification that informs that some conversation been seen by self-user on another device.
      * (means that notifications about that conversation can be hidden)
@@ -121,7 +131,7 @@ interface NotificationEventsManager {
  * Class to pass some data to this manager and later being able to map it to the correct types.
  * We can expand this class later when we have more cases for ephemeral notifications.
  */
-data class EphemeralConversationNotification(
+internal data class EphemeralConversationNotification(
     val conversationEvent: Event.Conversation,
     val conversation: Conversation,
     val user: User?

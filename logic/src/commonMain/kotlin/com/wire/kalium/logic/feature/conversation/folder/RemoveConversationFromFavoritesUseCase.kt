@@ -30,16 +30,16 @@ import kotlinx.coroutines.withContext
 /**
  * This use case will remove a conversation from the favorites folder.
  */
-interface RemoveConversationFromFavoritesUseCase {
+public interface RemoveConversationFromFavoritesUseCase {
     /**
      * @param conversationId the id of the conversation
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(conversationId: ConversationId): Result
+    public suspend operator fun invoke(conversationId: ConversationId): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 

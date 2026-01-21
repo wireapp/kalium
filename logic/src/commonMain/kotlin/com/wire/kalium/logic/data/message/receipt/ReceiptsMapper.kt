@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 
-interface ReceiptsMapper {
+internal interface ReceiptsMapper {
     fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity
     fun fromTypeEntity(type: ReceiptTypeEntity): ReceiptType
     fun fromEntityToModel(detailedReceiptEntity: DetailedReceiptEntity): DetailedReceipt

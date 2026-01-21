@@ -17,6 +17,12 @@
  */
 package com.wire.kalium.logic.network
 
+import com.wire.kalium.network.CurrentNetwork
+import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.flow.StateFlow
 
-internal expect class NetworkStateObserverImpl : NetworkStateObserver
+internal expect class NetworkStateObserverImpl : NetworkStateObserver {
+    override fun observeNetworkState(): StateFlow<NetworkState>
+    override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?>
+}

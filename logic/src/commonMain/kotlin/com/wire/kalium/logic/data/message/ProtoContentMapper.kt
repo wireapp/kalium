@@ -79,13 +79,13 @@ import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
 @Mockable
-interface ProtoContentMapper {
+internal interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
-class ProtoContentMapperImpl(
+internal class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
@@ -152,6 +152,7 @@ class ProtoContentMapperImpl(
             is MessageContent.Receipt -> packReceipt(readableContent)
             is MessageContent.ClientAction -> packClientAction()
             is MessageContent.TextEdited -> packEdited(readableContent)
+            is MessageContent.MultipartEdited -> packEdited(readableContent)
             is MessageContent.CompositeEdited,
             is MessageContent.FailedDecryption,
             is MessageContent.RestrictedAsset,
@@ -204,33 +205,8 @@ class ProtoContentMapperImpl(
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
         }
         val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
-        val attachments = readableContent.attachments.map { attachment ->
-            when (attachment) {
-                is AssetContent ->
-                    Attachment(
-                        content = Attachment.Content.Asset(
-                            asset = assetMapper.fromAssetContentToProtoAssetMessage(
-                                messageContent = MessageContent.Asset(value = attachment),
-                                expectsReadConfirmation = expectsReadConfirmation,
-                                legalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus),
-                            )
-                        )
-                    )
+        val attachments = packMultipartAttachments(readableContent.attachments, expectsReadConfirmation, legalHoldStatus)
 
-                is CellAssetContent ->
-                    Attachment(
-                        content = Attachment.Content.CellAsset(
-                            cellAsset = CellAsset(
-                                uuid = attachment.id,
-                                contentType = attachment.mimeType,
-                                initialName = attachment.assetPath,
-                                initialSize = attachment.assetSize,
-                                initialMetaData = attachment.metadata?.toProto()
-                            )
-                        )
-                    )
-            }
-        }
         return GenericMessage.Content.Multipart(
             Multipart(
                 text = Text(
@@ -244,6 +220,38 @@ class ProtoContentMapperImpl(
                 attachments = attachments,
             )
         )
+    }
+
+    private fun packMultipartAttachments(
+        attachments: List<MessageAttachment>,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): List<Attachment> = attachments.map { attachment ->
+        when (attachment) {
+            is AssetContent ->
+                Attachment(
+                    content = Attachment.Content.Asset(
+                        asset = assetMapper.fromAssetContentToProtoAssetMessage(
+                            messageContent = MessageContent.Asset(value = attachment),
+                            expectsReadConfirmation = expectsReadConfirmation,
+                            legalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus),
+                        )
+                    )
+                )
+
+            is CellAssetContent ->
+                Attachment(
+                    content = Attachment.Content.CellAsset(
+                        cellAsset = CellAsset(
+                            uuid = attachment.id,
+                            contentType = attachment.mimeType,
+                            initialName = attachment.assetPath,
+                            initialSize = attachment.assetSize,
+                            initialMetaData = attachment.metadata?.toProto()
+                        )
+                    )
+                )
+        }
     }
 
     private fun packLocation(
@@ -364,6 +372,7 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited,
             is MessageContent.CompositeEdited,
+            is MessageContent.MultipartEdited,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
             is MessageContent.History,
@@ -514,15 +523,20 @@ class ProtoContentMapperImpl(
         mentions = protoContent.text?.mentions?.mapNotNull { messageMentionMapper.fromProtoToModel(it) } ?: emptyList(),
         quotedMessageReference = protoContent.text?.quote?.let {
             MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
+                quotedMessageId = it.quotedMessageId,
+                quotedMessageSha256 = it.quotedMessageSha256?.array,
+                isVerified = false
             )
         },
         quotedMessageDetails = null,
-        attachments = protoContent.attachments.mapNotNull { attachment ->
+        attachments = unpackMultipartAttachments(protoContent.attachments),
+    )
+
+    private fun unpackMultipartAttachments(attachments: List<Attachment>): List<MessageAttachment> =
+        attachments.mapNotNull { attachment ->
             when (val content = attachment.content) {
                 is Attachment.Content.Asset -> {
-                    // TODO: implement support for regular assets WPB-16590
-                    return MessageContent.Ignored
+                    null
                 }
 
                 is Attachment.Content.CellAsset -> CellAssetContent(
@@ -537,8 +551,7 @@ class ProtoContentMapperImpl(
 
                 null -> null
             }
-        },
-    )
+        }
 
     private fun unpackLocation(
         protoContent: GenericMessage.Content.Location
@@ -559,7 +572,9 @@ class ProtoContentMapperImpl(
                 type = when (receiptContent.type) {
                     ReceiptType.DELIVERED -> Confirmation.Type.DELIVERED
                     ReceiptType.READ -> Confirmation.Type.READ
-                }, firstMessageId = firstMessage, moreMessageIds = restOfMessageIds
+                },
+                firstMessageId = firstMessage,
+                moreMessageIds = restOfMessageIds
             )
         )
     }
@@ -662,13 +677,33 @@ class ProtoContentMapperImpl(
         )
     }
 
+    private fun packEdited(readableContent: MessageContent.MultipartEdited): GenericMessage.Content.Edited {
+        val mentions = readableContent.newMentions.map { messageMentionMapper.fromModelToProto(it) }
+        return GenericMessage.Content.Edited(
+            MessageEdit(
+                replacingMessageId = readableContent.editMessageId,
+                content = MessageEdit.Content.Multipart(
+                    Multipart(
+                        text = Text(
+                            content = readableContent.newTextContent ?: "",
+                            mentions = mentions,
+                        ),
+                        attachments = packMultipartAttachments(readableContent.newAttachments, false, Conversation.LegalHoldStatus.UNKNOWN)
+                    )
+                )
+            )
+        )
+    }
+
     private fun unpackEdited(protoContent: GenericMessage.Content.Edited, genericMessage: GenericMessage): MessageContent.FromProto {
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
             is MessageEdit.Content.Text -> {
                 val mentions = editContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
                 MessageContent.TextEdited(
-                    editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
+                    editMessageId = replacingMessageId,
+                    newContent = editContent.value.content,
+                    newMentions = mentions
                 )
             }
 
@@ -681,6 +716,19 @@ class ProtoContentMapperImpl(
                     editMessageId = replacingMessageId,
                     newTextContent = editedText,
                     newButtonList = unpackButtonList(editContent.value.items),
+                )
+            }
+
+            is MessageEdit.Content.Multipart -> {
+                val editedText = editContent.value.text?.let(::unpackText)
+                val editedMentions = editedText?.mentions
+                val editedAttachments = editContent.value.attachments.let(::unpackMultipartAttachments)
+
+                MessageContent.MultipartEdited(
+                    editMessageId = replacingMessageId,
+                    newTextContent = editedText?.value,
+                    newAttachments = editedAttachments,
+                    newMentions = editedMentions ?: emptyList(),
                 )
             }
 
@@ -782,7 +830,9 @@ class ProtoContentMapperImpl(
         mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
+                quotedMessageId = it.quotedMessageId,
+                quotedMessageSha256 = it.quotedMessageSha256?.array,
+                isVerified = false
             )
         },
         quotedMessageDetails = null

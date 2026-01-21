@@ -25,7 +25,7 @@ import io.mockative.Mockable
  * This by feature flag and backend current API version.
  */
 @Mockable
-interface IsAllowedToUseAsyncNotificationsUseCase {
+internal interface IsAllowedToUseAsyncNotificationsUseCase {
     suspend operator fun invoke(): Boolean
 }
 

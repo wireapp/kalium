@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.sync
 import com.wire.kalium.common.error.CoreFailure
 import kotlin.time.Duration
 
-sealed interface IncrementalSyncStatus {
+internal sealed interface IncrementalSyncStatus {
 
     data object Pending : IncrementalSyncStatus {
         override fun toString(): String = "PENDING"

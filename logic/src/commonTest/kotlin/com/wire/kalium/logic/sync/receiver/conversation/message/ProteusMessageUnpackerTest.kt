@@ -32,14 +32,12 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -54,6 +52,7 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -74,8 +73,8 @@ class ProteusMessageUnpackerTest {
                 )
             ).arrange()
 
-        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
         proteusUnpacker.unpackProteusMessage(arrangement.proteusContext, messageEvent) { }
 
         val cryptoSessionId = CryptoSessionId(
@@ -83,7 +82,7 @@ class ProteusMessageUnpackerTest {
             CryptoClientId(messageEvent.senderClientId.value)
         )
 
-        val decodedByteArray = Base64.decodeFromBase64(messageEvent.content.toByteArray())
+        val decodedByteArray = Base64.decode(messageEvent.content)
         coVerify {
             arrangement.proteusContext.decryptMessage<Any>(eq(cryptoSessionId), matches { it.contentEquals(decodedByteArray) }, any())
         }.wasInvoked(exactly = once)
@@ -126,7 +125,7 @@ class ProteusMessageUnpackerTest {
             ).arrange()
 
         val messageEvent = TestEvent.newMessageEvent(
-            Base64.encodeToBase64("anything".encodeToByteArray()).decodeToString(),
+            Base64.encode("anything".encodeToByteArray()),
             encryptedExternalContent = encryptedProtobufExternalContent
         )
 

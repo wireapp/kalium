@@ -46,9 +46,10 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
+import okio.use
 
 @Mockable
-interface AssetRepository {
+internal interface AssetRepository {
     /**
      * Method used to upload and persist to local memory a public asset
      * @param mimeType type of the asset to be uploaded
@@ -110,9 +111,10 @@ interface AssetRepository {
     /**
      * Method used to download and persist to local memory a public asset
      * @param assetId the asset identifier
-     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] of the decoded asset
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [FetchedAssetData] which consists of [Path] to the decoded asset
+     * and a [Boolean] indicating whether the asset has just been downloaded (true) or was already present locally (false)
      */
-    suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path>
+    suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, FetchedAssetData>
 
     /**
      * Method used to fetch the [Path] of a decoded private asset
@@ -121,7 +123,8 @@ interface AssetRepository {
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @param encryptionKey the asset encryption key used to decrypt an extra layer of asset/user authentication
      * @param downloadIfNeeded flag determining whether it should make a request do download an asset if it's not available locally
-     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the decoded asset
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [FetchedAssetData] which consists of [Path] to the decoded asset
+     * and a [Boolean] indicating whether the asset has just been downloaded (true) or was already present locally (false)
      */
     @Suppress("LongParameterList")
     suspend fun fetchPrivateDecodedAsset(
@@ -133,7 +136,7 @@ interface AssetRepository {
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key,
         downloadIfNeeded: Boolean = true
-    ): Either<CoreFailure, Path>
+    ): Either<CoreFailure, FetchedAssetData>
 
     /**
      * Method used to delete asset locally and externally
@@ -233,7 +236,7 @@ internal class AssetDataSource(
             } else {
                 this
             }
-    }
+        }
 
     @Suppress("LongParameterList")
     private suspend fun buildPublicAssetData(
@@ -265,11 +268,10 @@ internal class AssetDataSource(
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
-
-                // we should also consider for avatar images, the compression for preview vs complete picture
-                assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
-                    .also { dataSource.close() }
+                kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath).use { dataSource ->
+                    // we should also consider for avatar images, the compression for preview vs complete picture
+                    assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
+                }
             }
         }
             .flatMap { assetResponse ->
@@ -296,7 +298,7 @@ internal class AssetDataSource(
         }
     }
 
-    override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, Path> =
+    override suspend fun downloadPublicAsset(assetId: String, assetDomain: String?): Either<CoreFailure, FetchedAssetData> =
         fetchOrDownloadDecodedAsset(assetId = assetId, assetDomain = assetDomain, assetName = assetId, assetToken = null, mimeType = null)
 
     override suspend fun fetchPrivateDecodedAsset(
@@ -308,8 +310,8 @@ internal class AssetDataSource(
         encryptionKey: AES256Key,
         assetSHA256Key: SHA256Key,
         downloadIfNeeded: Boolean
-    ): Either<CoreFailure, Path> =
-        if (!downloadIfNeeded) fetchDecodedAsset(assetId = assetId)
+    ): Either<CoreFailure, FetchedAssetData> =
+        if (!downloadIfNeeded) fetchDecodedAsset(assetId = assetId).map { FetchedAssetData(it, false) }
         else fetchOrDownloadDecodedAsset(
             assetId = assetId,
             assetDomain = assetDomain,
@@ -333,8 +335,11 @@ internal class AssetDataSource(
         mimeType: String?,
         encryptionKey: AES256Key? = null,
         assetSHA256: SHA256Key? = null
-    ): Either<CoreFailure, Path> =
-        fetchDecodedAsset(assetId).flatMapLeft {
+    ): Either<CoreFailure, FetchedAssetData> = fetchDecodedAsset(assetId)
+        .map {
+            FetchedAssetData(it, false) // Asset found locally, no need to download, return the local path with 'false' flag
+        }
+        .flatMapLeft {
             val tempFile = kaliumFileSystem.tempFilePath("temp_$assetId")
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
@@ -355,7 +360,8 @@ internal class AssetDataSource(
                     val decodedAssetPath =
                         kaliumFileSystem.providePersistentAssetPath(
                             buildFileName(
-                                assetId, assetName.fileExtension()
+                                assetId,
+                                assetName.fileExtension()
                                     ?: getExtensionFromMimeType(mimeType)
                             )
                         )
@@ -377,7 +383,7 @@ internal class AssetDataSource(
                         // Everything went fine, we persist the asset to the DB
                         else -> {
                             saveAssetInDB(assetId, assetDomain, decodedAssetPath, assetDataSize)
-                            Either.Right(decodedAssetPath)
+                            Either.Right(FetchedAssetData(decodedAssetPath, true))
                         }
                     }
                 } catch (e: IOException) {
@@ -464,3 +470,5 @@ internal class AssetDataSource(
 
 private fun buildFileName(name: String, extension: String?): String =
     extension?.let { "$name.$extension" } ?: name
+
+internal data class FetchedAssetData(val path: Path, val justDownloaded: Boolean)

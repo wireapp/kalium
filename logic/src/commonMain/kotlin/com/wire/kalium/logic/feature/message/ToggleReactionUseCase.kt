@@ -18,10 +18,15 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.UserReactions
@@ -29,11 +34,6 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -41,12 +41,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.uuid.Uuid
 
-/**
- * Toggles a reaction on a message.
- * If the reaction already exists it will be removed, if not it will be added.
- */
-class ToggleReactionUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class ToggleReactionUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
@@ -55,18 +53,18 @@ class ToggleReactionUseCase internal constructor(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
-     * Operation to toggle a reaction on a message
+     * Operation to toggle a reaction on a message. If the reaction already exists it will be removed, if not it will be added.
      *
      * @param conversationId the id of the conversation the message is in
      * @param messageId the id of the message to toggle the reaction on/off
      * @param reaction the reaction "emoji" to toggle
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @return [ToggleReactionResult] indicating success or failure
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         reaction: String
-    ): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
+    ): ToggleReactionResult = withContext(dispatcher.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -98,7 +96,10 @@ class ToggleReactionUseCase internal constructor(
                         reaction
                     )
                 }
-            }
+            }.fold(
+                { ToggleReactionResult.Failure(it) },
+                { ToggleReactionResult.Success }
+            )
     }
 
     @Suppress("LongParameterList")
@@ -157,4 +158,9 @@ class ToggleReactionUseCase internal constructor(
                 reactionRepository.persistReaction(messageId, conversationId, userId, date, removedReaction)
             }
     }
+}
+
+public sealed class ToggleReactionResult {
+    public object Success : ToggleReactionResult()
+    public data class Failure(val failure: CoreFailure) : ToggleReactionResult()
 }

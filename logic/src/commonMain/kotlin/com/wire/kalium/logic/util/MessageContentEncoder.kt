@@ -18,17 +18,19 @@
 
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.cryptography.utils.calcSHA256
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.utils.calcSHA256
+import com.wire.kalium.logic.data.message.MessageAttachment
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.uuid
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
 import kotlinx.datetime.Instant
 import kotlin.math.roundToLong
 
-class MessageContentEncoder {
-    fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
+internal class MessageContentEncoder {
+    internal fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
         return when (messageContent) {
             is MessageContent.Asset ->
                 encodeMessageAsset(
@@ -47,6 +49,14 @@ class MessageContentEncoder {
                     latitude = latitude,
                     longitude = longitude,
                     messageTimeStampInMillis = messageInstant.toEpochMilliseconds()
+                )
+            }
+
+            is MessageContent.Multipart -> with(messageContent) {
+                encodeMultipartBody(
+                    messageTimeStampInMillis = messageInstant.toEpochMilliseconds(),
+                    messageTextBody = value ?: "",
+                    attachments = attachments,
                 )
             }
 
@@ -86,6 +96,20 @@ class MessageContentEncoder {
         return EncodedMessageContent(latitudeBEBytes + longitudeBEBytes + encodeMessageTimeStampInMillis(messageTimeStampInMillis))
     }
 
+    private fun encodeMultipartBody(
+        messageTimeStampInMillis: Long,
+        messageTextBody: String,
+        attachments: List<MessageAttachment>,
+    ): EncodedMessageContent {
+        val messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis)
+        val messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
+        val attachmentsBytes = attachments.joinToString { it.uuid() }.toUTF16BEByteArray()
+
+        return EncodedMessageContent(
+            byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + attachmentsBytes + messageTimeStampByteArray
+        )
+    }
+
     private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
         return EncodedMessageContent(
             byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray
@@ -98,7 +122,7 @@ class MessageContentEncoder {
     }
 }
 
-class EncodedMessageContent(val byteArray: ByteArray) {
-    val asHexString = byteArray.toHexString()
-    val sha256Digest = calcSHA256(byteArray)
+internal class EncodedMessageContent(val byteArray: ByteArray) {
+    internal val asHexString = byteArray.toHexString()
+    internal val sha256Digest = calcSHA256(byteArray)
 }

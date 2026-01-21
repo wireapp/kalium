@@ -43,7 +43,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
@@ -54,15 +53,14 @@ import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_REC
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import io.ktor.utils.io.charsets.Charsets
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.serializer
+import kotlin.io.encoding.Base64
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
-class EventMapper(
+internal class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
@@ -73,7 +71,7 @@ class EventMapper(
     private val qualifiedIdMapper: QualifiedIdMapper = MapperProvider.qualifiedIdMapper(selfUserId),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) {
-    fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
+    internal fun fromDTO(eventResponse: EventResponse, isLive: Boolean): List<EventEnvelope> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
@@ -85,7 +83,7 @@ class EventMapper(
         } ?: listOf()
     }
 
-    fun fromStoredDTO(eventId: String, payload: List<EventContentDTO>?, isLive: Boolean): List<EventEnvelope> {
+    internal fun fromStoredDTO(eventId: String, payload: List<EventContentDTO>?, isLive: Boolean): List<EventEnvelope> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventId
 
@@ -107,7 +105,7 @@ class EventMapper(
     }
 
     @Suppress("ComplexMethod")
-    fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO): Event =
+    internal fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO): Event =
         when (eventContentDTO) {
             is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
             is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
@@ -189,7 +187,7 @@ class EventMapper(
     )
 
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
-    fun unknown(
+    internal fun unknown(
         id: String,
         eventContentDTO: EventContentDTO,
         cause: String? = null
@@ -226,7 +224,7 @@ class EventMapper(
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
 
-    fun conversationMessageTimerUpdate(
+    internal fun conversationMessageTimerUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MessageTimerUpdate,
     ) = Event.Conversation.ConversationMessageTimer(
@@ -335,7 +333,7 @@ class EventMapper(
         eventContentDTO.time,
         eventContentDTO.data.text,
         eventContentDTO.data.encryptedExternalData?.let {
-            EncryptedData(Base64.decodeFromBase64(it.toByteArray(Charsets.UTF_8)))
+            EncryptedData(Base64.decode(it))
         }
     )
 
@@ -426,7 +424,7 @@ class EventMapper(
         eventContentDTO.data
     )
 
-    fun conversationMemberJoin(
+    internal fun conversationMemberJoin(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO,
     ) = Event.Conversation.MemberJoin(
@@ -437,7 +435,7 @@ class EventMapper(
         dateTime = eventContentDTO.time,
     )
 
-    fun conversationMemberLeave(
+    internal fun conversationMemberLeave(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO,
     ) = Event.Conversation.MemberLeave(
@@ -449,7 +447,7 @@ class EventMapper(
         reason = eventContentDTO.removedUsers.reason.toModel()
     )
 
-    fun mlsConversationReset(
+    internal fun mlsConversationReset(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MlsResetConversationDTO
     ) = Event.Conversation.MLSReset(
@@ -573,14 +571,14 @@ class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.Cells)
         )
+
+        is FeatureConfigData.CellsInternal -> Event.FeatureConfig.CellsInternalConfigUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.CellsInternal)
+        )
         is FeatureConfigData.EnableUserProfileQRCode -> Event.FeatureConfig.EnableUserProfileQRCodeConfigUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.EnableUserProfileQRCode)
-        )
-
-        is FeatureConfigData.ChatBubbles -> Event.FeatureConfig.ChatBubblesConfigUpdated(
-            id,
-            (featureConfigUpdatedDTO.data as FeatureConfigData.ChatBubbles).toModel()
         )
 
         is FeatureConfigData.AssetAuditLog -> Event.FeatureConfig.AssetAuditLogConfigUpdated(
@@ -611,7 +609,7 @@ class EventMapper(
         timestampIso = deletedConversationDTO.time
     )
 
-    fun conversationRenamed(
+    internal fun conversationRenamed(
         id: String,
         event: EventContentDTO.Conversation.ConversationRenameDTO,
     ) = Event.Conversation.RenamedConversation(

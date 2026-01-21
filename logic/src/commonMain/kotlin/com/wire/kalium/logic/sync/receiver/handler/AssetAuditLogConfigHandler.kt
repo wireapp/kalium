@@ -23,10 +23,10 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AssetAuditLogConfigModel
 import com.wire.kalium.logic.data.featureConfig.Status
 
-class AssetAuditLogConfigHandler(
+internal class AssetAuditLogConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(model: AssetAuditLogConfigModel?): Either<CoreFailure, Unit> =
+    internal suspend fun handle(model: AssetAuditLogConfigModel?): Either<CoreFailure, Unit> =
         when {
             model == null -> userConfigRepository.setAssetAuditLogEnabled(false)
             else -> userConfigRepository.setAssetAuditLogEnabled(model.status == Status.ENABLED)

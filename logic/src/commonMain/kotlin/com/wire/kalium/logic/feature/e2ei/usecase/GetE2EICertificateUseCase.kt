@@ -18,14 +18,10 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import io.mockative.Mockable
 
@@ -33,22 +29,34 @@ import io.mockative.Mockable
  * This use case is used to get the e2ei certificate
  */
 @Mockable
-interface GetMLSClientIdentityUseCase {
-    suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity>
+public interface GetMLSClientIdentityUseCase {
+    public suspend operator fun invoke(clientId: ClientId): GetMLSClientIdentityResult
 }
 
-class GetMLSClientIdentityUseCaseImpl internal constructor(
+public sealed class GetMLSClientIdentityResult {
+    public data class Success(val identity: MLSClientIdentity) : GetMLSClientIdentityResult()
+
+    public sealed class Failure : GetMLSClientIdentityResult() {
+        public data object IdentityNotFound : Failure()
+        public data class Generic(val coreFailure: CoreFailure) : Failure()
+    }
+}
+
+internal class GetMLSClientIdentityUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val transactionProvider: CryptoTransactionProvider
 ) : GetMLSClientIdentityUseCase {
-    override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, MLSClientIdentity> =
+    override suspend operator fun invoke(clientId: ClientId): GetMLSClientIdentityResult =
         transactionProvider
             .mlsTransaction("GetMLSClientIdentity") { mlsContext ->
                 mlsConversationRepository.getClientIdentity(mlsContext, clientId)
             }
-            .flatMap {
-                it?.let {
-                    MLSClientIdentity.fromWireIdentity(it).right()
-                } ?: StorageFailure.DataNotFound.left()
-            }
+            .fold(
+                { GetMLSClientIdentityResult.Failure.Generic(it) },
+                { wireIdentity ->
+                    wireIdentity?.let {
+                        GetMLSClientIdentityResult.Success(MLSClientIdentity.fromWireIdentity(it))
+                    } ?: GetMLSClientIdentityResult.Failure.IdentityNotFound
+                }
+            )
 }

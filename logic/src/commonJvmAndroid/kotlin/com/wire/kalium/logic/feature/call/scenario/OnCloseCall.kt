@@ -38,7 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Suppress("LongParameterList")
-class OnCloseCall(
+internal class OnCloseCall(
     private val callRepository: CallRepository,
     private val scope: CoroutineScope,
     private val qualifiedIdMapper: QualifiedIdMapper,
@@ -109,19 +109,22 @@ class OnCloseCall(
             CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
                 callMetadata.establishedTime.isNullOrEmpty() &&
                         currentCallStatus != CallStatus.CLOSED_INTERNALLY &&
-                        currentCallStatus != CallStatus.REJECTED
+                        currentCallStatus != CallStatus.REJECTED &&
+                        currentCallStatus != CallStatus.STARTED
             } ?: false
 
             else -> false
+        }.also {
+            callingLogger.i(
+                "[OnCloseCall] -> shouldPersistMissedCall: $it (callStatus: $callStatus, " +
+                        "establishedTime: ${callMetadata?.establishedTime}, currentCallStatus: ${callMetadata?.callStatus})"
+            )
         }
 
     private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
         CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
         CallClosedReason.CANCELLED -> CallStatus.MISSED
-        CallClosedReason.TIMEOUT_ECONN -> CallStatus.MISSED
         CallClosedReason.REJECTED -> CallStatus.REJECTED
-        else -> {
-            CallStatus.CLOSED
-        }
+        else -> CallStatus.CLOSED
     }
 }

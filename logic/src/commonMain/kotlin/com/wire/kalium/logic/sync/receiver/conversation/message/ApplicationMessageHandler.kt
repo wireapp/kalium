@@ -48,6 +48,7 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -90,6 +91,7 @@ internal class ApplicationMessageHandlerImpl(
     private val persistMessage: PersistMessageUseCase,
     private val persistReaction: PersistReactionUseCase,
     private val editTextHandler: MessageTextEditHandler,
+    private val editMultipartHandler: MessageMultipartEditHandler,
     private val lastReadContentHandler: LastReadContentHandler,
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
@@ -225,6 +227,8 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.CompositeEdited -> messageCompositeEditHandler.handle(signaling, content)
 
+            is MessageContent.MultipartEdited -> editMultipartHandler.handle(signaling, content)
+
             is MessageContent.History -> TODO("HISTORY CLIENTS ARE NOT HANDLED YET")
         }
     }
@@ -356,10 +360,10 @@ internal class ApplicationMessageHandlerImpl(
     "This will be moved to another package",
     ReplaceWith("com.wire.kalium.logic.data.message.hasValidRemoteData")
 )
-fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
+internal fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
 
 @Deprecated(
     "This will be moved to another package",
     ReplaceWith("com.wire.kalium.logic.data.message.hasValidData")
 )
-fun AssetContent.RemoteData.hasValidData() = hasValidData()
+internal fun AssetContent.RemoteData.hasValidData() = hasValidData()

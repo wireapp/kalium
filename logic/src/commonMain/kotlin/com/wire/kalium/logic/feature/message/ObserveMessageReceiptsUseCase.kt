@@ -18,11 +18,11 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,8 +33,8 @@ import kotlinx.coroutines.flow.Flow
  * @return Flow<List<DetailedReceipt>> - Flow of DetailedReceipt List that should be shown to the user.
  * That Flow emits everytime a receipt on the message is added.
  */
-interface ObserveMessageReceiptsUseCase {
-    suspend operator fun invoke(
+public interface ObserveMessageReceiptsUseCase {
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         type: ReceiptType
@@ -55,7 +55,9 @@ internal class ObserveMessageReceiptsUseCaseImpl(
             messageId = messageId,
             type
         ).also {
-            kaliumLogger.i("[ObserveMessageReceiptsUseCase] - Observing read receipts for " +
-                    "Conversation: ${conversationId.toLogString()}")
+            kaliumLogger.i(
+                "[ObserveMessageReceiptsUseCase] - Observing read receipts for " +
+                        "Conversation: ${conversationId.toLogString()}"
+            )
         }
 }

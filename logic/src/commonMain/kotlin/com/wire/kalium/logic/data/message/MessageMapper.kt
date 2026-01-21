@@ -59,7 +59,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @Mockable
-interface MessageMapper {
+internal interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
@@ -70,7 +70,7 @@ interface MessageMapper {
 }
 
 @Suppress("TooManyFunctions")
-class MessageMapperImpl(
+internal class MessageMapperImpl(
     private val selfUserId: UserId,
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
@@ -177,7 +177,14 @@ class MessageMapperImpl(
             )
         },
         visibility = message.visibility.toModel(),
-        reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+        reactions = Message.Reactions(
+            reactions = message.reactions.reactions.mapValues { (_, reaction) ->
+                Message.ReactionData(
+                    count = reaction.count,
+                    isSelf = reaction.isSelf
+                )
+            }
+        ),
         senderUserName = message.senderName,
         isSelfMessage = message.isSelfMessage,
         expectsReadConfirmation = message.expectsReadConfirmation,
@@ -333,6 +340,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.LEGAL_HOLD -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> null
+            MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> null
 
             MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
                 messageId = message.id,
@@ -443,7 +451,7 @@ class MessageMapperImpl(
 }
 
 @Suppress("ComplexMethod")
-fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
+internal fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
     is MessageEntityContent.MemberChange -> {
         val memberList = this.memberUserIdList.map { it.toModel() }
         when (this.memberChangeType) {
@@ -498,18 +506,21 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
                 MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
         }
     }
+
     is MessageEntityContent.NewConversationWithCellMessage -> MessageContent.NewConversationWithCellMessage
     is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
         MessageContent.NewConversationWithCellSelfDeleteDisabledMessage
+
+    is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
 
-fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
+internal fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
     Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
     Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
     Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
 }
 
-fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
+internal fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
     MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
     MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
@@ -574,14 +585,14 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.Deleted -> MessagePreviewContent.WithUser.Deleted(username = senderName)
 }
 
-fun AssetTypeEntity.toModel(): AssetType = when (this) {
+internal fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.IMAGE -> AssetType.IMAGE
     AssetTypeEntity.VIDEO -> AssetType.VIDEO
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
     AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
 }
 
-fun Message.Status.toEntityStatus() =
+internal fun Message.Status.toEntityStatus() =
     when (this) {
         Message.Status.Delivered -> MessageEntity.Status.DELIVERED
         Message.Status.Pending -> MessageEntity.Status.PENDING
@@ -591,7 +602,7 @@ fun Message.Status.toEntityStatus() =
         Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
     }
 
-fun MessageEntity.Status.toModel(readCount: Long) =
+internal fun MessageEntity.Status.toModel(readCount: Long) =
     when (this) {
         MessageEntity.Status.PENDING -> Message.Status.Pending
         MessageEntity.Status.SENT -> Message.Status.Sent
@@ -602,7 +613,7 @@ fun MessageEntity.Status.toModel(readCount: Long) =
     }
 
 @Suppress("LongMethod", "CyclomaticComplexMethod")
-fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: UserId): MessageContent.Regular = when (this) {
+internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: UserId): MessageContent.Regular = when (this) {
     is MessageEntityContent.Text -> {
         val quotedMessageDetails = this.quotedMessage?.let {
             MessageContent.QuotedMessageDetails(
@@ -638,7 +649,9 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
     is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
 
     is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
-        this.mimeType, this.assetSizeInBytes, this.assetName
+        this.mimeType,
+        this.assetSizeInBytes,
+        this.assetName
     )
 
     is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
@@ -718,12 +731,18 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
         )
     }
 
+    it.contentType == MessageEntity.ContentType.MULTIPART -> {
+        MessageContent.QuotedMessageDetails.Multipart(
+            text = it.textBody,
+        )
+    }
+
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
 
 @Suppress("ComplexMethod", "LongMethod")
-fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
+internal fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
     is MessageContent.MemberChange -> {
         val memberUserIdList = this.members.map { it.toDao() }
         when (this) {
@@ -804,9 +823,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
 
     MessageContent.NewConversationWithCellMessage -> MessageEntityContent.NewConversationWithCellMessage
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
+    is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
 }
 
-fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {
+internal fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {
     return MessageAssetStatusEntity(
         id = id,
         conversationId = conversationId.toDao(),
@@ -814,7 +834,7 @@ fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {
     )
 }
 
-fun MessageAssetStatusEntity.toModel(): MessageAssetStatus {
+internal fun MessageAssetStatusEntity.toModel(): MessageAssetStatus {
     return MessageAssetStatus(
         id = id,
         conversationId = conversationId.toModel(),

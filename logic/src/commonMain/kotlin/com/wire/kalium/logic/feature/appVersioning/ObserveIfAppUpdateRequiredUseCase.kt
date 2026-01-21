@@ -19,6 +19,10 @@
 
 package com.wire.kalium.logic.feature.appVersioning
 
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.intervalFlow
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
@@ -26,10 +30,6 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl.Companion.CHECK_APP_VERSION_FREQUENCY_MS
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.intervalFlow
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,11 +50,11 @@ import kotlin.coroutines.coroutineContext
  * @return Flow<Boolean> emits true if at least one ServerConfig requires app updating, false - otherwise.
  *
  */
-interface ObserveIfAppUpdateRequiredUseCase {
-    suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
+public interface ObserveIfAppUpdateRequiredUseCase {
+    public suspend operator fun invoke(currentAppVersion: Int): Flow<Boolean>
 }
 
-class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
+internal class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val customServerConfigRepository: CustomServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
@@ -128,7 +128,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
             }
     }
 
-    companion object {
+    internal companion object {
         private const val CHECK_APP_VERSION_FREQUENCY_MS = 24 * 60 * 60 * 1000L
         private const val TAG = "ObserveIfAppFreshEnoughUseCase"
     }

@@ -52,7 +52,7 @@ import kotlinx.datetime.Clock
 internal interface FederationEventReceiver : EventReceiver<Event.Federation>
 
 @Suppress("LongParameterList")
-class FederationEventReceiverImpl internal constructor(
+internal class FederationEventReceiverImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
@@ -219,8 +219,8 @@ class FederationEventReceiverImpl internal constructor(
         persistMessage(message)
     }
 
-    companion object {
-        const val EXPECTED_DOMAIN_LIST_SIZE = 2
+    internal companion object {
+        internal const val EXPECTED_DOMAIN_LIST_SIZE = 2
     }
 
 }

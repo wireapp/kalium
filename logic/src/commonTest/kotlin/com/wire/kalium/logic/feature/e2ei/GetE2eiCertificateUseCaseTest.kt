@@ -28,12 +28,11 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -48,7 +47,7 @@ import kotlin.test.assertIs
 class GetE2eiCertificateUseCaseTest {
 
     @Test
-    fun givenRepositoryReturnsFailure_whenRunningUseCase_thenReturnFailure() = runTest {
+    fun givenRepositoryReturnsFailure_whenRunningUseCase_thenReturnGenericFailure() = runTest {
         val (arrangement, getE2eiCertificateUseCase) = Arrangement()
             .withRepositoryFailure()
             .arrange()
@@ -59,25 +58,26 @@ class GetE2eiCertificateUseCaseTest {
             arrangement.mlsConversationRepository.getClientIdentity(any(), any())
         }.wasInvoked(once)
 
-        result.shouldFail()
+        assertIs<GetMLSClientIdentityResult.Failure.Generic>(result)
     }
 
     @Test
-    fun givenRepositoryReturnsStorageFailure_whenRunningUseCase_thenReturnFailure() = runTest {
+    fun givenRepositoryReturnsStorageFailure_whenRunningUseCase_thenReturnGenericFailure() = runTest {
         val (arrangement, getE2eiCertificateUseCase) = Arrangement()
             .withRepositoryFailure(StorageFailure.DataNotFound)
             .arrange()
 
         val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
-        result.shouldFail()
 
         coVerify {
             arrangement.mlsConversationRepository.getClientIdentity(any(), any())
         }.wasInvoked(once)
+
+        assertIs<GetMLSClientIdentityResult.Failure.Generic>(result)
     }
 
     @Test
-    fun givenRepositoryReturnsValidCertificateString_whenRunningUseCase_thenReturnCertificate() =
+    fun givenRepositoryReturnsValidCertificateString_whenRunningUseCase_thenReturnSuccessWithCertificate() =
         runTest {
             val (arrangement, getE2eiCertificateUseCase) = Arrangement()
                 .withRepositoryValidCertificate(X509_VALID_IDENTITY)
@@ -85,9 +85,8 @@ class GetE2eiCertificateUseCaseTest {
 
             val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-            result.shouldSucceed()
-            assertIs<Either.Right<MLSClientIdentity>>(result)
-            assertEquals(MLSClientE2EIStatus.VALID, (result.value as MLSClientIdentity).e2eiStatus)
+            assertIs<GetMLSClientIdentityResult.Success>(result)
+            assertEquals(MLSClientE2EIStatus.VALID, result.identity.e2eiStatus)
 
             coVerify {
                 arrangement.mlsConversationRepository.getClientIdentity(any(), any())
@@ -95,16 +94,16 @@ class GetE2eiCertificateUseCaseTest {
         }
 
     @Test
-    fun givenRepositoryReturnsBasicClient_whenRunningUseCase_thenReturnNotActivatedStatus() =
+    fun givenRepositoryReturnsBasicClient_whenRunningUseCase_thenReturnSuccessWithNotActivatedStatus() =
         runTest {
             val (arrangement, getE2eiCertificateUseCase) = Arrangement()
                 .withRepositoryValidCertificate(BASIC_VALID_IDENTITY)
                 .arrange()
 
             val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
-            result.shouldSucceed()
-            assertIs<Either.Right<MLSClientIdentity>>(result)
-            assertEquals(MLSClientE2EIStatus.NOT_ACTIVATED, (result.value as MLSClientIdentity).e2eiStatus)
+
+            assertIs<GetMLSClientIdentityResult.Success>(result)
+            assertEquals(MLSClientE2EIStatus.NOT_ACTIVATED, result.identity.e2eiStatus)
 
             coVerify {
                 arrangement.mlsConversationRepository.getClientIdentity(any(), any())
@@ -112,7 +111,7 @@ class GetE2eiCertificateUseCaseTest {
         }
 
     @Test
-    fun givenRepositoryReturnsNullCertificate_whenRunningUseCase_thenReturnFailure() =
+    fun givenRepositoryReturnsNullCertificate_whenRunningUseCase_thenReturnIdentityNotFound() =
         runTest {
             val (arrangement, getE2eiCertificateUseCase) = Arrangement()
                 .withRepositoryValidCertificate(null)
@@ -120,7 +119,7 @@ class GetE2eiCertificateUseCaseTest {
 
             val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-            result.shouldFail()
+            assertIs<GetMLSClientIdentityResult.Failure.IdentityNotFound>(result)
 
             coVerify {
                 arrangement.mlsConversationRepository.getClientIdentity(any(), any())

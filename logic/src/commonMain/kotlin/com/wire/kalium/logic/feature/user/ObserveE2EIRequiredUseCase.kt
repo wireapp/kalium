@@ -17,15 +17,16 @@
  */
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onlyRight
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
 import com.wire.kalium.logic.feature.e2ei.X509Identity
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
@@ -46,11 +47,11 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Observe [E2EISettings] to notify user when setting is changed to Enabled
  */
-interface ObserveE2EIRequiredUseCase {
+public interface ObserveE2EIRequiredUseCase {
     /**
      * @return [Flow] of [E2EIRequiredResult]
      */
-    operator fun invoke(): Flow<E2EIRequiredResult>
+    public operator fun invoke(): Flow<E2EIRequiredResult>
 }
 
 internal class ObserveE2EIRequiredUseCaseImpl(
@@ -79,16 +80,18 @@ internal class ObserveE2EIRequiredUseCaseImpl(
                             E2EIRequiredResult.NotRequired
                         },
                         { clientId ->
-                            return@map mlsClientIdentity(clientId).fold({
-                                E2EIRequiredResult.NotRequired
-                            }, { clientIdentity ->
-                                when (clientIdentity.e2eiStatus) {
-                                    MLSClientE2EIStatus.REVOKED -> E2EIRequiredResult.NotRequired
-                                    MLSClientE2EIStatus.NOT_ACTIVATED -> onUserHasNoCertificate(setting)
-                                    MLSClientE2EIStatus.EXPIRED -> E2EIRequiredResult.NoGracePeriod.Renew
-                                    MLSClientE2EIStatus.VALID -> onUserHasValidCertificate(clientIdentity.x509Identity!!)
+                            return@map when (val identityResult = mlsClientIdentity(clientId)) {
+                                is GetMLSClientIdentityResult.Failure -> E2EIRequiredResult.NotRequired
+                                is GetMLSClientIdentityResult.Success -> {
+                                    val clientIdentity = identityResult.identity
+                                    when (clientIdentity.e2eiStatus) {
+                                        MLSClientE2EIStatus.REVOKED -> E2EIRequiredResult.NotRequired
+                                        MLSClientE2EIStatus.NOT_ACTIVATED -> onUserHasNoCertificate(setting)
+                                        MLSClientE2EIStatus.EXPIRED -> E2EIRequiredResult.NoGracePeriod.Renew
+                                        MLSClientE2EIStatus.VALID -> onUserHasValidCertificate(clientIdentity.x509Identity!!)
+                                    }
                                 }
-                            })
+                            }
                         }
                     )
                 }
@@ -136,16 +139,16 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     }
 }
 
-sealed class E2EIRequiredResult {
-    sealed class WithGracePeriod(open val timeLeft: Duration) : E2EIRequiredResult() {
-        data class Create(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
-        data class Renew(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
+public sealed class E2EIRequiredResult {
+    public sealed class WithGracePeriod(public open val timeLeft: Duration) : E2EIRequiredResult() {
+        public data class Create(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
+        public data class Renew(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
     }
 
-    sealed class NoGracePeriod : E2EIRequiredResult() {
-        data object Create : NoGracePeriod()
-        data object Renew : NoGracePeriod()
+    public sealed class NoGracePeriod : E2EIRequiredResult() {
+        public data object Create : NoGracePeriod()
+        public data object Renew : NoGracePeriod()
     }
 
-    data object NotRequired : E2EIRequiredResult()
+    public data object NotRequired : E2EIRequiredResult()
 }

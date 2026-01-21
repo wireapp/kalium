@@ -50,10 +50,11 @@ import kotlinx.coroutines.CoroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-actual class GlobalCallManager(
+internal actual class GlobalCallManager(
     appContext: PlatformContext,
-    scope: CoroutineScope
-) {
+    scope: CoroutineScope,
+    networkStateObserver: NetworkStateObserver
+) : CallNetworkChangeManager(scope, networkStateObserver) {
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
         ConcurrentHashMap()
     }
@@ -125,7 +126,7 @@ actual class GlobalCallManager(
         }
     }
 
-    actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
+    internal actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
         callManagerHolder[userId]?.cancelJobs()
         callManagerHolder.remove(userId)
     }
@@ -133,15 +134,20 @@ actual class GlobalCallManager(
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
     private val flowManager by lazy { FlowManagerServiceImpl(appContext, scope) }
 
-    actual fun getFlowManager(): FlowManagerService = flowManager
+    internal actual fun getFlowManager(): FlowManagerService = flowManager
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
     private val mediaManager by lazy { MediaManagerServiceImpl(appContext, scope) }
 
-    actual fun getMediaManager(): MediaManagerService = mediaManager
+    internal actual fun getMediaManager(): MediaManagerService = mediaManager
+
+    actual override fun networkChanged() {
+        calling.wcall_network_changed()
+        callingLogger.i("GlobalCallManager -> wcall_network_changed")
+    }
 }
 
-object LogHandlerImpl : LogHandler {
+internal object LogHandlerImpl : LogHandler {
     override fun onLog(level: Int, message: String, arg: Pointer?) {
         when (level) {
             0 -> callingLogger.d(message)

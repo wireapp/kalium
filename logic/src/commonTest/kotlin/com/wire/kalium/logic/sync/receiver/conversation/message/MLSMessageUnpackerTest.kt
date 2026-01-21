@@ -18,9 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
@@ -37,7 +35,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -47,11 +44,12 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
-class MLSMessageUnpackerTest {
+internal class MLSMessageUnpackerTest {
 
     @Test
     fun givenConversationWithProteusProtocol_whenUnpacking_thenFailWithNotSupportedByProteus() = runTest {
@@ -135,7 +133,7 @@ class MLSMessageUnpackerTest {
         coVerify {
             arrangement.mlsConversationRepository.decryptMessage(
                 any(),
-                matches { it.contentEquals(messageEvent.content.decodeBase64Bytes()) },
+                matches { it.contentEquals(Base64.decode(messageEvent.content)) },
                 eq(TestConversation.GROUP_ID)
             )
         }.wasInvoked(once)

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
 
-actual class FlowManagerServiceImpl(
+internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext
 ) : FlowManagerService {
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {

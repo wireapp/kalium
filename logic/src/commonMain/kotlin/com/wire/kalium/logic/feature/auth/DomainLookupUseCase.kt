@@ -30,11 +30,12 @@ import com.wire.kalium.common.functional.fold
  * if the domain is not found then it will return a failure.
  * @param email the email to lookup
  */
-class DomainLookupUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class DomainLookupUseCase internal constructor(
     private val customServerConfigRepository: CustomServerConfigRepository,
     private val ssoLoginRepository: SSOLoginRepository
 ) {
-    suspend operator fun invoke(email: String): Result {
+    public suspend operator fun invoke(email: String): Result {
         val domain = email.substringAfterLast('@').ifBlank {
             // if the text is not an email then use the text as domain
             email
@@ -45,8 +46,8 @@ class DomainLookupUseCase internal constructor(
         }.fold(Result::Failure, Result::Success)
     }
 
-    sealed interface Result {
-        data class Success(val serverLinks: ServerConfig.Links) : Result
-        data class Failure(val coreFailure: CoreFailure) : Result
+    public sealed interface Result {
+        public data class Success(val serverLinks: ServerConfig.Links) : Result
+        public data class Failure(val coreFailure: CoreFailure) : Result
     }
 }

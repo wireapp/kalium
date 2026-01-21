@@ -278,7 +278,7 @@ class JoinExistingMLSConversationUseCaseTest {
             withTransactionReturning(Either.Right(Unit))
 
             coEvery {
-                resetMlsConversation.invoke(any())
+                resetMlsConversation.invoke(any()).toEither()
             } returns Unit.right()
         }
 
@@ -357,15 +357,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 )
             )
 
-            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
-                KaliumException.InvalidRequestError(
-                    ErrorResponse(
-                        403,
-                        "The conversation epoch in a message is too old",
-                        "mls-stale-message"
-                    )
-                )
-            )
+            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.MlsMessageRejectedFailure.StaleMessage
 
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")

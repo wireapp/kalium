@@ -22,7 +22,7 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 @Mockable
-interface MediaManagerService {
+internal interface MediaManagerService {
     suspend fun turnLoudSpeakerOn()
     suspend fun turnLoudSpeakerOff()
     fun observeSpeaker(): Flow<Boolean>
@@ -34,7 +34,7 @@ interface MediaManagerService {
     suspend fun startMediaManager()
 }
 
-expect class MediaManagerServiceImpl : MediaManagerService {
+internal expect class MediaManagerServiceImpl : MediaManagerService {
     override suspend fun turnLoudSpeakerOn()
     override suspend fun turnLoudSpeakerOff()
     override fun observeSpeaker(): Flow<Boolean>

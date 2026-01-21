@@ -25,13 +25,13 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
-class MLSMigrationConfigHandler(
+internal class MLSMigrationConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val transactionProvider: CryptoTransactionProvider,
 ) {
 
-    suspend fun handle(mlsMigrationConfig: MLSMigrationModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
+    internal suspend fun handle(mlsMigrationConfig: MLSMigrationModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
         if (mlsMigrationConfig.hasMigrationEnded() && !duringSlowSync) {
             transactionProvider.transaction("MLSMigrationConfig") { transactionContext ->
                 updateSupportedProtocolsAndResolveOneOnOnes(

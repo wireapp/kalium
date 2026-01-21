@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
+import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
@@ -42,22 +44,24 @@ import java.io.File
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-actual class CoreLogic(
+public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
     useInMemoryStorage: Boolean = false,
 ) : CoreLogicCommon(
-    rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
+    rootPath = rootPath,
+    kaliumConfigs = kaliumConfigs,
+    userAgent = userAgent
 ) {
 
-    override val globalPreferences: GlobalPrefProvider =
+    actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
                 StorageData.InMemory
@@ -69,22 +73,23 @@ actual class CoreLogic(
         queriesContext = KaliumDispatcherImpl.io
     )
 
-    override fun getSessionScope(userId: UserId): UserSessionScope =
+    public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override suspend fun deleteSessionScope(userId: UserId) {
+    actual override suspend fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
     }
-
-    override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        PlatformContext(),
-        CoroutineScope(KaliumDispatcherImpl.io)
+    public actual override val networkStateObserver: NetworkStateObserver =
+        kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+    actual override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = PlatformContext(),
+        scope = CoroutineScope(KaliumDispatcherImpl.io),
+        networkStateObserver = networkStateObserver,
     )
 
-    override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
-    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
+    actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
+    actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
             rootPathsProvider,
@@ -100,7 +105,8 @@ actual class CoreLogic(
             useInMemoryStorage
         )
     }
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 }
 
 @Suppress("MayBeConst")
-actual val clientPlatform: String = "jvm"
+internal actual val clientPlatform: String = "jvm"

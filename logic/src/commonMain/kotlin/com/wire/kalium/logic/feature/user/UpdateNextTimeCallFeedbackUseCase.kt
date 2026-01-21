@@ -20,20 +20,21 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.UpdateNextTimeCallFeedbackUseCase.Companion.askingForFeedbackPeriod
 import com.wire.kalium.util.DateTimeUtil
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 /**
  * Use case that updates next time when user should be asked for a feedback about call quality.
  */
-interface UpdateNextTimeCallFeedbackUseCase {
+public interface UpdateNextTimeCallFeedbackUseCase {
     /**
      * Update next time when user should be asked for a feedback about call quality.
      * @param neverAskAgain [Boolean] if user checked "never ask me again"
      */
-    suspend operator fun invoke(neverAskAgain: Boolean)
+    public suspend operator fun invoke(neverAskAgain: Boolean)
 
-    companion object {
-        val askingForFeedbackPeriod = 3.days
+    public companion object {
+        public val askingForFeedbackPeriod: Duration = 3.days
     }
 }
 

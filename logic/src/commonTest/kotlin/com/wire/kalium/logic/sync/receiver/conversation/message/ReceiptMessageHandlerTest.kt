@@ -45,15 +45,24 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ReceiptMessageHandlerTest {
 
-    private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY)
+    private val testDispatcher = StandardTestDispatcher()
+    private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY, testDispatcher)
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
 
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -67,6 +76,18 @@ class ReceiptMessageHandlerTest {
         userDatabase.builder.messageDAO.insertOrIgnoreMessage(MESSAGE_ENTITY)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @AfterTest
+    fun tearDown() {
+        userDatabase.delete()
+        Dispatchers.resetMain()
+    }
     @Test
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainTheNewReceipt() = runTest {
         // given

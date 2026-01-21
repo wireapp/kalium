@@ -18,8 +18,8 @@
 package com.wire.kalium.plugins
 
 enum class FrequentModules(val projectName: String) {
-    COMMON("common"),
-    DATA("data"),
-    LOGGER("logger"),
-    UTIL("util"),
+    COMMON("core:common"),
+    DATA("core:data"),
+    LOGGER("core:logger"),
+    UTIL("core:util"),
 }

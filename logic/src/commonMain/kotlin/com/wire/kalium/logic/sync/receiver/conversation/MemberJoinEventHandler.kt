@@ -42,7 +42,7 @@ import com.wire.kalium.util.serialization.toJsonElement
 import io.mockative.Mockable
 
 @Mockable
-interface MemberJoinEventHandler {
+internal interface MemberJoinEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.MemberJoin

@@ -35,8 +35,8 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.AssetAuditLogConfigModel
-import com.wire.kalium.logic.data.featureConfig.CellsConfigModel
-import com.wire.kalium.logic.data.featureConfig.ChatBubblesConfigModel
+import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
+import com.wire.kalium.logic.data.featureConfig.CellsModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -63,7 +63,7 @@ import kotlinx.serialization.json.JsonNull
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].
  */
-data class EventEnvelope(
+internal data class EventEnvelope(
     val event: Event,
     val deliveryInfo: EventDeliveryInfo
 ) {
@@ -71,9 +71,9 @@ data class EventEnvelope(
         return super.toString()
     }
 
-    fun toLogString(): String = toLogMap().toJsonElement().toString()
+    internal fun toLogString(): String = toLogMap().toJsonElement().toString()
 
-    fun toLogMap(): Map<String, Any?> = mapOf(
+    internal fun toLogMap(): Map<String, Any?> = mapOf(
         "event" to event.toLogMap(),
         "deliveryInfo" to deliveryInfo.toLogMap()
     )
@@ -85,11 +85,11 @@ data class EventEnvelope(
  * @property source Indicates whether the event was received in real-time via WebSocket [EventSource.LIVE]
  * or fetched in batch as a pending event [EventSource.PENDING].
  */
-data class EventDeliveryInfo(
+internal data class EventDeliveryInfo(
     val source: EventSource,
 ) {
 
-    fun toLogMap(): Map<String, Any?> = mapOf(
+    internal fun toLogMap(): Map<String, Any?> = mapOf(
         "source" to source,
     )
 }
@@ -100,7 +100,7 @@ data class EventDeliveryInfo(
  * @property id The ID of the event. As of Jan 2024, the ID used by the backend is
  * _not_ guaranteed to be unique, so comparing the full object might be necessary.
  */
-sealed class Event(open val id: String) {
+internal sealed class Event(open val id: String) {
 
     private companion object {
         const val typeKey = "type"
@@ -116,17 +116,17 @@ sealed class Event(open val id: String) {
         const val selfDeletionDurationKey = "selfDeletionDuration"
     }
 
-    open fun toLogString(): String {
+    internal open fun toLogString(): String {
         return "${toLogMap().toJsonElement()}"
     }
 
-    abstract fun toLogMap(): Map<String, Any?>
+    internal abstract fun toLogMap(): Map<String, Any?>
 
-    sealed class Conversation(
+    internal sealed class Conversation(
         id: String,
-        open val conversationId: ConversationId
+        internal open val conversationId: ConversationId
     ) : Event(id) {
-        data class AccessUpdate(
+        internal data class AccessUpdate(
             override val id: String,
             override val conversationId: ConversationId,
             val access: Set<Access>,
@@ -136,13 +136,13 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.AccessUpdate",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "qualifiedFrom" to qualifiedFrom.toLogString()
             )
         }
 
-        data class NewMessage(
+        internal data class NewMessage(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -154,15 +154,15 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.NewMessage",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
-                "senderClientId" to senderClientId.value.obfuscateId(),
-                timestampIsoKey to messageInstant
+                "senderClientId" to senderClientId.toLogString(),
+                timestampIsoKey to messageInstant.toIsoDateTimeString()
             )
         }
 
-        data class NewMLSMessage(
+        internal data class NewMLSMessage(
             override val id: String,
             override val conversationId: ConversationId,
             val subconversationId: SubconversationId?,
@@ -173,14 +173,14 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.NewMLSMessage",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
                 timestampIsoKey to messageInstant.toIsoDateTimeString()
             )
         }
 
-        data class NewConversation(
+        internal data class NewConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -190,13 +190,13 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.NewConversation",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 timestampIsoKey to dateTime
             )
         }
 
-        data class MemberJoin(
+        internal data class MemberJoin(
             override val id: String,
             override val conversationId: ConversationId,
             val addedBy: UserId,
@@ -206,7 +206,7 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.MemberJoin",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "addedBy" to addedBy.toLogString(),
                 "members" to members.map { it.toMap() },
@@ -214,7 +214,7 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class MemberLeave(
+        internal data class MemberLeave(
             override val id: String,
             override val conversationId: ConversationId,
             val removedBy: UserId,
@@ -225,35 +225,35 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.MemberLeave",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "removedBy" to removedBy.toLogString(),
                 timestampIsoKey to dateTime
             )
         }
 
-        sealed class MemberChanged(
+        internal sealed class MemberChanged(
             override val id: String,
             override val conversationId: ConversationId,
-            open val timestampIso: String,
+            internal open val timestampIso: String,
         ) : Conversation(id, conversationId) {
-            class MemberChangedRole(
+            internal class MemberChangedRole(
                 override val id: String,
                 override val conversationId: ConversationId,
                 override val timestampIso: String,
-                val member: Member?,
+                internal val member: Member?,
             ) : MemberChanged(id, conversationId, timestampIso) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.MemberChangedRole",
-                    idKey to id.obfuscateId(),
+                    idKey to id,
                     conversationIdKey to conversationId.toLogString(),
                     "member" to (member?.toMap() ?: JsonNull),
                     timestampIsoKey to timestampIso
                 )
             }
 
-            data class MemberMutedStatusChanged(
+            internal data class MemberMutedStatusChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
                 override val timestampIso: String,
@@ -263,7 +263,7 @@ sealed class Event(open val id: String) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.MemberMutedStatusChanged",
-                    idKey to id.obfuscateId(),
+                    idKey to id,
                     conversationIdKey to conversationId.toLogString(),
                     timestampIsoKey to timestampIso,
                     "mutedConversationStatus" to mutedConversationStatus.status,
@@ -271,7 +271,7 @@ sealed class Event(open val id: String) {
                 )
             }
 
-            data class MemberArchivedStatusChanged(
+            internal data class MemberArchivedStatusChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
                 override val timestampIso: String,
@@ -281,7 +281,7 @@ sealed class Event(open val id: String) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.MemberArchivedStatusChanged",
-                    idKey to id.obfuscateId(),
+                    idKey to id,
                     conversationIdKey to conversationId.toLogString(),
                     timestampIsoKey to timestampIso,
                     "isArchiving" to isArchiving,
@@ -289,20 +289,20 @@ sealed class Event(open val id: String) {
                 )
             }
 
-            data class IgnoredMemberChanged(
+            internal data class IgnoredMemberChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
             ) : MemberChanged(id, conversationId, "") {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.IgnoredMemberChanged",
-                    idKey to id.obfuscateId(),
+                    idKey to id,
                     conversationIdKey to conversationId.toLogString(),
                 )
             }
         }
 
-        data class MLSWelcome(
+        internal data class MLSWelcome(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -311,14 +311,14 @@ sealed class Event(open val id: String) {
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.MLSWelcome",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 timestampIsoKey to timestampIso,
                 senderUserIdKey to senderUserId.toLogString()
             )
         }
 
-        data class DeletedConversation(
+        internal data class DeletedConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -327,14 +327,14 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.DeletedConversation",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 timestampIsoKey to timestampIso,
                 senderUserIdKey to senderUserId.toLogString()
             )
         }
 
-        data class RenamedConversation(
+        internal data class RenamedConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val conversationName: String,
@@ -343,7 +343,7 @@ sealed class Event(open val id: String) {
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.RenamedConversation",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
                 "conversationName" to conversationName,
@@ -351,7 +351,7 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class ConversationReceiptMode(
+        internal data class ConversationReceiptMode(
             override val id: String,
             override val conversationId: ConversationId,
             val receiptMode: ReceiptMode,
@@ -360,14 +360,14 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationReceiptMode",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "receiptMode" to receiptMode.name,
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
 
-        data class ConversationMessageTimer(
+        internal data class ConversationMessageTimer(
             override val id: String,
             override val conversationId: ConversationId,
             val messageTimer: Long?,
@@ -377,7 +377,7 @@ sealed class Event(open val id: String) {
 
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationMessageTimer",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "messageTime" to messageTimer,
                 senderUserIdKey to senderUserId.toLogString(),
@@ -385,7 +385,7 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class CodeUpdated(
+        internal data class CodeUpdated(
             override val id: String,
             override val conversationId: ConversationId,
             val key: String,
@@ -394,22 +394,22 @@ sealed class Event(open val id: String) {
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                idKey to id.obfuscateId(),
+                idKey to id,
                 typeKey to "Conversation.CodeUpdated"
             )
         }
 
-        data class CodeDeleted(
+        internal data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                idKey to id.obfuscateId(),
+                idKey to id,
                 typeKey to "Conversation.CodeDeleted"
             )
         }
 
-        data class TypingIndicator(
+        internal data class TypingIndicator(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -417,7 +417,7 @@ sealed class Event(open val id: String) {
             val typingIndicatorMode: TypingIndicatorMode,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                idKey to id.obfuscateId(),
+                idKey to id,
                 typeKey to "Conversation.TypingIndicator",
                 conversationIdKey to conversationId.toLogString(),
                 "typingIndicatorMode" to typingIndicatorMode.name,
@@ -426,7 +426,7 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class ConversationProtocol(
+        internal data class ConversationProtocol(
             override val id: String,
             override val conversationId: ConversationId,
             val protocol: Protocol,
@@ -434,14 +434,14 @@ sealed class Event(open val id: String) {
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationProtocol",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "protocol" to protocol.name,
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
 
-        data class ConversationChannelAddPermission(
+        internal data class ConversationChannelAddPermission(
             override val id: String,
             override val conversationId: ConversationId,
             val channelAddPermission: ChannelAddPermission,
@@ -449,14 +449,14 @@ sealed class Event(open val id: String) {
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ChannelAddPermission",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 "channelAddPermission" to channelAddPermission.name,
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
 
-        data class MLSReset(
+        internal data class MLSReset(
             override val id: String,
             override val conversationId: ConversationId,
             val from: UserId,
@@ -465,18 +465,18 @@ sealed class Event(open val id: String) {
         ) : Conversation(id, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.MlsReset",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 conversationIdKey to conversationId.toLogString(),
             )
         }
     }
 
-    sealed class Team(
+    internal sealed class Team(
         id: String,
-        open val teamId: String,
+        internal open val teamId: String,
     ) : Event(id) {
 
-        data class MemberLeave(
+        internal data class MemberLeave(
             override val id: String,
             override val teamId: String,
             val memberId: String,
@@ -484,7 +484,7 @@ sealed class Event(open val id: String) {
         ) : Team(id, teamId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.MemberLeave",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 teamIdKey to teamId.obfuscateId(),
                 timestampIsoKey to dateTime.toIsoDateTimeString(),
                 memberIdKey to memberId.obfuscateId(),
@@ -492,185 +492,185 @@ sealed class Event(open val id: String) {
         }
     }
 
-    sealed class FeatureConfig(
+    internal sealed class FeatureConfig(
         id: String,
     ) : Event(id) {
-        data class FileSharingUpdated(
+        internal data class FileSharingUpdated(
             override val id: String,
             val model: ConfigsStatusModel
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.FileSharingUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class MLSUpdated(
+        internal data class MLSUpdated(
             override val id: String,
             val model: MLSModel
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name
             )
         }
 
-        data class MLSMigrationUpdated(
+        internal data class MLSMigrationUpdated(
             override val id: String,
             val model: MLSMigrationModel
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
                 "startTime" to model.startTime,
                 "endTime" to model.endTime
             )
         }
 
-        data class ClassifiedDomainsUpdated(
+        internal data class ClassifiedDomainsUpdated(
             override val id: String,
             val model: ClassifiedDomainsModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.ClassifiedDomainsUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
                 "domains" to model.config.domains.map { it.obfuscateDomain() }
             )
         }
 
-        data class ConferenceCallingUpdated(
+        internal data class ConferenceCallingUpdated(
             override val id: String,
             val model: ConferenceCallingModel,
         ) : FeatureConfig(id) {
             override fun toLogMap() = mapOf(
                 typeKey to "FeatureConfig.ConferenceCallingUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class GuestRoomLinkUpdated(
+        internal data class GuestRoomLinkUpdated(
             override val id: String,
             val model: ConfigsStatusModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.GuestRoomLinkUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class SelfDeletingMessagesConfig(
+        internal data class SelfDeletingMessagesConfig(
             override val id: String,
             val model: SelfDeletingMessagesModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.SelfDeletingMessagesConfig",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
                 selfDeletionDurationKey to model.config.enforcedTimeoutSeconds
             )
         }
 
-        data class MLSE2EIUpdated(
+        internal data class MLSE2EIUpdated(
             override val id: String,
             val model: E2EIModel
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSE2EIUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
                 "config" to model.config
             )
         }
 
-        data class AppLockUpdated(
+        internal data class AppLockUpdated(
             override val id: String,
             val model: AppLockModel
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.AppLockUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
                 "timeout" to model.inactivityTimeoutSecs
             )
         }
 
-        data class AllowedGlobalOperationsUpdated(
+        internal data class AllowedGlobalOperationsUpdated(
             override val id: String,
             val model: AllowedGlobalOperationsModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.AllowedGlobalOperationsUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
                 "mlsConversationReset" to model.mlsConversationsReset
             )
         }
 
-        data class CellsConfigUpdated(
+        internal data class CellsConfigUpdated(
             override val id: String,
-            val model: CellsConfigModel,
+            val model: CellsModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.CellsConfigUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class ChatBubblesConfigUpdated(
+        internal data class CellsInternalConfigUpdated(
             override val id: String,
-            val model: ChatBubblesConfigModel,
+            val model: CellsInternalModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "FeatureConfig.ChatBubblesConfigUpdated",
-                idKey to id.obfuscateId(),
+                typeKey to "FeatureConfig.CellsInternalConfigUpdated",
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class EnableUserProfileQRCodeConfigUpdated(
+        internal data class EnableUserProfileQRCodeConfigUpdated(
             override val id: String,
             val model: EnableUserProfileQRCodeConfigModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.ProfileQRCodeConfigUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class AssetAuditLogConfigUpdated(
+        internal data class AssetAuditLogConfigUpdated(
             override val id: String,
             val model: AssetAuditLogConfigModel,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.AssetAudiLogConfigUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 featureStatusKey to model.status.name,
             )
         }
 
-        data class UnknownFeatureUpdated(
+        internal data class UnknownFeatureUpdated(
             override val id: String,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.UnknownFeatureUpdated",
-                idKey to id.obfuscateId(),
+                idKey to id,
             )
         }
     }
 
-    sealed class User(
+    internal sealed class User(
         id: String,
     ) : Event(id) {
 
-        data class Update(
+        internal data class Update(
             override val id: String,
             val userId: UserId,
             val accentId: Int?,
@@ -684,54 +684,54 @@ sealed class Event(open val id: String) {
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.Update",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 userIdKey to userId.toLogString()
             )
         }
 
-        data class NewConnection(
+        internal data class NewConnection(
             override val id: String,
             val connection: Connection
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.NewConnection",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "connection" to connection.toMap()
             )
         }
 
-        data class ClientRemove(
+        internal data class ClientRemove(
             override val id: String,
             val clientId: ClientId
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.ClientRemove",
-                idKey to id.obfuscateId(),
-                clientIdKey to clientId.value.obfuscateId()
+                idKey to id,
+                clientIdKey to clientId.toLogString()
             )
         }
 
-        data class UserDelete(
+        internal data class UserDelete(
             override val id: String,
             val userId: UserId,
             val timestampIso: String = DateTimeUtil.currentIsoDateTimeString() // TODO we are not receiving it from API
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserDelete",
-                idKey to id.obfuscateId(),
-                userIdKey to "${userId.toLogString()}",
+                idKey to id,
+                userIdKey to userId.toLogString(),
                 timestampIsoKey to timestampIso
             )
         }
 
-        data class NewClient(
+        internal data class NewClient(
             override val id: String,
             val client: Client,
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.NewClient",
-                idKey to id.obfuscateId(),
-                clientIdKey to client.id.value.obfuscateId(),
+                idKey to id,
+                clientIdKey to client.id.toLogString(),
                 "registrationTime" to client.registrationTime,
                 "model" to (client.model ?: ""),
                 "clientType" to client.type,
@@ -741,7 +741,7 @@ sealed class Event(open val id: String) {
             )
         }
 
-        data class LegalHoldRequest(
+        internal data class LegalHoldRequest(
             override val id: String,
             val clientId: ClientId,
             val lastPreKey: LastPreKey,
@@ -749,108 +749,108 @@ sealed class Event(open val id: String) {
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.LegalHold-request",
-                idKey to id.obfuscateId(),
-                "clientId" to clientId.value.obfuscateId(),
+                idKey to id,
+                "clientId" to clientId.toLogString(),
                 "userId" to userId.toLogString(),
             )
         }
 
-        data class LegalHoldEnabled(
+        internal data class LegalHoldEnabled(
             override val id: String,
             val userId: UserId
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.LegalHold-enabled",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "userId" to userId.toLogString()
             )
         }
 
-        data class LegalHoldDisabled(
+        internal data class LegalHoldDisabled(
             override val id: String,
             val userId: UserId
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.LegalHold-disabled",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "userId" to userId.toLogString()
             )
         }
     }
 
-    sealed class UserProperty(
+    internal sealed class UserProperty(
         id: String,
     ) : Event(id) {
 
-        data class ReadReceiptModeSet(
+        internal data class ReadReceiptModeSet(
             override val id: String,
             val value: Boolean,
         ) : UserProperty(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserProperty.ReadReceiptModeSet",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "value" to "$value"
             )
         }
 
-        data class TypingIndicatorModeSet(
+        internal data class TypingIndicatorModeSet(
             override val id: String,
             val value: Boolean,
         ) : UserProperty(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserProperty.TypingIndicatorModeSet",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "value" to "$value"
             )
         }
 
-        data class FoldersUpdate(
+        internal data class FoldersUpdate(
             override val id: String,
             val folders: List<FolderWithConversations>,
         ) : UserProperty(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserProperty.FoldersUpdate",
-                idKey to id.obfuscateId(),
-                "folders" to folders.map { it.id.obfuscateId() }
+                idKey to id,
+                "folders" to folders.map { it.id }
             )
         }
     }
 
-    data class Unknown(
+    internal data class Unknown(
         override val id: String,
         val unknownType: String?,
         val cause: String? = null
     ) : Event(id) {
         override fun toLogMap(): Map<String, Any?> = mapOf(
             typeKey to "User.UnknownEvent",
-            idKey to id.obfuscateId(),
+            idKey to id,
             "unknownType" to unknownType,
             "cause" to cause
         )
     }
 
-    sealed class Federation(
+    internal sealed class Federation(
         id: String,
     ) : Event(id) {
 
-        data class Delete(
+        internal data class Delete(
             override val id: String,
             val domain: String,
         ) : Federation(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.Delete",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "domain" to domain
             )
         }
 
-        data class ConnectionRemoved(
+        internal data class ConnectionRemoved(
             override val id: String,
             val domains: List<String>,
         ) : Federation(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.ConnectionRemoved",
-                idKey to id.obfuscateId(),
+                idKey to id,
                 "domains" to domains
             )
         }

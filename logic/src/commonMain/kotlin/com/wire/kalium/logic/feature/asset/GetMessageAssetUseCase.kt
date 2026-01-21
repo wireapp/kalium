@@ -30,9 +30,11 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFoundLabel
 import com.wire.kalium.util.KaliumDispatcher
@@ -44,7 +46,7 @@ import kotlinx.coroutines.async
 import okio.Path
 
 @Mockable
-interface GetMessageAssetUseCase {
+public interface GetMessageAssetUseCase {
     /**
      * Function that enables fetching a message asset locally or if it doesn't exist, downloading it from the server, decrypting it and
      * saving it locally. The function returns a [Deferred] result to the path where the decrypted asset was stored. The caller is
@@ -55,17 +57,19 @@ interface GetMessageAssetUseCase {
      * @return a [Deferred] [MessageAssetResult] with the [Path] and size of the decrypted asset in case of success or [CoreFailure] if any
      * failure occurred.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
     ): Deferred<MessageAssetResult>
 }
 
+@Suppress("LongParameterList")
 internal class GetMessageAssetUseCaseImpl(
     private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
+    private val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher
 ) : GetMessageAssetUseCase {
@@ -140,13 +144,19 @@ internal class GetMessageAssetUseCaseImpl(
                                     it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
                                     else -> MessageAssetResult.Failure(it, true)
                                 }
-                            }, { decodedAssetPath ->
+                            }, { (decodedAssetPath, justDownloaded) ->
                                 // TODO Kubaz rethink should we store images asset status when they are already downloaded
                                 updateAssetMessageTransferStatus(AssetTransferStatus.SAVED_INTERNALLY, conversationId, messageId)
+                                (content.value.metadata as? AssetContent.AssetMetadata.Audio)?.let {
+                                    if (justDownloaded && it.normalizedLoudness == null) {
+                                        // downloaded audio asset without normalized loudness, so schedule building it
+                                        audioNormalizedLoudnessScheduler.scheduleBuildingAudioNormalizedLoudness(conversationId, messageId)
+                                    }
+                                }
                                 MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
                             })
                         } else {
-                            MessageAssetResult.Success(decodedAsset!!, assetMetadata.assetSize, assetMetadata.assetName)
+                            MessageAssetResult.Success(decodedAsset, assetMetadata.assetSize, assetMetadata.assetName)
                         }
                     }
                 }
@@ -161,12 +171,12 @@ internal class GetMessageAssetUseCaseImpl(
         })
 }
 
-sealed class MessageAssetResult {
-    class Success(
-        val decodedAssetPath: Path,
-        val assetSize: Long,
-        val assetName: String
+public sealed class MessageAssetResult {
+    public class Success(
+        public val decodedAssetPath: Path,
+        public val assetSize: Long,
+        public val assetName: String
     ) : MessageAssetResult()
 
-    class Failure(val coreFailure: CoreFailure, val isRetryNeeded: Boolean) : MessageAssetResult()
+    public class Failure(public val coreFailure: CoreFailure, public val isRetryNeeded: Boolean) : MessageAssetResult()
 }

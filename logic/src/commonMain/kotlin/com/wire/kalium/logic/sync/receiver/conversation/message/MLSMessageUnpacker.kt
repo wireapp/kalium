@@ -42,9 +42,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
-import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
 
 @Mockable
@@ -114,7 +114,8 @@ internal class MLSMessageUnpackerImpl(
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
         logger.logStructuredJson(
-            KaliumLogLevel.DEBUG, "Received MLS proposal, scheduling delayed commit",
+            KaliumLogLevel.DEBUG,
+            "Received MLS proposal, scheduling delayed commit",
             mapOf(
                 "groupId" to groupId.toLogString(),
                 "commitDelay" to "$commitDelay"
@@ -133,24 +134,26 @@ internal class MLSMessageUnpackerImpl(
         messageEvent.subconversationId?.let { subConversationId ->
             subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation", mapOf(
+                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation",
+                        mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "subConversationId" to subConversationId.toLogString(),
                         "groupID" to groupID.toLogString()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, messageEvent.content.decodeBase64Bytes(), groupID)
+                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation", mapOf(
+                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation",
+                        mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "groupID" to protocolInfo.groupId.toLogString(),
                         "protocolInfo" to protocolInfo.toLogMap()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
+                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), protocolInfo.groupId)
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }

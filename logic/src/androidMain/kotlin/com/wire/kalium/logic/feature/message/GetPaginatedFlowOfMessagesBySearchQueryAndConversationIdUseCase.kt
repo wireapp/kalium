@@ -31,17 +31,21 @@ import kotlinx.coroutines.flow.flowOn
  * @see PagingData
  * @see Message
  */
-class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository
 ) {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         searchQuery: String,
         conversationId: ConversationId,
         startingOffset: Long,
         pagingConfig: PagingConfig
     ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesSearchBySearchQueryAndConversationId(
-        searchQuery, conversationId, pagingConfig, startingOffset
+        searchQuery,
+        conversationId,
+        pagingConfig,
+        startingOffset
     ).flowOn(dispatcher.io)
 }

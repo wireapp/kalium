@@ -29,12 +29,12 @@ import com.wire.kalium.logic.data.message.width
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.protobuf.messages.Attachment
 
-interface MessageAttachmentMapper {
+internal interface MessageAttachmentMapper {
     fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity?
     fun fromProtoToModel(attachment: Attachment): MessageAttachment?
 }
 
-class MessageAttachmentMapperImpl : MessageAttachmentMapper {
+internal class MessageAttachmentMapperImpl : MessageAttachmentMapper {
 
     override fun fromModelToDao(attachment: MessageAttachment): MessageAttachmentEntity? {
         return when (attachment) {
@@ -51,6 +51,7 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
                 assetHeight = attachment.metadata?.height(),
                 assetDuration = attachment.metadata?.durationMs(),
                 assetTransferStatus = attachment.transferStatus.name,
+                isEditSupported = false,
             )
 
             is AssetContent -> {
@@ -78,7 +79,7 @@ class MessageAttachmentMapperImpl : MessageAttachmentMapper {
     }
 }
 
-fun MessageAttachmentEntity.toModel() =
+internal fun MessageAttachmentEntity.toModel() =
     if (cellAsset) {
         CellAssetContent(
             id = assetId,
@@ -92,6 +93,8 @@ fun MessageAttachmentEntity.toModel() =
             transferStatus = AssetTransferStatus.valueOf(assetTransferStatus),
             contentHash = contentHash?.takeIf { it.isNotEmpty() },
             contentUrl = contentUrl?.takeIf { it.isNotEmpty() },
+            contentUrlExpiresAt = contentExpiresAt,
+            isEditSupported = isEditSupported,
         )
     } else {
         // TODO: implement support for regular assets WPB-16590
@@ -99,7 +102,7 @@ fun MessageAttachmentEntity.toModel() =
     }
 
 @Suppress("CyclomaticComplexMethod")
-fun MessageAttachmentEntity.metadata(): AssetContent.AssetMetadata? {
+internal fun MessageAttachmentEntity.metadata(): AssetContent.AssetMetadata? {
 
     val type = AttachmentType.fromMimeTypeString(mimeType)
 

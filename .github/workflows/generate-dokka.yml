@@ -7,27 +7,28 @@ on:
   workflow_dispatch:
 
 jobs:
-    publish:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout project
-              uses: actions/checkout@v5
-              with:
-                fetch-depth: 0
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-            - name: Setup Java and Gradle
-              uses: ./.github/actions/setup-java-gradle
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
 
-            - name: Generate Dokka docs
-              run: make doc/generate-kdocs
-              env:
-                GITHUB_USER: ${{ github.actor }}
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate Dokka docs
+        run: make doc/generate-kdocs
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Deploy docs 🚀
-              uses: JamesIves/github-pages-deploy-action@v4.7.3
-              with:
-                  branch: gh-pages
-                  clean: false
-                  folder: build/dokka/htmlMultiModule
-                  target-folder: docs
+      - name: Deploy kdocs 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/dokka/htmlMultiModule
+          publish_branch: gh-pages
+          destination_dir: docs/kdocs
+          keep_files: true

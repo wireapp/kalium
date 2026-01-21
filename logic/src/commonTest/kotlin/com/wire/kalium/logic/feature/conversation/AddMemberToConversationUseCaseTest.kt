@@ -115,7 +115,7 @@ class AddMemberToConversationUseCaseTest {
         suspend fun arrange(block: Arrangement.() -> Unit = { }): Pair<Arrangement, AddMemberToConversationUseCase> {
 
             coEvery {
-                resetMLSConversationUseCase(any())
+                resetMLSConversationUseCase(any()).toEither()
             } returns Unit.right()
 
             return apply(block).let { this to addMemberUseCase }
