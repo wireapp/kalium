@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.network
 
+import com.wire.kalium.network.CurrentNetwork
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,4 +27,7 @@ internal actual class NetworkStateObserverImpl : NetworkStateObserver {
 
     actual override fun observeNetworkState(): StateFlow<NetworkState> =
         MutableStateFlow(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
+
+    actual override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> =
+        MutableStateFlow(null) // TODO: for now we don't provide any current network info
 }

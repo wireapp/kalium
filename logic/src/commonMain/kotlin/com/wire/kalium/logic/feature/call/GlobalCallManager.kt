@@ -38,7 +38,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 
-internal expect class GlobalCallManager {
+internal expect class GlobalCallManager : CallNetworkChangeManager {
 
     @Suppress("LongParameterList")
     internal fun getCallManagerForClient(
@@ -63,4 +63,5 @@ internal expect class GlobalCallManager {
     internal suspend fun removeInMemoryCallingManagerForUser(userId: UserId)
     internal fun getFlowManager(): FlowManagerService
     internal fun getMediaManager(): MediaManagerService
+    override fun networkChanged()
 }

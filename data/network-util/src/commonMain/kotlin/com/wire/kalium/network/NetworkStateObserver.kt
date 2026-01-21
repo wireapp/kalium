@@ -29,6 +29,7 @@ import kotlin.time.Duration
 interface NetworkStateObserver {
 
     fun observeNetworkState(): StateFlow<NetworkState>
+    fun observeCurrentNetwork(): StateFlow<CurrentNetwork?>
 
     // Delay which will be completed earlier if there is a reconnection in the meantime.
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration) {
@@ -52,4 +53,8 @@ sealed class NetworkState {
     data object ConnectedWithInternet : NetworkState()
     data object ConnectedWithoutInternet : NetworkState()
     data object NotConnected : NetworkState()
+}
+
+data class CurrentNetwork(val id: String, val type: Type?, val hasInternetAccess: Boolean) {
+    enum class Type { WIFI, CELLULAR, OTHER }
 }

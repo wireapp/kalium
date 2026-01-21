@@ -79,7 +79,8 @@ public actual class CoreLogic(
     internal actual override val globalCallManager: GlobalCallManager by lazy {
         GlobalCallManager(
             appContext = PlatformContext(appContext),
-            scope = getGlobalScope()
+            scope = getGlobalScope(),
+            networkStateObserver = networkStateObserver
         )
     }
 

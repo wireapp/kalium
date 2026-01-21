@@ -26,6 +26,7 @@ import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.network.CurrentNetwork
 import com.wire.kalium.network.NetworkState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -47,6 +48,8 @@ import kotlin.test.assertEquals
 class NetworkStateObserverImplTest {
 
     private val dispatcher = TestKaliumDispatcher
+
+    // region network state tests
 
     @Test
     fun givenNoNetworkConnected_thenStateIsNotConnected() = runTest(dispatcher.default) {
@@ -276,6 +279,229 @@ class NetworkStateObserverImplTest {
             }
         }
 
+    // endregion network state tests
+
+    // region connected network tests
+
+    @Test
+    fun givenNoDefaultNetworkConnected_thenCurrentNetworkIsNull() = runTest(dispatcher.default) {
+        // given
+        val (_, networkStateObserverImpl) = Arrangement()
+            .arrange()
+        // then
+        assertEquals(null, networkStateObserverImpl.observeCurrentNetwork().value)
+    }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithoutInternetValidated_thenCurrentNetworkDoesNotHaveInternet() = runTest(dispatcher.default) {
+        // given
+        val (_, networkStateObserverImpl) = Arrangement()
+            .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = false)
+            .arrange()
+        // then
+        assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), networkStateObserverImpl.observeCurrentNetwork().value)
+    }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithInternetValidated_thenCurrentNetworkHasInternet() = runTest(dispatcher.default) {
+        // given
+        val (_, networkStateObserverImpl) = Arrangement()
+            .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+            .arrange()
+        // then
+        assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), networkStateObserverImpl.observeCurrentNetwork().value)
+    }
+
+    @Test
+    fun givenNoDefaultNetworkConnected_whenDefaultConnectsWithoutInternetValidated_thenCurrentNetworkChangesToNotHaveInternet() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(null, awaitItem())
+                arrangement.connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = false)
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenNoDefaultNetworkConnected_whenDefaultConnectsWithInternetValidated_thenCurrentNetworkChangesToHaveInternet() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(null, awaitItem())
+                arrangement.connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithInternetValidated_whenItLosesInternetValidation_thenCurrentNetworkChangesToNotHaveInternet() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.changeNetworkCapabilities(networkType = NetworkType.MOBILE, withInternetValidated = false)
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithInternetValidated_whenItDisconnects_thenCurrentNetworkChangesToNull() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.disconnectNetwork(networkType = NetworkType.MOBILE)
+                assertEquals(null, awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithInternetValidated_whenOtherDefaultConnectsWithInternetValidated_thenCurrentNetworkChanges() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.connectNetwork(networkType = NetworkType.WIFI, setAsDefault = true, withInternetValidated = true)
+                assertEquals(NetworkType.WIFI.toCurrentNetwork(true), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultAndOtherNetworksConnectedWithInternetValidated_whenDefaultDisconnectsAndDefaultIsChanged_thenCurrentNetworkChanges() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.disconnectNetwork(networkType = NetworkType.MOBILE)
+                assertEquals(NetworkType.WIFI.toCurrentNetwork(true), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultAndOtherNetworksConnectedWithInternetValidated_whenOtherDisconnects_thenCurrentNetworkDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.disconnectNetwork(networkType = NetworkType.WIFI)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultAndOtherNetworksConnectedWithInternetValidated_whenDefaultNetworkChanges_thenCurrentNetworkChanges() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .connectNetwork(networkType = NetworkType.WIFI, setAsDefault = false, withInternetValidated = true)
+                .changeDefaultNetwork(NetworkType.MOBILE)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.changeDefaultNetwork(NetworkType.WIFI)
+                assertEquals(NetworkType.WIFI.toCurrentNetwork(true), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithInternetValidated_whenItChangesToBlocked_thenCurrentNetworkChangesToNotHaveInternet() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+                arrangement.changeNetworkBlocked(NetworkType.MOBILE, true)
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithInternetValidatedButBlocked_whenItChangesToNotBlocked_thenCurrentNetworkChangesToHaveInternet() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = true)
+                .arrange()
+            // needs to be done after the observer is created to be handled by the callback as it's not a network state but just a network event
+            arrangement.changeNetworkBlocked(NetworkType.MOBILE, true)
+            advanceUntilIdle()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), awaitItem())
+                arrangement.changeNetworkBlocked(NetworkType.MOBILE, false)
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(true), awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithoutInternetValidated_whenItChangesToBlocked_thenCurrentNetworkDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = false)
+                .arrange()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), awaitItem())
+                arrangement.changeNetworkBlocked(NetworkType.MOBILE, true)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDefaultNetworkConnectedWithoutInternetValidatedButBlocked_whenItChangesToNotBlocked_thenCurrentNetworkDoesNotChange() =
+        runTest(dispatcher.default) {
+            // given
+            val (arrangement, networkStateObserverImpl) = Arrangement()
+                .connectNetwork(networkType = NetworkType.MOBILE, setAsDefault = true, withInternetValidated = false)
+                .arrange()
+            // needs to be done after the observer is created to be handled by the callback as it's not a network state but just a network event
+            arrangement.changeNetworkBlocked(NetworkType.MOBILE, true)
+            advanceUntilIdle()
+            // when-then
+            networkStateObserverImpl.observeCurrentNetwork().test {
+                assertEquals(NetworkType.MOBILE.toCurrentNetwork(false), awaitItem())
+                arrangement.changeNetworkBlocked(NetworkType.MOBILE, false)
+                expectNoEvents()
+            }
+        }
+
+    // endregion connected network tests
+
     /*
      * All the network logic and changes emulated by functions in this class are following Android network state documentation and examples
      * https://developer.android.com/training/basics/network-ops/reading-network-state
@@ -344,7 +570,7 @@ class NetworkStateObserverImplTest {
         }
 
         fun connectNetwork(networkType: NetworkType, setAsDefault: Boolean, withInternetValidated: Boolean) = apply {
-            val network = ShadowNetwork.newInstance(networkType.type)
+            val network = networkType.mock
             val networkInfo = ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED, networkType.type, 0, true, true)
             shadowOf(connectivityManager).apply {
                 addNetwork(network, networkInfo)
@@ -399,8 +625,16 @@ class NetworkStateObserverImplTest {
         internal fun arrange() = this to networkStateObserverImpl
     }
 
-    enum class NetworkType(val type: Int) {
-        WIFI(ConnectivityManager.TYPE_WIFI),
-        MOBILE(ConnectivityManager.TYPE_MOBILE)
+    enum class NetworkType(val type: Int, val mock: Network) {
+        WIFI(ConnectivityManager.TYPE_WIFI, ShadowNetwork.newInstance(ConnectivityManager.TYPE_WIFI)),
+        MOBILE(ConnectivityManager.TYPE_MOBILE, ShadowNetwork.newInstance(ConnectivityManager.TYPE_MOBILE)),
     }
+
+    fun NetworkType.toCurrentNetworkType() = when (this) {
+        NetworkType.WIFI -> CurrentNetwork.Type.WIFI
+        NetworkType.MOBILE -> CurrentNetwork.Type.CELLULAR
+    }
+
+    fun NetworkType.toCurrentNetwork(hasInternetAccess: Boolean) =
+        CurrentNetwork(this.mock.networkHandle.toString(), this.toCurrentNetworkType(), hasInternetAccess)
 }
