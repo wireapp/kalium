@@ -86,6 +86,7 @@ $dokka.location:com.wire.kalium.calling/Calling/wcall_create/#kotlin.String#kotl
 $dokka.location:com.wire.kalium.calling/Calling/wcall_end/#com.wire.kalium.calling.types.Uint32_t#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_end.html
 $dokka.location:com.wire.kalium.calling/Calling/wcall_init/#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_init.html
 $dokka.location:com.wire.kalium.calling/Calling/wcall_library_version/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_library_version.html
+$dokka.location:com.wire.kalium.calling/Calling/wcall_network_changed/#/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_network_changed.html
 $dokka.location:com.wire.kalium.calling/Calling/wcall_process_notifications/#com.wire.kalium.calling.types.Uint32_t#kotlin.Boolean/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_process_notifications.html
 $dokka.location:com.wire.kalium.calling/Calling/wcall_recv_msg/#com.wire.kalium.calling.types.Uint32_t#kotlin.ByteArray#kotlin.Int#com.wire.kalium.calling.types.Uint32_t#com.wire.kalium.calling.types.Uint32_t#kotlin.String#kotlin.String#kotlin.String#kotlin.Int/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_recv_msg.html
 $dokka.location:com.wire.kalium.calling/Calling/wcall_reject/#com.wire.kalium.calling.types.Uint32_t#kotlin.String/PointingToDeclaration/calling/com.wire.kalium.calling/[jvm]-calling/wcall_reject.html
