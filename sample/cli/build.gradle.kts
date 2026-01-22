@@ -43,6 +43,9 @@ kotlin {
     }
 
     sourceSets {
+        all {
+            languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
+        }
         val commonMain by sourceSets.getting {
             dependencies {
                 implementation(projects.data.network)
@@ -60,10 +63,10 @@ kotlin {
             }
         }
         val jvmMain by getting {
-             dependencies {
-                 implementation(libs.ktor.okHttp)
-                 implementation(libs.okhttp.loggingInterceptor)
-             }
+            dependencies {
+                implementation(libs.ktor.okHttp)
+                implementation(libs.okhttp.loggingInterceptor)
+            }
         }
         val macosMain by getting {
             dependencies {

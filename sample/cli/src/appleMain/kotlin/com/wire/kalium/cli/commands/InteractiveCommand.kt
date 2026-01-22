@@ -21,12 +21,14 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.requireObject
 import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.terminal.prompt
 import com.wire.kalium.cli.listConversations
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.conversation.GetConversationUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveConversationDetailsUseCase
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
@@ -91,7 +93,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                             viewState.inputInfo,
                             viewState.title,
                             viewState.messages,
-                            terminal.info.height
+                            terminal.size.height
                         )
                     )
                 )
@@ -105,6 +107,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         )
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override fun run() = runBlocking {
         signal(
             SIGWINCH,
@@ -141,8 +144,8 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
             GlobalScope.launch(Dispatchers.Default) {
                 combine(
                     userSession.messages.getRecentMessages(conversationId, limit = 100),
-                    userSession.conversations.getConversationDetails(conversationId)
-                        .mapNotNull { if (it is GetConversationUseCase.Result.Success) it.conversation.name else null },
+                    userSession.conversations.observeConversationDetails(conversationId)
+                        .mapNotNull { if (it is ObserveConversationDetailsUseCase.Result.Success) it.conversationDetails.conversation.name else null },
                     actionFlow(userSession)
                         .onEach {
                             when (it) {
@@ -150,20 +153,23 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                                     finished = true
                                     cancel()
                                 }
+
                                 is InputAction.SendText -> userSession.messages.sendTextMessage(
                                     conversationId,
                                     it.draft
                                 )
+
                                 is InputAction.RunCommand -> {
                                     when (it.command) {
                                         is Command.Jump -> {
                                             it.command.selection?.let {
-                                                currentConversationId = it.conversation.id
+                                                currentConversationId = it.conversationDetails.conversation.id
                                                 cancel()
                                             }
                                         }
                                     }
                                 }
+
                                 else -> Unit
                             }
                         }
@@ -184,6 +190,7 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     @Suppress("UnusedPrivateMember")
     private fun enableReadTimeout() = memScoped {
         val termios = alloc<termios>()

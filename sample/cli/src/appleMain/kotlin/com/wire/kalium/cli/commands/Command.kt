@@ -18,6 +18,8 @@
 package com.wire.kalium.cli.commands
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
+import com.wire.kalium.logic.data.conversation.ConversationFilter
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.feature.UserSessionScope
 import kotlinx.coroutines.flow.first
@@ -31,10 +33,10 @@ sealed class Command(
 
     class Jump(query: String, private val userSession: UserSessionScope) : Command(NAME, query) {
         private var index: Int = 0
-        private var conversations: List<ConversationDetails> = emptyList()
-        private var filteredConversations: List<ConversationDetails> = emptyList()
+        private var conversations: List<ConversationDetailsWithEvents> = emptyList()
+        private var filteredConversations: List<ConversationDetailsWithEvents> = emptyList()
 
-        val selection: ConversationDetails?
+        val selection: ConversationDetailsWithEvents?
             get() = if (filteredConversations.isEmpty()) null else filteredConversations[index]
 
         override var query: String
@@ -45,13 +47,16 @@ sealed class Command(
             }
 
         suspend fun prepare() {
-            conversations = userSession.conversations.observeConversationListDetails(includeArchived = true).first()
+            conversations = userSession.conversations.observeConversationListDetailsWithEvents(
+                fromArchive = true,
+                conversationFilter = ConversationFilter.All
+            ).first()
             updateFilter()
         }
 
         private fun updateFilter() {
             filteredConversations = conversations
-                .filter { it.conversation.name?.contains(query, ignoreCase = true) ?: false }
+                .filter { it.conversationDetails.conversation.name?.contains(query, ignoreCase = true) ?: false }
             index = 0
         }
 
@@ -65,7 +70,7 @@ sealed class Command(
 
         override fun resultDescription(): String =
             selection?.let {
-                val unreadCount = when (it) {
+                val unreadCount = when (it.conversationDetails) {
                     is ConversationDetails.Group -> it.unreadEventCount[UnreadEventType.MESSAGE]
                     is ConversationDetails.OneOne -> it.unreadEventCount[UnreadEventType.MESSAGE]
                     else -> null
@@ -76,11 +81,11 @@ sealed class Command(
 
         private fun indexDescription() = "$index/${filteredConversations.size}"
 
-        private fun nameDescription() = selection?.conversation?.name ?: "no name"
+        private fun nameDescription() = selection?.conversationDetails?.conversation?.name ?: "no name"
 
         private fun unreadCountDescription(): String {
             val unreadCount = selection?.let {
-                when (it) {
+                when (it.conversationDetails) {
                     is ConversationDetails.Group -> it.unreadEventCount[UnreadEventType.MESSAGE]
                     is ConversationDetails.OneOne -> it.unreadEventCount[UnreadEventType.MESSAGE]
                     else -> null
