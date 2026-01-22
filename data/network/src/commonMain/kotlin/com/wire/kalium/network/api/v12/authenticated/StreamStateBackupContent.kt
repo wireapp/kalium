@@ -21,10 +21,10 @@ package com.wire.kalium.network.api.v12.authenticated
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.close
 import io.ktor.utils.io.writeFully
 import okio.Buffer
 import okio.Source
+import okio.use
 
 /**
  * Streaming content handler for uploading cryptographic state backups.
@@ -47,7 +47,7 @@ internal class StreamStateBackupContent(
             }
         }
         channel.flush()
-        channel.close()
+        channel.flushAndClose()
     }
 
     private companion object {

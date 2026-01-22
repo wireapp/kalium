@@ -99,7 +99,7 @@ interface MessageSyncApi {
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "12") = NetworkResponse.Error(
-            APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
+            APINotSupported("MessageSyncApi: $apiName api is only available on API V$apiVersion")
         )
     }
 }
