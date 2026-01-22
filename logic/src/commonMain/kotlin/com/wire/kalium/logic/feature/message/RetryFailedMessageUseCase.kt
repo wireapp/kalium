@@ -19,12 +19,12 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
@@ -55,6 +55,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 // todo(interface). extract interface for use case
 @Suppress("LongParameterList")
@@ -84,13 +85,14 @@ public class RetryFailedMessageUseCase internal constructor(
      *
      * @param messageId the id of the failed message to be resent
      * @param conversationId the id of the conversation where the failed message wants to be resent
-     * @return [Either.Left] in case the message could not be found or has invalid status, [Either.Right] otherwise. Note that this doesn't
+     * @return [MessageOperationResult] with a [MessageOperationResult.Failure]
+     * in case the message could not be found or has invalid status, [MessageOperationResult.Success] otherwise. Note that this doesn't
      * imply that send will succeed, it just confirms that resending is the valid action for this message, and it has been started.
      */
     public suspend operator fun invoke(
         messageId: String,
         conversationId: ConversationId
-    ): Either<CoreFailure, Unit> =
+    ): MessageOperationResult =
         messageRepository.getMessageById(conversationId, messageId)
             .flatMap { message ->
                 when (message.status) {
@@ -122,8 +124,10 @@ public class RetryFailedMessageUseCase internal constructor(
 
                     else -> handleError("Message with status ${message.status} cannot be retried")
                 }
-            }
-            .map { /* returns Unit */ }
+            }.fold(
+                { MessageOperationResult.Failure(it) },
+                { MessageOperationResult.Success }
+            )
 
     private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =
         messageSender.sendMessage(message)

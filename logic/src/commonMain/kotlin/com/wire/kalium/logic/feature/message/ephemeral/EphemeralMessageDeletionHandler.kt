@@ -17,15 +17,18 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.feature.message.MessageOperationResult
+import com.wire.kalium.logic.feature.message.ephemeral.LoggingSelfDeletionEvent.SelfDeletionFailed
+import com.wire.kalium.logic.feature.message.ephemeral.LoggingSelfDeletionEvent.SuccessfullyDeleted
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -124,19 +127,19 @@ internal class EphemeralMessageDeletionHandlerImpl(
             )
 
             when (val result = deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)) {
-                is Either.Left -> {
+                is MessageOperationResult.Failure -> {
                     logger.log(
-                        LoggingSelfDeletionEvent.SelfDeletionFailed(
+                        SelfDeletionFailed(
                             message,
                             expirationData,
-                            result.value
+                            result.error
                         )
                     )
                 }
 
-                is Either.Right -> {
+                is MessageOperationResult.Success -> {
                     logger.log(
-                        LoggingSelfDeletionEvent.SuccessfullyDeleted(
+                        SuccessfullyDeleted(
                             message,
                             expirationData,
                         )
@@ -151,7 +154,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 )
             )
 
-            when (val result = deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)) {
+            when (val result = deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id).toEither()) {
                 is Either.Left -> {
                     logger.log(
                         LoggingSelfDeletionEvent.SelfDeletionFailed(

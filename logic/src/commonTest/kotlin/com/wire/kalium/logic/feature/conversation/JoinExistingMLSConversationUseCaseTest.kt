@@ -278,7 +278,7 @@ class JoinExistingMLSConversationUseCaseTest {
             withTransactionReturning(Either.Right(Unit))
 
             coEvery {
-                resetMlsConversation.invoke(any())
+                resetMlsConversation.invoke(any()).toEither()
             } returns Unit.right()
         }
 

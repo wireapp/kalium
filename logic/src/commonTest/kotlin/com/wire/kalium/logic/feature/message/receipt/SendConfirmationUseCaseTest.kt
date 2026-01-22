@@ -18,18 +18,18 @@
 
 package com.wire.kalium.logic.feature.message.receipt
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -58,7 +58,7 @@ class SendConfirmationUseCaseTest {
 
         val result = sendConfirmation(TestConversation.ID, after, until)
 
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasInvoked(exactly = once)
@@ -79,7 +79,7 @@ class SendConfirmationUseCaseTest {
 
         val result = sendConfirmation(TestConversation.ID, after, until)
 
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
         coVerify {
             arrangement.messageSender.sendMessage(any(), any())
         }.wasNotInvoked()

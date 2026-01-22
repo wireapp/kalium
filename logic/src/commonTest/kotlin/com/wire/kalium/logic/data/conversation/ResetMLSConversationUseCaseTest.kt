@@ -49,7 +49,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagEnabled()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -65,7 +65,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagDisabled()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -81,7 +81,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagEnabled()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -97,7 +97,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureDisabled()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -144,7 +144,11 @@ class ResetMLSConversationUseCaseTest {
         useCase(TEST_CONVERSATION_ID)
 
         coVerify {
-            arrangement.fetchConversationUseCase(conversationId = any(), transactionContext =  any(), reason =  eq(ConversationSyncReason.ConversationReset))
+            arrangement.fetchConversationUseCase(
+                conversationId = any(),
+                transactionContext = any(),
+                reason = eq(ConversationSyncReason.ConversationReset)
+            )
         }.wasInvoked(exactly = 1)
     }
 
@@ -169,7 +173,7 @@ class ResetMLSConversationUseCaseTest {
             .withConversation(TestConversation.MLS_CONVERSATION)
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -185,7 +189,7 @@ class ResetMLSConversationUseCaseTest {
             .withConversation(TestConversation.MIXED_CONVERSATION)
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -201,7 +205,7 @@ class ResetMLSConversationUseCaseTest {
             .withLeaveGroupFailing()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -220,7 +224,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -240,7 +244,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagDisabled()
             .arrange()
 
-        val result = useCase(TEST_CONVERSATION_ID.copy(domain = "domainFederated"))
+        val result = useCase(TEST_CONVERSATION_ID.copy(domain = "domainFederated")).toEither()
 
         assertTrue(result.isRight())
 
@@ -324,7 +328,7 @@ class ResetMLSConversationUseCaseTest {
             } returns MLSAdditionResult(emptySet(), emptySet()).right()
 
             coEvery {
-                fetchConversationUseCase(any(), any(), reason =  eq(ConversationSyncReason.ConversationReset))
+                fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))
             } returns Unit.right()
 
             coEvery {

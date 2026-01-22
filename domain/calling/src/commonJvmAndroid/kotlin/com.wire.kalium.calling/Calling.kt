@@ -199,6 +199,9 @@ interface Calling : Library {
         isInBackground: Boolean,
     )
 
+    @Suppress("FunctionNaming")
+    fun wcall_network_changed()
+
     fun kcall_init(env: Int)
     fun kcall_close()
 

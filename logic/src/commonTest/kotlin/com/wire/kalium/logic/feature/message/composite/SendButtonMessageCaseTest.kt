@@ -66,7 +66,7 @@ class SendButtonMessageCaseTest {
         val result = sendTextMessage.invoke(TestConversation.ID, "some-text", listOf(), null, buttons)
 
         // Then
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
 
         coVerify {
             arrangement.userPropertyRepository.getReadReceiptsStatus()

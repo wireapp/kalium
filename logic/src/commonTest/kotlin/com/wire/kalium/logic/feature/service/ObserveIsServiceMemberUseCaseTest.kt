@@ -17,12 +17,11 @@
  */
 package com.wire.kalium.logic.feature.service
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.mock
@@ -31,6 +30,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ObserveIsServiceMemberUseCaseTest {
 
@@ -45,12 +45,13 @@ class ObserveIsServiceMemberUseCaseTest {
             .arrange()
 
         // when
-        observeServiceDetails.invoke(
+        val result = observeServiceDetails.invoke(
             serviceId = Arrangement.serviceId,
             conversationId = Arrangement.conversationId
-        ).first().shouldSucceed { result ->
-            assertEquals(Arrangement.userId, result)
-        }
+        ).first()
+
+        assertIs<ObserveIsServiceMemberResult.Success>(result)
+        assertEquals(Arrangement.userId, result.userId)
     }
 
     private class Arrangement {

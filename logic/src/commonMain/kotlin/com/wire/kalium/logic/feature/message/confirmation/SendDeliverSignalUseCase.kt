@@ -17,11 +17,12 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.MessageId
@@ -29,21 +30,18 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.logStructuredJson
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * Use case for sending a delivery confirmation signal for a list of messages in a conversation.
  */
 @Mockable
 internal interface SendDeliverSignalUseCase {
-    suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): MessageOperationResult
 }
 
 internal class SendDeliverSignalUseCaseImpl(
@@ -55,7 +53,7 @@ internal class SendDeliverSignalUseCaseImpl(
     override suspend fun invoke(
         conversation: Conversation,
         messages: List<MessageId>
-    ): Either<CoreFailure, Unit> = currentClientIdProvider()
+    ): MessageOperationResult = currentClientIdProvider()
         .flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = Uuid.random().toString(),
@@ -69,28 +67,31 @@ internal class SendDeliverSignalUseCaseImpl(
                 expirationData = null
             )
             messageSender.sendMessage(message)
-                .onFailure { error ->
-                    kaliumLogger.logStructuredJson(
-                        level = KaliumLogLevel.ERROR,
-                        leadingMessage = "Error while sending delivery confirmation for ${conversation.id.toLogString()}",
-                        jsonStringKeyValues = mapOf(
-                            "conversationId" to conversation.id.toLogString(),
-                            "messages" to messages.joinToString { it.obfuscateId() },
-                            "error" to error.toString()
-                        )
+        }.fold(
+            { error ->
+                kaliumLogger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "Error while sending delivery confirmation for ${conversation.id.toLogString()}",
+                    jsonStringKeyValues = mapOf(
+                        "conversationId" to conversation.id.toLogString(),
+                        "messages" to messages.joinToString { it.obfuscateId() },
+                        "error" to error.toString()
                     )
-                }
-                .onSuccess {
-                    kaliumLogger.logStructuredJson(
-                        level = KaliumLogLevel.DEBUG,
-                        leadingMessage = "Delivery confirmation sent for ${conversation.id.toLogString()}" +
-                                " and message count: ${messages.size}",
-                        jsonStringKeyValues = mapOf(
-                            "conversationId" to conversation.id.toLogString(),
-                            "messages" to messages.joinToString { it.obfuscateId() },
-                            "messageCount" to messages.size
-                        )
+                )
+                MessageOperationResult.Failure(error)
+            },
+            {
+                kaliumLogger.logStructuredJson(
+                    level = KaliumLogLevel.DEBUG,
+                    leadingMessage = "Delivery confirmation sent for ${conversation.id.toLogString()}" +
+                            " and message count: ${messages.size}",
+                    jsonStringKeyValues = mapOf(
+                        "conversationId" to conversation.id.toLogString(),
+                        "messages" to messages.joinToString { it.obfuscateId() },
+                        "messageCount" to messages.size
                     )
-                }
-        }
+                )
+                MessageOperationResult.Success
+            }
+        )
 }

@@ -17,12 +17,13 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -80,7 +81,11 @@ class EphemeralMessageDeletionHandlerTest {
 
         // then
         coVerify {
-            arrangement.messageRepository.markSelfDeletionEndDate(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
+            arrangement.messageRepository.markSelfDeletionEndDate(
+                eq(oneSecondEphemeralMessage.conversationId),
+                eq(oneSecondEphemeralMessage.id),
+                any()
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -118,7 +123,11 @@ class EphemeralMessageDeletionHandlerTest {
 
         // invoke first time
         coVerify {
-            arrangement.messageRepository.markSelfDeletionEndDate(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
+            arrangement.messageRepository.markSelfDeletionEndDate(
+                eq(oneSecondEphemeralMessage.conversationId),
+                eq(oneSecondEphemeralMessage.id),
+                any()
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -138,7 +147,11 @@ class EphemeralMessageDeletionHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.messageRepository.markSelfDeletionEndDate(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
+            arrangement.messageRepository.markSelfDeletionEndDate(
+                eq(oneSecondEphemeralMessage.conversationId),
+                eq(oneSecondEphemeralMessage.id),
+                any()
+            )
         }.wasNotInvoked()
     }
 
@@ -175,7 +188,10 @@ class EphemeralMessageDeletionHandlerTest {
 
             // then
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
+                    eq(oneSecondEphemeralMessage.conversationId),
+                    eq(oneSecondEphemeralMessage.id)
+                )
             }.wasInvoked(exactly = once)
         }
 
@@ -213,7 +229,10 @@ class EphemeralMessageDeletionHandlerTest {
 
             // then
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(oneSecondEphemeralMessage.conversationId),
+                    eq(oneSecondEphemeralMessage.id)
+                )
             }.wasInvoked(exactly = once)
         }
 
@@ -285,7 +304,10 @@ class EphemeralMessageDeletionHandlerTest {
 
             // then
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(oneSecondEphemeralMessage.conversationId),
+                    eq(oneSecondEphemeralMessage.id)
+                )
             }.wasNotInvoked()
         }
 
@@ -331,7 +353,10 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
             // then
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
+                    eq(oneSecondEphemeralMessage.conversationId),
+                    oneOf("1", "2", "3", "4")
+                )
             }.wasInvoked(4)
         }
 
@@ -378,7 +403,10 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(timeUntilExpiration + 1.milliseconds)
             // then
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(oneSecondEphemeralMessage.conversationId),
+                    oneOf("1", "2", "3", "4")
+                )
             }.wasInvoked(exactly = 4)
         }
 
@@ -448,25 +476,37 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(oneSecondEphemeralMessage.id)
+                )
             }.wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(twoSecondEphemeralMessage.id)
+                )
             }.wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), (eq(threeSecondsEphemeralMessage.id)))
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    (eq(threeSecondsEphemeralMessage.id))
+                )
             }.wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(fourSecondsEphemeralMessage.id)
+                )
             }.wasInvoked(once)
         }
 
@@ -540,25 +580,37 @@ class EphemeralMessageDeletionHandlerTest {
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(oneSecondEphemeralMessage.id)
+                )
             }.wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(twoSecondEphemeralMessage.id)
+                )
             }.wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(threeSecondsEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(threeSecondsEphemeralMessage.id)
+                )
             }.wasInvoked(once)
 
             advanceTimeBy(1.seconds + 1.milliseconds)
 
             coVerify {
-                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))
+                arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(
+                    eq(TestMessage.TEXT_MESSAGE.conversationId),
+                    eq(fourSecondsEphemeralMessage.id)
+                )
             }.wasInvoked(once)
         }
 
@@ -695,7 +747,11 @@ class EphemeralMessageDeletionHandlerTest {
 
         // then
         coVerify {
-            arrangement.messageRepository.markSelfDeletionEndDate(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
+            arrangement.messageRepository.markSelfDeletionEndDate(
+                eq(oneSecondEphemeralMessage.conversationId),
+                eq(oneSecondEphemeralMessage.id),
+                any()
+            )
         }.wasNotInvoked()
 
         coVerify {
@@ -738,10 +794,10 @@ class EphemeralMessageDeletionHandlerTest {
         suspend fun withDeletingMessage(): Arrangement {
             coEvery {
                 deleteEphemeralMessageForSelfUserAsReceiver.invoke(any(), any())
-            }.returns(Either.Right(Unit))
+            }.returns(MessageOperationResult.Success)
             coEvery {
                 deleteEphemeralMessageForSelfUserAsSender.invoke(any(), any())
-            }.returns(Either.Right(Unit))
+            }.returns(MessageOperationResult.Success)
 
             return this
         }
