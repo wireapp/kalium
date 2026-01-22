@@ -133,6 +133,7 @@ private fun regularContent(message: Message.Regular) =
         is MessageContent.Multipart -> systemMessage(message.senderUserName, "Shared a multipart message")
     }
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 private fun systemContent(message: Message.System) =
     when (val content = message.content) {
         is MessageContent.ConversationRenamed ->

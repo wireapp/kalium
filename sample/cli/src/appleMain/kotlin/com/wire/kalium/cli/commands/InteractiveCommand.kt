@@ -145,7 +145,10 @@ class InteractiveCommand : CliktCommand(name = "interactive") {
                 combine(
                     userSession.messages.getRecentMessages(conversationId, limit = 100),
                     userSession.conversations.observeConversationDetails(conversationId)
-                        .mapNotNull { if (it is ObserveConversationDetailsUseCase.Result.Success) it.conversationDetails.conversation.name else null },
+                        .mapNotNull {
+                            if (it is ObserveConversationDetailsUseCase.Result.Success) it.conversationDetails.conversation.name
+                            else null
+                        },
                     actionFlow(userSession)
                         .onEach {
                             when (it) {
