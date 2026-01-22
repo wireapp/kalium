@@ -1,0 +1,9 @@
+CREATE TABLE RemotebackupChangeLog (
+    conversation_id TEXT NOT NULL,
+    message_nonce TEXT NOT NULL,
+    event_type INTEGER NOT NULL,
+    timestamp_ms INTEGER NOT NULL,
+    PRIMARY KEY (conversation_id, message_nonce, event_type)
+);
+
+CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timestamp_ms);
