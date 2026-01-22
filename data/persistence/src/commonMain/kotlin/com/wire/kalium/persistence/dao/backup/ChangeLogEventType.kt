@@ -25,17 +25,18 @@ package com.wire.kalium.persistence.dao.backup
  * - 10-99: Sub-entity events at message level (reactions, etc.)
  * - 100+: Conversation-level events (message_nonce = "")
  */
+@Suppress("MagicNumber")
 enum class ChangeLogEventType(val code: Int) {
     // Message-level (require message_nonce)
-    MESSAGE_UPSERT(1),      // Message created or edited
-    MESSAGE_DELETE(2),      // Message deleted
+    MESSAGE_UPSERT(1), // Message created or edited
+    MESSAGE_DELETE(2), // Message deleted
 
     // Sub-entity events at message level
-    REACTIONS_SYNC(10),     // Any reaction changed - sync all reactions for this message
+    REACTIONS_SYNC(10), // Any reaction changed - sync all reactions for this message
 
     // Conversation-level (message_nonce = "")
-    CONVERSATION_DELETE(100),  // Conversation deleted
-    CONVERSATION_CLEAR(101);   // Conversation history cleared
+    CONVERSATION_DELETE(100), // Conversation deleted
+    CONVERSATION_CLEAR(101); // Conversation history cleared
 
     companion object {
         fun fromCode(code: Int): ChangeLogEventType? = entries.find { it.code == code }
