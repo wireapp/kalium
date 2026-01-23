@@ -173,5 +173,5 @@ internal class AuthenticatedNetworkContainerV12 internal constructor(
     override val cellsHttpClient: HttpClient = networkClient.httpClient
 
     override val remoteBackupApi: RemoteBackupApi
-        get() = RemoteBackupApiV12(networkClient.httpClient, null)
+        get() = RemoteBackupApiV12(networkClient.httpClient)
 }
