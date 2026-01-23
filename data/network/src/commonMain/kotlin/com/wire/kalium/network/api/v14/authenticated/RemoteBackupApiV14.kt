@@ -23,5 +23,4 @@ import io.ktor.client.HttpClient
 
 internal open class RemoteBackupApiV14 internal constructor(
     httpClient: HttpClient,
-    backupServiceUrl: String?
-) : RemoteBackupApiV13(httpClient, backupServiceUrl)
+) : RemoteBackupApiV13(httpClient)
