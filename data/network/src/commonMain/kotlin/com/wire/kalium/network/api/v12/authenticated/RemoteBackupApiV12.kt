@@ -47,12 +47,11 @@ import okio.use
 
 internal open class RemoteBackupApiV12(
     private val httpClient: HttpClient,
-    private val backupServiceUrl: String?
 ) : RemoteBackupApiV0() {
 
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
         wrapRequest {
-            httpClient.post("$backupServiceUrl/messages") {
+            httpClient.post("backup/messages") {
                 setBody(request)
             }
         }
@@ -65,7 +64,7 @@ internal open class RemoteBackupApiV12(
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
         wrapRequest {
-            httpClient.get("$backupServiceUrl/messages") {
+            httpClient.get("backup/messages") {
                 parameter("user", user)
                 since?.let { parameter("since", it) }
                 conversation?.let { parameter("conversation", it) }
@@ -80,7 +79,7 @@ internal open class RemoteBackupApiV12(
         before: Long?
     ): NetworkResponse<DeleteMessagesResponseDTO> =
         wrapRequest {
-            httpClient.delete("$backupServiceUrl/messages") {
+            httpClient.delete("backup/messages") {
                 userId?.let { parameter("user_id", it) }
                 conversationId?.let { parameter("conversation_id", it) }
                 before?.let { parameter("before", it) }
@@ -93,7 +92,7 @@ internal open class RemoteBackupApiV12(
         backupSize: Long
     ): NetworkResponse<Unit> =
         wrapRequest {
-            httpClient.post("$backupServiceUrl/state") {
+            httpClient.post("backup/state") {
                 parameter("user_id", userId)
                 contentType(ContentType.Application.OctetStream)
                 setBody(
@@ -109,7 +108,7 @@ internal open class RemoteBackupApiV12(
         userId: String,
         tempFileSink: Sink
     ): NetworkResponse<Unit> = wrapStreamingRequest { handleError ->
-        httpClient.prepareGet("$backupServiceUrl/state") {
+        httpClient.prepareGet("backup/state") {
             parameter("user_id", userId)
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
