@@ -18,11 +18,9 @@
 
 package com.wire.kalium.network.api.v12.authenticated
 
-import com.wire.kalium.network.api.model.ConversationsLastReadResponseDTO
 import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
-import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.api.v11.authenticated.MessageSyncApiV11
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -49,12 +47,11 @@ import okio.use
 
 internal open class MessageSyncApiV12(
     private val httpClient: HttpClient,
-    private val backupServiceUrl: String?
 ) : MessageSyncApiV11() {
 
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
         wrapRequest {
-            httpClient.post("$backupServiceUrl/messages") {
+            httpClient.post("backup/messages") {
                 setBody(request)
             }
         }
@@ -67,7 +64,7 @@ internal open class MessageSyncApiV12(
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
         wrapRequest {
-            httpClient.get("$backupServiceUrl/messages") {
+            httpClient.get("backup/messages") {
                 parameter("user", user)
                 since?.let { parameter("since", it) }
                 conversation?.let { parameter("conversation", it) }
@@ -82,7 +79,7 @@ internal open class MessageSyncApiV12(
         before: Long?
     ): NetworkResponse<DeleteMessagesResponseDTO> =
         wrapRequest {
-            httpClient.delete("$backupServiceUrl/messages") {
+            httpClient.delete("backup/messages") {
                 userId?.let { parameter("user_id", it) }
                 conversationId?.let { parameter("conversation_id", it) }
                 before?.let { parameter("before", it) }
@@ -95,7 +92,7 @@ internal open class MessageSyncApiV12(
         backupSize: Long
     ): NetworkResponse<Unit> =
         wrapRequest {
-            httpClient.post("$backupServiceUrl/state") {
+            httpClient.post("backup/state") {
                 parameter("user_id", userId)
                 contentType(ContentType.Application.OctetStream)
                 setBody(
@@ -111,7 +108,7 @@ internal open class MessageSyncApiV12(
         userId: String,
         tempFileSink: Sink
     ): NetworkResponse<Unit> = runCatching {
-        httpClient.prepareGet("$backupServiceUrl/state") {
+        httpClient.prepareGet("backup/state") {
             parameter("user_id", userId)
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {

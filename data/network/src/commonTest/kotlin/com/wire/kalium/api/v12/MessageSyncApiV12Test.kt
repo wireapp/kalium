@@ -56,7 +56,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -79,7 +79,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then - should not throw exception, accept empty response
@@ -102,7 +102,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -130,36 +130,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
-        val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
-
-        // Then
-        assertTrue(response.isSuccessful())
-    }
-
-    @Test
-    fun givenCustomBackupServiceUrl_whenUploadingStateBackup_thenRequestShouldUseCustomUrl() = runTest {
-        // Given
-        val fileSystem = FakeFileSystem()
-        val customBackupUrl = "https://custom-backup-service.com"
-        val userId = "test-user"
-        val backupData = "backup-data".encodeToByteArray()
-        val backupDataSource = { getDummyDataSource(fileSystem, backupData) }
-        val backupSize = backupData.size.toLong()
-
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = ByteArray(0),
-            statusCode = HttpStatusCode.Created,
-            assertion = {
-                assertPost()
-                assertQueryParameter("user_id", userId)
-                // Note: In actual implementation, this would verify the custom URL is used
-                // but for this test we're just ensuring the request is successful
-            }
-        )
-
-        // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, customBackupUrl)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.uploadStateBackup(userId, backupDataSource, backupSize)
 
         // Then
@@ -209,7 +180,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.fetchMessages(userId, since, conversationId, paginationToken, size)
 
         // Then
@@ -238,7 +209,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.fetchMessages(userId, null, null, null, 100)
 
         // Then
@@ -293,7 +264,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.fetchMessages(userId, null, null, null, 100)
 
         // Then
@@ -317,7 +288,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.fetchMessages(userId, null, null, null, 100)
 
         // Then
@@ -343,7 +314,7 @@ internal class MessageSyncApiV12Test : ApiTest() {
         )
 
         // When
-        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient, backupServiceUrl = null)
+        val messageSyncApi: MessageSyncApi = MessageSyncApiV12(networkClient.httpClient)
         val response = messageSyncApi.fetchMessages(userId, null, null, null, size)
 
         // Then

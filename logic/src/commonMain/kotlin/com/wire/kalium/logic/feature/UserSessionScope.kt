@@ -686,7 +686,6 @@ class UserSessionScope internal constructor(
         mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
         mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
         kaliumLogger = userScopedLogger,
-        remoteBackupURL = kaliumConfigs.remoteBackupURL
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version

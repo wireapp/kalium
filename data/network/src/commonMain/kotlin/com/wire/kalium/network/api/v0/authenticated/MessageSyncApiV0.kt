@@ -19,11 +19,9 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
-import com.wire.kalium.network.api.model.ConversationsLastReadResponseDTO
 import com.wire.kalium.network.api.model.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.model.MessageSyncRequestDTO
-import com.wire.kalium.network.api.model.StateBackupUploadResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import okio.Sink
 import okio.Source
