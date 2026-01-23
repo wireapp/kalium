@@ -59,11 +59,11 @@ data class KaliumConfigs(
     val dbInvalidationControlEnabled: Boolean = false,
     private val messageSynchronizationEnabledFlag: Boolean = false,
     private val cryptoStateBackupEnabledFlag: Boolean = false,
-    val remoteBackupURL: String? = null,
+    val remoteBackupEnabled: Boolean = false,
     val cryptoStateBackupInterval: Duration = 5.minutes
 ) {
-    val messageSynchronizationEnabled = messageSynchronizationEnabledFlag && remoteBackupURL != null
-    val cryptoStateBackupEnabled = cryptoStateBackupEnabledFlag && remoteBackupURL != null
+    val messageSynchronizationEnabled = messageSynchronizationEnabledFlag && remoteBackupEnabled
+    val cryptoStateBackupEnabled = cryptoStateBackupEnabledFlag && remoteBackupEnabled
 }
 
 sealed interface BuildFileRestrictionState {

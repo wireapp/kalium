@@ -140,8 +140,7 @@ interface AuthenticatedNetworkContainer {
             certificatePinning: CertificatePinning,
             mockEngine: HttpClientEngine?,
             mockWebSocketSession: WebSocketSession?,
-            kaliumLogger: KaliumLogger,
-            remoteBackupURL: String?,
+            kaliumLogger: KaliumLogger
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -261,8 +260,7 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger,
-                    remoteBackupURL
+                    kaliumLogger
                 )
 
                 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to

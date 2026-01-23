@@ -88,7 +88,6 @@ internal class AuthenticatedNetworkContainerV12 internal constructor(
     mockEngine: HttpClientEngine?,
     mockWebSocketSession: WebSocketSession?,
     kaliumLogger: KaliumLogger,
-    private val remoteBackupURL: String?,
     engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
@@ -171,7 +170,7 @@ internal class AuthenticatedNetworkContainerV12 internal constructor(
         get() = ServerTimeApiV12(networkClient)
 
     override val messageSyncApi: com.wire.kalium.network.api.base.authenticated.backup.MessageSyncApi
-        get() = MessageSyncApiV12(networkClient.httpClient, remoteBackupURL)
+        get() = MessageSyncApiV12(networkClient)
 
     override val cellsHttpClient: HttpClient = networkClient.httpClient
 }

@@ -517,7 +517,7 @@ class SlowSyncWorkerTest {
         val restoreRemoteBackup = mock(RestoreRemoteBackupUseCase::class)
         val kaliumConfigs = KaliumConfigs(
             messageSynchronizationEnabledFlag = false,
-            remoteBackupURL = "https://example.com"
+            remoteBackupEnabled = "https://example.com"
         )
 
         init {
