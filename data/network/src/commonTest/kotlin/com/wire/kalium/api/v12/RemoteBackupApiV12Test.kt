@@ -72,11 +72,11 @@ internal class RemoteBackupApiV12Test {
             capturedPath = requestData.url.encodedPath
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.syncMessages(request)
 
         assertEquals(HttpMethod.Post, capturedMethod)
-        assertEquals("/messages", capturedPath)
+        assertEquals("/backup/messages", capturedPath)
     }
 
     @Test
@@ -94,7 +94,7 @@ internal class RemoteBackupApiV12Test {
             }
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.syncMessages(request)
 
         val expectedJson = KtxSerializer.json.encodeToString(request)
@@ -110,7 +110,7 @@ internal class RemoteBackupApiV12Test {
             statusCode = HttpStatusCode.OK
         )
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val result = api.syncMessages(request)
 
         assertTrue(result.isSuccessful())
@@ -133,11 +133,11 @@ internal class RemoteBackupApiV12Test {
             capturedPath = requestData.url.encodedPath
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.fetchMessages(user = TEST_USER_ID, size = 100)
 
         assertEquals(HttpMethod.Get, capturedMethod)
-        assertEquals("/messages", capturedPath)
+        assertEquals("/backup/messages", capturedPath)
     }
 
     @Test
@@ -153,7 +153,7 @@ internal class RemoteBackupApiV12Test {
             capturedSizeParam = requestData.url.parameters["size"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.fetchMessages(user = TEST_USER_ID, size = 50)
 
         assertEquals(TEST_USER_ID, capturedUserParam)
@@ -175,7 +175,7 @@ internal class RemoteBackupApiV12Test {
             capturedPaginationTokenParam = requestData.url.parameters["pagination_token"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.fetchMessages(
             user = TEST_USER_ID,
             since = 1234567890L,
@@ -204,7 +204,7 @@ internal class RemoteBackupApiV12Test {
             capturedPaginationTokenParam = requestData.url.parameters["pagination_token"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.fetchMessages(user = TEST_USER_ID, size = 100)
 
         assertNull(capturedSinceParam)
@@ -219,7 +219,7 @@ internal class RemoteBackupApiV12Test {
             statusCode = HttpStatusCode.OK
         )
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val result = api.fetchMessages(user = TEST_USER_ID, size = 100)
 
         assertTrue(result.isSuccessful())
@@ -250,11 +250,11 @@ internal class RemoteBackupApiV12Test {
             capturedPath = requestData.url.encodedPath
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.deleteMessages(userId = TEST_USER_ID)
 
         assertEquals(HttpMethod.Delete, capturedMethod)
-        assertEquals("/messages", capturedPath)
+        assertEquals("/backup/messages", capturedPath)
     }
 
     @Test
@@ -272,7 +272,7 @@ internal class RemoteBackupApiV12Test {
             capturedBeforeParam = requestData.url.parameters["before"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.deleteMessages(
             userId = TEST_USER_ID,
             conversationId = TEST_CONVERSATION_ID,
@@ -299,7 +299,7 @@ internal class RemoteBackupApiV12Test {
             capturedBeforeParam = requestData.url.parameters["before"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         api.deleteMessages()
 
         assertNull(capturedUserIdParam)
@@ -314,7 +314,7 @@ internal class RemoteBackupApiV12Test {
             statusCode = HttpStatusCode.OK
         )
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val result = api.deleteMessages(userId = TEST_USER_ID)
 
         assertTrue(result.isSuccessful())
@@ -338,7 +338,7 @@ internal class RemoteBackupApiV12Test {
             capturedPath = requestData.url.encodedPath
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val backupData = "test backup data".encodeToByteArray()
         api.uploadStateBackup(
             userId = TEST_USER_ID,
@@ -347,7 +347,7 @@ internal class RemoteBackupApiV12Test {
         )
 
         assertEquals(HttpMethod.Post, capturedMethod)
-        assertEquals("/state", capturedPath)
+        assertEquals("/backup/state", capturedPath)
     }
 
     @Test
@@ -361,7 +361,7 @@ internal class RemoteBackupApiV12Test {
             capturedUserIdParam = requestData.url.parameters["user_id"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val backupData = "test backup data".encodeToByteArray()
         api.uploadStateBackup(
             userId = TEST_USER_ID,
@@ -383,7 +383,7 @@ internal class RemoteBackupApiV12Test {
             capturedContentType = requestData.body.contentType
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val backupData = "test backup data".encodeToByteArray()
         api.uploadStateBackup(
             userId = TEST_USER_ID,
@@ -401,7 +401,7 @@ internal class RemoteBackupApiV12Test {
             statusCode = HttpStatusCode.OK
         )
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val backupData = "test backup data".encodeToByteArray()
         val result = api.uploadStateBackup(
             userId = TEST_USER_ID,
@@ -429,12 +429,12 @@ internal class RemoteBackupApiV12Test {
             capturedPath = requestData.url.encodedPath
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val sink = Buffer()
         api.downloadStateBackup(userId = TEST_USER_ID, tempFileSink = sink)
 
         assertEquals(HttpMethod.Get, capturedMethod)
-        assertEquals("/state", capturedPath)
+        assertEquals("/backup/state", capturedPath)
     }
 
     @Test
@@ -448,7 +448,7 @@ internal class RemoteBackupApiV12Test {
             capturedUserIdParam = requestData.url.parameters["user_id"]
         }
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val sink = Buffer()
         api.downloadStateBackup(userId = TEST_USER_ID, tempFileSink = sink)
 
@@ -463,7 +463,7 @@ internal class RemoteBackupApiV12Test {
             statusCode = HttpStatusCode.OK
         )
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val sink = Buffer()
         val result = api.downloadStateBackup(userId = TEST_USER_ID, tempFileSink = sink)
 
@@ -478,7 +478,7 @@ internal class RemoteBackupApiV12Test {
             statusCode = HttpStatusCode.NotFound
         )
 
-        val api = RemoteBackupApiV12(httpClient, BACKUP_SERVICE_URL)
+        val api = RemoteBackupApiV12(httpClient)
         val sink = Buffer()
         val result = api.downloadStateBackup(userId = TEST_USER_ID, tempFileSink = sink)
 
@@ -538,7 +538,6 @@ internal class RemoteBackupApiV12Test {
     // endregion
 
     private companion object {
-        const val BACKUP_SERVICE_URL = "https://backup.wire.com"
         const val TEST_USER_ID = "user-123-abc"
         const val TEST_CONVERSATION_ID = "conv-456-def"
 
