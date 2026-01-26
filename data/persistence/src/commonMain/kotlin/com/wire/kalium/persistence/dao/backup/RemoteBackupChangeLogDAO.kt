@@ -19,7 +19,6 @@
 package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 /**
