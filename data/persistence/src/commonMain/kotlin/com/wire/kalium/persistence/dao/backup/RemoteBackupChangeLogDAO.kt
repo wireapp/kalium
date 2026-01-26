@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.Flow
  * This changelog tracks WHAT changed, not the data itself.
  * Actual data is fetched from existing DB tables when syncing.
  */
-@Mockable
 interface RemoteBackupChangeLogDAO {
 
     /**
