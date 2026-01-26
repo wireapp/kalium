@@ -32,6 +32,8 @@ import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
+import com.wire.kalium.persistence.dao.reaction.MessageReactionUserEntity
+import com.wire.kalium.persistence.dao.reaction.MessageReactionsEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.JsonSerializer
@@ -833,4 +835,20 @@ object MessageMapper {
             emptyList()
         }
     } ?: emptyList()
+
+    fun toReactionEntityFromView(messageId: String, conversationId: QualifiedIDEntity, aggregatedReactions: String?) =
+        MessageReactionsEntity(
+            messageId = messageId,
+            conversationId = conversationId,
+            reactions = aggregatedReactions?.let {
+                val reactions = aggregatedReactions.split("|")
+                reactions.map {
+                    val (emoji, userId) = it.split(":")
+                    MessageReactionUserEntity(
+                        emoji = emoji,
+                        userId = QualifiedIDEntity(userId.split("@")[0], userId.split("@")[1]),
+                    )
+                }
+            } ?: emptyList()
+        )
 }

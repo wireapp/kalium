@@ -151,6 +151,7 @@ internal class MPBackupMapper {
 
     fun mapReactionToProtobuf(it: BackupReaction): ExportedReaction = ExportedReaction(
         messageId = it.messageId,
+        conversationId = it.conversationId.toProtoModel(),
         reactions = it.emojiReactions.map { er ->
             EmojiReaction(
                 emoji = er.emoji,
@@ -187,6 +188,7 @@ internal class MPBackupMapper {
     private fun fromReactionProtoToBackupModel(reaction: ExportedReaction): BackupReaction =
         BackupReaction(
             messageId = reaction.messageId,
+            conversationId = reaction.conversationId.toModel(),
             emojiReactions = reaction.reactions.map { emojiReaction ->
                 BackupEmojiReaction(
                     emoji = emojiReaction.emoji,

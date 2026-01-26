@@ -33,7 +33,13 @@ class BackupDataSourceTest {
     private val userId = UserId("userId", "domain")
     private val testDatabase = TestUserDatabase(UserIDEntity(userId.value, userId.domain), testDispatcher)
     private val subject =
-        BackupDataSource(userId, testDatabase.builder.userDAO, testDatabase.builder.messageDAO, testDatabase.builder.conversationDAO)
+        BackupDataSource(
+            selfUserId = userId,
+            userDAO = testDatabase.builder.userDAO,
+            messageDAO = testDatabase.builder.messageDAO,
+            conversationDAO = testDatabase.builder.conversationDAO,
+            reactionDAO = testDatabase.builder.reactionDAO,
+        )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @BeforeTest
@@ -89,7 +95,7 @@ class BackupDataSourceTest {
         val result = subject.getMessages().first()
 
         // Then
-        assertEquals(testMessages.size, result.messages.size)
+        assertEquals(testMessages.size, result.data.size)
         assertTrue(result.totalPages > 0)
     }
 
@@ -114,7 +120,7 @@ class BackupDataSourceTest {
         assertTrue(allPages.isNotEmpty())
         assertTrue(allPages.first().totalPages > 0)
         allPages.forEach { page ->
-            page.messages.forEach { message ->
+            page.data.forEach { message ->
                 val originalMessage = messageMap.remove(message.id)
                 assertNotNull(originalMessage, "Message was not found in the original map.")
             }

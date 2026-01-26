@@ -23,11 +23,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
-import com.wire.kalium.logic.data.backup.PagedMessages
+import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
+import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
+import com.wire.kalium.logic.feature.backup.mapper.toBackupReaction
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupExporter
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
@@ -55,7 +57,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.datetime.Instant
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -83,6 +84,7 @@ class CreateMPBackupUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withExporter()
             .withMessages(listOf(TEXT_MESSAGE))
+            .withReactions(listOf(testReaction))
             .arrange()
 
         val result = useCase("test_password") {}
@@ -91,6 +93,7 @@ class CreateMPBackupUseCaseTest {
         coVerify { arrangement.exporter.add(testUser.toBackupUser()) }.wasInvoked(1)
         coVerify { arrangement.exporter.add(TestConversation.CONVERSATION.toBackupConversation()) }.wasInvoked(1)
         coVerify { arrangement.exporter.add(TEXT_MESSAGE.toBackupMessage()!!) }.wasInvoked(1)
+        coVerify { arrangement.exporter.add(testReaction.toBackupReaction()) }.wasInvoked(1)
     }
 
     @Test
@@ -113,15 +116,23 @@ class CreateMPBackupUseCaseTest {
         val exporterProvider = mock(MPBackupExporterProvider::class)
 
         var backupMessages: List<Message.Standalone> = emptyList()
+        var backupReactions: List<MessageReactions> = emptyList()
 
         val backupRepository = object : BackupRepository {
             override suspend fun getUsers(): List<OtherUser> = listOf(testUser)
 
             override suspend fun getConversations(): List<Conversation> = listOf(TestConversation.CONVERSATION)
 
-            override suspend fun getMessages(pageSize: Int): Flow<PagedMessages> = flowOf(
-                PagedMessages(
-                    messages = backupMessages,
+            override suspend fun getMessages(pageSize: Int): Flow<PagedData<Message.Standalone>> = flowOf(
+                PagedData(
+                    data = backupMessages,
+                    totalPages = 1,
+                )
+            )
+
+            override suspend fun getReactions(pageSize: Int): Flow<PagedData<MessageReactions>> = flowOf(
+                PagedData(
+                    data = backupReactions,
                     totalPages = 1,
                 )
             )
@@ -131,10 +142,16 @@ class CreateMPBackupUseCaseTest {
             override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit> = Unit.right()
         }
 
         fun withMessages(messages: List<Message.Standalone>) = apply {
             backupMessages = messages
+        }
+
+        fun withReactions(reactions: List<MessageReactions>) = apply {
+            backupReactions = reactions
         }
 
         suspend fun withExporter() = apply {
@@ -220,6 +237,17 @@ class CreateMPBackupUseCaseTest {
             deleted = false,
             defederated = false,
             isProteusVerified = false,
+        )
+
+        private val testReaction = MessageReactions(
+            messageId = "messageId",
+            conversationId = TestConversation.ID,
+            reactions = listOf(
+                MessageReactionWithUsers(
+                    emoji = ":)",
+                    users = listOf(testUser.id)
+                )
+            )
         )
     }
 }
