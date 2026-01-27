@@ -22,12 +22,12 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.auth.AuthenticationResult
 import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
-import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
@@ -42,14 +42,14 @@ internal interface LoginRepository {
         label: String?,
         shouldPersistClient: Boolean,
         secondFactorVerificationCode: String? = null,
-    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>>
+    ): Either<NetworkFailure, AuthenticationResult>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
         label: String?,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>>
+    ): Either<NetworkFailure, AuthenticationResult>
 
     suspend fun getDomainRegistration(email: String): Either<NetworkFailure, LoginDomainPath>
     suspend fun fetchDomainRedirectCustomBackendConfig(backendUrl: String): Either<NetworkFailure, DomainLookupResult>
@@ -59,6 +59,7 @@ internal class LoginRepositoryImpl internal constructor(
     private val loginApi: LoginApi,
     private val getDomainRegistrationApi: GetDomainRegistrationApi,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val domainRegistrationMapper: DomainRegistrationMapper = MapperProvider.domainRegistrationMapper()
 ) : LoginRepository {
@@ -69,7 +70,7 @@ internal class LoginRepositoryImpl internal constructor(
         label: String?,
         shouldPersistClient: Boolean,
         secondFactorVerificationCode: String?,
-    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> =
+    ): Either<NetworkFailure, AuthenticationResult> =
         login(
             LoginParam.LoginWithEmail(email, password, label, secondFactorVerificationCode),
             shouldPersistClient
@@ -80,7 +81,7 @@ internal class LoginRepositoryImpl internal constructor(
         password: String,
         label: String?,
         shouldPersistClient: Boolean,
-    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> =
+    ): Either<NetworkFailure, AuthenticationResult> =
         login(
             LoginParam.LoginWithHandle(handle, password, label),
             shouldPersistClient
@@ -102,9 +103,13 @@ internal class LoginRepositoryImpl internal constructor(
     private suspend fun login(
         loginParam: LoginParam,
         persistClient: Boolean
-    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> = wrapApiRequest {
+    ): Either<NetworkFailure, AuthenticationResult> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)
-    }.map {
-        Pair(sessionMapper.fromSessionDTO(it.first), idMapper.toSsoId(it.second.ssoID))
+    }.map { (sessionDto, selfUserDto) ->
+        AuthenticationResult(
+            accountTokens = sessionMapper.fromSessionDTO(sessionDto),
+            ssoId = idMapper.toSsoId(selfUserDto.ssoID),
+            managedBy = userMapper.fromManagedByDtoToSsoManagedBy(selfUserDto.managedByDTO),
+        )
     }
 }

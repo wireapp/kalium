@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepo
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newTestServer
 import io.mockative.any
@@ -61,7 +62,7 @@ class LoginUseCaseTest {
 
         assertEquals(
             loginUserCaseResult,
-            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
+            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
         verify {
@@ -94,7 +95,7 @@ class LoginUseCaseTest {
 
         assertEquals(
             loginUserCaseResult,
-            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
+            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
         verify {
@@ -120,7 +121,7 @@ class LoginUseCaseTest {
 
         assertEquals(
             loginUserCaseResult,
-            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
+            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
         verify {
@@ -149,7 +150,7 @@ class LoginUseCaseTest {
         // then
         assertEquals(
             loginUserCaseResult,
-            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
+            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
         verify {
@@ -174,7 +175,7 @@ class LoginUseCaseTest {
 
         assertEquals(
             loginUserCaseResult,
-            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
+            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
     }
 
@@ -426,13 +427,19 @@ class LoginUseCaseTest {
                 handleValidationResult = ValidateUserHandleResult.Valid(handle),
                 handle = handle
             )
-            .withLoginUsingHandleResulting(Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID))
+            .withLoginUsingHandleResulting(
+                com.wire.kalium.logic.data.auth.AuthenticationResult(
+                    accountTokens = TEST_AUTH_TOKENS,
+                    ssoId = TEST_SSO_ID,
+                    managedBy = null,
+                ).right()
+            )
             .arrange()
 
         val loginUserCaseResult = loginUseCase(handle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
 
         assertEquals(
-            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS),
+            AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS),
             loginUserCaseResult
         )
 
@@ -464,7 +471,13 @@ class LoginUseCaseTest {
                 handleValidationResult = ValidateUserHandleResult.Invalid.InvalidCharacters("cooluser", listOf('!', ':', '?')),
                 handle = handle
             )
-            .withLoginUsingHandleResulting(Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID))
+            .withLoginUsingHandleResulting(
+                com.wire.kalium.logic.data.auth.AuthenticationResult(
+                    accountTokens = TEST_AUTH_TOKENS,
+                    ssoId = TEST_SSO_ID,
+                    managedBy = null,
+                ).right()
+            )
             .arrange()
 
         val loginUserCaseResult = loginUseCase(handle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
@@ -568,8 +581,16 @@ class LoginUseCaseTest {
                     ),
                     handle = TEST_EMAIL
                 )
-                withLoginUsingEmailResulting(Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID))
-                withLoginUsingHandleResulting(Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID))
+                withLoginUsingEmailResulting(com.wire.kalium.logic.data.auth.AuthenticationResult(
+                    accountTokens = TEST_AUTH_TOKENS,
+                    ssoId = TEST_SSO_ID,
+                    managedBy = null,
+                ).right())
+                withLoginUsingHandleResulting(com.wire.kalium.logic.data.auth.AuthenticationResult(
+                    accountTokens = TEST_AUTH_TOKENS,
+                    ssoId = TEST_SSO_ID,
+                    managedBy = null,
+                ).right())
             }
         }
 
@@ -591,13 +612,13 @@ class LoginUseCaseTest {
             }.returns(handleValidationResult)
         }
 
-        suspend fun withLoginUsingEmailResulting(result: Either<NetworkFailure, Pair<AccountTokens, SsoId?>>) = apply {
+        suspend fun withLoginUsingEmailResulting(result: Either<NetworkFailure, com.wire.kalium.logic.data.auth.AuthenticationResult>) = apply {
             coEvery {
                 loginRepository.loginWithEmail(any(), any(), any(), any(), any())
             }.returns(result)
         }
 
-        suspend fun withLoginUsingHandleResulting(result: Either<NetworkFailure, Pair<AccountTokens, SsoId?>>) = apply {
+        suspend fun withLoginUsingHandleResulting(result: Either<NetworkFailure, com.wire.kalium.logic.data.auth.AuthenticationResult>) = apply {
             coEvery {
                 loginRepository.loginWithHandle(any(), any(), any(), any())
             }.returns(result)
