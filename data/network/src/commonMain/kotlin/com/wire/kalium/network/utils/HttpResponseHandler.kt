@@ -252,3 +252,47 @@ internal object FederationErrorResponseInterceptorConflictWithMissingUsers : Bas
 @Suppress("MagicNumber")
 val HttpStatusCode.Companion.UnreachableRemoteBackends: HttpStatusCode
     get() = HttpStatusCode(533, "Unreachable remote backends")
+
+/**
+ * Wraps a streaming request (e.g., file download using prepareGet...execute) with proper error handling.
+ * This handles the common pattern of streaming downloads where:
+ * - On success: execute custom success handling (e.g., write to sink)
+ * - On failure: use standard error interceptors
+ * - On exception: wrap in GenericError (re-throwing CancellationException)
+ *
+ * @param json JSON serializer for parsing error responses
+ * @param performRequest the streaming request block that returns a NetworkResponse
+ * @return NetworkResponse with either success or properly handled error
+ */
+@Suppress("TooGenericExceptionCaught")
+internal inline fun <reified ResponseType : Any> wrapStreamingRequest(
+    json: Json = KtxSerializer.json,
+    performRequest: (handleError: suspend (HttpResponse) -> NetworkResponse<ResponseType>) -> NetworkResponse<ResponseType>
+): NetworkResponse<ResponseType> = try {
+    performRequest { httpResponse ->
+        handleStreamingError(httpResponse, json)
+    }
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    NetworkResponse.Error(KaliumException.GenericError(e))
+}
+
+/**
+ * Handles error responses for streaming requests using the standard interceptor chain.
+ */
+internal suspend inline fun <reified ResponseType : Any> handleStreamingError(
+    httpResponse: HttpResponse,
+    json: Json = KtxSerializer.json
+): NetworkResponse<ResponseType> {
+    val responseData = HttpResponseData(
+        headers = httpResponse.headers,
+        statusCode = httpResponse.status,
+        body = httpResponse.bodyAsText(),
+        json = json,
+    )
+    return UnauthorizedResponseInterceptor.intercept(responseData)
+        ?: FederationErrorResponseInterceptorConflict.intercept(responseData)
+        ?: MLSErrorResponseHandler.intercept(responseData)
+        ?: BaseErrorResponseInterceptor.intercept(responseData)
+}

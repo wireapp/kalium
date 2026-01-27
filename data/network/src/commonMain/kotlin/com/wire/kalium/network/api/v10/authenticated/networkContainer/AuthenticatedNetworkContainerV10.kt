@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v10.authenticated.networkContainer
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.RemoteBackupApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
@@ -45,6 +46,7 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.v0.authenticated.RemoteBackupApiV0
 import com.wire.kalium.network.api.v10.authenticated.AccessTokenApiV10
 import com.wire.kalium.network.api.v10.authenticated.AssetApiV10
 import com.wire.kalium.network.api.v10.authenticated.CallApiV10
@@ -169,4 +171,6 @@ internal class AuthenticatedNetworkContainerV10 internal constructor(
         get() = ServerTimeApiV10(networkClient)
 
     override val cellsHttpClient: HttpClient = networkClient.httpClient
+
+    override val remoteBackupApi: RemoteBackupApi get() = RemoteBackupApiV0()
 }

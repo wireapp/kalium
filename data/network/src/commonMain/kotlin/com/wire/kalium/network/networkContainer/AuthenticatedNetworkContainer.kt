@@ -44,6 +44,7 @@ import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
+import com.wire.kalium.network.api.base.authenticated.RemoteBackupApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
@@ -125,6 +126,8 @@ interface AuthenticatedNetworkContainer {
     val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     val serverTimeApi: ServerTimeApi
+
+    val remoteBackupApi: RemoteBackupApi
 
     val cellsHttpClient: HttpClient
         get() = HttpClient()
