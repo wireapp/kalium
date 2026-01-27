@@ -17,18 +17,28 @@
  */
 package com.wire.kalium.network.api.authenticated.remoteBackup
 
+import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Individual message upsert operation
+ * DTO representing the payload of a message sync operation.
+ * This mirrors the structure of BackupMessage for type-safe serialization.
  */
 @Serializable
-data class MessageSyncUpsertDTO(
-    @SerialName("message_id")
-    val messageId: String,
-    @SerialName("timestamp")
-    val timestamp: Long, // Unix timestamp in milliseconds
-    @SerialName("payload")
-    val payload: RemoteBackupPayloadDTO
+data class RemoteBackupPayloadDTO(
+    @SerialName("id")
+    val id: String,
+    @SerialName("conversationId")
+    val conversationId: QualifiedID,
+    @SerialName("senderUserId")
+    val senderUserId: QualifiedID,
+    @SerialName("senderClientId")
+    val senderClientId: String,
+    @SerialName("creationDate")
+    val creationDate: Long,
+    @SerialName("content")
+    val content: RemoteBAckupMessageContentDTO,
+    @SerialName("lastEditTime")
+    val lastEditTime: Long? = null
 )
