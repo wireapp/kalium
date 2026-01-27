@@ -30,5 +30,5 @@ data class MessageSyncResultDTO(
     @SerialName("message_id")
     val messageId: String,
     @SerialName("payload")
-    val payload: MessageSyncPayloadDTO
+    val payload: RemoteBackupPayloadDTO
 )
