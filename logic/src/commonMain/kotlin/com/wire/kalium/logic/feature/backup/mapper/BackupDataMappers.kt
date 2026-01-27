@@ -19,9 +19,11 @@ package com.wire.kalium.logic.feature.backup.mapper
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupDateTime
+import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -29,6 +31,8 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.OtherUser
 
 internal fun QualifiedID.toBackupQualifiedId() = BackupQualifiedId(
@@ -61,12 +65,28 @@ internal fun Message.toBackupMessage() =
         )
     }
 
+internal fun MessageReactions.toBackupReaction() =
+    BackupReaction(
+        messageId = messageId,
+        conversationId = conversationId.toBackupQualifiedId(),
+        emojiReactions = reactions.map { (emoji, users) ->
+            BackupEmojiReaction(
+                emoji = emoji,
+                users = users.map { userId -> userId.toBackupQualifiedId() }
+            )
+        },
+    )
+
 private fun Message.backupMessageContent(): BackupMessageContent? = when (this) {
     is Message.Regular -> when (content) {
-        is MessageContent.Text -> BackupMessageContent.Text(
-            text = (content as MessageContent.Text).value,
-            mentions = emptyList()
-        )
+        is MessageContent.Text -> with(content as MessageContent.Text) {
+            BackupMessageContent.Text(
+                text = value,
+                mentions = mentions.toBackupModel(),
+                quotedMessageId = quotedMessageReference?.quotedMessageId,
+            )
+        }
+
         is MessageContent.Asset -> with((content as MessageContent.Asset).value) {
             BackupMessageContent.Asset(
                 mimeType = mimeType,
@@ -99,6 +119,14 @@ private fun Message.backupMessageContent(): BackupMessageContent? = when (this) 
     is Message.Signaling -> null
     is Message.System -> null
 }
+
+private fun MessageMention.toBackupModel() = BackupMessageContent.Text.Mention(
+    userId = userId.toBackupQualifiedId(),
+    start = start,
+    length = length
+)
+
+private fun List<MessageMention>.toBackupModel() = map { it.toBackupModel() }
 
 private fun Message.lastEditTime(): BackupDateTime? =
     when (this) {

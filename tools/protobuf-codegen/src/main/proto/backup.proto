@@ -71,7 +71,8 @@ message ExportedMessage {
 
 message ExportedReaction {
     required string message_id = 1;
-    repeated EmojiReaction reactions = 2;
+    required ExportedQualifiedId conversation_id = 2;
+    repeated EmojiReaction reactions = 3;
 }
 
 message EmojiReaction {
