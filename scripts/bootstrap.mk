@@ -1,6 +1,6 @@
 # initial setup/bootstrap related targets
 SHELL := /bin/bash
-AVS_VERSION := 9.7.1
+AVS_VERSION := 10.1.41
 
 ifeq ($(JAVA_HOME),)
 	export JAVA_HOME := $(shell /usr/libexec/java_home)
