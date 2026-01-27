@@ -118,6 +118,10 @@ data class SsoId(
     @SerialName("tenant") val tenant: String?
 )
 
+enum class SsoManagedBy {
+    WIRE, SCIM
+}
+
 data class SelfUser(
     override val id: UserId,
     override val name: String?,

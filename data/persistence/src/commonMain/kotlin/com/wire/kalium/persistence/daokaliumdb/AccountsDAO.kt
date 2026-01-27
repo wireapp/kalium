@@ -155,6 +155,7 @@ interface AccountsDAO {
     suspend fun insertOrReplace(
         userIDEntity: UserIDEntity,
         ssoIdEntity: SsoIdEntity?,
+        managedByEntity: ManagedByEntity?,
         serverConfigId: String,
         isPersistentWebSocketEnabled: Boolean
     )
@@ -202,6 +203,7 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun insertOrReplace(
         userIDEntity: UserIDEntity,
         ssoIdEntity: SsoIdEntity?,
+        managedByEntity: ManagedByEntity?,
         serverConfigId: String,
         isPersistentWebSocketEnabled: Boolean
     ) {
@@ -213,7 +215,8 @@ internal class AccountsDAOImpl internal constructor(
                 id = userIDEntity,
                 serverConfigId = serverConfigId,
                 logoutReason = null,
-                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                managedBy = managedByEntity,
             )
         }
     }
