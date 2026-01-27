@@ -1,0 +1,17 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.backup.ChangeLogEventType;
+
+CREATE TABLE RemotebackupChangeLog (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_id TEXT NOT NULL,
+    event_type INTEGER AS ChangeLogEventType NOT NULL,
+    timestamp_ms INTEGER NOT NULL,
+    CHECK (
+        (event_type >= 500 AND message_id = '')
+        OR
+        (event_type < 500 AND length(message_id) > 0)
+    ),
+    PRIMARY KEY (conversation_id, message_id, event_type)
+);
+
+CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timestamp_ms);
