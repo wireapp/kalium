@@ -17,8 +17,7 @@
  */
 package com.wire.kalium.api.v12
 
-import com.wire.kalium.network.api.authenticated.remoteBackup.MessageSyncRequestDTO
-import com.wire.kalium.network.api.authenticated.remoteBackup.MessageSyncUpsertDTO
+import com.wire.kalium.mocks.responses.RemoteBackupResponseJson
 import com.wire.kalium.network.api.v12.authenticated.RemoteBackupApiV12
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.tools.KtxSerializer
@@ -38,7 +37,6 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import okio.Buffer
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -46,8 +44,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 internal class RemoteBackupApiV12Test {
 
@@ -60,7 +56,7 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenSyncMessagesRequest_whenInvoking_thenShouldUseCorrectEndpointAndMethod() = runTest {
-        val request = createSyncRequest()
+        val request = RemoteBackupResponseJson.validSyncRequest.serializableData
         var capturedMethod: HttpMethod? = null
         var capturedPath: String? = null
 
@@ -81,7 +77,7 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenSyncMessagesRequest_whenInvoking_thenShouldSerializeBodyCorrectly() = runTest {
-        val request = createSyncRequest()
+        val request = RemoteBackupResponseJson.validSyncRequest.serializableData
         var capturedBody: String? = null
 
         val httpClient = createMockHttpClient(
@@ -103,7 +99,7 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenSyncMessagesRequest_whenSuccessful_thenShouldReturnSuccess() = runTest {
-        val request = createSyncRequest()
+        val request = RemoteBackupResponseJson.validSyncRequest.serializableData
 
         val httpClient = createMockHttpClient(
             responseBody = "",
@@ -126,7 +122,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPath: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = FETCH_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedMethod = requestData.method
@@ -146,7 +142,7 @@ internal class RemoteBackupApiV12Test {
         var capturedSizeParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = FETCH_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedUserParam = requestData.url.parameters["user"]
@@ -167,7 +163,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPaginationTokenParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = FETCH_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedSinceParam = requestData.url.parameters["since"]
@@ -196,7 +192,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPaginationTokenParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = FETCH_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedSinceParam = requestData.url.parameters["since"]
@@ -214,8 +210,9 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenFetchMessagesRequest_whenSuccessful_thenShouldDeserializeResponseCorrectly() = runTest {
+        val expectedResponse = RemoteBackupResponseJson.validFetchResponse.serializableData
         val httpClient = createMockHttpClient(
-            responseBody = FETCH_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
             statusCode = HttpStatusCode.OK
         )
 
@@ -224,13 +221,14 @@ internal class RemoteBackupApiV12Test {
 
         assertTrue(result.isSuccessful())
         val response = result.value
-        assertTrue(response.hasMore)
-        assertEquals("next-token", response.paginationToken)
+        assertEquals(expectedResponse.hasMore, response.hasMore)
+        assertEquals(expectedResponse.paginationToken, response.paginationToken)
         assertTrue(response.conversations.containsKey(TEST_CONVERSATION_ID))
         val conversationMessages = response.conversations[TEST_CONVERSATION_ID]!!
-        assertEquals(1000L, conversationMessages.lastRead)
-        assertEquals(1, conversationMessages.messages.size)
-        assertEquals("msg-1", conversationMessages.messages[0].messageId)
+        val expectedConversationMessages = expectedResponse.conversations[TEST_CONVERSATION_ID]!!
+        assertEquals(expectedConversationMessages.lastRead, conversationMessages.lastRead)
+        assertEquals(expectedConversationMessages.messages.size, conversationMessages.messages.size)
+        assertEquals(expectedConversationMessages.messages[0].messageId, conversationMessages.messages[0].messageId)
     }
 
     // endregion
@@ -243,7 +241,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPath: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = DELETE_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedMethod = requestData.method
@@ -264,7 +262,7 @@ internal class RemoteBackupApiV12Test {
         var capturedBeforeParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = DELETE_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedUserIdParam = requestData.url.parameters["user_id"]
@@ -291,7 +289,7 @@ internal class RemoteBackupApiV12Test {
         var capturedBeforeParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = DELETE_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedUserIdParam = requestData.url.parameters["user_id"]
@@ -309,8 +307,9 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenDeleteMessagesRequest_whenSuccessful_thenShouldDeserializeResponseCorrectly() = runTest {
+        val expectedResponse = RemoteBackupResponseJson.validDeleteResponse.serializableData
         val httpClient = createMockHttpClient(
-            responseBody = DELETE_MESSAGES_RESPONSE,
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
             statusCode = HttpStatusCode.OK
         )
 
@@ -318,7 +317,7 @@ internal class RemoteBackupApiV12Test {
         val result = api.deleteMessages(userId = TEST_USER_ID)
 
         assertTrue(result.isSuccessful())
-        assertEquals(42, result.value.deletedCount)
+        assertEquals(expectedResponse.deletedCount, result.value.deletedCount)
     }
 
     // endregion
@@ -515,51 +514,10 @@ internal class RemoteBackupApiV12Test {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
-    private fun createSyncRequest(): MessageSyncRequestDTO = MessageSyncRequestDTO(
-        userId = TEST_USER_ID,
-        upserts = mapOf(
-            TEST_CONVERSATION_ID to listOf(
-                MessageSyncUpsertDTO(
-                    messageId = "msg-1",
-                    timestamp = Instant.DISTANT_PAST.toEpochMilliseconds(),
-                    payload = """{"type":"text","content":"Hello"}"""
-                )
-            )
-        ),
-        deletions = mapOf(
-            TEST_CONVERSATION_ID to listOf("deleted-msg-1", "deleted-msg-2")
-        ),
-        conversationsLastRead = mapOf(
-            TEST_CONVERSATION_ID to 1234567890L
-        )
-    )
-
     // endregion
 
     private companion object {
         const val TEST_USER_ID = "user-123-abc"
         const val TEST_CONVERSATION_ID = "conv-456-def"
-
-        val FETCH_MESSAGES_RESPONSE = """
-            {
-                "has_more": true,
-                "conversations": {
-                    "$TEST_CONVERSATION_ID": {
-                        "last_read": 1000,
-                        "messages": [
-                            {
-                                "message_id": "msg-1",
-                                "timestamp": 999,
-                                "payload": "{\"type\":\"text\"}"
-                            }
-                        ]
-                    }
-                },
-                "pagination_token": "next-token"
-            }
-        """.trimIndent()
-
-        const val DELETE_MESSAGES_RESPONSE = """{"deleted_count": 42}"""
     }
 }
