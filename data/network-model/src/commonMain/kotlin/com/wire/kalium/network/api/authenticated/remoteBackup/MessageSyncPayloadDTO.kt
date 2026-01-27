@@ -21,14 +21,34 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Individual message upsert operation
+ * DTO representing the payload of a message sync operation.
+ * This mirrors the structure of BackupMessage for type-safe serialization.
  */
 @Serializable
-data class MessageSyncUpsertDTO(
-    @SerialName("message_id")
-    val messageId: String,
-    @SerialName("timestamp")
-    val timestamp: Long, // Unix timestamp in milliseconds
-    @SerialName("payload")
-    val payload: MessageSyncPayloadDTO
+data class MessageSyncPayloadDTO(
+    @SerialName("id")
+    val id: String,
+    @SerialName("conversationId")
+    val conversationId: MessageSyncQualifiedIdDTO,
+    @SerialName("senderUserId")
+    val senderUserId: MessageSyncQualifiedIdDTO,
+    @SerialName("senderClientId")
+    val senderClientId: String,
+    @SerialName("creationDate")
+    val creationDate: Long,
+    @SerialName("content")
+    val content: MessageSyncContentDTO,
+    @SerialName("lastEditTime")
+    val lastEditTime: Long? = null
+)
+
+/**
+ * DTO for qualified IDs in message sync payloads.
+ */
+@Serializable
+data class MessageSyncQualifiedIdDTO(
+    @SerialName("id")
+    val id: String,
+    @SerialName("domain")
+    val domain: String
 )
