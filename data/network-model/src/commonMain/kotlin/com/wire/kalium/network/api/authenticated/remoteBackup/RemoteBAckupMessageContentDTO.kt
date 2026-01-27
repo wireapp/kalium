@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.authenticated.remoteBackup
 
+import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -25,7 +26,7 @@ import kotlinx.serialization.Serializable
  * This mirrors the structure of BackupMessageContent.
  */
 @Serializable
-sealed class MessageSyncContentDTO {
+sealed class RemoteBAckupMessageContentDTO {
 
     @Serializable
     @SerialName("text")
@@ -36,7 +37,7 @@ sealed class MessageSyncContentDTO {
         val mentions: List<MessageSyncMentionDTO> = emptyList(),
         @SerialName("quotedMessageId")
         val quotedMessageId: String? = null
-    ) : MessageSyncContentDTO()
+    ) : RemoteBAckupMessageContentDTO()
 
     @Serializable
     @SerialName("asset")
@@ -61,7 +62,7 @@ sealed class MessageSyncContentDTO {
         val encryption: String?,
         @SerialName("metaData")
         val metaData: MessageSyncAssetMetadataDTO?
-    ) : MessageSyncContentDTO()
+    ) : RemoteBAckupMessageContentDTO()
 
     @Serializable
     @SerialName("location")
@@ -74,7 +75,7 @@ sealed class MessageSyncContentDTO {
         val name: String?,
         @SerialName("zoom")
         val zoom: Int?
-    ) : MessageSyncContentDTO()
+    ) : RemoteBAckupMessageContentDTO()
 }
 
 /**
@@ -83,7 +84,7 @@ sealed class MessageSyncContentDTO {
 @Serializable
 data class MessageSyncMentionDTO(
     @SerialName("userId")
-    val userId: MessageSyncQualifiedIdDTO,
+    val userId: QualifiedID,
     @SerialName("start")
     val start: Int,
     @SerialName("length")

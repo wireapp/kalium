@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.authenticated.remoteBackup
 
+import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -25,30 +26,19 @@ import kotlinx.serialization.Serializable
  * This mirrors the structure of BackupMessage for type-safe serialization.
  */
 @Serializable
-data class MessageSyncPayloadDTO(
+data class RemoteBackupPayloadDTO(
     @SerialName("id")
     val id: String,
     @SerialName("conversationId")
-    val conversationId: MessageSyncQualifiedIdDTO,
+    val conversationId: QualifiedID,
     @SerialName("senderUserId")
-    val senderUserId: MessageSyncQualifiedIdDTO,
+    val senderUserId: QualifiedID,
     @SerialName("senderClientId")
     val senderClientId: String,
     @SerialName("creationDate")
     val creationDate: Long,
     @SerialName("content")
-    val content: MessageSyncContentDTO,
+    val content: RemoteBAckupMessageContentDTO,
     @SerialName("lastEditTime")
     val lastEditTime: Long? = null
-)
-
-/**
- * DTO for qualified IDs in message sync payloads.
- */
-@Serializable
-data class MessageSyncQualifiedIdDTO(
-    @SerialName("id")
-    val id: String,
-    @SerialName("domain")
-    val domain: String
 )

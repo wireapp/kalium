@@ -30,5 +30,5 @@ data class MessageSyncUpsertDTO(
     @SerialName("timestamp")
     val timestamp: Long, // Unix timestamp in milliseconds
     @SerialName("payload")
-    val payload: MessageSyncPayloadDTO
+    val payload: RemoteBackupPayloadDTO
 )
