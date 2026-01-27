@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.model.AssetSizeDTO
+import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
@@ -100,6 +101,7 @@ internal interface UserMapper {
 
     fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
     fun fromSearchEntityToUserSearchDetails(searchEntity: UserSearchEntity): UserSearchDetails
+    fun fromManagedByDtoToSsoManagedBy(managedBy: ManagedByDTO?): SsoManagedBy?
 }
 
 @Suppress("TooManyFunctions")
@@ -439,6 +441,12 @@ internal class UserMapperImpl(
         connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(searchEntity.connectionStatus),
         handle = searchEntity.handle
     )
+
+    override fun fromManagedByDtoToSsoManagedBy(managedBy: ManagedByDTO?): SsoManagedBy? = when (managedBy) {
+        ManagedByDTO.WIRE -> SsoManagedBy.WIRE
+        ManagedByDTO.SCIM -> SsoManagedBy.SCIM
+        else -> null
+    }
 }
 
 internal fun SupportedProtocol.toApi() = when (this) {

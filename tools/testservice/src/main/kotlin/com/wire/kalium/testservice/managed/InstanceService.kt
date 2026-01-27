@@ -223,6 +223,7 @@ class InstanceService(
                 loginResult.ssoID,
                 loginResult.authData,
                 null,
+                null,
                 true
             )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {

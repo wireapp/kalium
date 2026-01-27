@@ -103,6 +103,7 @@ class BackupImportPagerTest {
     fun givenMultipleReactionPages_whenConsuming_thenShouldReadInNumericOrder() {
         val reaction0 = BackupReaction(
             messageId = "message0",
+            conversationId = BackupQualifiedId("conv_id", "domain"),
             emojiReactions = listOf(
                 BackupEmojiReaction("👍", listOf(fakeId(0), fakeId(1))),
                 BackupEmojiReaction("🔥", listOf(fakeId(2)))
@@ -110,6 +111,7 @@ class BackupImportPagerTest {
         )
         val reaction1 = BackupReaction(
             messageId = "message1",
+            conversationId = BackupQualifiedId("conv_id", "domain"),
             emojiReactions = listOf(
                 BackupEmojiReaction("❤️", listOf(fakeId(3)))
             )

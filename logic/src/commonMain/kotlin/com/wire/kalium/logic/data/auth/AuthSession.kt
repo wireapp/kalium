@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -78,3 +79,9 @@ public data class AccountTokens(
         get() = accessToken.tokenType
 
 }
+
+public data class AuthenticationResult(
+    val accountTokens: AccountTokens,
+    val ssoId: SsoId?,
+    val managedBy: SsoManagedBy?,
+)

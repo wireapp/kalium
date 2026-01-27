@@ -130,6 +130,8 @@ public data class BackupMessage(
 public data class BackupReaction(
     @SerialName("messageId")
     val messageId: String,
+    @SerialName("conversationId")
+    val conversationId: BackupQualifiedId,
     @SerialName("reactions")
     val emojiReactions: List<BackupEmojiReaction>
 )
