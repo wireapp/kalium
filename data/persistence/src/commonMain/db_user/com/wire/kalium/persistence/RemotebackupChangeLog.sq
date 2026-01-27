@@ -1,0 +1,61 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.backup.ChangeLogEventType;
+
+CREATE TABLE RemotebackupChangeLog (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_nonce TEXT NOT NULL,
+    event_type INTEGER AS ChangeLogEventType NOT NULL,
+    timestamp_ms INTEGER NOT NULL,
+    PRIMARY KEY (conversation_id, message_nonce, event_type)
+);
+
+CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timestamp_ms);
+
+insertMessageUpsert:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_nonce, event_type, timestamp_ms
+) VALUES (:conversationId, :messageNonce, :eventType, :timestampMs);
+
+insertMessageDelete:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_nonce, event_type, timestamp_ms
+) VALUES (:conversationId, :messageNonce, :eventType, :timestampMs);
+
+insertReactionsSync:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_nonce, event_type, timestamp_ms
+) VALUES (:conversationId, :messageNonce, :eventType, :timestampMs);
+
+insertConversationDelete {
+    DELETE FROM RemotebackupChangeLog WHERE conversation_id = :conversationId;
+    INSERT INTO RemotebackupChangeLog(
+        conversation_id, message_nonce, event_type, timestamp_ms
+    ) VALUES (:conversationId, '', :eventType, :timestampMs);
+}
+
+insertConversationClear {
+    DELETE FROM RemotebackupChangeLog WHERE conversation_id = :conversationId;
+    INSERT INTO RemotebackupChangeLog(
+        conversation_id, message_nonce, event_type, timestamp_ms
+    ) VALUES (:conversationId, '', :eventType, :timestampMs);
+}
+
+getPendingChanges:
+SELECT * FROM RemotebackupChangeLog ORDER BY timestamp_ms ASC;
+
+getChangesByEventType:
+SELECT * FROM RemotebackupChangeLog
+WHERE event_type = ?
+ORDER BY timestamp_ms ASC;
+
+getChangesForConversation:
+SELECT * FROM RemotebackupChangeLog
+WHERE conversation_id = ?
+ORDER BY timestamp_ms ASC;
+
+deleteProcessedEntries:
+DELETE FROM RemotebackupChangeLog WHERE timestamp_ms <= ?;
+
+deleteEntry:
+DELETE FROM RemotebackupChangeLog
+WHERE conversation_id = ? AND message_nonce = ? AND event_type = ?;
