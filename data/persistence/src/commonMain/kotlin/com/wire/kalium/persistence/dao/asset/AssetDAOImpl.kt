@@ -83,8 +83,8 @@ class AssetDAOImpl internal constructor(
     override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
         return queries.selectByKey(assetKey, mapper::fromAssets)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun updateAsset(assetEntity: AssetEntity) {
