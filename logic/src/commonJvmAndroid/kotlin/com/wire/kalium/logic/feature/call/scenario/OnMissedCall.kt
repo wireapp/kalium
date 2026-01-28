@@ -24,7 +24,7 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logger.obfuscateId
 
-object OnMissedCall : MissedCallHandler {
+internal object OnMissedCall : MissedCallHandler {
     override fun onMissedCall(conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer?) {
         // NOTHING TO DO | This callback is not triggered by AVS
         callingLogger.i("[onMissedCall] - conversationId: ${conversationId.obfuscateId()} | userId: ${userId.obfuscateId()}")

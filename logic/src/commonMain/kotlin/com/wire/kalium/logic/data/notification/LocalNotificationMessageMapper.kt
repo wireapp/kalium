@@ -29,9 +29,9 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 
-interface LocalNotificationMessageMapper {
+internal interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
     fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotification
     fun fromConversationEventToLocalNotification(
@@ -42,6 +42,7 @@ interface LocalNotificationMessageMapper {
 
     fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification
     fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.TextEdited): LocalNotification
+    fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.MultipartEdited): LocalNotification
     fun toConversationSeen(conversationId: ConversationId): LocalNotification
     fun fromEntitiesToLocalNotifications(
         list: List<NotificationMessageEntity>,
@@ -50,7 +51,7 @@ interface LocalNotificationMessageMapper {
     ): List<LocalNotification.Conversation>
 }
 
-class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
+internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
 
     override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =
         LocalNotificationMessageAuthor(author?.name ?: "", null)
@@ -83,7 +84,7 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
                     messageId = "",
                     author = LocalNotificationMessageAuthor(author?.name ?: "", null),
                     // TODO: change time to Instant
-                    time = conversationEvent.timestampIso.toInstant()
+                    time = Instant.parse(conversationEvent.timestampIso)
                 )
                 LocalNotification.Conversation(
                     id = conversation.id,
@@ -115,6 +116,16 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
             message.conversationId,
             messageContent.editMessageId,
             LocalNotificationUpdateMessageAction.Edit(messageContent.newContent, message.id)
+        )
+
+    override fun fromMessageToMessageEditedLocalNotification(
+        message: Message,
+        messageContent: MessageContent.MultipartEdited
+    ): LocalNotification =
+        LocalNotification.UpdateMessage(
+            message.conversationId,
+            messageContent.editMessageId,
+            LocalNotificationUpdateMessageAction.Edit(messageContent.newTextContent ?: "", message.id)
         )
 
     override fun fromEntitiesToLocalNotifications(

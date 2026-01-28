@@ -46,12 +46,12 @@ import kotlinx.coroutines.flow.map
  * Note:
  * If there are new Clients for more than one logged-in User, CurrentUser has higher priority and will be returned first.
  */
-interface ObserveNewClientsUseCase {
-    suspend operator fun invoke(): Flow<NewClientResult>
+public interface ObserveNewClientsUseCase {
+    public suspend operator fun invoke(): Flow<NewClientResult>
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ObserveNewClientsUseCaseImpl internal constructor(
+internal class ObserveNewClientsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val observeValidAccounts: ObserveValidAccountsUseCase,
     private val clientRepositoryProvider: UserClientRepositoryProvider
@@ -113,11 +113,11 @@ class ObserveNewClientsUseCaseImpl internal constructor(
     }
 }
 
-sealed class NewClientResult {
-    data object Error : NewClientResult()
-    data object Empty : NewClientResult()
-    data class InCurrentAccount(val newClients: List<Client>, val userId: UserId) : NewClientResult()
-    data class InOtherAccount(
+public sealed class NewClientResult {
+    public data object Error : NewClientResult()
+    public data object Empty : NewClientResult()
+    public data class InCurrentAccount(val newClients: List<Client>, val userId: UserId) : NewClientResult()
+    public data class InOtherAccount(
         val newClients: List<Client>,
         val userId: UserId,
         val userName: String?,

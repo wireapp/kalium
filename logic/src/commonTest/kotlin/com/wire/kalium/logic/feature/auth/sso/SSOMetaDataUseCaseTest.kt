@@ -32,7 +32,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SSOMetaDataUseCaseTest {
+internal class SSOMetaDataUseCaseTest {
 
         val ssoLoginRepository = mock(SSOLoginRepository::class)
     lateinit var ssoMetaDataUseCase: SSOMetaDataUseCase

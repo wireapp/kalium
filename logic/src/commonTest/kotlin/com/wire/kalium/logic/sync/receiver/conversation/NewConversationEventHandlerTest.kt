@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
@@ -79,6 +81,7 @@ class NewConversationEventHandlerTest {
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         eventHandler.handle(arrangement.transactionContext, event)
@@ -112,6 +115,7 @@ class NewConversationEventHandlerTest {
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         eventHandler.handle(arrangement.transactionContext, event)
@@ -126,6 +130,7 @@ class NewConversationEventHandlerTest {
         // given
         val event = testNewConversationEvent(
             conversation = TestConversation.CONVERSATION_RESPONSE.copy(
+                id = TestConversation.ID.toApi(),
                 creator = "creatorId@creatorDomain",
                 receiptMode = ReceiptMode.ENABLED
             ),
@@ -147,6 +152,7 @@ class NewConversationEventHandlerTest {
             .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
+            .withConversationAppsAccessIfEnabled()
             .arrange()
 
         // when
@@ -176,6 +182,15 @@ class NewConversationEventHandlerTest {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 eq(event.conversation.id.toModel()),
                 eq(event.dateTime)
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                eq(event.id),
+                eq(event.conversation.id.toModel()),
+                eq(event.conversation.hasAppsAccessEnabled()),
+                eq(event.senderUserId)
             )
         }.wasInvoked(exactly = once)
     }
@@ -377,6 +392,12 @@ class NewConversationEventHandlerTest {
             coEvery {
                 oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
             }.returns(result)
+        }
+
+        suspend fun withConversationAppsAccessIfEnabled() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+            }.returns(Unit.right())
         }
 
         fun arrange() = this to newConversationEventHandler

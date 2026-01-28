@@ -33,13 +33,14 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class ResetMLSConversationUseCaseTest {
+
+    private val TEST_CONVERSATION_ID = UserId("testConversation", "domain")
 
     @Test
     fun givenCompileTimeFlagDisabled_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
@@ -48,7 +49,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagEnabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -64,7 +65,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagDisabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -80,7 +81,7 @@ class ResetMLSConversationUseCaseTest {
             .withRuntimeFlagEnabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -96,7 +97,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureDisabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -112,7 +113,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        useCase(TestConversation.ID)
+        useCase(TEST_CONVERSATION_ID)
 
         coVerify {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
@@ -126,7 +127,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        useCase(TestConversation.ID)
+        useCase(TEST_CONVERSATION_ID)
 
         coVerify {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
@@ -140,10 +141,14 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        useCase(TestConversation.ID)
+        useCase(TEST_CONVERSATION_ID)
 
         coVerify {
-            arrangement.fetchConversationUseCase(conversationId = any(), transactionContext =  any(), reason =  eq(ConversationSyncReason.ConversationReset))
+            arrangement.fetchConversationUseCase(
+                conversationId = any(),
+                transactionContext = any(),
+                reason = eq(ConversationSyncReason.ConversationReset)
+            )
         }.wasInvoked(exactly = 1)
     }
 
@@ -154,7 +159,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        useCase(TestConversation.ID)
+        useCase(TEST_CONVERSATION_ID)
 
         coVerify {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
@@ -168,7 +173,7 @@ class ResetMLSConversationUseCaseTest {
             .withConversation(TestConversation.MLS_CONVERSATION)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -184,7 +189,7 @@ class ResetMLSConversationUseCaseTest {
             .withConversation(TestConversation.MIXED_CONVERSATION)
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -200,7 +205,7 @@ class ResetMLSConversationUseCaseTest {
             .withLeaveGroupFailing()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -219,7 +224,7 @@ class ResetMLSConversationUseCaseTest {
             .withFeatureEnabled()
             .arrange()
 
-        val result = useCase(TestConversation.ID)
+        val result = useCase(TEST_CONVERSATION_ID).toEither()
 
         assertTrue(result.isRight())
 
@@ -232,7 +237,25 @@ class ResetMLSConversationUseCaseTest {
         }.wasInvoked()
     }
 
+    @Test
+    fun givenFederatedConversation_whenUseCaseCalled_thenResetConversationNotStarted() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withCompileTimeFlagEnabled()
+            .withRuntimeFlagDisabled()
+            .arrange()
+
+        val result = useCase(TEST_CONVERSATION_ID.copy(domain = "domainFederated")).toEither()
+
+        assertTrue(result.isRight())
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+
+        private val TEST_USER_ID = UserId("testUser", "domain")
 
         val userConfig = mock(UserConfigRepository::class)
         val conversationRepository = mock(ConversationRepository::class)
@@ -305,7 +328,7 @@ class ResetMLSConversationUseCaseTest {
             } returns MLSAdditionResult(emptySet(), emptySet()).right()
 
             coEvery {
-                fetchConversationUseCase(any(), any(), reason =  eq(ConversationSyncReason.ConversationReset))
+                fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))
             } returns Unit.right()
 
             coEvery {
@@ -313,6 +336,7 @@ class ResetMLSConversationUseCaseTest {
             } returns listOf(UserId("test", "test@user")).right()
 
             return this to ResetMLSConversationUseCaseImpl(
+                selfUserId = TEST_USER_ID,
                 userConfig = userConfig,
                 transactionProvider = cryptoTransactionProvider,
                 conversationRepository = conversationRepository,

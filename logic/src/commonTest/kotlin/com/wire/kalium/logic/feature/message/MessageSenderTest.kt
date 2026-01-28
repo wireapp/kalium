@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -50,6 +51,8 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.mls.FakeMLSMissingUsersRejectionHandler
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
@@ -63,10 +66,7 @@ import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -322,6 +322,52 @@ class MessageSenderTest {
             coVerify {
                 arrangement.staleEpochVerifier.verifyEpoch(any(), eq(Arrangement.TEST_CONVERSATION_ID), any(), any())
             }.wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenGroupOutOfSyncResponse_whenSendingMlsMessage_thenCallFailureHandlerAndSendSuccessfullyAfterwards() {
+        // given
+        val missingUsers = listOf(
+            TestUser.OTHER_USER_ID,
+            TestUser.OTHER_USER_ID.copy(value = "value2")
+        )
+        val response = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(missingUsers))
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(response), times = 1)
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            assertEquals(1, arrangement.mlsMissingUsersMessageRejectionHandler.callCount)
+            result.shouldSucceed()
+        }
+    }
+
+    @Test
+    fun givenNoFailures_whenSendingMlsMessage_thenShouldNotCallMLSOutOfSyncHandler() {
+        // given
+        val (arrangement, messageSender) = arrange {
+            withSendMlsMessage()
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            assertEquals(0, arrangement.mlsMissingUsersMessageRejectionHandler.callCount)
         }
     }
 
@@ -783,6 +829,45 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenASuccess_WhenSendingMultipartEditMessage_ThenUpdateMessageIdButDoNotUpdateCreationDate() {
+        // given
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withUpdateMultipartMessage()
+        }
+
+        val originalMessageId = "original_id"
+        val editedMessageId = "edited_id"
+        val content = MessageContent.MultipartEdited(originalMessageId, "", listOf())
+        val message = Message.Signaling(
+            id = editedMessageId,
+            content = content,
+            conversationId = Arrangement.TEST_CONVERSATION_ID,
+            date = TestMessage.TEST_DATE,
+            senderUserId = UserId("userValue", "userDomain"),
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.Pending,
+            isSelfMessage = false,
+            expirationData = null
+        )
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message = message)
+
+            // then
+            result.shouldSucceed()
+            coVerify {
+                arrangement.messageRepository.updateMultipartMessage(any(), eq(content), eq(editedMessageId), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), eq(editedMessageId), eq<Instant?>(null), any())
+            }.wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
     fun givenASuccess_WhenSendingRegularMessage_ThenDoNotUpdateMessageIdButUpdateCreationDateToServerDate() {
         // given
         val (arrangement, messageSender) = arrange {
@@ -997,6 +1082,7 @@ class MessageSenderTest {
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
         val syncManager = mock(SyncManager::class)
         val userRepository = mock(UserRepository::class)
+        val mlsMissingUsersMessageRejectionHandler = FakeMLSMissingUsersRejectionHandler()
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
@@ -1032,6 +1118,7 @@ class MessageSenderTest {
                 },
                 staleEpochVerifier = staleEpochVerifier,
                 transactionProvider = cryptoTransactionProvider,
+                mlsMissingUsersMessageRejectionHandler = mlsMissingUsersMessageRejectionHandler,
                 scope = testScope
             )
         }
@@ -1145,6 +1232,12 @@ class MessageSenderTest {
             }.returns(Either.Right(Unit))
         }
 
+        suspend fun withUpdateMultipartMessage() = apply {
+            coEvery {
+                messageRepository.updateMultipartMessage(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
         suspend fun withAllRecipients(recipients: Pair<List<Recipient>, List<Recipient>>) = apply {
             coEvery {
                 userRepository.getAllRecipients()
@@ -1221,7 +1314,7 @@ class MessageSenderTest {
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
             val MESSAGE_SENT_TIME = Instant.UNIX_FIRST_DATE
-            val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
+            val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".encodeToByteArray())
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
             val TEST_PROTOCOL_INFO_FAILURE = StorageFailure.DataNotFound
             val GROUP_ID = GroupID("groupId")
@@ -1232,15 +1325,7 @@ class MessageSenderTest {
                 Instant.DISTANT_PAST,
                 CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
-            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
-                KaliumException.InvalidRequestError(
-                    ErrorResponse(
-                        409,
-                        "The conversation epoch in a message is too old",
-                        "mls-stale-message"
-                    )
-                )
-            )
+            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.MlsMessageRejectedFailure.StaleMessage
             val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure.General("error")
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")

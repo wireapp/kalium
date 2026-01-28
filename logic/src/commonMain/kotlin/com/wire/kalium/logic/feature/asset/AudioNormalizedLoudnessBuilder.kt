@@ -1,0 +1,37 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.feature.asset
+
+public fun interface AudioNormalizedLoudnessBuilder {
+    /**
+     * Generates audio normalized loudness [ByteArray] for the given file path.
+     * @param filePath the path to the audio file.
+     * @return [ByteArray] representing the normalized loudness.
+     */
+    public suspend operator fun invoke(filePath: String): ByteArray?
+
+    public companion object {
+        internal const val MAX_SIZE = 200
+        internal const val MAX_VALUE = 255 // normalized loudness can be up to 255 (UByte.MAX_VALUE)
+        internal const val TAG = "AudioNormalizedLoudnessBuilder"
+    }
+}
+
+internal expect class AudioNormalizedLoudnessBuilderImpl : AudioNormalizedLoudnessBuilder {
+    override suspend operator fun invoke(filePath: String): ByteArray?
+}

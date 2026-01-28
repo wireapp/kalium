@@ -30,18 +30,20 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistResult
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
+import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 import androidx.work.ListenableWorker.Result as AndroidResult
 import com.wire.kalium.logic.sync.Result as KaliumResult
 
-class WrapperWorker(
+public class WrapperWorker internal constructor(
     private val innerWorker: DefaultWorker,
     appContext: Context,
     params: WorkerParameters,
@@ -84,7 +86,7 @@ class WrapperWorker(
     }
 }
 
-class WrapperWorkerFactory(
+public class WrapperWorkerFactory(
     private val coreLogic: CoreLogic,
     private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
 ) : WorkerFactory() {
@@ -110,6 +112,16 @@ class WrapperWorkerFactory(
 
             UpdateApiVersionsWorker::class.java.canonicalName -> coreLogic.getGlobalScope().updateApiVersionsWorker
 
+            AudioNormalizedLoudnessWorker::class.java.canonicalName -> withSessionScope(userId) { sessionScope ->
+                val conversationId: ConversationId? = workerParameters.getSerializable(CONVERSATION_ID_KEY)
+                val messageId: String? = workerParameters.inputData.getString(MESSAGE_ID_KEY)
+                if (conversationId == null || messageId == null) {
+                    throw IllegalArgumentException("Missing parameters for ${AudioNormalizedLoudnessWorker.NAME}")
+                } else {
+                    sessionScope.buildAudioNormalizedLoudnessWorker(conversationId, messageId)
+                }
+            }
+
             else -> {
                 kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
                 Class.forName(innerWorkerClassName).getDeclaredConstructor().newInstance() as DefaultWorker
@@ -133,13 +145,21 @@ class WrapperWorkerFactory(
     internal companion object {
         private const val WORKER_CLASS_KEY = "worker_class"
         internal const val USER_ID_KEY = "user-id-worker-param"
+        internal const val CONVERSATION_ID_KEY: String = "conversation-id-param"
+        internal const val MESSAGE_ID_KEY: String = "message-id-param"
 
-        // TODO: delete not used anymore
-        internal const val SERVER_CONFIG_ID_KEY = "server-config-id-worker-param"
-
-        fun workData(work: KClass<out DefaultWorker>, userId: UserId? = null) = Data.Builder()
+        fun workData(
+            work: KClass<out DefaultWorker>,
+            userId: UserId? = null,
+            conversationId: ConversationId? = null,
+            messageId: String? = null
+        ) = Data.Builder()
             .putString(WORKER_CLASS_KEY, work.java.canonicalName)
-            .apply { userId?.let { putSerializable(USER_ID_KEY, it) } }
+            .apply {
+                userId?.let { putSerializable(USER_ID_KEY, it) }
+                conversationId?.let { putSerializable(CONVERSATION_ID_KEY, it) }
+                messageId?.let { putString(MESSAGE_ID_KEY, it) }
+            }
             .build()
     }
 }

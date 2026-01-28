@@ -41,6 +41,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
@@ -53,12 +54,13 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface SessionRepository {
+internal interface SessionRepository {
     suspend fun storeSession(
         serverConfigId: String,
         ssoId: SsoId?,
         accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
     ): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
@@ -99,13 +101,15 @@ internal class SessionDataSource internal constructor(
         serverConfigId: String,
         ssoId: SsoId?,
         accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
-                accountTokens.userId.toDao(),
-                sessionMapper.toSsoIdEntity(ssoId),
-                serverConfigId,
+                userIDEntity = accountTokens.userId.toDao(),
+                ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
+                managedByEntity = managedBy?.toDao(),
+                serverConfigId = serverConfigId,
                 isPersistentWebSocketEnabled = kaliumConfigs.isWebSocketEnabledByDefault
             )
         }.flatMap {
@@ -244,5 +248,10 @@ internal class SessionDataSource internal constructor(
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE
         ManagedByDTO.SCIM -> ManagedByEntity.SCIM
+    }
+
+    internal fun SsoManagedBy.toDao() = when (this) {
+        SsoManagedBy.WIRE -> ManagedByEntity.WIRE
+        SsoManagedBy.SCIM -> ManagedByEntity.SCIM
     }
 }

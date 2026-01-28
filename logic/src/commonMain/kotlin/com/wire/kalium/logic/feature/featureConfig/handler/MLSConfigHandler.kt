@@ -28,12 +28,12 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
-class MLSConfigHandler(
+internal class MLSConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) {
-    suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
+    internal suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
         val isMLSSupported = mlsConfig.supportedProtocols.contains(SupportedProtocol.MLS)
         val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))

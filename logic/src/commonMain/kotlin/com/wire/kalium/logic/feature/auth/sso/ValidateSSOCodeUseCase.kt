@@ -27,15 +27,15 @@ import kotlin.uuid.Uuid
  * The code is valid if it starts with [SSO_CODE_WIRE_PREFIX] and contains **a valid UUID with hex-and-dash format**.
  */
 @Mockable
-interface ValidateSSOCodeUseCase {
+public interface ValidateSSOCodeUseCase {
     /**
      * @param ssoCode the SSO code to validate
      * @return the [ValidateSSOCodeResult] with the UUID if successful
      */
-    operator fun invoke(ssoCode: String): ValidateSSOCodeResult
+    public operator fun invoke(ssoCode: String): ValidateSSOCodeResult
 
-    companion object {
-        const val SSO_CODE_WIRE_PREFIX = "wire-"
+    public companion object {
+        public const val SSO_CODE_WIRE_PREFIX: String = "wire-"
     }
 }
 
@@ -52,7 +52,7 @@ internal class ValidateSSOCodeUseCaseImpl : ValidateSSOCodeUseCase {
         }
 }
 
-sealed class ValidateSSOCodeResult {
-    data class Valid(val uuid: String) : ValidateSSOCodeResult()
-    data object Invalid : ValidateSSOCodeResult()
+public sealed class ValidateSSOCodeResult {
+    public data class Valid(val uuid: String) : ValidateSSOCodeResult()
+    public data object Invalid : ValidateSSOCodeResult()
 }

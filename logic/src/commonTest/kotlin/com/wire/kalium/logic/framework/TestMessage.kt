@@ -18,9 +18,12 @@
 
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.message.MessageSent
@@ -30,7 +33,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-object TestMessage {
+internal object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
     val TEST_DATE = Instant.parse("2023-02-01T12:34:50Z")
     val TEST_MESSAGE_SENT = MessageSent(TEST_DATE)
@@ -87,6 +90,21 @@ object TestMessage {
         isSelfMessage = false
     )
 
+    fun multipartMessage(attachments: List<MessageAttachment> = TEST_ATTACHMENTS) = Message.Regular(
+        id = TEST_MESSAGE_ID,
+        content = MessageContent.Multipart(
+            value = TEXT_CONTENT.value,
+            attachments = attachments
+        ),
+        conversationId = ConversationId("conv", "id"),
+        date = TEST_DATE,
+        senderUserId = TEST_SENDER_USER_ID,
+        senderClientId = TEST_SENDER_CLIENT_ID,
+        status = Message.Status.Pending,
+        editStatus = Message.EditStatus.NotEdited,
+        isSelfMessage = false
+    )
+
     val ENTITY = MessageEntity.Regular(
         TEST_MESSAGE_ID,
         TestConversation.ENTITY_ID,
@@ -123,5 +141,26 @@ object TestMessage {
         status = Message.Status.Sent,
         isSelfMessage = false,
         expirationData = null
+    )
+
+    val TEST_ATTACHMENTS: List<MessageAttachment> = listOf(
+        CellAssetContent(
+            id = "assetId1",
+            versionId = "v1",
+            mimeType = "image/png",
+            assetPath = null,
+            assetSize = 1024,
+            metadata = null,
+            transferStatus = AssetTransferStatus.UPLOADED
+        ),
+        CellAssetContent(
+            id = "assetId2",
+            versionId = "v1",
+            mimeType = "video/mp4",
+            assetPath = null,
+            assetSize = 2048,
+            metadata = null,
+            transferStatus = AssetTransferStatus.UPLOADED
+        )
     )
 }

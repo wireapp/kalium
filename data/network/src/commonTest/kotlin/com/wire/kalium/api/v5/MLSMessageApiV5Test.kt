@@ -1,0 +1,173 @@
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.api.v5
+
+import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
+import com.wire.kalium.mocks.responses.SendMLSMessageResponseJson
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
+import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
+import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
+import com.wire.kalium.network.exceptions.FederationError
+import com.wire.kalium.network.exceptions.MLSError
+import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.isSuccessful
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+@ExperimentalCoroutinesApi
+internal class MLSMessageApiV5Test : ApiTest() {
+
+    @Test
+    fun givenMessage_whenSendingCommitBundle_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
+                statusCode = HttpStatusCode.Created,
+                assertion =
+                {
+                    assertPost()
+                    assertContentType(ContentType.Message.Mls)
+                    assertPathEqual(PATH_COMMIT_BUNDLES)
+                }
+            )
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+            val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+            assertTrue(response.isSuccessful())
+        }
+
+    @Test
+    fun givenMessage_whenSendingMessage_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
+                statusCode = HttpStatusCode.Created,
+                assertion =
+                {
+                    assertPost()
+                    assertContentType(ContentType.Message.Mls)
+                    assertPathEqual(PATH_MESSAGE)
+                }
+            )
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+            val response = mlsMessageApi.sendMessage(MESSAGE)
+            assertTrue(response.isSuccessful())
+        }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundle_theRequestShouldFail() =
+        runTest {
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
+            val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+            assertFalse(response.isSuccessful())
+        }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundleFailsUnreachable_theRequestShouldFailWithUnreachableError() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable,
+            statusCode = HttpStatusCode.UnreachableRemoteBackends,
+            assertion =
+            {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            }
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+        val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+
+        assertIs<NetworkResponse.Error>(response)
+        assertIs<FederationError>(response.kException)
+        assertIs<FederationErrorResponse.Unreachable>(response.kException.errorResponse)
+    }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundleFailsConflict_theRequestShouldFailWithConflictDomainsError() = runTest {
+        val nonFederatingBackends = listOf("bella.wire.link", "foma.wire.link")
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.validFederationConflictingBackends(
+                FederationErrorResponse.Conflict(nonFederatingBackends)
+            ).rawJson,
+            statusCode = HttpStatusCode.Conflict,
+            assertion = {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            }
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+        val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+
+        assertFalse(response.isSuccessful())
+        assertIs<FederationError>(response.kException)
+        assertIs<FederationErrorResponse.Conflict>(response.kException.errorResponse)
+        assertEquals(
+            expected = nonFederatingBackends,
+            actual = response.kException.errorResponse.nonFederatingBackends
+        )
+    }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundleFailsMLSStaleMessage_theRequestShouldFailWithMLSRequestError() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.valid(
+                ErrorResponse(
+                    code = HttpStatusCode.Conflict.value,
+                    message = "some other error",
+                    label = "mls-stale-message"
+                )
+            ).rawJson,
+            statusCode = HttpStatusCode.Conflict,
+            assertion =
+            {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            }
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+        val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+
+        assertFalse(response.isSuccessful())
+        assertIs<MLSError>(response.kException)
+        assertIs<MLSErrorResponse.StaleMessage>(response.kException.errorBody)
+    }
+
+    private companion object {
+        const val PATH_MESSAGE = "/mls/messages"
+        const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
+
+        val MESSAGE = "ApplicationMessage".encodeToByteArray()
+        val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
+    }
+}

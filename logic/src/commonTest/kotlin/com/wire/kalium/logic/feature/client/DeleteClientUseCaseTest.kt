@@ -33,7 +33,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

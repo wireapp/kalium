@@ -23,7 +23,7 @@ import com.wire.kalium.protobuf.messages.Availability
 import io.mockative.Mockable
 
 @Mockable
-interface AvailabilityStatusMapper {
+internal interface AvailabilityStatusMapper {
     fun fromDaoAvailabilityStatusToModel(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus
     fun fromModelAvailabilityStatusToDao(status: UserAvailabilityStatus): UserAvailabilityStatusEntity
     fun fromProtoAvailabilityToModel(status: Availability): UserAvailabilityStatus

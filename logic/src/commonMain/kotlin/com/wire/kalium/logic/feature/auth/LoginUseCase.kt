@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -38,53 +39,54 @@ import com.wire.kalium.network.exceptions.isAccountSuspended
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
-sealed class AuthenticationResult {
-    data class Success(
+public sealed class AuthenticationResult {
+    public data class Success(
         val authData: AccountTokens,
         val ssoID: SsoId?,
+        val managedBy: SsoManagedBy?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : AuthenticationResult()
 
-    sealed class Failure : AuthenticationResult() {
-        data object SocketError : Failure()
-        sealed class InvalidCredentials : Failure() {
+    public sealed class Failure : AuthenticationResult() {
+        public data object SocketError : Failure()
+        public sealed class InvalidCredentials : Failure() {
             /**
              * The team has enabled 2FA but the user has not entered it yet
              */
-            data object Missing2FA : InvalidCredentials()
+            public data object Missing2FA : InvalidCredentials()
 
             /**
              * The user has entered an invalid 2FA code, or the 2FA code has expired
              */
-            data object Invalid2FA : InvalidCredentials()
+            public data object Invalid2FA : InvalidCredentials()
 
             /**
              * The user has entered an invalid email/handle or password combination
              */
-            data object InvalidPasswordIdentityCombination : InvalidCredentials()
+            public data object InvalidPasswordIdentityCombination : InvalidCredentials()
         }
 
         /**
          * The user has entered a text that isn't considered a valid email or handle
          */
-        data object InvalidUserIdentifier : Failure()
+        public data object InvalidUserIdentifier : Failure()
 
         /**
          * The user's account has been suspended, for instance via backoffice
          */
-        data object AccountSuspended : Failure()
+        public data object AccountSuspended : Failure()
 
         /**
          * The user has been invited to a team but hasn't accepted the invitation yet
          */
-        data object AccountPendingActivation : Failure()
+        public data object AccountPendingActivation : Failure()
 
-        data class Generic(val genericFailure: CoreFailure) : Failure()
+        public data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
-interface LoginUseCase {
+public interface LoginUseCase {
     /**
      * Login with user credentials and return the session
      * Be noticed that session won't be stored locally, to store it use [AddAuthenticatedUserUseCase].
@@ -96,7 +98,7 @@ interface LoginUseCase {
      * @see AddAuthenticatedUserUseCase
      * @see RequestSecondFactorVerificationCodeUseCase
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
@@ -145,21 +147,23 @@ internal class LoginUseCaseImpl internal constructor(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials) }
-            .fold({
-                when (it) {
-                    is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
-                    is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it, isEmail, cleanUserIdentifier)
-                    is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
-                    is NetworkFailure.FederatedBackendFailure -> AuthenticationResult.Failure.Generic(it)
-                    is NetworkFailure.FeatureNotSupported -> AuthenticationResult.Failure.Generic(it)
-                }
-            }, {
-                if (isEmail && clean2FACode != null) {
-                    secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, clean2FACode)
-                }
-                it
-            })
+        }.map { result ->
+            AuthenticationResult.Success(result.accountTokens, result.ssoId, result.managedBy, serverConfig.id, proxyCredentials)
+        }.fold({
+            when (it) {
+                is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
+                is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it, isEmail, cleanUserIdentifier)
+                is NetworkFailure.NoNetworkConnection,
+                is NetworkFailure.FederatedBackendFailure,
+                is NetworkFailure.FeatureNotSupported,
+                is NetworkFailure.MlsMessageRejectedFailure -> AuthenticationResult.Failure.Generic(it)
+            }
+        }, {
+            if (isEmail && clean2FACode != null) {
+                secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, clean2FACode)
+            }
+            it
+        })
     }
 
     private suspend fun handleServerMiscommunication(

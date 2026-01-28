@@ -19,6 +19,6 @@ package com.wire.kalium.logic.data.user
 
 import kotlinx.coroutines.flow.Flow
 
-fun interface SelfUserObservationProvider {
+internal fun interface SelfUserObservationProvider {
     suspend fun observeSelfUser(): Flow<SelfUser>
 }

@@ -17,14 +17,10 @@
  */
 package com.wire.kalium.logic.feature.conversation.delete
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.left
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 
-interface DeleteConversationLocallyUseCase {
+public interface DeleteConversationLocallyUseCase {
     /**
      * Delete local conversation which:
      * - Clear all local assets
@@ -33,22 +29,17 @@ interface DeleteConversationLocallyUseCase {
      * - Send Signal message to other clients to do the same
      *
      * @param conversationId - id of conversation to delete
+     *
+     * @return [ClearConversationContentUseCase.Result] of the operation, indicating success or failure.
      */
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result
 }
 
 internal class DeleteConversationLocallyUseCaseImpl(
-    private val clearConversationContent: ClearConversationContentUseCase,
-    private val deleteConversation: DeleteConversationUseCase,
-    private val transactionProvider: CryptoTransactionProvider
+    private val clearConversationContent: ClearConversationContentUseCase
 ) : DeleteConversationLocallyUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        val clearResult = clearConversationContent(conversationId, true)
-        return if (clearResult is ClearConversationContentUseCase.Result.Failure) {
-            clearResult.failure.left()
-        } else {
-            transactionProvider.transaction("DeleteConversationLocally") { deleteConversation(it, conversationId) }
-        }
+    override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result {
+        return clearConversationContent(conversationId, true)
     }
 }

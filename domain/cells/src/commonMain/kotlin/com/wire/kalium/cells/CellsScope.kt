@@ -1,0 +1,388 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.cells
+
+import com.wire.kalium.cells.data.CellAttachmentsDataSource
+import com.wire.kalium.cells.data.CellConfigDataSource
+import com.wire.kalium.cells.data.CellConversationDataSource
+import com.wire.kalium.cells.data.CellUploadManagerImpl
+import com.wire.kalium.cells.data.CellUsersDataSource
+import com.wire.kalium.cells.data.CellsApiImpl
+import com.wire.kalium.cells.data.CellsAwsClient
+import com.wire.kalium.cells.data.CellsDataSource
+import com.wire.kalium.cells.data.FileDownloader
+import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
+import com.wire.kalium.cells.data.cellsAwsClient
+import com.wire.kalium.cells.data.fileDownloader
+import com.wire.kalium.cells.domain.CellAttachmentsRepository
+import com.wire.kalium.cells.domain.CellConfigRepository
+import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.CellUploadManager
+import com.wire.kalium.cells.domain.CellUsersRepository
+import com.wire.kalium.cells.domain.CellsApi
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.NodeServiceBuilder
+import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
+import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
+import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCase
+import com.wire.kalium.cells.domain.usecase.GetAllTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.GetCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
+import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
+import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
+import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
+import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCase
+import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCase
+import com.wire.kalium.cells.domain.usecase.IsAtLeastOneCellAvailableUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.MoveNodeUseCase
+import com.wire.kalium.cells.domain.usecase.MoveNodeUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCase
+import com.wire.kalium.cells.domain.usecase.ObserveAttachmentDraftsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
+import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RefreshCellAssetStateUseCase
+import com.wire.kalium.cells.domain.usecase.RefreshCellAssetStateUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCase
+import com.wire.kalium.cells.domain.usecase.RemoveNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RenameNodeUseCase
+import com.wire.kalium.cells.domain.usecase.RenameNodeUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCase
+import com.wire.kalium.cells.domain.usecase.RestoreNodeFromRecycleBinUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCase
+import com.wire.kalium.cells.domain.usecase.RetryAttachmentUploadUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCase
+import com.wire.kalium.cells.domain.usecase.UpdateNodeTagsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateDocumentFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateFolderUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateFolderUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreatePresentationFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreatePresentationFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.create.CreateSpreadsheetFileUseCase
+import com.wire.kalium.cells.domain.usecase.create.CreateSpreadsheetFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellVersionUseCase
+import com.wire.kalium.cells.domain.usecase.download.DownloadCellVersionUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkPasswordUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.CreatePublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.DeletePublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkPasswordUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.GetPublicLinkUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.SetPublicLinkExpirationUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.SetPublicLinkExpirationUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCase
+import com.wire.kalium.cells.domain.usecase.publiclink.UpdatePublicLinkPasswordUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCase
+import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
+import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
+import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
+import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
+import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRedirect
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import okio.FileSystem
+import okio.SYSTEM
+import kotlin.coroutines.CoroutineContext
+
+public class CellsScope(
+    private val cellsClient: HttpClient,
+    private val dao: CellScopeDao,
+    private val sessionManager: SessionManager,
+    private val accessTokenApi: AccessTokenApi,
+) : CoroutineScope {
+
+    public data class CellScopeDao(
+        val attachmentDraftDao: MessageAttachmentDraftDao,
+        val conversationsDao: ConversationDAO,
+        val attachmentsDao: MessageAttachmentsDao,
+        val assetsDao: AssetDAO,
+        val userDao: UserDAO,
+        val publicLinkDao: PublicLinkDao,
+        val userConfigDAO: UserConfigDAO,
+    )
+
+    /**
+     * A dedicated minimalist HttpClient for downloads
+     */
+    public val downloadHttpClient: HttpClient = HttpClient {
+        followRedirects = true
+        install(HttpRedirect) {
+            checkHttpMethod = false
+            allowHttpsDowngrade = false
+        }
+    }
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    private val cellsCredentialsProvider: CellsCredentialsProvider by lazy {
+        CellsCredentialsProvider(getCellConfig)
+    }
+
+    private val cellClientCredentialsDeferred: Deferred<CellsCredentials> by lazy {
+        async { cellsCredentialsProvider.getCredentials() }
+    }
+
+    private val cellAwsClient: CellsAwsClient by lazy {
+        cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
+    }
+
+    private val nodeServiceApiMutex = Mutex()
+    private var _nodeServiceApi: NodeServiceApi? = null
+
+    private suspend fun getNodeServiceApiCached(): NodeServiceApi {
+        // If already initialized, return it
+        _nodeServiceApi?.let { return it }
+
+        // Lock to ensure only one coroutine initializes
+        return nodeServiceApiMutex.withLock {
+            _nodeServiceApi ?: NodeServiceBuilder
+                .withHttpClient(cellsClient)
+                .withCredentials(cellClientCredentialsDeferred)
+                .build()
+                .also { _nodeServiceApi = it }
+        }
+    }
+
+    private val cellsApi: CellsApi by lazy {
+        CellsApiImpl(getNodeServiceApi = { getNodeServiceApiCached() })
+    }
+
+    private val cellsRepository: CellsRepository by lazy {
+        CellsDataSource(
+            cellsApi = cellsApi,
+            publicLinkDao = dao.publicLinkDao,
+            awsClient = cellAwsClient,
+            fileSystem = FileSystem.SYSTEM
+        )
+    }
+
+    private val cellsConversationRepository: CellConversationRepository by lazy {
+        CellConversationDataSource(dao.conversationsDao)
+    }
+
+    private val cellAttachmentsRepository: CellAttachmentsRepository by lazy {
+        CellAttachmentsDataSource(dao.attachmentsDao, dao.assetsDao)
+    }
+
+    public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository by lazy {
+        MessageAttachmentDraftDataSource(dao.attachmentDraftDao)
+    }
+
+    private val usersRepository: CellUsersRepository by lazy {
+        CellUsersDataSource(dao.userDao)
+    }
+
+    private val cellConfigRepository: CellConfigRepository by lazy {
+        CellConfigDataSource(dao.userConfigDAO)
+    }
+
+    public val uploadManager: CellUploadManager by lazy {
+        CellUploadManagerImpl(
+            repository = cellsRepository,
+            uploadScope = this,
+        )
+    }
+
+    public val addAttachment: AddAttachmentDraftUseCase by lazy {
+        AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this)
+    }
+
+    public val removeAttachment: RemoveAttachmentDraftUseCase by lazy {
+        RemoveAttachmentDraftUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, cellsRepository)
+    }
+
+    public val removeAttachments: RemoveAttachmentDraftsUseCase by lazy {
+        RemoveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository)
+    }
+
+    public val observeAttachments: ObserveAttachmentDraftsUseCase by lazy {
+        ObserveAttachmentDraftsUseCaseImpl(messageAttachmentsDraftRepository, uploadManager)
+    }
+
+    public val publishAttachments: PublishAttachmentsUseCase by lazy {
+        PublishAttachmentsUseCaseImpl(cellsRepository)
+    }
+
+    public val observeFiles: GetPaginatedNodesUseCase by lazy {
+        GetPaginatedNodesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
+    }
+
+    public val observePagedFiles: GetCellFilesPagedUseCase by lazy {
+        GetCellFilesPagedUseCaseImpl(observeFiles)
+    }
+
+    public val downloadCellFile: DownloadCellFileUseCase by lazy {
+        DownloadCellFileUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+
+    private val fileDownloader: FileDownloader
+        get() = fileDownloader(httpClient = downloadHttpClient)
+
+    public val refreshAsset: RefreshCellAssetStateUseCase by lazy {
+        RefreshCellAssetStateUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+
+    public val deleteAttachmentsUseCase: DeleteMessageAttachmentsUseCase by lazy {
+        DeleteMessageAttachmentsUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+
+    public val deleteCellAssetUseCase: DeleteCellAssetUseCase by lazy {
+        DeleteCellAssetUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+
+    public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
+        CreatePublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+    }
+
+    public val getPublicLinkUseCase: GetPublicLinkUseCase by lazy {
+        GetPublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+    }
+
+    public val deletePublicLinkUseCase: DeletePublicLinkUseCase by lazy {
+        DeletePublicLinkUseCaseImpl(cellsRepository)
+    }
+
+    public val retryAttachmentUpload: RetryAttachmentUploadUseCase by lazy {
+        RetryAttachmentUploadUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
+    }
+
+    public val createFolderUseCase: CreateFolderUseCase by lazy {
+        CreateFolderUseCaseImpl(cellsRepository)
+    }
+    public val createSpreadsheetFileUseCase: CreateSpreadsheetFileUseCase by lazy {
+        CreateSpreadsheetFileUseCaseImpl(cellsRepository)
+    }
+    public val createPresentationFileUseCase: CreatePresentationFileUseCase by lazy {
+        CreatePresentationFileUseCaseImpl(cellsRepository)
+    }
+    public val createDocumentFileUseCase: CreateDocumentFileUseCase by lazy {
+        CreateDocumentFileUseCaseImpl(cellsRepository)
+    }
+    public val moveNodeUseCase: MoveNodeUseCase by lazy {
+        MoveNodeUseCaseImpl(cellsRepository)
+    }
+    public val getFoldersUseCase: GetFoldersUseCase by lazy {
+        GetFoldersUseCaseImpl(cellsRepository)
+    }
+    public val restoreNodeFromRecycleBin: RestoreNodeFromRecycleBinUseCase by lazy {
+        RestoreNodeFromRecycleBinUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+    public val getAllTags: GetAllTagsUseCase by lazy {
+        GetAllTagsUseCaseImpl(cellsRepository)
+    }
+    public val updateNodeTagsUseCase: UpdateNodeTagsUseCase by lazy {
+        UpdateNodeTagsUseCaseImpl(cellsRepository)
+    }
+    public val removeNodeTagsUseCase: RemoveNodeTagsUseCase by lazy {
+        RemoveNodeTagsUseCaseImpl(cellsRepository)
+    }
+    public val renameNodeUseCase: RenameNodeUseCase by lazy {
+        RenameNodeUseCaseImpl(cellsRepository, cellAttachmentsRepository)
+    }
+
+    public val isCellAvailable: IsAtLeastOneCellAvailableUseCase by lazy {
+        IsAtLeastOneCellAvailableUseCaseImpl(cellsConversationRepository)
+    }
+
+    public val getMessageAttachmentUseCase: GetMessageAttachmentUseCase by lazy {
+        GetMessageAttachmentUseCaseImpl(cellAttachmentsRepository)
+    }
+
+    public val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase by lazy {
+        GetMessageAttachmentsUseCaseImpl(cellAttachmentsRepository)
+    }
+
+    public val getCellFileUseCase: GetCellFileUseCase by lazy {
+        GetCellFileUseCaseImpl(cellsRepository)
+    }
+
+    public val createPublicLinkPasswordUseCase: CreatePublicLinkPasswordUseCase by lazy {
+        CreatePublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val updatePublicLinkPasswordUseCase: UpdatePublicLinkPasswordUseCase by lazy {
+        UpdatePublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val getPublicLinkPassword: GetPublicLinkPasswordUseCase by lazy {
+        GetPublicLinkPasswordUseCaseImpl(cellsRepository)
+    }
+
+    public val setPublicLinkExpiration: SetPublicLinkExpirationUseCase by lazy {
+        SetPublicLinkExpirationUseCaseImpl(cellsRepository)
+    }
+
+    public val getEditorUrl: GetEditorUrlUseCase by lazy {
+        GetEditorUrlUseCaseImpl(cellsRepository)
+    }
+
+    public val getNodeVersions: GetNodeVersionsUseCase by lazy {
+        GetNodeVersionsUseCaseImpl(cellsRepository)
+    }
+
+    public val restoreNodeVersion: RestoreNodeVersionUseCase by lazy {
+        RestoreNodeVersionUseCaseImpl(cellsRepository)
+    }
+    public val downloadCellVersion: DownloadCellVersionUseCase by lazy {
+        DownloadCellVersionUseCaseImpl(fileDownloader)
+    }
+
+    public val getCellConfig: GetWireCellConfigurationUseCase by lazy {
+        GetWireCellConfigurationUseCaseImpl(cellConfigRepository)
+    }
+}

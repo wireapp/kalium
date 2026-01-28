@@ -66,13 +66,12 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mockable
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @Mockable
-interface ConversationMapper {
+internal interface ConversationMapper {
     fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
@@ -142,7 +141,7 @@ internal class ConversationMapperImpl(
             creatorId = apiModel.creator ?: selfUserId.value, // NOTE mls 1-1 does not have the creator field set.
             lastReadDate = Instant.UNIX_FIRST_DATE,
             lastNotificationDate = null,
-            lastModifiedDate = apiModel.lastEventTime.toInstant(),
+            lastModifiedDate = Instant.parse(apiModel.lastEventTime),
             access = apiModel.access.map { it.toDAO() },
             accessRole = (apiModel.accessRole ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL)
                 .map { it.toDAO() },
@@ -151,7 +150,7 @@ internal class ConversationMapperImpl(
             userMessageTimer = null, // user picked self deletion timer is only persisted locally
             hasIncompleteMetadata = false,
             archived = apiModel.members.self?.otrArchived ?: false,
-            archivedInstant = apiModel.members.self?.otrArchivedRef?.toInstant(),
+            archivedInstant = apiModel.members.self?.otrArchivedRef?.let { Instant.parse(it) },
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
@@ -519,9 +518,9 @@ internal class ConversationMapperImpl(
         mutedTime = 0,
         removedBy = null,
         creatorId = "",
-        lastNotificationDate = "1970-01-01T00:00:00.000Z".toInstant(),
-        lastModifiedDate = "1970-01-01T00:00:00.000Z".toInstant(),
-        lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastNotificationDate = Instant.parse("1970-01-01T00:00:00.000Z"),
+        lastModifiedDate = Instant.parse("1970-01-01T00:00:00.000Z"),
+        lastReadDate = Instant.parse("1970-01-01T00:00:00.000Z"),
         access = emptyList(),
         accessRole = emptyList(),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
@@ -620,22 +619,22 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
+internal fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
     ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
     ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
 }
 
-fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
+internal fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
     ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
     ConversationEntity.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
 }
 
-fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {
+internal fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAccess = when (this) {
     ConversationEntity.ChannelAccess.PRIVATE -> ChannelAccess.PRIVATE
     ConversationEntity.ChannelAccess.PUBLIC -> ChannelAccess.PUBLIC
 }
 
-fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
+internal fun ConversationEntity.Type.fromDaoModelToType(isChannel: Boolean): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.Self
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
     ConversationEntity.Type.GROUP -> {

@@ -24,6 +24,9 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
+import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toConversation
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
@@ -44,7 +47,7 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.use
 
-interface RestoreMPBackupUseCase {
+public interface RestoreMPBackupUseCase {
     /**
      * Restores a valid previously created backup file in multiplatform format into the current database, respecting the current data
      * if there is any overlap.
@@ -52,7 +55,7 @@ interface RestoreMPBackupUseCase {
      * @param password the password used to encrypt the original backup file. Null if the file was not encrypted.
      * @return A [RestoreBackupResult] indicating the success or failure of the operation.
      */
-    suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
+    public suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
 }
 
 internal class RestoreMPBackupUseCaseImpl(
@@ -131,6 +134,7 @@ internal class RestoreMPBackupUseCaseImpl(
             pager.persistUsers { onProgress(processedPageCount++, pager.totalPagesCount) }
             pager.persistConversations { onProgress(processedPageCount++, pager.totalPagesCount) }
             pager.persistMessages { onProgress(processedPageCount++, pager.totalPagesCount) }
+            pager.persistReactions { onProgress(processedPageCount++, pager.totalPagesCount) }
         }
     }
 
@@ -165,6 +169,30 @@ internal class RestoreMPBackupUseCaseImpl(
                     .onFailure { error ->
                         kaliumLogger.e("Restore messages error: $error")
                     }
+                onPageProcessed()
+            }
+    }
+
+    @Suppress("MagicNumber")
+    private suspend fun ImportResultPager.persistReactions(onPageProcessed: () -> Unit) {
+        reactionsPager.pages().asFlow().buffer(10)
+            .collect { page ->
+                backupRepository.insertReactions(
+                    reactions = page.map { reaction ->
+                        MessageReactions(
+                            messageId = reaction.messageId,
+                            conversationId = reaction.conversationId.let { QualifiedID(it.id, it.domain) },
+                            reactions = reaction.emojiReactions.map {
+                                MessageReactionWithUsers(
+                                    emoji = it.emoji,
+                                    users = it.users.map { QualifiedID(it.id, it.domain) }
+                                )
+                            }
+                        )
+                    }
+                ).onFailure { error ->
+                    kaliumLogger.e("Restore reactions error: $error")
+                }
                 onPageProcessed()
             }
     }

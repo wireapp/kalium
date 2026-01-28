@@ -32,30 +32,34 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 /**
  * Adds an authenticated user to the session
  * In case of the new session having a different server configurations, the new session should not be added
  */
-class AddAuthenticatedUserUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
     private val serverConfigurationDAO: ServerConfigurationDAO,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
-    sealed class Result {
-        data class Success(val userId: UserId) : Result()
-        sealed class Failure : Result() {
-            data object UserAlreadyExists : Failure()
-            data class Generic(val genericFailure: CoreFailure) : Failure()
+    public sealed class Result {
+        public data class Success(val userId: UserId) : Result()
+        public sealed class Failure : Result() {
+            public data object UserAlreadyExists : Failure()
+            public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
     }
 
-    suspend operator fun invoke(
+    @Suppress("LongParameterList")
+    public suspend operator fun invoke(
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy? = null,
         replace: Boolean = false
     ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
@@ -63,8 +67,8 @@ class AddAuthenticatedUserUseCase internal constructor(
             },
         { doesValidSessionExist ->
                 when (doesValidSessionExist) {
-                    true -> onUserExist(serverConfigId, ssoId, authTokens, proxyCredentials, replace)
-                    false -> storeUser(serverConfigId, ssoId, authTokens, proxyCredentials)
+                    true -> onUserExist(serverConfigId, ssoId, authTokens, proxyCredentials, managedBy, replace)
+                    false -> storeUser(serverConfigId, ssoId, authTokens, proxyCredentials, managedBy)
                 }
             }
         )
@@ -73,9 +77,10 @@ class AddAuthenticatedUserUseCase internal constructor(
         serverConfigId: String,
         ssoId: SsoId?,
         accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
     ): Result =
-        sessionRepository.storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials)
+        sessionRepository.storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials, managedBy)
             .onSuccess {
                 sessionRepository.updateCurrentSession(accountTokens.userId)
             }.fold(
@@ -84,11 +89,13 @@ class AddAuthenticatedUserUseCase internal constructor(
             )
 
     // In case of the new session have a different server configurations the new session should not be added
+    @Suppress("LongParameterList")
     private suspend fun onUserExist(
         newServerConfigId: String,
         ssoId: SsoId?,
         newAccountTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
         replace: Boolean
     ): Result =
         when (replace) {
@@ -108,7 +115,8 @@ class AddAuthenticatedUserUseCase internal constructor(
                                 serverConfigId = newServerConfigId,
                                 ssoId = ssoId,
                                 accountTokens = newAccountTokens,
-                                proxyCredentials = proxyCredentials
+                                proxyCredentials = proxyCredentials,
+                                managedBy = managedBy,
                             )
                         } else Result.Failure.UserAlreadyExists
                     }

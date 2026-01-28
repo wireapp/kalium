@@ -23,21 +23,22 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-sealed class AccountInfo {
-    abstract val userId: UserId
+public sealed class AccountInfo {
+    public abstract val userId: UserId
 
-    data class Valid(override val userId: UserId) : AccountInfo()
-    data class Invalid(
-        override val userId: UserId,
-        val logoutReason: LogoutReason
+    public data class Valid(public override val userId: UserId) : AccountInfo()
+    public data class Invalid(
+        public override val userId: UserId,
+        public val logoutReason: LogoutReason
     ) : AccountInfo()
 
     @OptIn(ExperimentalContracts::class)
-    fun isValid(): Boolean {
+    public fun isValid(): Boolean {
         contract {
             returns(true) implies (this@AccountInfo is Valid)
             returns(false) implies (this@AccountInfo is Invalid)
@@ -46,12 +47,12 @@ sealed class AccountInfo {
     }
 }
 
-data class PersistentWebSocketStatus(
+public data class PersistentWebSocketStatus(
     val userId: UserId,
     val isPersistentWebSocketEnabled: Boolean
 )
 
-data class Account(
+internal data class Account(
     val info: AccountInfo,
     val serverConfig: ServerConfig,
     val ssoId: SsoId?
@@ -60,13 +61,13 @@ data class Account(
 /**
  * Holds information about the user ID, and the associated user id.
  */
-data class AccountTokens(
+public data class AccountTokens(
     val userId: UserId,
     val accessToken: AccessToken,
     val refreshToken: RefreshToken,
     val cookieLabel: String?
 ) {
-    constructor(
+    public constructor(
         userId: UserId,
         accessToken: String,
         refreshToken: String,
@@ -78,3 +79,9 @@ data class AccountTokens(
         get() = accessToken.tokenType
 
 }
+
+public data class AuthenticationResult(
+    val accountTokens: AccountTokens,
+    val ssoId: SsoId?,
+    val managedBy: SsoManagedBy?,
+)

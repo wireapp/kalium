@@ -17,19 +17,19 @@
  */
 package com.wire.kalium.logic.feature.message.composite
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * Use case for sending a button action message.
@@ -39,40 +39,40 @@ import kotlinx.datetime.Clock
  *
  * the action message is sent only to the message original sender.
  */
-class SendButtonActionConfirmationMessageUseCase internal constructor(
+public class SendButtonActionConfirmationMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val syncManager: SyncManager,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
         buttonId: String,
         userIds: List<UserId>
     ): Result = syncManager.waitUntilLiveOrFailure().flatMap {
-            currentClientIdProvider().flatMap { currentClientId ->
-                val regularMessage = Message.Signaling(
-                    id = Uuid.random().toString(),
-                    content = MessageContent.ButtonActionConfirmation(
-                        referencedMessageId = messageId,
-                        buttonId = buttonId
-                    ),
-                    conversationId = conversationId,
-                    date = Clock.System.now(),
-                    senderUserId = selfUserId,
-                    senderClientId = currentClientId,
-                    status = Message.Status.Pending,
-                    isSelfMessage = true,
-                    expirationData = null
-                )
-                messageSender.sendMessage(regularMessage, messageTarget = MessageTarget.Users(userIds))
-            }
+        currentClientIdProvider().flatMap { currentClientId ->
+            val regularMessage = Message.Signaling(
+                id = Uuid.random().toString(),
+                content = MessageContent.ButtonActionConfirmation(
+                    referencedMessageId = messageId,
+                    buttonId = buttonId
+                ),
+                conversationId = conversationId,
+                date = Clock.System.now(),
+                senderUserId = selfUserId,
+                senderClientId = currentClientId,
+                status = Message.Status.Pending,
+                isSelfMessage = true,
+                expirationData = null
+            )
+            messageSender.sendMessage(regularMessage, messageTarget = MessageTarget.Users(userIds))
+        }
     }.fold(Result::Failure, { Result.Success })
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(
             val error: CoreFailure
         ) : Result
     }

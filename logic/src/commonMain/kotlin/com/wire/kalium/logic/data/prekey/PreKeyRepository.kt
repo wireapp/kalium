@@ -53,7 +53,7 @@ import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface PreKeyRepository {
+internal interface PreKeyRepository {
     /**
      * Fetches the IDs of the prekeys currently available on the backend.
      * @see uploadNewPrekeyBatch
@@ -129,7 +129,7 @@ interface PreKeyRepository {
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class PreKeyDataSource(
+internal class PreKeyDataSource(
     private val preKeyApi: PreKeyApi,
     private val proteusClientProvider: ProteusClientProvider,
     private val provideCurrentClientId: CurrentClientIdProvider,

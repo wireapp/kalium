@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 import org.jetbrains.kotlin.util.suffixIfNot
 
 @Suppress("DSL_SCOPE_VIOLATION")
@@ -23,6 +24,8 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mockative)
+    alias(libs.plugins.mokkery)
+    alias(libs.plugins.skie)
 }
 
 kaliumLibrary {
@@ -31,24 +34,41 @@ kaliumLibrary {
     }
 }
 
+val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
+    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+
 kotlin {
+    explicitApi()
+
+    val xcf = XCFramework("KaliumLogic")
+    val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64())
+    appleTargets.forEach {
+        it.binaries.framework {
+            baseName = "KaliumLogic"
+            freeCompilerArgs += "-Xbinary=bundleId=com.wire.kalium.logic"
+            linkerOpts.add("-lsqlite3")
+            xcf.add(this)
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(projects.common)
-                implementation(projects.network)
-                api(projects.data)
-                implementation(projects.dataMappers)
-                api(projects.networkUtil)
-                implementation(projects.cryptography)
-                implementation(projects.persistence)
-                implementation(projects.protobuf)
-                api(projects.logger)
-                api(projects.calling)
-                implementation(projects.util)
-                implementation(projects.cells)
-                implementation(projects.backup)
-                implementation(projects.messaging.sending)
+                api(projects.core.common)
+                api(projects.domain.work)
+                implementation(projects.data.network)
+                api(projects.core.data)
+                implementation(projects.data.dataMappers)
+                api(projects.data.networkUtil)
+                implementation(projects.core.cryptography)
+                implementation(projects.data.persistence)
+                implementation(projects.data.protobuf)
+                api(projects.core.logger)
+                api(projects.domain.calling)
+                implementation(projects.core.util)
+                implementation(projects.domain.cells)
+                implementation(projects.domain.backup)
+                implementation(projects.domain.messaging.sending)
 
                 // coroutines
                 implementation(libs.coroutines.core)
@@ -71,13 +91,16 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
+                if (useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoKmp)
+                }
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation(projects.common)
-                implementation(projects.persistenceTest)
-                implementation(projects.dataMocks)
+                implementation(projects.core.common)
+                implementation(projects.data.persistenceTest)
+                implementation(projects.test.dataMocks)
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
@@ -98,7 +121,9 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-                implementation(libs.coreCryptoJvm)
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoJvm)
+                }
             }
         }
         val jvmTest by getting {
@@ -110,9 +135,11 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
+                if (!useUnifiedCoreCrypto) {
+                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                        exclude("androidx.core")
+                        exclude("androidx.appcompat")
+                    }
                 }
             }
         }

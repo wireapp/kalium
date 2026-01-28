@@ -10,15 +10,12 @@
 ### Dependencies
 
 - JDK 21 (ex: openjdk-21-jdk on Ubuntu)
-- [libsodium](https://github.com/jedisct1/libsodium)
-- [cryptobox-c](https://github.com/wireapp/cryptobox-c)
-- [cryptobox4j](https://github.com/wireapp/cryptobox4j)
 
 ### Supported Platforms
 
 - Android (see the [Android](https://github.com/wireapp/wire-android) module)
 - JVM (see the [cli](https://github.com/wireapp/kalium/tree/develop/cli) module)
-- iOS (partially)
+- iOS (see the [iOS Build Guide](docs/IOS_BUILD.md))
 - JavaScript (just a tiny bit)
 
 The `cli` can be executed on the terminal of any machine that 
@@ -79,28 +76,22 @@ Commands:
 ##### JVM
 
 ```
-./gradlew :cli:assemble
+./gradlew :sample:cli:assemble
 java -jar cli/build/libs/cli.jar login --email <email> --password <password> listen-group 
 ```
 
 or if you want the jar file deleted after your run:
 
 ```
-./gradlew :cli:run  --console=plain --quiet --args="login --email <email> --password <password> listen-group"
+./gradlew :sample:cli:run  --console=plain --quiet --args="login --email <email> --password <password> listen-group"
 ```
 
 ##### Native (Mac)
 
 For running on arm64 mac
 ```
-./gradlew :cli:macosArm64Binaries
+./gradlew :sample:cli:macosArm64Binaries
 ./cli/build/bin/macosArm64/debugExecutable/cli.kexe login
-```
-
-For running on intel mac
-```
-./gradlew :cli:macosX64Binaries
-./cli/build/bin/macosX64/debugExecutable/cli.kexe login
 ```
 
 #### Detekt rules
@@ -134,85 +125,140 @@ You can run locally in your terminal:
 }%%
 
 graph LR
-  :persistence["persistence"]
-  :logger["logger"]
-  :util["util"]
-  :backup["backup"]
-  :protobuf["protobuf"]
-  :persistence-test["persistence-test"]
-  :persistence["persistence"]
-  :network["network"]
-  :network-model["network-model"]
-  :network-util["network-util"]
-  :mocks["mocks"]
   :logic["logic"]
-  :common["common"]
-  :data["data"]
-  :network-util["network-util"]
-  :logger["logger"]
-  :calling["calling"]
-  :network["network"]
-  :cryptography["cryptography"]
-  :persistence["persistence"]
-  :protobuf["protobuf"]
-  :util["util"]
-  :cells["cells"]
-  :backup["backup"]
-  :persistence-test["persistence-test"]
-  :cryptography["cryptography"]
-  :mocks["mocks"]
-  :network-util["network-util"]
-  :cells["cells"]
-  :common["common"]
-  :network["network"]
-  :data["data"]
-  :network-model["network-model"]
-  :data["data"]
-  :common["common"]
-  :cryptography["cryptography"]
+  subgraph :core
+    :core:cryptography["cryptography"]
+    :core:logger["logger"]
+    :core:util["util"]
+    :core:common["common"]
+    :core:data["data"]
+    :core:cryptography["cryptography"]
+    :core:common["common"]
+    :core:data["data"]
+    :core:logger["logger"]
+    :core:cryptography["cryptography"]
+    :core:util["util"]
+    :core:data["data"]
+    :core:common["common"]
+  end
+  subgraph :domain
+    :domain:backup["backup"]
+    :domain:calling["calling"]
+    :domain:cells["cells"]
+    :domain:backup["backup"]
+    :domain:cells["cells"]
+    subgraph :messaging
+      :domain:messaging:sending["sending"]
+      :domain:messaging:sending["sending"]
+    end
+  end
+  subgraph :data
+    :data:protobuf["protobuf"]
+    :data:network["network"]
+    :data:network-model["network-model"]
+    :data:network-util["network-util"]
+    :data:persistence["persistence"]
+    :data:network["network"]
+    :data:persistence["persistence"]
+    :data:persistence-test["persistence-test"]
+    :data:network-util["network-util"]
+    :data:network["network"]
+    :data:data-mappers["data-mappers"]
+    :data:persistence["persistence"]
+    :data:protobuf["protobuf"]
+    :data:persistence-test["persistence-test"]
+    :data:network-model["network-model"]
+    :data:network-util["network-util"]
+    :data:data-mappers["data-mappers"]
+  end
+  subgraph :test
+    :test:mocks["mocks"]
+    :test:data-mocks["data-mocks"]
+    :test:data-mocks["data-mocks"]
+    :test:mocks["mocks"]
+  end
 
-  :persistence --> :logger
-  :persistence --> :util
-  :backup --> :protobuf
-  :persistence-test --> :persistence
-  :network --> :network-model
-  :network --> :logger
-  :network --> :protobuf
-  :network --> :util
-  :network --> :network-util
-  :network --> :mocks
-  :logic --> :common
-  :logic --> :data
-  :logic --> :network-util
-  :logic --> :logger
-  :logic --> :calling
-  :logic --> :network
-  :logic --> :cryptography
-  :logic --> :persistence
-  :logic --> :protobuf
-  :logic --> :util
-  :logic --> :cells
-  :logic --> :backup
-  :logic --> :persistence-test
-  :cryptography --> :logger
-  :mocks --> :network-model
-  :network-util --> :logger
-  :cells --> :common
-  :cells --> :network
-  :cells --> :data
-  :cells --> :util
-  :cells --> :persistence
-  :network-model --> :logger
-  :network-model --> :util
-  :data --> :network-model
-  :data --> :util
-  :common --> :data
-  :common --> :logger
-  :common --> :util
-  :common --> :persistence
-  :common --> :network
-  :common --> :network-util
-  :common --> :cryptography
+  :core:cryptography --> :core:logger
+  :domain:backup --> :data:protobuf
+  :data:network --> :data:network-model
+  :data:network --> :core:logger
+  :data:network --> :data:protobuf
+  :data:network --> :core:util
+  :data:network --> :data:network-util
+  :data:network --> :test:mocks
+  :core:common --> :core:data
+  :core:common --> :core:logger
+  :core:common --> :core:util
+  :core:common --> :data:persistence
+  :core:common --> :data:network
+  :core:common --> :data:network-util
+  :core:common --> :core:cryptography
+  :data:persistence --> :core:logger
+  :data:persistence --> :core:util
+  :data:persistence-test --> :data:persistence
+  :logic --> :core:common
+  :logic --> :core:data
+  :logic --> :data:network-util
+  :logic --> :core:logger
+  :logic --> :domain:calling
+  :logic --> :data:network
+  :logic --> :data:data-mappers
+  :logic --> :core:cryptography
+  :logic --> :data:persistence
+  :logic --> :data:protobuf
+  :logic --> :core:util
+  :logic --> :domain:cells
+  :logic --> :domain:backup
+  :logic --> :domain:messaging:sending
+  :logic --> :data:persistence-test
+  :logic --> :test:data-mocks
+  :data:network-model --> :core:logger
+  :data:network-model --> :core:util
+  :test:data-mocks --> :core:data
+  :test:data-mocks --> :data:persistence
+  :test:data-mocks --> :data:network-model
+  :test:data-mocks --> :core:util
+  :data:network-util --> :core:logger
+  :core:data --> :data:network-model
+  :core:data --> :core:util
+  :test:mocks --> :data:network-model
+  :domain:messaging:sending --> :core:common
+  :domain:messaging:sending --> :core:data
+  :domain:messaging:sending --> :core:logger
+  :domain:messaging:sending --> :core:util
+  :domain:cells --> :core:common
+  :domain:cells --> :data:network
+  :domain:cells --> :core:data
+  :domain:cells --> :core:util
+  :domain:cells --> :data:persistence
+  :data:data-mappers --> :core:data
+  :data:data-mappers --> :data:protobuf
+  :data:data-mappers --> :data:persistence
+  :data:data-mappers --> :core:cryptography
+  :data:data-mappers --> :data:network-model
+  :data:data-mappers --> :core:util
+
+classDef kotlin-multiplatform fill:#C792EA,stroke:#fff,stroke-width:2px,color:#fff;
+class :core:cryptography kotlin-multiplatform
+class :core:logger kotlin-multiplatform
+class :domain:backup kotlin-multiplatform
+class :data:protobuf kotlin-multiplatform
+class :data:network kotlin-multiplatform
+class :data:network-model kotlin-multiplatform
+class :core:util kotlin-multiplatform
+class :data:network-util kotlin-multiplatform
+class :test:mocks kotlin-multiplatform
+class :core:common kotlin-multiplatform
+class :core:data kotlin-multiplatform
+class :data:persistence kotlin-multiplatform
+class :data:persistence-test kotlin-multiplatform
+class :logic kotlin-multiplatform
+class :domain:calling kotlin-multiplatform
+class :data:data-mappers kotlin-multiplatform
+class :domain:cells kotlin-multiplatform
+class :domain:messaging:sending kotlin-multiplatform
+class :test:data-mocks kotlin-multiplatform
+
 ```
 #### Logo
 

@@ -34,13 +34,13 @@ import com.wire.kalium.logic.data.e2ei.Nonce
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.FinalizeEnrollmentResult
+import com.wire.kalium.logic.feature.e2ei.usecase.InitialEnrollmentResult
 import com.wire.kalium.logic.framework.TestConversation.MLS_CONVERSATION
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
@@ -67,7 +67,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
-class EnrollE2EICertificateUseCaseTest {
+internal class EnrollE2EICertificateUseCaseTest {
 
     private lateinit var coroutineScope: TestScope
 
@@ -96,7 +96,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
+        assertIs<InitialEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
@@ -163,7 +163,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
+        assertIs<InitialEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
@@ -229,7 +229,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
+        assertIs<InitialEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
@@ -300,7 +300,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
+        assertIs<InitialEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
@@ -373,7 +373,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
+        assertIs<InitialEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
@@ -449,12 +449,9 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
+        assertIs<InitialEnrollmentResult.Success>(result)
 
-        result.shouldSucceed()
-
-        assertIs<E2EIEnrollmentResult.Initialized>(result.value)
-
-        assertEquals(expected, result.value as E2EIEnrollmentResult.Initialized)
+        assertEquals(expected, result.initializationResult)
 
         coVerify {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
@@ -521,7 +518,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -566,7 +563,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -614,7 +611,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -663,7 +660,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -714,7 +711,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -766,7 +763,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -820,7 +817,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -874,7 +871,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -933,7 +930,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
+        assertIs<FinalizeEnrollmentResult.Failure>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -985,7 +982,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldSucceed()
+        assertIs<FinalizeEnrollmentResult.Success>(result)
 
         coVerify {
             arrangement.e2EIRepository.getWireNonce()
@@ -1044,7 +1041,7 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment(true)
 
         // then
-        result.shouldSucceed()
+        assertIs<InitialEnrollmentResult.Success>(result)
         advanceUntilIdle()
         coVerify {
             arrangement.userRepository.fetchSelfUser()

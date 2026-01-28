@@ -25,14 +25,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Mention
 
-interface MessageMentionMapper {
+internal interface MessageMentionMapper {
     fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention
     fun fromModelToDao(mention: MessageMention): MessageEntity.Mention
     fun fromProtoToModel(mention: Mention): MessageMention?
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
-class MessageMentionMapperImpl(
+internal class MessageMentionMapperImpl(
     private val idMapper: IdMapper,
     private val selfUserId: UserId
 ) : MessageMentionMapper {
@@ -73,14 +73,14 @@ class MessageMentionMapperImpl(
     )
 }
 
-fun MessageEntity.Mention.toModel(selfUserId: UserId?): MessageMention = MessageMention(
+internal fun MessageEntity.Mention.toModel(selfUserId: UserId?): MessageMention = MessageMention(
     start = start,
     length = length,
     userId = userId.toModel(),
     isSelfMention = userId.toModel() == selfUserId
 )
 
-fun MessageMention.toDao(): MessageEntity.Mention = MessageEntity.Mention(
+internal fun MessageMention.toDao(): MessageEntity.Mention = MessageEntity.Mention(
     start = start,
     length = length,
     userId = userId.toDao()

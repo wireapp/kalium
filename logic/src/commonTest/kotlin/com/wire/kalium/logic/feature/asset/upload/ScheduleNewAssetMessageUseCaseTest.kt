@@ -272,6 +272,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             otrKey = AES256Key(byteArrayOf()),
             sha256Key = SHA256Key(byteArrayOf()),
             audioLengthInMs = 0L,
+            audioNormalizedLoudness = null
         )
 
         private val conversationId = QualifiedID("some-convo-id", "some-domain-id")
@@ -284,7 +285,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetMimeType = "text/plain",
             assetWidth = null,
             assetHeight = null,
-            audioLengthInMs = 0
+            audioLengthInMs = 0,
+            audioNormalizedLoudness = null
         )
 
     }

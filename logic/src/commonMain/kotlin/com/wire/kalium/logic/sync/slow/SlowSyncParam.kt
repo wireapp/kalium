@@ -17,9 +17,8 @@
  */
 package com.wire.kalium.logic.sync.slow
 
-sealed interface SlowSyncParam {
+internal sealed interface SlowSyncParam {
     data object Success : SlowSyncParam
     data object NotPerformedBefore : SlowSyncParam
-    data object LastSlowSyncTooOld : SlowSyncParam
     data class MigrationNeeded(val oldVersion: Int, val newVersion: Int) : SlowSyncParam
 }

@@ -24,7 +24,7 @@ import androidx.annotation.DrawableRes
  * Provide resources that will be displayed when Kalium
  * needs to display a Foreground notification due to some work being done.
  */
-fun interface ForegroundNotificationDetailsProvider {
+public fun interface ForegroundNotificationDetailsProvider {
     @DrawableRes
-    fun getSmallIconResId(): Int
+    public fun getSmallIconResId(): Int
 }

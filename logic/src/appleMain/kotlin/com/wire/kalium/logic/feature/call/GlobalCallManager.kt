@@ -38,7 +38,12 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 
-actual class GlobalCallManager {
+import kotlinx.coroutines.CoroutineScope
+
+internal actual class GlobalCallManager(
+    scope: CoroutineScope,
+    networkStateObserver: NetworkStateObserver
+) : CallNetworkChangeManager(scope, networkStateObserver) {
     @Suppress("LongParameterList")
     internal actual fun getCallManagerForClient(
         userId: QualifiedID,
@@ -73,4 +78,7 @@ actual class GlobalCallManager {
         TODO("Not yet implemented")
     }
 
+    actual override fun networkChanged() {
+        TODO("Not yet implemented")
+    }
 }

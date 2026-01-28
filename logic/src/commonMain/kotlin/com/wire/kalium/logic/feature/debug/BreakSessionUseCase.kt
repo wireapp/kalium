@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -34,7 +33,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-interface BreakSessionUseCase {
+public interface BreakSessionUseCase {
     /**
      * Function that can be used to create a broken session with another user on purpose. This debug function
      * can be used to test correct client behaviour in case of broken sessions. It should not be used by
@@ -47,7 +46,7 @@ interface BreakSessionUseCase {
      * @return an [BreakSessionResult] containing a [CoreFailure] in case anything goes wrong
      * and [BreakSessionResult.Success] in case everything succeeds
      */
-    suspend operator fun invoke(userId: UserId, clientId: ClientId): BreakSessionResult
+    public suspend operator fun invoke(userId: UserId, clientId: ClientId): BreakSessionResult
 }
 
 internal class BreakSessionUseCaseImpl internal constructor(
@@ -69,7 +68,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
             wrapProteusRequest {
                 proteusContext.createSession(proteusContext.newLastResortPreKey(), cryptoSessionId)
             }.onSuccess {
-                kaliumLogger.i("Created new session for ${userId.toLogString()} with ${clientId.value.obfuscateId()}")
+                kaliumLogger.i("Created new session for ${userId.toLogString()} with ${clientId.toLogString()}")
             }
 
         }
@@ -80,7 +79,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
     }
 }
 
-sealed class BreakSessionResult {
-    data object Success : BreakSessionResult()
-    data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
+public sealed class BreakSessionResult {
+    public data object Success : BreakSessionResult()
+    public data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
 }

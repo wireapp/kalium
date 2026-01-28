@@ -23,25 +23,26 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 
-data class UserStorage(val database: UserDatabaseBuilder, val preferences: UserPrefBuilder)
-abstract class UserStorageProvider {
+internal data class UserStorage(val database: UserDatabaseBuilder, val preferences: UserPrefBuilder)
+internal abstract class UserStorageProvider {
     private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
-    fun getOrCreate(
+    internal fun getOrCreate(
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
-        shouldEncryptData: Boolean = true
+        shouldEncryptData: Boolean = true,
+        dbInvalidationControlEnabled: Boolean,
     ): UserStorage = inMemoryUserStorage.computeIfAbsent(userId) {
-        create(userId, shouldEncryptData, platformUserStorageProperties)
+        create(userId, shouldEncryptData, platformUserStorageProperties, dbInvalidationControlEnabled)
     }
 
     protected abstract fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
-        platformProperties: PlatformUserStorageProperties
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean
     ): UserStorage
 
-    fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)
+    internal fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)
 }
 
-internal expect class PlatformUserStorageProvider constructor() : UserStorageProvider
-expect class PlatformUserStorageProperties
+internal expect class PlatformUserStorageProperties

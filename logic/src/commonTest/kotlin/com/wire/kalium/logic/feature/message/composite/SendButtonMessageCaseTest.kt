@@ -33,6 +33,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.InternalKaliumApi
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -46,6 +47,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(InternalKaliumApi::class)
 class SendButtonMessageCaseTest {
 
     @Test
@@ -64,7 +66,7 @@ class SendButtonMessageCaseTest {
         val result = sendTextMessage.invoke(TestConversation.ID, "some-text", listOf(), null, buttons)
 
         // Then
-        result.shouldSucceed()
+        result.toEither().shouldSucceed()
 
         coVerify {
             arrangement.userPropertyRepository.getReadReceiptsStatus()

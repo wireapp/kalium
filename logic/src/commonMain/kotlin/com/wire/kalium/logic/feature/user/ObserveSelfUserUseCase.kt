@@ -25,12 +25,12 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case is responsible for observing the current user.
  */
-interface ObserveSelfUserUseCase {
+public interface ObserveSelfUserUseCase {
 
     /**
      * @return a [Flow] of the current user [SelfUser]
      */
-    suspend operator fun invoke(): Flow<SelfUser>
+    public suspend operator fun invoke(): Flow<SelfUser>
 
 }
 

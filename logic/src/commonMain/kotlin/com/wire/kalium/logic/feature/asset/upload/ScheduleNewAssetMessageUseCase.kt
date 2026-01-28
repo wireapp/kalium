@@ -53,7 +53,7 @@ import kotlinx.coroutines.withContext
 import okio.Path
 import kotlin.uuid.Uuid
 
-interface ScheduleNewAssetMessageUseCase {
+public interface ScheduleNewAssetMessageUseCase {
     /**
      * Function that enables sending an asset message to a given conversation with the strategy of fire & forget. This message is persisted
      * locally and the asset upload is scheduled but not awaited, so returning a [ScheduleNewAssetMessageResult.Success] doesn't mean that
@@ -65,7 +65,7 @@ interface ScheduleNewAssetMessageUseCase {
      * succeeded. Note that this doesn't imply that the asset upload will succeed, it just confirms that the creation and persistence of the
      * initial worked out.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         asset: AssetUploadParams
     ): ScheduleNewAssetMessageResult
 }
@@ -167,16 +167,16 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     }
 }
 
-sealed interface ScheduleNewAssetMessageResult {
-    data class Success(val messageId: String) : ScheduleNewAssetMessageResult
-    sealed interface Failure : ScheduleNewAssetMessageResult {
-        data class Generic(val coreFailure: CoreFailure) : Failure
-        data object DisabledByTeam : Failure
-        data object RestrictedFileType : Failure
+public sealed interface ScheduleNewAssetMessageResult {
+    public data class Success(val messageId: String) : ScheduleNewAssetMessageResult
+    public sealed interface Failure : ScheduleNewAssetMessageResult {
+        public data class Generic(val coreFailure: CoreFailure) : Failure
+        public data object DisabledByTeam : Failure
+        public data object RestrictedFileType : Failure
     }
 }
 
-data class AssetUploadParams(
+public data class AssetUploadParams(
     val conversationId: ConversationId,
     val assetDataPath: Path,
     val assetDataSize: Long,
@@ -185,4 +185,34 @@ data class AssetUploadParams(
     val assetWidth: Int?,
     val assetHeight: Int?,
     val audioLengthInMs: Long,
-)
+    val audioNormalizedLoudness: ByteArray?
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as AssetUploadParams
+        if (assetDataSize != other.assetDataSize) return false
+        if (assetWidth != other.assetWidth) return false
+        if (assetHeight != other.assetHeight) return false
+        if (audioLengthInMs != other.audioLengthInMs) return false
+        if (conversationId != other.conversationId) return false
+        if (assetDataPath != other.assetDataPath) return false
+        if (assetName != other.assetName) return false
+        if (assetMimeType != other.assetMimeType) return false
+        if (!audioNormalizedLoudness.contentEquals(other.audioNormalizedLoudness)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = assetDataSize.hashCode()
+        result = 31 * result + (assetWidth ?: 0)
+        result = 31 * result + (assetHeight ?: 0)
+        result = 31 * result + audioLengthInMs.hashCode()
+        result = 31 * result + conversationId.hashCode()
+        result = 31 * result + assetDataPath.hashCode()
+        result = 31 * result + assetName.hashCode()
+        result = 31 * result + assetMimeType.hashCode()
+        result = 31 * result + (audioNormalizedLoudness?.contentHashCode() ?: 0)
+        return result
+    }
+}

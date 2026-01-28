@@ -21,11 +21,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
@@ -43,19 +43,21 @@ import kotlinx.coroutines.flow.first
  * @param domain optional domain of the conversation
  *
  */
-class CheckConversationInviteCodeUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class CheckConversationInviteCodeUseCase internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(code: String, key: String, domain: String?) =
+    public suspend operator fun invoke(code: String, key: String, domain: String?): Result =
         conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key).fold(
             { failure ->
                 when (failure) {
                     is NetworkFailure.NoNetworkConnection,
                     is NetworkFailure.FederatedBackendFailure,
                     is NetworkFailure.FeatureNotSupported,
-                    is NetworkFailure.ProxyError -> Result.Failure.Generic(failure)
+                    is NetworkFailure.ProxyError,
+                    is NetworkFailure.MlsMessageRejectedFailure -> Result.Failure.Generic(failure)
 
                     is NetworkFailure.ServerMiscommunication -> handleServerMissCommunicationError(failure)
                 }
@@ -98,21 +100,21 @@ class CheckConversationInviteCodeUseCase internal constructor(
             else -> Result.Failure.Generic(error)
         }
 
-    sealed interface Result {
-        data class Success(
+    public sealed interface Result {
+        public data class Success(
             val name: String?,
             val conversationId: ConversationId,
             val isSelfMember: Boolean,
             val isPasswordProtected: Boolean
         ) : Result
 
-        sealed interface Failure : Result {
-            data object InvalidCodeOrKey : Failure
-            data object RequestingUserIsNotATeamMember : Failure
-            data object AccessDenied : Failure
-            data object ConversationNotFound : Failure
-            data object GuestLinksDisabled : Failure
-            data class Generic(val failure: CoreFailure) : Failure
+        public sealed interface Failure : Result {
+            public data object InvalidCodeOrKey : Failure
+            public data object RequestingUserIsNotATeamMember : Failure
+            public data object AccessDenied : Failure
+            public data object ConversationNotFound : Failure
+            public data object GuestLinksDisabled : Failure
+            public data class Generic(val failure: CoreFailure) : Failure
         }
     }
 }

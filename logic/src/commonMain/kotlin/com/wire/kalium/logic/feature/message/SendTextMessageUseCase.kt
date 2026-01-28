@@ -18,10 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
@@ -49,13 +47,15 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class SendTextMessageUseCase internal constructor(
+public class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -69,13 +69,13 @@ class SendTextMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
+    ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -123,11 +123,14 @@ class SendTextMessageUseCase internal constructor(
                 messageId = generatedMessageUuid,
                 messageType = TYPE
             )
-        }
+        }.fold(
+            { MessageOperationResult.Failure(it) },
+            { MessageOperationResult.Success }
+        )
     }.await()
 
-    companion object {
-        const val TYPE = "Text"
+    internal companion object {
+        internal const val TYPE = "Text"
     }
 
     private suspend fun uploadLinkPreviewImages(

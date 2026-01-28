@@ -33,7 +33,6 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -62,7 +61,6 @@ internal class KeyPackageManagerImpl(
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
     private val refillKeyPackagesScope = CoroutineScope(dispatcher)

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -29,9 +29,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -39,12 +36,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * Sending a location message to a conversation
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class SendLocationUseCase internal constructor(
+public class SendLocationUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -64,15 +63,15 @@ class SendLocationUseCase internal constructor(
      * @param name the address line or name of the location to send
      * @param zoom the zoom level of the location
      *
-     * @return [Either] [CoreFailure] or [Unit]
+     * @return [MessageOperationResult] indicating success or failure.
      */
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         latitude: Float,
         longitude: Float,
         name: String?,
         zoom: Int
-    ): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
+    ): MessageOperationResult = withContext(dispatcher.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -102,12 +101,18 @@ class SendLocationUseCase internal constructor(
             )
             persistMessage(message)
                 .flatMap { messageSender.sendMessage(message) }
-        }.onFailure {
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
-        }
+        }.fold(
+            {
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
+                MessageOperationResult.Failure(it)
+            },
+            {
+                MessageOperationResult.Success
+            }
+        )
     }
 
-    companion object {
-        const val TYPE = "Location"
+    internal companion object {
+        internal const val TYPE = "Location"
     }
 }

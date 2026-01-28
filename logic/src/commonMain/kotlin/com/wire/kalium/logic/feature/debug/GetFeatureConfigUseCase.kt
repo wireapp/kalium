@@ -18,22 +18,32 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 
-/**
- * Fetch features configuration from server. Only used in debug menu.
- */
-interface GetFeatureConfigUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, FeatureConfigModel>
+public interface GetFeatureConfigUseCase {
+    /**
+     * Fetch features configuration from server. Only used in debug menu.
+     * @return [GetFeatureConfigResult] indicating success with [FeatureConfigModel] or failure.
+     */
+    public suspend operator fun invoke(): GetFeatureConfigResult
 }
 
 internal class GetFeatureConfigUseCaseImpl(
     private val featureConfigRepository: FeatureConfigRepository
 ) : GetFeatureConfigUseCase {
 
-    override suspend fun invoke(): Either<CoreFailure, FeatureConfigModel> {
-        return featureConfigRepository.getFeatureConfigs()
+    override suspend fun invoke(): GetFeatureConfigResult {
+        return featureConfigRepository.getFeatureConfigs().fold({
+            GetFeatureConfigResult.Failure(it)
+        }, {
+            GetFeatureConfigResult.Success(it)
+        })
     }
+}
+
+public sealed class GetFeatureConfigResult {
+    public data class Success(val featureConfigModel: FeatureConfigModel) : GetFeatureConfigResult()
+    public data class Failure(val coreFailure: CoreFailure) : GetFeatureConfigResult()
 }

@@ -17,18 +17,18 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
-import com.wire.kalium.common.functional.onSuccess
 import io.mockative.Mockable
 
 /**
  * Use case to observe certificate revocation for self client.
  */
 @Mockable
-interface ObserveCertificateRevocationForSelfClientUseCase {
+internal interface ObserveCertificateRevocationForSelfClientUseCase {
     suspend operator fun invoke()
 }
 
@@ -45,10 +45,15 @@ internal class ObserveCertificateRevocationForSelfClientUseCaseImpl(
     override suspend fun invoke() {
         logger.d("Checking if should notify certificate revocation")
         currentClientIdProvider().onSuccess { clientId ->
-            getE2eiCertificate(clientId).onSuccess {
-                if (it.e2eiStatus == MLSClientE2EIStatus.REVOKED) {
-                    logger.i("Setting that should notify certificate revocation")
-                    userConfigRepository.setShouldNotifyForRevokedCertificate(true)
+            when (val result = getE2eiCertificate(clientId)) {
+                is GetMLSClientIdentityResult.Success -> {
+                    if (result.identity.e2eiStatus == MLSClientE2EIStatus.REVOKED) {
+                        logger.i("Setting that should notify certificate revocation")
+                        userConfigRepository.setShouldNotifyForRevokedCertificate(true)
+                    }
+                }
+                is GetMLSClientIdentityResult.Failure -> {
+                    // No action needed for failure case
                 }
             }
         }

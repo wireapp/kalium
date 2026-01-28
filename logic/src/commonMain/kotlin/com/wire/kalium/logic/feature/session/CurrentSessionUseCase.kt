@@ -24,14 +24,14 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.common.functional.fold
 
-sealed class CurrentSessionResult {
-    data class Success(val accountInfo: AccountInfo) : CurrentSessionResult()
+public sealed class CurrentSessionResult {
+    public data class Success(val accountInfo: AccountInfo) : CurrentSessionResult()
 
-    sealed class Failure : CurrentSessionResult() {
-        data object SessionNotFound : Failure()
+    public sealed class Failure : CurrentSessionResult() {
+        public data object SessionNotFound : Failure()
 
         @Suppress("UNUSED_PARAMETER") // It's used by consumers of Kalium
-        class Generic(coreFailure: CoreFailure) : Failure()
+        public class Generic(coreFailure: CoreFailure) : Failure()
     }
 }
 
@@ -39,8 +39,9 @@ sealed class CurrentSessionResult {
  * This use case will return the current session.
  * @see [CurrentSessionResult.Success.accountInfo]
  */
-class CurrentSessionUseCase(private val sessionRepository: SessionRepository) {
-    suspend operator fun invoke(): CurrentSessionResult =
+// todo(interface). extract interface for use case
+public class CurrentSessionUseCase internal constructor(private val sessionRepository: SessionRepository) {
+    public suspend operator fun invoke(): CurrentSessionResult =
         sessionRepository.currentSession().fold({
             when (it) {
                 StorageFailure.DataNotFound -> CurrentSessionResult.Failure.SessionNotFound

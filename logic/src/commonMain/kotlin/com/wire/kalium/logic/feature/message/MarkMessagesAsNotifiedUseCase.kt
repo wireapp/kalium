@@ -27,26 +27,15 @@ import com.wire.kalium.common.functional.fold
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
  * @see GetNotificationsUseCase
  */
-@Suppress("konsist.classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke")
-class MarkMessagesAsNotifiedUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class MarkMessagesAsNotifiedUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {
 
     /**
-     * @param conversationId the specific conversation that needs to be marked as notified,
-     * or null for marking all notifications as notified.
-     */
-    @Deprecated("This will be removed in order to use a more explicit input", ReplaceWith("invoke(UpdateTarget)"))
-    suspend operator fun invoke(conversationId: ConversationId?): Result = if (conversationId == null) {
-        invoke(UpdateTarget.AllConversations)
-    } else {
-        invoke(UpdateTarget.SingleConversation(conversationId))
-    }
-
-    /**
      * @param conversationsToUpdate which conversation(s) to be marked as notified.
      */
-    suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
+    public suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
         when (conversationsToUpdate) {
             UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate()
 
@@ -57,20 +46,20 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
     /**
      * Specifies which conversations should be marked as notified
      */
-    sealed interface UpdateTarget {
+    public sealed interface UpdateTarget {
         /**
          * All conversations should be marked as notified.
          */
-        data object AllConversations : UpdateTarget
+        public data object AllConversations : UpdateTarget
 
         /**
          * A specific conversation, represented by its [conversationId], should be marked as notified
          */
-        data class SingleConversation(val conversationId: ConversationId) : UpdateTarget
+        public data class SingleConversation(val conversationId: ConversationId) : UpdateTarget
     }
 }
 
-sealed class Result {
-    data object Success : Result()
-    data class Failure(val storageFailure: StorageFailure) : Result()
+public sealed class Result {
+    public data object Success : Result()
+    public data class Failure(val storageFailure: StorageFailure) : Result()
 }

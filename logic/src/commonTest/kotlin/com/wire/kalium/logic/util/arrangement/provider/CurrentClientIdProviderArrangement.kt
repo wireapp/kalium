@@ -25,14 +25,14 @@ import com.wire.kalium.common.functional.Either
 import io.mockative.coEvery
 import io.mockative.mock
 
-interface CurrentClientIdProviderArrangement {
+internal interface CurrentClientIdProviderArrangement {
 
     val currentClientIdProvider: CurrentClientIdProvider
     suspend fun withCurrentClientIdSuccess(currentClientId: ClientId)
     suspend fun withCurrentClientIdFailure(error: CoreFailure = StorageFailure.DataNotFound)
 }
 
-class CurrentClientIdProviderArrangementImpl : CurrentClientIdProviderArrangement {
+internal class CurrentClientIdProviderArrangementImpl : CurrentClientIdProviderArrangement {
 
     override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 

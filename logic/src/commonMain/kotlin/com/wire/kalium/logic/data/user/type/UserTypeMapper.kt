@@ -23,25 +23,25 @@ import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mockable
 
-class UserEntityTypeMapperImpl : UserEntityTypeMapper {
+internal class UserEntityTypeMapperImpl : UserEntityTypeMapper {
 
-    val guest: UserTypeEntity
+    internal val guest: UserTypeEntity
         get() = UserTypeEntity.GUEST
-    val federated: UserTypeEntity
+    internal val federated: UserTypeEntity
         get() = UserTypeEntity.FEDERATED
-    val external: UserTypeEntity
+    internal val external: UserTypeEntity
         get() = UserTypeEntity.EXTERNAL
-    val standard: UserTypeEntity
+    internal val standard: UserTypeEntity
         get() = UserTypeEntity.STANDARD
-    val admin: UserTypeEntity
+    internal val admin: UserTypeEntity
         get() = UserTypeEntity.ADMIN
-    val owner: UserTypeEntity
+    internal val owner: UserTypeEntity
         get() = UserTypeEntity.OWNER
-    val service: UserTypeEntity
+    internal val service: UserTypeEntity
         get() = UserTypeEntity.SERVICE
-    val none: UserTypeEntity
+    internal val none: UserTypeEntity
         get() = UserTypeEntity.NONE
-    val app: UserTypeEntity
+    internal val app: UserTypeEntity
         get() = UserTypeEntity.APP
 
     /**
@@ -134,21 +134,21 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
 
 }
 
-class DomainUserTypeMapperImpl : DomainUserTypeMapper {
+internal class DomainUserTypeMapperImpl : DomainUserTypeMapper {
 
-    val guest: UserType
+    internal val guest: UserType
         get() = UserType.GUEST
-    val federated: UserType
+    internal val federated: UserType
         get() = UserType.FEDERATED
-    val external: UserType
+    internal val external: UserType
         get() = UserType.EXTERNAL
-    val standard: UserType
+    internal val standard: UserType
         get() = UserType.INTERNAL
-    val admin: UserType
+    internal val admin: UserType
         get() = UserType.ADMIN
-    val owner: UserType
+    internal val owner: UserType
         get() = UserType.OWNER
-    val none: UserType
+    internal val none: UserType
         get() = UserType.NONE
 
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo {
@@ -167,7 +167,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
     }
 }
 
-interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
+internal interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
     fun fromUserTypeInfo(userTypeInfo: UserTypeInfo): UserTypeEntity
     fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): UserTypeEntity
 
@@ -183,11 +183,11 @@ interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
 }
 
 @Mockable
-interface DomainUserTypeMapper : UserTypeMapper<UserType> {
+internal interface DomainUserTypeMapper : UserTypeMapper<UserType> {
     fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo
 }
 
-interface UserTypeMapper<T> {
+internal interface UserTypeMapper<T> {
 
     private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String): Boolean =
         otherUserDomain.lowercase() != selfDomain.lowercase()

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 
 @Suppress("LongParameterList")
-class ConnectionScope internal constructor(
+public class ConnectionScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -36,14 +36,14 @@ class ConnectionScope internal constructor(
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) {
-    val sendConnectionRequest: SendConnectionRequestUseCase
+    public val sendConnectionRequest: SendConnectionRequestUseCase
         get() = SendConnectionRequestUseCaseImpl(
             connectionRepository,
             userRepository,
             transactionProvider
         )
 
-    val acceptConnectionRequest: AcceptConnectionRequestUseCase
+    public val acceptConnectionRequest: AcceptConnectionRequestUseCase
         get() = AcceptConnectionRequestUseCaseImpl(
             connectionRepository,
             conversationRepository,
@@ -53,25 +53,25 @@ class ConnectionScope internal constructor(
             transactionProvider
         )
 
-    val cancelConnectionRequest: CancelConnectionRequestUseCase
+    public val cancelConnectionRequest: CancelConnectionRequestUseCase
         get() = CancelConnectionRequestUseCaseImpl(
             connectionRepository,
             transactionProvider
         )
 
-    val ignoreConnectionRequest: IgnoreConnectionRequestUseCase
+    public val ignoreConnectionRequest: IgnoreConnectionRequestUseCase
         get() = IgnoreConnectionRequestUseCaseImpl(
             connectionRepository,
             transactionProvider
         )
 
-    val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
+    internal val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
-    val blockUser: BlockUserUseCase
+    public val blockUser: BlockUserUseCase
         get() = BlockUserUseCaseImpl(connectionRepository, transactionProvider)
 
-    val unblockUser: UnblockUserUseCase
+    public val unblockUser: UnblockUserUseCase
         get() = UnblockUserUseCaseImpl(connectionRepository, transactionProvider)
 
 }

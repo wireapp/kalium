@@ -25,16 +25,16 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.client.TokenStorage
 import io.mockative.Mockable
 
-data class NotificationToken(val token: String, val transport: String, val applicationId: String)
+internal data class NotificationToken(val token: String, val transport: String, val applicationId: String)
 
 @Mockable
-interface NotificationTokenRepository {
+internal interface NotificationTokenRepository {
 
     fun persistNotificationToken(token: String, transport: String, applicationId: String): Either<StorageFailure, Unit>
     fun getNotificationToken(): Either<StorageFailure, NotificationToken>
 }
 
-class NotificationTokenDataSource(
+internal class NotificationTokenDataSource(
     private val tokenStorage: TokenStorage
 ) : NotificationTokenRepository {
 

@@ -37,9 +37,9 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import io.mockative.Mockable
 
-sealed class RecoverMLSConversationsResult {
-    data object Success : RecoverMLSConversationsResult()
-    data class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
+internal sealed class RecoverMLSConversationsResult {
+    internal data object Success : RecoverMLSConversationsResult()
+    internal data class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
 }
 
 /**
@@ -83,7 +83,7 @@ internal class RecoverMLSConversationsUseCaseImpl(
         val protocol = conversation.protocol
         return if (protocol is Conversation.ProtocolInfo.MLS) {
             transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.isGroupOutOfSync(mlsContext, protocol.groupId, protocol.epoch)
+                mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, protocol.epoch)
             }
                 .fold({ checkEpochFailure ->
                     Either.Left(checkEpochFailure)

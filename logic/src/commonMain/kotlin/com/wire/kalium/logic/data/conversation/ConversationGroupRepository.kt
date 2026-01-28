@@ -68,7 +68,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Mockable
-interface ConversationGroupRepository {
+internal interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -177,6 +177,12 @@ internal class ConversationGroupRepositoryImpl(
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationCellStatus(conversationEntity)
+        }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationAppsAccessIfEnabled(
+                conversationId = conversationEntity.id.toModel(),
+                hasAppsAccessEnabled = conversationResponse.hasAppsAccessEnabled(),
+                creatorId = selfUserId,
+            )
         }.flatMap {
             when (protocol) {
                 is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())

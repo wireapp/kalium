@@ -20,4 +20,4 @@ package com.wire.kalium.logic.failure
 
 import com.wire.kalium.common.error.CoreFailure
 
-object InvalidMappingFailure : CoreFailure.FeatureFailure()
+internal object InvalidMappingFailure : CoreFailure.FeatureFailure()

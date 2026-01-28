@@ -29,7 +29,7 @@ import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
-interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
+internal interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
         val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase
 
     suspend fun withConversationTimer(
@@ -39,7 +39,7 @@ interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
     )
 }
 
-open class ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl :
+internal open class ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl :
     ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
         override val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase =
         mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)

@@ -20,7 +20,7 @@ package com.wire.kalium.logic.failure
 
 import com.wire.kalium.common.error.CoreFailure
 
-sealed class ServerConfigFailure : CoreFailure.FeatureFailure() {
-    data object UnknownServerVersion : ServerConfigFailure()
-    data object NewServerVersion : ServerConfigFailure()
+internal sealed class ServerConfigFailure : CoreFailure.FeatureFailure() {
+    internal data object UnknownServerVersion : ServerConfigFailure()
+    internal data object NewServerVersion : ServerConfigFailure()
 }

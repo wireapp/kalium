@@ -17,37 +17,41 @@
  */
 package com.wire.kalium.logic.feature.notificationToken
 
-import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 
 /**
  * Sends to the API locally stored FCM push token
  */
-interface SendFCMTokenUseCase {
-    suspend operator fun invoke(): Either<SendFCMTokenError, Unit>
+public interface SendFCMTokenUseCase {
+    public suspend operator fun invoke(): SendFCMTokenResult
 }
 
-data class SendFCMTokenError(
+public sealed class SendFCMTokenResult {
+    public data object Success : SendFCMTokenResult()
+    public data class Failure(val error: SendFCMTokenError) : SendFCMTokenResult()
+}
+
+public data class SendFCMTokenError(
     val status: Reason,
     val error: String? = null,
 ) {
-    enum class Reason {
+    public enum class Reason {
         CANT_GET_CLIENT_ID, CANT_GET_NOTIFICATION_TOKEN, CANT_REGISTER_TOKEN,
     }
 }
 
-class SendFCMTokenToAPIUseCaseImpl internal constructor(
+internal class SendFCMTokenToAPIUseCaseImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val clientRepository: ClientRepository,
     private val notificationTokenRepository: NotificationTokenRepository,
 ) : SendFCMTokenUseCase {
 
-    override suspend fun invoke(): Either<SendFCMTokenError, Unit> {
+    override suspend fun invoke(): SendFCMTokenResult {
         val clientIdResult = currentClientIdProvider()
         val notificationTokenResult = notificationTokenRepository.getNotificationToken()
 
@@ -67,7 +71,7 @@ class SendFCMTokenToAPIUseCaseImpl internal constructor(
         )
 
         if (error != null) {
-            return Either.Left(error)
+            return SendFCMTokenResult.Failure(error)
         }
 
         val clientId = clientIdResult.getOrNull()!!.value
@@ -80,14 +84,14 @@ class SendFCMTokenToAPIUseCaseImpl internal constructor(
             transport = notificationToken.transport
         ).fold(
             {
-                Either.Left(
+                SendFCMTokenResult.Failure(
                     SendFCMTokenError(
                         SendFCMTokenError.Reason.CANT_REGISTER_TOKEN,
                         it.toString()
                     )
                 )
             },
-            { Either.Right(Unit) }
+            { SendFCMTokenResult.Success }
         )
     }
 }

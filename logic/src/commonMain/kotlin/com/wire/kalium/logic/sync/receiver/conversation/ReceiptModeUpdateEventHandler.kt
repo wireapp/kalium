@@ -37,7 +37,7 @@ import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
 @Mockable
-interface ReceiptModeUpdateEventHandler {
+internal interface ReceiptModeUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
 }
 

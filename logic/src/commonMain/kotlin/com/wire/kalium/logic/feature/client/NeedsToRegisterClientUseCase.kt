@@ -29,8 +29,8 @@ import com.wire.kalium.logic.data.user.UserId
 /**
  * This use case will return true if the current user needs to register a client.
  */
-interface NeedsToRegisterClientUseCase {
-    suspend operator fun invoke(): Boolean
+public interface NeedsToRegisterClientUseCase {
+    public suspend operator fun invoke(): Boolean
 }
 
 internal class NeedsToRegisterClientUseCaseImpl(

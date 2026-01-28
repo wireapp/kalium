@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -30,14 +30,15 @@ import com.wire.kalium.network.exceptions.isKeyExists
 /**
  * Use case to request an activation code for a given email address.
  */
-class RequestActivationCodeUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class RequestActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
     /**
      * @param email [String] the registered email address to request an activation code for
      * @return [RequestActivationCodeResult.Success] or [RequestActivationCodeResult.Failure] with the specific error.
      */
-    suspend operator fun invoke(email: String): RequestActivationCodeResult {
+    public suspend operator fun invoke(email: String): RequestActivationCodeResult {
 
         return registerAccountRepository.requestEmailActivationCode(email)
             .fold({
@@ -57,13 +58,13 @@ class RequestActivationCodeUseCase internal constructor(
     }
 }
 
-sealed class RequestActivationCodeResult {
-    data object Success : RequestActivationCodeResult()
-    sealed class Failure : RequestActivationCodeResult() {
-        data object InvalidEmail : Failure()
-        data object BlacklistedEmail : Failure()
-        data object AlreadyInUse : Failure()
-        data object DomainBlocked : Failure()
-        data class Generic(val failure: NetworkFailure) : Failure()
+public sealed class RequestActivationCodeResult {
+    public data object Success : RequestActivationCodeResult()
+    public sealed class Failure : RequestActivationCodeResult() {
+        public data object InvalidEmail : Failure()
+        public data object BlacklistedEmail : Failure()
+        public data object AlreadyInUse : Failure()
+        public data object DomainBlocked : Failure()
+        public data class Generic(val failure: NetworkFailure) : Failure()
     }
 }

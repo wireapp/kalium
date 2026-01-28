@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
@@ -34,8 +35,11 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mockable
+import kotlin.experimental.ExperimentalObjCRefinement
+import kotlin.native.HiddenFromObjC
 
 /**
  * Reset an MLS conversation which cannot be recovered by any other means.
@@ -47,22 +51,23 @@ import io.mockative.Mockable
  *  - Re-establishing the MLS group with the updated group ID and current members.
  */
 @Mockable
-interface ResetMLSConversationUseCase {
+public interface ResetMLSConversationUseCase {
     // TODO(refactor): transactionProvider should be always required to avoid deadlocks.
     //                 Callers of this function should get one if needed.
     @Deprecated("Transaction provider should be provided")
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId
-    ): Either<CoreFailure, Unit>
+    ): ResetMLSConversationResult
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
-    ): Either<CoreFailure, Unit>
+    ): ResetMLSConversationResult
 }
 
-@Suppress("ReturnCount")
+@Suppress("ReturnCount", "LongParameterList")
 internal class ResetMLSConversationUseCaseImpl(
+    private val selfUserId: UserId,
     private val userConfig: UserConfigRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val conversationRepository: ConversationRepository,
@@ -73,27 +78,39 @@ internal class ResetMLSConversationUseCaseImpl(
 
     private val logger by lazy { kaliumLogger.withTextTag("ResetMLSConversationUseCase") }
 
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun invoke(conversationId: ConversationId): ResetMLSConversationResult {
         return transactionProvider.transaction("ResetMLSConversation") {
-            invoke(conversationId, it)
-        }
+            invoke(conversationId, it).toEither()
+        }.fold(
+            { ResetMLSConversationResult.Failure(it) },
+            { ResetMLSConversationResult.Success }
+        )
     }
 
     override suspend operator fun invoke(
         conversationId: ConversationId,
         transactionContext: CryptoTransactionContext
-    ): Either<CoreFailure, Unit> {
+    ): ResetMLSConversationResult {
         if (!kaliumConfigs.isMlsResetEnabled) {
             logger.i("MLS conversation reset feature is disabled via compile time flag.")
-            return Unit.right()
+            return ResetMLSConversationResult.Success
         }
 
         if (!userConfig.isMlsConversationsResetEnabled()) {
             logger.i("MLS conversation reset feature is disabled.")
-            return Unit.right()
+            return ResetMLSConversationResult.Success
+        }
+
+        if (selfUserId.domain != conversationId.domain) {
+            logger.i("Federated conversation. Do not reset conversation for another backend.")
+            return ResetMLSConversationResult.Success
         }
 
         return transactionContext.resetConversation(conversationId)
+            .fold(
+                { ResetMLSConversationResult.Failure(it) },
+                { ResetMLSConversationResult.Success }
+            )
     }
 
     private suspend fun CryptoTransactionContext.resetConversation(
@@ -159,4 +176,32 @@ private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLSCapable
         is Conversation.ProtocolInfo.MLSCapable -> this.protocol as Conversation.ProtocolInfo.MLSCapable
         else -> null
     }
+}
+
+public sealed class ResetMLSConversationResult {
+    /**
+     * Indicates the reset MLS conversation operation completed successfully or no further action is needed.
+     */
+    public data object Success : ResetMLSConversationResult()
+
+    /**
+     * Indicates the reset MLS conversation operation failed.
+     * @param error The error that occurred during the operation.
+     */
+    public data class Failure(val error: CoreFailure) : ResetMLSConversationResult()
+
+    /**
+     * Converts this result to an Either type for internal Kalium use or JVM/Android clients.
+     * This function is hidden from iOS/Swift to maintain a clean Swift API.
+     *
+     * @return Either.Right(Unit) for Success, Either.Left(error) for Failure
+     */
+    @OptIn(ExperimentalObjCRefinement::class)
+    @HiddenFromObjC
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
+    public fun toEither(): Either<CoreFailure, Unit> =
+        when (this) {
+            is Success -> Either.Right(Unit)
+            is Failure -> Either.Left(error)
+        }
 }

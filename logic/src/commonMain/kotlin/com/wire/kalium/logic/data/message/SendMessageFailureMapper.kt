@@ -27,11 +27,11 @@ import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import io.mockative.Mockable
 
 @Mockable
-interface SendMessageFailureMapper {
+internal interface SendMessageFailureMapper {
     fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure
 }
 
-class SendMessageFailureMapperImpl : SendMessageFailureMapper {
+internal class SendMessageFailureMapperImpl : SendMessageFailureMapper {
     override fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure = with(error.errorBody) {
         ProteusSendMessageFailure(
             missingClientsOfUsers = missing.fromNestedMapToSimpleMap(),

@@ -45,12 +45,14 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import okio.Path
 
 @Suppress("MaxLineLength")
-fun interface SendBrokenAssetMessageUseCase {
+@InternalKaliumApi
+public fun interface SendBrokenAssetMessageUseCase {
     /**
      * Function that can be used to send manipulated asset messages to a given conversation. Manipulation can be either a wrong
      * checksum or a changed otrKey. This debug function can be used to test correct client behaviour. It should not be used by
@@ -67,7 +69,7 @@ fun interface SendBrokenAssetMessageUseCase {
      * @return an [SendBrokenAssetMessageResult] containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
      */
     @Suppress("LongParameterList")
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
         assetDataSize: Long,
@@ -77,6 +79,7 @@ fun interface SendBrokenAssetMessageUseCase {
     ): SendBrokenAssetMessageResult
 }
 
+@OptIn(InternalKaliumApi::class)
 @Suppress("LongParameterList", "MaxLineLength")
 internal class SendBrokenAssetMessageUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -217,9 +220,9 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     }
 }
 
-sealed class SendBrokenAssetMessageResult {
-    data object Success : SendBrokenAssetMessageResult()
-    data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
+public sealed class SendBrokenAssetMessageResult {
+    public data object Success : SendBrokenAssetMessageResult()
+    public data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 
 private data class AssetMessageMetadata(
@@ -235,7 +238,7 @@ private data class AssetMessageMetadata(
     val sha256Key: SHA256Key
 )
 
-data class BrokenState(
+public data class BrokenState(
     val invalidHash: Boolean,
     val otherHash: Boolean,
     val otherAlgorithm: Boolean

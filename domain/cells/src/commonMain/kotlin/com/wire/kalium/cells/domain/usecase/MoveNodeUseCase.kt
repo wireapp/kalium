@@ -1,0 +1,41 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.cells.domain.usecase
+
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+
+public interface MoveNodeUseCase {
+    /**
+     * Use case to move a [com.wire.kalium.cells.domain.model.Node] from one path to another within a specific cell.
+     * @param uuid The unique identifier of the cell.
+     * @param path The current path of the node to be moved.
+     * @param targetPath The target path where the node should be moved.
+     * @return the result of the rename operation.
+     */
+    public suspend operator fun invoke(uuid: String, path: String, targetPath: String): Either<CoreFailure, Unit>
+}
+
+internal class MoveNodeUseCaseImpl(
+    private val cellsRepository: CellsRepository,
+) : MoveNodeUseCase {
+    override suspend fun invoke(uuid: String, path: String, targetPath: String): Either<CoreFailure, Unit> =
+        cellsRepository.moveNode(uuid = uuid, path = path, targetPath = targetPath).map { }
+}

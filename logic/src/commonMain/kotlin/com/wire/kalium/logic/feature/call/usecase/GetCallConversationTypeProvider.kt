@@ -33,7 +33,7 @@ import io.mockative.Mockable
  * This class is responsible for providing the conversation type for a call.
  */
 @Mockable
-interface GetCallConversationTypeProvider {
+internal interface GetCallConversationTypeProvider {
     suspend operator fun invoke(conversationId: ConversationId): ConversationTypeCalling
 }
 

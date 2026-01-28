@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.rootDetection
 import android.annotation.SuppressLint
 import java.io.File
 
-actual class RootDetectorImpl actual constructor() : RootDetector {
+internal actual open class RootDetectorImpl actual constructor() : RootDetector {
 
     actual override fun isSystemRooted(): Boolean {
         // Lambdas so they can be executed lazily

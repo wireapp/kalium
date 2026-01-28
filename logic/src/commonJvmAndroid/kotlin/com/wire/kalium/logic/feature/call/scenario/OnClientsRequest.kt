@@ -77,6 +77,6 @@ internal class OnClientsRequest(
 }
 
 @Mockable
-fun interface EpochInfoUpdater {
+internal fun interface EpochInfoUpdater {
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
 }

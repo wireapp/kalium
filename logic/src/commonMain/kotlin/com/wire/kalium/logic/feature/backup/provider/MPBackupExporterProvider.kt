@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.backup.provider
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.FileZipper
@@ -30,15 +31,16 @@ import okio.FileSystem
 import okio.SYSTEM
 
 @Mockable
-interface BackupExporter {
+internal interface BackupExporter {
     fun add(user: BackupUser)
     fun add(conversation: BackupConversation)
     fun add(message: BackupMessage)
+    fun add(reaction: BackupReaction)
     suspend fun finalize(password: String): BackupExportResult
 }
 
 @Mockable
-interface MPBackupExporterProvider {
+internal interface MPBackupExporterProvider {
     fun provideExporter(
         selfUserId: BackupQualifiedId,
         workDirectory: String,
@@ -79,6 +81,10 @@ internal class MPBackupExporterProviderImpl(
 
             override fun add(message: BackupMessage) {
                 exporter.add(message)
+            }
+
+            override fun add(reaction: BackupReaction) {
+                exporter.add(reaction)
             }
 
             override suspend fun finalize(password: String): BackupExportResult = exporter.finalize(password)

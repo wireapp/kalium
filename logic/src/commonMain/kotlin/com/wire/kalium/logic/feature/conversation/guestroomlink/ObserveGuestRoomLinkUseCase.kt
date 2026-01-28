@@ -19,22 +19,37 @@
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-/**
- * observe guest room link
- */
-interface ObserveGuestRoomLinkUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
+public interface ObserveGuestRoomLinkUseCase {
+    /**
+     * Observe guest room link of a conversation.
+     * @param conversationId The conversation id to observe the guest room link.
+     * @return A flow emitting [ObserveGuestRoomLinkResult] with the guest room link if exists or failure.
+     */
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<ObserveGuestRoomLinkResult>
 }
 
-class ObserveGuestRoomLinkUseCaseImpl internal constructor(
+public sealed class ObserveGuestRoomLinkResult {
+    public data class Success(val link: ConversationGuestLink?) : ObserveGuestRoomLinkResult()
+    public data class Failure(val failure: CoreFailure) : ObserveGuestRoomLinkResult()
+}
+
+internal class ObserveGuestRoomLinkUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : ObserveGuestRoomLinkUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>> =
-        conversationGroupRepository.observeGuestRoomLink(conversationId)
+    override suspend fun invoke(conversationId: ConversationId): Flow<ObserveGuestRoomLinkResult> {
+        return conversationGroupRepository.observeGuestRoomLink(conversationId).map {
+            if (it.isRight()) {
+                ObserveGuestRoomLinkResult.Success(it.value)
+            } else {
+                ObserveGuestRoomLinkResult.Failure(it.value)
+            }
+        }
+    }
 }

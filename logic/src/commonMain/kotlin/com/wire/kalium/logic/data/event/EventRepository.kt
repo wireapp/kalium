@@ -33,7 +33,6 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
@@ -60,7 +59,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import io.mockative.Mockable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -79,7 +78,7 @@ import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
 
 @Mockable
-interface EventRepository {
+internal interface EventRepository {
 
     /**
      * Performs an acknowledgment of the missed event after performing a slow sync.
@@ -131,6 +130,7 @@ interface EventRepository {
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
     suspend fun observeEvents(): Flow<List<EventEnvelope>>
+    suspend fun setEventsAsProcessed(eventIds: List<String>): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -155,7 +155,11 @@ internal class EventDataSource(
         var lastEmittedEventId: String? = null
         return eventDAO.observeUnprocessedEvents().transform { eventEntities ->
             logger.d("got ${eventEntities.size} unprocessed events")
-            logger.d("current last emitted event id: ${lastEmittedEventId?.obfuscateId()}")
+            if (eventEntities.isNotEmpty()) {
+                logger.d("first unprocessed event ${eventEntities.firstOrNull()?.eventId}")
+                logger.d("last unprocessed event ${eventEntities.lastOrNull()?.eventId}")
+            }
+            logger.d("current last emitted event id: $lastEmittedEventId")
 
             val emittedEventIndex = eventEntities.indexOfFirst { entity -> entity.eventId == lastEmittedEventId }
 
@@ -267,11 +271,11 @@ internal class EventDataSource(
                             }
                             if (clearOnFirstWSMessage.value) {
                                 clearOnFirstWSMessage.emit(false)
-                                logger.d("clear processed events before ${event.data.event.id.obfuscateId()}")
+                                logger.d("clear processed events before ${event.data.event.id}")
                                 clearProcessedEvents(event.data.event.id)
                             }
                             event.data.event.let { eventResponse ->
-                                logger.d("insert event ${eventResponse.id.obfuscateId()} from WS")
+                                logger.d("insert event ${eventResponse.id} from WS")
                                 wrapStorageRequest {
                                     eventDAO.insertEvents(
                                         listOf(
@@ -478,6 +482,10 @@ internal class EventDataSource(
 
     override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {
         eventDAO.markEventAsProcessed(eventId)
+    }
+
+    override suspend fun setEventsAsProcessed(eventIds: List<String>): Either<StorageFailure, Unit> = wrapStorageRequest {
+        eventDAO.markEventsAsProcessed(eventIds)
     }
 
     private suspend fun getNextPendingEventsPage(

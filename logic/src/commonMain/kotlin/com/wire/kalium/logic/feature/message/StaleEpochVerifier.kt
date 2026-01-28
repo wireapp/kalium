@@ -40,7 +40,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 @Mockable
-interface StaleEpochVerifier {
+internal interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
@@ -85,7 +85,7 @@ internal class StaleEpochVerifierImpl(
             }
         }.flatMap { protocolInfo ->
             transactionContext.wrapInMLSContext {
-                mlsConversationRepository.isGroupOutOfSync(it, protocolInfo.groupId, protocolInfo.epoch)
+                mlsConversationRepository.isLocalGroupEpochStale(it, protocolInfo.groupId, protocolInfo.epoch)
             }
                 .map { epochIsStale ->
                     epochIsStale
@@ -115,7 +115,7 @@ internal class StaleEpochVerifierImpl(
         return subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
             .flatMap { subConversationDetails ->
                 transactionContext.wrapInMLSContext {
-                    mlsConversationRepository.isGroupOutOfSync(it, subConversationDetails.groupId, subConversationDetails.epoch)
+                    mlsConversationRepository.isLocalGroupEpochStale(it, subConversationDetails.groupId, subConversationDetails.epoch)
                 }
                     .map { epochIsStale ->
                         epochIsStale

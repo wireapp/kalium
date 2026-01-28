@@ -44,10 +44,10 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 
 @Deprecated("Use SyncStateObserver instead", ReplaceWith("SyncStateObserver"))
-typealias SyncManager = SyncStateObserver
+public typealias SyncManager = SyncStateObserver
 
 @Mockable
-interface SyncStateObserver {
+public interface SyncStateObserver {
 
     /**
      * Allows observing of [SyncState].
@@ -57,7 +57,7 @@ interface SyncStateObserver {
      * in waiting for slow collectors.
      * In case a slow collector is interested in receiving all values, it should add a buffer of its own.
      */
-    val syncState: StateFlow<SyncState>
+    public val syncState: StateFlow<SyncState>
 
     /**
      * Suspends the caller until all pending events are processed,
@@ -69,7 +69,7 @@ interface SyncStateObserver {
      * - Sending a connection request
      * - Editing conversation settings, etc.
      */
-    suspend fun waitUntilLive()
+    public suspend fun waitUntilLive()
 
     /**
      * If Sync is ongoing, suspends the caller until it reaches a terminal state.
@@ -77,11 +77,14 @@ interface SyncStateObserver {
      * @return [CoreFailure] in case Sync was not started or reached a failure, or
      * [Unit] in case [IncrementalSyncStatus.Live] is reached.
      */
-    suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
+    public suspend fun waitUntilLiveOrFailure(): Either<CoreFailure, Unit>
 
-    suspend fun isSlowSyncOngoing(): Boolean
-    suspend fun isSlowSyncCompleted(): Boolean
-    suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
+    public suspend fun isSlowSyncOngoing(): Boolean
+    public suspend fun isSlowSyncCompleted(): Boolean
+
+    @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
+    public suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
 }
 
 @Deprecated("Use SyncStateObserverImpl instead", ReplaceWith("SyncStateObserverImpl"))

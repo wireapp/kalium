@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.fold
 
 /**
  * Updates the verification status of a client.
@@ -31,17 +31,18 @@ import com.wire.kalium.common.functional.fold
  * @return [UpdateClientVerificationStatusUseCase.Result.Success] if the client was updated successfully.
  * [UpdateClientVerificationStatusUseCase.Result.Failure] if the client could not be updated.
  */
-class UpdateClientVerificationStatusUseCase internal constructor(
+// todo(interface). extract interface for use case
+public class UpdateClientVerificationStatusUseCase internal constructor(
     private val clientRepository: ClientRepository
 ) {
-    suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
+    public suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
         clientRepository.updateClientProteusVerificationStatus(userId, clientId, verified).fold(
             { error -> Result.Failure(error) },
             { Result.Success }
         )
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val error: StorageFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val error: StorageFailure) : Result
     }
 }

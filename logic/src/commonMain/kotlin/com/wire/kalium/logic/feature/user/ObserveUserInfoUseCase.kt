@@ -42,14 +42,14 @@ import kotlinx.coroutines.flow.map
  * Use case that allows observing the user details of a user locally,
  * or request it from API and save to DB, if there is no local data for such user.
  */
-interface ObserveUserInfoUseCase {
+public interface ObserveUserInfoUseCase {
     /**
      * Use case [GetUserInfoUseCase] operation
      *
      * @param userId the target user identifier
      * @return a [GetUserInfoResult] indicating the operation result
      */
-    suspend operator fun invoke(userId: UserId): Flow<GetUserInfoResult>
+    public suspend operator fun invoke(userId: UserId): Flow<GetUserInfoResult>
 }
 
 internal class ObserveUserInfoUseCaseImpl(
@@ -121,14 +121,14 @@ internal class ObserveUserInfoUseCaseImpl(
     }
 }
 
-data class ObserveOtherUserResult(
+internal data class ObserveOtherUserResult(
     val getKnownUserError: CoreFailure? = null,
     val fetchUserError: CoreFailure? = null,
     val success: OtherUser? = null
 ) {
-    fun isValid() = getKnownUserError != null || fetchUserError != null || success != null
+    internal fun isValid() = getKnownUserError != null || fetchUserError != null || success != null
 
-    fun toEither(): Either<CoreFailure, OtherUser> =
+    internal fun toEither(): Either<CoreFailure, OtherUser> =
         when {
             success != null -> Either.Right(success)
             getKnownUserError != null -> Either.Left(getKnownUserError)

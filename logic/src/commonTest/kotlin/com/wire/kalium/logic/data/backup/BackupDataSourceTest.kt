@@ -9,25 +9,49 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.time.measureTime
-import kotlin.time.measureTimedValue
 
 
 class BackupDataSourceTest {
 
+    private val testDispatcher = StandardTestDispatcher()
     private val userId = UserId("userId", "domain")
-    private val testDatabase = TestUserDatabase(UserIDEntity(userId.value, userId.domain))
+    private val testDatabase = TestUserDatabase(UserIDEntity(userId.value, userId.domain), testDispatcher)
     private val subject =
-        BackupDataSource(userId, testDatabase.builder.userDAO, testDatabase.builder.messageDAO, testDatabase.builder.conversationDAO)
+        BackupDataSource(
+            selfUserId = userId,
+            userDAO = testDatabase.builder.userDAO,
+            messageDAO = testDatabase.builder.messageDAO,
+            conversationDAO = testDatabase.builder.conversationDAO,
+            reactionDAO = testDatabase.builder.reactionDAO,
+        )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun givenUsersInDatabase_whenGettingUsers_thenShouldExportThemProperly() = runTest {
@@ -71,7 +95,7 @@ class BackupDataSourceTest {
         val result = subject.getMessages().first()
 
         // Then
-        assertEquals(testMessages.size, result.messages.size)
+        assertEquals(testMessages.size, result.data.size)
         assertTrue(result.totalPages > 0)
     }
 
@@ -96,7 +120,7 @@ class BackupDataSourceTest {
         assertTrue(allPages.isNotEmpty())
         assertTrue(allPages.first().totalPages > 0)
         allPages.forEach { page ->
-            page.messages.forEach { message ->
+            page.data.forEach { message ->
                 val originalMessage = messageMap.remove(message.id)
                 assertNotNull(originalMessage, "Message was not found in the original map.")
             }

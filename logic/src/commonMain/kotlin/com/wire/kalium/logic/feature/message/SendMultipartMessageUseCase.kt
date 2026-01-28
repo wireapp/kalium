@@ -17,18 +17,15 @@
  */
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -70,14 +67,16 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import okio.Path.Companion.toPath
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * Use case to send a multipart message.
  * Sends Multipart message with multiple attachments in conversations with Cell Feature enabled.
  * For regular conversations, each attachment is sent as a separate Asset message.
  */
+// todo(interface). extract interface for use case
 @Suppress("LongParameterList")
-class SendMultipartMessageUseCase internal constructor(
+public class SendMultipartMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -96,17 +95,17 @@ class SendMultipartMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    companion object {
+    internal companion object {
         private const val MSG_TYPE_TEXT = "Text"
     }
 
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
+    ): MessageOperationResult = scope.async(dispatchers.io) {
 
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -115,7 +114,7 @@ class SendMultipartMessageUseCase internal constructor(
         val generatedMessageUuid = Uuid.random().toString()
 
         val isCellEnabled = conversationRepository.isCellEnabled(conversationId).getOrFail { error ->
-            return@async error.left()
+            return@async MessageOperationResult.Failure(error)
         }
 
         val attachments: List<MessageAttachment> = attachmentsRepository.getAll(conversationId)
@@ -162,7 +161,10 @@ class SendMultipartMessageUseCase internal constructor(
                 messageId = generatedMessageUuid,
                 messageType = MSG_TYPE_TEXT
             )
-        }
+        }.fold(
+            { MessageOperationResult.Failure(it) },
+            { MessageOperationResult.Success }
+        )
     }.await()
 
     private suspend fun buildMessage(
@@ -238,6 +240,7 @@ class SendMultipartMessageUseCase internal constructor(
                             assetWidth = metadata?.width(),
                             assetHeight = metadata?.height(),
                             audioLengthInMs = metadata?.durationMs() ?: 0,
+                            audioNormalizedLoudness = (metadata as? AssetContent.AssetMetadata.Audio)?.normalizedLoudness
                         )
                     )
                 }
@@ -282,7 +285,7 @@ class SendMultipartMessageUseCase internal constructor(
     }
 }
 
-fun AttachmentDraft.metadata(): AssetContent.AssetMetadata? {
+internal fun AttachmentDraft.metadata(): AssetContent.AssetMetadata? {
 
     val type = AttachmentType.fromMimeTypeString(mimeType)
 

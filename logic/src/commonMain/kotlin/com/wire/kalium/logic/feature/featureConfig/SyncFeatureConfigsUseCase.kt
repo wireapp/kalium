@@ -41,7 +41,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesC
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.ChatBubblesConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
@@ -74,7 +73,6 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val allowedGlobalOperationsHandler: AllowedGlobalOperationsHandler,
     private val cellsConfigHandler: CellsConfigHandler,
     private val appsFeatureHandler: AppsFeatureHandler,
-    private val chatBubblesHandler: ChatBubblesConfigHandler,
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
     private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
 ) : SyncFeatureConfigsUseCase {
@@ -99,10 +97,10 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
             it.allowedGlobalOperationsModel?.let { model -> allowedGlobalOperationsHandler.handle(model) }
             cellsConfigHandler.handle(it.cellsModel)
+            cellsConfigHandler.handle(it.cellsInternalModel)
             it.appsModel?.let { appsModel ->
                 appsFeatureHandler.handle(appsModel)
             }
-            chatBubblesHandler.handle(it.chatBubblesModel)
             enableUserProfileQRCodeConfigHandler.handle(it.enableUserProfileQRCodeConfigModel)
             assetAuditLogConfigHandler.handle(it.assetAuditLogConfigModel)
             Either.Right(Unit)

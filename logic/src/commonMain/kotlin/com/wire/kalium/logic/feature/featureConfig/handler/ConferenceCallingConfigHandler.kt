@@ -24,10 +24,10 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 
-class ConferenceCallingConfigHandler(
+internal class ConferenceCallingConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    fun handle(conferenceCallingConfig: ConferenceCallingModel): Either<CoreFailure, Unit> {
+    internal fun handle(conferenceCallingConfig: ConferenceCallingModel): Either<CoreFailure, Unit> {
         val conferenceCallingEnabled = conferenceCallingConfig.status == Status.ENABLED
         val result = userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled).flatMap {
             userConfigRepository.setUseSFTForOneOnOneCalls(conferenceCallingConfig.useSFTForOneOnOneCalls)

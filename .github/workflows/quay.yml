@@ -11,7 +11,7 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -30,7 +30,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./monkeys/docker/Dockerfile
+          file: ./tools/monkeys/docker/Dockerfile
           platforms: linux/amd64
           tags: quay.io/wire/infinitemonkeys
           push: true

@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -43,9 +44,26 @@ import kotlinx.datetime.Instant
  * Updates the supported protocols of the current user.
  */
 @Mockable
-interface UpdateSelfUserSupportedProtocolsUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, Boolean>
+public interface UpdateSelfUserSupportedProtocolsUseCase {
+    public suspend operator fun invoke(): UpdateSelfUserSupportedProtocolsResult
 }
+
+public sealed class UpdateSelfUserSupportedProtocolsResult {
+    public data class Failure(val coreFailure: CoreFailure) : UpdateSelfUserSupportedProtocolsResult()
+    public data object NotUpdated : UpdateSelfUserSupportedProtocolsResult()
+    public data object Updated : UpdateSelfUserSupportedProtocolsResult()
+}
+
+/**
+ * Converts the result to an Either type for internal use.
+ * @return Either a CoreFailure or a Boolean indicating if the supported protocols were updated.
+ */
+internal fun UpdateSelfUserSupportedProtocolsResult.toEither(): Either<CoreFailure, Boolean> =
+    if (this is UpdateSelfUserSupportedProtocolsResult.Failure) {
+        Either.Left(this.coreFailure)
+    } else {
+        Either.Right(this is UpdateSelfUserSupportedProtocolsResult.Updated)
+    }
 
 internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     private val clientsRepository: ClientRepository,
@@ -56,13 +74,12 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     private val logger: KaliumLogger
 ) : UpdateSelfUserSupportedProtocolsUseCase {
 
-    override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
+    override suspend operator fun invoke(): UpdateSelfUserSupportedProtocolsResult {
         return if (!featureSupport.isMLSSupported) {
             logger.d("Skip updating supported protocols, since MLS is not supported.")
-            Either.Right(false)
+            UpdateSelfUserSupportedProtocolsResult.NotUpdated
         } else {
-            (
-                userRepository.getSelfUser().flatMap { selfUser ->
+            userRepository.getSelfUser().flatMap { selfUser ->
                 selfSupportedProtocols().flatMap { calculatedSupportedProtocols ->
                     val finalizedSupportedProtocols = if (selfUser.supportedProtocols?.contains(SupportedProtocol.MLS) == true) {
                         calculatedSupportedProtocols + SupportedProtocol.MLS
@@ -91,7 +108,13 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                         else -> Either.Left(it)
                     }
                 }
-            } ?: Either.Left(StorageFailure.DataNotFound)
+            }.fold(
+                { failure ->
+                    UpdateSelfUserSupportedProtocolsResult.Failure(failure)
+                },
+                { updated ->
+                    if (updated) UpdateSelfUserSupportedProtocolsResult.Updated else UpdateSelfUserSupportedProtocolsResult.NotUpdated
+                }
             )
         }
     }

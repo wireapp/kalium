@@ -26,12 +26,14 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.feature.backup.CreateBackupResult.Failure
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
+import com.wire.kalium.logic.feature.backup.mapper.toBackupReaction
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupExporter
 import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
@@ -51,13 +53,13 @@ import okio.Path.Companion.toPath
 import okio.SYSTEM
 import okio.use
 
-interface CreateMPBackupUseCase {
+public interface CreateMPBackupUseCase {
     /**
      * Creates a compressed backup file in multiplatform format. This file can be encrypted
      * with the provided password if password is not empty.
      * @param password The password to encrypt the backup file with. If empty, the file will be unencrypted.
      */
-    suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
+    public suspend operator fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult
 }
 
 internal class CreateMPBackupUseCaseImpl(
@@ -99,6 +101,12 @@ internal class CreateMPBackupUseCaseImpl(
                             page.mapNotNull(Message::toBackupMessage)
                                 .forEach { mpBackupExporter.add(it) }
                             onProgress(pageIndex++.toFloat() / totalPages)
+                        }
+                    }
+                    async {
+                        getReactions().buffer().collect { (page, _) ->
+                            page.map(MessageReactions::toBackupReaction)
+                                .forEach { mpBackupExporter.add(it) }
                         }
                     }
                 }

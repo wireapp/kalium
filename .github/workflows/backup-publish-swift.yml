@@ -13,7 +13,7 @@ jobs:
         with:
           xcode-version: '16.1.0'
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Force fetch the tag to work around actions/checkout#290
         run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
       - name: Ensure the tag is signed
@@ -23,14 +23,14 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Build XCFramework
-        run: ./gradlew :backup:assembleBackupReleaseXCFramework
+        run: ./gradlew :domain:backup:assembleBackupReleaseXCFramework
 
       - name: Create XCFramework Zip
-        working-directory: backup/build/XCFrameworks/release
+        working-directory: domain/backup/build/XCFrameworks/release
         run: zip -rXq KaliumBackup.xcframework.zip KaliumBackup.xcframework
 
       - name: Upload XCFramework (GH Releases)
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip
+            domain/backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip

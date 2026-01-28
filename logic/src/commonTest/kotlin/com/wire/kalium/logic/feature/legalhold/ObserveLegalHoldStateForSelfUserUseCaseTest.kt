@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.framework.TestUser
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -32,7 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveLegalHoldStateForSelfUserUseCaseTest {
+internal class ObserveLegalHoldStateForSelfUserUseCaseTest {
 
     private fun testLegalHoldStateForSelfUser(
         givenLegalHoldState: LegalHoldState,

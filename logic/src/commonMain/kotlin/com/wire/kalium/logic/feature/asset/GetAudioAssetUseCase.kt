@@ -34,7 +34,7 @@ import okio.Path.Companion.toPath
  * Use case to get audio asset either from Wire Cells or Asset Storage
  * based on whether Wire Cells is enabled for the conversation.
  */
-interface GetAudioAssetUseCase {
+internal interface GetAudioAssetUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: MessageId?,

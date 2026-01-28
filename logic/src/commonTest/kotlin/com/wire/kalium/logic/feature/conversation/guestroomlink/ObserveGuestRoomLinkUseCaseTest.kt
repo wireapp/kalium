@@ -17,11 +17,10 @@
  */
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -33,10 +32,11 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
-class ObserveGuestRoomLinkUseCaseTest {
+internal class ObserveGuestRoomLinkUseCaseTest {
 
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
+    val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
     private lateinit var observeGuestRoomLink: ObserveGuestRoomLinkUseCase
 
@@ -52,9 +52,9 @@ class ObserveGuestRoomLinkUseCaseTest {
             conversationGroupRepository.observeGuestRoomLink(eq(conversationId))
         }.returns(flowOf(Either.Right(guestLink)))
 
-        observeGuestRoomLink(conversationId).first().shouldSucceed {
-            assertEquals(guestLink, it)
-        }
+        val result = observeGuestRoomLink(conversationId).first()
+        assertIs<ObserveGuestRoomLinkResult.Success>(result)
+        assertEquals(guestLink, result.link)
 
         coVerify {
             conversationGroupRepository.observeGuestRoomLink(eq(conversationId))

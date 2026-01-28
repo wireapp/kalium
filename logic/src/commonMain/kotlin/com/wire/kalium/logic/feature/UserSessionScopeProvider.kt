@@ -25,14 +25,14 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import io.mockative.Mockable
 
 @Mockable
-interface UserSessionScopeProvider {
+internal interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope
     fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
     suspend fun delete(userId: UserId)
 }
 
-abstract class UserSessionScopeProviderCommon(
+internal abstract class UserSessionScopeProviderCommon(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     protected val userAgent: String
@@ -57,7 +57,7 @@ abstract class UserSessionScopeProviderCommon(
         userStorageProvider.clearInMemoryUserStorage(userId)
     }
 
-    abstract fun create(userId: UserId): UserSessionScope
+    internal abstract fun create(userId: UserId): UserSessionScope
 }
 
 internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider {

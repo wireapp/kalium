@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
@@ -58,7 +59,7 @@ class GetPublicAssetUseCaseTest {
 
         coEvery {
             assetRepository.downloadPublicAsset(eq(assetKey.value), eq(assetKey.domain))
-        }.returns(Either.Right(expectedPath))
+        }.returns(Either.Right(FetchedAssetData(expectedPath, true)))
 
         val publicAsset = getPublicAsset(assetKey)
 

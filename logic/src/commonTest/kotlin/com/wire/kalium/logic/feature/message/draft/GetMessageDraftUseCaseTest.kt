@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,103 +15,132 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.message.draft
 
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.draft.MessageDraft
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
+import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
-import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GetMessageDraftUseCaseTest {
 
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 
     @Test
-    fun givenConversationId_whenInvokingUseCase_thenShouldCallMessageDraftRepository() = runTest(testDispatchers.io) {
-        val (arrangement, getMessageDraftUseCase) = Arrangement()
-            .withRepositoryMessageDraftReturning(CONVERSATION_ID, null)
+    fun givenNoDraft_whenUseCaseInvoked_thenNullReturned() = runTest(testDispatchers.io) {
+        val (_, useCase) = Arrangement()
+            .withNoDraft()
             .arrange()
 
-        getMessageDraftUseCase(CONVERSATION_ID)
+        val result = useCase(CONVERSATION_ID)
 
-        coVerify {
-            arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID)
-        }.wasInvoked(exactly = once)
+        assertNull(result)
     }
 
     @Test
-    fun givenRepositoryReturnsNullDraft_whenInvokingUseCase_thenShouldPropagateNull() = runTest(testDispatchers.io) {
-        // Given
-        val (arrangement, getMessageDraftUseCase) = Arrangement()
-            .withRepositoryMessageDraftReturning(CONVERSATION_ID, null)
+    fun givenDraftIsNotEdit_whenUseCaseInvoked_thenMessageIsNotFetched() = runTest(testDispatchers.io) {
+        val (arrangement, useCase) = Arrangement()
+            .withDraft(MessageDraft(
+                conversationId = CONVERSATION_ID,
+                text = "text",
+                editMessageId = null,
+                quotedMessageId = null,
+                selectedMentionList = emptyList()
+            ))
             .arrange()
 
-        // When
-        val result = getMessageDraftUseCase(CONVERSATION_ID)
-
-        // Then
-        assertEquals(null, result)
+        useCase(CONVERSATION_ID)
 
         coVerify {
-            arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID)
-        }.wasInvoked(exactly = once)
+            arrangement.messageRepository.getMessageById(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
-    fun givenRepositorySucceeds_whenInvokingUseCase_thenShouldPropagateTheDraft() = runTest(testDispatchers.io) {
-        // Given
-        val (arrangement, getMessageDraftUseCase) = Arrangement()
-            .withRepositoryMessageDraftReturning(CONVERSATION_ID, MESSAGE_DRAFT)
+    fun givenDraftIsEditRegular_whenUseCaseInvoked_thenCorrectValueReturned() = runTest(testDispatchers.io) {
+        val (_, useCase) = Arrangement()
+            .withRegularMessageEdit()
+            .withDraft(MessageDraft(
+                conversationId = CONVERSATION_ID,
+                text = "text",
+                editMessageId = "message_id",
+                quotedMessageId = null,
+                selectedMentionList = emptyList()
+            ))
             .arrange()
 
-        // When
-        val result = getMessageDraftUseCase(CONVERSATION_ID)
+        val result = useCase(CONVERSATION_ID)
 
-        // Then
-        assertEquals(MESSAGE_DRAFT, result)
+        assertTrue(result?.isMultipartEdit == false)
+    }
 
-        coVerify {
-            arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID)
-        }.wasInvoked(exactly = once)
+    @Test
+    fun givenDraftIsEditMultipart_whenUseCaseInvoked_thenCorrectValueReturned() = runTest(testDispatchers.io) {
+        val (_, useCase) = Arrangement()
+            .withMultipartMessageEdit()
+            .withDraft(MessageDraft(
+                conversationId = CONVERSATION_ID,
+                text = "text",
+                editMessageId = "message_id",
+                quotedMessageId = null,
+                selectedMentionList = emptyList()
+            ))
+            .arrange()
+
+        val result = useCase(CONVERSATION_ID)
+
+        assertTrue(result?.isMultipartEdit == true)
     }
 
     private inner class Arrangement {
+
+        val messageRepository: MessageRepository = mock(MessageRepository::class)
         val messageDraftRepository: MessageDraftRepository = mock(MessageDraftRepository::class)
 
-        private val getMessageDraft by lazy {
-            GetMessageDraftUseCaseImpl(messageDraftRepository, testDispatchers)
-        }
-
-        suspend fun withRepositoryMessageDraftReturning(
-            conversationId: ConversationId,
-            response: MessageDraft?
-        ) = apply {
+        suspend fun withNoDraft() = apply {
             coEvery {
-                messageDraftRepository.getMessageDraft(conversationId)
-            }.returns(response)
+                messageDraftRepository.getMessageDraft(any())
+            } returns null
         }
 
-        fun arrange() = this to getMessageDraft
+        suspend fun withDraft(draft: MessageDraft) = apply {
+            coEvery {
+                messageDraftRepository.getMessageDraft(any())
+            } returns draft
+        }
+
+        suspend fun withRegularMessageEdit() = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            } returns TestMessage.TEXT_MESSAGE.right()
+        }
+
+        suspend fun withMultipartMessageEdit() = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            } returns TestMessage.multipartMessage(emptyList()).right()
+        }
+
+        fun arrange() = this to GetMessageDraftUseCaseImpl(
+            messageRepository = messageRepository,
+            messageDraftRepository = messageDraftRepository,
+            dispatcher = testDispatchers
+        )
     }
 
     private companion object {
-        val CONVERSATION_ID = TestConversation.ID
-        val MESSAGE_DRAFT = MessageDraft(
-            conversationId = CONVERSATION_ID,
-            text = "hello",
-            editMessageId = null,
-            quotedMessageId = null,
-            selectedMentionList = listOf()
-        )
+        val CONVERSATION_ID = QualifiedID("conversation_id", "domain")
     }
 }

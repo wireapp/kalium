@@ -32,7 +32,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 
-interface ConnectionMapper {
+internal interface ConnectionMapper {
     fun fromApiToDao(state: ConnectionDTO): ConnectionEntity
     fun fromDaoToModel(connection: ConnectionEntity): Connection
     fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails.Connection

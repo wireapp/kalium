@@ -26,7 +26,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ParticipantsFilterTest {
+internal class ParticipantsFilterTest {
 
         private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 

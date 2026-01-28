@@ -20,28 +20,30 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 
 /**
  * This use case will add a member(s) to a given conversation.
  */
-interface AddMemberToConversationUseCase {
+public interface AddMemberToConversationUseCase {
     /**
      * @param conversationId the id of the conversation
      * @param userIdList the list of user ids to add to the conversation
      * @return the [Result] indicating a successful operation, otherwise a [CoreFailure]
      */
-    suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
+    public suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
 
-    sealed interface Result {
-        data object Success : Result
-        data class Failure(val cause: CoreFailure) : Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val cause: CoreFailure) : Result
     }
 }
 
@@ -55,19 +57,25 @@ internal class AddMemberToConversationUseCaseImpl(
         userRepository.insertOrIgnoreIncompleteUsers(userIdList)
         return conversationGroupRepository.addMembers(userIdList, conversationId)
             .fold({ error ->
-                when (error) {
-                    is MLSFailure.MessageRejected.InvalidLeafNodeIndex,
-                    is MLSFailure.MessageRejected.InvalidLeafNodeSignature -> {
-                        resetMLSConversation(conversationId).fold(
-                            {
-                                AddMemberToConversationUseCase.Result.Failure(it)
-                            },
-                            {
-                                AddMemberToConversationUseCase.Result.Success
-                            }
-                        )
+                val mlsError = error.wrapNetworkMlsFailureIfApplicable()
+                if (mlsError is MLSFailure.MessageRejected) {
+                    when (mlsError.cause) {
+                        is NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex,
+                        is NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature -> {
+                            resetMLSConversation(conversationId).toEither().fold(
+                                {
+                                    AddMemberToConversationUseCase.Result.Failure(it)
+                                },
+                                {
+                                    AddMemberToConversationUseCase.Result.Success
+                                }
+                            )
+                        }
+
+                        else -> AddMemberToConversationUseCase.Result.Failure(error)
                     }
-                    else -> AddMemberToConversationUseCase.Result.Failure(error)
+                } else {
+                    AddMemberToConversationUseCase.Result.Failure(error)
                 }
             }, {
                 AddMemberToConversationUseCase.Result.Success

@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.sync
 
-sealed class Result {
-    data object Success : Result()
-    data object Failure : Result()
-    data object Retry : Result()
+internal sealed class Result {
+    internal data object Success : Result()
+    internal data object Failure : Result()
+    internal data object Retry : Result()
 }
 
-interface DefaultWorker {
+internal interface DefaultWorker {
     suspend fun doWork(): Result
 }

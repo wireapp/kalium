@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 import java.net.InetAddress
 
-actual class ClientConfigImpl : ClientConfig {
+internal actual open class ClientConfigImpl : ClientConfig {
     actual override fun deviceType(): DeviceType {
         return DeviceType.Desktop
     }

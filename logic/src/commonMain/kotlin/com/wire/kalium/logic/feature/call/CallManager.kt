@@ -32,7 +32,7 @@ import io.mockative.Mockable
 
 @Suppress("TooManyFunctions")
 @Mockable
-interface CallManager {
+internal interface CallManager {
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,
         content: MessageContent.Calling,
@@ -56,5 +56,6 @@ interface CallManager {
     suspend fun setTestVideoType(testVideoType: TestVideoType)
     suspend fun setTestPreviewActive(shouldEnable: Boolean)
     suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
+    suspend fun setBackground(background: Boolean)
     suspend fun cancelJobs()
 }
