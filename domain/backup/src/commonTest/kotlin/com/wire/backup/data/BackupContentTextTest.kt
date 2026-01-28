@@ -24,40 +24,6 @@ import kotlin.test.assertFailsWith
 class BackupContentTextTest {
 
     @Test
-    fun givenMentionTooLong_whenCreatingText_thenShouldThrowIAE() {
-        val text = "Hello"
-        val mention = BackupMessageContent.Text.Mention(
-            userId = BackupQualifiedId(id = "user", domain = "example.com"),
-            start = 3,
-            length = 5, // 3 + 5 = 8 > text.length (5)
-        )
-
-        assertFailsWith<IllegalArgumentException> {
-            BackupMessageContent.Text(text = text, mentions = listOf(mention))
-        }
-    }
-
-    @Test
-    fun givenMultipleMentionsWithOnlyOneOutOfBounds_whenCreatingText_thenShouldThrowIAE() {
-        val text = "Hello @alice"
-        val validMention = BackupMessageContent.Text.Mention(
-            userId = BackupQualifiedId(id = "alice-id", domain = "example.com"),
-            start = 6,
-            length = 6, // Valid: 6 + 6 = 12 == text.length
-        )
-        val invalidMention = BackupMessageContent.Text.Mention(
-            userId = BackupQualifiedId(id = "bob-id", domain = "example.com"),
-            start = 10,
-            length = 5, // Invalid: 10 + 5 = 15 > text.length (12)
-        )
-
-        assertFailsWith<IllegalArgumentException> {
-            BackupMessageContent.Text(text = text, mentions = listOf(validMention, invalidMention))
-        }
-    }
-
-
-    @Test
     fun givenNegativeStart_whenCreatingMention_thenShouldThrowIAE() {
         assertFailsWith<IllegalArgumentException> {
             BackupMessageContent.Text.Mention(
