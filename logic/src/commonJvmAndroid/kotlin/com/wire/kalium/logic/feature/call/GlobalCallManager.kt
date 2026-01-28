@@ -63,7 +63,7 @@ internal actual class GlobalCallManager(
             if (CurrentPlatform().type == PlatformType.ANDROID)
                 wcall_init(env = ENVIRONMENT_DEFAULT)
             else {
-                wcall_setup()
+                wcall_setup_ex(AVS_FLAG_AUDIO_TEST or AVS_FLAG_VIDEO_TEST)
                 wcall_run()
             }
             wcall_set_log_handler(
@@ -139,6 +139,12 @@ internal actual class GlobalCallManager(
     private val mediaManager by lazy { MediaManagerServiceImpl(appContext, scope) }
 
     internal actual fun getMediaManager(): MediaManagerService = mediaManager
+
+    companion object {
+        const val AVS_FLAG_AUDIO_TEST = 1 shl 1
+	    const val AVS_FLAG_VIDEO_TEST = 1 shl 2
+	    const val AVS_FLAG_NOISE_TEST = 1 shl 3
+    }
 }
 
 internal object LogHandlerImpl : LogHandler {

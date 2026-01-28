@@ -28,6 +28,51 @@ import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import com.wire.kalium.util.serialization.toJsonElement
+
+
+
+private val sftServersKey = "sft_servers"
+private val sftServers = "[{\"urls\":[\"https://rust-sft.stars.wire.link\"]}]"
+private val sftServersAllKey = "sft_servers_all"
+private val sftServersAll = "[{\"urls\":[\"https://rust-sft.stars.wire.link\"]}]"
+
+
+private fun  overwriteSft(element: JsonElement): JsonElement =
+    when (element) {
+        is JsonObject -> {
+            val jsonObj =  (element as JsonObject)
+            jsonObj.entries.associate { entry ->
+                val key = entry.key
+                when {
+                    key == sftServersKey -> {
+                        val newSftServers = (Json.parseToJsonElement(sftServers) as JsonArray)
+                        val orgVal = entry.value
+                        callingLogger.i("[OnConfigRequest] Overwriting $key")
+                        callingLogger.i("[OnConfigRequest] $orgVal --> $newSftServers")
+                        key to newSftServers
+                    }
+                    key == sftServersAllKey -> {
+                        val newSftServersAll = (Json.parseToJsonElement(sftServersAll) as JsonArray)
+                        val orgVal = entry.value
+                        callingLogger.i("[OnConfigRequest] Overwriting $key")
+                        callingLogger.i("[OnConfigRequest] $orgVal --> $newSftServersAll")
+                        key to newSftServersAll
+                    }
+                    else -> {
+                        key to entry.value
+                    }
+                }
+            }.toJsonElement()
+        }
+        else -> element
+    }
 
 // TODO(testing): create unit test
 internal class OnConfigRequest(
@@ -52,11 +97,17 @@ internal class OnConfigRequest(
                         error = 1,
                         jsonString = ""
                     )
-                }, { config ->
+                }, {
+                    config -> 
+                    callingLogger.v("[OnConfigRequest] - original config: $config") 
+                    val jsonEl =  (Json.parseToJsonElement(config) as JsonElement)
+                    val modConfig = overwriteSft(jsonEl).toString()
+                    callingLogger.v("[OnConfigRequest] - overwritten config: $modConfig") 
+
                     calling.wcall_config_update(
                         inst = inst,
                         error = 0,
-                        jsonString = config
+                        jsonString = modConfig
                     )
                     callingLogger.i("[OnConfigRequest] - wcall_config_update()")
                 })
