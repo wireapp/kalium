@@ -27,7 +27,7 @@ import kotlin.time.Duration.Companion.hours
 public data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
     // Lazy provider for file restriction state - evaluated when needed
-    val fileRestrictionState: () -> BuildFileRestrictionState = { BuildFileRestrictionState.NoRestriction },
+    val fileRestrictionState: Lazy<BuildFileRestrictionState> = lazy{ BuildFileRestrictionState.NoRestriction },
     // Lazy provider for encryption setting - evaluated when needed
     // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: () -> Boolean = { true },
