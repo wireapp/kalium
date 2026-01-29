@@ -347,7 +347,7 @@ class GetNotificationsUseCaseTest {
             )
         }.also {
             coEvery {
-                conversationRepository.updateConversationNotificationDate(any())
+                conversationRepository.updateConversationNotificationDate(any(), any())
             }.returns(Either.Right(Unit))
 
             coEvery {

@@ -48,7 +48,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.conversationRepository.updateConversationNotificationDate(any())
+            arrangement.conversationRepository.updateConversationNotificationDate(any(), any())
         }.wasNotInvoked()
 
         assertEquals(result, Result.Success)
@@ -63,7 +63,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
         val result = markMessagesAsNotified(UpdateTarget.SingleConversation(CONVERSATION_ID))
 
         coVerify {
-            arrangement.conversationRepository.updateConversationNotificationDate(eq(CONVERSATION_ID))
+            arrangement.conversationRepository.updateConversationNotificationDate(eq(CONVERSATION_ID), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -111,7 +111,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         suspend fun withUpdatingOneConversationReturning(result: Either<StorageFailure, Unit>) = apply {
             coEvery {
-                conversationRepository.updateConversationNotificationDate(any())
+                conversationRepository.updateConversationNotificationDate(any(), any())
             }.returns(result)
         }
 
