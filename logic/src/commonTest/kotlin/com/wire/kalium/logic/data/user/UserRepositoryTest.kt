@@ -945,6 +945,107 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenMultipleUsersWithSomeKnown_whenFetchingUsersIfUnknownByIds_thenShouldOnlyFetchUnknownUsers() = runTest {
+        // Given - 10 users, 5 known (with names) and 5 unknown
+        val knownUserIds = (1..5).map { UserId(value = "known$it", domain = "domain") }
+        val unknownUserIds = (6..10).map { UserId(value = "unknown$it", domain = "domain") }
+        val allRequestedUserIds = (knownUserIds + unknownUserIds).toSet()
+
+        val knownUserEntities = knownUserIds.map {
+            TestUser.DETAILS_ENTITY.copy(
+                id = UserIDEntity(value = it.value, domain = it.domain),
+                name = "Known User ${it.value}"
+            )
+        }
+
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
+            .withSuccessfulGetMultipleUsersApiRequest(
+                ListUsersDTO(
+                    usersFailed = emptyList(),
+                    usersFound = unknownUserIds.map {
+                        TestUser.USER_PROFILE_DTO.copy(id = it.toApi())
+                    }
+                )
+            )
+            .arrange()
+
+        // When
+        userRepository.fetchUsersIfUnknownByIds(allRequestedUserIds).shouldSucceed()
+
+        // Then - should only fetch the unknown users
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(matches { request: ListUserRequest ->
+                val requestedIds = (request as QualifiedUserIdListRequest).qualifiedIds
+                requestedIds.size == 5 && requestedIds.all { apiId ->
+                    unknownUserIds.any { it.toApi() == apiId }
+                }
+            })
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMultipleTeamMatesAndOtherUsers_whenGettingAllRecipients_thenShouldCorrectlySeparateThem() = runTest {
+        // Given - Multiple team members and other users
+        val teamId = "test-team-id"
+        val teamMemberIds = (1..5).map { UserId(value = "team$it", domain = "domain") }
+        val otherUserIds = (6..10).map { UserId(value = "other$it", domain = "domain") }
+
+        val teamUserDetails = teamMemberIds.map {
+            TestUser.DETAILS_ENTITY.copy(
+                id = UserIDEntity(value = it.value, domain = it.domain),
+                team = teamId
+            )
+        }
+
+        val clientsMap = (teamMemberIds + otherUserIds).associate { userId ->
+            userId.toDao() to emptyList<com.wire.kalium.persistence.dao.client.Client>()
+        }
+
+        val (arrangement, userRepository) = Arrangement()
+            .arrange()
+
+        coEvery {
+            arrangement.selfTeamIdProvider()
+        }.returns(Either.Right(TeamId(teamId)))
+        coEvery {
+            arrangement.userDAO.getAllUsersDetailsByTeam(teamId)
+        }.returns(teamUserDetails)
+        coEvery {
+            arrangement.memberDAO.getAllMembers()
+        }.returns(emptyList())
+        coEvery {
+            arrangement.clientDAO.selectAllClients()
+        }.returns(clientsMap)
+
+        // When
+        val result = userRepository.getAllRecipients()
+
+        // Then
+        result.shouldSucceed { (teamRecipients, otherRecipients) ->
+            // Should correctly separate team members from other users
+            assertEquals(5, teamRecipients.size, "Expected 5 team recipients")
+            assertEquals(5, otherRecipients.size, "Expected 5 other recipients")
+
+            // Verify team recipients contain only team member IDs
+            assertTrue(
+                teamRecipients.all { recipient -> teamMemberIds.contains(recipient.id) },
+                "All team recipients should be team members"
+            )
+
+            // Verify other recipients contain only non-team member IDs
+            assertTrue(
+                otherRecipients.all { recipient -> otherUserIds.contains(recipient.id) },
+                "All other recipients should be non-team members"
+            )
+        }
+
+        coVerify {
+            arrangement.userDAO.getAllUsersDetailsByTeam(teamId)
+        }.wasInvoked(exactly = once)
+    }
+
     private companion object {
         val SELF_USER = TestUser.SELF
     }
