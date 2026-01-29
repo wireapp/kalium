@@ -11,11 +11,9 @@ OS := $(shell uname -s | tr A-Z a-z)
 # override avs lib name and extension for linux
 # osx 	=>	avs.framework.osx.10.1.41.zip
 # linux =>	avs.linux.10.1.41.tar.bz2
-AVS_NAME := framework.osx
-AVS_EXT := zip
+AVS_LIB_NAME := avs.framework.osx.$(AVS_VERSION).zip
 ifeq ($(OS), linux)
-	AVS_NAME = $(OS)
-	AVS_EXT = tar.bz2
+	AVS_LIB_NAME = avs.linux.$(AVS_VERSION).tar.bz2
 endif
 
 AVS_ARTIFACT_FILE := avs.framework
@@ -24,8 +22,8 @@ NATIVE_TARBALLS = native/.tarballs
 NATIVE_LIBS = native/libs
 NATIVE := native/.libs.stamp native/.tarballs.stamp
 
-AVS_FRAMEWORK_URL := https://github.com/wireapp/wire-avs/releases/download/$(AVS_VERSION)/avs.$(AVS_NAME).$(AVS_VERSION).$(AVS_EXT)
-AVS_FRAMEWORK_ZIP := $(NATIVE_TARBALLS)/avs.$(AVS_NAME).$(AVS_VERSION).$(AVS_EXT)
+AVS_FRAMEWORK_URL := https://github.com/wireapp/wire-avs/releases/download/$(AVS_VERSION)/$(AVS_LIB_NAME)
+AVS_FRAMEWORK_ZIP := $(NATIVE_TARBALLS)/$(AVS_LIB_NAME)
 AVS_FRAMEWORK_UNZIP := native/avs.framework_$(AVS_VERSION)
 AVS_FRAMEWORK_ARTIFACT := $(NATIVE_LIBS)/$(AVS_ARTIFACT_FILE)
 
