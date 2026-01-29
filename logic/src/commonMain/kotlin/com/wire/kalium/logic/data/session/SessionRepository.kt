@@ -33,7 +33,6 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -61,6 +60,7 @@ internal interface SessionRepository {
         accountTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
@@ -91,7 +91,6 @@ internal class SessionDataSource internal constructor(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
     private val serverConfigDAO: ServerConfigurationDAO,
-    private val kaliumConfigs: KaliumConfigs,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
@@ -103,6 +102,7 @@ internal class SessionDataSource internal constructor(
         accountTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
@@ -110,7 +110,7 @@ internal class SessionDataSource internal constructor(
                 ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
                 managedByEntity = managedBy?.toDao(),
                 serverConfigId = serverConfigId,
-                isPersistentWebSocketEnabled = kaliumConfigs.isWebSocketEnabledByDefault
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
             )
         }.flatMap {
             wrapStorageRequest {

@@ -891,7 +891,7 @@ class SyncFeatureConfigsUseCaseTest {
         fun withBuildConfigFileSharing(
             state: BuildFileRestrictionState
         ) = apply {
-            kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
+            kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = { state })
             userConfigRepository = UserConfigDataSource(
                 inMemoryStorage,
                 userConfigDAO,
