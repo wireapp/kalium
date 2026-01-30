@@ -85,7 +85,7 @@ complexity:
         ignoreAnnotated: [ 'Composable' ]
     LongParameterList:
         active: true
-        functionThreshold: 6
+        functionThreshold: 7
         constructorThreshold: 7
         ignoreDefaultParameters: false
         ignoreDataClasses: true

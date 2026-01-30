@@ -54,13 +54,13 @@ public actual class CoreLogic(
 
     actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
         appContext,
-        kaliumConfigs.shouldEncryptData
+        kaliumConfigs.shouldEncryptData()
     )
 
     actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(appContext),
         queriesContext = KaliumDispatcherImpl.io,
-        passphrase = if (kaliumConfigs.shouldEncryptData) {
+        passphrase = if (kaliumConfigs.shouldEncryptData()) {
             SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
         } else {
             null
