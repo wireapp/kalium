@@ -115,6 +115,6 @@ internal class ParallelConversationWorkQueue(
         }
 
     private companion object {
-        private val QUEUE_DEBOUNCE = 3.seconds
+        private val QUEUE_DEBOUNCE = 1.seconds
     }
 }
