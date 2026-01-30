@@ -24,7 +24,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.UserConfigStorageImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 
-actual class UserPrefBuilder(
+actual class UserPrefBuilder constructor(
     userId: UserIDEntity,
     rootPath: String,
     shouldEncryptData: Boolean = true

@@ -28,7 +28,7 @@ import com.wire.kalium.common.functional.nullableFold
 internal class AppLockConfigHandler internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) {
-    fun handle(appLockConfig: AppLockModel): Either<CoreFailure, Unit> {
+    suspend fun handle(appLockConfig: AppLockModel): Either<CoreFailure, Unit> {
 
         val isStatusChanged = userConfigRepository.isTeamAppLockEnabled().nullableFold(
             {

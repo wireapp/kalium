@@ -18,11 +18,11 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_LIST_KEY
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
@@ -30,11 +30,9 @@ import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
-import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -123,7 +121,7 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        verify { arrangement.userConfigRepository.getE2EISettings() }
+        verifySuspend { arrangement.userConfigRepository.getE2EISettings() }
 
         verifySuspend { arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, DUMMY_URL) }
     }
@@ -137,7 +135,7 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        verify { arrangement.userConfigRepository.getE2EISettings() }
+        verifySuspend { arrangement.userConfigRepository.getE2EISettings() }
 
         verifySuspend {
             arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, null)
@@ -153,7 +151,7 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        verify { arrangement.userConfigRepository.getE2EISettings() }
+        verifySuspend { arrangement.userConfigRepository.getE2EISettings() }
 
         verifySuspend {
             arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, null)
@@ -196,11 +194,16 @@ class CertificateRevocationListRepositoryTest {
         }
 
         fun withE2EISettings(result: Either<StorageFailure, E2EISettings> = E2EI_SETTINGS.right()) = apply {
-            every { userConfigRepository.getE2EISettings() } returns result
+            everySuspend { userConfigRepository.getE2EISettings() } returns result
         }
 
         fun withClientDomainCRL() = apply {
-            everySuspend { acmeApi.getClientDomainCRL(any(), any<String?>()) } returns NetworkResponse.Success("some_response".encodeToByteArray(), mapOf(), 200)
+            everySuspend {
+                acmeApi.getClientDomainCRL(
+                    any(),
+                    any<String?>()
+                )
+            } returns NetworkResponse.Success("some_response".encodeToByteArray(), mapOf(), 200)
         }
     }
 

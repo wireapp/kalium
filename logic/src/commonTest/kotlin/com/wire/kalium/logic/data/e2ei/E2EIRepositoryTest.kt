@@ -62,11 +62,9 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.time
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -941,7 +939,7 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenE2EIIsDisabled_whenCallingDiscoveryUrl_thenItFailWithDisabled() {
+    fun givenE2EIIsDisabled_whenCallingDiscoveryUrl_thenItFailWithDisabled() = runTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
@@ -950,13 +948,13 @@ class E2EIRepositoryTest {
             assertIs<E2EIFailure.Disabled>(it)
         }
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.getE2EISettings()
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenE2EIIsEnabledAndDiscoveryUrlIsNull_whenCallingDiscoveryUrl_thenItFailWithMissingDiscoveryUrl() {
+    fun givenE2EIIsEnabledAndDiscoveryUrlIsNull_whenCallingDiscoveryUrl_thenItFailWithMissingDiscoveryUrl() = runTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
@@ -965,13 +963,13 @@ class E2EIRepositoryTest {
             assertIs<E2EIFailure.MissingDiscoveryUrl>(it)
         }
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.getE2EISettings()
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenE2EIIsEnabledAndDiscoveryUrlIsNotNull_whenCallingDiscoveryUrl_thenItSucceed() {
+    fun givenE2EIIsEnabledAndDiscoveryUrlIsNotNull_whenCallingDiscoveryUrl_thenItSucceed() = runTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
@@ -980,7 +978,7 @@ class E2EIRepositoryTest {
             assertEquals(RANDOM_URL, it)
         }
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.getE2EISettings()
         }.wasInvoked(once)
     }
@@ -1095,8 +1093,8 @@ class E2EIRepositoryTest {
             }.returns(Either.Right(mlsClient))
         }
 
-        fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
-            every {
+        suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
+            coEvery {
                 userConfigRepository.getE2EISettings()
             }.returns(result)
         }

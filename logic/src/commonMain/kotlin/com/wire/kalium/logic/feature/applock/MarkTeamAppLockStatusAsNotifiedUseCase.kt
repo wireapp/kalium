@@ -25,13 +25,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
  * e.g. after showing a dialog, or a toast etc.
  */
 public interface MarkTeamAppLockStatusAsNotifiedUseCase {
-    public operator fun invoke()
+    public suspend operator fun invoke()
 }
 
 internal class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : MarkTeamAppLockStatusAsNotifiedUseCase {
-    override operator fun invoke() {
+    override suspend operator fun invoke() {
         userConfigRepository.setTeamAppLockAsNotified()
     }
 }

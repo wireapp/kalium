@@ -29,7 +29,7 @@ internal class GuestRoomConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    internal fun handle(guestRoomConfig: ConfigsStatusModel): Either<CoreFailure, Unit> =
+    internal suspend fun handle(guestRoomConfig: ConfigsStatusModel): Either<CoreFailure, Unit> =
         if (!kaliumConfigs.guestRoomLink) {
             userConfigRepository.setGuestRoomStatus(false, null)
         } else {

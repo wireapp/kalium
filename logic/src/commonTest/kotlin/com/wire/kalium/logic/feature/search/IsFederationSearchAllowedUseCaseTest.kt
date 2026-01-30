@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
@@ -25,12 +26,10 @@ import com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUse
 import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.PROTEUS_PROTOCOL_INFO
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -126,8 +125,8 @@ class IsFederationSearchAllowedUseCaseTest {
             )
         )
 
-        fun withDefaultProtocol(protocol: SupportedProtocol) = apply {
-            every { getDefaultProtocol.invoke() }.returns(protocol)
+        suspend fun withDefaultProtocol(protocol: SupportedProtocol) = apply {
+            coEvery { getDefaultProtocol.invoke() }.returns(protocol)
         }
 
         suspend fun withConversationProtocolInfo(protocolInfo: GetConversationProtocolInfoUseCase.Result) = apply {

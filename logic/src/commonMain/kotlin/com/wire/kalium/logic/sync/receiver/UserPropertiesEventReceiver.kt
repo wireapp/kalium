@@ -59,7 +59,7 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
         }
     }
 
-    private fun handleReadReceiptMode(
+    private suspend fun handleReadReceiptMode(
         event: Event.UserProperty.ReadReceiptModeSet
     ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
@@ -69,7 +69,7 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             .onFailure { logger.logFailure(it) }
     }
 
-    private fun handleTypingIndicatorMode(
+    private suspend fun handleTypingIndicatorMode(
         event: Event.UserProperty.TypingIndicatorModeSet
     ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)

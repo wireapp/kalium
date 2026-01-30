@@ -26,7 +26,7 @@ import com.wire.kalium.common.functional.Either
 internal class ClassifiedDomainsConfigHandler internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) {
-    fun handle(classifiedDomainsConfig: ClassifiedDomainsModel): Either<CoreFailure, Unit> {
+    suspend fun handle(classifiedDomainsConfig: ClassifiedDomainsModel): Either<CoreFailure, Unit> {
         val classifiedDomainsEnabled = classifiedDomainsConfig.status == Status.ENABLED
         return userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, classifiedDomainsConfig.config.domains)
     }

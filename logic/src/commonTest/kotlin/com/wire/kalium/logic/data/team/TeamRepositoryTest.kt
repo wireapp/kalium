@@ -47,7 +47,7 @@ import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.UserConfigDAO
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify

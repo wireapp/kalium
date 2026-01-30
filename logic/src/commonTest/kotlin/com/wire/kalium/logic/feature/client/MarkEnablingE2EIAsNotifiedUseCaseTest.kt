@@ -17,16 +17,17 @@
  */
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration
@@ -96,9 +97,11 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         val userConfigRepository = mock(UserConfigRepository::class)
 
         init {
-            every {
-                userConfigRepository.snoozeE2EINotification(any<Duration>())
-            }.returns(Either.Right(Unit))
+            runBlocking {
+                coEvery {
+                    userConfigRepository.snoozeE2EINotification(any<Duration>())
+                }.returns(Either.Right(Unit))
+            }
         }
 
         private var markMLSE2EIEnableChangeAsNotified: MarkEnablingE2EIAsNotifiedUseCase =

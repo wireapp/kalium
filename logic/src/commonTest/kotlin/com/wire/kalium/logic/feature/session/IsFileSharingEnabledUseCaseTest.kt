@@ -19,14 +19,14 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
-import com.wire.kalium.common.functional.Either
-import io.mockative.every
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,7 +44,7 @@ class IsFileSharingEnabledUseCaseTest {
         val actual = isFileSharingEnabledUseCase.invoke()
         assertEquals(expectedValue, actual)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isFileSharingEnabled()
         }.wasInvoked(exactly = once)
     }
@@ -60,7 +60,7 @@ class IsFileSharingEnabledUseCaseTest {
         // When
         isFileSharingEnabledUseCase.invoke()
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isFileSharingEnabled()
         }.wasInvoked(exactly = once)
     }
@@ -71,16 +71,16 @@ class IsFileSharingEnabledUseCaseTest {
 
         val isFileSharingEnabledUseCase = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
-        fun withSuccessfulResponse(expectedValue: FileSharingStatus): Arrangement {
-            every {
+        suspend fun withSuccessfulResponse(expectedValue: FileSharingStatus): Arrangement {
+            coEvery {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(Either.Right(expectedValue))
 
             return this
         }
 
-        fun withIsFileSharingEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
-            every {
+        suspend fun withIsFileSharingEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
+            coEvery {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(Either.Left(storageFailure))
             return this

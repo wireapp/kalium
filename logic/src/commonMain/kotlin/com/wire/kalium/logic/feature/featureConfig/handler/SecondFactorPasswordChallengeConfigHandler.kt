@@ -26,7 +26,7 @@ import com.wire.kalium.common.functional.Either
 internal class SecondFactorPasswordChallengeConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    internal fun handle(secondFactorPasswordChallengeConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    internal suspend fun handle(secondFactorPasswordChallengeConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
         val isRequired = secondFactorPasswordChallengeConfig.status == Status.ENABLED
         return userConfigRepository.setSecondFactorPasswordChallengeStatus(isRequired)
     }

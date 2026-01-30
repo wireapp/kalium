@@ -30,14 +30,14 @@ public interface GetDefaultProtocolUseCase {
     /**
      * @return [SupportedProtocol.MLS] or [SupportedProtocol.PROTEUS]
      */
-    public operator fun invoke(): SupportedProtocol
+    public suspend operator fun invoke(): SupportedProtocol
 }
 
 internal class GetDefaultProtocolUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : GetDefaultProtocolUseCase {
 
-    override fun invoke(): SupportedProtocol =
+    override suspend fun invoke(): SupportedProtocol =
         userConfigRepository.getDefaultProtocol().fold({
             SupportedProtocol.PROTEUS
         }, { supportedProtocol ->

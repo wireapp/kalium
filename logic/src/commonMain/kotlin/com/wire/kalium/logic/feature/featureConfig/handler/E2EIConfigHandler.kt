@@ -30,12 +30,12 @@ import kotlin.time.toDuration
 
 internal class E2EIConfigHandler(private val userConfigRepository: UserConfigRepository) {
 
-    internal fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
+    internal suspend fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
         setSettingsIfNeeded(e2eiConfig)
         return userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
     }
 
-    private fun setSettingsIfNeeded(e2eiConfig: E2EIModel) {
+    private suspend fun setSettingsIfNeeded(e2eiConfig: E2EIModel) {
         val gracePeriodEnd = e2eiConfig.config.verificationExpirationSeconds
             .toDuration(DurationUnit.SECONDS)
             .let { DateTimeUtil.currentInstant().plus(it) }

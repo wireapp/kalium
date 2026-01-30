@@ -53,11 +53,9 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -79,7 +77,7 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setFileSharingStatus(eq(true), eq(true))
         }.wasInvoked(once)
     }
@@ -97,7 +95,7 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setFileSharingStatus(eq(false), eq(true))
         }.wasInvoked(once)
     }
@@ -115,7 +113,7 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setFileSharingStatus(eq(false), eq(false))
         }.wasInvoked(once)
     }
@@ -133,11 +131,11 @@ class FeatureConfigEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(eq(true))
         }.wasInvoked(once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(false))
         }.wasInvoked(once)
     }
@@ -155,11 +153,11 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(eq(false))
         }.wasInvoked(once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(true))
         }.wasNotInvoked()
     }
@@ -359,26 +357,26 @@ class FeatureConfigEventReceiverTest {
             )
         }
 
-        fun withSettingFileSharingEnabledSuccessful() = apply {
-            every {
+        suspend fun withSettingFileSharingEnabledSuccessful() = apply {
+            coEvery {
                 userConfigRepository.setFileSharingStatus(any(), any())
             }.returns(Either.Right(Unit))
         }
 
-        fun withSettingConferenceCallingEnabledSuccessful() = apply {
-            every {
+        suspend fun withSettingConferenceCallingEnabledSuccessful() = apply {
+            coEvery {
                 userConfigRepository.setConferenceCallingEnabled(any())
             }.returns(Either.Right(Unit))
         }
 
-        fun withSetUseSFTForOneOnOneCallsSuccessful() = apply {
-            every {
+        suspend fun withSetUseSFTForOneOnOneCallsSuccessful() = apply {
+            coEvery {
                 userConfigRepository.setUseSFTForOneOnOneCalls(any())
             }.returns(Either.Right(Unit))
         }
 
-        fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
-            every {
+        suspend fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
+            coEvery {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(result)
         }

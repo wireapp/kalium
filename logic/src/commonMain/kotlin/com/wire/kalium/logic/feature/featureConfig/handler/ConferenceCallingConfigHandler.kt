@@ -27,7 +27,7 @@ import com.wire.kalium.common.functional.flatMap
 internal class ConferenceCallingConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
-    internal fun handle(conferenceCallingConfig: ConferenceCallingModel): Either<CoreFailure, Unit> {
+    internal suspend fun handle(conferenceCallingConfig: ConferenceCallingModel): Either<CoreFailure, Unit> {
         val conferenceCallingEnabled = conferenceCallingConfig.status == Status.ENABLED
         val result = userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled).flatMap {
             userConfigRepository.setUseSFTForOneOnOneCalls(conferenceCallingConfig.useSFTForOneOnOneCalls)
