@@ -88,26 +88,26 @@ internal class CallDAOImpl(
     override suspend fun observeCalls(): Flow<List<CallEntity>> =
         callsQueries.selectAllCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun observeOutgoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOutgoingCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getEstablishedCall(): CallEntity = withContext(readDispatcher.value) {
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).executeAsOne()
@@ -116,8 +116,8 @@ internal class CallDAOImpl(
     override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOngoingCalls(mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
@@ -140,8 +140,8 @@ internal class CallDAOImpl(
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getLastCallConversationTypeByConversationId(
         conversationId: QualifiedIDEntity
@@ -159,6 +159,6 @@ internal class CallDAOImpl(
     override fun observeLastActiveCallByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?> =
         callsQueries.selectLastActiveCallByConversationId(conversationId, mapper = mapper::fromCalls)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
 }

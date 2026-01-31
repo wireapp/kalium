@@ -66,7 +66,10 @@ internal class MessageAttachmentsDaoImpl(
     }
 
     override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> = withContext(readDispatcher.value) {
-        queries.getAllAttachments(::toDao).asFlow().flowOn(readDispatcher.value).mapToList()
+        queries.getAllAttachments(::toDao)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getAttachment(assetId: String): MessageAttachmentEntity = withContext(readDispatcher.value) {

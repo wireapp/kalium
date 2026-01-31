@@ -278,9 +278,9 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>> = userQueries.selectAllUsers()
         .asFlow()
-        .flowOn(readDispatcher.value)
         .mapToList()
         .map { entryList -> entryList.map(mapper::toDetailsModel) }
+        .flowOn(readDispatcher.value)
 
     override suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?> =
         userCache.get(qualifiedID) {
@@ -288,12 +288,14 @@ class UserDAOImpl internal constructor(
                 .asFlow()
                 .mapToOneOrNull()
                 .map { it?.let { mapper.toDetailsModel(it) } }
+                .flowOn(readDispatcher.value)
         }
 
     override suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
         userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
             .asFlow()
             .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
         withContext(readDispatcher.value) {
@@ -328,18 +330,18 @@ class UserDAOImpl internal constructor(
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserDetailsEntity>> = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
         .asFlow()
-        .flowOn(readDispatcher.value)
         .mapToList()
         .map { it.map(mapper::toDetailsModel) }
+        .flowOn(readDispatcher.value)
 
     override suspend fun getUserDetailsByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
     ) = userQueries.selectByHandleAndConnectionState(handle, connectionStates)
         .asFlow()
-        .flowOn(readDispatcher.value)
         .mapToList()
         .map { it.map(mapper::toDetailsModel) }
+        .flowOn(readDispatcher.value)
 
     override suspend fun getUsersWithOneOnOneConversation(): List<UserEntity> = withContext(readDispatcher.value) {
         userQueries.selectUsersWithOneOnOne().executeAsList().map(mapper::toModel)
@@ -406,9 +408,9 @@ class UserDAOImpl internal constructor(
     override fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
 
     override suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
@@ -416,9 +418,9 @@ class UserDAOImpl internal constructor(
     ): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, searchQuery)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
 
     override suspend fun getUsersDetailsNotInConversationByHandle(
         conversationId: QualifiedIDEntity,
@@ -426,9 +428,9 @@ class UserDAOImpl internal constructor(
     ): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotInConversationByHandle(conversationId, handle)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
 
     override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>) =
         withContext(writeDispatcher.value) {
@@ -448,9 +450,9 @@ class UserDAOImpl internal constructor(
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
 
     override suspend fun getAllUsersDetailsByTeam(teamId: String): List<UserDetailsEntity> = withContext(readDispatcher.value) {
         userQueries.selectUsersByTeam(teamId)

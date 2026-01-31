@@ -285,9 +285,9 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
             .distinctUntilChanged()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
@@ -331,8 +331,8 @@ internal class MessageDAOImpl internal constructor(
             mapper::toEntityMessageFromView
         )
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity> =
         withContext(readDispatcher.value) {
@@ -359,8 +359,8 @@ internal class MessageDAOImpl internal constructor(
             mapper::toEntityMessageFromView
         )
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
         withContext(readDispatcher.value) {
@@ -449,26 +449,33 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         messagePreviewQueries.getLastMessages(mapper::toPreviewEntity)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
         return unreadEventsQueries.getConversationsUnreadEventCountsGrouped(unreadEventMapper::toConversationUnreadEntity)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>> =
         withContext(readDispatcher.value) {
-            unreadEventsQueries.getUnreadEvents(unreadEventMapper::toUnreadEntity).asFlow().mapToList()
+            unreadEventsQueries.getUnreadEvents(unreadEventMapper::toUnreadEntity)
+                .asFlow()
+                .mapToList()
                 .map { it.groupBy { event -> event.conversationId } }
+                .flowOn(readDispatcher.value)
         }
 
     override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
         queries.getUnreadMessagesCount { conversationId, count ->
             conversationId to count.toInt()
-        }.asFlow().flowOn(readDispatcher.value).mapToList().map { it.toMap() }
+        }
+            .asFlow()
+            .mapToList()
+            .map { it.toMap() }
+            .flowOn(readDispatcher.value)
 
     override suspend fun resetAssetTransferStatus() {
         withContext(writeDispatcher.value) {
@@ -571,9 +578,9 @@ internal class MessageDAOImpl internal constructor(
     ): Flow<MessageEntity.Visibility?> {
         return queries.selectMessageVisibility(messageUuid, conversationId)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
             .distinctUntilChanged()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getSearchedConversationMessagePosition(
@@ -589,8 +596,8 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
         assetStatusQueries.selectConversationAssetStatus(conversationId, mapper::fromAssetStatus)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity =
         withContext(readDispatcher.value) {

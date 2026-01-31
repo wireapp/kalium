@@ -266,7 +266,8 @@ class UserDatabaseBuilder internal constructor(
             database.metadataQueries,
             metadataCache,
             databaseScope,
-            writeDispatcher
+            writeDispatcher,
+            readDispatcher,
         )
 
     val clientDAO: ClientDAO

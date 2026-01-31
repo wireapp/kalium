@@ -88,16 +88,22 @@ internal class ServiceDAOImpl(
     override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
         serviceQueries.getUserIdFromMember(conversationId, id)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull(readDispatcher.value)
+            .flowOn(readDispatcher.value)
 
     override suspend fun getAllServices(): Flow<List<ServiceEntity>> =
-        serviceQueries.allServices(mapper = ::mapToServiceEntity).asFlow().flowOn(readDispatcher.value).mapToList()
+        serviceQueries.allServices(mapper = ::mapToServiceEntity)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun searchServicesByName(
         query: String
     ): Flow<List<ServiceEntity>> =
-        serviceQueries.searchByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(readDispatcher.value).mapToList()
+        serviceQueries.searchByName(query, mapper = ::mapToServiceEntity)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun insert(service: ServiceEntity) {
         withContext(writeDispatcher.value) {

@@ -76,8 +76,8 @@ internal class ConversationDAOImpl internal constructor(
         conversationCache.get(qualifiedID) {
             conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
                 .asFlow()
-                .flowOn(readDispatcher.value)
                 .mapToOneOrNull()
+                .flowOn(readDispatcher.value)
         }
 
     override suspend fun getConversationById(
@@ -89,8 +89,8 @@ internal class ConversationDAOImpl internal constructor(
     ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
         conversationDetailsQueries.selectConversationDetailsByQualifiedId(conversationId, conversationMapper::fromViewToModel)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getConversationDetailsById(
@@ -474,9 +474,9 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
         return conversationQueries.selectProposalTimers()
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, Instant.parse(it.mls_proposal_timer)) } }
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
@@ -590,9 +590,10 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
-        unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow()
-            .flowOn(readDispatcher.value)
+        unreadEventsQueries.getUnreadArchivedConversationsCount()
+            .asFlow()
             .mapToOne()
+            .flowOn(readDispatcher.value)
 
     override suspend fun updateLegalHoldStatus(
         conversationId: QualifiedIDEntity,

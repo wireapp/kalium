@@ -199,7 +199,10 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
-        queries.storedConfig(mapper = mapper::fromServerConfiguration).asFlow().flowOn(queriesContext).mapToList()
+        queries.storedConfig(mapper = mapper::fromServerConfiguration)
+            .asFlow()
+            .mapToList()
+            .flowOn(queriesContext)
 
     override suspend fun allConfig(): List<ServerConfigEntity> = withContext(queriesContext) {
         queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
@@ -248,8 +251,10 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
-        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().flowOn(queriesContext)
+        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId)
+            .asFlow()
             .mapToList()
+            .flowOn(queriesContext)
 
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) {
         withContext(queriesContext) {
@@ -272,6 +277,9 @@ internal class ServerConfigurationDAOImpl internal constructor(
                     api_proxy_port = apiProxy?.port,
                     mapper = mapper::fromServerConfiguration
                 )
-            }.asFlow().mapToOneOrNull()
+            }
+                .asFlow()
+                .mapToOneOrNull()
+                .flowOn(queriesContext)
         }
 }

@@ -74,8 +74,8 @@ internal class NewClientDAOImpl(
     override suspend fun observeNewClients(): Flow<List<NewClientEntity>> =
         newClientsQueries.selectNewClientsForUser(mapper::fromClient)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
     override suspend fun clearNewClients() {
         withContext(writeDispatcher.value) {

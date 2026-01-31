@@ -70,9 +70,9 @@ class TeamDAOImpl(
 
     override suspend fun getTeamById(teamId: String) = queries.selectTeamById(id = teamId)
         .asFlow()
-        .flowOn(readDispatcher.value)
         .mapToOneOrNull()
         .map { it?.let { mapper.toModel(team = it) } }
+        .flowOn(readDispatcher.value)
 
     override suspend fun updateTeam(team: TeamEntity) {
         withContext(writeDispatcher.value) {
