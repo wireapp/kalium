@@ -157,9 +157,9 @@ internal class MemberDAOImpl internal constructor(
     ): Flow<List<MemberEntity>> = membersCache.get(qualifiedID) {
         memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(memberMapper::toModel) }
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role) {
@@ -189,9 +189,9 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
         memberQueries.isUserMember(conversationId, userId)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToOneOrNull()
             .map { it != null }
+            .flowOn(readDispatcher.value)
 
     override suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         withContext(writeDispatcher.value) {
