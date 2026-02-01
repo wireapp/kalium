@@ -85,7 +85,7 @@ class ReceiptDAOImpl(
             type = type,
             mapper = ReceiptMapper::fromDetailedReceiptView
         ).asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
 
 }

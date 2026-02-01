@@ -144,9 +144,9 @@ class ReactionDAOImpl(
     override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
         reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
+            .flowOn(readDispatcher.value)
 
     override suspend fun getPagedReactionsFlow(
         pageSize: Int,
