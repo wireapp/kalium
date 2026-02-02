@@ -21,6 +21,11 @@ package com.wire.kalium.persistence.kmmSettings
 import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
 import com.wire.kalium.persistence.config.UserConfigStorage
 
+@Deprecated(
+    "Scheduled for removal in future versions, User KMM Settings are now replaced by database implementation." +
+            "Just kept for migration purposes.",
+    ReplaceWith("No replacement available"),
+)
 actual class UserPrefBuilder {
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
         get() = TODO("Not yet implemented")
