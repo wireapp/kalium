@@ -32,6 +32,7 @@ internal class SyncMigrationStep_10_11(
 
     override val version: Int = 11
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         return try {
             migrateLocallyManagedPreferences()

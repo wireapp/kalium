@@ -26,6 +26,7 @@ fun inMemoryUserConfigStorage(): UserConfigStorage = UserConfigStorageImpl(
     KaliumPreferencesSettings(MapSettings())
 )
 
+@Suppress("TooManyFunctions")
 class FakeUserConfigStorage(
     val backingStorage: MutableMap<String, Any> = mutableMapOf()
 ) : UserConfigStorage {
