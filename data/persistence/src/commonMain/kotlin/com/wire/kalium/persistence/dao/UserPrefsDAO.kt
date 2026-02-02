@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-internal class UserPrefsDAO constructor(
+internal class UserPrefsDAO(
     private val metadataDAO: MetadataDAO,
 ) : UserConfigStorage {
     override suspend fun persistAppLockStatus(
