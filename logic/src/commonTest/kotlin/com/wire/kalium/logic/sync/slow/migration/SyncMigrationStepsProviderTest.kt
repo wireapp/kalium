@@ -64,7 +64,7 @@ class SyncMigrationStepsProviderTest {
             accountRepository = lazy { accountRepository },
             selfTeamIdProvider = selfTeamIdProvider,
             oldUserConfigStorage = inMemoryUserConfigStorage(),
-            newUserConfigStorage = lazy { FakeUserConfigStorage() }
+            newUserConfigStorage = FakeUserConfigStorage()
         )
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to provider }

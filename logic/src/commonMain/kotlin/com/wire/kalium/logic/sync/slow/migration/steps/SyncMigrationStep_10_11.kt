@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.first
 @Suppress("ClassNaming", "MagicNumber")
 internal class SyncMigrationStep_10_11(
     private val oldUserConfigStorage: UserConfigStorage,
-    private val newUserConfigStorage: Lazy<UserConfigStorage>
+    private val newUserConfigStorage: UserConfigStorage
 ) : SyncMigrationStep {
 
     override val version: Int = 11
@@ -46,23 +46,23 @@ internal class SyncMigrationStep_10_11(
 
     private suspend fun migrateLocallyManagedPreferences() {
         oldUserConfigStorage.areReadReceiptsEnabled().first().let { isEnabled ->
-            newUserConfigStorage.value.persistReadReceipts(isEnabled)
+            newUserConfigStorage.persistReadReceipts(isEnabled)
             kaliumLogger.d("Migrated read receipts: $isEnabled")
         }
 
         oldUserConfigStorage.isTypingIndicatorEnabled().first().let { isEnabled ->
-            newUserConfigStorage.value.persistTypingIndicator(isEnabled)
+            newUserConfigStorage.persistTypingIndicator(isEnabled)
             kaliumLogger.d("Migrated typing indicator: $isEnabled")
         }
 
         oldUserConfigStorage.isScreenshotCensoringEnabledFlow().first().let { isEnabled ->
-            newUserConfigStorage.value.persistScreenshotCensoring(isEnabled)
+            newUserConfigStorage.persistScreenshotCensoring(isEnabled)
             kaliumLogger.d("Migrated screenshot censoring: $isEnabled")
         }
 
         oldUserConfigStorage.getE2EINotificationTime()?.let { timestamp ->
             if (timestamp > 0) {
-                newUserConfigStorage.value.updateE2EINotificationTime(timestamp)
+                newUserConfigStorage.updateE2EINotificationTime(timestamp)
                 kaliumLogger.d("Migrated E2EI notification time: $timestamp")
             }
         }

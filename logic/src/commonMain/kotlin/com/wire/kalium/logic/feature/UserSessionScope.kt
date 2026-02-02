@@ -1303,7 +1303,7 @@ public class UserSessionScope internal constructor(
             accountRepository = lazy { accountRepository },
             selfTeamIdProvider = selfTeamId,
             oldUserConfigStorage = userStorage.preferences.userConfigStorage,
-            newUserConfigStorage = lazy { userStorage.database.userPrefsDAO }
+            newUserConfigStorage = userStorage.database.userPrefsDAO
         )
     }
 
