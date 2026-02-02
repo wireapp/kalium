@@ -161,8 +161,8 @@ class RegisterMLSClientUseCaseTest {
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
-            every {
+        suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
+            coEvery {
                 userConfigRepository.getE2EISettings()
             }.returns(result)
         }

@@ -707,7 +707,7 @@ public class UserSessionScope internal constructor(
 
     internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
-            userStorage.preferences.userConfigStorage,
+            userStorage.database.userPrefsDAO,
             userStorage.database.userConfigDAO,
             kaliumConfigs
         )

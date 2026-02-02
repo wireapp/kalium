@@ -27,10 +27,9 @@ import com.wire.kalium.common.functional.Either
 internal class FileSharingConfigHandler(
     private val userConfigRepository: UserConfigRepository,
 ) {
-    internal fun handle(fileSharingConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    internal suspend fun handle(fileSharingConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
         val newStatus: Boolean = fileSharingConfig.status == Status.ENABLED
-        val currentStatus = userConfigRepository.isFileSharingEnabled()
-        val isStatusChanged: Boolean = when (currentStatus) {
+        val isStatusChanged: Boolean = when (val currentStatus = userConfigRepository.isFileSharingEnabled()) {
             is Either.Left -> false
             is Either.Right -> {
                 when (currentStatus.value.state) {

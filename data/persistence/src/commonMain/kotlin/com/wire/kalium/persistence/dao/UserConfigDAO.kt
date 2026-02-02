@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,15 +18,13 @@
 
 @file:Suppress("TooManyFunctions")
 
-package com.wire.kalium.persistence.dao.unread
+package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.config.LastPreKey
 import com.wire.kalium.persistence.config.LegalHoldRequestEntity
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.WireCellsConfigEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
