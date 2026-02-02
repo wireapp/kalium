@@ -516,7 +516,7 @@ class SlowSyncWorkerTest {
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
         val restoreRemoteBackup = mock(RestoreRemoteBackupUseCase::class)
         val kaliumConfigs = KaliumConfigs(
-            messageSynchronizationEnabledFlag = false,
+            contentBackupEnabled = false,
             remoteBackupEnabled = "https://example.com"
         )
 

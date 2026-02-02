@@ -137,7 +137,7 @@ class BackupCryptoStateUseCaseTest {
 
         fun withMessageSyncEnabled(enabled: Boolean) = apply {
             kaliumConfigs = kaliumConfigs.copy(
-                messageSynchronizationEnabledFlag = enabled,
+                contentBackupEnabled = enabled,
                 remoteBackupEnabled = "https://example.com"
             )
         }

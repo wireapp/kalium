@@ -892,7 +892,7 @@ class UserSessionScope internal constructor(
         MessageSyncTrackerImpl(
             messageSyncRepository = messageSyncRepository,
             messageRepository = messageRepository,
-            isFeatureEnabled = kaliumConfigs.messageSynchronizationEnabled,
+            isFeatureEnabled = kaliumConfigs.contentBackupEnabled,
             kaliumLogger = userScopedLogger
         )
     }
@@ -2315,7 +2315,7 @@ class UserSessionScope internal constructor(
             userScopedLogger,
             messageSyncTracker,
             messageSyncRepository,
-            kaliumConfigs.messageSynchronizationEnabled,
+            kaliumConfigs.contentBackupEnabled,
             appVisibilityObserver,
             userSessionWorkScheduler,
             userId

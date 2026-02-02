@@ -124,7 +124,7 @@ internal class SlowSyncWorkerImpl(
                     }
                 }
                 .continueWithStep(SlowSyncStep.RESTORE_REMOTE_BACKUP) {
-                    if (kaliumConfigs.messageSynchronizationEnabled) {
+                    if (kaliumConfigs.contentBackupEnabled) {
                         restoreRemoteBackup().map { restoredCount ->
                             logger.i("Restored $restoredCount messages from remote backup")
                         }
