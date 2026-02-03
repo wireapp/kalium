@@ -23,22 +23,22 @@ import com.wire.kalium.persistence.config.E2EISettingsEntity
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.IsGuestRoomLinkEnabledEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.APP_LOCK
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.DEFAULT_PROTOCOL
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.E2EI_NOTIFICATION_TIME
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.E2EI_SETTINGS
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.ENABLE_CLASSIFIED_DOMAINS
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.ENABLE_CONFERENCE_CALLING
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.ENABLE_MLS
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.ENABLE_READ_RECEIPTS
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.ENABLE_SCREENSHOT_CENSORING
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.ENABLE_TYPING_INDICATOR
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.FILE_SHARING
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.GUEST_ROOM_LINK
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE
-import com.wire.kalium.persistence.config.UserConfigStorageImpl.Companion.USE_SFT_FOR_ONE_ON_ONE_CALLS
+import com.wire.kalium.persistence.config.UserConfigStorage.Companion.DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
+import com.wire.kalium.persistence.config.UserConfigStorage.Companion.DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.APP_LOCK
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.DEFAULT_PROTOCOL
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI_NOTIFICATION_TIME
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI_SETTINGS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CLASSIFIED_DOMAINS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CONFERENCE_CALLING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_MLS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_READ_RECEIPTS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_SCREENSHOT_CENSORING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_TYPING_INDICATOR
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.FILE_SHARING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.GUEST_ROOM_LINK
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.USE_SFT_FOR_ONE_ON_ONE_CALLS
 import com.wire.kalium.util.time.Second
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -53,27 +53,27 @@ internal class UserPrefsDAO(
         isStatusChanged: Boolean?
     ) {
         metadataDAO.putSerializable(
-            APP_LOCK,
+            APP_LOCK.key,
             AppLockConfigEntity(inactivityTimeoutSecs, isEnforced, isStatusChanged),
             AppLockConfigEntity.serializer(),
         )
     }
 
     override suspend fun appLockStatus(): AppLockConfigEntity? {
-        return metadataDAO.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+        return metadataDAO.getSerializable(APP_LOCK.key, AppLockConfigEntity.serializer())
     }
 
     override fun appLockFlow(): Flow<AppLockConfigEntity?> {
-        return metadataDAO.observeSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+        return metadataDAO.observeSerializable(APP_LOCK.key, AppLockConfigEntity.serializer())
     }
 
     override suspend fun setTeamAppLockAsNotified() {
         val newValue =
-            metadataDAO.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+            metadataDAO.getSerializable(APP_LOCK.key, AppLockConfigEntity.serializer())
                 ?.copy(isStatusChanged = false)
                 ?: return
         metadataDAO.putSerializable(
-            APP_LOCK,
+            APP_LOCK.key,
             newValue,
             AppLockConfigEntity.serializer()
         )
@@ -81,75 +81,75 @@ internal class UserPrefsDAO(
 
     override suspend fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
         metadataDAO.putSerializable(
-            FILE_SHARING,
+            FILE_SHARING.key,
             IsFileSharingEnabledEntity(status, isStatusChanged),
             IsFileSharingEnabledEntity.serializer()
         )
     }
 
     override suspend fun isFileSharingEnabled(): IsFileSharingEnabledEntity? {
-        return metadataDAO.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+        return metadataDAO.getSerializable(FILE_SHARING.key, IsFileSharingEnabledEntity.serializer())
     }
 
     override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> {
-        return metadataDAO.observeSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+        return metadataDAO.observeSerializable(FILE_SHARING.key, IsFileSharingEnabledEntity.serializer())
     }
 
     override suspend fun setFileSharingAsNotified() {
         val newValue =
-            metadataDAO.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+            metadataDAO.getSerializable(FILE_SHARING.key, IsFileSharingEnabledEntity.serializer())
                 ?.copy(isStatusChanged = false)
                 ?: return
         metadataDAO.putSerializable(
-            FILE_SHARING,
+            FILE_SHARING.key,
             newValue,
             IsFileSharingEnabledEntity.serializer()
         )
     }
 
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity?> {
-        return metadataDAO.observeSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())
+        return metadataDAO.observeSerializable(ENABLE_CLASSIFIED_DOMAINS.key, ClassifiedDomainsEntity.serializer())
     }
 
     override suspend fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
         metadataDAO.putSerializable(
-            ENABLE_CLASSIFIED_DOMAINS,
+            ENABLE_CLASSIFIED_DOMAINS.key,
             ClassifiedDomainsEntity(status, classifiedDomains),
             ClassifiedDomainsEntity.serializer()
         )
     }
 
     override suspend fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean) {
-        metadataDAO.insertValue(value = isRequired.toString(), key = REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE)
+        metadataDAO.insertValue(value = isRequired.toString(), key = REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE.key)
     }
 
     override suspend fun isSecondFactorPasswordChallengeRequired(): Boolean {
-        return metadataDAO.valueByKey(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE)?.toBoolean() ?: false
+        return metadataDAO.valueByKey(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE.key)?.toBoolean() ?: false
     }
 
     override suspend fun persistDefaultProtocol(protocol: SupportedProtocolEntity) {
-        metadataDAO.insertValue(value = protocol.name, key = DEFAULT_PROTOCOL)
+        metadataDAO.insertValue(value = protocol.name, key = DEFAULT_PROTOCOL.key)
     }
 
     override suspend fun defaultProtocol(): SupportedProtocolEntity {
-        return metadataDAO.valueByKey(DEFAULT_PROTOCOL)?.let { SupportedProtocolEntity.valueOf(it) }
+        return metadataDAO.valueByKey(DEFAULT_PROTOCOL.key)?.let { SupportedProtocolEntity.valueOf(it) }
             ?: SupportedProtocolEntity.PROTEUS
     }
 
     override suspend fun enableMLS(enabled: Boolean) {
-        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_MLS)
+        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_MLS.key)
     }
 
     override suspend fun isMLSEnabled(): Boolean {
-        return metadataDAO.valueByKey(ENABLE_MLS)?.toBoolean() ?: false
+        return metadataDAO.valueByKey(ENABLE_MLS.key)?.toBoolean() ?: false
     }
 
     override suspend fun setE2EISettings(settingEntity: E2EISettingsEntity?) {
         if (settingEntity == null) {
-            metadataDAO.deleteValue(E2EI_SETTINGS)
+            metadataDAO.deleteValue(E2EI_SETTINGS.key)
         } else {
             metadataDAO.putSerializable(
-                E2EI_SETTINGS,
+                E2EI_SETTINGS.key,
                 settingEntity,
                 E2EISettingsEntity.serializer()
             )
@@ -157,58 +157,58 @@ internal class UserPrefsDAO(
     }
 
     override suspend fun getE2EISettings(): E2EISettingsEntity? {
-        return metadataDAO.getSerializable(E2EI_SETTINGS, E2EISettingsEntity.serializer())
+        return metadataDAO.getSerializable(E2EI_SETTINGS.key, E2EISettingsEntity.serializer())
     }
 
     override fun e2EISettingsFlow(): Flow<E2EISettingsEntity?> {
-        return metadataDAO.observeSerializable(E2EI_SETTINGS, E2EISettingsEntity.serializer())
+        return metadataDAO.observeSerializable(E2EI_SETTINGS.key, E2EISettingsEntity.serializer())
     }
 
     override suspend fun persistConferenceCalling(enabled: Boolean) {
-        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_CONFERENCE_CALLING)
+        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_CONFERENCE_CALLING.key)
     }
 
     override suspend fun isConferenceCallingEnabled(): Boolean {
-        return metadataDAO.valueByKey(ENABLE_CONFERENCE_CALLING)?.toBoolean() ?: DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
+        return metadataDAO.valueByKey(ENABLE_CONFERENCE_CALLING.key)?.toBoolean() ?: DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
     }
 
     override suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean> {
-        return metadataDAO.valueByKeyFlow(ENABLE_CONFERENCE_CALLING).map { value ->
+        return metadataDAO.valueByKeyFlow(ENABLE_CONFERENCE_CALLING.key).map { value ->
             value?.toBoolean() ?: DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         }
     }
 
     override suspend fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
-        metadataDAO.insertValue(value = shouldUse.toString(), key = USE_SFT_FOR_ONE_ON_ONE_CALLS)
+        metadataDAO.insertValue(value = shouldUse.toString(), key = USE_SFT_FOR_ONE_ON_ONE_CALLS.key)
     }
 
     override suspend fun shouldUseSftForOneOnOneCalls(): Boolean {
-        return metadataDAO.valueByKey(USE_SFT_FOR_ONE_ON_ONE_CALLS)?.toBoolean() ?: DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
+        return metadataDAO.valueByKey(USE_SFT_FOR_ONE_ON_ONE_CALLS.key)?.toBoolean() ?: DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
     }
 
     override suspend fun areReadReceiptsEnabled(): Flow<Boolean> {
-        return metadataDAO.valueByKeyFlow(ENABLE_READ_RECEIPTS).map {
+        return metadataDAO.valueByKeyFlow(ENABLE_READ_RECEIPTS.key).map {
             it?.toBoolean() ?: true
         }
     }
 
     override suspend fun persistReadReceipts(enabled: Boolean) {
-        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_READ_RECEIPTS)
+        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_READ_RECEIPTS.key)
     }
 
     override suspend fun isTypingIndicatorEnabled(): Flow<Boolean> {
-        return metadataDAO.valueByKeyFlow(ENABLE_TYPING_INDICATOR).map {
+        return metadataDAO.valueByKeyFlow(ENABLE_TYPING_INDICATOR.key).map {
             it?.toBoolean() ?: true
         }
     }
 
     override suspend fun persistTypingIndicator(enabled: Boolean) {
-        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_TYPING_INDICATOR)
+        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_TYPING_INDICATOR.key)
     }
 
     override suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?) {
         metadataDAO.putSerializable(
-            GUEST_ROOM_LINK,
+            GUEST_ROOM_LINK.key,
             IsGuestRoomLinkEnabledEntity(status, isStatusChanged),
             IsGuestRoomLinkEnabledEntity.serializer()
         )
@@ -216,46 +216,46 @@ internal class UserPrefsDAO(
 
     override suspend fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? {
         return metadataDAO.getSerializable(
-            GUEST_ROOM_LINK,
+            GUEST_ROOM_LINK.key,
             IsGuestRoomLinkEnabledEntity.serializer()
         )
     }
 
     override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> {
         return metadataDAO.observeSerializable(
-            GUEST_ROOM_LINK,
+            GUEST_ROOM_LINK.key,
             IsGuestRoomLinkEnabledEntity.serializer()
         )
     }
 
     override suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> {
-        return metadataDAO.valueByKeyFlow(ENABLE_SCREENSHOT_CENSORING).map {
+        return metadataDAO.valueByKeyFlow(ENABLE_SCREENSHOT_CENSORING.key).map {
             it?.toBoolean() ?: false
         }
     }
 
     override suspend fun persistScreenshotCensoring(enabled: Boolean) {
-        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_SCREENSHOT_CENSORING)
+        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_SCREENSHOT_CENSORING.key)
     }
 
     override suspend fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
         getE2EINotificationTime().let { current ->
             if (current == null || current <= 0)
-                metadataDAO.insertValue(value = timeStamp.toString(), key = E2EI_NOTIFICATION_TIME)
+                metadataDAO.insertValue(value = timeStamp.toString(), key = E2EI_NOTIFICATION_TIME.key)
         }
     }
 
     override suspend fun getE2EINotificationTime(): Long? {
-        return metadataDAO.valueByKey(E2EI_NOTIFICATION_TIME)?.toLong()
+        return metadataDAO.valueByKey(E2EI_NOTIFICATION_TIME.key)?.toLong()
     }
 
     override suspend fun e2EINotificationTimeFlow(): Flow<Long?> {
-        return metadataDAO.valueByKeyFlow(E2EI_NOTIFICATION_TIME).map {
+        return metadataDAO.valueByKeyFlow(E2EI_NOTIFICATION_TIME.key).map {
             it?.toLong()
         }
     }
 
     override suspend fun updateE2EINotificationTime(timeStamp: Long) {
-        metadataDAO.insertValue(value = timeStamp.toString(), key = E2EI_NOTIFICATION_TIME)
+        metadataDAO.insertValue(value = timeStamp.toString(), key = E2EI_NOTIFICATION_TIME.key)
     }
 }

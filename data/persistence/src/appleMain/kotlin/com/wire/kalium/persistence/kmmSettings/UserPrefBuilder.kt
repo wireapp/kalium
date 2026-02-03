@@ -24,6 +24,11 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.UserConfigStorageImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 
+@Deprecated(
+    "Scheduled for removal in future versions, User KMM Settings are now replaced by database implementation." +
+            "Just kept for migration purposes.",
+    ReplaceWith("No replacement available"),
+)
 actual class UserPrefBuilder constructor(
     userId: UserIDEntity,
     rootPath: String,

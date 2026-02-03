@@ -20,7 +20,9 @@ package com.wire.kalium.logic.sync.slow.migration
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
+import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_10_11
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
+import com.wire.kalium.persistence.config.UserConfigStorage
 import io.mockative.Mockable
 
 @Mockable
@@ -31,11 +33,14 @@ internal interface SyncMigrationStepsProvider {
 @Suppress("MagicNumber")
 internal class SyncMigrationStepsProviderImpl(
     accountRepository: Lazy<AccountRepository>,
-    selfTeamIdProvider: SelfTeamIdProvider
+    selfTeamIdProvider: SelfTeamIdProvider,
+    oldUserConfigStorage: UserConfigStorage,
+    newUserConfigStorage: UserConfigStorage
 ) : SyncMigrationStepsProvider {
 
     private val steps = mapOf(
-        7 to lazy { SyncMigrationStep_6_7(accountRepository, selfTeamIdProvider) }
+        7 to lazy { SyncMigrationStep_6_7(accountRepository, selfTeamIdProvider) },
+        11 to lazy { SyncMigrationStep_10_11(oldUserConfigStorage, newUserConfigStorage) }
     )
 
     override fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep> {

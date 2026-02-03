@@ -17,11 +17,14 @@
  */
 package com.wire.kalium.logic.sync.slow.migration
 
+import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_10_11
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.AccountRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.AccountRepositoryArrangementImpl
+import com.wire.kalium.persistence.config.FakeUserConfigStorage
+import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -34,8 +37,13 @@ class SyncMigrationStepsProviderTest {
         val (_, provider) = Arrangement().arrange()
 
         provider.getMigrationSteps(Int.MIN_VALUE, Int.MAX_VALUE).also {
-            assertIs<SyncMigrationStep_6_7>(it.first())
-            assertEquals(7, it.first().version)
+            val firstManualMigration = it.first()
+            val lastManualMigration = it.last()
+            assertIs<SyncMigrationStep_6_7>(firstManualMigration)
+            assertEquals(7, firstManualMigration.version)
+
+            assertIs<SyncMigrationStep_10_11>(lastManualMigration)
+            assertEquals(11, lastManualMigration.version)
         }
     }
 
@@ -53,8 +61,10 @@ class SyncMigrationStepsProviderTest {
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
 
         private val provider: SyncMigrationStepsProvider = SyncMigrationStepsProviderImpl(
-            lazy { accountRepository },
-            selfTeamIdProvider
+            accountRepository = lazy { accountRepository },
+            selfTeamIdProvider = selfTeamIdProvider,
+            oldUserConfigStorage = inMemoryUserConfigStorage(),
+            newUserConfigStorage = FakeUserConfigStorage()
         )
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to provider }

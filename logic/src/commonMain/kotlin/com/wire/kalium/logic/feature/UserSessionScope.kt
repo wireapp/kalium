@@ -1299,7 +1299,12 @@ public class UserSessionScope internal constructor(
         get() = SlowSyncRecoveryHandlerImpl(logout)
 
     private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider = {
-        SyncMigrationStepsProviderImpl(lazy { accountRepository }, selfTeamId)
+        SyncMigrationStepsProviderImpl(
+            accountRepository = lazy { accountRepository },
+            selfTeamIdProvider = selfTeamId,
+            oldUserConfigStorage = userStorage.preferences.userConfigStorage,
+            newUserConfigStorage = userStorage.database.userPrefsDAO
+        )
     }
 
     private val slowSyncManager: SlowSyncManager by lazy {
