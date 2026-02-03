@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
@@ -120,6 +122,9 @@ public class GlobalKaliumScope internal constructor(
 
     public val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
+
+    public suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        sessionRepository.setAllPersistentWebSocketEnabled(enabled)
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
