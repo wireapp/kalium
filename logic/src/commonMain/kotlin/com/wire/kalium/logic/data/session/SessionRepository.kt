@@ -77,6 +77,7 @@ internal interface SessionRepository {
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
     suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
@@ -197,6 +198,9 @@ internal class SessionDataSource internal constructor(
         wrapStorageRequest {
             accountsDAO.updatePersistentWebSocketStatus(userId.toDao(), isPersistentWebSocketEnabled)
         }
+
+    override suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { accountsDAO.setAllAccountsPersistentWebSocketEnabled(enabled) }
 
     override suspend fun updateSsoIdAndScimInfo(
         userId: UserId,

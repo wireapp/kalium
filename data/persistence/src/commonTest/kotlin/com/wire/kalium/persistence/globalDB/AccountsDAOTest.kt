@@ -29,15 +29,9 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestCoroutineScheduler
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -205,6 +199,79 @@ class AccountsDAOTest : GlobalDBBaseTest() {
 
         val result = globalDatabaseBuilder.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
         assertEquals(null, result)
+    }
+
+    @Test
+    fun whenUpdatingPersistentWebSocketStatus_thenStatusIsUpdated() = runTest {
+        val account = VALID_ACCOUNT
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
+
+        // initial status false
+        val initial = globalDatabaseBuilder.accountsDAO.persistentWebSocketStatus(account.info.userIDEntity)
+        assertEquals(false, initial)
+
+        // update to true
+        globalDatabaseBuilder.accountsDAO.updatePersistentWebSocketStatus(account.info.userIDEntity, true)
+        val updated = globalDatabaseBuilder.accountsDAO.persistentWebSocketStatus(account.info.userIDEntity)
+        assertEquals(true, updated)
+    }
+
+    @Test
+    fun whenSettingAllAccountsPersistentWebSocketEnabled_thenAllStatusesAreUpdated() = runTest {
+        val a1 = VALID_ACCOUNT
+        val a2 = VALID_ACCOUNT.copy(info = AccountInfoEntity(UserIDEntity("user2", "domain2"), null))
+        val a3 = VALID_ACCOUNT.copy(info = AccountInfoEntity(UserIDEntity("user3", "domain3"), null))
+
+        listOf(a1, a2, a3).forEach {
+            globalDatabaseBuilder.accountsDAO.insertOrReplace(it.info.userIDEntity, it.ssoId, it.managedBy, it.serverConfigId, false)
+        }
+
+        globalDatabaseBuilder.accountsDAO.setAllAccountsPersistentWebSocketEnabled(true)
+
+        listOf(a1, a2, a3).forEach {
+            val status = globalDatabaseBuilder.accountsDAO.persistentWebSocketStatus(it.info.userIDEntity)
+            assertEquals(true, status)
+        }
+    }
+
+    @Test
+    fun whenGettingAllValidAccountPersistentWebSocketStatus_thenOnlyValidAccountsIncluded() = runTest {
+        val valid1 = VALID_ACCOUNT
+        val valid2 = VALID_ACCOUNT.copy(info = AccountInfoEntity(UserIDEntity("userB", "domainB"), null))
+        val invalid = INVALID_ACCOUNT
+
+        // insert accounts with different initial statuses
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(valid1.info.userIDEntity, valid1.ssoId, valid1.managedBy, valid1.serverConfigId, true)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(valid2.info.userIDEntity, valid2.ssoId, valid2.managedBy, valid2.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(invalid.info.userIDEntity, invalid.ssoId, invalid.managedBy, invalid.serverConfigId, true)
+        globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(invalid.info.userIDEntity, invalid.info.logoutReason!!)
+
+        val list = globalDatabaseBuilder.accountsDAO.getAllValidAccountPersistentWebSocketStatus().first()
+        // Should contain only the two valid accounts in any order
+        val ids = list.map { it.userIDEntity }.toSet()
+        assertEquals(setOf(valid1.info.userIDEntity, valid2.info.userIDEntity), ids)
+        val map = list.associateBy({ it.userIDEntity }, { it.isPersistentWebSocketEnabled })
+        assertEquals(true, map[valid1.info.userIDEntity])
+        assertEquals(false, map[valid2.info.userIDEntity])
+    }
+
+    @Test
+    fun whenRequestingValidAccountWithServerConfigId_thenReturnMapForValidAccounts() = runTest {
+        val valid1 = VALID_ACCOUNT
+        val valid2 = VALID_ACCOUNT.copy(info = AccountInfoEntity(UserIDEntity("userC", "domainC"), null))
+        val invalid = INVALID_ACCOUNT
+
+        listOf(valid1, valid2, invalid).forEach {
+            globalDatabaseBuilder.accountsDAO.insertOrReplace(it.info.userIDEntity, it.ssoId, it.managedBy, it.serverConfigId, false)
+        }
+        globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(invalid.info.userIDEntity, invalid.info.logoutReason!!)
+
+        val map = globalDatabaseBuilder.accountsDAO.validAccountWithServerConfigId()
+        // only valid1 and valid2 should be present
+        assertEquals(setOf(valid1.info.userIDEntity, valid2.info.userIDEntity), map.keys)
+        map.values.forEach { serverConfig ->
+            assertEquals(SERVER_CONFIG, serverConfig)
+        }
     }
 
     private companion object {
