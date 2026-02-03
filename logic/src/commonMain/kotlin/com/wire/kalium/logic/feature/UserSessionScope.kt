@@ -394,6 +394,8 @@ import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotC
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCase
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.GetLastWebSocketEventInstantUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.GetLastWebSocketEventInstantUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatus
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatusImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
@@ -1352,6 +1354,7 @@ public class UserSessionScope internal constructor(
             cryptoTransactionProvider,
             userStorage.database,
             eventRepository,
+            incrementalSyncRepository,
             userScopedLogger,
         )
     }
@@ -2349,6 +2352,9 @@ public class UserSessionScope internal constructor(
 
     public val getPersistentWebSocketStatus: GetPersistentWebSocketStatus
         get() = GetPersistentWebSocketStatusImpl(userId, globalScope.sessionRepository)
+
+    public val getLastWebSocketEventInstant: GetLastWebSocketEventInstantUseCase
+        get() = GetLastWebSocketEventInstantUseCaseImpl(incrementalSyncRepository)
 
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(

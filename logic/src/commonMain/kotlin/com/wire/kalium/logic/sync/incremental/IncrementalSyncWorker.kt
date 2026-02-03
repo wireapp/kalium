@@ -27,6 +27,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import io.mockative.Mockable
@@ -48,12 +49,14 @@ internal interface IncrementalSyncWorker {
     suspend fun processEventsFlow(): Flow<EventSource>
 }
 
+@Suppress("LongParameterList")
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val eventProcessor: EventProcessor,
     private val transactionProvider: CryptoTransactionProvider,
     private val databaseBuilder: UserDatabaseBuilder,
     private val eventRepository: EventRepository,
+    private val incrementalSyncRepository: IncrementalSyncRepository,
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncWorker {
 
@@ -62,17 +65,22 @@ internal class IncrementalSyncWorkerImpl(
     override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
         // We start as PENDING
         send(EventSource.PENDING)
+        var isLive = false
 
         kaliumLogger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()
             // If we ever become Up-To-Date, move to LIVE
             .onEach { eventStreamData ->
                 if (eventStreamData is EventStreamData.IsUpToDate) {
+                    isLive = true
                     send(EventSource.LIVE) // We are LIVE!!!!!!
                 }
             }
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
+                if (isLive) {
+                    incrementalSyncRepository.recordLastWebSocketEvent()
+                }
                 val envelopes = streamData.eventList
                 kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
                 transactionProvider.transaction("processEvents") { context ->

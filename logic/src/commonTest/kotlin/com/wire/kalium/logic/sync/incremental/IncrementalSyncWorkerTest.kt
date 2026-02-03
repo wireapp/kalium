@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -180,6 +181,7 @@ class IncrementalSyncWorkerTest {
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
         val eventRepository: EventRepository = mock(EventRepository::class)
+        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
         val database = TestUserDatabase(
             userId = QualifiedID("value", "domain").toDao(),
             dispatcher = TestKaliumDispatcher.default
@@ -216,7 +218,7 @@ class IncrementalSyncWorkerTest {
             block()
             withTransactionReturning(Either.Right(Unit))
             this to IncrementalSyncWorkerImpl(
-                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository
+                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository, incrementalSyncRepository
             )
         }
     }

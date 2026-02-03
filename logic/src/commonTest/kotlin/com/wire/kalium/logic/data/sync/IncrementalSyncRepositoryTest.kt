@@ -36,10 +36,14 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -161,5 +165,46 @@ internal class IncrementalSyncRepositoryTest {
             // Cancel the slow collector as we already know we're able to emit all updates without being blocked.
             slowCollectionJob.cancel()
         }
+    }
+
+    @Test
+    fun givenNoWebSocketEventsRecorded_whenGettingLastWebSocketEventInstant_thenReturnsNull() = runTest {
+        // Given - fresh repository with no events recorded
+
+        // When
+        val result = incrementalSyncRepository.lastWebSocketEventInstant()
+
+        // Then
+        assertNull(result)
+    }
+
+    @Test
+    fun givenWebSocketEventRecorded_whenGettingLastWebSocketEventInstant_thenReturnsTimestamp() = runTest {
+        // Given
+        val beforeRecord = Clock.System.now()
+        incrementalSyncRepository.recordLastWebSocketEvent()
+        val afterRecord = Clock.System.now()
+
+        // When
+        val result = incrementalSyncRepository.lastWebSocketEventInstant()
+
+        // Then
+        assertNotNull(result)
+        assertTrue(result >= beforeRecord && result <= afterRecord)
+    }
+
+    @Test
+    fun givenMultipleWebSocketEventsRecorded_whenGettingLastWebSocketEventInstant_thenReturnsLatestTimestamp() = runTest {
+        // Given
+        incrementalSyncRepository.recordLastWebSocketEvent()
+        val firstTimestamp = incrementalSyncRepository.lastWebSocketEventInstant()
+        delay(10) // Small delay to ensure different timestamps
+        incrementalSyncRepository.recordLastWebSocketEvent()
+        val secondTimestamp = incrementalSyncRepository.lastWebSocketEventInstant()
+
+        // Then
+        assertNotNull(firstTimestamp)
+        assertNotNull(secondTimestamp)
+        assertTrue(secondTimestamp >= firstTimestamp)
     }
 }

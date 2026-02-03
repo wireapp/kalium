@@ -166,7 +166,11 @@ internal fun IncrementalSyncManager(
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
 
                 // when the source is LIVE, we need to generate a new syncId since it means the previous one is done
-                if (eventSource == EventSource.LIVE) Uuid.random().toString() to Clock.System.now() else syncData
+                if (eventSource == EventSource.LIVE) {
+                    Uuid.random().toString() to Clock.System.now()
+                } else {
+                    syncData
+                }
             }.collect()
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         logger.i("IncrementalSync stopped.")

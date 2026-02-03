@@ -27,8 +27,11 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Mockable
 internal interface IncrementalSyncRepository {
@@ -46,6 +49,21 @@ internal interface IncrementalSyncRepository {
     val incrementalSyncState: Flow<IncrementalSyncStatus>
 
     suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus)
+
+    /**
+     * Returns the timestamp of the last received WebSocket event.
+     * Used to detect stale WebSocket connections that stopped receiving events
+     * without proper disconnection notification.
+     *
+     * @return The [Instant] when the last WebSocket event was received, or null if no events were received yet.
+     */
+    fun lastWebSocketEventInstant(): Instant?
+
+    /**
+     * Records the current timestamp as the last WebSocket event time.
+     * Should be called whenever a WebSocket event is received.
+     */
+    fun recordLastWebSocketEvent()
 
     companion object {
         // The same default buffer size used by Coroutines channels
@@ -65,6 +83,8 @@ internal class InMemoryIncrementalSyncRepository(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
+    private val _lastWebSocketEventInstant = MutableStateFlow<Instant?>(null)
+
     override val incrementalSyncState = _syncState
         .asSharedFlow()
         .distinctUntilChanged()
@@ -78,4 +98,9 @@ internal class InMemoryIncrementalSyncRepository(
         _syncState.emit(newState)
     }
 
+    override fun lastWebSocketEventInstant(): Instant? = _lastWebSocketEventInstant.value
+
+    override fun recordLastWebSocketEvent() {
+        _lastWebSocketEventInstant.value = Clock.System.now()
+    }
 }
