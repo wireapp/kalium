@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
     "Scheduled for removal in future versions, User KMM Settings are now replaced by database implementation." +
             "Just kept for migration purposes.",
     ReplaceWith("No replacement available"),
+    level = DeprecationLevel.ERROR
 )
 actual class UserPrefBuilder(
     userId: UserIDEntity,

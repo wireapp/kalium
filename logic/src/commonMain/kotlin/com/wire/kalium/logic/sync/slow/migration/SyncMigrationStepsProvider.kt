@@ -34,7 +34,7 @@ internal interface SyncMigrationStepsProvider {
 internal class SyncMigrationStepsProviderImpl(
     accountRepository: Lazy<AccountRepository>,
     selfTeamIdProvider: SelfTeamIdProvider,
-    oldUserConfigStorage: UserConfigStorage,
+    oldUserConfigStorage: Lazy<UserConfigStorage>,
     newUserConfigStorage: Lazy<UserConfigStorage>
 ) : SyncMigrationStepsProvider {
 

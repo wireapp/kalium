@@ -63,7 +63,7 @@ class SyncMigrationStepsProviderTest {
         private val provider: SyncMigrationStepsProvider = SyncMigrationStepsProviderImpl(
             accountRepository = lazy { accountRepository },
             selfTeamIdProvider = selfTeamIdProvider,
-            oldUserConfigStorage = inMemoryUserConfigStorage(),
+            oldUserConfigStorage = lazy { inMemoryUserConfigStorage() },
             newUserConfigStorage = lazy { FakeUserConfigStorage() }
         )
 
