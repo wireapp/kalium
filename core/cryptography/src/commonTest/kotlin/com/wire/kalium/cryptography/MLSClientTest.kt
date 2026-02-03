@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -110,6 +111,98 @@ class MLSClientTest : BaseMLSClientTest() {
         val result = aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, keyMaterialCommit.first.commit) }
 
         assertNull(result.first().message)
+    }
+
+    @Test
+    fun givenLocalConversationExists_whenProcessingWelcome_thenIgnoringItDoesNotAllowCommunication() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        // Both clients locally create the same conversation (race scenario).
+        aliceClient.transaction { it.createConversation(MLS_CONVERSATION_ID, externalSenderKey) }
+        bobClient.transaction { it.createConversation(MLS_CONVERSATION_ID, externalSenderKey) }
+
+        // Bob adds Alice and produces a welcome.
+        val aliceKeyPackage = aliceClient.transaction { it.generateKeyPackages(1).first() }
+        bobClient.transaction {
+            it.addMember(MLS_CONVERSATION_ID, listOf(aliceKeyPackage))
+        }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+
+
+        val exception = assertFailsWith<Throwable> {
+            aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        }
+        assertTrue(
+            exception.toString().contains("ConversationAlreadyExists"),
+            "Expected ConversationAlreadyExists when processing welcome for an already created local group. Got: $exception"
+        )
+
+        // If we ignore the welcome and keep the local group, Alice should not decrypt Bob's message.
+        val applicationMessage = bobClient.transaction { it.encryptMessage(MLS_CONVERSATION_ID, PLAIN_TEXT.encodeToByteArray()) }
+        val decryptedResult = runCatching {
+            aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, applicationMessage) }
+        }
+        val decryptedBundles = decryptedResult.getOrNull().orEmpty()
+        val decryptedText = decryptedBundles.firstOrNull()?.message?.decodeToString()
+        assertTrue(
+            decryptedResult.isFailure || decryptedBundles.isEmpty() || decryptedText == null || decryptedText != PLAIN_TEXT,
+            "Without wiping the local group, Alice should not be able to decrypt Bob's message."
+        )
+    }
+
+    @Test
+    fun givenLocalConversationExists_whenWipingAndReprocessingWelcome_thenWeCanDecryptMessages() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        // Both clients locally create the same conversation (race scenario).
+        aliceClient.transaction { it.createConversation(MLS_CONVERSATION_ID, externalSenderKey) }
+        bobClient.transaction { it.createConversation(MLS_CONVERSATION_ID, externalSenderKey) }
+
+        // Bob adds Alice and produces a welcome.
+        val aliceKeyPackage = aliceClient.transaction { it.generateKeyPackages(1).first() }
+        bobClient.transaction {
+            it.addMember(MLS_CONVERSATION_ID, listOf(aliceKeyPackage))
+        }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+
+        // First processing should fail because Alice already created the local group.
+        assertFailsWith<Throwable> {
+            aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        }
+
+        // Recovery: wipe local group and retry processing the welcome.
+        aliceClient.transaction { it.wipeConversation(MLS_CONVERSATION_ID) }
+        val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
+
+        // Now Alice should be able to decrypt Bob's messages.
+        val applicationMessage = bobClient.transaction { it.encryptMessage(MLS_CONVERSATION_ID, PLAIN_TEXT.encodeToByteArray()) }
+        val decryptedBundles = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, applicationMessage) }
+        val decryptedText = decryptedBundles.firstOrNull()?.message?.decodeToString()
+
+        assertEquals(PLAIN_TEXT, decryptedText)
     }
 
     @Test
