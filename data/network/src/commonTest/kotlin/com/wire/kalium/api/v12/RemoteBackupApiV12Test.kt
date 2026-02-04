@@ -18,16 +18,17 @@
 package com.wire.kalium.api.v12
 
 import com.wire.kalium.mocks.responses.RemoteBackupResponseJson
+import com.wire.kalium.network.api.base.authenticated.remoteBackup.RemoteBackupProtoMapper
 import com.wire.kalium.network.api.v12.authenticated.RemoteBackupApiV12
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
+import com.wire.kalium.network.serialization.XProtoBuf
+import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
@@ -40,6 +41,7 @@ import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -56,7 +58,7 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenSyncMessagesRequest_whenInvoking_thenShouldUseCorrectEndpointAndMethod() = runTest {
-        val request = RemoteBackupResponseJson.validSyncRequest.serializableData
+        val request = RemoteBackupResponseJson.validSyncRequest
         var capturedMethod: HttpMethod? = null
         var capturedPath: String? = null
 
@@ -77,29 +79,29 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenSyncMessagesRequest_whenInvoking_thenShouldSerializeBodyCorrectly() = runTest {
-        val request = RemoteBackupResponseJson.validSyncRequest.serializableData
-        var capturedBody: String? = null
+        val request = RemoteBackupResponseJson.validSyncRequest
+        var capturedBody: ByteArray? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = "",
+            responseBody = ByteArray(0),
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             val body = requestData.body
             if (body is OutgoingContent.ByteArrayContent) {
-                capturedBody = body.bytes().decodeToString()
+                capturedBody = body.bytes()
             }
         }
 
         val api = RemoteBackupApiV12(httpClient)
         api.syncMessages(request)
 
-        val expectedJson = KtxSerializer.json.encodeToString(request)
-        assertEquals(expectedJson, capturedBody)
+        val expectedBytes = RemoteBackupProtoMapper().encodeSyncRequest(request)
+        assertContentEquals(expectedBytes, checkNotNull(capturedBody))
     }
 
     @Test
     fun givenSyncMessagesRequest_whenSuccessful_thenShouldReturnSuccess() = runTest {
-        val request = RemoteBackupResponseJson.validSyncRequest.serializableData
+        val request = RemoteBackupResponseJson.validSyncRequest
 
         val httpClient = createMockHttpClient(
             responseBody = "",
@@ -122,7 +124,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPath: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
+            responseBody = RemoteBackupProtoMapper().encodeFetchResponse(RemoteBackupResponseJson.validFetchResponse),
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedMethod = requestData.method
@@ -142,7 +144,7 @@ internal class RemoteBackupApiV12Test {
         var capturedSizeParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
+            responseBody = RemoteBackupProtoMapper().encodeFetchResponse(RemoteBackupResponseJson.validFetchResponse),
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedUserParam = requestData.url.parameters["user"]
@@ -163,7 +165,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPaginationTokenParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
+            responseBody = RemoteBackupProtoMapper().encodeFetchResponse(RemoteBackupResponseJson.validFetchResponse),
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedSinceParam = requestData.url.parameters["since"]
@@ -192,7 +194,7 @@ internal class RemoteBackupApiV12Test {
         var capturedPaginationTokenParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
+            responseBody = RemoteBackupProtoMapper().encodeFetchResponse(RemoteBackupResponseJson.validFetchResponse),
             statusCode = HttpStatusCode.OK
         ) { requestData ->
             capturedSinceParam = requestData.url.parameters["since"]
@@ -210,9 +212,9 @@ internal class RemoteBackupApiV12Test {
 
     @Test
     fun givenFetchMessagesRequest_whenSuccessful_thenShouldDeserializeResponseCorrectly() = runTest {
-        val expectedResponse = RemoteBackupResponseJson.validFetchResponse.serializableData
+        val expectedResponse = RemoteBackupResponseJson.validFetchResponse
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validFetchResponse.rawJson,
+            responseBody = RemoteBackupProtoMapper().encodeFetchResponse(expectedResponse),
             statusCode = HttpStatusCode.OK
         )
 
@@ -220,15 +222,7 @@ internal class RemoteBackupApiV12Test {
         val result = api.fetchMessages(user = TEST_USER_ID, size = 100)
 
         assertTrue(result.isSuccessful())
-        val response = result.value
-        assertEquals(expectedResponse.hasMore, response.hasMore)
-        assertEquals(expectedResponse.paginationToken, response.paginationToken)
-        assertTrue(response.conversations.containsKey(TEST_CONVERSATION_ID))
-        val conversationMessages = response.conversations[TEST_CONVERSATION_ID]!!
-        val expectedConversationMessages = expectedResponse.conversations[TEST_CONVERSATION_ID]!!
-        assertEquals(expectedConversationMessages.lastRead, conversationMessages.lastRead)
-        assertEquals(expectedConversationMessages.messages.size, conversationMessages.messages.size)
-        assertEquals(expectedConversationMessages.messages[0].messageId, conversationMessages.messages[0].messageId)
+        assertEquals(expectedResponse, result.value)
     }
 
     // endregion
@@ -241,8 +235,9 @@ internal class RemoteBackupApiV12Test {
         var capturedPath: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
-            statusCode = HttpStatusCode.OK
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson.encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Application.Json
         ) { requestData ->
             capturedMethod = requestData.method
             capturedPath = requestData.url.encodedPath
@@ -262,8 +257,9 @@ internal class RemoteBackupApiV12Test {
         var capturedBeforeParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
-            statusCode = HttpStatusCode.OK
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson.encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Application.Json
         ) { requestData ->
             capturedUserIdParam = requestData.url.parameters["user_id"]
             capturedConversationIdParam = requestData.url.parameters["conversation_id"]
@@ -289,8 +285,9 @@ internal class RemoteBackupApiV12Test {
         var capturedBeforeParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
-            statusCode = HttpStatusCode.OK
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson.encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Application.Json
         ) { requestData ->
             capturedUserIdParam = requestData.url.parameters["user_id"]
             capturedConversationIdParam = requestData.url.parameters["conversation_id"]
@@ -309,8 +306,9 @@ internal class RemoteBackupApiV12Test {
     fun givenDeleteMessagesRequest_whenSuccessful_thenShouldDeserializeResponseCorrectly() = runTest {
         val expectedResponse = RemoteBackupResponseJson.validDeleteResponse.serializableData
         val httpClient = createMockHttpClient(
-            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson,
-            statusCode = HttpStatusCode.OK
+            responseBody = RemoteBackupResponseJson.validDeleteResponse.rawJson.encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Application.Json
         )
 
         val api = RemoteBackupApiV12(httpClient)
@@ -421,8 +419,9 @@ internal class RemoteBackupApiV12Test {
         var capturedPath: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = "backup content",
-            statusCode = HttpStatusCode.OK
+            responseBody = "backup content".encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Text.Plain
         ) { requestData ->
             capturedMethod = requestData.method
             capturedPath = requestData.url.encodedPath
@@ -441,8 +440,9 @@ internal class RemoteBackupApiV12Test {
         var capturedUserIdParam: String? = null
 
         val httpClient = createMockHttpClient(
-            responseBody = "backup content",
-            statusCode = HttpStatusCode.OK
+            responseBody = "backup content".encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Text.Plain
         ) { requestData ->
             capturedUserIdParam = requestData.url.parameters["user_id"]
         }
@@ -458,8 +458,9 @@ internal class RemoteBackupApiV12Test {
     fun givenDownloadStateBackupRequest_whenSuccessful_thenShouldWriteContentToSink() = runTest {
         val backupContent = "test backup content data"
         val httpClient = createMockHttpClient(
-            responseBody = backupContent,
-            statusCode = HttpStatusCode.OK
+            responseBody = backupContent.encodeToByteArray(),
+            statusCode = HttpStatusCode.OK,
+            contentType = ContentType.Text.Plain
         )
 
         val api = RemoteBackupApiV12(httpClient)
@@ -473,8 +474,9 @@ internal class RemoteBackupApiV12Test {
     @Test
     fun givenDownloadStateBackupRequest_whenServerReturns404_thenShouldReturnError() = runTest {
         val httpClient = createMockHttpClient(
-            responseBody = """{"code":404,"message":"No backup found","label":"not-found"}""",
-            statusCode = HttpStatusCode.NotFound
+            responseBody = """{"code":404,"message":"No backup found","label":"not-found"}""".encodeToByteArray(),
+            statusCode = HttpStatusCode.NotFound,
+            contentType = ContentType.Application.Json
         )
 
         val api = RemoteBackupApiV12(httpClient)
@@ -489,8 +491,9 @@ internal class RemoteBackupApiV12Test {
     // region helper functions
 
     private fun createMockHttpClient(
-        responseBody: String,
+        responseBody: ByteArray,
         statusCode: HttpStatusCode,
+        contentType: ContentType = ContentType.Application.XProtoBuf,
         assertion: (io.ktor.client.request.HttpRequestData) -> Unit = {}
     ): HttpClient {
         val mockEngine = MockEngine { request ->
@@ -499,16 +502,14 @@ internal class RemoteBackupApiV12Test {
                 content = ByteReadChannel(responseBody),
                 status = statusCode,
                 headers = HeadersImpl(
-                    mapOf(HttpHeaders.ContentType to listOf("application/json"))
+                    mapOf(HttpHeaders.ContentType to listOf(contentType.toString()))
                 )
             )
         }
         return HttpClient(mockEngine) {
             install(ContentNegotiation) {
                 json(KtxSerializer.json)
-            }
-            defaultRequest {
-                header(HttpHeaders.ContentType, ContentType.Application.Json)
+                xprotobuf()
             }
             expectSuccess = false
         }

@@ -17,18 +17,11 @@
  */
 package com.wire.kalium.network.api.authenticated.remoteBackup
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
 /**
- * Response payload for fetching messages from the backup service
+ * Response payload for fetching events from the backup service.
  */
-@Serializable
 data class MessageSyncFetchResponseDTO(
-    @SerialName("has_more")
     val hasMore: Boolean,
-    @SerialName("conversations")
-    val conversations: Map<String, ConversationMessagesDTO>,
-    @SerialName("pagination_token")
+    val events: List<RemoteBackupEventDTO>,
     val paginationToken: String? = null
 )

@@ -17,20 +17,11 @@
  */
 package com.wire.kalium.network.api.authenticated.remoteBackup
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
 /**
- * Request payload for synchronizing messages to the backup service
+ * Request payload for synchronizing messages to the backup service.
+ * Events can be upserts, deletes, or last-read updates.
  */
-@Serializable
 data class MessageSyncRequestDTO(
-    @SerialName("user_id")
     val userId: String,
-    @SerialName("upserts")
-    val upserts: Map<String, List<MessageSyncUpsertDTO>>, // Map from conversation ID to list of upserts
-    @SerialName("deletions")
-    val deletions: Map<String, List<String>>, // Map from conversation ID to list of message IDs to delete
-    @SerialName("conversations_last_read")
-    val conversationsLastRead: Map<String, Long> = emptyMap() // Map from conversation ID to last read timestamp (epoch millis)
+    val events: List<RemoteBackupEventDTO>
 )
