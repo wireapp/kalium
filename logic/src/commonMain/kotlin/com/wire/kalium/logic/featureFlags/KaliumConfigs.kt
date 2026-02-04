@@ -57,6 +57,7 @@ public data class KaliumConfigs(
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
     val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
+    val testSft: String? = null,
 )
 
 public sealed interface BuildFileRestrictionState {

@@ -29,11 +29,54 @@ import com.wire.kalium.common.functional.fold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import com.wire.kalium.util.serialization.toJsonElement
+
+private val sftServersKey = "sft_servers"
+private val sftServersAllKey = "sft_servers_all"
+
+internal fun  overwriteSft(element: JsonElement, sft: String): JsonElement =
+    when (element) {
+        is JsonObject -> {
+            val jsonObj =  (element as JsonObject)
+            jsonObj.entries.associate { entry ->
+                val key = entry.key
+                when {
+                    key == sftServersKey -> {
+                        val sftServers = "[{\"urls\":[\"${sft}\"]}]"
+                        val newSftServers = (Json.parseToJsonElement(sftServers) as JsonArray)
+                        val orgVal = entry.value
+                        callingLogger.i("[OnConfigRequest] Overwriting $key : $orgVal --> $newSftServers")
+                        key to newSftServers
+                    }
+                    key == sftServersAllKey -> {
+                        val sftServersAll = "[{\"urls\":[\"${sft}\"]}]"
+                        val newSftServersAll = (Json.parseToJsonElement(sftServersAll) as JsonArray)
+                        val orgVal = entry.value
+                        callingLogger.i("[OnConfigRequest] Overwriting $key : $orgVal --> $newSftServersAll")
+                        key to newSftServersAll
+                    }
+                    else -> {
+                        key to entry.value
+                    }
+                }
+            }.toJsonElement()
+        }
+        else -> element
+    }
+
+
 // TODO(testing): create unit test
 internal class OnConfigRequest(
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val callingScope: CoroutineScope
+    private val callingScope: CoroutineScope,
+    private val sft: String?
 ) : CallConfigRequestHandler {
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         callingLogger.i("[OnConfigRequest] - STARTED")
@@ -53,11 +96,21 @@ internal class OnConfigRequest(
                         jsonString = ""
                     )
                 }, { config ->
-                    calling.wcall_config_update(
-                        inst = inst,
-                        error = 0,
-                        jsonString = config
-                    )
+                        if (sft == null) {
+                            calling.wcall_config_update(
+                                inst = inst,
+                                error = 0,
+                                jsonString = config
+                            )
+                        } else {
+                            val jsonEl =  (Json.parseToJsonElement(config) as JsonElement)
+                            val modConfig = overwriteSft(jsonEl, sft).toString()
+                            calling.wcall_config_update(
+                                inst = inst,
+                                error = 0,
+                                jsonString = modConfig
+                            )
+                        }
                     callingLogger.i("[OnConfigRequest] - wcall_config_update()")
                 })
         }

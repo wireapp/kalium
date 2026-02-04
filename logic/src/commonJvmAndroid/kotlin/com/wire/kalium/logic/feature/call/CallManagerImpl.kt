@@ -235,7 +235,7 @@ internal class CallManagerImpl internal constructor(
                     createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
-                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
+                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope, kaliumConfigs.testSft)
                     .keepingStrongReference(),
                 constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
                 videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
