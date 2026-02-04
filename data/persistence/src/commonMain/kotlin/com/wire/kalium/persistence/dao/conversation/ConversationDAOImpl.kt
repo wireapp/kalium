@@ -274,9 +274,13 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity) {
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant?) {
         withContext(writeDispatcher.value) {
-            conversationQueries.updateConversationNotificationsDateWithTheLastMessage(qualifiedID)
+            if (date != null) {
+                conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
+            } else {
+                conversationQueries.updateConversationNotificationsDateWithTheLastMessage(qualifiedID)
+            }
         }
     }
 
