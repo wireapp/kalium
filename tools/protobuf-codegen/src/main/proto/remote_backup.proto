@@ -1,0 +1,137 @@
+/*
+ * Wire
+ * Copyright (C) 2026 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
+ */
+
+syntax = "proto2";
+
+option java_package = "com.wire.kalium.protobuf.remote_backup";
+
+message RemoteBackupMessageSyncRequest {
+    repeated RemoteBackupEvent events = 2;
+}
+
+message RemoteBackupMessageSyncResponse {
+    required bool has_more = 1;
+    repeated RemoteBackupEvent events = 2;
+    optional string pagination_token = 3;
+}
+
+message RemoteBackupEvent {
+    oneof event {
+        RemoteBackupUpsert upsert = 1;
+        RemoteBackupDelete delete = 2;
+        RemoteBackupLastRead last_read = 3;
+    }
+}
+
+message RemoteBackupUpsert {
+    required string message_id = 1;
+    required int64 timestamp = 2;
+    required RemoteBackupMessage payload = 3;
+}
+
+message RemoteBackupDelete {
+    required string conversation_id = 1;
+    required string message_id = 2;
+}
+
+message RemoteBackupLastRead {
+    required string conversation_id = 1;
+    required int64 last_read = 2;
+}
+
+message RemoteBackupMessage {
+    required string id = 1;
+    required RemoteBackupQualifiedId conversation_id = 2;
+    required RemoteBackupQualifiedId sender_user_id = 3;
+    required string sender_client_id = 4;
+    required int64 creation_date = 5;
+    required RemoteBackupMessageContent content = 6;
+    optional int64 last_edit_time = 7;
+}
+
+message RemoteBackupQualifiedId {
+    required string id = 1;
+    required string domain = 2;
+}
+
+message RemoteBackupMessageContent {
+    oneof content {
+        RemoteBackupText text = 1;
+        RemoteBackupAsset asset = 2;
+        RemoteBackupLocation location = 3;
+    }
+}
+
+message RemoteBackupText {
+    required string text = 1;
+    repeated RemoteBackupMention mentions = 2;
+    optional string quoted_message_id = 3;
+}
+
+message RemoteBackupMention {
+    required RemoteBackupQualifiedId user_id = 1;
+    required int32 start = 2;
+    required int32 length = 3;
+}
+
+message RemoteBackupAsset {
+    required string mime_type = 1;
+    required int64 size = 2;
+    optional string name = 3;
+    required string otr_key = 4;
+    required string sha256 = 5;
+    required string asset_id = 6;
+    optional string asset_token = 7;
+    optional string asset_domain = 8;
+    optional string encryption = 9;
+    oneof meta_data {
+        RemoteBackupImageMetaData image = 10;
+        RemoteBackupVideoMetaData video = 11;
+        RemoteBackupAudioMetaData audio = 12;
+        RemoteBackupGenericMetaData generic = 13;
+    }
+}
+
+message RemoteBackupImageMetaData {
+    required int32 width = 1;
+    required int32 height = 2;
+    optional string tag = 3;
+}
+
+message RemoteBackupVideoMetaData {
+    optional int32 width = 1;
+    optional int32 height = 2;
+    optional int64 duration_in_millis = 3;
+}
+
+message RemoteBackupAudioMetaData {
+    optional string normalization = 1;
+    optional int64 duration_in_millis = 2;
+}
+
+message RemoteBackupGenericMetaData {
+    optional string name = 1;
+}
+
+message RemoteBackupLocation {
+    required float longitude = 1;
+    required float latitude = 2;
+    optional string name = 3;
+    optional int32 zoom = 4;
+}
