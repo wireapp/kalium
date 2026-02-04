@@ -48,6 +48,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
+@Deprecated("Use UserPrefsDAO instead. This will be removed in future versions.", ReplaceWith("UserPrefsDAO"))
 @Suppress("TooManyFunctions")
 interface UserConfigStorage {
 
