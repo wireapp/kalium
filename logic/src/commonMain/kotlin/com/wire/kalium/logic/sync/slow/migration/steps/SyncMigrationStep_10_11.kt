@@ -26,8 +26,8 @@ import kotlinx.coroutines.flow.first
 
 @Suppress("ClassNaming", "MagicNumber")
 internal class SyncMigrationStep_10_11(
-    private val oldUserConfigStorage: UserConfigStorage,
-    private val newUserConfigStorage: UserConfigStorage
+    private val oldUserConfigStorage: Lazy<UserConfigStorage>,
+    private val newUserConfigStorage: Lazy<UserConfigStorage>
 ) : SyncMigrationStep {
 
     override val version: Int = 11
@@ -45,24 +45,24 @@ internal class SyncMigrationStep_10_11(
     }
 
     private suspend fun migrateLocallyManagedPreferences() {
-        oldUserConfigStorage.areReadReceiptsEnabled().first().let { isEnabled ->
-            newUserConfigStorage.persistReadReceipts(isEnabled)
+        oldUserConfigStorage.value.areReadReceiptsEnabled().first().let { isEnabled ->
+            newUserConfigStorage.value.persistReadReceipts(isEnabled)
             kaliumLogger.d("Migrated read receipts: $isEnabled")
         }
 
-        oldUserConfigStorage.isTypingIndicatorEnabled().first().let { isEnabled ->
-            newUserConfigStorage.persistTypingIndicator(isEnabled)
+        oldUserConfigStorage.value.isTypingIndicatorEnabled().first().let { isEnabled ->
+            newUserConfigStorage.value.persistTypingIndicator(isEnabled)
             kaliumLogger.d("Migrated typing indicator: $isEnabled")
         }
 
-        oldUserConfigStorage.isScreenshotCensoringEnabledFlow().first().let { isEnabled ->
-            newUserConfigStorage.persistScreenshotCensoring(isEnabled)
+        oldUserConfigStorage.value.isScreenshotCensoringEnabledFlow().first().let { isEnabled ->
+            newUserConfigStorage.value.persistScreenshotCensoring(isEnabled)
             kaliumLogger.d("Migrated screenshot censoring: $isEnabled")
         }
 
-        oldUserConfigStorage.getE2EINotificationTime()?.let { timestamp ->
+        oldUserConfigStorage.value.getE2EINotificationTime()?.let { timestamp ->
             if (timestamp > 0) {
-                newUserConfigStorage.updateE2EINotificationTime(timestamp)
+                newUserConfigStorage.value.updateE2EINotificationTime(timestamp)
                 kaliumLogger.d("Migrated E2EI notification time: $timestamp")
             }
         }

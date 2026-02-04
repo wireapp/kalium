@@ -34,8 +34,8 @@ internal interface SyncMigrationStepsProvider {
 internal class SyncMigrationStepsProviderImpl(
     accountRepository: Lazy<AccountRepository>,
     selfTeamIdProvider: SelfTeamIdProvider,
-    oldUserConfigStorage: UserConfigStorage,
-    newUserConfigStorage: UserConfigStorage
+    oldUserConfigStorage: Lazy<UserConfigStorage>,
+    newUserConfigStorage: Lazy<UserConfigStorage>
 ) : SyncMigrationStepsProvider {
 
     private val steps = mapOf(

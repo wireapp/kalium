@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,29 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.di
 
-package com.wire.kalium.logic.feature.auth
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.config.UserConfigStorage
 
-import com.wire.kalium.logic.di.UserStorage
-import io.mockative.Mockable
-
-/**
- * Clears the user data from the local storage, except for the client id
- */
-@Mockable
-internal interface ClearUserDataUseCase {
-    suspend operator fun invoke()
-}
-
-internal class ClearUserDataUseCaseImpl internal constructor(
-    private val userStorage: UserStorage
-) : ClearUserDataUseCase {
-
-    override suspend operator fun invoke() {
-        clearUserStorage()
-    }
-
-    private fun clearUserStorage() {
-        userStorage.database.nuke()
+@Suppress("DEPRECATION")
+internal actual class UserConfigStorageFactory actual constructor() {
+    actual fun create(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties
+    ): UserConfigStorage {
+        TODO("JS implementation not yet available")
     }
 }
