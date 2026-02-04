@@ -21,7 +21,9 @@ package com.wire.kalium.network.api.v12.authenticated
 import com.wire.kalium.network.api.authenticated.remoteBackup.DeleteMessagesResponseDTO
 import com.wire.kalium.network.api.authenticated.remoteBackup.MessageSyncFetchResponseDTO
 import com.wire.kalium.network.api.authenticated.remoteBackup.MessageSyncRequestDTO
+import com.wire.kalium.network.api.base.authenticated.remoteBackup.RemoteBackupProtoMapper
 import com.wire.kalium.network.api.v0.authenticated.RemoteBackupApiV0
+import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.BACKUP_STREAM_BUFFER_SIZE
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.StreamStateBackupContent
@@ -47,12 +49,14 @@ import okio.use
 
 internal open class RemoteBackupApiV12(
     private val httpClient: HttpClient,
+    private val protoMapper: RemoteBackupProtoMapper = RemoteBackupProtoMapper(),
 ) : RemoteBackupApiV0() {
 
     override suspend fun syncMessages(request: MessageSyncRequestDTO): NetworkResponse<Unit> =
         wrapRequest {
             httpClient.post("backup/messages") {
-                setBody(request)
+                contentType(ContentType.Application.XProtoBuf)
+                setBody(protoMapper.encodeSyncRequest(request))
             }
         }
 
@@ -63,7 +67,12 @@ internal open class RemoteBackupApiV12(
         paginationToken: String?,
         size: Int
     ): NetworkResponse<MessageSyncFetchResponseDTO> =
-        wrapRequest {
+        wrapRequest(
+            successHandler = { response ->
+                val bytes = response.body<ByteArray>()
+                NetworkResponse.Success(protoMapper.decodeFetchResponse(bytes), response)
+            }
+        ) {
             httpClient.get("backup/messages") {
                 parameter("user", user)
                 since?.let { parameter("since", it) }
