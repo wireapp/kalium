@@ -22,22 +22,25 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
-import kotlinx.coroutines.flow.first
 
 /**
- * This use case is responsible for getting the cached team information of the self user.
+ * This use case is responsible for syncing the self team information from the backend.
  */
-public class GetUpdatedSelfTeamUseCase internal constructor(
+public class SyncSelfTeamInfoUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
 ) {
 
     public suspend operator fun invoke(): Team? {
         return selfTeamIdProvider().nullableFold({
-            kaliumLogger.w("GetUpdatedSelfTeamUseCase - self team id not found")
+            kaliumLogger.w("SyncSelfTeamInfoUseCase - self team id not found")
             null
         }, { teamId ->
-            teamId?.let { teamRepository.getTeam(it).first() }
+            teamId?.let { teamRepository.syncTeam(it) }
+                ?.nullableFold(
+                    { failure -> null },
+                    { team -> team }
+                )
         })
     }
 }

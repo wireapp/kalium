@@ -31,20 +31,19 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class GetUpdatedSelfTeamUseCaseTest {
+class SyncSelfTeamInfoUseCaseTest {
 
     @Test
-    fun givenSelfUserHasNotValidTeam_whenGettingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
+    fun givenSelfUserHasNotValidTeam_whenSyncingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(null))
-            .withTeamByIdReturning(flowOf(TestTeam.TEAM))
+            .withSyncTeamReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -53,16 +52,16 @@ class GetUpdatedSelfTeamUseCaseTest {
         // then
         assertNull(result)
         verifySuspend(VerifyMode.not) {
-            arrangement.teamRepository.getTeam(TestTeam.TEAM_ID)
+            arrangement.teamRepository.syncTeam(any())
         }
     }
 
     @Test
-    fun givenAnError_whenGettingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
+    fun givenAnError_whenSyncingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-            .withTeamByIdReturning(flowOf(TestTeam.TEAM))
+            .withSyncTeamReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -71,25 +70,43 @@ class GetUpdatedSelfTeamUseCaseTest {
         // then
         assertNull(result)
         verifySuspend(VerifyMode.not) {
-            arrangement.teamRepository.getTeam(eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.syncTeam(any())
         }
     }
 
     @Test
-    fun givenSelfUserHasValidTeam_whenGettingSelfTeam_thenTeamInfoIsRequested() = runTest {
+    fun givenSelfUserHasValidTeam_whenSyncingSelfTeamFails_thenNullIsReturned() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
-            .withTeamByIdReturning(flowOf(TestTeam.TEAM))
+            .withSyncTeamReturning(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
             .arrange()
 
         // when
         val result = sut.invoke()
 
         // then
-        assertNotNull(result)
+        assertNull(result)
         verifySuspend {
-            arrangement.teamRepository.getTeam(eq(TestTeam.TEAM_ID))
+            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
+        }
+    }
+
+    @Test
+    fun givenSelfUserHasValidTeam_whenSyncingSelfTeam_thenTeamInfoIsReturned() = runTest {
+        // given
+        val (arrangement, sut) = Arrangement()
+            .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
+            .withSyncTeamReturning(Either.Right(TestTeam.TEAM))
+            .arrange()
+
+        // when
+        val result = sut.invoke()
+
+        // then
+        assertEquals(TestTeam.TEAM, result)
+        verifySuspend {
+            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
         }
     }
 
@@ -103,13 +120,13 @@ class GetUpdatedSelfTeamUseCaseTest {
             }.returns(result)
         }
 
-        fun withTeamByIdReturning(result: kotlinx.coroutines.flow.Flow<Team?>) = apply {
+        fun withSyncTeamReturning(result: Either<CoreFailure, Team>) = apply {
             everySuspend {
-                teamRepository.getTeam(any())
+                teamRepository.syncTeam(any())
             }.returns(result)
         }
 
-        fun arrange() = this to GetUpdatedSelfTeamUseCase(
+        fun arrange() = this to SyncSelfTeamInfoUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
             teamRepository = teamRepository
         )

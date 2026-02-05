@@ -148,7 +148,8 @@ public class UserScope internal constructor(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     public val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
     public val observeSelfUser: ObserveSelfUserUseCase get() = ObserveSelfUserUseCaseImpl(userRepository)
-    internal val getSelfUserWithTeam: ObserveSelfUserWithTeamUseCase get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
+    public val observeSelfUserWithTeam: ObserveSelfUserWithTeamUseCase
+        get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
     public val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     public val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     public val persistSelfUserEmail: PersistSelfUserEmailUseCase get() = PersistSelfUserEmailUseCaseImpl(userRepository)
