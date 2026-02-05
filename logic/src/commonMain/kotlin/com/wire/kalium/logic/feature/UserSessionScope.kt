@@ -565,7 +565,7 @@ public class UserSessionScope internal constructor(
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
-        kaliumConfigs.shouldEncryptData,
+        kaliumConfigs.shouldEncryptData(),
         kaliumConfigs.dbInvalidationControlEnabled
     )
 
