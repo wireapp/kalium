@@ -24,11 +24,14 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestTeam
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -37,11 +40,11 @@ import kotlin.test.assertNull
 class GetUpdatedSelfTeamUseCaseTest {
 
     @Test
-    fun givenSelfUserHasNotValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
+    fun givenSelfUserHasNotValidTeam_whenGettingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(null))
-            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
+            .withTeamByIdReturning(flowOf(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -49,17 +52,17 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         assertNull(result)
-        coVerify {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.getTeam(TestTeam.TEAM_ID)
+        }
     }
 
     @Test
-    fun givenAnError_whenGettingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
+    fun givenAnError_whenGettingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
+            .withTeamByIdReturning(flowOf(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -67,17 +70,17 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         assertNull(result)
-        coVerify {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.getTeam(eq(TestTeam.TEAM_ID))
+        }
     }
 
     @Test
-    fun givenSelfUserHasValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreRequested() = runTest {
+    fun givenSelfUserHasValidTeam_whenGettingSelfTeam_thenTeamInfoIsRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
-            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
+            .withTeamByIdReturning(flowOf(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -85,24 +88,24 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         assertNotNull(result)
-        coVerify {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
-        }.wasInvoked()
+        verifySuspend {
+            arrangement.teamRepository.getTeam(eq(TestTeam.TEAM_ID))
+        }
     }
 
     private class Arrangement {
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>()
+        val teamRepository: TeamRepository = mock<TeamRepository>()
 
-        suspend fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+        fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
+            everySuspend {
                 selfTeamIdProvider.invoke()
             }.returns(result)
         }
 
-        suspend fun withSyncingByIdReturning(result: Either<CoreFailure, Team>) = apply {
-            coEvery {
-                teamRepository.syncTeam(any())
+        fun withTeamByIdReturning(result: kotlinx.coroutines.flow.Flow<Team?>) = apply {
+            everySuspend {
+                teamRepository.getTeam(any())
             }.returns(result)
         }
 
