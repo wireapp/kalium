@@ -59,6 +59,14 @@ tasks.named("run", JavaExec::class) {
     standardOutput = System.out
 }
 
+tasks.shadowJar {
+    archiveBaseName.set("testservice")
+    mergeServiceFiles()
+    manifest {
+        attributes(mapOf("Main-Class" to mainFunctionClassName))
+    }
+}
+
 dependencies {
     add("implementation", "io.dropwizard:dropwizard-core:${Versions.dropwizard}")
     add("implementation", "com.smoketurner:dropwizard-swagger:2.1.4-1")
