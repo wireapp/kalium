@@ -44,7 +44,7 @@ class LibraryPlugin : Plugin<Project> {
         interface MultiplatformConfiguration {
             val enableApple: Property<Boolean>
             val enableJs: Property<Boolean>
-            val jsModuleName: Property<String?>
+            val jsModuleName: Property<String>
             val enableJsTests: Property<Boolean>
             val includeNativeInterop: Property<Boolean>
             val enableIntegrationTests: Property<Boolean>

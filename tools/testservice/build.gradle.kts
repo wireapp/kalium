@@ -22,7 +22,6 @@ plugins {
     kotlin("jvm")
     java
     application
-    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 group = "com.wire.kalium.testservice"
@@ -57,14 +56,6 @@ tasks.named("run", JavaExec::class) {
     isIgnoreExitValue = true
     standardInput = System.`in`
     standardOutput = System.out
-}
-
-tasks.shadowJar {
-    archiveBaseName.set("testservice")
-    mergeServiceFiles()
-    manifest {
-        attributes(mapOf("Main-Class" to mainFunctionClassName))
-    }
 }
 
 dependencies {
