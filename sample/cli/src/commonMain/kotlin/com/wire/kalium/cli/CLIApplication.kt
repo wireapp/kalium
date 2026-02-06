@@ -52,7 +52,7 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     ).default("24h")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
-    private val sft: String?  by option("-S", "--sft", help = "sft url to inject into config")
+    private val sft: String? by option("-S", "--sft", help = "sft url to inject into config")
 
     override fun run() = runBlocking {
         currentContext.findOrSetObject {
@@ -62,7 +62,7 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
                     developmentApiEnabled = developmentApiEnabled,
                     encryptProteusStorage = encryptProteusStorage,
                     mlsMigrationInterval = Duration.parse(mlsMigrationInterval),
-                    testSft = sft
+                    callConfigTransformer = sft?.let { createSftOverrideTransformer(it) }
                 )
             )
         }
