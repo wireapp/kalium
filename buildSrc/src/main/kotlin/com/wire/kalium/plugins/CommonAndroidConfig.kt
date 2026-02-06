@@ -19,6 +19,7 @@
 package com.wire.kalium.plugins
 
 import com.android.build.gradle.LibraryExtension
+import org.gradle.api.Project
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
@@ -42,6 +43,7 @@ fun KotlinAndroidTarget.commmonKotlinAndroidTargetConfig() {
  * Invalid characters like "-" are replaced with a dot (.).
  */
 fun LibraryExtension.commonAndroidLibConfig(
+    project: Project,
     includeNativeInterop: Boolean,
     namespaceSuffix: String
 ) {
@@ -52,7 +54,9 @@ fun LibraryExtension.commonAndroidLibConfig(
     defaultConfig {
         minSdk = Android.Sdk.min
         lint.targetSdk = Android.Sdk.target
-        consumerProguardFiles("consumer-proguard-rules.pro")
+        if (project.file("consumer-proguard-rules.pro").exists()) {
+            consumerProguardFiles("consumer-proguard-rules.pro")
+        }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {

@@ -76,7 +76,7 @@ internal fun Project.configureDefaultMultiplatform(
 
     (this as org.gradle.api.plugins.ExtensionAware).extensions
         .configure<com.android.build.gradle.LibraryExtension>("android") {
-            commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
+            commonAndroidLibConfig(this@configureDefaultMultiplatform, includeNativeInterop, androidNamespaceSuffix)
         }
 
     val androidInstrTest = kotlinExtension.sourceSets.getByName("androidInstrumentedTest")
