@@ -31,7 +31,6 @@ kaliumLibrary {
     }
 }
 
-
 sqldelight {
     databases {
         create("UserDatabase") {
