@@ -34,7 +34,7 @@ class LibraryPlugin : Plugin<Project> {
         target.pluginManager.apply {
             apply("org.jetbrains.kotlin.multiplatform")
             // android library plugin
-            apply("com.android.library")
+            apply("com.android.kotlin.multiplatform.library")
         }
 
         extensions.create("kaliumLibrary", Extension::class.java)

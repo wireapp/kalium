@@ -31,9 +31,6 @@ kaliumLibrary {
     }
 }
 
-dependencies {
-    implementation(libs.kotlin.nativeUtils)
-}
 
 sqldelight {
     databases {
@@ -60,6 +57,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(libs.kotlin.nativeUtils)
                 // coroutines
                 implementation(libs.coroutines.core)
 
@@ -116,14 +114,5 @@ kotlin {
                 implementation(libs.sqldelight.nativeDriver)
             }
         }
-    }
-}
-
-android {
-    testOptions.unitTests.all {
-        it.enabled = false
-    }
-    buildFeatures {
-        buildConfig = true
     }
 }

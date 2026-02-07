@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
-import org.jetbrains.kotlin.util.suffixIfNot
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -143,31 +142,10 @@ kotlin {
                 }
             }
         }
-        val androidUnitTest by getting {
+        val androidHostTest by getting {
             dependencies {
                 implementation(libs.robolectric)
                 implementation(libs.core.ktx)
-            }
-        }
-    }
-}
-
-android {
-    testOptions.unitTests.isIncludeAndroidResources = true
-}
-
-android {
-    testOptions.unitTests.all { test ->
-        // only run tests that are different for the android platform, the rest is covered by the jvm tests
-        file("src/androidUnitTest/kotlin").let { dir ->
-            if (dir.exists() && dir.isDirectory) {
-                dir.walk().forEach {
-                    if (it.isFile && it.extension == "kt") {
-                        it.relativeToOrNull(dir)?.let {
-                            test.include(it.path.removeSuffix(".kt").suffixIfNot("*"))
-                        }
-                    }
-                }
             }
         }
     }
