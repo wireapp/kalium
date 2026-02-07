@@ -193,8 +193,10 @@ open class ProteusException(message: String?, val code: Code, val intCode: Int?,
             return when (code) {
                 501 -> Code.STORAGE_ERROR
                 3, 301, 302, 303 -> Code.DECODE_ERROR
+                204 -> Code.REMOTE_IDENTITY_CHANGED
                 206, 207, 210 -> Code.INVALID_SIGNATURE
                 200, 201, 202, 205, 213 -> Code.INVALID_MESSAGE
+                209 -> Code.DUPLICATE_MESSAGE
                 211, 212 -> Code.TOO_DISTANT_FUTURE
                 208 -> Code.OUTDATED_MESSAGE
                 300 -> Code.IDENTITY_ERROR

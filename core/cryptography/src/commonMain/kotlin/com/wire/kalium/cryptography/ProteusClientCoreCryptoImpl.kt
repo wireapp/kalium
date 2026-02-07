@@ -156,6 +156,13 @@ class ProteusClientCoreCryptoImpl private constructor(
     private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
+        } catch (e: ProteusExceptionNative) {
+            throw ProteusException(
+                message = e.message,
+                code = mapProteusExceptionToErrorCode(e),
+                intCode = mapProteusExceptionToRawIntErrorCode(e),
+                cause = e
+            )
         } catch (e: CoreCryptoException.Proteus) {
             throw ProteusException(
                 message = e.message,
@@ -197,6 +204,13 @@ class ProteusClientCoreCryptoImpl private constructor(
                     it.proteusInit()
                 }
                 return ProteusClientCoreCryptoImpl(coreCrypto)
+            } catch (e: ProteusExceptionNative) {
+                throw ProteusException(
+                    message = e.message,
+                    code = mapProteusExceptionToErrorCode(e),
+                    intCode = mapProteusExceptionToRawIntErrorCode(e),
+                    cause = e
+                )
             } catch (exception: ProteusStorageMigrationException) {
                 throw exception
             } catch (e: CoreCryptoException.Proteus) {

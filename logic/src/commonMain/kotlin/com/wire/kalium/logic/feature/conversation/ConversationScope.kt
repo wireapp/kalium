@@ -273,6 +273,9 @@ public class ConversationScope internal constructor(
             kaliumLogger
         )
 
+    public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
+        get() = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository)
+
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
 

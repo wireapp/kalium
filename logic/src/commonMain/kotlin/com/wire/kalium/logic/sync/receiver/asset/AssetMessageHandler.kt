@@ -147,29 +147,33 @@ internal class AssetMessageHandlerImpl(
     ): Message.Regular? {
         val assetMessageContent = when (persistedMessage.content) {
             is MessageContent.Asset -> persistedMessage.content as MessageContent.Asset
-            is MessageContent.RestrictedAsset -> {
-                // original message was a restricted asset message, ignoring
-                return null
-            }
-
+            is MessageContent.RestrictedAsset -> null // original message was a restricted asset message, ignoring
             is MessageContent.FailedDecryption,
             is MessageContent.Knock,
             is MessageContent.Location,
             is MessageContent.Composite,
             is MessageContent.Text,
             is MessageContent.Multipart,
-            is MessageContent.Unknown -> error("Invalid asset message content type ${persistedMessage.content.getType()}")
-        }
-        // The message was previously received with just metadata info, so let's update it with the raw data info
-        return persistedMessage.copy(
-            content = assetMessageContent.copy(
-                value = assetMessageContent.value.copy(
-                    remoteData = remoteData
+            is MessageContent.Unknown -> {
+                kaliumLogger.e(
+                    "Invalid asset message content type=${persistedMessage.content.getType()} " +
+                        "messageId=${persistedMessage.id} conversationId=${persistedMessage.conversationId}"
                 )
-            ),
-            // If update message for any reason has still invalid encryption keys, message can't still be shown
-            visibility = if (remoteData.hasValidData()) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
-        )
+                null
+            }
+        }
+        return assetMessageContent?.let { asset ->
+            // The message was previously received with just metadata info, so let's update it with the raw data info
+            persistedMessage.copy(
+                content = asset.copy(
+                    value = asset.value.copy(
+                        remoteData = remoteData
+                    )
+                ),
+                // If update message for any reason has still invalid encryption keys, message can't still be shown
+                visibility = if (remoteData.hasValidData()) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
+            )
+        }
     }
 }
 
