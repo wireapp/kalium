@@ -62,7 +62,14 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             Either.Right(Unit)
         } else {
             transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
-                conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
+                // Query for both PENDING_JOIN and PENDING_AFTER_RESET conversations.
+                // PENDING_AFTER_RESET occurs when a conversation.mls-reset event is processed
+                // but the subsequent MLSWelcome was never received (e.g., client was offline
+                // when key packages expired). These conversations need to join via external commit
+                // just like PENDING_JOIN conversations.
+                conversationRepository.getConversationsByGroupStates(
+                    listOf(GroupState.PENDING_JOIN, GroupState.PENDING_AFTER_RESET)
+                ).flatMap { pendingConversations ->
                     kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
                     coroutineScope {
                         pendingConversations.map { conversation ->
