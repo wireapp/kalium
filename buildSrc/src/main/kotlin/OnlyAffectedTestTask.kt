@@ -65,16 +65,13 @@ open class OnlyAffectedTestTask : DefaultTask() {
     private fun executeTask(affectedModules: Set<String>, runAllTests: Boolean, missingAffectedModulesData: Boolean) {
         val tasksName = mutableListOf<String>()
         project.subprojects
-            .filter { (runAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.name) }
+            .filter { (runAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.path) }
             .forEach { childProject ->
-                tasksName.addAll(
-                    childProject.tasks
-                    .filter { it.name.equals(configuration.testTarget, true) }
-                    .map { task ->
-                        println("Adding task: ${childProject.path}:${task.name}")
-                        "${childProject.path}:${task.name}"
-                    }.toList()
-                )
+                val targetTaskName = childProject.tasks.names.firstOrNull { it.equals(configuration.testTarget, true) }
+                targetTaskName?.let { taskName ->
+                    println("Adding task: ${childProject.path}:$taskName")
+                    tasksName.add("${childProject.path}:$taskName")
+                }
             }
 
         if (missingAffectedModulesData) {
