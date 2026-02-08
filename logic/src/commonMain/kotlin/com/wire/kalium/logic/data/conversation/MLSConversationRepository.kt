@@ -201,6 +201,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun updateKeyingMaterial(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
+    suspend fun clearProposalTimer(groupID: GroupID)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun rotateKeysAndMigrateConversations(
         mlsContext: MlsCoreCryptoContext,
@@ -429,6 +430,10 @@ internal class MLSConversationDataSource(
         }
     }
 
+    override suspend fun clearProposalTimer(groupID: GroupID) {
+        conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
+    }
+
     override suspend fun observeProposalTimers(): Flow<ProposalTimer> =
         merge(
             proposalTimersFlow,
@@ -577,6 +582,8 @@ internal class MLSConversationDataSource(
     override suspend fun leaveGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit> =
         wrapMLSRequest {
             mlsContext.wipeConversation(idMapper.toCryptoModel(groupID))
+        }.onSuccess {
+            clearProposalTimer(groupID)
         }
 
     override suspend fun establishMLSGroup(

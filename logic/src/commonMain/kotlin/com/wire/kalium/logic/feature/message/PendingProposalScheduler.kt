@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.functional.distinct
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
@@ -101,6 +102,12 @@ internal class PendingProposalSchedulerImpl(
             }
                 .onFailure {
                     kaliumLogger.e("Failed to commit pending proposals in ${groupID.toLogString()}: $it")
+                    if (it is MLSFailure.ConversationNotFound || it is MLSFailure.StaleProposal) {
+                        kaliumLogger.w(
+                            "Clearing stale proposal timer for ${groupID.toLogString()} due to unrecoverable failure"
+                        )
+                        mlsConversationRepository.value.clearProposalTimer(groupID)
+                    }
                 }
         }
     }
