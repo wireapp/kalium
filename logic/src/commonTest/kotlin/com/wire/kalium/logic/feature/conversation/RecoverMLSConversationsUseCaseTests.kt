@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -144,6 +145,56 @@ class RecoverMLSConversationsUseCaseTests {
     }
 
     @Test
+    fun givenEpochCheckFailsWithConversationNotFound_ThenGroupIsSkippedAndOtherGroupsProcessed() = runTest {
+        val conversations = listOf(Arrangement.MLS_CONVERSATION1, Arrangement.MLS_CONVERSATION2)
+        val (arrangement, recoverMLSConversationsUseCase) = Arrangement()
+            .withConversationsByGroupStateReturns(Either.Right(conversations))
+            .withJoinExistingMLSConversationUseCaseSuccessful()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withEpochCheckFailsWithConversationNotFoundFor(Arrangement.GROUP_ID1)
+            .withConversationIsOutOfSyncReturnsTrueFor(listOf(Arrangement.GROUP_ID2))
+            .arrange()
+
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
+
+        // Both groups should have epoch check attempted
+        coVerify {
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
+        }.wasInvoked(conversations.size)
+
+        // Only the second group should be joined (first was skipped due to ConversationNotFound)
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any())
+        }.wasInvoked(once)
+
+        // Overall result should be Success since ConversationNotFound is non-fatal
+        assertIs<RecoverMLSConversationsResult.Success>(actual)
+    }
+
+    @Test
+    fun givenAllGroupsFailWithConversationNotFound_ThenResultIsSuccess() = runTest {
+        val conversations = listOf(Arrangement.MLS_CONVERSATION1, Arrangement.MLS_CONVERSATION2)
+        val (arrangement, recoverMLSConversationsUseCase) = Arrangement()
+            .withConversationsByGroupStateReturns(Either.Right(conversations))
+            .withJoinExistingMLSConversationUseCaseSuccessful()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withEpochCheckFailsWithConversationNotFoundFor(Arrangement.GROUP_ID1)
+            .withEpochCheckFailsWithConversationNotFoundFor(Arrangement.GROUP_ID2)
+            .arrange()
+
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
+
+        // No groups should be joined since all were skipped
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+        }.wasNotInvoked()
+
+        assertIs<RecoverMLSConversationsResult.Success>(actual)
+    }
+
+    @Test
     fun whenFetchingListOfConversationsFails_ThenShouldReturnFailure() = runTest {
         val (arrangement, recoverMLSConversationsUseCase) = Arrangement()
             .withConversationsByGroupStateReturns(Either.Left(StorageFailure.DataNotFound))
@@ -214,6 +265,12 @@ class RecoverMLSConversationsUseCaseTests {
             coEvery {
                 mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it != groupID }, any())
             }.returns(Either.Right(true))
+        }
+
+        suspend fun withEpochCheckFailsWithConversationNotFoundFor(groupID: GroupID) = apply {
+            coEvery {
+                mlsConversationRepository.isLocalGroupEpochStale(any(), eq(groupID), any())
+            }.returns(Either.Left(MLSFailure.ConversationNotFound))
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
