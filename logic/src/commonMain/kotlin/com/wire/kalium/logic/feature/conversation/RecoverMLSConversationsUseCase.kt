@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
@@ -86,7 +87,18 @@ internal class RecoverMLSConversationsUseCaseImpl(
                 mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, protocol.epoch)
             }
                 .fold({ checkEpochFailure ->
-                    Either.Left(checkEpochFailure)
+                    if (checkEpochFailure is MLSFailure.ConversationNotFound) {
+                        kaliumLogger.w(
+                            "Marking ${protocol.groupId.toLogString()} as PENDING_AFTER_RESET: " +
+                                "group not found in local MLS state, will retry join on next sync"
+                        )
+                        conversationRepository.updateConversationGroupState(
+                            protocol.groupId, GroupState.PENDING_AFTER_RESET
+                        )
+                        Either.Right(Unit)
+                    } else {
+                        Either.Left(checkEpochFailure)
+                    }
                 }, { isGroupOutOfSync ->
                     if (isGroupOutOfSync) {
                         joinExistingMLSConversationUseCase(transactionContext, conversation.id).onFailure { joinFailure ->
