@@ -51,7 +51,6 @@ plugins {
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
-    alias(libs.plugins.dagCommand)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.jetbrains) apply false
 }
@@ -102,12 +101,6 @@ allprojects {
         google()
         mavenCentral()
     }
-}
-
-dagCommand {
-    defaultBranch = "origin/develop"
-    outputType = "json"
-    printModulesInfo = true
 }
 
 kover {

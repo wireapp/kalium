@@ -18,7 +18,12 @@
 
 package scripts
 
+import DagCommandTask
 import OnlyAffectedTestTask
+
+project.tasks.register("dag-command", DagCommandTask::class) {
+    defaultBranch = "origin/develop"
+}
 
 OnlyAffectedTestTask.TestTaskConfiguration.values().forEach { taskConfiguration ->
     project.tasks.register(taskConfiguration.taskName, OnlyAffectedTestTask::class) {
