@@ -89,8 +89,11 @@ internal class RecoverMLSConversationsUseCaseImpl(
                 .fold({ checkEpochFailure ->
                     if (checkEpochFailure is MLSFailure.ConversationNotFound) {
                         kaliumLogger.w(
-                            "Skipping recovery for ${protocol.groupId.toLogString()}: " +
-                                "group not found in local MLS state"
+                            "Marking ${protocol.groupId.toLogString()} as PENDING_AFTER_RESET: " +
+                                "group not found in local MLS state, will retry join on next sync"
+                        )
+                        conversationRepository.updateConversationGroupState(
+                            protocol.groupId, GroupState.PENDING_AFTER_RESET
                         )
                         Either.Right(Unit)
                     } else {
