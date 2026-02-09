@@ -24,6 +24,7 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
 import co.touchlab.sqliter.JournalMode
+import co.touchlab.sqliter.interop.Logger
 
 // TODO encrypt database using sqlcipher
 actual data class PlatformDatabaseData(
@@ -48,6 +49,7 @@ fun databaseDriver(
         version = schema.version.toInt(),
         journalMode = if (driverConfiguration.isWALEnabled) JournalMode.WAL else JournalMode.DELETE,
         inMemory = inMemory,
+        loggingConfig = DatabaseConfiguration.Logging(logger = SilentSqliterLogger),
         create = { connection ->
             wrapConnection(connection) { schema.create(it) }
         },
@@ -63,4 +65,12 @@ fun databaseDriver(
         )
     )
     return NativeSqliteDriver(configuration)
+}
+
+private object SilentSqliterLogger : Logger {
+    override fun trace(message: String) = Unit
+    override val vActive: Boolean = false
+    override fun vWrite(message: String) = Unit
+    override val eActive: Boolean = false
+    override fun eWrite(message: String, exception: Throwable?) = Unit
 }

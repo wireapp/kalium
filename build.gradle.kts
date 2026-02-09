@@ -72,11 +72,11 @@ subprojects {
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
 
-        // workaround for knowing which tests passed failed since HTML reporting is disabled for native tests
-        // can be removed once HTML reporting is working
+        // Keep failed test visibility without forwarding all native stdout/stderr to Gradle's
+        // test output store, which can fail after Gradle/Kotlin upgrades.
         testLogging {
             events("failed")
-            showStandardStreams = true
+            showStandardStreams = false
         }
     }
 
