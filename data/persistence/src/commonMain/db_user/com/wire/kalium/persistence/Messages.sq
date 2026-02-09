@@ -527,31 +527,43 @@ SET conversation_id = :to
 WHERE conversation_id = :from;
 
 selectConversationMessagesFromSearch:
-SELECT * FROM MessageDetailsView
-WHERE text LIKE ('%' || :searchQuery || '%')
-AND conversationId = :conversationId
-AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
-AND expireAfterMillis IS NULL
-ORDER BY date DESC
+SELECT MessageDetailsView.*
+FROM MessageTextContent AS TextContent
+JOIN Message
+ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+JOIN MessageDetailsView
+ON MessageDetailsView.id = Message.id AND MessageDetailsView.conversationId = Message.conversation_id
+WHERE TextContent.text_body LIKE ('%' || :searchQuery || '%')
+AND Message.conversation_id = :conversationId
+AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
+AND Message.expire_after_millis IS NULL
+ORDER BY Message.creation_date DESC
 LIMIT :limit
 OFFSET :offset;
 
 selectAllMessagesFromSearch:
-SELECT * FROM MessageDetailsView
-WHERE text LIKE ('%' || :searchQuery || '%')
-AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
-AND expireAfterMillis IS NULL
-ORDER BY date DESC
+SELECT MessageDetailsView.*
+FROM MessageTextContent AS TextContent
+JOIN Message
+ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+JOIN MessageDetailsView
+ON MessageDetailsView.id = Message.id AND MessageDetailsView.conversationId = Message.conversation_id
+WHERE TextContent.text_body LIKE ('%' || :searchQuery || '%')
+AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
+AND Message.expire_after_millis IS NULL
+ORDER BY Message.creation_date DESC
 LIMIT :limit
 OFFSET :offset;
 
 countBySearchedMessageAndConversationId:
-SELECT COUNT(*) FROM MessageDetailsView
-WHERE text LIKE ('%' || :searchQuery || '%')
-AND conversationId = :conversationId
-AND (contentType = 'TEXT' OR contentType = 'MULTIPART')
-AND expireAfterMillis IS NULL
-ORDER BY date DESC;
+SELECT COUNT(*)
+FROM MessageTextContent AS TextContent
+JOIN Message
+ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+WHERE TextContent.text_body LIKE ('%' || :searchQuery || '%')
+AND Message.conversation_id = :conversationId
+AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
+AND Message.expire_after_millis IS NULL;
 
 selectSearchedConversationMessagePosition:
 SELECT COUNT(*) FROM Message
