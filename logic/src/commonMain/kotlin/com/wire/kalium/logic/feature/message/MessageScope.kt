@@ -395,6 +395,11 @@ public class MessageScope internal constructor(
             slowSyncRepository
         )
 
+    public val observeRecentMessages: ObserveRecentMessagesUseCase
+        get() = ObserveRecentMessagesUseCase(
+            messageRepository
+        )
+
     public val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(
             messageRepository,
