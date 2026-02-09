@@ -69,6 +69,17 @@ tasks.withType<Test> {
 // For some reason xml and html generation is failing, looks like tests running in parallel
 subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+        val fullSqliterTraces = providers.gradleProperty("kalium.sqliter.fullTraces")
+            .orNull
+            ?.lowercase()
+            ?.let { it == "true" || it == "1" || it == "yes" }
+            ?: false
+        environment("KALIUM_SQLITER_FULL_TRACES", fullSqliterTraces.toString())
+
+        providers.gradleProperty("kalium.sqliter.traceFile").orNull?.takeIf { it.isNotBlank() }?.let {
+            environment("KALIUM_SQLITER_TRACE_FILE", it)
+        }
+
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
 

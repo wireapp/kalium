@@ -25,10 +25,16 @@ import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
 import co.touchlab.sqliter.JournalMode
 import co.touchlab.sqliter.interop.Logger
+import kotlinx.cinterop.toKString
+import platform.posix.fclose
+import platform.posix.fopen
+import platform.posix.fputs
+import platform.posix.getenv
 
 // TODO encrypt database using sqlcipher
 actual data class PlatformDatabaseData(
-    val storageData: StorageData
+    val storageData: StorageData,
+    val useGradleSafeSqliterLogging: Boolean = false
 )
 
 sealed class StorageData {
@@ -49,7 +55,11 @@ fun databaseDriver(
         version = schema.version.toInt(),
         journalMode = if (driverConfiguration.isWALEnabled) JournalMode.WAL else JournalMode.DELETE,
         inMemory = inMemory,
-        loggingConfig = DatabaseConfiguration.Logging(logger = SilentSqliterLogger),
+        loggingConfig = if (driverConfiguration.useGradleSafeSqliterLogging) {
+            DatabaseConfiguration.Logging(logger = GradleSafeSqliterLogger)
+        } else {
+            DatabaseConfiguration.Logging()
+        },
         create = { connection ->
             wrapConnection(connection) { schema.create(it) }
         },
@@ -67,10 +77,40 @@ fun databaseDriver(
     return NativeSqliteDriver(configuration)
 }
 
-private object SilentSqliterLogger : Logger {
+private object GradleSafeSqliterLogger : Logger {
     override fun trace(message: String) = Unit
     override val vActive: Boolean = false
     override fun vWrite(message: String) = Unit
-    override val eActive: Boolean = false
-    override fun eWrite(message: String, exception: Throwable?) = Unit
+    override val eActive: Boolean = true
+    override fun eWrite(message: String, exception: Throwable?) {
+        // Keep concise SQLiter error visibility without dumping stack traces that
+        // can overwhelm Kotlin/Gradle native test output parsing.
+        println(message)
+        exception?.let {
+            val trace = it.stackTraceToString()
+            appendSqliterTraceToFile("$message\n$trace")
+            if (isSqliterFullTracesEnabled()) {
+                println(trace)
+            }
+        }
+    }
+}
+
+private const val SQLITER_FULL_TRACES_ENV = "KALIUM_SQLITER_FULL_TRACES"
+private const val SQLITER_TRACE_FILE_ENV = "KALIUM_SQLITER_TRACE_FILE"
+
+private fun isSqliterFullTracesEnabled(): Boolean {
+    val value = getenv(SQLITER_FULL_TRACES_ENV)?.toKString()?.lowercase() ?: return false
+    return value == "true" || value == "1" || value == "yes"
+}
+
+private fun appendSqliterTraceToFile(content: String) {
+    val path = getenv(SQLITER_TRACE_FILE_ENV)?.toKString()?.takeIf { it.isNotBlank() } ?: return
+    val file = fopen(path, "a") ?: return
+    try {
+        fputs(content, file)
+        fputs("\n\n", file)
+    } finally {
+        fclose(file)
+    }
 }
