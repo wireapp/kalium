@@ -67,6 +67,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.util.MutexProvider
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.utils.isSuccessful
@@ -213,6 +214,8 @@ internal class CallDataSource(
 
     override suspend fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
 
+    private val mutexProvider = MutexProvider<ConversationId>()
+
     // TODO This method needs to be simplified and optimized
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
@@ -223,7 +226,7 @@ internal class CallDataSource(
         isMuted: Boolean,
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
-    ) {
+    ) = mutexProvider.withLock(conversationId) {
         val conversation: ConversationDetails =
             conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
@@ -269,7 +272,7 @@ internal class CallDataSource(
         callingLogger.i(
             "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
                     " ConversationId: [${conversationId.toLogString()}] " +
-                    "| status: [$status]"
+                    "| status: [$status] | isCallInCurrentSession: [$isCallInCurrentSession]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             _callMetadataProfile.update { callMetadataProfile ->
@@ -300,7 +303,13 @@ internal class CallDataSource(
             callingLogger.i(
                 "[CallRepository][createCall] -> else | lastCallStatus: [$lastCallStatus] | status: [$status]"
             )
-            if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
+            if (lastCallStatus == callMapper.toCallEntityStatus(status)) {
+                callingLogger.i("[CallRepository][createCall] -> Update Call with same status")
+                // Update the metadata
+                _callMetadataProfile.update { callMetadataProfile ->
+                    callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
+                }
+            } else if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
                 // Save into database
                 wrapStorageRequest {
