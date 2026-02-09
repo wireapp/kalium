@@ -259,7 +259,17 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.Text -> handleTextMessage(message, content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
-            is MessageContent.Asset -> assetMessageHandler.handle(message)
+            is MessageContent.Asset -> {
+                try {
+                    assetMessageHandler.handle(message)
+                } catch (exception: IllegalStateException) {
+                    logger.e(
+                        "AssetMessageHandler failed for messageId=${message.id} conversationId=${message.conversationId}",
+                        exception
+                    )
+                }
+            }
+
             is MessageContent.RestrictedAsset -> {
                 /* no-op */
             }

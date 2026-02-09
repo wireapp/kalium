@@ -88,12 +88,14 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         globalDatabaseBuilder.accountsDAO.insertOrReplace(
             accountWithNullSsoId.info.userIDEntity,
             accountWithNullSsoId.ssoId,
+            accountWithSsoId.managedBy,
             accountWithNullSsoId.serverConfigId,
             false
         )
         globalDatabaseBuilder.accountsDAO.insertOrReplace(
             accountWithSsoId.info.userIDEntity,
             accountWithSsoId.ssoId,
+            accountWithSsoId.managedBy,
             accountWithSsoId.serverConfigId,
             false
         )
@@ -109,7 +111,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenInsertingAccount_thenAccountIsInserted() = runTest {
         val account = VALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
 
         val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account.info, insertedAccount?.info)
@@ -139,10 +141,10 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         val account3 = VALID_ACCOUNT
             .copy(info = VALID_ACCOUNT.info.copy(userIDEntity = UserIDEntity("user3", "domain3")))
         val account4 = INVALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account1.info.userIDEntity, account1.ssoId, account1.serverConfigId, false)
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account2.info.userIDEntity, account2.ssoId, account2.serverConfigId, false)
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account3.info.userIDEntity, account3.ssoId, account3.serverConfigId, false)
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account4.info.userIDEntity, account4.ssoId, account4.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account1.info.userIDEntity, account1.ssoId, account1.managedBy, account1.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account2.info.userIDEntity, account2.ssoId, account2.managedBy, account2.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account3.info.userIDEntity, account3.ssoId, account3.managedBy, account3.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account4.info.userIDEntity, account4.ssoId, account4.managedBy, account4.serverConfigId, false)
         globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(account4.info.userIDEntity, account4.info.logoutReason!!)
 
         return listOf(account1, account2, account3, account4)
@@ -151,7 +153,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenMarkingAccountAsInvalid_thenAccountIsMarkedAsInvalid() = runTest {
         val account = VALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
         globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, LogoutReason.SELF_SOFT_LOGOUT)
 
         val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
@@ -161,7 +163,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenDeletingAccount_thenAccountIsDeleted() = runTest {
         val account = VALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
         val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account, insertedAccount)
 
@@ -180,7 +182,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenInvalidSession_whenCallindDoesValidAccountExists_thenFalseIsReturned() = runTest {
         val account = INVALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
         globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, account.info.logoutReason!!)
         val exists = globalDatabaseBuilder.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
         assertEquals(false, exists)
@@ -189,7 +191,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenValidAccount_whenManagedByIsPresent_thenReturnsTheCorrespondingValue() = runTest {
         val account = VALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
         globalDatabaseBuilder.accountsDAO.updateSsoIdAndScimInfo(account.info.userIDEntity, account.ssoId, ManagedByEntity.SCIM)
 
         val result = globalDatabaseBuilder.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
@@ -199,7 +201,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenValidAccount_whenManagedByNotPresent_thenReturnsTheCorrespondingValue() = runTest {
         val account = VALID_ACCOUNT
-        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.managedBy, account.serverConfigId, false)
 
         val result = globalDatabaseBuilder.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
         assertEquals(null, result)

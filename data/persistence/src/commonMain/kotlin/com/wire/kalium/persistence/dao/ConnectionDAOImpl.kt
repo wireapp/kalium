@@ -117,9 +117,9 @@ class ConnectionDAOImpl(
     override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.getConnections()
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(connectionMapper::toModel) }
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun getConnection(conversationId: QualifiedIDEntity): ConnectionEntity? = withContext(readDispatcher.value) {
@@ -129,8 +129,8 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun insertConnection(connectionEntity: ConnectionEntity) {
@@ -182,8 +182,8 @@ class ConnectionDAOImpl(
     override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {

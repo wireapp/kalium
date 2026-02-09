@@ -130,6 +130,8 @@ public data class BackupMessage(
 public data class BackupReaction(
     @SerialName("messageId")
     val messageId: String,
+    @SerialName("conversationId")
+    val conversationId: BackupQualifiedId,
     @SerialName("reactions")
     val emojiReactions: List<BackupEmojiReaction>
 )
@@ -168,12 +170,6 @@ public sealed class BackupMessageContent {
         @SerialName("mentions") val mentions: List<Mention> = emptyList(),
         @SerialName("quotedMessageId") val quotedMessageId: String? = null
     ) : BackupMessageContent() {
-        init {
-            mentions.forEach { mention ->
-                require(mention.start + mention.length <= text.length) { "Mention range exceeds text length" }
-            }
-        }
-
         /**
          * Represents a mention of a user in a text.
          *

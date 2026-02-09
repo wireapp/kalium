@@ -15,23 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly",)
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.data.auth.login.ProxyCredentials
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.SsoManagedBy
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 /**
@@ -52,45 +53,75 @@ public class AddAuthenticatedUserUseCase internal constructor(
         }
     }
 
+    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
+        isPersistentWebSocketEnabled: Boolean,
+        managedBy: SsoManagedBy? = null,
         replace: Boolean = false
     ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
-            {
-                Result.Failure.Generic(it)
-            },
+        {
+            Result.Failure.Generic(it)
+        },
         { doesValidSessionExist ->
-                when (doesValidSessionExist) {
-                    true -> onUserExist(serverConfigId, ssoId, authTokens, proxyCredentials, replace)
-                    false -> storeUser(serverConfigId, ssoId, authTokens, proxyCredentials)
-                }
+            when (doesValidSessionExist) {
+                true -> onUserExist(
+                    serverConfigId,
+                    ssoId,
+                    authTokens,
+                    proxyCredentials,
+                    managedBy,
+                    replace,
+                    isPersistentWebSocketEnabled,
+                )
+
+                false -> storeUser(
+                    serverConfigId,
+                    ssoId,
+                    authTokens,
+                    proxyCredentials,
+                    managedBy,
+                    isPersistentWebSocketEnabled
+                )
             }
-        )
+        }
+    )
 
     private suspend fun storeUser(
         serverConfigId: String,
         ssoId: SsoId?,
         accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Result =
-        sessionRepository.storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials)
-            .onSuccess {
-                sessionRepository.updateCurrentSession(accountTokens.userId)
-            }.fold(
-                { Result.Failure.Generic(it) },
-                { Result.Success(accountTokens.userId) }
-            )
+        sessionRepository.storeSession(
+            serverConfigId,
+            ssoId,
+            accountTokens,
+            proxyCredentials,
+            managedBy,
+            isPersistentWebSocketEnabled
+        ).onSuccess {
+            sessionRepository.updateCurrentSession(accountTokens.userId)
+        }.fold(
+            { Result.Failure.Generic(it) },
+            { Result.Success(accountTokens.userId) }
+        )
 
     // In case of the new session have a different server configurations the new session should not be added
+    @Suppress("LongParameterList")
     private suspend fun onUserExist(
         newServerConfigId: String,
         ssoId: SsoId?,
         newAccountTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
-        replace: Boolean
+        managedBy: SsoManagedBy?,
+        replace: Boolean,
+        isPersistentWebSocketEnabled: Boolean,
     ): Result =
         when (replace) {
             true -> {
@@ -109,7 +140,9 @@ public class AddAuthenticatedUserUseCase internal constructor(
                                 serverConfigId = newServerConfigId,
                                 ssoId = ssoId,
                                 accountTokens = newAccountTokens,
-                                proxyCredentials = proxyCredentials
+                                proxyCredentials = proxyCredentials,
+                                managedBy = managedBy,
+                                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
                             )
                         } else Result.Failure.UserAlreadyExists
                     }

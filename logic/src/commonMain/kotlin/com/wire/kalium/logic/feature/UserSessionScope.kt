@@ -565,7 +565,7 @@ public class UserSessionScope internal constructor(
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
-        kaliumConfigs.shouldEncryptData,
+        kaliumConfigs.shouldEncryptData(),
         kaliumConfigs.dbInvalidationControlEnabled
     )
 
@@ -2064,6 +2064,7 @@ public class UserSessionScope internal constructor(
             userDAO = userStorage.database.userDAO,
             conversationDAO = userStorage.database.conversationDAO,
             messageDAO = userStorage.database.messageDAO,
+            reactionDAO = userStorage.database.reactionDAO,
         )
 
     public val observeSyncState: ObserveSyncStateUseCase

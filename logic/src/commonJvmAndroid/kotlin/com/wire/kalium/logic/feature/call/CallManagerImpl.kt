@@ -235,7 +235,7 @@ internal class CallManagerImpl internal constructor(
                     createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
                 ).keepingStrongReference(),
                 metricsHandler = metricsHandler,
-                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
+                callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope, kaliumConfigs.callConfigTransformer)
                     .keepingStrongReference(),
                 constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
                 videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
@@ -586,8 +586,7 @@ internal class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
-                    userConfigRepository = userConfigRepository,
-                    callHelper = CallHelperImpl(),
+                    callHelper = CallHelperImpl(userConfigRepository, callRepository),
                     endCall = { endCall(it) },
                     callingScope = scope
                 ).keepingStrongReference()

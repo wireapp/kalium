@@ -33,7 +33,6 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -41,6 +40,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
@@ -58,7 +58,9 @@ internal interface SessionRepository {
         serverConfigId: String,
         ssoId: SsoId?,
         accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
@@ -89,7 +91,6 @@ internal class SessionDataSource internal constructor(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
     private val serverConfigDAO: ServerConfigurationDAO,
-    private val kaliumConfigs: KaliumConfigs,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
@@ -99,14 +100,17 @@ internal class SessionDataSource internal constructor(
         serverConfigId: String,
         ssoId: SsoId?,
         accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
-                accountTokens.userId.toDao(),
-                sessionMapper.toSsoIdEntity(ssoId),
-                serverConfigId,
-                isPersistentWebSocketEnabled = kaliumConfigs.isWebSocketEnabledByDefault
+                userIDEntity = accountTokens.userId.toDao(),
+                ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
+                managedByEntity = managedBy?.toDao(),
+                serverConfigId = serverConfigId,
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
             )
         }.flatMap {
             wrapStorageRequest {
@@ -244,5 +248,10 @@ internal class SessionDataSource internal constructor(
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE
         ManagedByDTO.SCIM -> ManagedByEntity.SCIM
+    }
+
+    internal fun SsoManagedBy.toDao() = when (this) {
+        SsoManagedBy.WIRE -> ManagedByEntity.WIRE
+        SsoManagedBy.SCIM -> ManagedByEntity.SCIM
     }
 }

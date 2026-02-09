@@ -182,7 +182,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                     leadingMessage = "Reset Conversation after join group failure",
                                     jsonStringKeyValues = conversation.logData(failure)
                                 )
-                                resetMLSConversation(conversation.id, transactionContext)
+                                resetMLSConversation(conversation.id, transactionContext).toEither()
                             }
                             else -> {
                                 logger.logStructuredJson(

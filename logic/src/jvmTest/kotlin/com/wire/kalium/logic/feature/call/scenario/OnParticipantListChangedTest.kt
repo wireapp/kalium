@@ -17,9 +17,6 @@
  */
 package com.wire.kalium.logic.feature.call.scenario
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallHelper
 import com.wire.kalium.logic.data.call.CallRepository
@@ -67,7 +64,7 @@ class OnParticipantListChangedTest {
         testScope.runTest {
             val (arrangement, onParticipantListChanged) = Arrangement()
                 .withParticipantMapper()
-                .withUserConfigRepositoryReturning(Either.Left(StorageFailure.DataNotFound))
+                .withShouldEndSFTOneOnOneCall(false)
                 .arrange()
 
             onParticipantListChanged.onParticipantChanged(
@@ -89,7 +86,6 @@ class OnParticipantListChangedTest {
         testScope.runTest {
             val (arrangement, onParticipantListChanged) = Arrangement()
                 .withParticipantMapper()
-                .withUserConfigRepositoryReturning(Either.Right(true))
                 .withProtocol()
                 .withEstablishedCall()
                 .withShouldEndSFTOneOnOneCall(true)
@@ -110,7 +106,6 @@ class OnParticipantListChangedTest {
         testScope.runTest {
             val (arrangement, onParticipantListChanged) = Arrangement()
                 .withParticipantMapper()
-                .withUserConfigRepositoryReturning(Either.Right(true))
                 .withProtocol()
                 .withEstablishedCall()
                 .withShouldEndSFTOneOnOneCall(false)
@@ -128,7 +123,6 @@ class OnParticipantListChangedTest {
     internal class Arrangement {
         val callRepository = mock(CallRepository::class)
         val participantMapper = mock(ParticipantMapper::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
         val callHelper = mock(CallHelper::class)
 
         var isEndCallInvoked = false
@@ -138,7 +132,6 @@ class OnParticipantListChangedTest {
         fun arrange() = this to OnParticipantListChanged(
             callRepository = callRepository,
             participantMapper = participantMapper,
-            userConfigRepository = userConfigRepository,
             callHelper = callHelper,
             qualifiedIdMapper = qualifiedIdMapper,
             endCall = {
@@ -146,12 +139,6 @@ class OnParticipantListChangedTest {
             },
             callingScope = testScope,
         )
-
-        suspend fun withUserConfigRepositoryReturning(result: Either<StorageFailure, Boolean>) = apply {
-            coEvery {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(result)
-        }
 
         fun withParticipantMapper() = apply {
             every {
@@ -171,9 +158,9 @@ class OnParticipantListChangedTest {
             }.returns(flowOf(listOf(call)))
         }
 
-        fun withShouldEndSFTOneOnOneCall(result: Boolean) = apply {
-            every {
-                callHelper.shouldEndSFTOneOnOneCall(any(), any(), any(), any(), any())
+        suspend fun withShouldEndSFTOneOnOneCall(result: Boolean) = apply {
+            coEvery {
+                callHelper.shouldEndSFTOneOnOneCall(any(), any())
             }.returns(result)
         }
     }

@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.fold
+import kotlinx.datetime.Instant
 
 /**
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
@@ -39,8 +40,17 @@ public class MarkMessagesAsNotifiedUseCase internal constructor(
         when (conversationsToUpdate) {
             UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate()
 
-            is UpdateTarget.SingleConversation ->
-                conversationRepository.updateConversationNotificationDate(conversationsToUpdate.conversationId)
+            is UpdateTarget.SingleConversation -> {
+                val notifiedDate = conversationsToUpdate.notifiedDate
+                if (notifiedDate != null) {
+                    conversationRepository.updateConversationNotificationDate(
+                        conversationsToUpdate.conversationId,
+                        notifiedDate
+                    )
+                } else {
+                    conversationRepository.updateConversationNotificationDate(conversationsToUpdate.conversationId)
+                }
+            }
         }.fold({ Result.Failure(it) }) { Result.Success }
 
     /**
@@ -53,9 +63,17 @@ public class MarkMessagesAsNotifiedUseCase internal constructor(
         public data object AllConversations : UpdateTarget
 
         /**
-         * A specific conversation, represented by its [conversationId], should be marked as notified
+         * A specific conversation, represented by its [conversationId], should be marked as notified.
+         * @param conversationId The conversation to mark as notified
+         * @param notifiedDate The timestamp of the last notified message. When provided, this exact
+         * timestamp is used instead of looking up the latest message in the database. This prevents
+         * race conditions where new messages arrive between displaying notifications and marking them
+         * as notified.
          */
-        public data class SingleConversation(val conversationId: ConversationId) : UpdateTarget
+        public data class SingleConversation(
+            val conversationId: ConversationId,
+            val notifiedDate: Instant? = null
+        ) : UpdateTarget
     }
 }
 

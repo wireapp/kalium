@@ -23,11 +23,14 @@ import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -68,6 +71,9 @@ interface ReactionDAO {
         conversationId: QualifiedIDEntity,
         messageId: String
     ): Flow<List<MessageReactionEntity>>
+
+    suspend fun getPagedReactionsFlow(pageSize: Int): Flow<List<MessageReactionsEntity>>
+    suspend fun countMessageReactionsBackup(): Long
 }
 
 class ReactionDAOImpl(
@@ -138,7 +144,36 @@ class ReactionDAOImpl(
     override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
         reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
             .asFlow()
-            .flowOn(readDispatcher.value)
             .mapToList()
             .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
+            .flowOn(readDispatcher.value)
+
+    override suspend fun getPagedReactionsFlow(
+        pageSize: Int,
+    ): Flow<List<MessageReactionsEntity>> = flow {
+        var offset = 0
+        var page: List<MessageReactionsEntity>
+
+        do {
+            page = getReactionsPage(offset.toLong(), pageSize.toLong())
+            if (page.isEmpty()) break
+            emit(page)
+            offset += pageSize
+        } while (page.size == pageSize)
+    }.buffer()
+        .flowOn(readDispatcher.value)
+
+    private fun getReactionsPage(
+        offset: Long,
+        pageSize: Long,
+    ) = reactionsQueries.selectReactionsByMessagePaged(
+        offset = offset,
+        limit = pageSize,
+        mapper = MessageMapper::toReactionEntityFromView
+    ).executeAsList()
+
+    override suspend fun countMessageReactionsBackup(): Long =
+        withContext(readDispatcher.value) {
+            reactionsQueries.countReactionsForBackup().executeAsOne()
+        }
 }

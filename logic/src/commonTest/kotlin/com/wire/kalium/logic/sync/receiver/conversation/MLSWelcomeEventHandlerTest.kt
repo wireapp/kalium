@@ -17,12 +17,15 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CommonizedMLSException
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.WelcomeBundle
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -51,6 +54,7 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -254,6 +258,29 @@ class MLSWelcomeEventHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenLocalConversationExists_whenHandlingWelcome_thenShouldWipeAndRetryProcessing() = runTest {
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withMLSClientProcessingOfWelcomeMessageFailingOnceWithConversationAlreadyExistsThenSuccess()
+            withFetchConversationIfUnknownSucceeding()
+            withConversationProtocolInfo(Either.Right(MockConversation.MLS_PROTOCOL_INFO))
+            withWipeConversationReturningSuccessfully()
+            withUpdateGroupStateReturning(Either.Right(Unit))
+            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        coVerify {
+            arrangement.mlsContext.wipeConversation(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.mlsContext.processWelcomeMessage(any())
+        }.wasInvoked(exactly = twice)
+    }
+
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
@@ -270,10 +297,35 @@ class MLSWelcomeEventHandlerTest {
             }.throws(exception)
         }
 
+        suspend fun withMLSClientProcessingOfWelcomeMessageFailingOnceWithConversationAlreadyExistsThenSuccess(
+            callCountToFail: Int = 1,
+            welcomeBundle: WelcomeBundle = WELCOME_BUNDLE
+        ) = apply {
+            var callCount = 0
+            coEvery {
+                mlsContext.processWelcomeMessage(any())
+            }.invokes {
+                callCount += 1
+                if (callCount == callCountToFail) {
+                    throw CommonizedMLSException(
+                        MLSFailure.ConversationAlreadyExists,
+                        IllegalStateException("conversation already exists")
+                    )
+                }
+                welcomeBundle
+            }
+        }
+
         suspend fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
             coEvery {
                 mlsContext.processWelcomeMessage(any())
             }.returns(welcomeBundle)
+        }
+
+        suspend fun withWipeConversationReturningSuccessfully() = apply {
+            coEvery {
+                mlsContext.wipeConversation(any())
+            }.returns(Unit)
         }
 
         suspend fun withCheckRevocationListResult() {
@@ -285,12 +337,6 @@ class MLSWelcomeEventHandlerTest {
         suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
             coEvery {
                 refillKeyPackagesUseCase.invoke(any())
-            }.returns(result)
-        }
-
-        suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                joinExistingMLSConversation(any(), conversationId = any())
             }.returns(result)
         }
 

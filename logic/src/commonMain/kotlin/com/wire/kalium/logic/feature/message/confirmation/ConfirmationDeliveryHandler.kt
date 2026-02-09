@@ -88,7 +88,7 @@ internal class ConfirmationDeliveryHandlerImpl(
                         sendDeliverSignalUseCase(
                             conversation = conversation,
                             messages = messages.toList()
-                        ).onSuccess {
+                        ).toEither().onSuccess {
                             pendingConfirmationMessages.block {
                                 val currentMessages = it[conversationId]
                                 if (currentMessages != null) {

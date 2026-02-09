@@ -52,8 +52,9 @@ import java.util.concurrent.ConcurrentMap
 
 internal actual class GlobalCallManager(
     appContext: PlatformContext,
-    scope: CoroutineScope
-) {
+    scope: CoroutineScope,
+    networkStateObserver: NetworkStateObserver
+) : CallNetworkChangeManager(scope, networkStateObserver) {
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
         ConcurrentHashMap()
     }
@@ -139,6 +140,11 @@ internal actual class GlobalCallManager(
     private val mediaManager by lazy { MediaManagerServiceImpl(appContext, scope) }
 
     internal actual fun getMediaManager(): MediaManagerService = mediaManager
+
+    actual override fun networkChanged() {
+        calling.wcall_network_changed()
+        callingLogger.i("GlobalCallManager -> wcall_network_changed")
+    }
 }
 
 internal object LogHandlerImpl : LogHandler {
