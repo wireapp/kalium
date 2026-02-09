@@ -18,25 +18,27 @@
 
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 internal actual open class MediaManagerServiceImpl(
     platformContext: PlatformContext
 ) : MediaManagerService {
     actual override suspend fun turnLoudSpeakerOn() {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: turnLoudSpeakerOn ignored")
     }
 
     actual override suspend fun turnLoudSpeakerOff() {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: turnLoudSpeakerOff ignored")
     }
 
     actual override fun observeSpeaker(): Flow<Boolean> {
-        TODO("Not yet implemented")
+        return flowOf(false)
     }
 
     actual override suspend fun startMediaManager() {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: startMediaManager ignored")
     }
 }
