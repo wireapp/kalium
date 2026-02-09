@@ -29,8 +29,9 @@ public class TeamScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
-    public val getUpdatedSelfTeamUseCase: GetUpdatedSelfTeamUseCase
-        get() = GetUpdatedSelfTeamUseCase(
+
+    public val syncSelfTeamInfoUseCase: SyncSelfTeamInfoUseCase
+        get() = SyncSelfTeamInfoUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
             teamRepository = teamRepository,
         )
