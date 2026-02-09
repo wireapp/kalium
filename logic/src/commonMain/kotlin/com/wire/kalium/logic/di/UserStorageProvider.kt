@@ -21,9 +21,8 @@ package com.wire.kalium.logic.di
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 
-internal data class UserStorage(val database: UserDatabaseBuilder, val preferences: UserPrefBuilder)
+internal data class UserStorage(val database: UserDatabaseBuilder)
 internal abstract class UserStorageProvider {
     private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
     internal fun getOrCreate(

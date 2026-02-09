@@ -18,24 +18,26 @@
 package com.wire.kalium.logic.feature.featureConfig.handler
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 internal class AppLockConfigHandlerTest {
 
     @Test
-    fun givenConfigRepositoryReturnsFailureWithStatusDisabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
+    fun givenConfigRepositoryReturnsFailureWithStatusDisabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() = runTest {
         val appLockModel = AppLockModel(Status.DISABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withUserConfigRepositoryFailure()
@@ -43,11 +45,11 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
         }.wasInvoked(exactly = once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
@@ -57,7 +59,7 @@ internal class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenConfigRepositoryReturnsFailureWithStatusEnabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+    fun givenConfigRepositoryReturnsFailureWithStatusEnabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withUserConfigRepositoryFailure()
@@ -65,11 +67,11 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
         }.wasInvoked(exactly = once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
@@ -79,7 +81,7 @@ internal class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithOldStatusChangedValue() {
+    fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithOldStatusChangedValue() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 44)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppLocked()
@@ -87,11 +89,11 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
         }.wasInvoked(exactly = once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
@@ -101,7 +103,7 @@ internal class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenNewStatusDifferentThenCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+    fun givenNewStatusDifferentThenCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppNotLocked()
@@ -109,11 +111,11 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
         }.wasInvoked(exactly = once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
@@ -133,25 +135,27 @@ internal class AppLockConfigHandlerTest {
         }
 
         init {
-            every {
-                userConfigRepository.setAppLockStatus(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            runBlocking {
+                coEvery {
+                    userConfigRepository.setAppLockStatus(any(), any(), any())
+                }.returns(Either.Right(Unit))
+            }
         }
 
-        fun withUserConfigRepositoryFailure() = apply {
-            every {
+        suspend fun withUserConfigRepositoryFailure() = apply {
+            coEvery {
                 userConfigRepository.isTeamAppLockEnabled()
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
-        fun withAppLocked() = apply {
-            every {
+        suspend fun withAppLocked() = apply {
+            coEvery {
                 userConfigRepository.isTeamAppLockEnabled()
             }.returns(Either.Right(appLockTeamConfigEnabled))
         }
 
-        fun withAppNotLocked() = apply {
-            every {
+        suspend fun withAppNotLocked() = apply {
+            coEvery {
                 userConfigRepository.isTeamAppLockEnabled()
             }.returns(Either.Right(appLockTeamConfigDisabled))
         }

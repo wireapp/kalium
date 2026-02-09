@@ -126,7 +126,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.UserConfigDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope

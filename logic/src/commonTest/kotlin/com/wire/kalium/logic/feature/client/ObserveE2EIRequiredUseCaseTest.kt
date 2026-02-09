@@ -18,15 +18,13 @@
 package com.wire.kalium.logic.feature.client
 
 import app.cash.turbine.test
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
-import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
 import com.wire.kalium.logic.feature.user.E2EIRequiredResult
@@ -37,14 +35,13 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestMLSClientIdentity.getMLSClientIdentityWithE2EI
 import com.wire.kalium.logic.framework.TestMLSClientIdentity.getMLSClientIdentityWithOutE2EI
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
-import io.mockative.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -181,7 +178,7 @@ class ObserveE2EIRequiredUseCaseTest {
             awaitComplete()
         }
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.observeE2EINotificationTime()
         }.wasNotInvoked()
     }
@@ -317,7 +314,7 @@ class ObserveE2EIRequiredUseCaseTest {
     }
 
     private class Arrangement(testDispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()) {
-                val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock(UserConfigRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val e2eiCertificate = mock(GetMLSClientIdentityUseCase::class)
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
@@ -330,8 +327,8 @@ class ObserveE2EIRequiredUseCaseTest {
                 .returns(flowOf(Either.Right(setting)))
         }
 
-        fun withE2EINotificationTime(instant: Instant) = apply {
-            every { userConfigRepository.observeE2EINotificationTime() }
+        suspend fun withE2EINotificationTime(instant: Instant) = apply {
+            coEvery { userConfigRepository.observeE2EINotificationTime() }
                 .returns(flowOf(Either.Right(instant)))
         }
 

@@ -19,15 +19,16 @@
 package com.wire.kalium.logic.feature.user.guestroomlink
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.common.functional.Either
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -43,37 +44,37 @@ internal class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryReturnsFailure_whenInvokingUseCase_thenDoNotUpdateGuestStatus() {
-        every {
+    fun givenRepositoryReturnsFailure_whenInvokingUseCase_thenDoNotUpdateGuestStatus() = runTest {
+        coEvery {
             userConfigRepository.getGuestRoomLinkStatus()
         }.returns(Either.Left(StorageFailure.DataNotFound))
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        verify {
+        coVerify {
             userConfigRepository.getGuestRoomLinkStatus()
         }.wasInvoked(exactly = once)
 
-        verify {
+        coVerify {
             userConfigRepository.setGuestRoomStatus(any(), eq(false))
         }.wasNotInvoked()
     }
 
     @Test
-    fun givenRepositoryReturnsSuccess_whenInvokingUseCase_thenUpdateGuestStatus() {
-        every {
+    fun givenRepositoryReturnsSuccess_whenInvokingUseCase_thenUpdateGuestStatus() = runTest {
+        coEvery {
             userConfigRepository.getGuestRoomLinkStatus()
         }.returns(Either.Right(GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)))
-        every {
+        coEvery {
             userConfigRepository.setGuestRoomStatus(status = false, isStatusChanged = false)
         }.returns(Either.Right(Unit))
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        verify {
+        coVerify {
             userConfigRepository.getGuestRoomLinkStatus()
         }.wasInvoked(exactly = once)
-        verify {
+        coVerify {
             userConfigRepository.setGuestRoomStatus(any(), eq(false))
         }.wasInvoked(once)
 

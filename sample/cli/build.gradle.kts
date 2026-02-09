@@ -68,6 +68,12 @@ kotlin {
                 implementation(libs.okhttp.loggingInterceptor)
             }
         }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.coroutines.test)
+            }
+        }
         val macosMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
