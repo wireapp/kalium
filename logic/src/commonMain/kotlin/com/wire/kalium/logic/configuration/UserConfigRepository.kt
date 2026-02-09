@@ -190,16 +190,14 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> {
         val serverSideConfig = wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }
-        val buildConfig = kaliumConfigs.fileRestrictionState
-        return deriveFileSharingStatus(serverSideConfig, buildConfig)
+        return deriveFileSharingStatus(serverSideConfig, kaliumConfigs.fileRestrictionState.value)
     }
 
     override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>> =
         userConfigStorage.isFileSharingEnabledFlow()
             .wrapStorageRequest()
             .map {
-                val buildConfig = kaliumConfigs.fileRestrictionState
-                deriveFileSharingStatus(it, buildConfig)
+                deriveFileSharingStatus(it, kaliumConfigs.fileRestrictionState.value)
             }
 
     private fun deriveFileSharingStatus(

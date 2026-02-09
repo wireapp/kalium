@@ -223,8 +223,10 @@ class InstanceService(
                 loginResult.ssoID,
                 loginResult.authData,
                 null,
+                false,
                 null,
-                true
+                true,
+
             )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                 throw WebApplicationException("Instance $instanceId: Failed to save session")

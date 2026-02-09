@@ -24,24 +24,26 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestTeam
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class GetUpdatedSelfTeamUseCaseTest {
+class SyncSelfTeamInfoUseCaseTest {
 
     @Test
-    fun givenSelfUserHasNotValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
+    fun givenSelfUserHasNotValidTeam_whenSyncingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(null))
-            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncTeamReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -49,17 +51,17 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         assertNull(result)
-        coVerify {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.syncTeam(any())
+        }
     }
 
     @Test
-    fun givenAnError_whenGettingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
+    fun givenAnError_whenSyncingSelfTeam_thenTeamInfoIsNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncTeamReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -67,46 +69,64 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         assertNull(result)
-        coVerify {
-            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.syncTeam(any())
+        }
     }
 
     @Test
-    fun givenSelfUserHasValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreRequested() = runTest {
+    fun givenSelfUserHasValidTeam_whenSyncingSelfTeamFails_thenNullIsReturned() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
-            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncTeamReturning(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
             .arrange()
 
         // when
         val result = sut.invoke()
 
         // then
-        assertNotNull(result)
-        coVerify {
+        assertNull(result)
+        verifySuspend {
             arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
-        }.wasInvoked()
+        }
+    }
+
+    @Test
+    fun givenSelfUserHasValidTeam_whenSyncingSelfTeam_thenTeamInfoIsReturned() = runTest {
+        // given
+        val (arrangement, sut) = Arrangement()
+            .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
+            .withSyncTeamReturning(Either.Right(TestTeam.TEAM))
+            .arrange()
+
+        // when
+        val result = sut.invoke()
+
+        // then
+        assertEquals(TestTeam.TEAM, result)
+        verifySuspend {
+            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
+        }
     }
 
     private class Arrangement {
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>()
+        val teamRepository: TeamRepository = mock<TeamRepository>()
 
-        suspend fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+        fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
+            everySuspend {
                 selfTeamIdProvider.invoke()
             }.returns(result)
         }
 
-        suspend fun withSyncingByIdReturning(result: Either<CoreFailure, Team>) = apply {
-            coEvery {
+        fun withSyncTeamReturning(result: Either<CoreFailure, Team>) = apply {
+            everySuspend {
                 teamRepository.syncTeam(any())
             }.returns(result)
         }
 
-        fun arrange() = this to GetUpdatedSelfTeamUseCase(
+        fun arrange() = this to SyncSelfTeamInfoUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
             teamRepository = teamRepository
         )

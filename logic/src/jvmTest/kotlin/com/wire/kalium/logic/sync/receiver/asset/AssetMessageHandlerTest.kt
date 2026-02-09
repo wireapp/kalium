@@ -243,6 +243,35 @@ class AssetMessageHandlerTest {
     }
 
     @Test
+    fun givenUnknownMessageStored_whenHandlingAssetUpdate_itDoesNotCrashOrPersist() = runTest {
+        // Given
+        val storedUnknownMessage = COMPLETE_ASSET_MESSAGE.copy(
+            content = MessageContent.Unknown(typeName = "some-new-type"),
+            visibility = Message.Visibility.HIDDEN
+        )
+        val updateAssetMessage = COMPLETE_ASSET_MESSAGE
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(storedUnknownMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateAssetMessage)
+
+        // Then
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                eq(updateAssetMessage.conversationId),
+                eq(updateAssetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify { arrangement.persistMessage(any()) }
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenValidPreviewAssetMessageStoredAndExtensionIsAllowed_whenHandlingTheUpdate_itIsCorrectlyProcessedAndVisible() = runTest {
         // Given
         val previewAssetMessage = PREVIEW_ASSET_MESSAGE.copy(visibility = Message.Visibility.HIDDEN)

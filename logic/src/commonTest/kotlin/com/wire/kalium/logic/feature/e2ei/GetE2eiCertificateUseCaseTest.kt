@@ -62,7 +62,7 @@ class GetE2eiCertificateUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryReturnsStorageFailure_whenRunningUseCase_thenReturnGenericFailure() = runTest {
+    fun givenRepositoryReturnsStorageDataNotFound_whenRunningUseCase_thenReturnE2EINotAvailable() = runTest {
         val (arrangement, getE2eiCertificateUseCase) = Arrangement()
             .withRepositoryFailure(StorageFailure.DataNotFound)
             .arrange()
@@ -73,7 +73,7 @@ class GetE2eiCertificateUseCaseTest {
             arrangement.mlsConversationRepository.getClientIdentity(any(), any())
         }.wasInvoked(once)
 
-        assertIs<GetMLSClientIdentityResult.Failure.Generic>(result)
+        assertIs<GetMLSClientIdentityResult.Failure.E2EINotAvailable>(result)
     }
 
     @Test

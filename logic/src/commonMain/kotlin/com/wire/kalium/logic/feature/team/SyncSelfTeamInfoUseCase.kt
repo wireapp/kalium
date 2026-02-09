@@ -24,17 +24,16 @@ import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 
 /**
- * This use case is responsible for getting the updated team information of the self user.
+ * This use case is responsible for syncing the self team information from the backend.
  */
-// todo(interface). extract interface for use case
-public class GetUpdatedSelfTeamUseCase internal constructor(
+public class SyncSelfTeamInfoUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
 ) {
 
     public suspend operator fun invoke(): Team? {
         return selfTeamIdProvider().nullableFold({
-            kaliumLogger.w("GetUpdatedSelfTeamUseCase - self team id not found")
+            kaliumLogger.w("SyncSelfTeamInfoUseCase - self team id not found")
             null
         }, { teamId ->
             teamId?.let { teamRepository.syncTeam(it) }
