@@ -18,15 +18,14 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.right
 import io.mockative.any
 import io.mockative.coEvery
-import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
@@ -35,9 +34,9 @@ internal interface UserConfigRepositoryArrangement {
 
     suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>)
     suspend fun withSetSupportedProtocolsSuccessful()
-    fun withSetDefaultProtocolSuccessful()
-    fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
-    fun withSetMLSEnabledSuccessful()
+    suspend fun withSetDefaultProtocolSuccessful()
+    suspend fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
+    suspend fun withSetMLSEnabledSuccessful()
     suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>)
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
@@ -70,18 +69,18 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(Either.Right(Unit))
     }
 
-    override fun withSetDefaultProtocolSuccessful() {
-        every {
+    override suspend fun withSetDefaultProtocolSuccessful() {
+        coEvery {
             userConfigRepository.setDefaultProtocol(any())
         }.returns(Either.Right(Unit))
     }
 
-    override fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
-        every { userConfigRepository.getDefaultProtocol() }.returns(result)
+    override suspend fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
+        coEvery { userConfigRepository.getDefaultProtocol() }.returns(result)
     }
 
-    override fun withSetMLSEnabledSuccessful() {
-        every {
+    override suspend fun withSetMLSEnabledSuccessful() {
+        coEvery {
             userConfigRepository.setMLSEnabled(any())
         }.returns(Either.Right(Unit))
     }
@@ -145,6 +144,6 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
     }
 
     override suspend fun withConferenceCallingEnabled(result: Boolean) {
-        every { userConfigRepository.isConferenceCallingEnabled() }.returns(result.right())
+        coEvery { userConfigRepository.isConferenceCallingEnabled() }.returns(result.right())
     }
 }

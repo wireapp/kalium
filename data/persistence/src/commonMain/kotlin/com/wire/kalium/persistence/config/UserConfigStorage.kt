@@ -18,6 +18,22 @@
 
 package com.wire.kalium.persistence.config
 
+import com.wire.kalium.persistence.config.UserConfigStorage.Companion.DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
+import com.wire.kalium.persistence.config.UserConfigStorage.Companion.DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.APP_LOCK
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.DEFAULT_PROTOCOL
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI_NOTIFICATION_TIME
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI_SETTINGS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CLASSIFIED_DOMAINS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CONFERENCE_CALLING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_MLS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_READ_RECEIPTS
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_SCREENSHOT_CENSORING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_TYPING_INDICATOR
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.FILE_SHARING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.GUEST_ROOM_LINK
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.USE_SFT_FOR_ONE_ON_ONE_CALLS
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.util.time.Second
@@ -32,13 +48,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
+@Deprecated("Use UserPrefsDAO instead. This will be removed in future versions.", ReplaceWith("UserPrefsDAO"))
 @Suppress("TooManyFunctions")
 interface UserConfigStorage {
 
     /**
      * save flag from the user settings to enforce and disable App Lock
      */
-    fun persistAppLockStatus(
+    suspend fun persistAppLockStatus(
         isEnforced: Boolean,
         inactivityTimeoutSecs: Second,
         isStatusChanged: Boolean?
@@ -47,42 +64,42 @@ interface UserConfigStorage {
     /**
      * get the saved flag to know if App Lock is enforced or not
      */
-    fun appLockStatus(): AppLockConfigEntity?
+    suspend fun appLockStatus(): AppLockConfigEntity?
 
     /**
      * returns a Flow of the saved App Lock status
      */
     fun appLockFlow(): Flow<AppLockConfigEntity?>
 
-    fun setTeamAppLockAsNotified()
+    suspend fun setTeamAppLockAsNotified()
 
     /**
      * Save flag from the file sharing api, and if the status changes
      */
-    fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
+    suspend fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
 
     /**
      * Get the saved flag that been saved to know if the file sharing is enabled or not with the flag
      * to know if there was a status change
      */
-    fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
+    suspend fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
 
     /**
      * Returns the Flow of file sharing status
      */
     fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?>
 
-    fun setFileSharingAsNotified()
+    suspend fun setFileSharingAsNotified()
 
     /**
      * Returns a Flow containing the status and list of classified domains
      */
-    fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity>
+    fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity?>
 
     /**
      *Save the flag and list of trusted domains
      */
-    fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
+    suspend fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
 
     /**
      * Saves the flag that indicates whether a 2FA challenge is
@@ -90,7 +107,7 @@ interface UserConfigStorage {
      * Login, Create Account, Register Client, etc.
      * @see isSecondFactorPasswordChallengeRequired
      */
-    fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean)
+    suspend fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean)
 
     /**
      * Checks if the 2FA challenge is
@@ -98,37 +115,37 @@ interface UserConfigStorage {
      * Login, Create Account, Register Client, etc.
      * @see persistSecondFactorPasswordChallengeStatus
      */
-    fun isSecondFactorPasswordChallengeRequired(): Boolean
+    suspend fun isSecondFactorPasswordChallengeRequired(): Boolean
 
     /**
      * Save default protocol to use
      */
-    fun persistDefaultProtocol(protocol: SupportedProtocolEntity)
+    suspend fun persistDefaultProtocol(protocol: SupportedProtocolEntity)
 
     /**
      * Gets default protocol to use. Defaults to PROTEUS if not default protocol has been saved.
      */
-    fun defaultProtocol(): SupportedProtocolEntity
+    suspend fun defaultProtocol(): SupportedProtocolEntity
 
     /**
      * Save flag from the user settings to enable and disable MLS
      */
-    fun enableMLS(enabled: Boolean)
+    suspend fun enableMLS(enabled: Boolean)
 
     /**
      * Get the saved flag to know if MLS enabled or not
      */
-    fun isMLSEnabled(): Boolean
+    suspend fun isMLSEnabled(): Boolean
 
     /**
      * Save MLSE2EISetting
      */
-    fun setE2EISettings(settingEntity: E2EISettingsEntity?)
+    suspend fun setE2EISettings(settingEntity: E2EISettingsEntity?)
 
     /**
      * Get MLSE2EISetting
      */
-    fun getE2EISettings(): E2EISettingsEntity?
+    suspend fun getE2EISettings(): E2EISettingsEntity?
 
     /**
      * Get Flow of the saved MLSE2EISetting
@@ -138,51 +155,73 @@ interface UserConfigStorage {
     /**
      * Save flag from user settings to enable or disable Conference Calling
      */
-    fun persistConferenceCalling(enabled: Boolean)
+    suspend fun persistConferenceCalling(enabled: Boolean)
 
     /**
      * Get the saved flag to know if Conference Calling is enabled or not
      */
-    fun isConferenceCallingEnabled(): Boolean
+    suspend fun isConferenceCallingEnabled(): Boolean
 
     /**
      * Get a flow of saved flag to know if conference calling is enabled or not
      */
-    fun isConferenceCallingEnabledFlow(): Flow<Boolean>
+    suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean>
 
-    fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
+    suspend fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
 
-    fun shouldUseSftForOneOnOneCalls(): Boolean
+    suspend fun shouldUseSftForOneOnOneCalls(): Boolean
 
     /**
      * Get the saved flag to know whether user's Read Receipts are currently enabled or not
      */
-    fun areReadReceiptsEnabled(): Flow<Boolean>
+    suspend fun areReadReceiptsEnabled(): Flow<Boolean>
 
     /**
      * Persist the flag to indicate if user's Read Receipts are enabled or not.
      */
-    fun persistReadReceipts(enabled: Boolean)
+    suspend fun persistReadReceipts(enabled: Boolean)
 
     /**
      * Get the saved global flag to know whether user's typing indicator is currently enabled or not.
      */
-    fun isTypingIndicatorEnabled(): Flow<Boolean>
+    suspend fun isTypingIndicatorEnabled(): Flow<Boolean>
 
     /**
      * Persist the flag to indicate whether user's typing indicator global flag is enabled or not.
      */
-    fun persistTypingIndicator(enabled: Boolean)
+    suspend fun persistTypingIndicator(enabled: Boolean)
 
-    fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
-    fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
+    suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
+    suspend fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
-    fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
-    fun persistScreenshotCensoring(enabled: Boolean)
-    fun setIfAbsentE2EINotificationTime(timeStamp: Long)
-    fun getE2EINotificationTime(): Long?
-    fun e2EINotificationTimeFlow(): Flow<Long?>
-    fun updateE2EINotificationTime(timeStamp: Long)
+    suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
+    suspend fun persistScreenshotCensoring(enabled: Boolean)
+    suspend fun setIfAbsentE2EINotificationTime(timeStamp: Long)
+    suspend fun getE2EINotificationTime(): Long?
+    suspend fun e2EINotificationTimeFlow(): Flow<Long?>
+    suspend fun updateE2EINotificationTime(timeStamp: Long)
+
+    enum class UserPreferences(val key: String) {
+        FILE_SHARING("file_sharing"),
+        GUEST_ROOM_LINK("guest_room_link"),
+        ENABLE_CLASSIFIED_DOMAINS("enable_classified_domains"),
+        ENABLE_MLS("enable_mls"),
+        E2EI_SETTINGS("end_to_end_identity_settings"),
+        E2EI_NOTIFICATION_TIME("end_to_end_identity_notification_time"),
+        ENABLE_CONFERENCE_CALLING("enable_conference_calling"),
+        USE_SFT_FOR_ONE_ON_ONE_CALLS("use_sft_for_one_on_one_calls"),
+        ENABLE_READ_RECEIPTS("enable_read_receipts"),
+        REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE("require_second_factor_password_challenge"),
+        ENABLE_SCREENSHOT_CENSORING("enable_screenshot_censoring"),
+        ENABLE_TYPING_INDICATOR("enable_typing_indicator"),
+        APP_LOCK("app_lock"),
+        DEFAULT_PROTOCOL("default_protocol")
+    }
+
+    companion object {
+        const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
+        const val DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE = false
+    }
 }
 
 @Serializable
@@ -278,8 +317,9 @@ data class WireCellsConfigEntity(
     @Serializable val teamQuotaBytes: Long?,
 )
 
+@Deprecated("Use UserPrefsDAO instead. This will be removed in future versions.", ReplaceWith("UserPrefsDAO"))
 @Suppress("TooManyFunctions")
-class UserConfigStorageImpl(
+class UserConfigStorageImpl constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
 
@@ -349,13 +389,13 @@ class UserConfigStorageImpl(
             onBufferOverflow = BufferOverflow.DROP_OLDEST
         )
 
-    override fun persistAppLockStatus(
+    override suspend fun persistAppLockStatus(
         isEnforced: Boolean,
         inactivityTimeoutSecs: Second,
         isStatusChanged: Boolean?
     ) {
         kaliumPreferences.putSerializable(
-            APP_LOCK,
+            APP_LOCK.key,
             AppLockConfigEntity(inactivityTimeoutSecs, isEnforced, isStatusChanged),
             AppLockConfigEntity.serializer(),
         ).also {
@@ -363,13 +403,13 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun setTeamAppLockAsNotified() {
+    override suspend fun setTeamAppLockAsNotified() {
         val newValue =
-            kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+            kaliumPreferences.getSerializable(APP_LOCK.key, AppLockConfigEntity.serializer())
                 ?.copy(isStatusChanged = false)
                 ?: return
         kaliumPreferences.putSerializable(
-            APP_LOCK,
+            APP_LOCK.key,
             newValue,
             AppLockConfigEntity.serializer()
         ).also {
@@ -377,8 +417,8 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun appLockStatus(): AppLockConfigEntity? =
-        kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+    override suspend fun appLockStatus(): AppLockConfigEntity? =
+        kaliumPreferences.getSerializable(APP_LOCK.key, AppLockConfigEntity.serializer())
 
     override fun appLockFlow(): Flow<AppLockConfigEntity?> = appLockFlow.map {
         appLockStatus()
@@ -386,12 +426,12 @@ class UserConfigStorageImpl(
         emit(appLockStatus())
     }
 
-    override fun persistFileSharingStatus(
+    override suspend fun persistFileSharingStatus(
         status: Boolean,
         isStatusChanged: Boolean?
     ) {
         kaliumPreferences.putSerializable(
-            FILE_SHARING,
+            FILE_SHARING.key,
             IsFileSharingEnabledEntity(status, isStatusChanged),
             IsFileSharingEnabledEntity.serializer()
         ).also {
@@ -399,8 +439,8 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
-        kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+    override suspend fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
+        kaliumPreferences.getSerializable(FILE_SHARING.key, IsFileSharingEnabledEntity.serializer())
 
     override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> =
         isFileSharingEnabledFlow
@@ -408,13 +448,13 @@ class UserConfigStorageImpl(
             .onStart { emit(isFileSharingEnabled()) }
             .distinctUntilChanged()
 
-    override fun setFileSharingAsNotified() {
+    override suspend fun setFileSharingAsNotified() {
         val newValue =
-            kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+            kaliumPreferences.getSerializable(FILE_SHARING.key, IsFileSharingEnabledEntity.serializer())
                 ?.copy(isStatusChanged = false)
                 ?: return
         kaliumPreferences.putSerializable(
-            FILE_SHARING,
+            FILE_SHARING.key,
             newValue,
             IsFileSharingEnabledEntity.serializer()
         ).also {
@@ -422,26 +462,26 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
+    override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity?> {
         return isClassifiedDomainsEnabledFlow
             .map {
                 kaliumPreferences.getSerializable(
-                    ENABLE_CLASSIFIED_DOMAINS,
+                    ENABLE_CLASSIFIED_DOMAINS.key,
                     ClassifiedDomainsEntity.serializer()
                 )!!
             }.onStart {
                 emit(
                     kaliumPreferences.getSerializable(
-                        ENABLE_CLASSIFIED_DOMAINS,
+                        ENABLE_CLASSIFIED_DOMAINS.key,
                         ClassifiedDomainsEntity.serializer()
                     )!!
                 )
             }.distinctUntilChanged()
     }
 
-    override fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
+    override suspend fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
         kaliumPreferences.putSerializable(
-            ENABLE_CLASSIFIED_DOMAINS,
+            ENABLE_CLASSIFIED_DOMAINS.key,
             ClassifiedDomainsEntity(status, classifiedDomains),
             ClassifiedDomainsEntity.serializer()
         ).also {
@@ -449,33 +489,33 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean) {
-        kaliumPreferences.putBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, isRequired)
+    override suspend fun persistSecondFactorPasswordChallengeStatus(isRequired: Boolean) {
+        kaliumPreferences.putBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE.key, isRequired)
     }
 
-    override fun isSecondFactorPasswordChallengeRequired(): Boolean =
-        kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
+    override suspend fun isSecondFactorPasswordChallengeRequired(): Boolean =
+        kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE.key, false)
 
-    override fun persistDefaultProtocol(protocol: SupportedProtocolEntity) {
-        kaliumPreferences.putString(DEFAULT_PROTOCOL, protocol.name)
+    override suspend fun persistDefaultProtocol(protocol: SupportedProtocolEntity) {
+        kaliumPreferences.putString(DEFAULT_PROTOCOL.key, protocol.name)
     }
 
-    override fun defaultProtocol(): SupportedProtocolEntity =
-        kaliumPreferences.getString(DEFAULT_PROTOCOL)?.let { SupportedProtocolEntity.valueOf(it) }
+    override suspend fun defaultProtocol(): SupportedProtocolEntity =
+        kaliumPreferences.getString(DEFAULT_PROTOCOL.key)?.let { SupportedProtocolEntity.valueOf(it) }
             ?: SupportedProtocolEntity.PROTEUS
 
-    override fun enableMLS(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
+    override suspend fun enableMLS(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_MLS.key, enabled)
     }
 
-    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
+    override suspend fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS.key, false)
 
-    override fun setE2EISettings(settingEntity: E2EISettingsEntity?) {
+    override suspend fun setE2EISettings(settingEntity: E2EISettingsEntity?) {
         if (settingEntity == null) {
-            kaliumPreferences.remove(E2EI_SETTINGS)
+            kaliumPreferences.remove(E2EI_SETTINGS.key)
         } else {
             kaliumPreferences.putSerializable(
-                E2EI_SETTINGS,
+                E2EI_SETTINGS.key,
                 settingEntity,
                 E2EISettingsEntity.serializer()
             ).also {
@@ -484,8 +524,8 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun getE2EISettings(): E2EISettingsEntity? {
-        return kaliumPreferences.getSerializable(E2EI_SETTINGS, E2EISettingsEntity.serializer())
+    override suspend fun getE2EISettings(): E2EISettingsEntity? {
+        return kaliumPreferences.getSerializable(E2EI_SETTINGS.key, E2EISettingsEntity.serializer())
     }
 
     override fun e2EISettingsFlow(): Flow<E2EISettingsEntity?> = e2EIFlow
@@ -493,79 +533,79 @@ class UserConfigStorageImpl(
         .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
 
-    override fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
+    override suspend fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
         getE2EINotificationTime().let { current ->
             if (current == null || current <= 0)
-                kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
+                kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME.key, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
         }
     }
 
-    override fun updateE2EINotificationTime(timeStamp: Long) {
-        kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
+    override suspend fun updateE2EINotificationTime(timeStamp: Long) {
+        kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME.key, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
     }
 
-    override fun getE2EINotificationTime(): Long? {
-        return kaliumPreferences.getLong(E2EI_NOTIFICATION_TIME)
+    override suspend fun getE2EINotificationTime(): Long? {
+        return kaliumPreferences.getLong(E2EI_NOTIFICATION_TIME.key)
     }
 
-    override fun e2EINotificationTimeFlow(): Flow<Long?> = e2EINotificationFlow
+    override suspend fun e2EINotificationTimeFlow(): Flow<Long?> = e2EINotificationFlow
         .map { getE2EINotificationTime() }
         .onStart { emit(getE2EINotificationTime()) }
         .distinctUntilChanged()
 
-    override fun persistConferenceCalling(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
+    override suspend fun persistConferenceCalling(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING.key, enabled)
         conferenceCallingEnabledFlow.tryEmit(Unit)
     }
 
-    override fun isConferenceCallingEnabled(): Boolean =
+    override suspend fun isConferenceCallingEnabled(): Boolean =
         kaliumPreferences.getBoolean(
-            ENABLE_CONFERENCE_CALLING,
+            ENABLE_CONFERENCE_CALLING.key,
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         )
 
-    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> = conferenceCallingEnabledFlow
+    override suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean> = conferenceCallingEnabledFlow
         .map { isConferenceCallingEnabled() }
         .onStart { emit(isConferenceCallingEnabled()) }
 
-    override fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
-        kaliumPreferences.putBoolean(USE_SFT_FOR_ONE_ON_ONE_CALLS, shouldUse)
+    override suspend fun persistUseSftForOneOnOneCalls(shouldUse: Boolean) {
+        kaliumPreferences.putBoolean(USE_SFT_FOR_ONE_ON_ONE_CALLS.key, shouldUse)
     }
 
-    override fun shouldUseSftForOneOnOneCalls(): Boolean =
+    override suspend fun shouldUseSftForOneOnOneCalls(): Boolean =
         kaliumPreferences.getBoolean(
-            USE_SFT_FOR_ONE_ON_ONE_CALLS,
+            USE_SFT_FOR_ONE_ON_ONE_CALLS.key,
             DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
         )
 
-    override fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
-        .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
-        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)) }
+    override suspend fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS.key, true) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS.key, true)) }
         .distinctUntilChanged()
 
-    override fun persistReadReceipts(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS, enabled).also {
+    override suspend fun persistReadReceipts(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS.key, enabled).also {
             areReadReceiptsEnabledFlow.tryEmit(Unit)
         }
     }
 
-    override fun isTypingIndicatorEnabled(): Flow<Boolean> = isTypingIndicatorEnabledFlow
-        .map { kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR, true) }
-        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR, true)) }
+    override suspend fun isTypingIndicatorEnabled(): Flow<Boolean> = isTypingIndicatorEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR.key, true) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR.key, true)) }
         .distinctUntilChanged()
 
-    override fun persistTypingIndicator(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_TYPING_INDICATOR, enabled).also {
+    override suspend fun persistTypingIndicator(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_TYPING_INDICATOR.key, enabled).also {
             isTypingIndicatorEnabledFlow.tryEmit(Unit)
         }
     }
 
-    override fun persistGuestRoomLinkFeatureFlag(
+    override suspend fun persistGuestRoomLinkFeatureFlag(
         status: Boolean,
         isStatusChanged: Boolean?
     ) {
         kaliumPreferences.putSerializable(
-            GUEST_ROOM_LINK,
+            GUEST_ROOM_LINK.key,
             IsGuestRoomLinkEnabledEntity(status, isStatusChanged),
             IsGuestRoomLinkEnabledEntity.serializer()
         ).also {
@@ -573,9 +613,9 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
+    override suspend fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
         kaliumPreferences.getSerializable(
-            GUEST_ROOM_LINK,
+            GUEST_ROOM_LINK.key,
             IsGuestRoomLinkEnabledEntity.serializer()
         )
 
@@ -585,35 +625,15 @@ class UserConfigStorageImpl(
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
-    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> =
+    override suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> =
         isScreenshotCensoringEnabledFlow
-            .map { kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false) }
-            .onStart { emit(kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false)) }
+            .map { kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING.key, false) }
+            .onStart { emit(kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING.key, false)) }
             .distinctUntilChanged()
 
-    override fun persistScreenshotCensoring(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_SCREENSHOT_CENSORING, enabled).also {
+    override suspend fun persistScreenshotCensoring(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_SCREENSHOT_CENSORING.key, enabled).also {
             isScreenshotCensoringEnabledFlow.tryEmit(Unit)
         }
-    }
-
-    private companion object {
-        const val FILE_SHARING = "file_sharing"
-        const val GUEST_ROOM_LINK = "guest_room_link"
-        const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
-        const val ENABLE_MLS = "enable_mls"
-        const val E2EI_SETTINGS = "end_to_end_identity_settings"
-        const val E2EI_NOTIFICATION_TIME = "end_to_end_identity_notification_time"
-        const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
-        const val USE_SFT_FOR_ONE_ON_ONE_CALLS = "use_sft_for_one_on_one_calls"
-        const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
-        const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
-        const val DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE = false
-        const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE =
-            "require_second_factor_password_challenge"
-        const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
-        const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
-        const val APP_LOCK = "app_lock"
-        const val DEFAULT_PROTOCOL = "default_protocol"
     }
 }
