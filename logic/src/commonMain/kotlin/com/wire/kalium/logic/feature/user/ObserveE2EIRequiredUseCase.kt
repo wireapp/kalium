@@ -51,7 +51,7 @@ public interface ObserveE2EIRequiredUseCase {
     /**
      * @return [Flow] of [E2EIRequiredResult]
      */
-    public operator fun invoke(): Flow<E2EIRequiredResult>
+    public suspend operator fun invoke(): Flow<E2EIRequiredResult>
 }
 
 internal class ObserveE2EIRequiredUseCaseImpl(
@@ -64,7 +64,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
 ) : ObserveE2EIRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun invoke(): Flow<E2EIRequiredResult> {
+    override suspend fun invoke(): Flow<E2EIRequiredResult> {
         if (!featureSupport.isMLSSupported) return flowOf(E2EIRequiredResult.NotRequired)
 
         return userConfigRepository

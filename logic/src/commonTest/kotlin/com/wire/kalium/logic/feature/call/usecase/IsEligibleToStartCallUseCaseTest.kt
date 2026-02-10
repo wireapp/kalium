@@ -19,14 +19,13 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.coEvery
-import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -35,9 +34,9 @@ import kotlin.test.assertEquals
 
 internal class IsEligibleToStartCallUseCaseTest {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+    val userConfigRepository = mock(UserConfigRepository::class)
 
-        val callRepository = mock(CallRepository::class)
+    val callRepository = mock(CallRepository::class)
 
     private lateinit var isEligibleToStartCall: IsEligibleToStartCallUseCase
 
@@ -58,7 +57,7 @@ internal class IsEligibleToStartCallUseCaseTest {
                 callRepository.establishedCallConversationId()
             }.returns(null)
 
-            every {
+            coEvery {
                 userConfigRepository.isConferenceCallingEnabled()
             }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
@@ -80,7 +79,7 @@ internal class IsEligibleToStartCallUseCaseTest {
                 callRepository.establishedCallConversationId()
             }.returns(null)
 
-            every {
+            coEvery {
                 userConfigRepository.isConferenceCallingEnabled()
             }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
@@ -102,7 +101,7 @@ internal class IsEligibleToStartCallUseCaseTest {
                 callRepository.establishedCallConversationId()
             }.returns(establishedCallConversationId)
 
-            every {
+            coEvery {
                 userConfigRepository.isConferenceCallingEnabled()
             }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
@@ -124,7 +123,7 @@ internal class IsEligibleToStartCallUseCaseTest {
                 callRepository.establishedCallConversationId()
             }.returns(establishedCallConversationId)
 
-            every {
+            coEvery {
                 userConfigRepository.isConferenceCallingEnabled()
             }.returns(Either.Right(true))
 
@@ -146,7 +145,7 @@ internal class IsEligibleToStartCallUseCaseTest {
                 callRepository.establishedCallConversationId()
             }.returns(conversationId)
 
-            every {
+            coEvery {
                 userConfigRepository.isConferenceCallingEnabled()
             }.returns(Either.Right(true))
 

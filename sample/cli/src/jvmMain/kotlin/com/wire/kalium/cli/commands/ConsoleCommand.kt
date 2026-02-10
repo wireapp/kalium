@@ -57,6 +57,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
     private val port by option(help = "REST API server port").int().default(0)
     private val avsTest by option("-T").flag(default = false)
     private val avsNoise by option("-N").flag(default = false)
+
     private val userSession by requireObject<UserSessionScope>()
     private val context = ConsoleContext(null, false)
     private var strokes: Array<KeyStroke> = arrayOf(

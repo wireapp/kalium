@@ -23,7 +23,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
@@ -48,7 +47,7 @@ import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.WireCellsConfigEntity
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mockable
@@ -64,54 +63,54 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("TooManyFunctions")
 @Mockable
 internal interface UserConfigRepository {
-    fun setAppLockStatus(
+    suspend fun setAppLockStatus(
         isAppLocked: Boolean,
         timeout: Int,
         isStatusChanged: Boolean?
     ): Either<StorageFailure, Unit>
 
-    fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig>
+    suspend fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig>
     fun observeAppLockConfig(): Flow<Either<StorageFailure, AppLockTeamConfig>>
-    fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit>
-    fun setFileSharingStatus(
+    suspend fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit>
+    suspend fun setFileSharingStatus(
         status: Boolean,
         isStatusChanged: Boolean?
     ): Either<StorageFailure, Unit>
 
-    fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
-    fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
+    suspend fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
+    suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
-    fun setClassifiedDomainsStatus(
+    suspend fun setClassifiedDomainsStatus(
         enabled: Boolean,
         domains: List<String>
     ): Either<StorageFailure, Unit>
 
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
     suspend fun isMLSEnabled(): Either<StorageFailure, Boolean>
-    fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun getE2EISettings(): Either<StorageFailure, E2EISettings>
+    suspend fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun getE2EISettings(): Either<StorageFailure, E2EISettings>
     fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>>
-    fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
-    fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
-    fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit>
+    suspend fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
+    suspend fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
+    suspend fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit>
     suspend fun setSupportedCipherSuite(cipherSuite: SupportedCipherSuite): Either<StorageFailure, Unit>
     suspend fun getSupportedCipherSuite(): Either<StorageFailure, SupportedCipherSuite>
-    fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol>
+    suspend fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol>
     suspend fun setSupportedProtocols(protocols: Set<SupportedProtocol>): Either<StorageFailure, Unit>
     suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>>
-    fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
-    fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>>
-    fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit>
+    suspend fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
+    suspend fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean>
-    fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
-    fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
-    fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
-    fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
-    fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>>
-    fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit>
-    fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
-    fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
+    suspend fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
+    suspend fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
+    suspend fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
+    suspend fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
     suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>>
@@ -123,8 +122,8 @@ internal interface UserConfigRepository {
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
     suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
-    fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>>
-    fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
+    suspend fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>>
+    suspend fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
     suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel>
     suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
     suspend fun setLegalHoldRequest(
@@ -179,17 +178,17 @@ internal class UserConfigDataSource internal constructor(
     private val kaliumConfigs: KaliumConfigs
 ) : UserConfigRepository {
 
-    override fun setFileSharingStatus(
+    override suspend fun setFileSharingStatus(
         status: Boolean,
         isStatusChanged: Boolean?
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }
 
-    override fun setFileSharingAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+    override suspend fun setFileSharingAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.setFileSharingAsNotified()
     }
 
-    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> {
+    override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> {
         val serverSideConfig = wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }
         return deriveFileSharingStatus(serverSideConfig, kaliumConfigs.fileRestrictionState.value)
     }
@@ -231,7 +230,7 @@ internal class UserConfigDataSource internal constructor(
         else -> error("Unknown file restriction state: buildConfig: $buildConfig , serverConfig: $serverSideConfig")
     }
 
-    override fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
+    override suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
         wrapStorageRequest { userConfigStorage.persistClassifiedDomainsStatus(enabled, domains) }
 
     override fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>> =
@@ -245,10 +244,10 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest { userConfigStorage.isMLSEnabled() }
     }
 
-    override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
-    override fun getE2EISettings(): Either<StorageFailure, E2EISettings> =
+    override suspend fun getE2EISettings(): Either<StorageFailure, E2EISettings> =
         wrapStorageRequest { userConfigStorage.getE2EISettings() }
             .map { E2EISettings.fromEntity(it) }
 
@@ -257,18 +256,18 @@ internal class UserConfigDataSource internal constructor(
             .wrapStorageRequest()
             .mapRight { E2EISettings.fromEntity(it) }
 
-    override fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
+    override suspend fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.setE2EISettings(setting.toEntity()) }
 
-    override fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>> =
+    override suspend fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>> =
         userConfigStorage.e2EINotificationTimeFlow()
             .wrapStorageRequest()
             .mapRight { Instant.fromEpochMilliseconds(it) }
 
-    override fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit> =
+    override suspend fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.setIfAbsentE2EINotificationTime(instant.toEpochMilliseconds()) }
 
-    override fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
+    override suspend fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             val notifyUserAfterMs = DateTimeUtil.currentInstant().toEpochMilliseconds().plus(duration.inWholeMilliseconds)
             userConfigStorage.updateE2EINotificationTime(notifyUserAfterMs)
@@ -281,10 +280,7 @@ internal class UserConfigDataSource internal constructor(
         }
     }
 
-    private fun getE2EINotificationTimeOrNull() =
-        wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
-
-    override fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> =
+    override suspend fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistDefaultProtocol(protocol.toDao()) }
 
     override suspend fun setSupportedCipherSuite(cipherSuite: SupportedCipherSuite): Either<StorageFailure, Unit> =
@@ -306,7 +302,7 @@ internal class UserConfigDataSource internal constructor(
         )
     }
 
-    override fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
+    override suspend fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
         wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }
 
     override suspend fun setSupportedProtocols(protocols: Set<SupportedProtocol>): Either<StorageFailure, Unit> =
@@ -315,20 +311,20 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>> =
         wrapStorageRequest { userConfigDAO.getSupportedProtocols()?.toModel() }
 
-    override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistConferenceCalling(enabled)
         }
 
-    override fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean> =
+    override suspend fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
             userConfigStorage.isConferenceCallingEnabled()
         }
 
-    override fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override suspend fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isConferenceCallingEnabledFlow().wrapStorageRequest()
 
-    override fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+    override suspend fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.persistUseSftForOneOnOneCalls(shouldUse)
     }
 
@@ -338,33 +334,33 @@ internal class UserConfigDataSource internal constructor(
         }
     }
 
-    override fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistSecondFactorPasswordChallengeStatus(isRequired)
         }
 
-    override fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean> =
+    override suspend fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
             userConfigStorage.isSecondFactorPasswordChallengeRequired()
         }
 
-    override fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override suspend fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.areReadReceiptsEnabled().wrapStorageRequest()
 
-    override fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistReadReceipts(enabled)
         }
 
-    override fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override suspend fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isTypingIndicatorEnabled().wrapStorageRequest()
 
-    override fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistTypingIndicator(enabled)
         }
 
-    override fun setGuestRoomStatus(
+    override suspend fun setGuestRoomStatus(
         status: Boolean,
         isStatusChanged: Boolean?
     ): Either<StorageFailure, Unit> =
@@ -372,7 +368,7 @@ internal class UserConfigDataSource internal constructor(
             userConfigStorage.persistGuestRoomLinkFeatureFlag(status, isStatusChanged)
         }
 
-    override fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus> =
+    override suspend fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus> =
         wrapStorageRequest { userConfigStorage.isGuestRoomLinkEnabled() }.map {
             with(it) { GuestRoomLinkStatus(status, isStatusChanged) }
         }
@@ -432,7 +428,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isScreenshotCensoringEnabledFlow().wrapStorageRequest()
 
-    override fun setAppLockStatus(
+    override suspend fun setAppLockStatus(
         isAppLocked: Boolean,
         timeout: Int,
         isStatusChanged: Boolean?
@@ -458,7 +454,7 @@ internal class UserConfigDataSource internal constructor(
             }
         }
 
-    override fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> =
+    override suspend fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> =
         wrapStorageRequest {
             userConfigStorage.appLockStatus()
         }.map {
@@ -469,7 +465,7 @@ internal class UserConfigDataSource internal constructor(
             )
         }
 
-    override fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+    override suspend fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.setTeamAppLockAsNotified()
     }
 
