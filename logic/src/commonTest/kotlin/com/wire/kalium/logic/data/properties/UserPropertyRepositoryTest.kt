@@ -19,21 +19,19 @@
 package com.wire.kalium.logic.data.properties
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.every
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -55,7 +53,7 @@ class UserPropertyRepositoryTest {
             arrangement.propertiesApi.setProperty(any(), any())
         }.wasInvoked(once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setReadReceiptsStatus(eq(true))
         }.wasInvoked(once)
     }
@@ -74,7 +72,7 @@ class UserPropertyRepositoryTest {
             arrangement.propertiesApi.deleteProperty(any())
         }.wasInvoked(once)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setReadReceiptsStatus(eq(false))
         }.wasInvoked(once)
     }
@@ -88,7 +86,7 @@ class UserPropertyRepositoryTest {
         val result = repository.getReadReceiptsStatus()
 
         assertFalse(result)
-        verify {
+        coVerify {
             arrangement.userConfigRepository.isReadReceiptsEnabled()
         }.wasInvoked(exactly = once)
     }
@@ -113,14 +111,14 @@ class UserPropertyRepositoryTest {
             }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 
-        fun withUpdateReadReceiptsLocallySuccess() = apply {
-            every {
+        suspend fun withUpdateReadReceiptsLocallySuccess() = apply {
+            coEvery {
                 userConfigRepository.setReadReceiptsStatus(any())
             }.returns(Either.Right(Unit))
         }
 
-        fun withNullReadReceiptsStatus() = apply {
-            every {
+        suspend fun withNullReadReceiptsStatus() = apply {
+            coEvery {
                 userConfigRepository.isReadReceiptsEnabled()
             }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }

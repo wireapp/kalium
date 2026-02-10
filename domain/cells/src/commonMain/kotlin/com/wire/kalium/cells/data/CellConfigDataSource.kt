@@ -23,7 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.featureConfig.CollaboraEdition.Companion.fromString
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.UserConfigDAO
 
 internal class CellConfigDataSource(
     private val userConfigDAO: UserConfigDAO,

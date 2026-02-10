@@ -253,9 +253,9 @@ class MLSMigrationWorkerTest {
         init {
             runBlocking {
                 coEvery { featureConfigRepository.getFeatureConfigs() }.returns(FeatureConfigTest.newModel().right())
-                every { userConfigRepository.setMLSEnabled(any<Boolean>()) }.returns(Unit.right())
+                coEvery { userConfigRepository.setMLSEnabled(any<Boolean>()) }.returns(Unit.right())
                 coEvery { userConfigRepository.getSupportedProtocols() }.returns(NOT_FOUND_FAILURE)
-                every { userConfigRepository.setDefaultProtocol(any<SupportedProtocol>()) }.returns(Unit.right())
+                coEvery { userConfigRepository.setDefaultProtocol(any<SupportedProtocol>()) }.returns(Unit.right())
                 coEvery { userConfigRepository.setSupportedProtocols(any<Set<SupportedProtocol>>()) }.returns(Unit.right())
                 coEvery { userConfigRepository.setSupportedCipherSuite(any<SupportedCipherSuite>()) }.returns(Unit.right())
                 coEvery { userConfigRepository.setMigrationConfiguration(any<MLSMigrationModel>()) }.returns(Unit.right())
