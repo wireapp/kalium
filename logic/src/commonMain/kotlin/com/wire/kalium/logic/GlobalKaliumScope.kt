@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
@@ -65,6 +63,8 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.SetPersistentWebSocketForAllUsersUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.SetPersistentWebSocketForAllUsersUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
@@ -123,8 +123,8 @@ public class GlobalKaliumScope internal constructor(
     public val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
 
-    public suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
-        sessionRepository.setAllPersistentWebSocketEnabled(enabled)
+    public val setAllPersistentWebSocketEnabled: SetPersistentWebSocketForAllUsersUseCase
+        get() = SetPersistentWebSocketForAllUsersUseCaseImpl(sessionRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
