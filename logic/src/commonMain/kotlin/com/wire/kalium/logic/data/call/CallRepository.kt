@@ -226,7 +226,15 @@ internal class CallDataSource(
         isMuted: Boolean,
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
-    ) = mutexProvider.withLock(conversationId) {
+    ) = mutexProvider.withLock(
+        key = conversationId,
+        onWaitingToUnlock = {
+            callingLogger.w(
+                "[CallRepository][createCall] -> Trying to create the same call again at the same time for conversation: $conversationId" +
+                        " - suspending action to execute it sequentially"
+            )
+        }
+    ) {
         val conversation: ConversationDetails =
             conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
@@ -325,21 +333,21 @@ internal class CallDataSource(
     }
 
     override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
-            // Update Call in Database
-            wrapStorageRequest {
-                callDAO.updateLastCallStatusByConversationId(
-                    status = callMapper.toCallEntityStatus(callStatus = status),
-                    conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                        conversationId = conversationId
-                    )
+        // Update Call in Database
+        wrapStorageRequest {
+            callDAO.updateLastCallStatusByConversationId(
+                status = callMapper.toCallEntityStatus(callStatus = status),
+                conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
+                    conversationId = conversationId
                 )
-                callingLogger.i(
-                    "[CallRepository][UpdateCallStatusById] ->" +
-                            " ConversationId: [${conversationId.value.obfuscateId()}" +
-                            "@${conversationId.domain.obfuscateDomain()}]" +
-                            " " + "| status: [$status]"
-                )
-            }
+            )
+            callingLogger.i(
+                "[CallRepository][UpdateCallStatusById] ->" +
+                        " ConversationId: [${conversationId.value.obfuscateId()}" +
+                        "@${conversationId.domain.obfuscateDomain()}]" +
+                        " " + "| status: [$status]"
+            )
+        }
 
         _callMetadataProfile.update(conversationId) { callMetadata ->
             callMetadata.copy(

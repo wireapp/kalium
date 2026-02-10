@@ -29,6 +29,7 @@ class MutexProviderTest {
     fun givenTwoSameKeys_whenWithLockIsCalled_thenOnlyOneExecutionOccursAtATime() = runTest {
         val mutexProvider = MutexProvider<String>()
         var secondActionExecuted = false
+        var onWaitingToUnlockCalled = false
         launch {
             mutexProvider.withLock("key1") {
                 delay(1000) // second job is started in the middle of this delay
@@ -36,9 +37,10 @@ class MutexProviderTest {
             }
             delay(1000) // ensure second job has time to execute after job1 releases the lock
             assertEquals(true, secondActionExecuted) // second job action should be executed after first one releases the lock
+            assertEquals(true, onWaitingToUnlockCalled) // it should be called as second job was waiting to unlock
         }
         launch {
-            mutexProvider.withLock("key1") {
+            mutexProvider.withLock("key1", { onWaitingToUnlockCalled = true }) {
                 secondActionExecuted = true
             }
         }
@@ -48,14 +50,16 @@ class MutexProviderTest {
     fun givenTwoDifferentKeys_whenWithLockIsCalled_thenBothExecutionsOccurIndependently() = runTest {
         val mutexProvider = MutexProvider<String>()
         var job2Executed = false
+        var onWaitingToUnlockCalled = false
         launch {
             mutexProvider.withLock("key1") {
                 delay(1000) // second job is started in the middle of this delay
                 assertEquals(true, job2Executed) // second job action should already be executed independently
+                assertEquals(false, onWaitingToUnlockCalled) // it should not be called as second job was not waiting to unlock
             }
         }
         launch {
-            mutexProvider.withLock("key2") {
+            mutexProvider.withLock("key2", { onWaitingToUnlockCalled = true }) {
                 job2Executed = true
             }
         }
