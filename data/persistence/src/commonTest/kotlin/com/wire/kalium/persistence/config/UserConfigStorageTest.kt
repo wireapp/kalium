@@ -24,7 +24,6 @@ import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
@@ -115,7 +114,7 @@ class UserConfigStorageTest {
     }
 
     @Test
-    fun givenGuestRoomLinkStatusIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() {
+    fun givenGuestRoomLinkStatusIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
         userConfigStorage.persistGuestRoomLinkFeatureFlag(status = false, isStatusChanged = false)
         userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
             assertFalse { it }
@@ -123,7 +122,7 @@ class UserConfigStorageTest {
     }
 
     @Test
-    fun givenGuestRoomLinkStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() {
+    fun givenGuestRoomLinkStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
         userConfigStorage.persistGuestRoomLinkFeatureFlag(status = true, isStatusChanged = false)
         userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
             assertTrue { it }
@@ -195,12 +194,12 @@ class UserConfigStorageTest {
     }
 
     @Test
-    fun givenDefaultProtocolIsNotSet_whenGettingItsValue_thenItShouldBeProteus() {
+    fun givenDefaultProtocolIsNotSet_whenGettingItsValue_thenItShouldBeProteus() = runTest {
         assertEquals(SupportedProtocolEntity.PROTEUS, userConfigStorage.defaultProtocol())
     }
 
     @Test
-    fun givenDefaultProtocolIsSetToMls_whenGettingItsValue_thenItShouldBeMls() {
+    fun givenDefaultProtocolIsSetToMls_whenGettingItsValue_thenItShouldBeMls() = runTest {
         userConfigStorage.persistDefaultProtocol(SupportedProtocolEntity.MLS)
         assertEquals(SupportedProtocolEntity.MLS, userConfigStorage.defaultProtocol())
     }

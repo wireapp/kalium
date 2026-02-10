@@ -46,7 +46,7 @@ class UserPropertiesEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        verify {
+        coVerify {
             arrangement.userConfigRepository.setReadReceiptsStatus(any())
         }.wasInvoked(exactly = once)
     }
@@ -75,8 +75,8 @@ class UserPropertiesEventReceiverTest {
             conversationFolderRepository = conversationFolderRepository
         )
 
-        fun withUpdateReadReceiptsSuccess() = apply {
-            every {
+        suspend fun withUpdateReadReceiptsSuccess() = apply {
+            coEvery {
                 userConfigRepository.setReadReceiptsStatus(any())
             }.returns(Either.Right(Unit))
         }

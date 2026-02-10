@@ -97,7 +97,7 @@ internal interface E2EIRepository {
     suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
-    fun discoveryUrl(): Either<E2EIFailure, String>
+    suspend fun discoveryUrl(): Either<E2EIFailure, String>
 }
 
 @Suppress("LongParameterList")
@@ -384,7 +384,7 @@ internal class E2EIRepositoryImpl(
             })
         })
 
-    override fun discoveryUrl() =
+    override suspend fun discoveryUrl() =
         userConfigRepository.getE2EISettings().fold({
             E2EIFailure.MissingTeamSettings.left()
         }, { settings ->

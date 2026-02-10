@@ -146,7 +146,7 @@ class RevocationListCheckerTest {
                 userConfigRepository.isMLSEnabled()
             }.returns(result.right())
 
-            every {
+            coEvery {
                 userConfigRepository.getE2EISettings()
             }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
         }
