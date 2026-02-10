@@ -25,16 +25,18 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.ConversationId
@@ -55,7 +57,7 @@ internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
  */
 @Mockable
 internal interface FetchMLSVerificationStatusUseCase {
-    suspend operator fun invoke(mlsContext: MlsCoreCryptoContext, groupId: GroupID)
+    suspend operator fun invoke(groupId: GroupID)
 }
 
 internal data class VerificationStatusData(
@@ -66,6 +68,7 @@ internal data class VerificationStatusData(
 
 @Suppress("LongParameterList")
 internal class FetchMLSVerificationStatusUseCaseImpl(
+    private val mlsClientProvider: MLSClientProvider,
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -76,19 +79,24 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
 
     private val logger = kaliumLogger.withTextTag("FetchMLSVerificationStatusUseCaseImpl")
 
-    override suspend fun invoke(mlsContext: MlsCoreCryptoContext, groupId: GroupID) {
-        wrapMLSRequest { mlsContext.isGroupVerified(groupId.value) }
+    override suspend fun invoke(groupId: GroupID) {
+        mlsClientProvider.getMLSClient()
+            .onFailure { logger.w("Could not fetch MLS client for verification refresh: $it") }
+            .onSuccess { mlsClient -> refreshVerificationStatus(mlsClient, groupId) }
+    }
+
+    private suspend fun refreshVerificationStatus(mlsClient: MLSClient, groupId: GroupID) {
+        wrapMLSRequest { mlsClient.isGroupVerified(groupId.value) }
             .map { it.toModel() }
             .flatMap { ccGroupStatus ->
                 if (ccGroupStatus == VerificationStatus.VERIFIED) {
-                    verifyUsersStatus(mlsContext, groupId)
+                    verifyUsersStatus(mlsClient, groupId)
                 } else {
                     conversationRepository.getConversationByMLSGroupId(groupId).map {
                         VerificationStatusData(
                             conversationId = it.id,
                             currentPersistedStatus = it.mlsVerificationStatus,
-                            newStatus =
-                                ccGroupStatus
+                            newStatus = ccGroupStatus
                         )
                     }
                 }
@@ -97,13 +105,13 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
             }
     }
 
-    private suspend fun verifyUsersStatus(mlsContext: MlsCoreCryptoContext, groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
+    private suspend fun verifyUsersStatus(mlsClient: MLSClient, groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
         conversationRepository.getGroupStatusMembersNamesAndHandles(groupId)
             .flatMap { epochChangesData ->
                 mlsConversationRepository.getMembersIdentities(
-                    mlsContext,
-                    epochChangesData.conversationId,
-                    epochChangesData.members.keys.toList()
+                    mlsClient = mlsClient,
+                    conversationId = epochChangesData.conversationId,
+                    userIds = epochChangesData.members.keys.toList()
                 )
                     .flatMap { ccIdentities ->
                         updateKnownUsersIfNeeded(epochChangesData, ccIdentities, groupId)

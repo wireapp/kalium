@@ -60,6 +60,20 @@ class MLSClientImpl(
         }
     }
 
+    override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
+        return coreCrypto.e2eiConversationState(groupId.toCrypto()).toCryptography()
+    }
+
+    override suspend fun getUserIdentities(
+        groupId: MLSGroupId,
+        users: List<CryptoQualifiedID>
+    ): Map<String, List<WireIdentity>> {
+        return coreCrypto.getUserIdentities(groupId.toCrypto(), users.map { it.value })
+            .mapValues { (_, identities) ->
+                identities.mapNotNull { identity -> identity.toCryptography() }
+            }
+    }
+
     override suspend fun <R> transaction(name: String, block: suspend (context: MlsCoreCryptoContext) -> R): R {
         return coreCrypto.transaction(name) { context ->
             block(mlsCoreCryptoContext(context))
