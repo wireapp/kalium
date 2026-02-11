@@ -31,6 +31,9 @@ import kotlinx.coroutines.sync.withLock
 internal class MutexProvider<K> {
     private val mutexMap = ConcurrentMutableMap<K, CountedMutex>()
 
+    // for testing purposes
+    fun doesLockCurrentlyExist(key: K): Boolean = mutexMap.containsKey(key)
+
     suspend fun <T> withLock(
         key: K,
         onWaitingToUnlock: () -> Unit = {},
@@ -39,7 +42,9 @@ internal class MutexProvider<K> {
         increaseCountAndGetMutex(key).let { (_, mutex) ->
             if (mutex.isLocked) onWaitingToUnlock()
             mutex.withLock {
-                action().also {
+                try {
+                    action()
+                } finally {
                     decreaseCountAndRemoveMutexIfNeeded(key)
                 }
             }

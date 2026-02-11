@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class MutexProviderTest {
 
@@ -49,19 +50,34 @@ class MutexProviderTest {
     @Test
     fun givenTwoDifferentKeys_whenWithLockIsCalled_thenBothExecutionsOccurIndependently() = runTest {
         val mutexProvider = MutexProvider<String>()
-        var job2Executed = false
+        var secondActionExecuted = false
         var onWaitingToUnlockCalled = false
         launch {
             mutexProvider.withLock("key1") {
                 delay(1000) // second job is started in the middle of this delay
-                assertEquals(true, job2Executed) // second job action should already be executed independently
+                assertEquals(true, secondActionExecuted) // second job action should already be executed independently
                 assertEquals(false, onWaitingToUnlockCalled) // it should not be called as second job was not waiting to unlock
             }
         }
         launch {
             mutexProvider.withLock("key2", { onWaitingToUnlockCalled = true }) {
-                job2Executed = true
+                secondActionExecuted = true
             }
         }
+    }
+
+    @Test
+    fun givenActionThrowsException_whenWithLockIsCalled_thenFinallyDecreaseMutex() = runTest {
+        val mutexProvider = MutexProvider<String>()
+        val exception = IllegalStateException("Test exception")
+
+        assertFailsWith<IllegalStateException> {
+            mutexProvider.withLock("key1") {
+                throw exception
+            }
+        }
+
+        assertEquals(false, mutexProvider.doesLockCurrentlyExist("key1")) // lock should be removed after exception is thrown
+
     }
 }
