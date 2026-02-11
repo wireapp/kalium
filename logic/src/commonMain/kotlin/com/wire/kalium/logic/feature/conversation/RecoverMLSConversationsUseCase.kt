@@ -93,7 +93,8 @@ internal class RecoverMLSConversationsUseCaseImpl(
                                 "group not found in local MLS state, will retry join on next sync"
                         )
                         conversationRepository.updateConversationGroupState(
-                            protocol.groupId, GroupState.PENDING_AFTER_RESET
+                            protocol.groupId,
+                            GroupState.PENDING_AFTER_RESET
                         )
                         Either.Right(Unit)
                     } else {
