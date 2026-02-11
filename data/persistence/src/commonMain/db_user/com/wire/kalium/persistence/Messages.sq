@@ -529,29 +529,25 @@ WHERE conversation_id = :from;
 selectConversationMessagesFromSearch:
 SELECT MessageDetailsView.*
 FROM MessageTextContent AS TextContent
-JOIN Message
-ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 JOIN MessageDetailsView
-ON MessageDetailsView.id = Message.id AND MessageDetailsView.conversationId = Message.conversation_id
+ON MessageDetailsView.id = TextContent.message_id AND MessageDetailsView.conversationId = TextContent.conversation_id
 WHERE TextContent.text_body LIKE ('%' || :searchQuery || '%')
-AND Message.conversation_id = :conversationId
-AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
-AND Message.expire_after_millis IS NULL
-ORDER BY Message.creation_date DESC
+AND TextContent.conversation_id = :conversationId
+AND (MessageDetailsView.contentType = 'TEXT' OR MessageDetailsView.contentType = 'MULTIPART')
+AND MessageDetailsView.expireAfterMillis IS NULL
+ORDER BY MessageDetailsView.date DESC
 LIMIT :limit
 OFFSET :offset;
 
 selectAllMessagesFromSearch:
 SELECT MessageDetailsView.*
 FROM MessageTextContent AS TextContent
-JOIN Message
-ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 JOIN MessageDetailsView
-ON MessageDetailsView.id = Message.id AND MessageDetailsView.conversationId = Message.conversation_id
+ON MessageDetailsView.id = TextContent.message_id AND MessageDetailsView.conversationId = TextContent.conversation_id
 WHERE TextContent.text_body LIKE ('%' || :searchQuery || '%')
-AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
-AND Message.expire_after_millis IS NULL
-ORDER BY Message.creation_date DESC
+AND (MessageDetailsView.contentType = 'TEXT' OR MessageDetailsView.contentType = 'MULTIPART')
+AND MessageDetailsView.expireAfterMillis IS NULL
+ORDER BY MessageDetailsView.date DESC
 LIMIT :limit
 OFFSET :offset;
 
