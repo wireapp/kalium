@@ -352,9 +352,14 @@ internal class EventDataSource(
         )
     }
 
+    @Suppress("ThrowsCount")
     private suspend fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<ConsumableNotificationResponse>) {
         when (val cause = webSocketEvent.cause) {
-            null -> logger.i("Websocket closed normally")
+            null -> {
+                logger.i("Websocket closed normally, will retry to keep connection alive")
+                throw KaliumSyncException("Websocket closed normally", CoreFailure.Unknown(null))
+            }
+
             is IOException ->
                 throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
 

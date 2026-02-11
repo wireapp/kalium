@@ -522,6 +522,35 @@ class EventRepositoryTest {
     }
 
     @Test
+    fun givenWholeBatchIsEmittedAgain_whenObservingEvents_thenFilterItOutAndDoNotEmitEmptyList() = runTest {
+        val entities = List(3) {
+            EventEntity(
+                id = it.toLong(),
+                eventId = "event-$it",
+                isProcessed = false,
+                payload = """[{"type":"really-unknown","some":"data"}]""",
+                isLive = true,
+                transient = false
+            )
+        }
+        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+        val (_, repository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withUnprocessedEvents(channel.consumeAsFlow())
+            .arrange()
+
+        repository.observeEvents().test {
+            channel.send(entities) // send the whole batch
+            assertEquals(entities.size, awaitItem().size) // first emission should emit all events
+
+            channel.send(entities) // send the same batch again
+            expectNoEvents() // no new events should be emitted, not even an empty list
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenUnknownEventWithoutType_whenObservingEvents_thenEmitsUnknownEnvelope() = runTest {
         val eventId = "unknown-no-type"
         val entity = EventEntity(
@@ -586,32 +615,29 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenWholeBatchIsEmittedAgain_whenObservingEvents_thenFilterItOutAndDoNotEmitEmptyList() = runTest {
-        val entities = List(3) {
-            EventEntity(
-                id = it.toLong(),
-                eventId = "event-$it",
-                isProcessed = false,
-                payload = """[{"type":"really-unknown","some":"data"}]""",
-                isLive = true,
-                transient = false
-            )
-        }
-        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+    fun givenWebSocketClosedWithNullCause_whenHandlingClosure_thenShouldThrowKaliumSyncException() = runTest {
         val (_, repository) = Arrangement()
-            .withLastStoredEventId(null)
-            .withUnprocessedEvents(channel.consumeAsFlow())
+            .withClientHasConsumableNotifications(true)
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(WebSocketEvent.Close(cause = null)),
+                    headers = emptyMap(),
+                    httpCode = 200
+                )
+            )
             .arrange()
 
-        repository.observeEvents().test {
-            channel.send(entities) // send the whole batch
-            assertEquals(entities.size, awaitItem().size) // first emission should emit all events
+        val eitherFlow = repository.liveEvents()
+        assertTrue(eitherFlow is Either.Right)
 
-            channel.send(entities) // send the same batch again
-            expectNoEvents() // no new events should be emitted, not even an empty list
+        val flow = eitherFlow.value
 
-            cancelAndIgnoreRemainingEvents()
+        val thrown = assertFailsWith<KaliumSyncException> {
+            flow.collect {}
         }
+
+        assertIs<CoreFailure.Unknown>(thrown.coreFailureCause)
     }
 
     private companion object {
