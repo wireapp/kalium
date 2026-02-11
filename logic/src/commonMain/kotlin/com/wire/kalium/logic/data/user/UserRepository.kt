@@ -34,6 +34,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -243,10 +244,26 @@ internal class UserDataSource internal constructor(
             }
 
     private suspend fun fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, ListUsersDTO> =
-        if (qualifiedUserIdList.isEmpty()) {
+        run {
+            val validQualifiedUserIdList = qualifiedUserIdList.filter { userId ->
+                userId.value.isNotBlank() && userId.domain.isValidQualifiedIdDomain()
+            }.toSet()
+            val invalidQualifiedUserIdList = qualifiedUserIdList - validQualifiedUserIdList
+
+            if (invalidQualifiedUserIdList.isNotEmpty()) {
+                val invalidCount = invalidQualifiedUserIdList.size
+                val sample = invalidQualifiedUserIdList
+                    .take(3)
+                    .joinToString { "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}" }
+                kaliumLogger.e("Ignoring $invalidCount malformed qualified user ids before list-users request. Sample=$sample")
+            }
+
+            validQualifiedUserIdList
+        }.let { validQualifiedUserIdList ->
+            if (validQualifiedUserIdList.isEmpty()) {
             Either.Right(ListUsersDTO(emptyList(), emptyList()))
         } else {
-            qualifiedUserIdList
+                validQualifiedUserIdList
                 .chunked(BATCH_SIZE)
                 .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, usersDTO ->
                     wrapApiRequest {
@@ -264,7 +281,7 @@ internal class UserDataSource internal constructor(
                 }
                 .flatMapLeft { error ->
                     if (error is NetworkFailure.FederatedBackendFailure.FederationNotEnabled) {
-                        val domains = qualifiedUserIdList
+                        val domains = validQualifiedUserIdList
                             .filterNot { it.domain == selfUserId.domain }
                             .map { it.domain.obfuscateDomain() }
                             .toSet()
@@ -273,7 +290,7 @@ internal class UserDataSource internal constructor(
                         wrapApiRequest {
                             userDetailsApi.getMultipleUsers(
                                 ListUserRequest.qualifiedIds(
-                                    qualifiedUserIdList.filter { it.domain == selfUserId.domain }
+                                    validQualifiedUserIdList.filter { it.domain == selfUserId.domain }
                                     .map { userId -> userId.toApi() }
                                 )
                             )
@@ -291,6 +308,7 @@ internal class UserDataSource internal constructor(
                         .flatMap { persistUsers(listUserProfileDTO.usersFound, it) }
                         .map { listUserProfileDTO }
                 }
+            }
         }
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean> =
@@ -647,5 +665,15 @@ internal class UserDataSource internal constructor(
     companion object {
 
         internal const val BATCH_SIZE = 500
+    }
+}
+
+private fun String.isValidQualifiedIdDomain(): Boolean {
+    val labels = split('.')
+    if (labels.isEmpty()) return false
+    return labels.all { label ->
+        label.isNotEmpty() &&
+            label.any(Char::isLetterOrDigit) &&
+            label.all { it.isLetterOrDigit() || it == '-' }
     }
 }

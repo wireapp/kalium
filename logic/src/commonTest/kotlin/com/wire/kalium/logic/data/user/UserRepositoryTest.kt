@@ -293,6 +293,52 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun givenMalformedQualifiedIdsInDb_whenFetchingAllOtherUsers_thenShouldFilterThemOutBeforeApiCall() = runTest {
+        // Given
+        val usersInDb = listOf(
+            UserIDEntity(value = "id1", domain = "domain1.com"),
+            UserIDEntity(value = "id2", domain = ""),
+            UserIDEntity(value = "id3", domain = "."),
+        )
+        val expectedRequestIds = listOf(UserId("id1", "domain1.com").toApi())
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetMultipleUsers()
+            .arrange {
+                withAllOtherUsersIdSuccess(usersInDb)
+            }
+
+        // When
+        userRepository.fetchAllOtherUsers().shouldSucceed()
+
+        // Then
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenOnlyMalformedQualifiedIdsInDb_whenFetchingAllOtherUsers_thenShouldSkipApiCallAndSucceed() = runTest {
+        // Given
+        val usersInDb = listOf(
+            UserIDEntity(value = "id1", domain = ""),
+            UserIDEntity(value = "id2", domain = "."),
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetMultipleUsers()
+            .arrange {
+                withAllOtherUsersIdSuccess(usersInDb)
+            }
+
+        // When
+        userRepository.fetchAllOtherUsers().shouldSucceed()
+
+        // Then
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenThereAreUsersWithoutMetadata_whenSyncingUsers_thenShouldUpdateThem() = runTest {
         // given
         val (arrangement, userRepository) = Arrangement()
