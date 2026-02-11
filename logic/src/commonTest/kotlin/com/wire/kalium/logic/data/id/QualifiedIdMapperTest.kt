@@ -187,6 +187,7 @@ class QualifiedIdMapperTest {
     fun givenAnEmptyString_whenMappingToQualifiedId_thenReturnsAnEmptyQualifiedID() = runTest {
         // Given
         val conversationId = ""
+        val fallbackDomain = selfUserId.domain
         val qualifiedIdMapper = createMapper()
 
         // When
@@ -194,7 +195,7 @@ class QualifiedIdMapperTest {
 
         // Then
         assertEquals(
-            QualifiedID(value = "", domain = ""),
+            QualifiedID(value = "", domain = fallbackDomain),
             result
         )
     }
@@ -203,6 +204,7 @@ class QualifiedIdMapperTest {
     fun givenAStringWithOnlyAtSign_whenMappingToQualifiedId_thenReturnsAnEmptyQualifiedID() = runTest {
         // Given
         val conversationId = "@"
+        val fallbackDomain = selfUserId.domain
         val qualifiedIdMapper = createMapper()
 
         // When
@@ -210,7 +212,18 @@ class QualifiedIdMapperTest {
 
         // Then
         assertEquals(
-            QualifiedID(value = "", domain = ""),
+            QualifiedID(value = "", domain = fallbackDomain),
+            result
+        )
+    }
+
+    @Test
+    fun givenBlankSelfDomain_whenMappingToQualifiedId_thenReturnsEmptyDomainAndDoesNotCrash() = runTest {
+        val mapper = QualifiedIdMapper(selfUserId = QualifiedID("self-id", ""))
+        val result = mapper.fromStringToQualifiedID("conversationId")
+
+        assertEquals(
+            QualifiedID(value = "conversationId", domain = ""),
             result
         )
     }
