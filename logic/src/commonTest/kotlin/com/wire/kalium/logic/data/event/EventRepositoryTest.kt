@@ -585,6 +585,35 @@ class EventRepositoryTest {
         }
     }
 
+    @Test
+    fun givenWholeBatchIsEmittedAgain_whenObservingEvents_thenFilterItOutAndDoNotEmitEmptyList() = runTest {
+        val entities = List(3) {
+            EventEntity(
+                id = it.toLong(),
+                eventId = "event-$it",
+                isProcessed = false,
+                payload = """[{"type":"really-unknown","some":"data"}]""",
+                isLive = true,
+                transient = false
+            )
+        }
+        val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
+        val (_, repository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withUnprocessedEvents(channel.consumeAsFlow())
+            .arrange()
+
+        repository.observeEvents().test {
+            channel.send(entities) // send the whole batch
+            assertEquals(entities.size, awaitItem().size) // first emission should emit all events
+
+            channel.send(entities) // send the same batch again
+            expectNoEvents() // no new events should be emitted, not even an empty list
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private companion object {
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
         val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
