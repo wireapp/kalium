@@ -2908,6 +2908,25 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertFalse(hasUnread)
     }
 
+    @Test
+    fun givenSomePreviousCallIsWronglyStillOngoingButLastOneIsAlreadyClosed_whenFetchingConversationDetails_thenReturnStateOfLastCall() =
+        runTest(dispatcher) {
+            val conversationEntity1 = conversationEntity1.copy(
+                id = ConversationIDEntity("conversation1", "domain"),
+                type = ConversationEntity.Type.GROUP,
+                mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+                lastModifiedDate = Instant.fromEpochMilliseconds(1)
+            )
+            conversationDAO.insertConversation(conversationEntity1)
+            userDAO.upsertUser(user1)
+            callDAO.insertCall(callEntity1.copy(id = "1", status = CallEntity.Status.STILL_ONGOING)) // older call wrongly still ongoing
+            callDAO.insertCall(callEntity1.copy(id = "2", status = CallEntity.Status.CLOSED)) // last call already closed
+            conversationDAO.getConversationDetailsById(conversationEntity1.id).let {
+                assertNotNull(it)
+                assertEquals(null, it.callStatus) // no call status because the last call is already closed
+            }
+        }
+
 //     @Test
 //     fun givenMutedInvalidations_whenInsertingManyConversations_thenFlowDoesNotEmitUntilFlushAndThenEmitsOnce() =
 //         runTest(dispatcher) {
@@ -3224,6 +3243,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val proposalTimer3 = ProposalTimerEntity(
             (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
             Instant.DISTANT_FUTURE
+        )
+
+        val callEntity1 = CallEntity(
+            conversationId = conversationEntity1.id,
+            id = "call_id",
+            status = CallEntity.Status.STILL_ONGOING,
+            callerId = "callerId",
+            conversationType = ConversationEntity.Type.GROUP,
+            type = CallEntity.Type.CONFERENCE
         )
     }
 }
