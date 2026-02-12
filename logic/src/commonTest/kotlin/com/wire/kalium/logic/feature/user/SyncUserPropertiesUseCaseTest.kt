@@ -21,10 +21,10 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -39,7 +39,7 @@ class SyncUserPropertiesUseCaseTest {
 
         useCase()
 
-        coVerify { arrangement.userPropertyRepository.syncPropertiesStatuses() }.wasInvoked(exactly = once)
+        verifySuspend { arrangement.userPropertyRepository.syncPropertiesStatuses() }
     }
 
     @Test
@@ -51,17 +51,17 @@ class SyncUserPropertiesUseCaseTest {
 
         val result = useCase()
 
-        coVerify { arrangement.userPropertyRepository.syncPropertiesStatuses() }.wasInvoked(exactly = once)
+        verifySuspend { arrangement.userPropertyRepository.syncPropertiesStatuses() }
         assertTrue(result is Either.Left)
     }
 
     private class Arrangement {
-        val userPropertyRepository = mock(UserPropertyRepository::class)
+        val userPropertyRepository: UserPropertyRepository = mock<UserPropertyRepository>()
 
         private val useCase = SyncUserPropertiesUseCaseImpl(userPropertyRepository)
 
-        suspend fun withSyncPropertiesStatuses(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { userPropertyRepository.syncPropertiesStatuses() }.returns(result)
+        fun withSyncPropertiesStatuses(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend { userPropertyRepository.syncPropertiesStatuses() }.returns(result)
         }
 
         fun arrange() = this to useCase

@@ -74,6 +74,20 @@ class PersistScreenshotCensoringConfigUseCaseTest {
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Failure)
     }
 
+    @Test
+    fun givenAFalseValueAndDeleteFails_shouldReturnACoreFailureResult() = runTest {
+        val (arrangement, persistScreenshotCensoringConfig) = Arrangement()
+            .withFailureToDeleteInRepo()
+            .arrange()
+        val actual = persistScreenshotCensoringConfig(false)
+
+        coVerify {
+            arrangement.userPropertyRepository.deleteScreenshotCensoringProperty()
+        }.wasInvoked(once)
+
+        assertTrue(actual is PersistScreenshotCensoringConfigResult.Failure)
+    }
+
     private class Arrangement {
 
         val userPropertyRepository = mock(UserPropertyRepository::class)
@@ -99,6 +113,14 @@ class PersistScreenshotCensoringConfigUseCaseTest {
         suspend fun withFailureToCallRepo() = apply {
             coEvery {
                 userPropertyRepository.setScreenshotCensoringEnabled()
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+
+            return this
+        }
+
+        suspend fun withFailureToDeleteInRepo() = apply {
+            coEvery {
+                userPropertyRepository.deleteScreenshotCensoringProperty()
             }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
 
             return this
