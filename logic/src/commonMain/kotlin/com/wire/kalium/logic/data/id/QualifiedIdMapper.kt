@@ -31,11 +31,13 @@ internal class QualifiedIdMapperImpl internal constructor(
     private val selfUserId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
+        require(id.isNotBlank()) { "Qualified ID cannot be blank" }
+
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
         val count = id.count { it == VALUE_DOMAIN_SEPARATOR }
         return when {
             components.isEmpty() -> {
-                QualifiedID(value = "", domain = selfUserDomain())
+                throw IllegalArgumentException("Qualified ID value cannot be empty")
             }
 
             count > 1 -> {
