@@ -170,7 +170,7 @@ interface MLSClient {
      *
      * Read-only operation that does not require an explicit transaction context.
      */
-    suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState
+    suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState
 
     /**
      * Get user identities in a conversation.

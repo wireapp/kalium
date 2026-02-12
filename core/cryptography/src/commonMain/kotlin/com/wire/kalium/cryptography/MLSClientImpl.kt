@@ -60,7 +60,7 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
+    override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState {
         return coreCrypto.e2eiConversationState(groupId.toCrypto()).toCryptography()
     }
 
@@ -266,7 +266,7 @@ class MLSClientImpl(
             return context.e2eiIsEnabled(defaultCipherSuite)
         }
 
-        override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
+        override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState {
             return context.e2eiConversationState(groupId.toCrypto()).toCryptography()
         }
 

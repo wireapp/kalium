@@ -252,7 +252,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         suspend fun withIsGroupVerified(result: E2EIConversationState) {
             coEvery {
-                mlsClient.isGroupVerified(any())
+                mlsClient.getGroupState(any())
             }.returns(result)
         }
 

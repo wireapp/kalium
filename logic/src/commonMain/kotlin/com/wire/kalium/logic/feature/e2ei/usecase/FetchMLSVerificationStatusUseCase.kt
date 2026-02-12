@@ -86,7 +86,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
     }
 
     private suspend fun refreshVerificationStatus(mlsClient: MLSClient, groupId: GroupID) {
-        wrapMLSRequest { mlsClient.isGroupVerified(groupId.value) }
+        wrapMLSRequest { mlsClient.getGroupState(groupId.value) }
             .map { it.toModel() }
             .flatMap { ccGroupStatus ->
                 if (ccGroupStatus == VerificationStatus.VERIFIED) {

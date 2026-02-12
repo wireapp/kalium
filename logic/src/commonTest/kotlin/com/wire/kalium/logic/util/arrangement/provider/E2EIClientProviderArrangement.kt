@@ -199,8 +199,8 @@ class DummyMLSClient(
         TODO("Not yet implemented")
     }
 
-    override suspend fun isGroupVerified(groupId: String): E2EIConversationState {
-        return context.isGroupVerified(groupId)
+    override suspend fun getGroupState(groupId: String): E2EIConversationState {
+        return context.getGroupState(groupId)
     }
 
     override suspend fun getUserIdentities(
