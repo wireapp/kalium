@@ -19,31 +19,45 @@
 package com.wire.kalium.logic.data.properties
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 
 @Mockable
 internal interface UserPropertyRepository {
     suspend fun getReadReceiptsStatus(): Boolean
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
+    suspend fun syncPropertiesStatuses(): Either<CoreFailure, Unit>
+    suspend fun syncReadReceiptsStatus(): Either<CoreFailure, Unit>
+    suspend fun syncTypingIndicatorStatus(): Either<CoreFailure, Unit>
+    suspend fun syncScreenshotCensoringStatus(): Either<CoreFailure, Unit>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
     suspend fun getTypingIndicatorStatus(): Boolean
     suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
+    suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit>
+    suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit>
     suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>>
 }
 
@@ -58,6 +72,58 @@ internal class UserPropertyDataSource(
             ?.fold({ false }, { it }) ?: false
 
     override suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
+
+    override suspend fun syncPropertiesStatuses(): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            propertiesApi.getPropertiesValues()
+        }.flatMap { properties ->
+            val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE) == 1
+            val typingIndicatorEnabled = properties.findIntValue(PropertyKey.WIRE_TYPING_INDICATOR_MODE)?.let { it != 0 } ?: true
+            val screenshotCensoringEnabled = properties.findIntValue(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE) == 1
+
+            userConfigRepository.setReadReceiptsStatus(readReceiptsEnabled)
+                .flatMap { userConfigRepository.setTypingIndicatorStatus(typingIndicatorEnabled) }
+                .flatMap { userConfigRepository.setScreenshotCensoringConfig(screenshotCensoringEnabled) }
+        }
+
+    override suspend fun syncReadReceiptsStatus(): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            propertiesApi.getProperty(PropertyKey.WIRE_RECEIPT_MODE)
+        }.flatMapLeft { failure ->
+            if (failure.isPropertyNotFound()) {
+                Either.Right(0)
+            } else {
+                Either.Left(failure)
+            }
+        }.flatMap { value ->
+            userConfigRepository.setReadReceiptsStatus(value == 1)
+        }
+
+    override suspend fun syncTypingIndicatorStatus(): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            propertiesApi.getProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE)
+        }.flatMapLeft { failure ->
+            if (failure.isPropertyNotFound()) {
+                Either.Right(1)
+            } else {
+                Either.Left(failure)
+            }
+        }.flatMap { value ->
+            userConfigRepository.setTypingIndicatorStatus(value != 0)
+        }
+
+    override suspend fun syncScreenshotCensoringStatus(): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            propertiesApi.getProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
+        }.flatMapLeft { failure ->
+            if (failure.isPropertyNotFound()) {
+                Either.Right(0)
+            } else {
+                Either.Left(failure)
+            }
+        }.flatMap { value ->
+            userConfigRepository.setScreenshotCensoringConfig(value == 1)
+        }
 
     override suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
         propertiesApi.setProperty(PropertyKey.WIRE_RECEIPT_MODE, 1)
@@ -91,8 +157,36 @@ internal class UserPropertyDataSource(
         userConfigRepository.setTypingIndicatorStatus(false)
     }
 
+    override suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.setProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE, 1)
+    }.flatMap {
+        userConfigRepository.setScreenshotCensoringConfig(true)
+    }
+
+    override suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.deleteProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
+    }.flatMap {
+        userConfigRepository.setScreenshotCensoringConfig(false)
+    }
+
     override suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>> = wrapApiRequest {
         propertiesApi.getLabels()
     }
         .map { it.labels.map { label -> label.toFolder(selfUserId.domain) } }
+
+    private fun CoreFailure.isPropertyNotFound(): Boolean =
+        this is NetworkFailure.ServerMiscommunication &&
+            kaliumException is KaliumException.InvalidRequestError &&
+            (kaliumException as KaliumException.InvalidRequestError).isNotFound()
+
+    private fun JsonObject.findIntValue(propertyKey: PropertyKey): Int? = this[propertyKey.key].toIntOrNull()
+
+    private fun JsonElement?.toIntOrNull(): Int? {
+        val primitive = this as? JsonPrimitive ?: return null
+        return if (primitive.isString) {
+            primitive.content.toIntOrNull()
+        } else {
+            primitive.intOrNull
+        }
+    }
 }

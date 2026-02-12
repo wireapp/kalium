@@ -376,6 +376,8 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
@@ -1173,6 +1175,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCaseImpl(userRepository)
+    private val syncUserProperties: SyncUserPropertiesUseCase get() = SyncUserPropertiesUseCaseImpl(userPropertyRepository)
     private val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
 
     private val syncSelfTeamUseCase: SyncSelfTeamUseCase
@@ -1283,6 +1286,7 @@ public class UserSessionScope internal constructor(
             isClientAsyncNotificationsCapableProvider,
             eventRepository,
             syncSelfUser,
+            syncUserProperties,
             syncFeatureConfigsUseCase,
             updateSupportedProtocols,
             syncConversations,
@@ -2508,7 +2512,7 @@ public class UserSessionScope internal constructor(
         get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository, userId)
 
     public val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
-        get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
+        get() = PersistScreenshotCensoringConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     public val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)

@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemo
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsResult
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -101,10 +102,32 @@ class SlowSyncWorkerTest {
     }
 
     @Test
+    fun givenSyncUserPropertiesFails_whenPerformingSlowSync_thenContinueWithNextSteps() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withSyncUserPropertiesFailure()
+            .withSyncFeatureConfigsSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
+            .arrange()
+
+        worker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        assertUseCases(arrangement, SlowSyncStep.values().toHashSet())
+    }
+
+    @Test
     fun givenSyncFeatureConfigsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.FEATURE_FLAGS
         )
         val (arrangement, worker) = Arrangement()
@@ -128,6 +151,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS
         )
@@ -153,6 +177,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS
@@ -180,6 +205,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -209,6 +235,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -240,6 +267,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -273,6 +301,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -308,6 +337,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -458,6 +488,10 @@ class SlowSyncWorkerTest {
         }.wasNotInvoked()
 
         coVerify {
+            arrangement.syncUserProperties.invoke()
+        }.wasNotInvoked()
+
+        coVerify {
             arrangement.syncFeatureConfigs.invoke()
         }.wasNotInvoked()
     }
@@ -466,6 +500,10 @@ class SlowSyncWorkerTest {
         coVerify {
             arrangement.syncSelfUser.invoke()
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
+
+        coVerify {
+            arrangement.syncUserProperties.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.USER_PROPERTIES)) once else 0.times)
 
         coVerify {
             arrangement.syncFeatureConfigs.invoke()
@@ -503,6 +541,7 @@ class SlowSyncWorkerTest {
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
+        val syncUserProperties: SyncUserPropertiesUseCase = mock(SyncUserPropertiesUseCase::class)
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
         val syncConnections: SyncConnectionsUseCase = mock(SyncConnectionsUseCase::class)
@@ -519,12 +558,14 @@ class SlowSyncWorkerTest {
                 withLastSavedEventIdReturning(Either.Right("LastSavedEventId"))
                 withIsClientAsyncNotificationsCapableReturning(false)
                 withTransactionReturning(Either.Right(Unit))
+                withSyncUserPropertiesSuccess()
             }
         }
 
         fun arrange() = this to SlowSyncWorkerImpl(
             eventRepository = eventRepository,
             syncSelfUser = syncSelfUser,
+            syncUserProperties = syncUserProperties,
             syncFeatureConfigs = syncFeatureConfigs,
             syncConversations = syncConversations,
             syncConnections = syncConnections,
@@ -547,6 +588,18 @@ class SlowSyncWorkerTest {
         suspend fun withSyncSelfUserSuccess() = apply {
             coEvery {
                 syncSelfUser.invoke()
+            }.returns(success)
+        }
+
+        suspend fun withSyncUserPropertiesFailure() = apply {
+            coEvery {
+                syncUserProperties.invoke()
+            }.returns(failure)
+        }
+
+        suspend fun withSyncUserPropertiesSuccess() = apply {
+            coEvery {
+                syncUserProperties.invoke()
             }.returns(success)
         }
 
