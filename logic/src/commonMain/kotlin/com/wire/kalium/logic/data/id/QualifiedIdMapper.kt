@@ -35,7 +35,7 @@ internal class QualifiedIdMapperImpl internal constructor(
         val count = id.count { it == VALUE_DOMAIN_SEPARATOR }
         return when {
             components.isEmpty() -> {
-                QualifiedID(value = "", domain = "")
+                QualifiedID(value = "", domain = selfUserDomain())
             }
 
             count > 1 -> {
