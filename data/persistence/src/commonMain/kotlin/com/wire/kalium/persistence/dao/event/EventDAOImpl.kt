@@ -111,6 +111,10 @@ class EventDAOImpl(
         }
     }
 
+    override suspend fun hasUnprocessedPendingEvents(): Boolean = withContext(readDispatcher.value) {
+        eventsQueries.hasUnprocessedPendingEvents().executeAsOne()
+    }
+
     override suspend fun setAllUnprocessedEventsAsPending() {
         withContext(writeDispatcher.value) {
             eventsQueries.setAllUnprocessedEventsAsPending()

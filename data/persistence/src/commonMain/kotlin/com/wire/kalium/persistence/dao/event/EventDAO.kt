@@ -33,4 +33,5 @@ interface EventDAO {
     suspend fun setAllUnprocessedEventsAsPending()
     suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>)
     suspend fun markEventsAsProcessed(eventIds: List<String>)
+    suspend fun hasUnprocessedPendingEvents(): Boolean
 }

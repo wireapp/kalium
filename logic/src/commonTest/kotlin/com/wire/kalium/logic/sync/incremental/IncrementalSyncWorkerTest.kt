@@ -40,6 +40,7 @@ import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -106,6 +107,61 @@ class IncrementalSyncWorkerTest {
                 assertEquals(EventSource.PENDING, awaitItem())
                 assertEquals(EventSource.LIVE, awaitItem())
                 awaitComplete()
+            }
+        }
+
+    @Test
+    fun givenLiveAlreadyReached_whenGathererEmitsUpToDateAgain_thenPendingCheckShouldNotRunAgain() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, worker) = Arrangement()
+                .withEventGathererReturning(
+                    flowOf(
+                        EventStreamData.IsUpToDate,
+                        EventStreamData.IsUpToDate
+                    )
+                )
+                .withHasUnprocessedPendingEventsReturning(Either.Right(false))
+                .arrange()
+
+            worker.processEventsFlow().test {
+                assertEquals(EventSource.PENDING, awaitItem())
+                assertEquals(EventSource.LIVE, awaitItem())
+                awaitComplete()
+            }
+
+            coVerify {
+                arrangement.eventRepository.hasUnprocessedPendingEvents()
+            }.wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenTemporaryEmptyQueueBetweenPages_whenPerformingIncrementalSync_thenWorkerShouldNotEmitLiveTooEarly() =
+        runTest(TestKaliumDispatcher.default) {
+            // Given
+            val firstEvent = TestEvent.memberJoin().wrapInEnvelope()
+            val secondEvent = TestEvent.memberJoin().wrapInEnvelope()
+            val eventFlow = MutableSharedFlow<EventStreamData>(extraBufferCapacity = 8)
+
+            val (arrangement, worker) = Arrangement()
+                .withEventGathererReturning(eventFlow)
+                .withHasUnprocessedPendingEventsReturning(Either.Right(true))
+                .arrange()
+
+            // When
+            worker.processEventsFlow().test {
+                // Then
+                assertEquals(EventSource.PENDING, awaitItem())
+
+                eventFlow.emit(EventStreamData.NewEvents(listOf(firstEvent)))
+                eventFlow.emit(EventStreamData.IsUpToDate)
+                eventFlow.emit(EventStreamData.NewEvents(listOf(secondEvent)))
+                expectNoEvents()
+
+                arrangement.withHasUnprocessedPendingEventsReturning(Either.Right(false))
+                eventFlow.emit(EventStreamData.IsUpToDate)
+                assertEquals(EventSource.LIVE, awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
             }
         }
 
@@ -189,6 +245,7 @@ class IncrementalSyncWorkerTest {
             runBlocking {
                 withEventProcessorSucceeding()
                 withSetEventsAsProcessedReturning(Either.Right(Unit))
+                withHasUnprocessedPendingEventsReturning(Either.Right(false))
             }
         }
 
@@ -210,6 +267,10 @@ class IncrementalSyncWorkerTest {
 
         suspend fun withSetEventsAsProcessedReturning(result: Either<StorageFailure, Unit>) = apply {
             coEvery { eventRepository.setEventsAsProcessed(any()) }.returns(result)
+        }
+
+        suspend fun withHasUnprocessedPendingEventsReturning(result: Either<StorageFailure, Boolean>) = apply {
+            coEvery { eventRepository.hasUnprocessedPendingEvents() }.returns(result)
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

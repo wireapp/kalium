@@ -205,4 +205,33 @@ class EventDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenNoEvents_whenCheckingHasUnprocessedPendingEvents_thenReturnsFalse() = runTest {
+        assertFalse(dao.hasUnprocessedPendingEvents())
+    }
+
+    @Test
+    fun givenOnlyUnprocessedLiveEvents_whenCheckingHasUnprocessedPendingEvents_thenReturnsFalse() = runTest {
+        dao.insertEvents(
+            listOf(
+                NewEventEntity(eventId = "live-1", payload = "{}", isLive = true, transient = false),
+                NewEventEntity(eventId = "live-2", payload = "{}", isLive = true, transient = true)
+            )
+        )
+
+        assertFalse(dao.hasUnprocessedPendingEvents())
+    }
+
+    @Test
+    fun givenAtLeastOneUnprocessedPendingEvent_whenCheckingHasUnprocessedPendingEvents_thenReturnsTrue() = runTest {
+        dao.insertEvents(
+            listOf(
+                NewEventEntity(eventId = "live-1", payload = "{}", isLive = true, transient = false),
+                NewEventEntity(eventId = "pending-1", payload = "{}", isLive = false, transient = false)
+            )
+        )
+
+        assertTrue(dao.hasUnprocessedPendingEvents())
+    }
+
 }
