@@ -30,11 +30,12 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.mapRight
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
+import com.wire.kalium.logic.data.asset.isInProgress
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -71,9 +72,11 @@ import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
-import kotlin.collections.map
 
 @Suppress("TooManyFunctions")
 @Mockable
@@ -193,6 +196,7 @@ internal interface MessageRepository {
         editInstant: Instant
     ): Either<CoreFailure, Unit>
 
+    @Deprecated("This function should not be used", level = DeprecationLevel.ERROR)
     suspend fun resetAssetTransferStatus()
     suspend fun markMessagesAsDecryptionResolved(
         conversationId: ConversationId,
@@ -303,6 +307,7 @@ internal class MessageDataSource internal constructor(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
+    private val runtimeTransportStatusTracker: RuntimeTransportStatusTracker = NoOpRuntimeTransportStatusTracker,
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
@@ -312,7 +317,11 @@ internal class MessageDataSource internal constructor(
     private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
 ) : MessageRepository {
 
-    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
+    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
+        messageDAO = messageDAO,
+        messageMapper = messageMapper,
+        runtimeMessageStatusResolver = ::resolveRuntimeMessageStatus
+    )
 
     override suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -325,13 +334,19 @@ internal class MessageDataSource internal constructor(
             limit,
             offset,
             visibility.map { it.toEntityVisibility() }
-        ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
+        ).mapWithRuntimeUpdates(runtimeTransportStatusTracker.updates) { messageList ->
+            messageList.map(messageMapper::fromEntityToMessage).map(::resolveRuntimeMessageStatus)
+        }
 
     override suspend fun getLastMessagesForConversationIds(
         conversationIdList: List<ConversationId>
     ): Either<StorageFailure, Map<ConversationId, Message>> = wrapStorageRequest {
         messageDAO.getLastMessagesByConversations(conversationIdList.map { it.toDao() })
-    }.map { it.map { it.key.toModel() to messageMapper.fromEntityToMessage(it.value) }.toMap() }
+    }.map { messageMap ->
+        messageMap.map { (conversationId, message) ->
+            conversationId.toModel() to resolveRuntimeMessageStatus(messageMapper.fromEntityToMessage(message))
+        }.toMap()
+    }
 
     override suspend fun getImageAssetMessagesByConversationId(
         conversationId: ConversationId,
@@ -401,11 +416,14 @@ internal class MessageDataSource internal constructor(
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
         }.map(messageMapper::fromEntityToMessage)
+            .map(::resolveRuntimeMessageStatus)
 
     override suspend fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>> =
         messageDAO.observeMessageById(messageUuid, conversationId.toDao())
             .wrapStorageRequest()
-            .mapRight(messageMapper::fromEntityToMessage)
+            .mapWithRuntimeUpdates(runtimeTransportStatusTracker.updates) { result ->
+                result.map(messageMapper::fromEntityToMessage).map(::resolveRuntimeMessageStatus)
+            }
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -415,7 +433,9 @@ internal class MessageDataSource internal constructor(
         conversationId.toDao(),
         date,
         visibility.map { it.toEntityVisibility() }
-    ).map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
+    ).mapWithRuntimeUpdates(runtimeTransportStatusTracker.updates) { messageList ->
+        messageList.map(messageMapper::fromEntityToMessage).map(::resolveRuntimeMessageStatus)
+    }
 
     override suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
@@ -454,6 +474,12 @@ internal class MessageDataSource internal constructor(
                 messageUuid,
                 conversationId.toDao()
             )
+        }.onSuccess {
+            if (transferStatus.isInProgress()) {
+                runtimeTransportStatusTracker.markAssetInProgress(conversationId, messageUuid, transferStatus)
+            } else {
+                runtimeTransportStatusTracker.clearAssetInProgress(conversationId, messageUuid)
+            }
         }
 
     override suspend fun sendEnvelope(
@@ -765,17 +791,42 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId
     ) = messageDAO.observeAssetStatuses(conversationId.toDao())
         .wrapStorageRequest()
-        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
+        .mapWithRuntimeUpdates(runtimeTransportStatusTracker.updates) { result ->
+            result.map { assetStatusEntities ->
+                assetStatusEntities.map { entity ->
+                    val model = entity.toModel()
+                    model.copy(
+                        transferStatus = resolveRuntimeAssetTransferStatus(
+                            conversationId = model.conversationId,
+                            messageId = model.id,
+                            persistedStatus = model.transferStatus
+                        )
+                    )
+                }
+            }
+        }
 
     override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
         .wrapStorageRequest()
-        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.transfer_status.toModel() } }
+        .mapWithRuntimeUpdates(runtimeTransportStatusTracker.updates) { result ->
+            result.map { assetStatusEntities ->
+                assetStatusEntities.map { statusEntry ->
+                    resolveRuntimeAssetTransferStatus(
+                        conversationId = statusEntry.conversation_id.toModel(),
+                        messageId = statusEntry.message_id,
+                        persistedStatus = statusEntry.transfer_status.toModel()
+                    )
+                }
+            }
+        }
 
     override suspend fun getMessageAssetTransferStatus(
         messageId: String,
         conversationId: ConversationId
     ): Either<StorageFailure, AssetTransferStatus> = wrapStorageRequest {
         messageDAO.getMessageAssetTransferStatus(messageId, conversationId.toDao()).toModel()
+    }.map { persistedStatus ->
+        resolveRuntimeAssetTransferStatus(conversationId, messageId, persistedStatus)
     }
 
     override suspend fun getAllAssetIdsFromConversationId(
@@ -835,5 +886,72 @@ internal class MessageDataSource internal constructor(
             messageId = messageId,
             normalizedLoudness = normalizedLoudness
         )
+    }
+
+    private fun <T, R> Flow<T>.mapWithRuntimeUpdates(
+        updates: Flow<Unit>,
+        transform: (T) -> R
+    ): Flow<R> = channelFlow {
+        val latestValue = MutableStateFlow<LatestValue<T>>(LatestValue.Empty)
+
+        val updatesJob = launch {
+            updates.drop(1).collect {
+                val currentValue = latestValue.value
+                if (currentValue is LatestValue.Value) {
+                    send(transform(currentValue.value))
+                }
+            }
+        }
+
+        collect { value ->
+            latestValue.value = LatestValue.Value(value)
+            send(transform(value))
+        }
+
+        updatesJob.cancel()
+    }
+
+    private sealed interface LatestValue<out T> {
+        data object Empty : LatestValue<Nothing>
+        data class Value<T>(val value: T) : LatestValue<T>
+    }
+
+    private fun resolveRuntimeMessageStatus(message: Message): Message = when (message) {
+        is Message.Standalone -> resolveRuntimeMessageStatus(message)
+        is Message.Signaling -> message
+    }
+
+    private fun resolveRuntimeMessageStatus(message: Message.Standalone): Message.Standalone = when (message) {
+        is Message.Regular -> {
+            if (!message.isSelfMessage) {
+                message
+            } else {
+                val effectiveStatus = when {
+                    runtimeTransportStatusTracker.isMessageSending(message.conversationId, message.id) -> Message.Status.Pending
+                    message.status == Message.Status.Pending -> Message.Status.Failed
+                    else -> message.status
+                }
+                message.copy(status = effectiveStatus)
+            }
+        }
+
+        is Message.System -> message
+    }
+
+    private fun resolveRuntimeAssetTransferStatus(
+        conversationId: ConversationId,
+        messageId: String,
+        persistedStatus: AssetTransferStatus
+    ): AssetTransferStatus {
+        val inProgressStatus = runtimeTransportStatusTracker.getAssetInProgressStatus(conversationId, messageId)
+        if (inProgressStatus != null) {
+            return inProgressStatus
+        }
+
+        return when (persistedStatus) {
+            AssetTransferStatus.UPLOAD_IN_PROGRESS -> AssetTransferStatus.FAILED_UPLOAD
+            AssetTransferStatus.DOWNLOAD_IN_PROGRESS -> AssetTransferStatus.FAILED_DOWNLOAD
+            else -> persistedStatus
+        }
     }
 }

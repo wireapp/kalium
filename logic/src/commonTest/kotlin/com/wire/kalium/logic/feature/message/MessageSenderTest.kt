@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -35,6 +36,7 @@ import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.message.RecipientEntry
+import com.wire.kalium.logic.data.message.RuntimeTransportStatusTracker
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
@@ -101,6 +103,24 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
+        }
+    }
+
+    @Test
+    fun whenSendingMessage_thenRuntimeTrackerMarksAndClearsSending() {
+        val message = TestMessage.TEXT_MESSAGE
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            messageSender.sendMessage(message)
+
+            assertEquals(1, arrangement.markMessageSendingCalls().size)
+            assertEquals(message.conversationId to message.id, arrangement.markMessageSendingCalls().single())
+            assertEquals(1, arrangement.clearMessageSendingCalls().size)
+            assertEquals(message.conversationId to message.id, arrangement.clearMessageSendingCalls().single())
         }
     }
 
@@ -1085,6 +1105,7 @@ class MessageSenderTest {
         val mlsMissingUsersMessageRejectionHandler = FakeMLSMissingUsersRejectionHandler()
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
+        private val runtimeTransportStatusTracker = FakeRuntimeTransportStatusTracker()
 
         val testScope = TestScope()
 
@@ -1119,8 +1140,39 @@ class MessageSenderTest {
                 staleEpochVerifier = staleEpochVerifier,
                 transactionProvider = cryptoTransactionProvider,
                 mlsMissingUsersMessageRejectionHandler = mlsMissingUsersMessageRejectionHandler,
-                scope = testScope
+                scope = testScope,
+                runtimeTransportStatusTracker = runtimeTransportStatusTracker
             )
+        }
+
+        fun markMessageSendingCalls(): List<Pair<ConversationId, String>> = runtimeTransportStatusTracker.markMessageSendingCalls
+        fun clearMessageSendingCalls(): List<Pair<ConversationId, String>> = runtimeTransportStatusTracker.clearMessageSendingCalls
+
+        private class FakeRuntimeTransportStatusTracker : RuntimeTransportStatusTracker {
+            val markMessageSendingCalls = mutableListOf<Pair<ConversationId, String>>()
+            val clearMessageSendingCalls = mutableListOf<Pair<ConversationId, String>>()
+
+            override val updates = kotlinx.coroutines.flow.flowOf(Unit)
+
+            override fun markMessageSending(conversationId: ConversationId, messageId: String) {
+                markMessageSendingCalls += conversationId to messageId
+            }
+
+            override fun clearMessageSending(conversationId: ConversationId, messageId: String) {
+                clearMessageSendingCalls += conversationId to messageId
+            }
+
+            override fun isMessageSending(conversationId: ConversationId, messageId: String): Boolean = false
+
+            override fun markAssetInProgress(
+                conversationId: ConversationId,
+                messageId: String,
+                transferStatus: AssetTransferStatus
+            ) = Unit
+
+            override fun clearAssetInProgress(conversationId: ConversationId, messageId: String) = Unit
+
+            override fun getAssetInProgressStatus(conversationId: ConversationId, messageId: String): AssetTransferStatus? = null
         }
 
         suspend fun withGetMessageById(failing: Boolean = false) = apply {

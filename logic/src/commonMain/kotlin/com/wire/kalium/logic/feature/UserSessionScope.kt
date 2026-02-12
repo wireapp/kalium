@@ -148,6 +148,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.RuntimeTransportStatusObserver
+import com.wire.kalium.logic.data.message.RuntimeTransportStatusTrackerImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -869,8 +871,16 @@ public class UserSessionScope internal constructor(
             messageApi = authenticatedNetworkContainer.messageApi,
             mlsMessageApi = authenticatedNetworkContainer.mlsMessageApi,
             messageDAO = userStorage.database.messageDAO,
-            selfUserId = userId
+            selfUserId = userId,
+            runtimeTransportStatusTracker = runtimeTransportStatusTracker
         )
+
+    private val runtimeTransportStatusTracker: RuntimeTransportStatusTrackerImpl by lazy {
+        RuntimeTransportStatusTrackerImpl()
+    }
+
+    public val runtimeTransportStatusObserver: RuntimeTransportStatusObserver
+        get() = runtimeTransportStatusTracker
 
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
@@ -2271,7 +2281,8 @@ public class UserSessionScope internal constructor(
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
             this,
-            userScopedLogger
+            userScopedLogger,
+            runtimeTransportStatusTracker = runtimeTransportStatusTracker
         )
     }
 
@@ -2656,7 +2667,6 @@ public class UserSessionScope internal constructor(
         launch {
             apiMigrationManager.performMigrations()
             callRepository.updateOpenCallsToClosedStatus()
-            messageRepository.resetAssetTransferStatus()
         }
 
         launch {

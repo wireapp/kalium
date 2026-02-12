@@ -63,6 +63,7 @@ internal interface MessageRepositoryExtensions {
 internal class MessageRepositoryExtensionsImpl internal constructor(
     private val messageDAO: MessageDAO,
     private val messageMapper: MessageMapper,
+    private val runtimeMessageStatusResolver: (Message.Standalone) -> Message.Standalone = { it }
 ) : MessageRepositoryExtensions {
 
     override suspend fun getPaginatedMessagesByConversationIdAndVisibility(
@@ -78,8 +79,10 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             startingOffset
         )
 
-        return pager.pagingDataFlow.map {
-            it.map { messageMapper.fromEntityToMessage(it) }
+        return pager.pagingDataFlow.map { pagingData ->
+            pagingData.map { messageEntity ->
+                runtimeMessageStatusResolver(messageMapper.fromEntityToMessage(messageEntity))
+            }
         }
     }
 
@@ -96,8 +99,10 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             startingOffset = startingOffset
         )
 
-        return pager.pagingDataFlow.map {
-            it.map { messageMapper.fromEntityToMessage(it) }
+        return pager.pagingDataFlow.map { pagingData ->
+            pagingData.map { messageEntity ->
+                runtimeMessageStatusResolver(messageMapper.fromEntityToMessage(messageEntity))
+            }
         }
     }
 
@@ -113,8 +118,10 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             startingOffset = startingOffset
         )
 
-        return pager.pagingDataFlow.map {
-            it.map { messageEntity -> messageMapper.fromEntityToMessage(messageEntity) }
+        return pager.pagingDataFlow.map { pagingData ->
+            pagingData.map { messageEntity ->
+                runtimeMessageStatusResolver(messageMapper.fromEntityToMessage(messageEntity))
+            }
         }
     }
 

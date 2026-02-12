@@ -41,9 +41,11 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.NoOpRuntimeTransportStatusTracker
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.RuntimeTransportStatusTracker
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
@@ -159,7 +161,8 @@ public class MessageScope internal constructor(
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
+    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl,
+    private val runtimeTransportStatusTracker: RuntimeTransportStatusTracker = NoOpRuntimeTransportStatusTracker
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -248,7 +251,8 @@ public class MessageScope internal constructor(
             transactionProvider,
             mlsMissingUsersMessageRejectionHandlerProvider(),
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
-            scope
+            scope,
+            runtimeTransportStatusTracker
         )
 
     internal val persistMessage: PersistMessageUseCase

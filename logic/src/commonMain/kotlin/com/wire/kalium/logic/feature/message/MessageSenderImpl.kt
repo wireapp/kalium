@@ -48,6 +48,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.NoOpRuntimeTransportStatusTracker
+import com.wire.kalium.logic.data.message.RuntimeTransportStatusTracker
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -88,7 +90,8 @@ internal class MessageSenderImpl internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val mlsMissingUsersMessageRejectionHandler: MLSMissingUsersMessageRejectionHandler,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val runtimeTransportStatusTracker: RuntimeTransportStatusTracker = NoOpRuntimeTransportStatusTracker
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
@@ -121,51 +124,59 @@ internal class MessageSenderImpl internal constructor(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
-        messageSendingInterceptor
-            .prepareMessage(message)
-            .flatMap { processedMessage ->
-                transactionProvider.transaction("sendMessage") { transactionContext ->
-                    attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
-                        val localDate = message.date
-                        val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                        // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                        val isEditMessage = when (message.content) {
-                            is MessageContent.MultipartEdited -> {
-                                messageRepository.updateMultipartMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
+    override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> {
+        runtimeTransportStatusTracker.markMessageSending(message.conversationId, message.id)
+        return try {
+            messageSendingInterceptor
+                .prepareMessage(message)
+                .flatMap { processedMessage ->
+                    transactionProvider.transaction("sendMessage") { transactionContext ->
+                        attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
+                            val localDate = message.date
+                            val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                            // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                            val isEditMessage = when (message.content) {
+                                is MessageContent.MultipartEdited -> {
+                                    messageRepository.updateMultipartMessage(
+                                        conversationId = processedMessage.conversationId,
+                                        messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                        newMessageId = processedMessage.id,
+                                        editInstant = processedMessage.date
+                                    )
+                                    true
+                                }
+
+                                is MessageContent.TextEdited -> {
+                                    messageRepository.updateTextMessage(
+                                        conversationId = processedMessage.conversationId,
+                                        messageContent = processedMessage.content as MessageContent.TextEdited,
+                                        newMessageId = processedMessage.id,
+                                        editInstant = processedMessage.date
+                                    )
+                                    true
+                                }
+
+                                else -> false
                             }
-                            is MessageContent.TextEdited -> {
-                                messageRepository.updateTextMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.TextEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
-                            }
-                            else -> false
+                            messageRepository.promoteMessageToSentUpdatingServerTime(
+                                conversationId = processedMessage.conversationId,
+                                messageUuid = processedMessage.id,
+                                // if it's edit then we don't want to change the original message creation time, it's already a server date
+                                serverDate = if (!isEditMessage) serverDate else null,
+                                millis = millis
+                            )
+                            Unit
                         }
-                        messageRepository.promoteMessageToSentUpdatingServerTime(
-                            conversationId = processedMessage.conversationId,
-                            messageUuid = processedMessage.id,
-                            // if it's edit then we don't want to change the original message creation time, it's already a server date
-                            serverDate = if (!isEditMessage) serverDate else null,
-                            millis = millis
-                        )
-                        Unit
+                    }.onSuccess {
+                        startSelfDeletionIfNeeded(message)
                     }
-                }.onSuccess {
-                    startSelfDeletionIfNeeded(message)
+                }.onFailure {
+                    logger.e("Failed to send message ${message::class.qualifiedName}. Failure = $it")
                 }
-            }.onFailure {
-                logger.e("Failed to send message ${message::class.qualifiedName}. Failure = $it")
-            }
+        } finally {
+            runtimeTransportStatusTracker.clearMessageSending(message.conversationId, message.id)
+        }
+    }
 
     override suspend fun broadcastMessage(
         message: BroadcastMessage,

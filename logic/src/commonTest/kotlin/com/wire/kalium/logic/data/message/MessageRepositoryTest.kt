@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
@@ -50,11 +51,13 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageAssetStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -71,6 +74,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -677,6 +681,112 @@ class MessageRepositoryTest {
     }
 
     @Test
+    fun givenSelfPendingMessageNotTrackedAsSending_whenGettingMessageById_thenMessageIsResolvedAsFailed() = runTest {
+        val messageEntity = TEST_MESSAGE_ENTITY.copy(status = MessageEntity.Status.PENDING)
+        val pendingMessage = TEST_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
+        val (_, messageRepository) = Arrangement()
+            .withGetMessageById(messageEntity)
+            .withMappedMessageModel(pendingMessage, messageEntity)
+            .arrange()
+
+        val result = messageRepository.getMessageById(pendingMessage.conversationId, pendingMessage.id)
+
+        result.shouldSucceed {
+            assertEquals(Message.Status.Failed, it.status)
+        }
+    }
+
+    @Test
+    fun givenSelfPendingMessageTrackedAsSending_whenGettingMessageById_thenMessageRemainsPending() = runTest {
+        val messageEntity = TEST_MESSAGE_ENTITY.copy(status = MessageEntity.Status.PENDING)
+        val pendingMessage = TEST_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
+        val (arrangement, messageRepository) = Arrangement()
+            .withGetMessageById(messageEntity)
+            .withMappedMessageModel(pendingMessage, messageEntity)
+            .arrange()
+
+        arrangement.runtimeTransportStatusTracker.markMessageSending(pendingMessage.conversationId, pendingMessage.id)
+        val result = messageRepository.getMessageById(pendingMessage.conversationId, pendingMessage.id)
+
+        result.shouldSucceed {
+            assertEquals(Message.Status.Pending, it.status)
+        }
+    }
+
+    @Test
+    fun givenStaleUploadInProgressAssetStatus_whenGettingTransferStatus_thenStatusIsResolvedAsFailedUpload() = runTest {
+        val (_, messageRepository) = Arrangement()
+            .withMessageAssetTransferStatus(AssetTransferStatusEntity.UPLOAD_IN_PROGRESS)
+            .arrange()
+
+        val status = messageRepository.getMessageAssetTransferStatus(TEST_MESSAGE_ID, TEST_CONVERSATION_ID)
+
+        status.shouldSucceed {
+            assertEquals(AssetTransferStatus.FAILED_UPLOAD, it)
+        }
+    }
+
+    @Test
+    fun givenObservedPendingMessage_whenSendingTrackerChanges_thenObserveMessageByIdEmitsResolvedStatus() = runTest {
+        val pendingEntity = TEST_MESSAGE_ENTITY.copy(status = MessageEntity.Status.PENDING)
+        val pendingMessage = TEST_MESSAGE.copy(status = Message.Status.Pending, isSelfMessage = true)
+        val observedMessages = MutableStateFlow<MessageEntity?>(pendingEntity)
+        val (arrangement, messageRepository) = Arrangement()
+            .withObserveMessageById(observedMessages)
+            .withMappedMessageModel(pendingMessage, pendingEntity)
+            .arrange()
+
+        messageRepository.observeMessageById(pendingMessage.conversationId, pendingMessage.id).test {
+            awaitItem().shouldSucceed {
+                assertEquals(Message.Status.Failed, it.status)
+            }
+
+            arrangement.runtimeTransportStatusTracker.markMessageSending(
+                pendingMessage.conversationId,
+                pendingMessage.id
+            )
+            awaitItem().shouldSucceed {
+                assertEquals(Message.Status.Pending, it.status)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenObservedStaleUploadInProgressAssetStatus_whenAssetTrackerChanges_thenObserveAssetStatusesEmitsResolvedStatus() = runTest {
+        val conversationId = TEST_CONVERSATION_ID
+        val messageId = TEST_MESSAGE_ID
+        val persistedStatus = MutableStateFlow(
+            listOf(
+                MessageAssetStatusEntity(
+                    id = messageId,
+                    conversationId = conversationId.toDao(),
+                    transferStatus = AssetTransferStatusEntity.UPLOAD_IN_PROGRESS
+                )
+            )
+        )
+        val (arrangement, messageRepository) = Arrangement()
+            .withObserveAssetStatusesForConversation(persistedStatus)
+            .arrange()
+
+        messageRepository.observeAssetStatuses(conversationId).test {
+            awaitItem().shouldSucceed {
+                assertEquals(AssetTransferStatus.FAILED_UPLOAD, it.single().transferStatus)
+            }
+
+            arrangement.runtimeTransportStatusTracker.markAssetInProgress(
+                conversationId = conversationId,
+                messageId = messageId,
+                transferStatus = AssetTransferStatus.UPLOAD_IN_PROGRESS
+            )
+            awaitItem().shouldSucceed {
+                assertEquals(AssetTransferStatus.UPLOAD_IN_PROGRESS, it.single().transferStatus)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenCompositeMessage_whenUpdating_thenEmitSuccess() = runTest {
         val messageEntity = TEST_COMPOSITE_ENTITY
         val message = TEST_MESSAGE
@@ -719,6 +829,7 @@ class MessageRepositoryTest {
         val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
         val sendMessagePartialFailureMapper = mock(SendMessagePartialFailureMapper::class)
         val messageMapper = mock(MessageMapper::class)
+        val runtimeTransportStatusTracker = RuntimeTransportStatusTrackerImpl()
         suspend fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
             coEvery {
                 messageDAO.getMessagesByConversationAndVisibility(any(), any(), any(), any())
@@ -881,6 +992,7 @@ class MessageRepositoryTest {
             messageDAO = messageDAO,
             messageMapper = messageMapper,
             selfUserId = SELF_USER_ID,
+            runtimeTransportStatusTracker = runtimeTransportStatusTracker,
             sendMessageFailureMapper = sendMessageFailureMapper,
             sendMessagePartialFailureMapper = sendMessagePartialFailureMapper
         )
@@ -895,6 +1007,24 @@ class MessageRepositoryTest {
             coEvery {
                 messageDAO.observeMessageById(any(), any())
             }.returns(messageFlow)
+        }
+
+        suspend fun withGetMessageById(messageEntity: MessageEntity?) = apply {
+            coEvery {
+                messageDAO.getMessageById(any(), any())
+            }.returns(messageEntity)
+        }
+
+        suspend fun withMessageAssetTransferStatus(status: AssetTransferStatusEntity) = apply {
+            coEvery {
+                messageDAO.getMessageAssetTransferStatus(any(), any())
+            }.returns(status)
+        }
+
+        suspend fun withObserveAssetStatusesForConversation(flow: Flow<List<MessageAssetStatusEntity>>) = apply {
+            coEvery {
+                messageDAO.observeAssetStatuses(any())
+            }.returns(flow)
         }
     }
 
