@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
@@ -158,6 +159,91 @@ class UserPropertyRepositoryTest {
         coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }.wasInvoked(once)
         coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }.wasInvoked(once)
         coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }.wasInvoked(once)
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndValuesAreStringNumbers_thenShouldPersistAllValues() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(
+                JsonObject(
+                    mapOf(
+                        PropertyKey.WIRE_RECEIPT_MODE.key to JsonPrimitive("1"),
+                        PropertyKey.WIRE_TYPING_INDICATOR_MODE.key to JsonPrimitive("0"),
+                        PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE.key to JsonPrimitive("1"),
+                    )
+                )
+            )
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }.wasInvoked(once)
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndBulkEndpointIsNotFound_thenShouldFallbackToSinglePropertyCalls() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesNotFound()
+            .withGetReadReceiptsStatusReturning(1)
+            .withGetTypingIndicatorStatusReturning(0)
+            .withGetScreenshotCensoringStatusReturning(1)
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
+        coVerify { arrangement.propertiesApi.getProperty(eq(PropertyKey.WIRE_RECEIPT_MODE)) }.wasInvoked(once)
+        coVerify { arrangement.propertiesApi.getProperty(eq(PropertyKey.WIRE_TYPING_INDICATOR_MODE)) }.wasInvoked(once)
+        coVerify { arrangement.propertiesApi.getProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)) }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }.wasInvoked(once)
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndBulkEndpointFailsWithNonNotFound_thenShouldReturnFailureAndNotFallback() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesBadRequest()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldFail()
+        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
+        coVerify { arrangement.propertiesApi.getProperty(any()) }.wasNotInvoked()
+        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }.wasNotInvoked()
+        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }.wasNotInvoked()
+        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndFallbackReadReceiptsFailsWithNonNotFound_thenShouldReturnFailureAndStopFallbackChain() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesNotFound()
+            .withGetReadReceiptsStatusBadRequest()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldFail()
+        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
+        coVerify { arrangement.propertiesApi.getProperty(eq(PropertyKey.WIRE_RECEIPT_MODE)) }.wasInvoked(once)
+        coVerify { arrangement.propertiesApi.getProperty(eq(PropertyKey.WIRE_TYPING_INDICATOR_MODE)) }.wasNotInvoked()
+        coVerify { arrangement.propertiesApi.getProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)) }.wasNotInvoked()
+        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }.wasNotInvoked()
+        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }.wasNotInvoked()
+        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -312,20 +398,28 @@ class UserPropertyRepositoryTest {
             }.returns(NetworkResponse.Success(value, mapOf(), 200))
         }
 
+        suspend fun withGetPropertiesValuesNotFound() = apply {
+            coEvery {
+                propertiesApi.getPropertiesValues()
+            }.returns(notFoundResponse())
+        }
+
+        suspend fun withGetPropertiesValuesBadRequest() = apply {
+            coEvery {
+                propertiesApi.getPropertiesValues()
+            }.returns(badRequestResponse())
+        }
+
         suspend fun withGetReadReceiptsStatusNotFound() = apply {
             coEvery {
                 propertiesApi.getProperty(eq(PropertyKey.WIRE_RECEIPT_MODE))
-            }.returns(
-                NetworkResponse.Error(
-                    KaliumException.InvalidRequestError(
-                        ErrorResponse(
-                            code = HttpStatusCode.NotFound.value,
-                            label = "not_found",
-                            message = "not found"
-                        )
-                    )
-                )
-            )
+            }.returns(notFoundResponse())
+        }
+
+        suspend fun withGetReadReceiptsStatusBadRequest() = apply {
+            coEvery {
+                propertiesApi.getProperty(eq(PropertyKey.WIRE_RECEIPT_MODE))
+            }.returns(badRequestResponse())
         }
 
         suspend fun withGetTypingIndicatorStatusReturning(value: Int) = apply {
@@ -337,17 +431,7 @@ class UserPropertyRepositoryTest {
         suspend fun withGetTypingIndicatorStatusNotFound() = apply {
             coEvery {
                 propertiesApi.getProperty(eq(PropertyKey.WIRE_TYPING_INDICATOR_MODE))
-            }.returns(
-                NetworkResponse.Error(
-                    KaliumException.InvalidRequestError(
-                        ErrorResponse(
-                            code = HttpStatusCode.NotFound.value,
-                            label = "not_found",
-                            message = "not found"
-                        )
-                    )
-                )
-            )
+            }.returns(notFoundResponse())
         }
 
         suspend fun withGetScreenshotCensoringStatusReturning(value: Int) = apply {
@@ -359,17 +443,7 @@ class UserPropertyRepositoryTest {
         suspend fun withGetScreenshotCensoringStatusNotFound() = apply {
             coEvery {
                 propertiesApi.getProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE))
-            }.returns(
-                NetworkResponse.Error(
-                    KaliumException.InvalidRequestError(
-                        ErrorResponse(
-                            code = HttpStatusCode.NotFound.value,
-                            label = "not_found",
-                            message = "not found"
-                        )
-                    )
-                )
-            )
+            }.returns(notFoundResponse())
         }
 
         suspend fun withDeleteReadReceiptsSuccess() = apply {
@@ -415,6 +489,26 @@ class UserPropertyRepositoryTest {
         }
 
         fun arrange() = this to userPropertyRepository
+
+        private fun notFoundResponse(): NetworkResponse.Error = NetworkResponse.Error(
+            KaliumException.InvalidRequestError(
+                ErrorResponse(
+                    code = HttpStatusCode.NotFound.value,
+                    label = "not_found",
+                    message = "not found"
+                )
+            )
+        )
+
+        private fun badRequestResponse(): NetworkResponse.Error = NetworkResponse.Error(
+            KaliumException.InvalidRequestError(
+                ErrorResponse(
+                    code = HttpStatusCode.BadRequest.value,
+                    label = "bad_request",
+                    message = "bad request"
+                )
+            )
+        )
 
     }
 }

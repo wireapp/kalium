@@ -45,6 +45,11 @@ import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangem
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
 import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock as mokkeryMock
+import dev.mokkery.verify.VerifyMode as MokkeryVerifyMode
+import dev.mokkery.verifySuspend
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -487,9 +492,9 @@ class SlowSyncWorkerTest {
             arrangement.syncSelfUser.invoke()
         }.wasNotInvoked()
 
-        coVerify {
+        verifySuspend(MokkeryVerifyMode.not) {
             arrangement.syncUserProperties.invoke()
-        }.wasNotInvoked()
+        }
 
         coVerify {
             arrangement.syncFeatureConfigs.invoke()
@@ -501,9 +506,9 @@ class SlowSyncWorkerTest {
             arrangement.syncSelfUser.invoke()
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
 
-        coVerify {
+        verifySuspend(MokkeryVerifyMode.exactly(if (steps.contains(SlowSyncStep.USER_PROPERTIES)) 1 else 0)) {
             arrangement.syncUserProperties.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.USER_PROPERTIES)) once else 0.times)
+        }
 
         coVerify {
             arrangement.syncFeatureConfigs.invoke()
@@ -541,7 +546,7 @@ class SlowSyncWorkerTest {
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
-        val syncUserProperties: SyncUserPropertiesUseCase = mock(SyncUserPropertiesUseCase::class)
+        val syncUserProperties: SyncUserPropertiesUseCase = mokkeryMock<SyncUserPropertiesUseCase>()
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
         val syncConnections: SyncConnectionsUseCase = mock(SyncConnectionsUseCase::class)
@@ -592,15 +597,15 @@ class SlowSyncWorkerTest {
         }
 
         suspend fun withSyncUserPropertiesFailure() = apply {
-            coEvery {
+            everySuspend {
                 syncUserProperties.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
         suspend fun withSyncUserPropertiesSuccess() = apply {
-            coEvery {
+            everySuspend {
                 syncUserProperties.invoke()
-            }.returns(success)
+            } returns success
         }
 
         suspend fun withSyncFeatureConfigsFailure() = apply {
