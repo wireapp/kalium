@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,33 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.sync
+package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.CoreFailure
-import kotlin.time.Duration
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import io.mockative.Mockable
 
-internal sealed interface SlowSyncStatus {
-
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure, val retryDelay: Duration) : SlowSyncStatus
+@Mockable
+internal interface SyncUserPropertiesUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
-internal enum class SlowSyncStep {
-    MIGRATION,
-    SELF_USER,
-    USER_PROPERTIES,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    LEGAL_HOLD
+internal class SyncUserPropertiesUseCaseImpl internal constructor(
+    private val userPropertyRepository: UserPropertyRepository
+) : SyncUserPropertiesUseCase {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = userPropertyRepository.syncPropertiesStatuses()
 }
