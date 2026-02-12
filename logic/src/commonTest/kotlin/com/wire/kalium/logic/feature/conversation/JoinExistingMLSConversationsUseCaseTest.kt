@@ -44,6 +44,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -54,7 +55,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(false)
-            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStateSuccessful().arrange()
+            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStatesSuccessful().arrange()
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
@@ -70,7 +71,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenNoMLSClientIsRegistered_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(false)
-            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStateSuccessful().arrange()
+            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStatesSuccessful().arrange()
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
@@ -86,7 +87,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenExistingConversations_whenInvokingUseCase_ThenRequestToJoinConversationIsCalledForAllConversations() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
-            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStateSuccessful().arrange()
+            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStatesSuccessful().arrange()
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
@@ -98,7 +99,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenNoKeyPackagesAvailable_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful().withNoKeyPackagesAvailable().arrange()
+            .withGetConversationsByGroupStatesSuccessful().withNoKeyPackagesAvailable().arrange()
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
@@ -110,7 +111,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenNetworkFailure_WhenJoinExistingMLSConversationUseCase_ThenPropagateFailure() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful().withJoinExistingMLSConversationNetworkFailure().arrange()
+            .withGetConversationsByGroupStatesSuccessful().withJoinExistingMLSConversationNetworkFailure().arrange()
 
         joinExistingMLSConversationsUseCase().shouldFail {
             assertIs<NetworkFailure>(it)
@@ -123,7 +124,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenOtherFailure_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful().withJoinExistingMLSConversationFailure().arrange()
+            .withGetConversationsByGroupStatesSuccessful().withJoinExistingMLSConversationFailure().arrange()
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
@@ -137,7 +138,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful()
+            .withGetConversationsByGroupStatesSuccessful()
             .withJoinExistingMLSConversationReturningServerMiscommunication()
             .arrange()
 
@@ -150,6 +151,43 @@ class JoinExistingMLSConversationsUseCaseTest {
         coVerify {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenPendingAfterResetConversation_whenInvokingUseCase_ThenRequestToJoinIsCalledForIt() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStatesSuccessful(listOf(Arrangement.MLS_CONVERSATION_PENDING_AFTER_RESET))
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenMixOfPendingJoinAndPendingAfterReset_whenInvokingUseCase_ThenAllAreJoined() = runTest {
+        val allConversations = listOf(
+            Arrangement.MLS_CONVERSATION1,
+            Arrangement.MLS_CONVERSATION2,
+            Arrangement.MLS_CONVERSATION_PENDING_AFTER_RESET
+        )
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStatesSuccessful(allConversations)
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+        }.wasInvoked(3)
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -166,11 +204,11 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         @Suppress("MaxLineLength")
-        suspend fun withGetConversationsByGroupStateSuccessful(
+        suspend fun withGetConversationsByGroupStatesSuccessful(
             conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)
         ) = apply {
             coEvery {
-                conversationRepository.getConversationsByGroupState(any())
+                conversationRepository.getConversationsByGroupStates(any())
             }.returns(Either.Right(conversations))
         }
 
@@ -227,6 +265,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         companion object {
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")
+            val GROUP_ID3 = GroupID("group3")
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
@@ -247,6 +286,16 @@ class JoinExistingMLSConversationsUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
+
+            val MLS_CONVERSATION_PENDING_AFTER_RESET = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET,
+                    epoch = 1UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id3", "domain"))
         }
     }
 }
