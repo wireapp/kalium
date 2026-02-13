@@ -15,6 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.util
+package com.wire.kalium.persistence.config
 
-actual val isDebug: Boolean = true
+import com.wire.kalium.persistence.dao.UserIDEntity
+
+@Suppress("DEPRECATION")
+@Deprecated(
+    "Scheduled for removal in future versions, User KMM Settings are now replaced by database implementation." +
+            "Just kept for migration purposes.",
+    ReplaceWith("No replacement available"),
+)
+actual class UserConfigStorageFactory actual constructor() {
+    actual fun create(
+        userId: UserIDEntity,
+        shouldEncryptData: Boolean,
+        platformParam: Any
+    ): UserConfigStorage {
+        TODO("JS implementation not yet available")
+    }
+}

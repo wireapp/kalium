@@ -251,10 +251,10 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private fun Conversation.logData(
         failure: CoreFailure? = null
     ): Map<String, Any> = buildMap {
-        "conversationId" to id.toLogString()
-        "conversationType" to type
-        "protocol" to CreateConversationParam.Protocol.MLS.name
-        "protocolInfo" to protocol.toLogMap()
-        failure?.run { "errorInfo" to "$failure" }
+        put("conversationId", id.toLogString())
+        put("conversationType", type)
+        put("protocol", CreateConversationParam.Protocol.MLS.name)
+        put("protocolInfo", protocol.toLogMap())
+        failure?.let { put("errorInfo", "$it") }
     }
 }

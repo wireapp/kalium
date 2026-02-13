@@ -194,6 +194,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.di.UserConfigStorageFactory
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
@@ -558,7 +559,7 @@ public class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
-    platformUserStorageProperties: PlatformUserStorageProperties,
+    private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
@@ -707,7 +708,7 @@ public class UserSessionScope internal constructor(
 
     internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
-            userStorage.preferences.userConfigStorage,
+            userStorage.database.userPrefsDAO,
             userStorage.database.userConfigDAO,
             kaliumConfigs
         )
@@ -1299,7 +1300,14 @@ public class UserSessionScope internal constructor(
         get() = SlowSyncRecoveryHandlerImpl(logout)
 
     private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider = {
-        SyncMigrationStepsProviderImpl(lazy { accountRepository }, selfTeamId)
+        SyncMigrationStepsProviderImpl(
+            accountRepository = lazy { accountRepository },
+            selfTeamIdProvider = selfTeamId,
+            oldUserConfigStorage = lazy {
+                UserConfigStorageFactory().create(userId, kaliumConfigs.shouldEncryptData(), platformUserStorageProperties)
+            },
+            newUserConfigStorage = lazy { userStorage.database.userPrefsDAO }
+        )
     }
 
     private val slowSyncManager: SlowSyncManager by lazy {

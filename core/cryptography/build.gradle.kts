@@ -118,18 +118,3 @@ kotlin {
 project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
 }
-
-android {
-    testOptions.unitTests.all {
-        it.enabled = false
-    }
-    defaultConfig {
-        ndk {
-            abiFilters.apply {
-                add("armeabi-v7a")
-                add("arm64-v8a")
-                add("x86_64")
-            }
-        }
-    }
-}

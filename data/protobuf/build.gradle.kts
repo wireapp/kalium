@@ -45,7 +45,7 @@ kotlin {
         val commonTest by getting {
             dependencies { }
         }
-        val androidUnitTest by getting {
+        val androidDeviceTest by getting {
             dependencies {
                 implementation(libs.androidtest.runner)
                 implementation(libs.androidtest.rules)

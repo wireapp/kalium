@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.di
 
-package com.wire.kalium.persistence.kmmSettings
-
-import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
-import com.wire.kalium.persistence.config.UserConfigStorage
-
-actual class UserPrefBuilder {
-    actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
-        get() = TODO("Not yet implemented")
-
-    actual fun clear() {
-        TODO("Not yet implemented")
-    }
-
-    actual val userConfigStorage: UserConfigStorage
-        get() = TODO("Not yet implemented")
-}
+internal actual class PlatformUserStorageProperties

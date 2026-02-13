@@ -15,9 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.util
+package com.wire.kalium.persistence.dao.unread
 
-import kotlin.experimental.ExperimentalNativeApi
+import com.wire.kalium.persistence.dao.message.UnreadContentCountEntity
+import com.wire.kalium.persistence.util.JsonSerializer
 
-@OptIn(ExperimentalNativeApi::class)
-actual val isDebug: Boolean = Platform.osFamily == OsFamily.IOS && Platform.isDebugBinary
+object UnreadContentMapper {
+
+    private val serializer = JsonSerializer()
+    fun unreadContentTypeFromJsonString(unreadContentJson: String?): UnreadContentCountEntity =
+        unreadContentJson?.let {
+            serializer.decodeFromString(unreadContentJson)
+        } ?: emptyMap()
+}

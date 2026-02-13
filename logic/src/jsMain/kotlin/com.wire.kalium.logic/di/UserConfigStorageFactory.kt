@@ -15,8 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.util
+package com.wire.kalium.logic.di
 
-import com.wire.kalium.persistence.BuildConfig
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.config.UserConfigStorage
 
-actual val isDebug: Boolean = BuildConfig.DEBUG
+@Suppress("DEPRECATION")
+internal actual class UserConfigStorageFactory actual constructor() {
+    actual fun create(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties
+    ): UserConfigStorage {
+        TODO("JS implementation not yet available")
+    }
+}
