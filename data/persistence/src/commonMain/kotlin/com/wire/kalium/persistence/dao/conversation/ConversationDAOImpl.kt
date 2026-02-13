@@ -299,10 +299,16 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun getAllConversationDetails(
         fromArchive: Boolean,
-        filter: ConversationFilterEntity
+        filter: ConversationFilterEntity,
+        strictMLSFilter: Boolean,
     ): Flow<List<ConversationViewEntity>> {
         return conversationDetailsQueries
-            .selectAllConversationDetails(fromArchive, filter.toString(), conversationMapper::fromViewToModel)
+            .selectAllConversationDetails(
+                fromArchive = fromArchive,
+                strict_mls = if (strictMLSFilter) 1 else 0,
+                conversationFilter = filter.toString(),
+                mapper = conversationMapper::fromViewToModel,
+            )
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
