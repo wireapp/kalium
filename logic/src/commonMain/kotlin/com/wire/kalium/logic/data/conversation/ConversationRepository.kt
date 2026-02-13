@@ -127,7 +127,8 @@ internal interface ConversationRepository {
 
     suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean = false,
-        conversationFilter: ConversationFilter = ConversationFilter.All
+        conversationFilter: ConversationFilter = ConversationFilter.All,
+        strictMlsFilter: Boolean = true,
     ): Flow<List<ConversationDetailsWithEvents>>
 
     /**
@@ -488,10 +489,11 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter
+        conversationFilter: ConversationFilter,
+        strictMlsFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEvents>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao()),
+            conversationDAO.getAllConversationDetails(fromArchive, conversationFilter.toDao(), strictMlsFilter),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()
