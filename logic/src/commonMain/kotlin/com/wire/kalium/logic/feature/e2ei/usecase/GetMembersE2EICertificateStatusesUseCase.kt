@@ -23,12 +23,13 @@ import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 /**
  * This use case is used to get the e2ei certificates of all the users in Conversation.
@@ -39,19 +40,18 @@ public interface GetMembersE2EICertificateStatusesUseCase {
 }
 
 internal class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
+    private val mlsClientProvider: MLSClientProvider,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val conversationRepository: ConversationRepository,
-    private val transactionProvider: CryptoTransactionProvider
+    private val conversationRepository: ConversationRepository
 ) : GetMembersE2EICertificateStatusesUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean> =
-        transactionProvider
-            .mlsTransaction("E2EIMembersCertificateStatuses") { mlsContext ->
-                mlsConversationRepository.getMembersIdentities(
-                    mlsContext,
-                    conversationId,
-                    userIds
-                )
-            }
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            mlsConversationRepository.getMembersIdentities(
+                mlsClient,
+                conversationId,
+                userIds
+            )
+        }
             .map { identities ->
                 val usersNameAndHandle = conversationRepository.selectMembersNameAndHandle(conversationId).getOrElse(mapOf())
 
