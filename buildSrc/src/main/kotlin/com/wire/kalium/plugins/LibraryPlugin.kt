@@ -29,7 +29,10 @@ import org.gradle.api.tasks.Nested
 class LibraryPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
         group = KaliumBuild.GROUP
-        version = KaliumBuild.VERSION
+        version = providers.exec {
+            workingDir(rootProject.rootDir)
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.map { it.trim() }.get()
 
         target.pluginManager.apply {
             apply("org.jetbrains.kotlin.multiplatform")
