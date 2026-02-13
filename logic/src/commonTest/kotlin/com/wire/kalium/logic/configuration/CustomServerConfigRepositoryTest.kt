@@ -34,15 +34,17 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.Url
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.properties.Delegates
@@ -60,9 +62,9 @@ class CustomServerConfigRepositoryTest {
         val actual = repository.fetchRemoteConfig(serverConfigUrl)
 
         actual.shouldSucceed { assertEquals(expected, it) }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigApi.fetchServerConfig(serverConfigUrl)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -75,21 +77,21 @@ class CustomServerConfigRepositoryTest {
             .storeConfig(expectedServerConfig.links, expectedServerConfig.metaData)
             .shouldSucceed { assertEquals(expectedServerConfig, it) }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configByLinks(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.insert(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.updateServerMetaData(any(), any(), any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -103,21 +105,21 @@ class CustomServerConfigRepositoryTest {
             .storeConfig(expected.links, expected.metaData)
             .shouldSucceed { assertEquals(it, expected) }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configByLinks(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.insert(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.updateServerMetaData(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
-        }.wasNotInvoked()
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -139,24 +141,24 @@ class CustomServerConfigRepositoryTest {
             .storeConfig(expectedServerConfig.links, expectedVersionInfo)
             .shouldSucceed { assertEquals(it, expectedServerConfig) }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.backendMetaDataUtil.calculateApiVersion(any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configByLinks(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.insert(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.updateServerMetaData(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
-        }.wasNotInvoked()
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -177,25 +179,25 @@ class CustomServerConfigRepositoryTest {
 
             cancelAndIgnoreRemainingEvents()
         }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.versionApi.fetchApiVersion(eq(Url(SERVER_CONFIG_RESPONSE.links.api)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val serverConfigApi = mock(ServerConfigApi::class)
-        val versionApi = mock(VersionApi::class)
+        val serverConfigApi = mock<ServerConfigApi>()
+        val versionApi = mock<VersionApi>()
 
         var developmentApiEnabled by Delegates.notNull<Boolean>()
 
-        val serverConfigurationDAO = mock(ServerConfigurationDAO::class)
+        val serverConfigurationDAO = mock<ServerConfigurationDAO>(mode = MockMode.autoUnit)
 
         init {
             developmentApiEnabled = false
         }
 
-        val backendMetaDataUtil = mock(BackendMetaDataUtil::class)
+        val backendMetaDataUtil = mock<BackendMetaDataUtil>()
 
         private var customServerConfigRepository: CustomServerConfigRepository =
             CustomServerConfigDataSource(versionApi, serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
@@ -203,48 +205,54 @@ class CustomServerConfigRepositoryTest {
         suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             every {
                 serverConfigurationDAO.configById(any())
-            }.returns(serverConfigEntity)
-            coEvery {
+            } returns serverConfigEntity
+            everySuspend {
                 serverConfigurationDAO.configByLinks(any())
-            }.returns(null)
+            } returns null
             return this
         }
 
         suspend fun withSuccessConfigResponse(): Arrangement {
-            coEvery { serverConfigApi.fetchServerConfig(SERVER_CONFIG_URL) }
-                .returns(NetworkResponse.Success(SERVER_CONFIG_RESPONSE.links, mapOf(), 200))
+            everySuspend { serverConfigApi.fetchServerConfig(SERVER_CONFIG_URL) } returns NetworkResponse.Success(
+                SERVER_CONFIG_RESPONSE.links,
+                mapOf(),
+                200
+            )
             return this
         }
 
         suspend fun withDaoEntityResponse(): Arrangement {
-            coEvery { serverConfigurationDAO.allConfig() }
-                .returns(listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3)))
+            everySuspend { serverConfigurationDAO.allConfig() } returns listOf(
+                newServerConfigEntity(1),
+                newServerConfigEntity(2),
+                newServerConfigEntity(3)
+            )
             return this
         }
 
         fun withConfigById(serverConfig: ServerConfigEntity): Arrangement {
             every {
                 serverConfigurationDAO.configById(any())
-            }.returns(serverConfig)
+            } returns serverConfig
             return this
         }
 
         suspend fun withConfigByLinks(serverConfigEntity: ServerConfigEntity?): Arrangement {
-            coEvery {
+            everySuspend {
                 serverConfigurationDAO.configByLinks(any())
-            }.returns(serverConfigEntity)
+            } returns serverConfigEntity
             return this
         }
 
         suspend fun withDaoEntityFlowResponse(): Arrangement {
-            coEvery { serverConfigurationDAO.allConfigFlow() }
-                .returns(flowOf(listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3))))
+            everySuspend { serverConfigurationDAO.allConfigFlow() } returns flowOf(
+                listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3))
+            )
             return this
         }
 
         suspend fun withGetServerConfigByLinksFlow(): Arrangement {
-            coEvery { serverConfigurationDAO.getServerConfigByLinksFlow(any()) }
-                .returns(flowOf(newServerConfigEntity(1)))
+            everySuspend { serverConfigurationDAO.getServerConfigByLinksFlow(any()) } returns flowOf(newServerConfigEntity(1))
             return this
         }
 
@@ -256,25 +264,27 @@ class CustomServerConfigRepositoryTest {
                 )
             )
 
-            coEvery { serverConfigurationDAO.configByLinks(serverConfigEntity.links) }
-                .returns(serverConfigEntity)
+            everySuspend { serverConfigurationDAO.configByLinks(serverConfigEntity.links) } returns serverConfigEntity
             every {
                 serverConfigurationDAO.configById(any())
-            }.returns(newServerConfigEntity)
+            } returns newServerConfigEntity
 
             return this
         }
 
         suspend fun withVersionApiResponse(): Arrangement {
-            coEvery { versionApi.fetchApiVersion(any()) }
-                .returns(NetworkResponse.Success(ServerConfigDTO.MetaData(true, ApiVersionDTO.fromInt(8), "wire.com"), mapOf(), 200))
+            everySuspend { versionApi.fetchApiVersion(any()) } returns NetworkResponse.Success(
+                ServerConfigDTO.MetaData(true, ApiVersionDTO.fromInt(8), "wire.com"),
+                mapOf(),
+                200
+            )
             return this
         }
 
         fun withCalculateApiVersion(result: ServerConfigDTO.MetaData): Arrangement {
             every {
                 backendMetaDataUtil.calculateApiVersion(any(), any(), any(), any())
-            }.returns(result)
+            } returns result
             return this
         }
 
