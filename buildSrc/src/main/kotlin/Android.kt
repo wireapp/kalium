@@ -21,7 +21,7 @@ object Android {
     const val testRunner = "androidx.test.runner.AndroidJUnitRunner"
     object Sdk {
         const val min = 26
-        const val compile = 35
+        const val compile = 36
         const val target = compile
     }
     object Ndk {

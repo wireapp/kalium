@@ -36,7 +36,7 @@ kotlin {
     }
 
     sourceSets {
-        val androidUnitTest by getting {
+        val androidDeviceTest by getting {
             dependencies {
                 implementation(libs.androidtest.runner)
                 implementation(libs.androidtest.rules)
@@ -69,18 +69,6 @@ kotlin {
 
         val commonTest by getting {
             dependencies { }
-        }
-    }
-}
-
-android {
-    defaultConfig {
-        ndk {
-            abiFilters.apply {
-                add("armeabi-v7a")
-                add("arm64-v8a")
-                add("x86_64")
-            }
         }
     }
 }
