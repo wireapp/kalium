@@ -34,7 +34,7 @@ class LibraryPlugin : Plugin<Project> {
         target.pluginManager.apply {
             apply("org.jetbrains.kotlin.multiplatform")
             // android library plugin
-            apply("com.android.library")
+            apply("com.android.kotlin.multiplatform.library")
         }
 
         extensions.create("kaliumLibrary", Extension::class.java)
@@ -44,7 +44,7 @@ class LibraryPlugin : Plugin<Project> {
         interface MultiplatformConfiguration {
             val enableApple: Property<Boolean>
             val enableJs: Property<Boolean>
-            val jsModuleName: Property<String?>
+            val jsModuleName: Property<String>
             val enableJsTests: Property<Boolean>
             val includeNativeInterop: Property<Boolean>
             val enableIntegrationTests: Property<Boolean>

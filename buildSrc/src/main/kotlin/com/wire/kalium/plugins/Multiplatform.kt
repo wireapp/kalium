@@ -18,10 +18,11 @@
 
 package com.wire.kalium.plugins
 
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 /**
  * Applies the base configurations for a multiplatform module, including:
@@ -60,8 +61,8 @@ internal fun Project.configureDefaultMultiplatform(
 
         jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
 
-        androidTarget {
-            commmonKotlinAndroidTargetConfig()
+        targets.withType(KotlinMultiplatformAndroidLibraryTarget::class.java).configureEach {
+            commonAndroidLibConfig(this@configureDefaultMultiplatform, includeNativeInterop, androidNamespaceSuffix)
             // ⇣ DO NOT open a `dependencies {}` block here; add to the project instead:
             project.dependencies.add("coreLibraryDesugaring", library("desugarJdkLibs"))
         }
@@ -74,13 +75,9 @@ internal fun Project.configureDefaultMultiplatform(
         }
     }
 
-    (this as org.gradle.api.plugins.ExtensionAware).extensions
-        .configure<com.android.build.gradle.LibraryExtension>("android") {
-            commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
-        }
-
-    val androidInstrTest = kotlinExtension.sourceSets.getByName("androidInstrumentedTest")
-    androidInstrTest.dependencies {
+    val androidDeviceTest = kotlinExtension.sourceSets.findByName("androidDeviceTest")
+        ?: kotlinExtension.sourceSets.findByName("androidInstrumentedTest")
+    androidDeviceTest?.dependencies {
         implementation(library("androidtest.core"))
         implementation(library("androidtest.runner"))
         implementation(library("androidtest.rules"))

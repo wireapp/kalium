@@ -22,7 +22,7 @@ plugins {
     kotlin("jvm")
     java
     application
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.gradleup.shadow") version "9.3.1"
 }
 
 group = "com.wire.kalium.testservice"
