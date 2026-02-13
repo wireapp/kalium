@@ -2516,8 +2516,7 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
-            fetchMLSVerificationStatusUseCase,
-            cryptoTransactionProvider
+            fetchMLSVerificationStatusUseCase
         )
 
     public val kaliumFileSystem: KaliumFileSystem by lazy {
@@ -2559,6 +2558,7 @@ public class UserSessionScope internal constructor(
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
         FetchMLSVerificationStatusUseCaseImpl(
+            mlsClientProvider,
             conversationRepository,
             persistMessage,
             mlsConversationRepository,
@@ -2572,8 +2572,7 @@ public class UserSessionScope internal constructor(
         ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
             fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
             epochChangesObserver = epochChangesObserver,
-            kaliumLogger = userScopedLogger,
-            transactionProvider = cryptoTransactionProvider
+            kaliumLogger = userScopedLogger
         )
     }
 
