@@ -2,6 +2,22 @@
 
 This guide captures the migration pattern used in this repository when moving tests from Mockative to Mokkery.
 
+## 0. Resolve scope to real paths first
+
+User-provided scope may use shorthand package names (for example `logic/cache`) that are not real top-level directories.
+
+Before editing:
+
+- resolve to actual paths under `logic/src/*Test/kotlin/com/wire/kalium/logic/...`
+- verify target files still contain Mockative usage
+
+Helpful commands:
+
+```bash
+find logic/src -type d \( -name cache -o -name client -o -name configuration -o -name corefailure \) | sort
+rg -n "io\\.mockative|coEvery|coVerify|verify\\s*\\{|every\\s*\\{" logic/src/commonTest/kotlin/com/wire/kalium/logic/cache logic/src/commonTest/kotlin/com/wire/kalium/logic/client logic/src/commonTest/kotlin/com/wire/kalium/logic/configuration logic/src/commonTest/kotlin/com/wire/kalium/logic/corefailure
+```
+
 ## 1. Decide interface strategy first
 
 For each mocked interface in `commonMain`:
@@ -50,6 +66,14 @@ Mokkery:
 val repository: UserPropertyRepository = mock<UserPropertyRepository>()
 ```
 
+If the collaborator has many unstubbed `Unit` methods (common for DAOs), prefer:
+
+```kotlin
+val dao = mock<SomeDao>(mode = MockMode.autoUnit)
+```
+
+Otherwise Mokkery may fail with `CallNotMockedException` for unit-returning calls such as `insert(...)` or `update(...)`.
+
 ## 4. Replace stubbing
 
 Mockative:
@@ -88,6 +112,8 @@ verifySuspend(VerifyMode.exactly(0)) { repository.syncPropertiesStatuses() }
 verifySuspend(VerifyMode.exactly(1)) { repository.syncPropertiesStatuses() }
 ```
 
+For non-suspend methods, use `verify { ... }` with the same `VerifyMode` patterns.
+
 ## 6. Mixed-framework test files
 
 If a test file still uses both libraries during incremental migration:
@@ -123,6 +149,13 @@ Run focused tests for changed areas first:
 ./gradlew --no-daemon :logic:jvmTest --tests "*SyncUserPropertiesUseCaseTest" --tests "*SlowSyncWorkerTest"
 ```
 
+In this repository, `:logic:commonTest` is not an available task; use `:logic:jvmTest` for these common test classes.
+If unsure, inspect task names first:
+
+```bash
+./gradlew :logic:tasks --all
+```
+
 Then run broader checks:
 
 ```bash
@@ -130,3 +163,11 @@ Then run broader checks:
 ./gradlew --no-daemon detekt
 ```
 
+## 9. Split-by-folder delivery (when requested)
+
+If the user asks for smaller PRs:
+
+- migrate and validate one folder at a time
+- create one branch and one commit per folder
+- open one PR per folder targeting `develop`
+- if a folder contains no Mockative usage, report no-op explicitly and create an empty commit only if the user requested a branch/PR for that folder
