@@ -1,0 +1,3 @@
+interface:
+  display_name: "Mockative -> Mokkery"
+  short_description: "Migrate Mockative tests safely"
