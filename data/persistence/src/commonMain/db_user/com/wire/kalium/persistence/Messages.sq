@@ -435,10 +435,28 @@ selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
+SELECT COUNT(*)
+FROM MessageMainList
+WHERE conversation_id = ?
+AND visibility IN ?;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+SELECT MessageDetailsView.*
+FROM (
+    SELECT
+        conversation_id,
+        message_id,
+        creation_date
+    FROM MessageMainList
+    WHERE conversation_id = :conversationId
+    AND visibility IN :visibility
+    ORDER BY creation_date DESC, message_id DESC
+    LIMIT :limit OFFSET :offset
+) AS MainPage
+INNER JOIN MessageDetailsView
+    ON MessageDetailsView.id = MainPage.message_id
+    AND MessageDetailsView.conversationId = MainPage.conversation_id
+ORDER BY MainPage.creation_date DESC, MainPage.message_id DESC;
 
 countBackupMessages:
 SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;

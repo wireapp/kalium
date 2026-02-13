@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
@@ -337,6 +338,7 @@ class SendTextMessageCaseTest {
         val messageSender = mock(MessageSender::class)
         val userPropertyRepository = mock(UserPropertyRepository::class)
         val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
+        val messageThreadRepository = mock(MessageThreadRepository::class)
         val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
         suspend fun withSendMessageSuccess() = apply {
@@ -404,6 +406,7 @@ class SendTextMessageCaseTest {
             messageSendFailureHandler,
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
+            messageThreadRepository,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher
         )

@@ -18,8 +18,13 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
@@ -30,6 +35,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -103,6 +109,7 @@ internal class ApplicationMessageHandlerImpl(
     private val inCallReactionsRepository: InCallReactionsRepository,
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
+    private val messageThreadRepository: MessageThreadRepository,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -149,7 +156,7 @@ internal class ApplicationMessageHandlerImpl(
                         )
                     }
                 )
-                processMessage(message)
+                processMessage(message, content.threadId)
             }
 
             is MessageContent.Signaling -> {
@@ -253,15 +260,16 @@ internal class ApplicationMessageHandlerImpl(
         persistMessage(message)
     }
 
-    private suspend fun processMessage(message: Message.Regular) {
+    private suspend fun processMessage(message: Message.Regular, threadId: String?) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
         when (val content = message.content) {
-            is MessageContent.Text -> handleTextMessage(message, content)
-            is MessageContent.FailedDecryption -> persistMessage(message)
-            is MessageContent.Knock -> persistMessage(message)
+            is MessageContent.Text -> handleTextMessage(message, content, threadId)
+            is MessageContent.FailedDecryption -> persistRegularMessage(message, threadId)
+            is MessageContent.Knock -> persistRegularMessage(message, threadId)
             is MessageContent.Asset -> {
                 try {
                     assetMessageHandler.handle(message)
+                    upsertThreadItemIfNeeded(message, threadId)
                 } catch (exception: IllegalStateException) {
                     logger.e(
                         "AssetMessageHandler failed for messageId=${message.id} conversationId=${message.conversationId}",
@@ -276,18 +284,19 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
-                persistMessage(message)
+                persistRegularMessage(message, threadId)
             }
 
-            is MessageContent.Composite -> persistMessage(message)
-            is MessageContent.Location -> persistMessage(message)
-            is MessageContent.Multipart -> handleMultipartMessage(message, content)
+            is MessageContent.Composite -> persistRegularMessage(message, threadId)
+            is MessageContent.Location -> persistRegularMessage(message, threadId)
+            is MessageContent.Multipart -> handleMultipartMessage(message, content, threadId)
         }
     }
 
     private suspend fun handleMultipartMessage(
         message: Message.Regular,
-        messageContent: MessageContent.Multipart
+        messageContent: MessageContent.Multipart,
+        threadId: String?,
     ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
@@ -298,12 +307,13 @@ internal class ApplicationMessageHandlerImpl(
         val adjustedMessage = message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
-        persistMessage(adjustedMessage)
+        persistRegularMessage(adjustedMessage, threadId)
     }
 
     private suspend fun handleTextMessage(
         message: Message.Regular,
-        messageContent: MessageContent.Text
+        messageContent: MessageContent.Text,
+        threadId: String?,
     ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
@@ -314,7 +324,75 @@ internal class ApplicationMessageHandlerImpl(
         val adjustedMessage = message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
-        persistMessage(adjustedMessage)
+        persistRegularMessage(adjustedMessage, threadId)
+    }
+
+    private suspend fun persistRegularMessage(message: Message.Regular, threadId: String?) {
+        persistMessage(message).onSuccess {
+            upsertThreadItemIfNeeded(message, threadId)
+        }
+    }
+
+    private suspend fun upsertThreadItemIfNeeded(message: Message.Regular, threadId: String?) {
+        val resolvedThreadId = threadId ?: return
+        messageThreadRepository.upsertThreadReplyIfNeeded(
+            conversationId = message.conversationId,
+            messageId = message.id,
+            threadId = resolvedThreadId,
+            creationDate = message.date,
+            visibility = message.visibility,
+        )
+        inferThreadRootIfNeeded(message, resolvedThreadId)
+    }
+
+    private suspend fun inferThreadRootIfNeeded(message: Message.Regular, threadId: String) {
+        val rootMessageId = threadId
+        messageThreadRepository.getThreadByRootMessage(
+            conversationId = message.conversationId,
+            rootMessageId = rootMessageId,
+        ).fold(
+            { failure ->
+                if (failure is StorageFailure.DataNotFound) {
+                    return@fold
+                }
+                logger.e(
+                    "Failed to read thread root mapping for inferred root. " +
+                        "conversation=${message.conversationId} threadId=$threadId failure=$failure"
+                )
+                return
+            },
+            { existingRoot ->
+                if (existingRoot != null) return
+            }
+        )
+
+        val rootCreationDate = messageRepository
+            .getMessageById(message.conversationId, rootMessageId)
+            .getOrNull()
+            ?.let {
+                it.date to ((it as? Message.Standalone)?.visibility ?: Message.Visibility.VISIBLE)
+            }
+            ?: (message.date to Message.Visibility.VISIBLE)
+
+        messageThreadRepository.upsertThreadRoot(
+            conversationId = message.conversationId,
+            rootMessageId = rootMessageId,
+            threadId = threadId,
+            createdAt = message.date,
+        ).onFailure {
+            logger.e("Failed to infer thread root for conversation=${message.conversationId} threadId=$threadId")
+        }
+
+        messageThreadRepository.upsertThreadItem(
+            conversationId = message.conversationId,
+            messageId = rootMessageId,
+            threadId = threadId,
+            isRoot = true,
+            creationDate = rootCreationDate.first,
+            visibility = rootCreationDate.second,
+        ).onFailure {
+            logger.e("Failed to infer thread root item for conversation=${message.conversationId} threadId=$threadId")
+        }
     }
 
     private suspend fun verifyMessageQuote(
@@ -362,7 +440,7 @@ internal class ApplicationMessageHandlerImpl(
             visibility = Message.Visibility.VISIBLE,
             isSelfMessage = senderUserId == selfUserId
         )
-        processMessage(message)
+        processMessage(message, threadId = null)
     }
 }
 

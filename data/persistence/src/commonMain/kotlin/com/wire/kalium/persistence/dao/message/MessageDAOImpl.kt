@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
+import com.wire.kalium.persistence.MessageThreadsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
@@ -62,6 +63,7 @@ internal class MessageDAOImpl internal constructor(
     private val assetViewQueries: MessageAssetViewQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
+    private val messageThreadsQueries: MessageThreadsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val messagePreviewQueries: MessagePreviewQueries,
     private val selfUserId: UserIDEntity,
@@ -74,6 +76,7 @@ internal class MessageDAOImpl internal constructor(
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
+        messageThreadsQueries,
         attachmentsQueries,
         unreadEventsQueries,
         conversationsQueries,
@@ -91,11 +94,23 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
-            queries.markMessageAsDeleted(
-                message_id = id,
-                conversation_id = conversationsId
-            )
-            unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
+            queries.transaction {
+                queries.markMessageAsDeleted(
+                    message_id = id,
+                    conversation_id = conversationsId
+                )
+                unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
+                messageThreadsQueries.updateMainListVisibility(
+                    conversation_id = conversationsId,
+                    message_id = id,
+                    visibility = MessageEntity.Visibility.DELETED,
+                )
+                messageThreadsQueries.syncThreadItemVisibilityIfNeeded(
+                    conversationId = conversationsId,
+                    messageId = id,
+                    newVisibility = MessageEntity.Visibility.DELETED,
+                )
+            }
         }
     }
 
@@ -151,16 +166,19 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
-        queries.insertOrIgnoreBulkSystemMessage(
-            id = message.id,
-            creation_date = message.date,
-            sender_user_id = message.senderUserId,
-            sender_client_id = null,
-            visibility = message.visibility,
-            status = message.status,
-            content_type = contentTypeOf(message.content),
-            expects_read_confirmation = false
-        )
+        queries.transaction {
+            queries.insertOrIgnoreBulkSystemMessage(
+                id = message.id,
+                creation_date = message.date,
+                sender_user_id = message.senderUserId,
+                sender_client_id = null,
+                visibility = message.visibility,
+                status = message.status,
+                content_type = contentTypeOf(message.content),
+                expects_read_confirmation = false
+            )
+            messageThreadsQueries.upsertMainListByMessageId(message.id)
+        }
     }
 
     /**
@@ -243,7 +261,14 @@ internal class MessageDAOImpl internal constructor(
                     }
                 }?.let {
                     // The message already exists in the local DB, if its id is different then just update id.
-                    if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
+                    if (it.id != message.id) {
+                        queries.updateMessageId(message.id, it.id, message.conversationId)
+                        messageThreadsQueries.updateThreadItemMessageId(
+                            conversation_id = message.conversationId,
+                            old_message_id = it.id,
+                            new_message_id = message.id,
+                        )
+                    }
                     true
                 }
         } ?: false
@@ -435,6 +460,11 @@ internal class MessageDAOImpl internal constructor(
         }
 
         queries.updateMessageId(newMessageId, currentMessageId, conversationId)
+        messageThreadsQueries.updateThreadItemMessageId(
+            conversation_id = conversationId,
+            old_message_id = currentMessageId,
+            new_message_id = newMessageId,
+        )
         queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
     }
 
@@ -748,6 +778,7 @@ internal class MessageDAOImpl internal constructor(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(
         queries,
+        messageThreadsQueries,
         assetViewQueries,
         mapper,
         readDispatcher,

@@ -48,7 +48,8 @@ internal interface MLSMessageCreator {
     suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
         groupId: GroupID,
-        message: Message.Sendable
+        message: Message.Sendable,
+        threadId: String? = null,
     ): Either<CoreFailure, MLSMessageApi.Message>
 
 }
@@ -67,7 +68,8 @@ internal class MLSMessageCreatorImpl(
     override suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
         groupId: GroupID,
-        message: Message.Sendable
+        message: Message.Sendable,
+        threadId: String?,
     ): Either<CoreFailure, MLSMessageApi.Message> = transactionContext.wrapInMLSContext { mlsContext ->
         val doesConversationExist = mlsContext.conversationExists(idMapper.toCryptoModel(groupId))
         if (doesConversationExist) {
@@ -78,7 +80,8 @@ internal class MLSMessageCreatorImpl(
             createOutgoingMLSMessage(
                 mlsContext = mlsContext,
                 groupId = groupId,
-                message = message
+                message = message,
+                threadId = threadId,
             )
         }
     }
@@ -86,7 +89,8 @@ internal class MLSMessageCreatorImpl(
     private suspend fun createOutgoingMLSMessage(
         mlsContext: MlsCoreCryptoContext,
         groupId: GroupID,
-        message: Message.Sendable
+        message: Message.Sendable,
+        threadId: String?,
     ): Either<CoreFailure, MLSMessageApi.Message> {
         kaliumLogger.i("Creating outgoing MLS message (groupID = ${groupId.toLogString()})")
         val expectsReadConfirmation = when (message) {
@@ -106,7 +110,8 @@ internal class MLSMessageCreatorImpl(
                 messageContent = message.content,
                 expectsReadConfirmation = expectsReadConfirmation,
                 expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
-                legalHoldStatus = legalHoldStatus
+                legalHoldStatus = legalHoldStatus,
+                threadId = threadId,
             )
         )
         return wrapMLSRequest {

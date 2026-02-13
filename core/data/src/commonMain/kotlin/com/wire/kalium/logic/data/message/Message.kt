@@ -88,7 +88,7 @@ sealed interface Message {
         override val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
+        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery,
     ) : Sendable, Standalone {
 
         override fun toLogString(): String {

@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -44,6 +45,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -72,6 +74,7 @@ public class RetryFailedMessageUseCase internal constructor(
     private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
     private val getAssetMessageTransferStatusUseCase: GetAssetMessageTransferStatusUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val messageThreadRepository: MessageThreadRepository,
 ) {
 
     /**
@@ -92,52 +95,67 @@ public class RetryFailedMessageUseCase internal constructor(
     public suspend operator fun invoke(
         messageId: String,
         conversationId: ConversationId
-    ): MessageOperationResult =
-        messageRepository.getMessageById(conversationId, messageId)
-            .flatMap { message ->
-                when (message.status) {
-                    Message.Status.Failed, Message.Status.FailedRemotely -> {
-                        messageRepository.updateMessageStatus(
-                            messageStatus = MessageEntity.Status.PENDING,
-                            conversationId = message.conversationId,
-                            messageUuid = message.id
-                        )
-                        scope.launch(dispatcher.io) {
-                            val content = message.content
-                            when {
-                                message is Message.Regular && content is MessageContent.Asset ->
-                                    retrySendingAssetMessage(message, content.value)
-
-                                message is Message.Regular && message.editStatus is Message.EditStatus.Edited ->
-                                    retrySendingEditMessage(message)
-
-                                message is Message.Regular && content is MessageContent.Multipart ->
-                                    retrySendingMultipartMessage(message)
-
-                                message is Message.Sendable -> retrySendingMessage(message)
-
-                                else -> handleError("Message of type ${message::class.simpleName} cannot be retried")
-                            }
-                        }
-                        Either.Right(Unit)
-                    }
-
-                    else -> handleError("Message with status ${message.status} cannot be retried")
-                }
-            }.fold(
-                { MessageOperationResult.Failure(it) },
-                { MessageOperationResult.Success }
+    ): MessageOperationResult {
+        val message = messageRepository.getMessageById(conversationId, messageId)
+            .fold(
+                { return MessageOperationResult.Failure(it) },
+                { it }
             )
+        val threadId = resolveThreadId(message)
 
-    private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =
-        messageSender.sendMessage(message)
+        val retryResult = when (message.status) {
+            Message.Status.Failed, Message.Status.FailedRemotely -> {
+                messageRepository.updateMessageStatus(
+                    messageStatus = MessageEntity.Status.PENDING,
+                    conversationId = message.conversationId,
+                    messageUuid = message.id
+                )
+                scope.launch(dispatcher.io) {
+                    val content = message.content
+                    when {
+                        message is Message.Regular && content is MessageContent.Asset ->
+                            retrySendingAssetMessage(message, content.value, threadId)
+
+                        message is Message.Regular && message.editStatus is Message.EditStatus.Edited ->
+                            retrySendingEditMessage(message, threadId)
+
+                        message is Message.Regular && content is MessageContent.Multipart ->
+                            retrySendingMultipartMessage(message, threadId)
+
+                        message is Message.Sendable -> retrySendingMessage(message, threadId)
+
+                        else -> handleError("Message of type ${message::class.simpleName} cannot be retried")
+                    }
+                }
+                Either.Right(Unit)
+            }
+
+            else -> handleError("Message with status ${message.status} cannot be retried")
+        }
+
+        return retryResult.fold(
+            { MessageOperationResult.Failure(it) },
+            { MessageOperationResult.Success }
+        )
+    }
+
+    private suspend fun resolveThreadId(message: Message): String? {
+        if (message !is Message.Regular) return null
+        return messageThreadRepository.getThreadIdByMessageId(message.conversationId, message.id).nullableFold(
+            { null },
+            { it }
+        )
+    }
+
+    private suspend fun retrySendingMessage(message: Message.Sendable, threadId: String? = null): Either<CoreFailure, Unit> =
+        messageSender.sendMessage(message, threadId = threadId)
             .onFailure {
                 val type = message.content.getType()
                 kaliumLogger.e("Failed to retry sending message of type $type. Failure = $it")
                 messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, type)
             }
 
-    private suspend fun retrySendingEditMessage(message: Message.Regular): Either<CoreFailure, Unit> =
+    private suspend fun retrySendingEditMessage(message: Message.Regular, threadId: String?): Either<CoreFailure, Unit> =
         when (val content = message.content) {
             is MessageContent.Text -> {
                 val editContent = MessageContent.TextEdited(
@@ -158,7 +176,7 @@ public class RetryFailedMessageUseCase internal constructor(
                     isSelfMessage = true,
                     expirationData = null
                 )
-                retrySendingMessage(editMessage)
+                retrySendingMessage(editMessage, threadId)
             }
 
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
@@ -167,6 +185,7 @@ public class RetryFailedMessageUseCase internal constructor(
     private suspend fun retrySendingAssetMessage(
         message: Message.Regular,
         content: AssetContent,
+        threadId: String?,
     ): Either<CoreFailure, Unit> {
         val assetTransferStatus = getAssetMessageTransferStatusUseCase(message.conversationId, message.id)
 
@@ -199,7 +218,7 @@ public class RetryFailedMessageUseCase internal constructor(
 
             else -> handleError("Asset message with transfer status $assetTransferStatus cannot be retried")
         }
-            .onSuccess { retrySendingMessage(it) }
+            .onSuccess { retrySendingMessage(it, threadId) }
             .map { /* returns Unit */ }
     }
 
@@ -238,7 +257,7 @@ public class RetryFailedMessageUseCase internal constructor(
                 }
         }
 
-    private suspend fun retrySendingMultipartMessage(message: Message.Regular): Either<CoreFailure, Unit> {
+    private suspend fun retrySendingMultipartMessage(message: Message.Regular, threadId: String?): Either<CoreFailure, Unit> {
 
         val isCellEnabled = conversationRepository.isCellEnabled(message.conversationId)
             .onFailure {
@@ -264,11 +283,11 @@ public class RetryFailedMessageUseCase internal constructor(
                 }
 
             publishAttachments(attachments).onSuccess {
-                messageSender.sendMessage(message)
+                messageSender.sendMessage(message, threadId = threadId)
             }
         }
 
-        return messageSender.sendMessage(message)
+        return messageSender.sendMessage(message, threadId = threadId)
     }
 
     private fun handleError(message: String): Either.Left<CoreFailure> =

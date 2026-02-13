@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.mls.CipherSuite
@@ -1080,6 +1081,7 @@ class MessageSenderTest {
         val sessionEstablisher = mock(SessionEstablisher::class)
         val messageEnvelopeCreator: MessageEnvelopeCreator = mock(MessageEnvelopeCreator::class)
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
+        val messageThreadRepository = mock(MessageThreadRepository::class)
         val syncManager = mock(SyncManager::class)
         val userRepository = mock(UserRepository::class)
         val mlsMissingUsersMessageRejectionHandler = FakeMLSMissingUsersRejectionHandler()
@@ -1096,6 +1098,9 @@ class MessageSenderTest {
 
         fun arrange() = run {
             runBlocking {
+                coEvery {
+                    messageThreadRepository.getThreadIdByMessageId(any(), any())
+                }.returns(Either.Right(null))
                 block()
                 withTransactionReturning(Either.Right(Unit))
             }
@@ -1106,6 +1111,7 @@ class MessageSenderTest {
                 messageSendFailureHandler = messageSendFailureHandler,
                 legalHoldHandler = legalHoldHandler,
                 sessionEstablisher = sessionEstablisher,
+                messageThreadRepository = messageThreadRepository,
                 messageEnvelopeCreator = messageEnvelopeCreator,
                 mlsMessageCreator = mlsMessageCreator,
                 messageSendingInterceptor = messageSendingInterceptor,

@@ -53,6 +53,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
         userDAO = db.userDAO
         messageExtensions = MessageInsertExtensionImpl(
             db.database.messagesQueries,
+            db.database.messageThreadsQueries,
             db.database.messageAttachmentsQueries,
             db.database.unreadEventsQueries,
             db.database.conversationsQueries,

@@ -35,13 +35,15 @@ internal interface MessageSenderArrangement {
 
     suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable> = AnyMatcher(valueOf()),
-        target: Matcher<MessageTarget> = AnyMatcher(valueOf())
+        target: Matcher<MessageTarget> = AnyMatcher(valueOf()),
+        threadId: Matcher<String?> = AnyMatcher(valueOf())
     )
 
     suspend fun withMessageSenderFailure(
         result: Either.Left<CoreFailure>,
         message: Matcher<Message.Sendable> = AnyMatcher(valueOf()),
-        target: Matcher<MessageTarget> = AnyMatcher(valueOf())
+        target: Matcher<MessageTarget> = AnyMatcher(valueOf()),
+        threadId: Matcher<String?> = AnyMatcher(valueOf())
     )
 }
 
@@ -51,20 +53,30 @@ internal open class MessageSenderArrangementImpl : MessageSenderArrangement {
 
     override suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable>,
-        target: Matcher<MessageTarget>
+        target: Matcher<MessageTarget>,
+        threadId: Matcher<String?>
     ) {
         coEvery {
-            messageSender.sendMessage(matches { message.matches(it) }, matches { target.matches(it) })
+            messageSender.sendMessage(
+                matches { message.matches(it) },
+                matches { target.matches(it) },
+                matches { threadId.matches(it) }
+            )
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withMessageSenderFailure(
         result: Either.Left<CoreFailure>,
         message: Matcher<Message.Sendable>,
-        target: Matcher<MessageTarget>
+        target: Matcher<MessageTarget>,
+        threadId: Matcher<String?>
     ) {
         coEvery {
-            messageSender.sendMessage(matches { message.matches(it) }, matches { target.matches(it) })
+            messageSender.sendMessage(
+                matches { message.matches(it) },
+                matches { target.matches(it) },
+                matches { threadId.matches(it) }
+            )
         }.returns(result)
     }
 

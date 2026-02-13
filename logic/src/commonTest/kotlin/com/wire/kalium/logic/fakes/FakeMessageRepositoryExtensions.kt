@@ -52,4 +52,12 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<AssetMessage>> = emptyFlow()
+
+    override suspend fun getPaginatedMessagesByThreadIdAndVisibility(
+        conversationId: ConversationId,
+        threadId: String,
+        visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> = emptyFlow()
 }
