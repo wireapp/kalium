@@ -28,14 +28,14 @@ import com.wire.kalium.common.functional.fold
  */
 
 public interface IsFileSharingEnabledUseCase {
-    public operator fun invoke(): FileSharingStatus
+    public suspend operator fun invoke(): FileSharingStatus
 }
 
 internal class IsFileSharingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsFileSharingEnabledUseCase {
 
-    override operator fun invoke(): FileSharingStatus =
+    override suspend operator fun invoke(): FileSharingStatus =
         userConfigRepository.isFileSharingEnabled()
             .fold({
                 FileSharingStatus(FileSharingStatus.Value.Disabled, false)

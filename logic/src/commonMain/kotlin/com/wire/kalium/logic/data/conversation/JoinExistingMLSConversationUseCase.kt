@@ -182,7 +182,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                     leadingMessage = "Reset Conversation after join group failure",
                                     jsonStringKeyValues = conversation.logData(failure)
                                 )
-                                resetMLSConversation(conversation.id, transactionContext)
+                                resetMLSConversation(conversation.id, transactionContext).toEither()
                             }
                             else -> {
                                 logger.logStructuredJson(
@@ -251,10 +251,10 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private fun Conversation.logData(
         failure: CoreFailure? = null
     ): Map<String, Any> = buildMap {
-        "conversationId" to id.toLogString()
-        "conversationType" to type
-        "protocol" to CreateConversationParam.Protocol.MLS.name
-        "protocolInfo" to protocol.toLogMap()
-        failure?.run { "errorInfo" to "$failure" }
+        put("conversationId", id.toLogString())
+        put("conversationType", type)
+        put("protocol", CreateConversationParam.Protocol.MLS.name)
+        put("protocolInfo", protocol.toLogMap())
+        failure?.let { put("errorInfo", "$it") }
     }
 }

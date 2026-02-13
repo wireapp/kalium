@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -27,11 +28,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
@@ -46,6 +44,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 class SendEditTextMessageUseCaseTest {
 
@@ -67,7 +66,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        result.shouldSucceed()
+        assertIs<MessageOperationResult.Success>(result)
         coVerify {
             arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
         }.wasInvoked(once)
@@ -100,7 +99,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        result.shouldFail()
+        assertIs<MessageOperationResult.Failure>(result)
         coVerify {
             arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
         }.wasInvoked(once)
@@ -130,27 +129,32 @@ class SendEditTextMessageUseCaseTest {
                 messageSender.sendMessage(any(), any())
             }.returns(Either.Right(Unit))
         }
+
         suspend fun withSendMessageFailure() = apply {
             coEvery {
                 messageSender.sendMessage(any(), any())
             }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
+
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             every {
                 slowSyncRepository.slowSyncStatus
             }.returns(stateFlow)
         }
+
         suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
             coEvery {
                 currentClientIdProvider.invoke()
             }.returns(Either.Right(clientId))
         }
+
         suspend fun withUpdateTextMessageSuccess() = apply {
             coEvery {
                 messageRepository.updateTextMessage(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
+
         suspend fun withUpdateMessageStatusSuccess() = apply {
             coEvery {
                 messageRepository.updateMessageStatus(any(), any(), any())

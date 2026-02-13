@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.time.Duration.Companion.seconds
 
 class CustomScrollRegion(
     private val content: Widget,
@@ -123,34 +124,155 @@ private fun regularContent(message: Message.Regular) =
             message.senderUserName,
             "Decryption error (${content.clientId})"
         )
+
         is MessageContent.Knock -> textMessage(message.senderUserName, "<ping>")
         is MessageContent.RestrictedAsset -> textMessage(message.senderUserName, "Shared an asset")
         is MessageContent.Unknown -> systemMessage(message.senderUserName, "Unknown message")
+        is MessageContent.Composite -> systemMessage(message.senderUserName, "Shared a composite message")
+        is MessageContent.Location -> systemMessage(message.senderUserName, "Shared a location")
+        is MessageContent.Multipart -> systemMessage(message.senderUserName, "Shared a multipart message")
     }
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 private fun systemContent(message: Message.System) =
     when (val content = message.content) {
         is MessageContent.ConversationRenamed ->
             systemMessage(message.senderUserName, "Conversation was renamed to ${content.conversationName}")
+
         is MessageContent.ConversationReceiptModeChanged ->
             systemMessage(
                 message.senderUserName,
-                "Read receipts was ${if (content.receiptMode) "enabled" else "disabled" }"
+                "Read receipts was ${if (content.receiptMode) "enabled" else "disabled"}"
             )
+
         MessageContent.CryptoSessionReset ->
             systemMessage(message.senderUserName, "Proteus session as reset")
+
         MessageContent.HistoryLost ->
             systemMessage(null, "You've been offline for a long time and may have lost history")
+
         is MessageContent.MemberChange.Added ->
             systemMessage(message.senderUserName, "${content.members.count()} user(s) was added")
+
         is MessageContent.MemberChange.Removed ->
             systemMessage(message.senderUserName, "${content.members.count()} user(s) were removed")
+
         MessageContent.MissedCall ->
             systemMessage(message.senderUserName, "missed call")
+
         is MessageContent.NewConversationReceiptMode ->
-            systemMessage(null, "Read receipts are ${if (content.receiptMode) "enabled" else "disabled" }")
+            systemMessage(null, "Read receipts are ${if (content.receiptMode) "enabled" else "disabled"}")
+
         is MessageContent.TeamMemberRemoved ->
             systemMessage(null, "${content.userName} was removed from the team")
+
+        is MessageContent.ConversationAppsEnabledChanged -> systemMessage(
+            message.senderUserName,
+            "Conversation apps were ${if (content.isEnabled) "enabled" else "disabled"}"
+        )
+
+        MessageContent.ConversationCreated -> systemMessage(message.senderUserName, "Conversation was created")
+        MessageContent.ConversationDegradedMLS -> systemMessage(message.senderUserName, "Conversation degraded MLS")
+        MessageContent.ConversationDegradedProteus -> systemMessage(message.senderUserName, "Conversation degraded Proteus")
+        is MessageContent.ConversationMessageTimerChanged -> systemMessage(
+            message.senderUserName,
+            "Message timer was changed to ${content.messageTimer?.seconds} seconds"
+        )
+
+        is MessageContent.ConversationProtocolChanged -> systemMessage(
+            message.senderUserName,
+            "Conversation protocol changed to ${content.protocol}"
+        )
+
+        MessageContent.ConversationProtocolChangedDuringACall -> systemMessage(
+            message.senderUserName,
+            "Conversation protocol changed during a call"
+        )
+
+        MessageContent.ConversationStartedUnverifiedWarning -> systemMessage(
+            message.senderUserName,
+            "Conversation started unverified warning"
+        )
+
+        MessageContent.ConversationVerifiedMLS -> systemMessage(
+            message.senderUserName,
+            "Conversation verified MLS"
+        )
+
+        MessageContent.ConversationVerifiedProteus -> systemMessage(
+            message.senderUserName,
+            "Conversation verified Proteus"
+        )
+
+        is MessageContent.FederationStopped.ConnectionRemoved -> systemMessage(
+            message.senderUserName,
+            "Federation connection to ${content.domainList} was removed"
+        )
+
+        is MessageContent.FederationStopped.Removed -> systemMessage(
+            message.senderUserName,
+            "Federation to ${content.domain} was removed"
+        )
+
+        MessageContent.HistoryLostProtocolChanged -> systemMessage(
+            null,
+            "You've been offline for a long time and may have lost history due to protocol change"
+        )
+
+        MessageContent.LegalHold.ForConversation.Disabled -> systemMessage(
+            message.senderUserName,
+            "Legal hold for conversation now disabled"
+        )
+
+        MessageContent.LegalHold.ForConversation.Enabled -> systemMessage(
+            message.senderUserName,
+            "Legal hold for conversation now enabled"
+        )
+
+        is MessageContent.LegalHold.ForMembers.Disabled -> systemMessage(
+            message.senderUserName,
+            "Legal hold for members ${content.members.joinToString(", ") { it.toLogString() }} now disabled"
+        )
+
+        is MessageContent.LegalHold.ForMembers.Enabled -> systemMessage(
+            message.senderUserName,
+            "Legal hold for members ${content.members.joinToString(", ") { it.toLogString() }} now disabled"
+        )
+
+        is MessageContent.MLSWrongEpochWarning -> systemMessage(
+            message.senderUserName,
+            "MLS wrong epoch warning"
+        )
+
+        is MessageContent.MemberChange.CreationAdded -> systemMessage(
+            message.senderUserName,
+            "${content.members.count()} user(s) was added during conversation creation"
+        )
+
+        is MessageContent.MemberChange.FailedToAdd -> systemMessage(
+            message.senderUserName,
+            "Failed to add ${content.members.count()} user(s)"
+        )
+
+        is MessageContent.MemberChange.FederationRemoved -> systemMessage(
+            message.senderUserName,
+            "${content.members.count()} federated user(s) were removed"
+        )
+
+        is MessageContent.MemberChange.RemovedFromTeam -> systemMessage(
+            message.senderUserName,
+            "${content.members.count()} user(s) were removed due to team removal"
+        )
+
+        MessageContent.NewConversationWithCellMessage -> systemMessage(
+            null,
+            "New conversation created with cell message enabled"
+        )
+
+        MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> systemMessage(
+            null,
+            "New conversation created with cell self-delete disabled"
+        )
     }
 
 @Suppress("MagicNumber")

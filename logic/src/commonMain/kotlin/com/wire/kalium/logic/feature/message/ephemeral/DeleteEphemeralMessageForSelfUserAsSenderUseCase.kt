@@ -17,18 +17,18 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import io.mockative.Mockable
 
 /**
@@ -43,7 +43,7 @@ internal interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
      * @param conversationId the conversation id that contains the self-deleting message
      * @param messageId the id of the self-deleting message
      */
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit>
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String): MessageOperationResult
 }
 
 internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl internal constructor(
@@ -51,14 +51,17 @@ internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl internal con
     private val assetRepository: AssetRepository,
 ) : DeleteEphemeralMessageForSelfUserAsSenderUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
+    override suspend fun invoke(conversationId: ConversationId, messageId: String): MessageOperationResult =
         messageRepository.getMessageById(conversationId, messageId)
             .onSuccess { message ->
                 deleteMessageAssetLocallyIfExists(message)
             }
             .flatMap {
                 messageRepository.markMessageAsDeleted(messageId, conversationId)
-            }
+            }.fold(
+                { MessageOperationResult.Failure(it) },
+                { MessageOperationResult.Success }
+            )
 
     private suspend fun deleteMessageAssetLocallyIfExists(message: Message) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->

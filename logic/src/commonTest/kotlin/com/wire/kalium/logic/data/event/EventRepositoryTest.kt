@@ -585,6 +585,32 @@ class EventRepositoryTest {
         }
     }
 
+    @Test
+    fun givenWebSocketClosedWithNullCause_whenHandlingClosure_thenShouldThrowKaliumSyncException() = runTest {
+        val (_, repository) = Arrangement()
+            .withClientHasConsumableNotifications(true)
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(WebSocketEvent.Close(cause = null)),
+                    headers = emptyMap(),
+                    httpCode = 200
+                )
+            )
+            .arrange()
+
+        val eitherFlow = repository.liveEvents()
+        assertTrue(eitherFlow is Either.Right)
+
+        val flow = eitherFlow.value
+
+        val thrown = assertFailsWith<KaliumSyncException> {
+            flow.collect {}
+        }
+
+        assertIs<CoreFailure.Unknown>(thrown.coreFailureCause)
+    }
+
     private companion object {
         const val LAST_SAVED_EVENT_ID_KEY = "last_processed_event_id"
         val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(

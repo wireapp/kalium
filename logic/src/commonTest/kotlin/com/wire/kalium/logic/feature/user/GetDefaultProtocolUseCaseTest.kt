@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.common.functional.Either
-import io.mockative.every
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -79,20 +79,20 @@ class GetDefaultProtocolUseCaseTest {
             userConfigRepository = userConfigRepository
         )
 
-        fun withReturningSuccessProteusProtocol() = apply {
-            every {
+        suspend fun withReturningSuccessProteusProtocol() = apply {
+            coEvery {
                 userConfigRepository.getDefaultProtocol()
             }.returns(Either.Right(SupportedProtocol.PROTEUS))
         }
 
-        fun withReturningSuccessMLSProtocol() = apply {
-            every {
+        suspend fun withReturningSuccessMLSProtocol() = apply {
+            coEvery {
                 userConfigRepository.getDefaultProtocol()
             }.returns(Either.Right(SupportedProtocol.MLS))
         }
 
-        fun withReturningError() = apply {
-            every {
+        suspend fun withReturningError() = apply {
+            coEvery {
                 userConfigRepository.getDefaultProtocol()
             }.returns(Either.Left(StorageFailure.Generic(Throwable())))
         }

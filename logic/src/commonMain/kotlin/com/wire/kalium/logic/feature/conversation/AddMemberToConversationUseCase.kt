@@ -62,7 +62,7 @@ internal class AddMemberToConversationUseCaseImpl(
                     when (mlsError.cause) {
                         is NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex,
                         is NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature -> {
-                            resetMLSConversation(conversationId).fold(
+                            resetMLSConversation(conversationId).toEither().fold(
                                 {
                                     AddMemberToConversationUseCase.Result.Failure(it)
                                 },

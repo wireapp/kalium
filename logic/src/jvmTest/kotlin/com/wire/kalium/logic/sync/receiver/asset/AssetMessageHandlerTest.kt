@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.asset
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
 import io.mockative.coEvery
@@ -240,6 +240,35 @@ class AssetMessageHandlerTest {
         coVerify {
             arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUnknownMessageStored_whenHandlingAssetUpdate_itDoesNotCrashOrPersist() = runTest {
+        // Given
+        val storedUnknownMessage = COMPLETE_ASSET_MESSAGE.copy(
+            content = MessageContent.Unknown(typeName = "some-new-type"),
+            visibility = Message.Visibility.HIDDEN
+        )
+        val updateAssetMessage = COMPLETE_ASSET_MESSAGE
+        val isFileSharingEnabled = FileSharingStatus.Value.EnabledAll
+        val (arrangement, assetMessageHandler) = Arrangement()
+            .withSuccessfulFileSharingFlag(isFileSharingEnabled)
+            .withSuccessfulStoredMessage(storedUnknownMessage)
+            .arrange()
+
+        // When
+        assetMessageHandler.handle(updateAssetMessage)
+
+        // Then
+        coVerify {
+            arrangement.messageRepository.getMessageById(
+                eq(updateAssetMessage.conversationId),
+                eq(updateAssetMessage.id)
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify { arrangement.persistMessage(any()) }
+            .wasNotInvoked()
     }
 
     @Test
@@ -476,8 +505,8 @@ class AssetMessageHandlerTest {
             }.returns(result)
         }
 
-        fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
-            every {
+        suspend fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
+            coEvery {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(Either.Right(FileSharingStatus(state = value, isStatusChanged = false)))
         }

@@ -19,9 +19,10 @@
 
 package com.wire.kalium.logic.feature.message
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -29,10 +30,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
@@ -40,6 +37,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 /**
  * Edits a text message
@@ -65,7 +63,9 @@ public class SendEditTextMessageUseCase internal constructor(
      * @param originalMessageId the id of the message to edit
      * @param text the edited content of the message
      * @param mentions the edited mentions in the message
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @param editedMessageId optional edited message id, generated if not provided
+     *
+     * @return [MessageOperationResult] indicating success or failure.
      */
     public suspend operator fun invoke(
         conversationId: ConversationId,
@@ -73,7 +73,7 @@ public class SendEditTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         editedMessageId: String = Uuid.random().toString()
-    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    ): MessageOperationResult = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -103,18 +103,24 @@ public class SendEditTextMessageUseCase internal constructor(
                 newMessageId = originalMessageId,
                 editInstant = message.date
             ).flatMap {
-                    messageRepository.updateMessageStatus(
-                        messageStatus = MessageEntity.Status.PENDING,
-                        conversationId = message.conversationId,
-                        messageUuid = originalMessageId
-                    )
-                }
+                messageRepository.updateMessageStatus(
+                    messageStatus = MessageEntity.Status.PENDING,
+                    conversationId = message.conversationId,
+                    messageUuid = originalMessageId
+                )
+            }
                 .flatMap {
                     messageSender.sendMessage(message)
                 }
-        }.onFailure {
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE)
-        }
+        }.fold(
+            {
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE)
+                MessageOperationResult.Failure(it)
+            },
+            {
+                MessageOperationResult.Success
+            }
+        )
     }
 
     internal companion object {

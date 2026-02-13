@@ -85,7 +85,7 @@ complexity:
         ignoreAnnotated: [ 'Composable' ]
     LongParameterList:
         active: true
-        functionThreshold: 6
+        functionThreshold: 7
         constructorThreshold: 7
         ignoreDefaultParameters: false
         ignoreDataClasses: true
@@ -647,4 +647,7 @@ WireRuleSet:
         excludes: [ '**/build/**', '**/*Test/**', '**/protobuf/**' ]
     DocumentedPublicUseCases:
         active: true # TODO: applied as now incrementally, document retroactively
+        excludes: [ '**/build/**', '**/*Test/**' ]
+    DaoFlowOnRule:
+        active: true
         excludes: [ '**/build/**', '**/*Test/**' ]

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
@@ -177,7 +178,7 @@ class UpdateConversationReadDateUseCaseTest {
         suspend fun arrange(): Pair<Arrangement, UpdateConversationReadDateUseCase> = run {
             coEvery {
                 sendConfirmation(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            }.returns(MessageOperationResult.Success)
             coEvery {
                 conversationRepository.updateConversationReadDate(any(), any())
             }.returns(Either.Right(Unit))

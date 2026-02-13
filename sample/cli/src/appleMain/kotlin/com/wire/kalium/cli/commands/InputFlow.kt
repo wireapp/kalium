@@ -15,9 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:OptIn(ExperimentalForeignApi::class)
+
 package com.wire.kalium.cli.commands
 
 import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -46,23 +49,31 @@ fun readChar(): Input =
     memScoped {
         val byte = alloc<ByteVar>()
         var numBytesRead: ssize_t
-        while (read(STDIN_FILENO, byte.ptr, 1).also { numBytesRead = it } != 1L) {
-            if (numBytesRead == -1L) { throw RuntimeException("Failed to read input") }
+        while (read(STDIN_FILENO, byte.ptr, 1u).also { numBytesRead = it } != 1L) {
+            if (numBytesRead == -1L) {
+                throw RuntimeException("Failed to read input")
+            }
         }
 
         val char = byte.value.toInt().toChar()
         if (char == '\u001b') {
             val sequence = ByteArray(3)
             sequence.usePinned {
-                if (read(STDIN_FILENO, it.addressOf(0), 1) != 1L) { return Input.Character('\u001b') }
-                if (read(STDIN_FILENO, it.addressOf(1), 1) != 1L) { return Input.Character('\u001b') }
+                if (read(STDIN_FILENO, it.addressOf(0), 1u) != 1L) {
+                    return Input.Character('\u001b')
+                }
+                if (read(STDIN_FILENO, it.addressOf(1), 1u) != 1L) {
+                    return Input.Character('\u001b')
+                }
             }
 
             if (sequence[0].toInt().toChar() == '[') {
                 when (sequence[1].toInt().toChar()) {
                     in '0'..'9' -> {
                         sequence.usePinned {
-                            if (read(STDIN_FILENO, it.addressOf(2), 1) != 1L) { return Input.Character('\u001b') }
+                            if (read(STDIN_FILENO, it.addressOf(2), 1u) != 1L) {
+                                return Input.Character('\u001b')
+                            }
                         }
                         if (sequence[2].toInt().toChar() == '~') {
                             when (sequence[1].toInt().toChar()) {
@@ -74,6 +85,7 @@ fun readChar(): Input =
                             }
                         }
                     }
+
                     'A' -> return Input.ArrowUp
                     'B' -> return Input.ArrowDown
                     'C' -> return Input.ArrowRight

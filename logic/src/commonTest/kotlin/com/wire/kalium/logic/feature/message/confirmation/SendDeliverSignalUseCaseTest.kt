@@ -18,14 +18,15 @@
 package com.wire.kalium.logic.feature.message.confirmation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.message.MessageOperationResult
+import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.messaging.sending.MessageSender
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -48,7 +49,7 @@ class SendDeliverSignalUseCaseTest {
 
         val result = usecase.invoke(conversation, messageIdList)
 
-        assertTrue(result is Either.Right)
+        assertTrue(result is MessageOperationResult.Success)
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
     }
 
@@ -64,7 +65,7 @@ class SendDeliverSignalUseCaseTest {
 
         val result = usecase.invoke(conversation, messageIdList)
 
-        assertTrue(result is Either.Left)
+        assertTrue(result is MessageOperationResult.Failure)
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
     }
 
@@ -79,7 +80,7 @@ class SendDeliverSignalUseCaseTest {
 
         val result = usecase.invoke(conversation, messageIdList)
 
-        assertTrue(result is Either.Left)
+        assertTrue(result is MessageOperationResult.Failure)
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasNotInvoked()
     }
 

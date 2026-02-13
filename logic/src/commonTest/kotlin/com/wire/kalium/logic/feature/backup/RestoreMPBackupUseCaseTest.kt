@@ -18,11 +18,15 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.data.BackupConversation
+import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupQualifiedId
+import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
@@ -85,6 +89,7 @@ class RestoreMPBackupUseCaseTest {
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertMessages(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.backupRepository.insertReactions(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -99,6 +104,7 @@ class RestoreMPBackupUseCaseTest {
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertMessages(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.backupRepository.insertReactions(any()) }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -161,6 +167,7 @@ class RestoreMPBackupUseCaseTest {
         val usersPager = mock(of<ImportDataPagerMockable<BackupUser>>())
         val conversationsPager = mock(of<ImportDataPagerMockable<BackupConversation>>())
         val messagesPager = mock(of<ImportDataPagerMockable<BackupMessage>>())
+        val reactionsPager = mock(of<ImportDataPagerMockable<BackupReaction>>())
         val importer = mock(BackupImporter::class)
 
         val storedPath = "testPath/backupFile.zip".toPath()
@@ -204,6 +211,7 @@ class RestoreMPBackupUseCaseTest {
             coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())
             coEvery { backupRepository.insertConversations(any()) }.returns(Unit.right())
             coEvery { backupRepository.insertMessages(any()) }.returns(Unit.right())
+            coEvery { backupRepository.insertReactions(any()) }.returns(Unit.right())
 
             every { usersPager.hasMorePages() }.returnsMany(true, false)
             every { usersPager.nextPage() }.returnsMany(arrayOf(testUser.toBackupUser()))
@@ -214,9 +222,13 @@ class RestoreMPBackupUseCaseTest {
             every { messagesPager.hasMorePages() }.returnsMany(true, false)
             every { messagesPager.nextPage() }.returnsMany(arrayOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!))
 
+            every { reactionsPager.hasMorePages() }.returnsMany(true, false)
+            every { reactionsPager.nextPage() }.returnsMany(arrayOf(testReaction))
+
             every { resultPager.usersPager }.returns(usersPager)
             every { resultPager.conversationsPager }.returns(conversationsPager)
             every { resultPager.messagesPager }.returns(messagesPager)
+            every { resultPager.reactionsPager }.returns(reactionsPager)
             every { resultPager.totalPagesCount }.returns(1)
 
             return this to RestoreMPBackupUseCaseImpl(
@@ -251,6 +263,17 @@ class RestoreMPBackupUseCaseTest {
             deleted = false,
             defederated = false,
             isProteusVerified = false,
+        )
+
+        private val testReaction = BackupReaction(
+            messageId = "messageId",
+            conversationId = BackupQualifiedId("conversationId", "domain"),
+            emojiReactions = listOf(
+                BackupEmojiReaction(
+                    emoji = ":)",
+                    users = listOf(BackupQualifiedId("participant2", "domain"))
+                )
+            ),
         )
     }
 }

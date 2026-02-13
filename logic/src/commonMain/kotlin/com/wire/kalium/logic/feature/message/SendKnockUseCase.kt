@@ -18,10 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -61,9 +59,9 @@ public class SendKnockUseCase internal constructor(
      *
      * @param conversationId the id of the conversation to send the ping to
      * @param hotKnock whether to send this as a hot knock or not @see [MessageContent.Knock]
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @return [MessageOperationResult] with a success or failure.
      */
-    public suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> =
+    public suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): MessageOperationResult =
         withContext(dispatcher.io) {
             slowSyncRepository.slowSyncStatus.first {
                 it is SlowSyncStatus.Complete
@@ -89,14 +87,17 @@ public class SendKnockUseCase internal constructor(
                 )
                 persistMessage(message)
                     .flatMap { messageSender.sendMessage(message) }
-            }.onFailure {
+            }.fold({
                 messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                     it,
                     conversationId,
                     generatedMessageUuid,
                     TYPE,
                 )
-            }
+                MessageOperationResult.Failure(it)
+            }, {
+                MessageOperationResult.Success
+            })
         }
 
     internal companion object {

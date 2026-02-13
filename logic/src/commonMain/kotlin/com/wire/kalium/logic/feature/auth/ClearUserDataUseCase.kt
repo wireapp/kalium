@@ -39,7 +39,5 @@ internal class ClearUserDataUseCaseImpl internal constructor(
 
     private fun clearUserStorage() {
         userStorage.database.nuke()
-        // exclude clientId clear from this step
-        userStorage.preferences.clear()
     }
 }

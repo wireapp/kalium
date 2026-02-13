@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.message.reaction
 
-package com.wire.kalium.persistence.dao
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 
-import com.wire.kalium.persistence.dao.message.UnreadContentCountEntity
-import com.wire.kalium.persistence.util.JsonSerializer
-import kotlinx.serialization.decodeFromString
+data class MessageReactions(
+    val messageId: String,
+    val conversationId: ConversationId,
+    val reactions: List<MessageReactionWithUsers>,
+)
 
-object UnreadContentMapper {
-
-    private val serializer = JsonSerializer()
-    fun unreadContentTypeFromJsonString(unreadContentJson: String?): UnreadContentCountEntity =
-        unreadContentJson?.let {
-            serializer.decodeFromString(unreadContentJson)
-        } ?: emptyMap()
-}
+data class MessageReactionWithUsers(
+    val emoji: String,
+    val users: List<QualifiedID>,
+)

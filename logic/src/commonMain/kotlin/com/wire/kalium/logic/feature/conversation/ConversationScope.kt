@@ -273,6 +273,9 @@ public class ConversationScope internal constructor(
             kaliumLogger
         )
 
+    public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
+        get() = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository)
+
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
 
@@ -319,11 +322,7 @@ public class ConversationScope internal constructor(
         get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
 
     public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
-        get() = DeleteConversationLocallyUseCaseImpl(
-            clearConversationContent,
-            deleteConversationUseCase,
-            transactionProvider
-        )
+        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
 
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)

@@ -51,9 +51,10 @@ public actual class CoreLogic(
     actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,
-            shouldEncryptData = kaliumConfigs.shouldEncryptData
+            shouldEncryptData = kaliumConfigs.shouldEncryptData()
         )
 
+    // TODO: add support for encrypted DB on apple platforms
     actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
@@ -91,7 +92,7 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    actual override val globalCallManager: GlobalCallManager = GlobalCallManager()
+    actual override val globalCallManager: GlobalCallManager = GlobalCallManager(getGlobalScope(), networkStateObserver)
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
     public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 

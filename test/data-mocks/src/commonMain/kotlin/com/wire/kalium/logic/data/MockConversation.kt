@@ -4,7 +4,9 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -16,6 +18,15 @@ object MockConversation {
 
     val ID = ConversationId(conversationValue, conversationDomain)
     val ENTITY_ID = QualifiedIDEntity(conversationValue, conversationDomain)
+    val GROUP_ID = GroupID("mlsGroupId")
+
+    val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
+        GROUP_ID,
+        ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    )
 
     fun id(suffix: Int = 0) = ConversationId("${conversationValue}_$suffix", conversationDomain)
 
@@ -122,5 +133,29 @@ object MockConversation {
         channelAddPermission = null,
         wireCell = null,
         historySharingRetentionSeconds = 0,
+    )
+
+    val MLS_CONVERSATION = Conversation(
+        ID,
+        "MLS Name",
+        Conversation.Type.OneOnOne,
+        null,
+        MLS_PROTOCOL_INFO,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null,
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null,
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
     )
 }

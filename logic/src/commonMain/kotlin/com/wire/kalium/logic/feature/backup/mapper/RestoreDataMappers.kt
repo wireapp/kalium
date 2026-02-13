@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -93,7 +94,7 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
 
     return Message.Regular(
         id = id,
-        content = content.toMessageContent(),
+        content = content.toMessageContent(selfUserId),
         conversationId = conversationId.toQualifiedId(),
         date = creationDate.instant,
         senderUserId = senderUserId.toQualifiedId(),
@@ -110,10 +111,26 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
     )
 }
 
-private fun BackupMessageContent.toMessageContent() =
+private fun BackupMessageContent.toMessageContent(selfUserId: UserId) =
     when (this) {
         is BackupMessageContent.Text -> MessageContent.Text(
             value = text,
+            mentions = mentions.map { mention ->
+                val userId = mention.userId.toQualifiedId()
+                MessageMention(
+                    start = mention.start,
+                    length = mention.length,
+                    userId = userId,
+                    isSelfMention = userId == selfUserId,
+                )
+            },
+            quotedMessageReference = quotedMessageId?.let {
+                MessageContent.QuoteReference(
+                    quotedMessageId = it,
+                    quotedMessageSha256 = null,
+                    isVerified = true,
+                )
+            }
         )
 
         is BackupMessageContent.Location -> MessageContent.Location(

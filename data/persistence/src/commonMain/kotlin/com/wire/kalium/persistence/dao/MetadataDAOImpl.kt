@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.cache.FlowCache
+import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
@@ -39,6 +41,7 @@ class MetadataDAOImpl internal constructor(
     private val metadataCache: FlowCache<String, String?>,
     private val databaseScope: CoroutineScope,
     private val writeDispatcher: WriteDispatcher,
+    private val readDispatcher: ReadDispatcher,
 ) : MetadataDAO {
 
     override suspend fun insertValue(value: String, key: String) {
@@ -59,6 +62,7 @@ class MetadataDAOImpl internal constructor(
         metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
     }
 
     override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
