@@ -154,6 +154,34 @@ interface MessageDAO {
         messageId: String
     ): Int
 
+    /**
+     * Search messages in a conversation by text content.
+     * @param conversationId The conversation to search in
+     * @param searchQuery The text to search for (case-insensitive, partial match)
+     * @param limit Maximum number of results to return
+     * @param offset Offset for pagination
+     * @return List of messages matching the search query, ordered by date descending
+     */
+    suspend fun searchMessagesByText(
+        conversationId: QualifiedIDEntity,
+        searchQuery: String,
+        limit: Int,
+        offset: Int
+    ): List<MessageEntity>
+
+    /**
+     * Search messages across all conversations by text content.
+     * @param searchQuery The text to search for (case-insensitive, partial match)
+     * @param limit Maximum number of results to return
+     * @param offset Offset for pagination
+     * @return List of messages matching the search query, ordered by date descending
+     */
+    suspend fun searchMessagesByTextGlobally(
+        searchQuery: String,
+        limit: Int,
+        offset: Int
+    ): List<MessageEntity>
+
     val platformExtensions: MessageExtensions
 
     suspend fun getImageMessageAssets(

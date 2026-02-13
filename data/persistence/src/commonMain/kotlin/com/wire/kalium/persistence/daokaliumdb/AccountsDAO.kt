@@ -174,6 +174,7 @@ interface AccountsDAO {
     suspend fun deleteAccount(userIDEntity: UserIDEntity)
     suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason)
     suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean)
+    suspend fun setAllAccountsPersistentWebSocketEnabled(enabled: Boolean)
     suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
@@ -301,6 +302,12 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) {
         withContext(queriesContext) {
             queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
+        }
+    }
+
+    override suspend fun setAllAccountsPersistentWebSocketEnabled(enabled: Boolean) {
+        withContext(queriesContext) {
+            queries.updateAllPersistentWebSocketStatus(enabled)
         }
     }
 
