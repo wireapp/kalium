@@ -35,6 +35,7 @@ internal actual open class MediaManagerServiceImpl(
     }
 
     actual override fun observeSpeaker(): Flow<Boolean> {
+        kaliumLogger.w("Calls not supported on iOS: observeSpeaker returns false")
         return flowOf(false)
     }
 
