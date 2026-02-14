@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
@@ -30,11 +31,13 @@ internal class QualifiedIdMapperImpl internal constructor(
     private val selfUserId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
+        require(id.isNotBlank()) { "Qualified ID cannot be blank" }
+
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
         val count = id.count { it == VALUE_DOMAIN_SEPARATOR }
         return when {
             components.isEmpty() -> {
-                QualifiedID(value = "", domain = "")
+                throw IllegalArgumentException("Qualified ID value cannot be empty")
             }
 
             count > 1 -> {
@@ -53,7 +56,11 @@ internal class QualifiedIdMapperImpl internal constructor(
         }
     }
 
-    private fun selfUserDomain(): String = selfUserId?.domain ?: ""
+    private fun selfUserDomain(): String = selfUserId?.domain?.takeIf { it.isNotBlank() } ?: run {
+        val error = IllegalStateException("Self user domain is required for qualified ID mapping")
+        kaliumLogger.e("QualifiedIdMapper fallback to empty domain because self user domain is missing", error)
+        ""
+    }
 }
 
 public fun QualifiedIdMapper(selfUserId: UserId?): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)

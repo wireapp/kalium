@@ -26,6 +26,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
@@ -34,6 +35,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -69,6 +71,8 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.network.api.model.isTeamMember
@@ -229,7 +233,11 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
-        return fetchUsersByIds(ids).map { }
+        val fetchResult = recoverMalformedQualifiedIdsIfNeeded(
+            fetchResult = fetchUsersByIdsReturningListUsersDTO(ids),
+            qualifiedUserIds = ids
+        )
+        return fetchResult.map { }
     }
 
     override suspend fun fetchUserInfo(userId: UserId) =
@@ -644,8 +652,59 @@ internal class UserDataSource internal constructor(
         clientDAO.isMLSCapable(userId.toDao(), clientId.value)
     }
 
+    /**
+     * Temporary workaround until we find and fix the root cause of malformed qualified IDs in local storage.
+     *
+     * On a specific list-users bad-request validation error, we remove malformed local entries and retry once.
+     */
+    private suspend fun recoverMalformedQualifiedIdsIfNeeded(
+        fetchResult: Either<CoreFailure, ListUsersDTO>,
+        qualifiedUserIds: Set<UserId>,
+    ): Either<CoreFailure, ListUsersDTO> = fetchResult.fold(
+        fnL = { error ->
+            val malformedUsers = qualifiedUserIds
+                .filter { it.value.isBlank() || it.domain.isBlank() }
+                .toSet()
+
+            if (!error.isMalformedQualifiedIdsDomainError() || malformedUsers.isEmpty()) {
+                Either.Left(error)
+            } else {
+                kaliumLogger.e(
+                    "list-users failed due to malformed qualified_ids domain. " +
+                        "Will delete ${malformedUsers.size} malformed users and retry. " +
+                        "Sample=${malformedUsers.toObfuscatedSample()}"
+                )
+
+                wrapStorageRequest {
+                    malformedUsers.forEach { malformedUser ->
+                        userDAO.deleteUserByQualifiedID(malformedUser.toDao())
+                    }
+                }.fold(
+                    fnL = { Either.Left(error) },
+                    fnR = {
+                        val validUsers = qualifiedUserIds
+                            .filterNot(malformedUsers::contains)
+                            .toSet()
+                        fetchUsersByIdsReturningListUsersDTO(validUsers)
+                    }
+                )
+            }
+        },
+        fnR = { listUsersDTO -> Either.Right(listUsersDTO) }
+    )
+
     companion object {
 
         internal const val BATCH_SIZE = 500
     }
 }
+
+private fun CoreFailure.isMalformedQualifiedIdsDomainError(): Boolean {
+    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
+    return invalidRequest?.isBadRequest() == true &&
+        invalidRequest.errorResponse.message.contains("qualified_ids", ignoreCase = true) &&
+        invalidRequest.errorResponse.message.contains("domain", ignoreCase = true)
+}
+
+private fun Set<UserId>.toObfuscatedSample(limit: Int = 3): String =
+    take(limit).joinToString { "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}" }

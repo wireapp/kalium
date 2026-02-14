@@ -60,6 +60,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -159,6 +160,30 @@ class RestoreMPBackupUseCaseTest {
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error"), result.failure)
     }
 
+    @Test
+    fun givenBackupContainsUsersWithEmptyDomain_whenRestoring_thenMalformedUserIsSkipped() = runTest {
+        val malformedBackupUser = testUser.toBackupUser().copy(
+            id = BackupQualifiedId("participant-malformed", "")
+        )
+        val capturedInsertedUsers = mutableListOf<List<OtherUser>>()
+
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withUsersPages(arrayOf(malformedBackupUser, testUser.toBackupUser()))
+            .captureInsertedUsers(capturedInsertedUsers)
+            .arrange()
+
+        val result = useCase(arrangement.storedPath, null) {}
+
+        assertTrue(result is RestoreBackupResult.Success)
+        assertEquals(1, capturedInsertedUsers.size)
+        val insertedUsers = capturedInsertedUsers.first()
+        assertEquals(1, insertedUsers.size)
+        val insertedUser = insertedUsers.firstOrNull()
+        assertNotNull(insertedUser)
+        assertEquals("domain", insertedUser.id.domain)
+    }
+
     private inner class Arrangement {
 
         val backupRepository = mock(BackupRepository::class)
@@ -169,6 +194,8 @@ class RestoreMPBackupUseCaseTest {
         val messagesPager = mock(of<ImportDataPagerMockable<BackupMessage>>())
         val reactionsPager = mock(of<ImportDataPagerMockable<BackupReaction>>())
         val importer = mock(BackupImporter::class)
+        var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
+        var usersInsertStubConfigured = false
 
         val storedPath = "testPath/backupFile.zip".toPath()
 
@@ -203,18 +230,35 @@ class RestoreMPBackupUseCaseTest {
             )
         }
 
+        fun withUsersPages(vararg pages: Array<BackupUser>) = apply {
+            usersPages = pages.toList()
+        }
+
+        suspend fun captureInsertedUsers(captured: MutableList<List<OtherUser>>) = apply {
+            usersInsertStubConfigured = true
+            coEvery { backupRepository.insertUsers(any()) }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val insertedUsers = args[0] as List<OtherUser>
+                captured.add(insertedUsers)
+                Unit.right()
+            }
+        }
+
         suspend fun arrange(): Pair<Arrangement, RestoreMPBackupUseCase> {
 
             every { importerProvider.providePeekImporter() }.returns(importer)
             every { importerProvider.provideImporter(any(), any()) }.returns(importer)
 
-            coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())
+            if (!usersInsertStubConfigured) {
+                coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())
+            }
             coEvery { backupRepository.insertConversations(any()) }.returns(Unit.right())
             coEvery { backupRepository.insertMessages(any()) }.returns(Unit.right())
             coEvery { backupRepository.insertReactions(any()) }.returns(Unit.right())
 
-            every { usersPager.hasMorePages() }.returnsMany(true, false)
-            every { usersPager.nextPage() }.returnsMany(arrayOf(testUser.toBackupUser()))
+            val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
+            every { usersPager.hasMorePages() }.returnsMany(*usersHasMorePagesValues.toTypedArray())
+            every { usersPager.nextPage() }.returnsMany(*usersPages.toTypedArray())
 
             every { conversationsPager.hasMorePages() }.returnsMany(true, false)
             every { conversationsPager.nextPage() }.returnsMany(arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
