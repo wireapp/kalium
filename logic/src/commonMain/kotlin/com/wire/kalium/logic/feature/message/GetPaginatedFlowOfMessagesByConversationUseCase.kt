@@ -40,13 +40,25 @@ public class GetPaginatedFlowOfMessagesByConversationUseCase internal constructo
 
     public suspend operator fun invoke(
         conversationId: ConversationId,
+        threadId: String? = null,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
         startingOffset: Long,
         pagingConfig: PagingConfig
-    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
-        conversationId,
-        visibility,
-        pagingConfig,
-        startingOffset
-    ).flowOn(dispatcher.io)
+    ): Flow<PagingData<Message.Standalone>> =
+        if (threadId == null) {
+            messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
+                conversationId,
+                visibility,
+                pagingConfig,
+                startingOffset
+            )
+        } else {
+            messageRepository.extensions.getPaginatedMessagesByThreadIdAndVisibility(
+                conversationId = conversationId,
+                threadId = threadId,
+                visibility = visibility,
+                pagingConfig = pagingConfig,
+                startingOffset = startingOffset
+            )
+        }.flowOn(dispatcher.io)
 }
