@@ -46,6 +46,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SessionEstablisher
@@ -113,6 +114,7 @@ public class DebugScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val eventProcessor: EventProcessor,
     private val legalHoldHandler: LegalHoldHandler,
+    private val messageThreadRepository: MessageThreadRepository,
     private val notificationTokenRepository: NotificationTokenRepository,
     private val scope: CoroutineScope,
     private val userStorage: UserStorage,
@@ -221,6 +223,7 @@ public class DebugScope internal constructor(
             messageSendFailureHandler,
             legalHoldHandler,
             sessionEstablisher,
+            messageThreadRepository,
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingInterceptor,

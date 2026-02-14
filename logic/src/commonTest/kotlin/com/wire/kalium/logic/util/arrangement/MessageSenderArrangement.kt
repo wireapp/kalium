@@ -27,6 +27,9 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
+import io.mockative.matchers.Matcher
 
 internal interface MessageSenderArrangement {
 
@@ -34,13 +37,15 @@ internal interface MessageSenderArrangement {
 
     suspend fun withSendMessageSucceed(
         message: (Message.Sendable) -> Boolean = { true },
-        target: (MessageTarget) -> Boolean = { true }
+        target: (MessageTarget) -> Boolean = { true },
+        threadId: Matcher<String?> = AnyMatcher(valueOf())
     )
 
     suspend fun withMessageSenderFailure(
         result: Either.Left<CoreFailure>,
         message: (Message.Sendable) -> Boolean = { true },
-        target: (MessageTarget) -> Boolean = { true }
+        target: (MessageTarget) -> Boolean = { true },
+        threadId: Matcher<String?> = AnyMatcher(valueOf())
     )
 }
 
@@ -53,7 +58,11 @@ internal open class MessageSenderArrangementImpl : MessageSenderArrangement {
         target: (MessageTarget) -> Boolean
     ) {
         everySuspend {
-            messageSender.sendMessage(matches { message(it) }, matches { target(it) })
+            messageSender.sendMessage(
+                matches { message(it) },
+                matches { target(it) },
+                matches { threadId.matches(it) }
+            )
         }.returns(Either.Right(Unit))
     }
 
@@ -63,7 +72,11 @@ internal open class MessageSenderArrangementImpl : MessageSenderArrangement {
         target: (MessageTarget) -> Boolean
     ) {
         everySuspend {
-            messageSender.sendMessage(matches { message(it) }, matches { target(it) })
+            messageSender.sendMessage(
+                matches { message(it) },
+                matches { target(it) },
+                matches { threadId.matches(it) }
+            )
         }.returns(result)
     }
 

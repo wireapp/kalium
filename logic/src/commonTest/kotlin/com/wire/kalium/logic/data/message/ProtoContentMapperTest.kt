@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Composite
@@ -38,6 +39,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class ProtoContentMapperTest {
@@ -65,6 +67,105 @@ class ProtoContentMapperTest {
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
         assertEquals(decoded, protoContent)
+    }
+
+    @Test
+    fun givenThreadedTextContent_whenMappingToProtoDataAndBack_thenThreadIdShouldBePreserved() {
+        assertReadableThreadRoundTrip(
+            content = MessageContent.Text("Threaded hello")
+        )
+    }
+
+    @Test
+    fun givenThreadedAssetContent_whenMappingToProtoDataAndBack_thenThreadIdShouldBePreserved() {
+        val assetName = "Mocked-Asset.bin"
+        val mockedAsset = assetName.encodeToByteArray()
+        val defaultRemoteData = AssetContent.RemoteData(
+            otrKey = ByteArray(0),
+            sha256 = ByteArray(0),
+            assetId = "",
+            assetDomain = null,
+            assetToken = null,
+            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC
+        )
+        assertReadableThreadRoundTrip(
+            content = MessageContent.Asset(
+                AssetContent(
+                    sizeInBytes = mockedAsset.size.toLong(),
+                    name = assetName,
+                    mimeType = "file/binary",
+                    remoteData = defaultRemoteData
+                )
+            )
+        )
+    }
+
+    @Test
+    fun givenThreadedMultipartContent_whenMappingToProtoDataAndBack_thenThreadIdShouldBePreserved() {
+        assertReadableThreadRoundTrip(
+            content = MessageContent.Multipart(
+                value = "Multipart body"
+            )
+        )
+    }
+
+    @Test
+    fun givenThreadedCompositeContent_whenMappingToProtoDataAndBack_thenThreadIdShouldBePreserved() {
+        assertReadableThreadRoundTrip(
+            content = MessageContent.Composite(
+                textContent = MessageContent.Text("Composite text"),
+                buttonList = listOf(Button(text = "Open", id = "btn-1", isSelected = false))
+            )
+        )
+    }
+
+    @Test
+    fun givenNonThreadedRegularContent_whenDecoding_thenThreadIdIsNull() {
+        val genericMessage = GenericMessage(
+            messageId = TEST_MESSAGE_UUID,
+            content = GenericMessage.Content.Knock(
+                com.wire.kalium.protobuf.messages.Knock(hotKnock = true)
+            )
+        )
+        val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(genericMessage.encodeToByteArray()))
+
+        assertIs<ProtoContent.Readable>(decoded)
+        assertEquals(null, decoded.threadId)
+        assertIs<MessageContent.Knock>(decoded.messageContent)
+    }
+
+    @Test
+    fun givenThreadedTextContent_whenDecoding_thenKeepsOriginalRegularContent() {
+        val genericMessage = GenericMessage(
+            messageId = TEST_MESSAGE_UUID,
+            content = GenericMessage.Content.Text(
+                Text(
+                    content = "threaded text",
+                    threadId = TEST_THREAD_ID
+                )
+            )
+        )
+        val decoded = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(genericMessage.encodeToByteArray()))
+
+        assertIs<ProtoContent.Readable>(decoded)
+        assertEquals(TEST_THREAD_ID, decoded.threadId)
+        assertIs<MessageContent.Text>(decoded.messageContent)
+    }
+
+    @Test
+    fun givenThreadedExpiringMessage_whenEncoding_thenItFails() {
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = MessageContent.Text("hello"),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+            expiresAfterMillis = 1000L,
+            threadId = TEST_THREAD_ID
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            protoContentMapper.encodeToProtobuf(protoContent)
+        }
     }
 
     @Test
@@ -571,7 +672,48 @@ class ProtoContentMapperTest {
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
+        const val TEST_THREAD_ID = "d1dbe8e0-7e8f-4d85-9af5-2f913f2d0eb9"
         val TEST_CONVERSATION_ID = TestConversation.ID
         const val TEST_CALLING_UUID = "callingUuid"
+    }
+
+    private fun assertReadableThreadRoundTrip(content: MessageContent.Regular) {
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = content,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+            threadId = TEST_THREAD_ID
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val genericMessage = GenericMessage.decodeFromByteArray(encoded.data)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        val genericContent = genericMessage.content
+        when (content) {
+            is MessageContent.Text -> {
+                assertIs<GenericMessage.Content.Text>(genericContent)
+                assertEquals(TEST_THREAD_ID, genericContent.value.threadId)
+            }
+
+            is MessageContent.Asset -> {
+                assertIs<GenericMessage.Content.Asset>(genericContent)
+                assertEquals(TEST_THREAD_ID, genericContent.value.threadId)
+            }
+
+            is MessageContent.Multipart -> {
+                assertIs<GenericMessage.Content.Multipart>(genericContent)
+                assertEquals(TEST_THREAD_ID, genericContent.value.threadId)
+            }
+
+            is MessageContent.Composite -> {
+                assertIs<GenericMessage.Content.Composite>(genericContent)
+                assertEquals(TEST_THREAD_ID, genericContent.value.threadId)
+            }
+
+            else -> error("Unexpected threaded content type: ${content.getType()}")
+        }
+        assertEquals(protoContent, decoded)
     }
 }

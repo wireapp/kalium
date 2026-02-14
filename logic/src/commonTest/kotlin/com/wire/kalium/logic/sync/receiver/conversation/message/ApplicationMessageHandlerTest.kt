@@ -26,13 +26,17 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRoot
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
@@ -59,6 +63,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 
@@ -354,6 +359,142 @@ class ApplicationMessageHandlerTest {
         }
     }
 
+    @Test
+    fun givenIncomingThreadedMessageWithoutRootMapping_whenHandling_thenInferAndUpsertRootMapping() = runTest {
+        val messageId = "thread-reply-message-id"
+        val threadId = "thread-root-message-id"
+        val textContent = MessageContent.Text(
+            value = "Reply in thread",
+            mentions = emptyList(),
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = messageId,
+            messageContent = textContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+            threadId = threadId,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withMessageThreadUpsertDefaults()
+            .withThreadRootLookupReturning(Either.Right(null))
+            .withErrorGetMessageById(StorageFailure.DataNotFound)
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        coVerify {
+            arrangement.messageThreadRepository.upsertThreadItem(
+                messageEvent.conversationId,
+                messageId,
+                threadId,
+                false,
+                messageEvent.messageInstant,
+                Message.Visibility.VISIBLE,
+            )
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageThreadRepository.upsertThreadRoot(
+                messageEvent.conversationId,
+                threadId,
+                threadId,
+                messageEvent.messageInstant
+            )
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageThreadRepository.upsertThreadItem(
+                messageEvent.conversationId,
+                threadId,
+                threadId,
+                true,
+                messageEvent.messageInstant,
+                Message.Visibility.VISIBLE,
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenIncomingThreadedMessageWithExistingRootMapping_whenHandling_thenDoNotDuplicateRootMapping() = runTest {
+        val messageId = "thread-reply-message-id"
+        val threadId = "thread-root-message-id"
+        val textContent = MessageContent.Text(
+            value = "Reply in thread",
+            mentions = emptyList(),
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = messageId,
+            messageContent = textContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+            threadId = threadId,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withMessageThreadUpsertDefaults()
+            .withThreadRootLookupReturning(
+                Either.Right(
+                    MessageThreadRoot(
+                        conversationId = TestConversation.ID,
+                        rootMessageId = threadId,
+                        threadId = threadId,
+                        createdAt = Clock.System.now(),
+                    )
+                )
+            )
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        coVerify {
+            arrangement.messageThreadRepository.upsertThreadItem(
+                messageEvent.conversationId,
+                messageId,
+                threadId,
+                false,
+                messageEvent.messageInstant,
+                Message.Visibility.VISIBLE,
+            )
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageThreadRepository.upsertThreadRoot(
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.messageThreadRepository.upsertThreadItem(
+                any(),
+                threadId,
+                any(),
+                true,
+                any(),
+                any(),
+            )
+        }.wasNotInvoked()
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
@@ -375,6 +516,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
+        val messageThreadRepository = mock(MessageThreadRepository::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -396,6 +538,7 @@ class ApplicationMessageHandlerTest {
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,
+            messageThreadRepository,
             TestUser.SELF.id
         )
 
@@ -439,6 +582,27 @@ class ApplicationMessageHandlerTest {
         fun withMessageMultipartEditHandler() = apply {
             everySuspend {
                 messageMultipartEditHandler.handle(any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        fun withButtonAction() = apply {
+            everySuspend {
+                buttonActionHandler.handle(any(), any(), any(), any())
+            }.returns(Unit)
+        }
+
+        fun withThreadRootLookupReturning(result: Either<StorageFailure, MessageThreadRoot?>) = apply {
+            everySuspend {
+                messageThreadRepository.getThreadByRootMessage(any(), any())
+            }.returns(result)
+        }
+
+        fun withMessageThreadUpsertDefaults() = apply {
+            everySuspend {
+                messageThreadRepository.upsertThreadRoot(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+            everySuspend {
+                messageThreadRepository.upsertThreadItem(any(), any(), any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
