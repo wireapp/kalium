@@ -66,7 +66,8 @@ interface MessageSender {
      */
     suspend fun sendMessage(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation(),
+        threadId: String? = null,
     ): Either<CoreFailure, Unit>
 
     /**

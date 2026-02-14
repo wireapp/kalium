@@ -59,7 +59,8 @@ internal interface MessageEnvelopeCreator {
     suspend fun createOutgoingEnvelope(
         proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>,
-        message: Message.Sendable
+        message: Message.Sendable,
+        threadId: String? = null,
     ): Either<CoreFailure, MessageEnvelope>
 
     suspend fun createOutgoingBroadcastEnvelope(
@@ -81,7 +82,8 @@ internal class MessageEnvelopeCreatorImpl(
     override suspend fun createOutgoingEnvelope(
         proteusContext: ProteusCoreCryptoContext,
         recipients: List<Recipient>,
-        message: Message.Sendable
+        message: Message.Sendable,
+        threadId: String?,
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
 
@@ -101,7 +103,8 @@ internal class MessageEnvelopeCreatorImpl(
             messageContent = message.content,
             expectsReadConfirmation = expectsReadConfirmation,
             expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
-            legalHoldStatus = legalHoldStatus
+            legalHoldStatus = legalHoldStatus,
+            threadId = threadId,
         )
 
         return createEnvelope(proteusContext, actualMessageContent, recipients, senderClientId)

@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
@@ -53,6 +54,7 @@ internal class PersistNewAssetMessageUseCaseImpl(
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val assetDataSource: AssetRepository,
+    private val messageThreadRepository: MessageThreadRepository,
     private val dispatcher: KaliumDispatcher,
 ) : PersistNewAssetMessageUseCase {
 
@@ -66,9 +68,11 @@ internal class PersistNewAssetMessageUseCaseImpl(
         val (generatedAssetUuid, tempAssetDomain) = Uuid.random().toString() to ""
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
-        val expireAfter = selfDeleteTimer(asset.conversationId, true)
-            .first()
-            .duration
+        val expireAfter = if (asset.threadId == null) {
+            selfDeleteTimer(asset.conversationId, true).first().duration
+        } else {
+            null
+        }
 
         withContext(dispatcher.io) {
             assetDataSource.persistAsset(
@@ -93,10 +97,19 @@ internal class PersistNewAssetMessageUseCaseImpl(
                         editStatus = Message.EditStatus.NotEdited,
                         expectsReadConfirmation = expectsReadConfirmation,
                         expirationData = expireAfter?.let { Message.ExpirationData(it) },
-                        isSelfMessage = true
+                        isSelfMessage = true,
                     )
                     // We persist the asset message right away so that it can be displayed on the conversation screen loading
-                    persistMessage(message).map { currentAssetMessageContent to message }
+                    persistMessage(message).map {
+                        messageThreadRepository.upsertThreadReplyIfNeeded(
+                            conversationId = message.conversationId,
+                            messageId = message.id,
+                            threadId = asset.threadId,
+                            creationDate = message.date,
+                            visibility = message.visibility,
+                        )
+                        currentAssetMessageContent to message
+                    }
                 }
         }
     }

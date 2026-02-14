@@ -98,7 +98,7 @@ internal class ProtoContentMapperImpl(
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
         val messageContent = when (protoContent) {
             is ProtoContent.ExternalMessageInstructions -> mapExternalMessageToProtobuf(protoContent)
-            is ProtoContent.Readable -> mapReadableContentToProtobuf(protoContent)
+            is ProtoContent.Readable -> mapReadableContentToProtobufWithThreadId(protoContent)
         }
 
         val message = GenericMessage(
@@ -106,6 +106,27 @@ internal class ProtoContentMapperImpl(
             content = messageContent
         )
         return PlainMessageBlob(message.encodeToByteArray())
+    }
+
+    private fun mapReadableContentToProtobufWithThreadId(
+        protoContent: ProtoContent.Readable
+    ): GenericMessage.Content<out Any> {
+        val threadId = protoContent.threadId ?: return mapReadableContentToProtobuf(protoContent)
+        if (protoContent.expiresAfterMillis != null) {
+            throw IllegalArgumentException("Expiring messages are not supported in threads")
+        }
+        val regularContent = protoContent.messageContent as? MessageContent.Regular ?: return mapReadableContentToProtobuf(protoContent)
+        regularContent.toThreadPayloadOrNull()
+            ?: throw IllegalArgumentException("Unsupported threaded regular content type: ${regularContent.getType()}")
+        val normalContent = mapNormalContent(regularContent, protoContent.expectsReadConfirmation, protoContent.legalHoldStatus)
+
+        return when (normalContent) {
+            is GenericMessage.Content.Text -> GenericMessage.Content.Text(normalContent.value.copy(threadId = threadId))
+            is GenericMessage.Content.Asset -> GenericMessage.Content.Asset(normalContent.value.copy(threadId = threadId))
+            is GenericMessage.Content.Multipart -> GenericMessage.Content.Multipart(normalContent.value.copy(threadId = threadId))
+            is GenericMessage.Content.Composite -> GenericMessage.Content.Composite(normalContent.value.copy(threadId = threadId))
+            else -> throw IllegalArgumentException("Unsupported threaded regular content type: ${regularContent.getType()}")
+        }
     }
 
     @Suppress("ComplexMethod")
@@ -406,7 +427,33 @@ internal class ProtoContentMapperImpl(
             val expectsReadConfirmation = when (val content = genericMessage.content) {
                 is GenericMessage.Content.Text -> content.value.expectsReadConfirmation ?: false
                 is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
-                else -> false
+                is GenericMessage.Content.Multipart -> content.value.expectsReadConfirmation ?: false
+                is GenericMessage.Content.Composite -> content.value.expectsReadConfirmation ?: false
+                is GenericMessage.Content.Location -> content.value.expectsReadConfirmation ?: false
+
+                is Availability,
+                is GenericMessage.Content.ButtonAction,
+                is GenericMessage.Content.ButtonActionConfirmation,
+                is GenericMessage.Content.Calling,
+                is GenericMessage.Content.Cleared,
+                is GenericMessage.Content.ClientAction,
+                is GenericMessage.Content.Confirmation,
+                is GenericMessage.Content.DataTransfer,
+                is Deleted,
+                is GenericMessage.Content.Edited,
+                is GenericMessage.Content.Ephemeral,
+                is GenericMessage.Content.External,
+                is GenericMessage.Content.Hidden,
+                is GenericMessage.Content.HistoryClientAvailable,
+                is GenericMessage.Content.HistoryClientRequest,
+                is GenericMessage.Content.HistoryClientResponse,
+                is GenericMessage.Content.Image,
+                is GenericMessage.Content.InCallEmoji,
+                is GenericMessage.Content.InCallHandRaise,
+                is GenericMessage.Content.Knock,
+                is GenericMessage.Content.LastRead,
+                is GenericMessage.Content.Reaction,
+                null -> false
             }
             val legalHoldStatus = getLegalHoldStatusFromProtoContent(genericMessage)
             val expiresAfterMillis: Long? = when (val content = genericMessage.content) {
@@ -416,6 +463,7 @@ internal class ProtoContentMapperImpl(
             ProtoContent.Readable(
                 messageUid = genericMessage.messageId,
                 messageContent = getReadableContent(genericMessage, encodedContent),
+                threadId = extractThreadId(genericMessage),
                 expectsReadConfirmation = expectsReadConfirmation,
                 legalHoldStatus = fromProtoLegalHoldStatus(legalHoldStatus),
                 expiresAfterMillis = expiresAfterMillis
@@ -431,6 +479,16 @@ internal class ProtoContentMapperImpl(
             is GenericMessage.Content.Location -> content.value.legalHoldStatus
             is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
             is GenericMessage.Content.Composite -> content.value.legalHoldStatus
+            is GenericMessage.Content.Multipart -> content.value.legalHoldStatus
+            else -> null
+        }
+
+    private fun extractThreadId(genericMessage: GenericMessage): String? =
+        when (val content = genericMessage.content) {
+            is GenericMessage.Content.Text -> content.value.threadId
+            is GenericMessage.Content.Asset -> content.value.threadId
+            is GenericMessage.Content.Composite -> content.value.threadId
+            is GenericMessage.Content.Multipart -> content.value.threadId
             else -> null
         }
 

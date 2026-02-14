@@ -148,6 +148,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepositoryImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -871,6 +873,9 @@ public class UserSessionScope internal constructor(
             messageDAO = userStorage.database.messageDAO,
             selfUserId = userId
         )
+
+    private val messageThreadRepository: MessageThreadRepository
+        get() = MessageThreadRepositoryImpl(userStorage.database.messageThreadDAO)
 
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
@@ -1655,6 +1660,7 @@ public class UserSessionScope internal constructor(
             inCallReactionsRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
+            messageThreadRepository,
             userId
         )
 
@@ -2216,6 +2222,7 @@ public class UserSessionScope internal constructor(
             staleEpochVerifier,
             eventProcessor,
             legalHoldHandler,
+            messageThreadRepository,
             notificationTokenRepository,
             this,
             userStorage,
@@ -2238,6 +2245,7 @@ public class UserSessionScope internal constructor(
             clientIdProvider,
             selfConversationIdProvider,
             messageRepository,
+            messageThreadRepository,
             conversationRepository,
             lazy { cells.messageAttachmentsDraftRepository },
             mlsConversationRepository,

@@ -185,7 +185,8 @@ public data class AssetUploadParams(
     val assetWidth: Int?,
     val assetHeight: Int?,
     val audioLengthInMs: Long,
-    val audioNormalizedLoudness: ByteArray?
+    val audioNormalizedLoudness: ByteArray?,
+    val threadId: String? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -199,6 +200,7 @@ public data class AssetUploadParams(
         if (assetDataPath != other.assetDataPath) return false
         if (assetName != other.assetName) return false
         if (assetMimeType != other.assetMimeType) return false
+        if (threadId != other.threadId) return false
         if (!audioNormalizedLoudness.contentEquals(other.audioNormalizedLoudness)) return false
         return true
     }
@@ -212,6 +214,7 @@ public data class AssetUploadParams(
         result = 31 * result + assetDataPath.hashCode()
         result = 31 * result + assetName.hashCode()
         result = 31 * result + assetMimeType.hashCode()
+        result = 31 * result + (threadId?.hashCode() ?: 0)
         result = 31 * result + (audioNormalizedLoudness?.contentHashCode() ?: 0)
         return result
     }
