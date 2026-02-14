@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.authenticated.properties
 
-enum class PropertyKey(val key: String) {
-    WIRE_RECEIPT_MODE("WIRE_RECEIPT_MODE"),
-    WIRE_TYPING_INDICATOR_MODE("WIRE_TYPING_INDICATOR_MODE"),
-    WIRE_SCREENSHOT_CENSORING_MODE("WIRE_SCREENSHOT_CENSORING_MODE"),
-    WIRE_LABELS("labels"),
-    // TODO map other event like -ie. 'labels'-
+package com.wire.kalium.logic.feature.user
+
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
+
+internal interface SyncUserPropertiesUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
+}
+
+internal class SyncUserPropertiesUseCaseImpl internal constructor(
+    private val userPropertyRepository: UserPropertyRepository
+) : SyncUserPropertiesUseCase {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = userPropertyRepository.syncPropertiesStatuses()
 }
