@@ -66,6 +66,14 @@ internal interface MessageRepositoryExtensions {
         conversationId: ConversationId,
         pageSize: Int,
     ): NomadMessagePagingResult
+
+    suspend fun getPaginatedMessagesByThreadIdAndVisibility(
+        conversationId: ConversationId,
+        threadId: String,
+        visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>>
 }
 
 internal class MessageRepositoryExtensionsImpl internal constructor(
@@ -159,5 +167,25 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             beforeTimestampMs = beforeTimestampMs,
             onInvalidate = {}
         )
+    }
+
+    override suspend fun getPaginatedMessagesByThreadIdAndVisibility(
+        conversationId: ConversationId,
+        threadId: String,
+        visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForThread(
+            conversationId = conversationId.toDao(),
+            threadId = threadId,
+            visibilities = visibility.map { it.toEntityVisibility() },
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset,
+        )
+
+        return pager.pagingDataFlow.map {
+            it.map { messageMapper.fromEntityToMessage(it) }
+        }
     }
 }

@@ -563,7 +563,10 @@ SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 countByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversation_id
 -- @CustomKey message_list
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
+SELECT COUNT(*)
+FROM MessageMainList
+WHERE conversation_id = ?
+AND visibility IN ?;
 
 countPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversation_id
@@ -576,7 +579,22 @@ SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility 
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
 -- @CustomKey message_list
-SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+SELECT MessageDetailsView.*
+FROM (
+    SELECT
+        conversation_id,
+        message_id,
+        creation_date
+    FROM MessageMainList
+    WHERE conversation_id = :conversationId
+    AND visibility IN :visibility
+    ORDER BY creation_date DESC, message_id DESC
+    LIMIT :limit OFFSET :offset
+) AS MainPage
+INNER JOIN MessageDetailsView
+    ON MessageDetailsView.id = MainPage.message_id
+    AND MessageDetailsView.conversationId = MainPage.conversation_id
+ORDER BY MainPage.creation_date DESC, MainPage.message_id DESC;
 
 selectPendingByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId

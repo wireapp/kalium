@@ -1,0 +1,207 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+import kotlin.Boolean;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE MessageMainList (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_id TEXT NOT NULL,
+    creation_date INTEGER AS Instant NOT NULL,
+    visibility TEXT AS MessageEntity.Visibility NOT NULL,
+    PRIMARY KEY (conversation_id, message_id),
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX message_main_list_conv_vis_date_desc
+ON MessageMainList(conversation_id, visibility, creation_date DESC, message_id);
+
+CREATE TABLE MessageThreadRoot (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    root_message_id TEXT NOT NULL,
+    thread_id TEXT NOT NULL,
+    created_at INTEGER AS Instant NOT NULL,
+    visible_reply_count INTEGER NOT NULL DEFAULT 0,
+    last_reply_date INTEGER AS Instant,
+    PRIMARY KEY (conversation_id, root_message_id),
+    UNIQUE (conversation_id, thread_id),
+    FOREIGN KEY (root_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE MessageThreadItem (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    thread_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    creation_date INTEGER AS Instant NOT NULL,
+    is_root INTEGER AS Boolean NOT NULL,
+    visibility TEXT AS MessageEntity.Visibility NOT NULL,
+    PRIMARY KEY (conversation_id, message_id),
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX message_thread_item_conv_thread_vis_date_desc
+ON MessageThreadItem(conversation_id, thread_id, visibility, creation_date DESC, message_id);
+
+CREATE INDEX message_thread_item_conv_thread_message
+ON MessageThreadItem(conversation_id, thread_id, message_id);
+
+upsertMainListItem:
+INSERT INTO MessageMainList(conversation_id, message_id, creation_date, visibility)
+VALUES(:conversation_id, :message_id, :creation_date, :visibility)
+ON CONFLICT(conversation_id, message_id) DO UPDATE SET
+    creation_date = excluded.creation_date,
+    visibility = excluded.visibility;
+
+upsertMainListByMessageId:
+INSERT INTO MessageMainList(conversation_id, message_id, creation_date, visibility)
+SELECT conversation_id, id, creation_date, visibility
+FROM Message
+WHERE id = :message_id
+ON CONFLICT(conversation_id, message_id) DO UPDATE SET
+    creation_date = excluded.creation_date,
+    visibility = excluded.visibility;
+
+deleteMainListItem:
+DELETE FROM MessageMainList
+WHERE conversation_id = :conversation_id
+AND message_id = :message_id;
+
+updateMainListVisibility:
+UPDATE MessageMainList
+SET visibility = :visibility
+WHERE conversation_id = :conversation_id
+AND message_id = :message_id;
+
+upsertThreadRoot:
+INSERT INTO MessageThreadRoot(conversation_id, root_message_id, thread_id, created_at)
+VALUES(:conversation_id, :root_message_id, :thread_id, :created_at)
+ON CONFLICT(conversation_id, root_message_id) DO UPDATE SET
+    thread_id = excluded.thread_id,
+    created_at = excluded.created_at;
+
+upsertThreadItem:
+INSERT INTO MessageThreadItem(conversation_id, thread_id, message_id, creation_date, is_root, visibility)
+VALUES(:conversation_id, :thread_id, :message_id, :creation_date, :is_root, :visibility)
+ON CONFLICT(conversation_id, message_id) DO UPDATE SET
+    thread_id = excluded.thread_id,
+    creation_date = excluded.creation_date,
+    is_root = excluded.is_root,
+    visibility = excluded.visibility;
+
+getThreadByRootMessage:
+SELECT * FROM MessageThreadRoot
+WHERE conversation_id = :conversation_id
+AND root_message_id = :root_message_id
+LIMIT 1;
+
+getRootMessageIdByThreadId:
+SELECT root_message_id FROM MessageThreadRoot
+WHERE conversation_id = :conversation_id
+AND thread_id = :thread_id
+LIMIT 1;
+
+getThreadIdByMessageId:
+SELECT thread_id FROM MessageThreadItem
+WHERE conversation_id = :conversation_id
+AND message_id = :message_id
+LIMIT 1;
+
+getThreadItemByMessageId:
+SELECT
+    thread_id,
+    is_root,
+    visibility,
+    creation_date
+FROM MessageThreadItem
+WHERE conversation_id = :conversation_id
+AND message_id = :message_id
+LIMIT 1;
+
+updateThreadItemVisibility:
+UPDATE MessageThreadItem
+SET visibility = :visibility
+WHERE conversation_id = :conversation_id
+AND message_id = :message_id;
+
+updateThreadItemMessageId:
+UPDATE MessageThreadItem
+SET message_id = :new_message_id
+WHERE conversation_id = :conversation_id
+AND message_id = :old_message_id;
+
+incrementThreadVisibleReplyCount:
+UPDATE MessageThreadRoot
+SET
+    visible_reply_count = visible_reply_count + 1,
+    last_reply_date = CASE
+        WHEN last_reply_date IS NULL OR last_reply_date < :reply_date THEN :reply_date
+        ELSE last_reply_date
+    END
+WHERE conversation_id = :conversation_id
+AND thread_id = :thread_id;
+
+decrementThreadVisibleReplyCount:
+UPDATE MessageThreadRoot
+SET visible_reply_count = CASE
+    WHEN visible_reply_count > 0 THEN visible_reply_count - 1
+    ELSE 0
+END
+WHERE conversation_id = :conversation_id
+AND thread_id = :thread_id;
+
+refreshThreadVisibleReplyCount:
+UPDATE MessageThreadRoot
+SET
+    visible_reply_count = (
+        SELECT IFNULL(COUNT(*), 0)
+        FROM MessageThreadItem
+        WHERE conversation_id = :conversation_id
+        AND thread_id = :thread_id
+        AND is_root = 0
+        AND visibility = 'VISIBLE'
+    ),
+    last_reply_date = (
+        SELECT MAX(creation_date)
+        FROM MessageThreadItem
+        WHERE conversation_id = :conversation_id
+        AND thread_id = :thread_id
+        AND is_root = 0
+        AND visibility = 'VISIBLE'
+    )
+WHERE conversation_id = :conversation_id
+AND thread_id = :thread_id;
+
+selectThreadSummariesByRootIds:
+SELECT
+    root.conversation_id AS conversationId,
+    root.root_message_id AS rootMessageId,
+    root.thread_id AS threadId,
+    root.visible_reply_count AS visibleReplyCount
+FROM MessageThreadRoot AS root
+WHERE root.conversation_id = :conversation_id
+AND root.root_message_id IN :root_message_ids;
+
+countByConversationAndThreadIdAndVisibility:
+SELECT COUNT(*)
+FROM MessageThreadItem
+WHERE MessageThreadItem.conversation_id = :conversation_id
+AND MessageThreadItem.thread_id = :thread_id
+AND MessageThreadItem.visibility IN :visibility;
+
+selectByConversationAndThreadIdAndVisibility:
+SELECT MessageDetailsView.*
+FROM (
+    SELECT
+        conversation_id,
+        message_id,
+        creation_date
+    FROM MessageThreadItem
+    WHERE conversation_id = :conversation_id
+    AND thread_id = :thread_id
+    AND visibility IN :visibility
+    ORDER BY creation_date DESC, message_id DESC
+    LIMIT :limit OFFSET :offset
+) AS ThreadPage
+INNER JOIN MessageDetailsView
+    ON MessageDetailsView.id = ThreadPage.message_id
+    AND MessageDetailsView.conversationId = ThreadPage.conversation_id
+ORDER BY ThreadPage.creation_date DESC, ThreadPage.message_id DESC;
