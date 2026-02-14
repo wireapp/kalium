@@ -24,11 +24,13 @@ import app.cash.sqldelight.async.coroutines.await
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
+import com.wire.kalium.persistence.MessageThreadsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.datetime.Instant
@@ -58,6 +60,7 @@ internal interface MessageInsertExtension {
 internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
     private val cellFilesQueries: CellFilesQueries,
+    private val messageThreadsQueries: MessageThreadsQueries,
     private val attachmentQueries: MessageAttachmentsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -100,6 +103,17 @@ internal class MessageInsertExtensionImpl(
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm,
                 assetNormalizedLoudness = assetNormalizedLoudness,
             ).await()
+
+            messageThreadsQueries.updateMainListVisibility(
+                conversation_id = message.conversationId,
+                message_id = message.id,
+                visibility = message.visibility,
+            )
+            messageThreadsQueries.syncThreadItemVisibilityIfNeeded(
+                conversationId = message.conversationId,
+                messageId = message.id,
+                newVisibility = message.visibility,
+            )
         }
     }
 
@@ -135,6 +149,12 @@ internal class MessageInsertExtensionImpl(
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
             expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
             self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null
+        )
+        messageThreadsQueries.upsertMainListItem(
+            conversation_id = message.conversationId,
+            message_id = message.id,
+            creation_date = message.date,
+            visibility = message.visibility,
         )
     }
 

@@ -54,6 +54,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
         messageExtensions = MessageInsertExtensionImpl(
             db.database.messagesQueries,
             db.database.cellFilesQueries,
+            db.database.messageThreadsQueries,
             db.database.messageAttachmentsQueries,
             db.database.unreadEventsQueries,
             db.database.conversationsQueries,

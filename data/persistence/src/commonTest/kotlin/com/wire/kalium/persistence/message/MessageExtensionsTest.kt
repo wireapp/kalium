@@ -69,6 +69,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val messagesQueries = db.database.messagesQueries
         val messageAttachmentsQueries = db.database.messageAttachmentsQueries
+        val messageThreadsQueries = db.database.messageThreadsQueries
         val messageAssetViewQueries = db.database.messageAssetViewQueries
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
@@ -76,6 +77,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageExtensions = MessageExtensionsImpl(
             messagesQueries = messagesQueries,
             messageAttachmentsQueries = messageAttachmentsQueries,
+            messageThreadsQueries = messageThreadsQueries,
             messageAssetViewQueries = messageAssetViewQueries,
             messageMapper = MessageMapper,
             readDispatcher = ReadDispatcher(dispatcher),
