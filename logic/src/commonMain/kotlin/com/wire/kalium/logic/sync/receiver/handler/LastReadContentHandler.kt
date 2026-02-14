@@ -19,13 +19,20 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Instant
 
 @Mockable
 internal interface LastReadContentHandler {
@@ -33,6 +40,8 @@ internal interface LastReadContentHandler {
         message: Message.Signaling,
         messageContent: MessageContent.LastRead
     )
+
+    suspend fun flushPendingLastReads()
 }
 
 // This class handles the messages that arrive when some client has read the conversation.
@@ -43,6 +52,10 @@ internal class LastReadContentHandlerImpl internal constructor(
     private val notificationEventsManager: NotificationEventsManager
 ) : LastReadContentHandler {
 
+    private val logger = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
+    private val pendingLastReadByConversation = mutableMapOf<ConversationId, Instant>()
+    private val pendingLastReadMutex = Mutex()
+
     override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.LastRead
@@ -51,20 +64,47 @@ internal class LastReadContentHandlerImpl internal constructor(
         val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
 
         if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
-            // If the message is coming from other client, it means that the user has read
-            // the conversation on the other device, and we can update the read date locally
-            // to synchronize the state across the clients.
-            conversationRepository
-                .updateReadDateAndGetHasUnreadEvents(
-                    qualifiedID = messageContent.conversationId,
-                    date = messageContent.time
-                )
-                .onSuccess { hasUnreadEvents ->
-                    if (!hasUnreadEvents) {
-                        notificationEventsManager.scheduleConversationSeenNotification(messageContent.conversationId)
-                    }
+            pendingLastReadMutex.withLock {
+                val currentPending = pendingLastReadByConversation[messageContent.conversationId]
+                if (currentPending == null || messageContent.time > currentPending) {
+                    pendingLastReadByConversation[messageContent.conversationId] = messageContent.time
                 }
+            }
         }
     }
 
+    override suspend fun flushPendingLastReads() {
+        val pending = pendingLastReadMutex.withLock {
+            if (pendingLastReadByConversation.isEmpty()) {
+                emptyMap()
+            } else {
+                pendingLastReadByConversation.toMap().also {
+                    pendingLastReadByConversation.clear()
+                }
+            }
+        }
+        if (pending.isEmpty()) return
+        logger.d("$TAG Flushing LastRead updates")
+
+        pending.forEach { (conversationId, readAt) ->
+            conversationRepository
+                .updateReadDateAndGetHasUnreadEvents(
+                    qualifiedID = conversationId,
+                    date = readAt
+                )
+                .onSuccess { hasUnreadEvents ->
+                    if (!hasUnreadEvents) {
+                        notificationEventsManager.scheduleConversationSeenNotification(conversationId)
+                    }
+                }
+                .onFailure {
+                    logger.w("$TAG Failed to flush LastRead. conversationId=${conversationId.toLogString()}")
+                }
+        }
+        logger.d("$TAG Flush finished")
+    }
+
+    private companion object {
+        const val TAG = "[LastReadContentHandler]"
+    }
 }

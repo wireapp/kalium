@@ -43,7 +43,9 @@ import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import io.mockative.Mockable
 
 @Mockable
-internal interface ConversationEventReceiver : EventReceiver<Event.Conversation>
+internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
+    suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
+}
 
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
@@ -139,5 +141,10 @@ internal class ConversationEventReceiverImpl(
                 channelAddPermissionUpdateEventHandler.handle(event)
             }
         }
+    }
+
+    override suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> {
+        newMessageHandler.flushPendingSideEffects()
+        return Either.Right(Unit)
     }
 }
