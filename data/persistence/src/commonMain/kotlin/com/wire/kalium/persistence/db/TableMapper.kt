@@ -40,12 +40,15 @@ import com.wire.kalium.persistence.MessageAttachments
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageDraft
 import com.wire.kalium.persistence.MessageLinkPreview
+import com.wire.kalium.persistence.MessageMainList
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRecipientFailure
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageSystemContent
 import com.wire.kalium.persistence.MessageTextContent
+import com.wire.kalium.persistence.MessageThreadItem
+import com.wire.kalium.persistence.MessageThreadRoot
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.NewClient
 import com.wire.kalium.persistence.PendingActions
@@ -279,5 +282,23 @@ internal object TableMapper {
     val pendingActionsAdapter = PendingActions.Adapter(
         action_typeAdapter = PendingActionTypeAdapter,
         qualified_idAdapter = QualifiedIDAdapter
+    )
+
+    val messageThreadRootAdapter = MessageThreadRoot.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        created_atAdapter = InstantTypeAdapter,
+        last_reply_dateAdapter = InstantTypeAdapter
+    )
+
+    val messageThreadItemAdapter = MessageThreadItem.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
+        visibilityAdapter = EnumColumnAdapter()
+    )
+
+    val messageMainListAdapter = MessageMainList.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
+        visibilityAdapter = EnumColumnAdapter()
     )
 }
