@@ -58,4 +58,12 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
         conversationId: ConversationId,
         pageSize: Int,
     ): NomadMessagePagingResult = NomadMessagePagingResult(hasMore = false)
+
+    override suspend fun getPaginatedMessagesByThreadIdAndVisibility(
+        conversationId: ConversationId,
+        threadId: String,
+        visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> = emptyFlow()
 }

@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -91,6 +92,7 @@ class SendButtonMessageCaseTest {
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        val messageThreadRepository = mock(MessageThreadRepository::class)
 
         suspend fun withSendMessageSuccess() = apply {
             everySuspend {
@@ -137,6 +139,7 @@ class SendButtonMessageCaseTest {
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
+            messageThreadRepository,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher
         )

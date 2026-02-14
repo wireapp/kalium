@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -65,6 +66,7 @@ public class SendTextMessageUseCase internal constructor(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
+    private val messageThreadRepository: MessageThreadRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val pendingMessagesEnabled: Boolean = true,
     private val scope: CoroutineScope,
@@ -75,7 +77,8 @@ public class SendTextMessageUseCase internal constructor(
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
+        quotedMessageId: String? = null,
+        threadId: String? = null,
     ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -83,9 +86,11 @@ public class SendTextMessageUseCase internal constructor(
 
         val generatedMessageUuid = Uuid.random().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
-            .first()
-            .duration
+        val messageTimer: Duration? = if (threadId == null) {
+            selfDeleteTimer(conversationId, true).first().duration
+        } else {
+            null
+        }
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
 
@@ -116,7 +121,14 @@ public class SendTextMessageUseCase internal constructor(
                 linkPreviews = previews
             )
             persistMessage(message).flatMap {
-                messageSender.sendMessage(message)
+                messageThreadRepository.upsertThreadReplyIfNeeded(
+                    conversationId = message.conversationId,
+                    messageId = message.id,
+                    threadId = threadId,
+                    creationDate = message.date,
+                    visibility = message.visibility,
+                )
+                messageSender.sendMessage(message, threadId = threadId)
             }
         }.onFailure {
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(

@@ -47,7 +47,6 @@ message GenericMessage {
         DataTransfer dataTransfer = 23; // client-side synchronization across devices of the same user
         InCallEmoji inCallEmoji = 24;
         // UnknownStrategy unknownStrategy = 25; -- Defined outside the oneof
-        // Next field should be 26 ↓
         InCallHandRaise inCallHandRaise = 26;
         Multipart multipart = 27;
         HistoryClientAvailable historyClientAvailable = 28;
@@ -78,6 +77,7 @@ message Composite {
     repeated Item items = 1;
     optional bool expects_read_confirmation = 2 [default = false];
     optional LegalHoldStatus legal_hold_status = 3 [default = UNKNOWN];
+    optional string thread_id = 4;
 
     message Item {
         oneof content {
@@ -132,6 +132,7 @@ message Text {
     optional Quote quote = 5; // if this Text is part of a MessageEdit, this field is ignored
     optional bool expects_read_confirmation = 6 [default = false]; // whether the sender is expecting to receive a read confirmation
     optional LegalHoldStatus legal_hold_status = 7 [default = UNKNOWN]; // whether this message was sent to legal hold
+    optional string thread_id = 8;
 }
 
 message Knock {
@@ -333,6 +334,7 @@ message Asset {
     optional Preview preview = 5;
     optional bool expects_read_confirmation = 6 [default = false]; // whether the sender is expecting to receive a read confirmation
     optional LegalHoldStatus legal_hold_status = 7 [default = UNKNOWN]; // whether this message was sent to legal hold
+    optional string thread_id = 8;
 }
 
 // Actual message is encrypted with AES and sent as additional data
@@ -412,6 +414,7 @@ message Multipart {
     // Standard flags for all message types
     optional bool expects_read_confirmation = 3 [default = false];
     optional LegalHoldStatus legal_hold_status = 4 [default = UNKNOWN];
+    optional string thread_id = 5;
 }
 
 message Attachment {

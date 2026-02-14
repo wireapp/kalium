@@ -36,7 +36,8 @@ sealed interface ProtoContent {
         val messageContent: MessageContent.FromProto,
         val expectsReadConfirmation: Boolean,
         val legalHoldStatus: Conversation.LegalHoldStatus,
-        val expiresAfterMillis: Long? = null
+        val expiresAfterMillis: Long? = null,
+        val threadId: String? = null,
     ) : ProtoContent
 
     /**

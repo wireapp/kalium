@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -134,6 +135,7 @@ public class MessageScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     internal val messageRepository: MessageRepository,
+    private val messageThreadRepository: MessageThreadRepository,
     private val conversationRepository: ConversationRepository,
     private val attachmentsRepository: Lazy<MessageAttachmentDraftRepository>,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -254,6 +256,7 @@ public class MessageScope internal constructor(
             messageSendFailureHandler,
             legalHoldHandler,
             sessionEstablisher,
+            messageThreadRepository,
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingInterceptor,
@@ -284,6 +287,7 @@ public class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             selfDeleteTimer = observeSelfDeletingMessages,
+            messageThreadRepository = messageThreadRepository,
             scope = scope,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )
@@ -304,6 +308,7 @@ public class MessageScope internal constructor(
             publishAttachments = publishAttachmentsUseCase.value,
             removeAttachmentDrafts = removeAttachmentDraftsUseCase.value,
             sendAssetMessage = sendAssetMessage,
+            messageThreadRepository = messageThreadRepository,
             scope = scope
         )
 
@@ -360,7 +365,8 @@ public class MessageScope internal constructor(
             messageSender,
             updateAssetMessageTransferStatus,
             getAssetMessageTransferStatus,
-            messageSendFailureHandler
+            messageSendFailureHandler,
+            messageThreadRepository
         )
 
     public val getMessageById: GetMessageByIdUseCase
@@ -376,6 +382,7 @@ public class MessageScope internal constructor(
             userPropertyRepository,
             observeSelfDeletingMessages,
             assetRepository,
+            messageThreadRepository,
             dispatcher
         )
 
@@ -548,7 +555,20 @@ public class MessageScope internal constructor(
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
+            messageThreadRepository = messageThreadRepository,
             scope = scope
+        )
+
+    public val startThreadFromMessage: StartThreadFromMessageUseCase
+        get() = StartThreadFromMessageUseCase(
+            messageRepository = messageRepository,
+            messageThreadRepository = messageThreadRepository,
+            scope = scope,
+        )
+
+    public val observeThreadSummariesForRoots: ObserveThreadSummariesForRootsUseCase
+        get() = ObserveThreadSummariesForRootsUseCase(
+            messageThreadRepository = messageThreadRepository,
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl

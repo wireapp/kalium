@@ -27,6 +27,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -48,6 +49,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -80,6 +82,7 @@ internal class MessageSenderImpl internal constructor(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val legalHoldHandler: LegalHoldHandler,
     private val sessionEstablisher: SessionEstablisher,
+    private val messageThreadRepository: MessageThreadRepository,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
@@ -99,7 +102,8 @@ internal class MessageSenderImpl internal constructor(
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 val result =
                     if (message is Message.Regular) {
-                        sendMessage(message)
+                        val threadId = resolveThreadIdForMessage(conversationId, messageUuid)
+                        sendMessage(message, threadId = threadId)
                     } else {
                         Either.Left(
                             StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages"))
@@ -121,12 +125,16 @@ internal class MessageSenderImpl internal constructor(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
+    override suspend fun sendMessage(
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        threadId: String?,
+    ): Either<CoreFailure, Unit> =
         messageSendingInterceptor
             .prepareMessage(message)
             .flatMap { processedMessage ->
                 transactionProvider.transaction("sendMessage") { transactionContext ->
-                    attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
+                    attemptToSend(transactionContext, processedMessage, messageTarget, threadId).map { serverDate ->
                         val localDate = message.date
                         val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
                         // If it was the "edit" message type, we need to update the id before we promote it to "sent"
@@ -180,19 +188,20 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun attemptToSend(
         transactionContext: CryptoTransactionContext,
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation(),
+        threadId: String? = null,
     ): Either<CoreFailure, Instant> {
         return conversationRepository
             .getConversationProtocolInfo(message.conversationId)
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
                     is Conversation.ProtocolInfo.MLS -> {
-                        attemptToSendWithMLS(transactionContext, protocolInfo, message)
+                        attemptToSendWithMLS(transactionContext, protocolInfo, message, threadId)
                     }
 
                     is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
                         // TODO(messaging): make this thread safe (per user)
-                        attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts = 1)
+                        attemptToSendWithProteus(transactionContext, message, messageTarget, threadId, remainingAttempts = 1)
                     }
                 }
             }
@@ -208,6 +217,7 @@ internal class MessageSenderImpl internal constructor(
         transactionContext: CryptoTransactionContext,
         message: Message.Sendable,
         messageTarget: MessageTarget,
+        threadId: String?,
         remainingAttempts: Int
     ): Either<CoreFailure, Instant> {
         val conversationId = message.conversationId
@@ -225,7 +235,7 @@ internal class MessageSenderImpl internal constructor(
                     .map { recipients to it }
             }.flatMap { (recipients, usersWithoutSessions) ->
                 messageEnvelopeCreator
-                    .createOutgoingEnvelope(transactionContext.proteus, recipients, message)
+                    .createOutgoingEnvelope(transactionContext.proteus, recipients, message, threadId)
                     .flatMap { envelope: MessageEnvelope ->
                         val updatedMessageTarget = when (messageTarget) {
                             is MessageTarget.Client,
@@ -234,7 +244,7 @@ internal class MessageSenderImpl internal constructor(
                             is MessageTarget.Conversation ->
                                 MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
                         }
-                        trySendingProteusEnvelope(transactionContext, envelope, message, updatedMessageTarget, remainingAttempts)
+                        trySendingProteusEnvelope(transactionContext, envelope, message, updatedMessageTarget, threadId, remainingAttempts)
                     }
             }
     }
@@ -292,9 +302,10 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun attemptToSendWithMLS(
         transactionContext: CryptoTransactionContext,
         protocolInfo: Conversation.ProtocolInfo.MLS,
-        message: Message.Sendable
+        message: Message.Sendable,
+        threadId: String?,
     ): Either<CoreFailure, Instant> =
-        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
+        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message, threadId)
             .flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(mlsMessage).fold({
                     when (val mlsRejectionCause = (it.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
@@ -304,7 +315,7 @@ internal class MessageSenderImpl internal constructor(
                                 message.conversationId,
                                 protocolInfo.groupId,
                                 mlsRejectionCause
-                            ).flatMap { attemptToSend(transactionContext, message) }
+                            ).flatMap { attemptToSend(transactionContext, message, threadId = threadId) }
                         }
                         is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
                             logger.logStructuredJson(
@@ -319,7 +330,9 @@ internal class MessageSenderImpl internal constructor(
                             )
                             staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
                                 .flatMap {
-                                    syncManager.waitUntilLiveOrFailure().flatMap { attemptToSend(transactionContext, message) }
+                                    syncManager.waitUntilLiveOrFailure().flatMap {
+                                        attemptToSend(transactionContext, message, threadId = threadId)
+                                    }
                                 }
                         }
                         else -> Either.Left(it)
@@ -362,6 +375,7 @@ internal class MessageSenderImpl internal constructor(
         envelope: MessageEnvelope,
         message: Message.Sendable,
         messageTarget: MessageTarget,
+        threadId: String?,
         remainingAttempts: Int
     ): Either<CoreFailure, Instant> =
         messageRepository
@@ -377,7 +391,7 @@ internal class MessageSenderImpl internal constructor(
                     conversationId = message.conversationId,
                     remainingAttempts = remainingAttempts
                 ) { remainingAttempts ->
-                    attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts)
+                    attemptToSendWithProteus(transactionContext, message, messageTarget, threadId, remainingAttempts)
                 }
             }, { messageSent ->
                 handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
@@ -501,6 +515,13 @@ internal class MessageSenderImpl internal constructor(
                 Either.Left(failure)
             }
         }
+
+    private suspend fun resolveThreadIdForMessage(conversationId: ConversationId, messageId: MessageId): String? {
+        return messageThreadRepository.getThreadIdByMessageId(conversationId, messageId).nullableFold(
+            { null },
+            { it }
+        )
+    }
 
     private suspend fun handleLegalHoldChanges(
         conversationId: ConversationId?,

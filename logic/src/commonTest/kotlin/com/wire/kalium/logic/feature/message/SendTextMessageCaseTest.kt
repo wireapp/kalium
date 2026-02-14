@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
@@ -363,6 +364,7 @@ class SendTextMessageCaseTest {
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        val messageThreadRepository = mock(MessageThreadRepository::class)
         val observeSelfDeletionTimerSettingsForConversation = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
         private var pendingMessages = true
 
@@ -438,6 +440,7 @@ class SendTextMessageCaseTest {
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             selfDeleteTimer = observeSelfDeletionTimerSettingsForConversation,
+            messageThreadRepository = messageThreadRepository,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher,
             pendingMessagesEnabled = pendingMessages
