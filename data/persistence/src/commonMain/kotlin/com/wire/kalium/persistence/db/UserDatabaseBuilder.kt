@@ -75,6 +75,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageThreadDAO
+import com.wire.kalium.persistence.dao.message.MessageThreadDAOImpl
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
@@ -187,7 +189,10 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
+        MessageThreadRootAdapter = TableMapper.messageThreadRootAdapter,
+        MessageThreadItemAdapter = TableMapper.messageThreadItemAdapter,
+        MessageMainListAdapter = TableMapper.messageMainListAdapter
     )
 
     init {
@@ -205,6 +210,9 @@ class UserDatabaseBuilder internal constructor(
 
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)
+
+    val messageThreadDAO: MessageThreadDAO
+        get() = MessageThreadDAOImpl(database.messageThreadsQueries, readDispatcher, writeDispatcher)
 
     val userConfigDAO: UserConfigDAO by lazy { UserConfigDAOImpl(metadataDAO) }
 
@@ -318,6 +326,7 @@ class UserDatabaseBuilder internal constructor(
             database.messageAssetViewQueries,
             database.notificationQueries,
             database.conversationsQueries,
+            database.messageThreadsQueries,
             database.unreadEventsQueries,
             database.messagePreviewQueries,
             userId,
