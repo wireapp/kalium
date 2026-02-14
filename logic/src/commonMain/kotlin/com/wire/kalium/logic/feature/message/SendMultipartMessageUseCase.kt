@@ -45,6 +45,7 @@ import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.durationMs
 import com.wire.kalium.logic.data.message.height
@@ -91,6 +92,7 @@ public class SendMultipartMessageUseCase internal constructor(
     private val publishAttachments: PublishAttachmentsUseCase,
     private val removeAttachmentDrafts: RemoveAttachmentDraftsUseCase,
     private val sendAssetMessage: ScheduleNewAssetMessageUseCase,
+    private val messageThreadRepository: MessageThreadRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val scope: CoroutineScope
 ) {
@@ -104,7 +106,8 @@ public class SendMultipartMessageUseCase internal constructor(
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
+        quotedMessageId: String? = null,
+        threadId: String? = null,
     ): MessageOperationResult = scope.async(dispatchers.io) {
 
         slowSyncRepository.slowSyncStatus.first {
@@ -148,10 +151,18 @@ public class SendMultipartMessageUseCase internal constructor(
                 attachments,
                 quotedMessageId,
                 isCellEnabled,
+                threadId,
             )
 
             persistMessage(message).flatMap {
-                sendMessage(conversationId, message, isCellEnabled, attachments)
+                messageThreadRepository.upsertThreadReplyIfNeeded(
+                    conversationId = message.conversationId,
+                    messageId = message.id,
+                    threadId = threadId,
+                    creationDate = message.date,
+                    visibility = message.visibility,
+                )
+                sendMessage(conversationId, message, isCellEnabled, attachments, threadId)
             }
 
         }.onFailure {
@@ -177,11 +188,16 @@ public class SendMultipartMessageUseCase internal constructor(
         attachments: List<MessageAttachment>,
         quotedMessageId: String?,
         isCellEnabled: Boolean,
+        threadId: String?,
     ): Message.Regular {
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().duration
+        val messageTimer: Duration? = if (threadId == null) {
+            selfDeleteTimer(conversationId, true).first().duration
+        } else {
+            null
+        }
 
         return Message.Regular(
             id = generatedMessageUuid,
@@ -213,7 +229,7 @@ public class SendMultipartMessageUseCase internal constructor(
             status = Message.Status.Pending,
             editStatus = Message.EditStatus.NotEdited,
             expirationData = messageTimer?.let { Message.ExpirationData(it) },
-            isSelfMessage = true
+            isSelfMessage = true,
         )
     }
 
@@ -221,10 +237,11 @@ public class SendMultipartMessageUseCase internal constructor(
         conversationId: ConversationId,
         message: Message.Regular,
         isCellEnabled: Boolean,
-        attachments: List<MessageAttachment>
+        attachments: List<MessageAttachment>,
+        threadId: String?,
     ) = if (isCellEnabled) {
         publishAttachments(attachments).onSuccess {
-            messageSender.sendMessage(message)
+            messageSender.sendMessage(message, threadId = threadId)
         }
     } else {
         scope.launch {
@@ -240,14 +257,15 @@ public class SendMultipartMessageUseCase internal constructor(
                             assetWidth = metadata?.width(),
                             assetHeight = metadata?.height(),
                             audioLengthInMs = metadata?.durationMs() ?: 0,
-                            audioNormalizedLoudness = (metadata as? AssetContent.AssetMetadata.Audio)?.normalizedLoudness
+                            audioNormalizedLoudness = (metadata as? AssetContent.AssetMetadata.Audio)?.normalizedLoudness,
+                            threadId = threadId,
                         )
                     )
                 }
             }
         }
 
-        messageSender.sendMessage(message)
+        messageSender.sendMessage(message, threadId = threadId)
     }
 
     private suspend fun uploadLinkPreviewImages(

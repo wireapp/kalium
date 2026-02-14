@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -42,6 +43,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.uuid.Uuid
+import com.wire.kalium.common.logger.kaliumLogger
 
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
@@ -57,6 +59,7 @@ public class SendButtonMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
+    private val messageThreadRepository: MessageThreadRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val scope: CoroutineScope
 ) {
@@ -66,7 +69,8 @@ public class SendButtonMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null,
-        buttons: List<String> = listOf()
+        buttons: List<String> = listOf(),
+        threadId: String? = null,
     ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -104,10 +108,17 @@ public class SendButtonMessageUseCase internal constructor(
                 editStatus = Message.EditStatus.NotEdited,
                 // According to proto Ephemeral it is not possible to send a Composite message with timer
                 expirationData = null,
-                isSelfMessage = true
+                isSelfMessage = true,
             )
             persistMessage(message).flatMap {
-                messageSender.sendMessage(message)
+                messageThreadRepository.upsertThreadReplyIfNeeded(
+                    conversationId = message.conversationId,
+                    messageId = message.id,
+                    threadId = threadId,
+                    creationDate = message.date,
+                    visibility = message.visibility,
+                )
+                messageSender.sendMessage(message, threadId = threadId)
             }
         }.onFailure {
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
@@ -125,4 +136,5 @@ public class SendButtonMessageUseCase internal constructor(
     internal companion object {
         internal const val TYPE = "Text"
     }
+
 }

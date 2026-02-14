@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
@@ -401,6 +402,7 @@ class RetryFailedMessageUseCaseTest {
         val getAssetMessageTransferStatus = mock<GetAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
         val publishAttachments = mock<PublishAttachmentsUseCase>(mode = MockMode.autoUnit)
+        val messageThreadRepository = mock(MessageThreadRepository::class)
 
         private val testScope = TestScope(testDispatcher.default)
 
@@ -467,20 +469,27 @@ class RetryFailedMessageUseCaseTest {
             } returns result
         }
 
-        fun arrange() = this to RetryFailedMessageUseCase(
-            messageRepository,
-            assetRepository,
-            conversationRepository,
-            attachmentsRepository,
-            persistMessage,
-            publishAttachments,
-            testScope,
-            testDispatcher,
-            messageSender,
-            updateAssetMessageTransferStatus,
-            getAssetMessageTransferStatus,
-            messageSendFailureHandler
-        )
+        suspend fun arrange(): Pair<Arrangement, RetryFailedMessageUseCase> {
+            coEvery {
+                messageThreadRepository.getThreadIdByMessageId(any(), any())
+            }.returns(Either.Right(null))
+
+            return this to RetryFailedMessageUseCase(
+                messageRepository,
+                assetRepository,
+                conversationRepository,
+                attachmentsRepository,
+                persistMessage,
+                publishAttachments,
+                testScope,
+                testDispatcher,
+                messageSender,
+                updateAssetMessageTransferStatus,
+                getAssetMessageTransferStatus,
+                messageSendFailureHandler,
+                messageThreadRepository,
+            )
+        }
     }
 
     companion object {
