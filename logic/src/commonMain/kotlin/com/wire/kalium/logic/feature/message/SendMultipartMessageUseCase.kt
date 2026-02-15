@@ -108,6 +108,7 @@ public class SendMultipartMessageUseCase internal constructor(
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null,
         threadId: String? = null,
+        threadSelfDeletionDuration: Duration? = null,
     ): MessageOperationResult = scope.async(dispatchers.io) {
 
         slowSyncRepository.slowSyncStatus.first {
@@ -152,6 +153,7 @@ public class SendMultipartMessageUseCase internal constructor(
                 quotedMessageId,
                 isCellEnabled,
                 threadId,
+                threadSelfDeletionDuration,
             )
 
             persistMessage(message).flatMap {
@@ -162,7 +164,7 @@ public class SendMultipartMessageUseCase internal constructor(
                     creationDate = message.date,
                     visibility = message.visibility,
                 )
-                sendMessage(conversationId, message, isCellEnabled, attachments, threadId)
+                sendMessage(conversationId, message, isCellEnabled, attachments, threadId, threadSelfDeletionDuration)
             }
 
         }.onFailure {
@@ -189,14 +191,16 @@ public class SendMultipartMessageUseCase internal constructor(
         quotedMessageId: String?,
         isCellEnabled: Boolean,
         threadId: String?,
+        threadSelfDeletionDuration: Duration?,
     ): Message.Regular {
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = if (threadId == null) {
-            selfDeleteTimer(conversationId, true).first().duration
-        } else {
-            null
+        val messageTimer: Duration? = when {
+            threadId == null -> selfDeleteTimer(conversationId, true).first().duration
+            // The proto does not support Ephemeral Multipart yet.
+            isCellEnabled -> null
+            else -> threadSelfDeletionDuration
         }
 
         return Message.Regular(
@@ -239,6 +243,7 @@ public class SendMultipartMessageUseCase internal constructor(
         isCellEnabled: Boolean,
         attachments: List<MessageAttachment>,
         threadId: String?,
+        threadSelfDeletionDuration: Duration?,
     ) = if (isCellEnabled) {
         publishAttachments(attachments).onSuccess {
             messageSender.sendMessage(message, threadId = threadId)
@@ -259,6 +264,7 @@ public class SendMultipartMessageUseCase internal constructor(
                             audioLengthInMs = metadata?.durationMs() ?: 0,
                             audioNormalizedLoudness = (metadata as? AssetContent.AssetMetadata.Audio)?.normalizedLoudness,
                             threadId = threadId,
+                            threadMessageSelfDeletionDuration = threadSelfDeletionDuration,
                         )
                     )
                 }
