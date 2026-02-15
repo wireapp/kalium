@@ -26,6 +26,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.backup.BackupThreadData
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -125,6 +126,17 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone? =
             )
         }
     }
+
+internal fun BackupMessage.toThreadDataOrNull(): BackupThreadData? {
+    val messageThreadId = threadId ?: return null
+    return BackupThreadData(
+        conversationId = conversationId.toQualifiedId(),
+        messageId = id,
+        threadId = messageThreadId,
+        isRoot = id == messageThreadId,
+        creationDate = creationDate.instant,
+    )
+}
 
 private fun BackupMessageContent.toMessageContent(selfUserId: UserId) =
     when (this) {

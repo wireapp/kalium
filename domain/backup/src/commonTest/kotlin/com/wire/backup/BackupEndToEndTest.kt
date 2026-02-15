@@ -94,6 +94,31 @@ class BackupEndToEndTest {
     }
 
     @Test
+    fun givenBackedUpThreadedMessage_whenRestoring_thenShouldKeepThreadId() = runTest {
+        val expectedMessage = BackupMessage(
+            id = "message_id_threaded",
+            conversationId = BackupQualifiedId("value", "domain"),
+            senderUserId = BackupQualifiedId("sender_id", "sender_domain"),
+            senderClientId = "senderClientId",
+            creationDate = BackupDateTime(0L),
+            content = BackupMessageContent.Text("Thread message", listOf(TEST_MENTION)),
+            threadId = "thread-id-1",
+        )
+
+        val result = subject.exportImportDataTest(BackupQualifiedId("eghyue", "potato"), "") {
+            add(expectedMessage)
+        }
+
+        assertIs<BackupImportResult.Success>(result)
+        val pager = result.pager
+        val allMessages = mutableListOf<BackupMessage>()
+        while (pager.messagesPager.hasMorePages()) {
+            allMessages.addAll(pager.messagesPager.nextPage())
+        }
+        assertContentEquals(arrayOf(expectedMessage), allMessages.toTypedArray())
+    }
+
+    @Test
     fun givenBackupWithPassword_whenPeeking_thenShouldBeEncrypted() = runTest {
         val result = subject.exportPeekTest(BackupQualifiedId("userId", "domain"), "password") {
             add(

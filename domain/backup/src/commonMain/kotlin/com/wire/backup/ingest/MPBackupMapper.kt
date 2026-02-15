@@ -140,6 +140,7 @@ internal class MPBackupMapper {
             },
             webPk = it.webPrimaryKey?.toLong(),
             lastEditTime = it.lastEditTime?.toLongMilliseconds(),
+            threadId = it.threadId,
         )
     }
 
@@ -276,6 +277,7 @@ internal class MPBackupMapper {
             content = content,
             webPrimaryKey = message.webPk?.toInt(),
             lastEditTime = message.lastEditTime?.let { BackupDateTime(it) },
+            threadId = message.threadId,
         )
     }
 
