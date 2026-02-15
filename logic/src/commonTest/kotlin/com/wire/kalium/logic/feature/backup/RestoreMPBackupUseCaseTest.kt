@@ -25,6 +25,7 @@ import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.backup.BackupThreadData
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -94,7 +95,8 @@ class RestoreMPBackupUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertThreadData(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.backupRepository.insertReactions(any()) }
     }
 
     @Test
@@ -109,7 +111,62 @@ class RestoreMPBackupUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertThreadData(any()) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.backupRepository.insertReactions(any()) }
+    }
+
+    @Test
+    fun givenThreadedMessageInBackup_whenRestoring_thenThreadDataIsPersisted() = runTest {
+        val threadId = "thread-1"
+        val threadedBackupMessage = TestMessage.TEXT_MESSAGE.toBackupMessage(threadId = threadId)!!
+
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withMessages(listOf(threadedBackupMessage))
+            .arrange()
+
+        useCase(arrangement.storedPath, null) {}
+
+        coVerify {
+            arrangement.backupRepository.insertThreadData(
+                listOf(
+                    BackupThreadData(
+                        conversationId = TestMessage.TEXT_MESSAGE.conversationId,
+                        messageId = TestMessage.TEXT_MESSAGE.id,
+                        threadId = threadId,
+                        isRoot = false,
+                        creationDate = TestMessage.TEXT_MESSAGE.date,
+                    )
+                )
+            )
+        }.wasInvoked(exactly = 1)
+    }
+
+    @Test
+    fun givenThreadRootMessageInBackup_whenRestoring_thenRootThreadDataIsPersisted() = runTest {
+        val threadId = TestMessage.TEXT_MESSAGE.id
+        val threadedBackupMessage = TestMessage.TEXT_MESSAGE.toBackupMessage(threadId = threadId)!!
+
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withMessages(listOf(threadedBackupMessage))
+            .arrange()
+
+        useCase(arrangement.storedPath, null) {}
+
+        coVerify {
+            arrangement.backupRepository.insertThreadData(
+                listOf(
+                    BackupThreadData(
+                        conversationId = TestMessage.TEXT_MESSAGE.conversationId,
+                        messageId = TestMessage.TEXT_MESSAGE.id,
+                        threadId = threadId,
+                        isRoot = true,
+                        creationDate = TestMessage.TEXT_MESSAGE.date,
+                    )
+                )
+            )
+        }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -294,6 +351,10 @@ class RestoreMPBackupUseCaseTest {
             }
         }
 
+        fun withMessages(messages: List<BackupMessage>) = apply {
+            backupMessages = messages
+        }
+
         suspend fun arrange(): Pair<Arrangement, RestoreMPBackupUseCase> {
 
             every { importerProvider.providePeekImporter() } returns (importer)
@@ -308,7 +369,8 @@ class RestoreMPBackupUseCaseTest {
             if (!messagesInsertStubConfigured) {
                 everySuspend { backupRepository.insertMessages(any()) } returns (Unit.right())
             }
-            everySuspend { backupRepository.insertReactions(any()) } returns (Unit.right())
+            everySuspend { backupRepository.insertThreadData(any()) }.returns(Unit.right())
+            coEvery { backupRepository.insertReactions(any()) } returns (Unit.right())
 
             val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
             var usersHasMorePagesIndex = 0
@@ -322,7 +384,7 @@ class RestoreMPBackupUseCaseTest {
 
             var messagesHasMorePagesIndex = 0
             every { messagesPager.hasMorePages() } calls { messagesHasMorePagesIndex++ == 0 }
-            every { messagesPager.nextPage() } returns (arrayOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!))
+            every { messagesPager.nextPage() } returns (arrayOf(*backupMessages.toTypedArray()))
 
             var reactionsHasMorePagesIndex = 0
             every { reactionsPager.hasMorePages() } calls { reactionsHasMorePagesIndex++ == 0 }

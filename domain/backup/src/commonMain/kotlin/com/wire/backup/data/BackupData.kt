@@ -115,6 +115,8 @@ public data class BackupMessage(
     val webPrimaryKey: Int? = null,
     @SerialName("lastEditTime")
     val lastEditTime: BackupDateTime? = null,
+    @SerialName("threadId")
+    val threadId: String? = null,
 )
 
 /**
