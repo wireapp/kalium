@@ -78,6 +78,7 @@ public class SendTextMessageUseCase internal constructor(
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null,
         threadId: String? = null,
+        threadSelfDeletionDuration: Duration? = null,
     ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -88,7 +89,7 @@ public class SendTextMessageUseCase internal constructor(
         val messageTimer: Duration? = if (threadId == null) {
             selfDeleteTimer(conversationId, true).first().duration
         } else {
-            null
+            threadSelfDeletionDuration
         }
 
         val previews = uploadLinkPreviewImages(linkPreviews, conversationId)

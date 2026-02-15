@@ -112,21 +112,44 @@ internal class ProtoContentMapperImpl(
         protoContent: ProtoContent.Readable
     ): GenericMessage.Content<out Any> {
         val threadId = protoContent.threadId ?: return mapReadableContentToProtobuf(protoContent)
-        if (protoContent.expiresAfterMillis != null) {
-            throw IllegalArgumentException("Expiring messages are not supported in threads")
-        }
         val regularContent = protoContent.messageContent as? MessageContent.Regular ?: return mapReadableContentToProtobuf(protoContent)
         regularContent.toThreadPayloadOrNull()
             ?: throw IllegalArgumentException("Unsupported threaded regular content type: ${regularContent.getType()}")
-        val normalContent = mapNormalContent(regularContent, protoContent.expectsReadConfirmation, protoContent.legalHoldStatus)
-
-        return when (normalContent) {
-            is GenericMessage.Content.Text -> GenericMessage.Content.Text(normalContent.value.copy(threadId = threadId))
-            is GenericMessage.Content.Asset -> GenericMessage.Content.Asset(normalContent.value.copy(threadId = threadId))
-            is GenericMessage.Content.Multipart -> GenericMessage.Content.Multipart(normalContent.value.copy(threadId = threadId))
-            is GenericMessage.Content.Composite -> GenericMessage.Content.Composite(normalContent.value.copy(threadId = threadId))
-            else -> throw IllegalArgumentException("Unsupported threaded regular content type: ${regularContent.getType()}")
+        val expiresAfterMillis = protoContent.expiresAfterMillis
+        if (expiresAfterMillis != null) {
+            return mapThreadedEphemeralContent(
+                readableContent = regularContent,
+                expireAfterMillis = expiresAfterMillis,
+                expectsReadConfirmation = protoContent.expectsReadConfirmation,
+                legalHoldStatus = protoContent.legalHoldStatus,
+                threadId = threadId,
+            )
         }
+        val normalContent = mapNormalContent(regularContent, protoContent.expectsReadConfirmation, protoContent.legalHoldStatus)
+        return normalContent.withThreadId(threadId)
+    }
+
+    private fun GenericMessage.Content<out Any>.withThreadId(threadId: String): GenericMessage.Content<out Any> = when (this) {
+        is GenericMessage.Content.Text -> GenericMessage.Content.Text(value.copy(threadId = threadId))
+        is GenericMessage.Content.Asset -> GenericMessage.Content.Asset(value.copy(threadId = threadId))
+        is GenericMessage.Content.Multipart -> GenericMessage.Content.Multipart(value.copy(threadId = threadId))
+        is GenericMessage.Content.Composite -> GenericMessage.Content.Composite(value.copy(threadId = threadId))
+        else -> throw IllegalArgumentException("Unsupported threaded regular content type")
+    }
+
+    private fun mapThreadedEphemeralContent(
+        readableContent: MessageContent.Regular,
+        expireAfterMillis: Long,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus,
+        threadId: String,
+    ): GenericMessage.Content<out Any> {
+        val ephemeralContent = when (val normalContent = mapNormalContent(readableContent, expectsReadConfirmation, legalHoldStatus)) {
+            is GenericMessage.Content.Text -> Ephemeral.Content.Text(normalContent.value.copy(threadId = threadId))
+            is GenericMessage.Content.Asset -> Ephemeral.Content.Asset(normalContent.value.copy(threadId = threadId))
+            else -> throw IllegalArgumentException("Unsupported expiring threaded regular content type: ${readableContent.getType()}")
+        }
+        return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
     }
 
     @Suppress("ComplexMethod")
@@ -430,6 +453,12 @@ internal class ProtoContentMapperImpl(
                 is GenericMessage.Content.Multipart -> content.value.expectsReadConfirmation ?: false
                 is GenericMessage.Content.Composite -> content.value.expectsReadConfirmation ?: false
                 is GenericMessage.Content.Location -> content.value.expectsReadConfirmation ?: false
+                is GenericMessage.Content.Ephemeral -> when (val ephemeralContent = content.value.content) {
+                    is Ephemeral.Content.Text -> ephemeralContent.value.expectsReadConfirmation ?: false
+                    is Ephemeral.Content.Asset -> ephemeralContent.value.expectsReadConfirmation ?: false
+                    is Ephemeral.Content.Location -> ephemeralContent.value.expectsReadConfirmation ?: false
+                    else -> false
+                }
 
                 is Availability,
                 is GenericMessage.Content.ButtonAction,
@@ -441,7 +470,6 @@ internal class ProtoContentMapperImpl(
                 is GenericMessage.Content.DataTransfer,
                 is Deleted,
                 is GenericMessage.Content.Edited,
-                is GenericMessage.Content.Ephemeral,
                 is GenericMessage.Content.External,
                 is GenericMessage.Content.Hidden,
                 is GenericMessage.Content.HistoryClientAvailable,
@@ -480,6 +508,13 @@ internal class ProtoContentMapperImpl(
             is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
             is GenericMessage.Content.Composite -> content.value.legalHoldStatus
             is GenericMessage.Content.Multipart -> content.value.legalHoldStatus
+            is GenericMessage.Content.Ephemeral -> when (val ephemeralContent = content.value.content) {
+                is Ephemeral.Content.Text -> ephemeralContent.value.legalHoldStatus
+                is Ephemeral.Content.Asset -> ephemeralContent.value.legalHoldStatus
+                is Ephemeral.Content.Knock -> ephemeralContent.value.legalHoldStatus
+                is Ephemeral.Content.Location -> ephemeralContent.value.legalHoldStatus
+                else -> null
+            }
             else -> null
         }
 
@@ -489,6 +524,11 @@ internal class ProtoContentMapperImpl(
             is GenericMessage.Content.Asset -> content.value.threadId
             is GenericMessage.Content.Composite -> content.value.threadId
             is GenericMessage.Content.Multipart -> content.value.threadId
+            is GenericMessage.Content.Ephemeral -> when (val ephemeralContent = content.value.content) {
+                is Ephemeral.Content.Text -> ephemeralContent.value.threadId
+                is Ephemeral.Content.Asset -> ephemeralContent.value.threadId
+                else -> null
+            }
             else -> null
         }
 

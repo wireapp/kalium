@@ -71,7 +71,7 @@ internal class PersistNewAssetMessageUseCaseImpl(
         val expireAfter = if (asset.threadId == null) {
             selfDeleteTimer(asset.conversationId, true).first().duration
         } else {
-            null
+            asset.threadMessageSelfDeletionDuration
         }
 
         withContext(dispatcher.io) {
