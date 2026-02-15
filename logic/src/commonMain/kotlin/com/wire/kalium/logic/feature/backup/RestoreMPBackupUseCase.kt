@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toConversation
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
+import com.wire.kalium.logic.feature.backup.mapper.toThreadDataOrNull
 import com.wire.kalium.logic.feature.backup.mapper.toUser
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
@@ -168,6 +169,10 @@ internal class RestoreMPBackupUseCaseImpl(
                 backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
                     .onFailure { error ->
                         kaliumLogger.e("Restore messages error: $error")
+                    }
+                backupRepository.insertThreadData(page.mapNotNull { it.toThreadDataOrNull() })
+                    .onFailure { error ->
+                        kaliumLogger.e("Restore thread data error: $error")
                     }
                 onPageProcessed()
             }

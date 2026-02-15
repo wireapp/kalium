@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -40,6 +41,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageThreadDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +49,7 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Mockable
 internal interface BackupRepository {
@@ -54,10 +57,12 @@ internal interface BackupRepository {
     suspend fun getConversations(): List<Conversation>
     suspend fun getMessages(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<Message.Standalone>>
     suspend fun getReactions(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<MessageReactions>>
+    suspend fun getThreadIdForMessage(conversationId: ConversationId, messageId: String): String?
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
     suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit>
+    suspend fun insertThreadData(threadData: List<BackupThreadData>): Either<CoreFailure, Unit>
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 1000
@@ -69,6 +74,7 @@ internal class BackupDataSource(
     private val selfUserId: UserId,
     private val userDAO: UserDAO,
     private val messageDAO: MessageDAO,
+    private val messageThreadDAO: MessageThreadDAO,
     private val conversationDAO: ConversationDAO,
     private val reactionDAO: ReactionDAO,
     private val userMapper: UserMapper = userMapper(),
@@ -93,17 +99,15 @@ internal class BackupDataSource(
             MessageEntity.ContentType.TEXT,
             MessageEntity.ContentType.ASSET,
             MessageEntity.ContentType.LOCATION,
+            MessageEntity.ContentType.MULTIPART,
+            MessageEntity.ContentType.COMPOSITE,
         )
 
         val totalMessages = messageDAO.countMessagesForBackup(contentTypes).toInt()
         val totalPages = (totalMessages / pageSize).coerceAtLeast(1)
 
         return messageDAO.getPagedMessagesFlow(
-            contentTypes = listOf(
-                MessageEntity.ContentType.TEXT,
-                MessageEntity.ContentType.ASSET,
-                MessageEntity.ContentType.LOCATION,
-            ),
+            contentTypes = contentTypes,
             pageSize = pageSize,
         ).map { page ->
             PagedData(
@@ -143,6 +147,12 @@ internal class BackupDataSource(
         }.buffer()
     }
 
+    override suspend fun getThreadIdForMessage(conversationId: ConversationId, messageId: String): String? =
+        messageThreadDAO.getThreadIdByMessageId(
+            conversationId = conversationId.toDao(),
+            messageId = messageId,
+        )
+
     override suspend fun insertUsers(users: List<OtherUser>) = wrapStorageRequest {
         userDAO.insertOrIgnoreUsers(users.map { userMapper.fromOtherToUserEntity(it) })
     }
@@ -174,9 +184,39 @@ internal class BackupDataSource(
             }
         }
     }
+
+    override suspend fun insertThreadData(threadData: List<BackupThreadData>) = wrapStorageRequest {
+        threadData.filter { it.isRoot }.forEach { thread ->
+            messageThreadDAO.upsertThreadRoot(
+                conversationId = thread.conversationId.toDao(),
+                rootMessageId = thread.messageId,
+                threadId = thread.threadId,
+                createdAt = thread.creationDate,
+            )
+        }
+
+        threadData.forEach { thread ->
+            messageThreadDAO.upsertThreadItem(
+                conversationId = thread.conversationId.toDao(),
+                messageId = thread.messageId,
+                threadId = thread.threadId,
+                isRoot = thread.isRoot,
+                creationDate = thread.creationDate,
+                visibility = MessageEntity.Visibility.VISIBLE,
+            )
+        }
+    }
 }
 
 internal data class PagedData<T>(
     val data: List<T>,
     val totalPages: Int,
+)
+
+internal data class BackupThreadData(
+    val conversationId: ConversationId,
+    val messageId: String,
+    val threadId: String,
+    val isRoot: Boolean,
+    val creationDate: Instant,
 )

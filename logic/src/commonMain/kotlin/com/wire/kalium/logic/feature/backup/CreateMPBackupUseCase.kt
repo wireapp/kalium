@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
@@ -98,8 +97,14 @@ internal class CreateMPBackupUseCaseImpl(
                     }
                     async {
                         getMessages().buffer().collect { (page, totalPages) ->
-                            page.mapNotNull(Message::toBackupMessage)
-                                .forEach { mpBackupExporter.add(it) }
+                            page.forEach { message ->
+                                val threadId = getThreadIdForMessage(
+                                    conversationId = message.conversationId,
+                                    messageId = message.id,
+                                )
+                                message.toBackupMessage(threadId = threadId)
+                                    ?.let { mpBackupExporter.add(it) }
+                            }
                             onProgress(pageIndex++.toFloat() / totalPages)
                         }
                     }

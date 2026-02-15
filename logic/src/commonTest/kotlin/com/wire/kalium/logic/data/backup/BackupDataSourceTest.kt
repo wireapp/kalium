@@ -2,6 +2,8 @@ package com.wire.kalium.logic.data.backup
 
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -37,6 +39,7 @@ class BackupDataSourceTest {
             selfUserId = userId,
             userDAO = testDatabase.builder.userDAO,
             messageDAO = testDatabase.builder.messageDAO,
+            messageThreadDAO = testDatabase.builder.messageThreadDAO,
             conversationDAO = testDatabase.builder.conversationDAO,
             reactionDAO = testDatabase.builder.reactionDAO,
         )
@@ -100,6 +103,28 @@ class BackupDataSourceTest {
     }
 
     @Test
+    fun givenMultipartAndCompositeMessagesInDatabase_whenGettingMessages_thenTheyAreExported() = runTest {
+        // Given
+        val testConversations = listOf(createTestConversation("1"), createTestConversation("2"))
+        val testMessages = listOf(
+            createMultipartTestMessage(testConversations.first().id, "multipart-message", userId),
+            createCompositeTestMessage(testConversations.first().id, "composite-message", userId),
+        )
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(testConversations)
+        subject.insertMessages(testMessages)
+
+        // When
+        val result = subject.getMessages().first()
+
+        // Then
+        assertEquals(testMessages.size, result.data.size)
+        assertEquals(testMessages.map { it.id }.toSet(), result.data.map { it.id }.toSet())
+        assertTrue(result.data.any { it is Message.Regular && it.content is MessageContent.Multipart })
+        assertTrue(result.data.any { it is Message.Regular && it.content is MessageContent.Composite })
+    }
+
+    @Test
     fun givenMessagesInMultiplePages_whenGettingMessages_thenAllMessagesAreExported() = runTest {
         // Given
         val numberOfMessages = 1000
@@ -128,6 +153,32 @@ class BackupDataSourceTest {
         assertTrue(messageMap.isEmpty(), "Not all messages were found in the export")
     }
 
+    @Test
+    fun givenMessageThreadData_whenGettingThreadIdForMessage_thenThreadIdIsReturned() = runTest {
+        val conversationId = createTestConversation("thread-conversation").id
+        val rootMessage = createTestMessage(conversationId, "root-message-id", userId)
+        val threadId = rootMessage.id
+
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(listOf(createTestConversation("thread-conversation")))
+        subject.insertMessages(listOf(rootMessage))
+
+        val threadData = listOf(
+            BackupThreadData(
+                conversationId = conversationId,
+                messageId = rootMessage.id,
+                threadId = threadId,
+                isRoot = true,
+                creationDate = rootMessage.date,
+            )
+        )
+        subject.insertThreadData(threadData)
+
+        val storedThreadId = subject.getThreadIdForMessage(conversationId, rootMessage.id)
+
+        assertEquals(threadId, storedThreadId)
+    }
+
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))
 
     private fun createTestConversation(id: String) =
@@ -145,6 +196,30 @@ class BackupDataSourceTest {
         conversationId = conversationId,
         id = id,
         senderUserId = senderId
+    )
+
+    private fun createMultipartTestMessage(
+        conversationId: QualifiedID,
+        id: String,
+        senderId: UserId,
+    ) = TestMessage.multipartMessage().copy(
+        conversationId = conversationId,
+        id = id,
+        senderUserId = senderId,
+    )
+
+    private fun createCompositeTestMessage(
+        conversationId: QualifiedID,
+        id: String,
+        senderId: UserId,
+    ) = TestMessage.TEXT_MESSAGE.copy(
+        conversationId = conversationId,
+        id = id,
+        senderUserId = senderId,
+        content = MessageContent.Composite(
+            textContent = MessageContent.Text("composite backup content"),
+            buttonList = listOf(Button(text = "Approve", id = "btn-1", isSelected = false)),
+        )
     )
 
 }

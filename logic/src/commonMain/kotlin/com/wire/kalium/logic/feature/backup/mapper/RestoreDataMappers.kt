@@ -25,6 +25,7 @@ import com.wire.backup.data.BackupUser
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.backup.BackupThreadData
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -108,6 +109,17 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
         editStatus = lastEditTime?.let {
             Message.EditStatus.Edited(it.instant)
         } ?: Message.EditStatus.NotEdited
+    )
+}
+
+internal fun BackupMessage.toThreadDataOrNull(): BackupThreadData? {
+    val messageThreadId = threadId ?: return null
+    return BackupThreadData(
+        conversationId = conversationId.toQualifiedId(),
+        messageId = id,
+        threadId = messageThreadId,
+        isRoot = id == messageThreadId,
+        creationDate = creationDate.instant,
     )
 }
 

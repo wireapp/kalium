@@ -22,11 +22,15 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.backup.BackupThreadData
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -109,6 +113,45 @@ class CreateMPBackupUseCaseTest {
         assertTrue(result is CreateBackupResult.Failure)
     }
 
+    @Test
+    fun givenMultipartAndCompositeMessages_whenCreatingBackup_thenTheyAreAddedToBackup() = runTest {
+
+        val multipartMessage = TEXT_MESSAGE.copy(content = MessageContent.Multipart(value = null))
+        val compositeMessage = TEXT_MESSAGE.copy(
+            content = MessageContent.Composite(
+                textContent = null,
+                buttonList = listOf(Button(text = "Approve", id = "btn-1", isSelected = false))
+            )
+        )
+
+        val (arrangement, useCase) = Arrangement()
+            .withExporter()
+            .withMessages(listOf(multipartMessage, compositeMessage))
+            .arrange()
+
+        val result = useCase("test_password") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        coVerify { arrangement.exporter.add(multipartMessage.toBackupMessage()!!) }.wasInvoked(1)
+        coVerify { arrangement.exporter.add(compositeMessage.toBackupMessage()!!) }.wasInvoked(1)
+    }
+
+    @Test
+    fun givenMessageHasThreadData_whenCreatingBackup_thenThreadIdIsAddedToBackupMessage() = runTest {
+        val threadId = "thread-1"
+
+        val (arrangement, useCase) = Arrangement()
+            .withExporter()
+            .withMessages(listOf(TEXT_MESSAGE))
+            .withThreadId(TEXT_MESSAGE.conversationId, TEXT_MESSAGE.id, threadId)
+            .arrange()
+
+        val result = useCase("test_password") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        coVerify { arrangement.exporter.add(TEXT_MESSAGE.toBackupMessage(threadId = threadId)!!) }.wasInvoked(1)
+    }
+
     private inner class Arrangement {
 
         val userRepository = mock(UserRepository::class)
@@ -117,6 +160,7 @@ class CreateMPBackupUseCaseTest {
 
         var backupMessages: List<Message.Standalone> = emptyList()
         var backupReactions: List<MessageReactions> = emptyList()
+        var threadIdsByConversationAndMessage: Map<Pair<ConversationId, String>, String> = emptyMap()
 
         val backupRepository = object : BackupRepository {
             override suspend fun getUsers(): List<OtherUser> = listOf(testUser)
@@ -137,6 +181,9 @@ class CreateMPBackupUseCaseTest {
                 )
             )
 
+            override suspend fun getThreadIdForMessage(conversationId: ConversationId, messageId: String): String? =
+                threadIdsByConversationAndMessage[conversationId to messageId]
+
             override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
@@ -144,6 +191,8 @@ class CreateMPBackupUseCaseTest {
             override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertThreadData(threadData: List<BackupThreadData>): Either<CoreFailure, Unit> = Unit.right()
         }
 
         fun withMessages(messages: List<Message.Standalone>) = apply {
@@ -152,6 +201,10 @@ class CreateMPBackupUseCaseTest {
 
         fun withReactions(reactions: List<MessageReactions>) = apply {
             backupReactions = reactions
+        }
+
+        fun withThreadId(conversationId: ConversationId, messageId: String, threadId: String) = apply {
+            threadIdsByConversationAndMessage = threadIdsByConversationAndMessage + ((conversationId to messageId) to threadId)
         }
 
         suspend fun withExporter() = apply {
