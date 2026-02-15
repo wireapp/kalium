@@ -52,6 +52,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.persistence.dao.message.ThreadMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
@@ -66,6 +67,9 @@ internal interface MessageMapper {
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
+
+internal fun MessageMapper.fromThreadEntityToMessage(message: ThreadMessageEntity): Message.Standalone =
+    fromEntityToMessage(message.message)
 
 @Suppress("TooManyFunctions")
 internal class MessageMapperImpl(
