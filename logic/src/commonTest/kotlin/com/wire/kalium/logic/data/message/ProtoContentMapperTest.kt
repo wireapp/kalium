@@ -153,10 +153,33 @@ class ProtoContentMapperTest {
     }
 
     @Test
-    fun givenThreadedExpiringMessage_whenEncoding_thenItFails() {
+    fun givenThreadedExpiringTextContent_whenMappingToProtoDataAndBack_thenThreadIdAndExpirationShouldBePreserved() {
         val protoContent = ProtoContent.Readable(
             messageUid = TEST_MESSAGE_UUID,
             messageContent = MessageContent.Text("hello"),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+            expiresAfterMillis = 1000L,
+            threadId = TEST_THREAD_ID
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val genericMessage = GenericMessage.decodeFromByteArray(encoded.data)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        val genericContent = genericMessage.content
+        assertIs<GenericMessage.Content.Ephemeral>(genericContent)
+        val ephemeralText = genericContent.value.content
+        assertIs<com.wire.kalium.protobuf.messages.Ephemeral.Content.Text>(ephemeralText)
+        assertEquals(TEST_THREAD_ID, ephemeralText.value.threadId)
+        assertEquals(protoContent, decoded)
+    }
+
+    @Test
+    fun givenThreadedExpiringMultipartMessage_whenEncoding_thenItFails() {
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = MessageContent.Multipart(value = "text"),
             expectsReadConfirmation = false,
             legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
             expiresAfterMillis = 1000L,

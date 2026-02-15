@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.Path
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 public interface ScheduleNewAssetMessageUseCase {
@@ -197,6 +198,7 @@ public data class AssetUploadParams(
     val audioLengthInMs: Long,
     val audioNormalizedLoudness: ByteArray?,
     val threadId: String? = null,
+    val threadMessageSelfDeletionDuration: Duration? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -211,6 +213,7 @@ public data class AssetUploadParams(
         if (assetName != other.assetName) return false
         if (assetMimeType != other.assetMimeType) return false
         if (threadId != other.threadId) return false
+        if (threadMessageSelfDeletionDuration != other.threadMessageSelfDeletionDuration) return false
         if (!audioNormalizedLoudness.contentEquals(other.audioNormalizedLoudness)) return false
         return true
     }
@@ -225,6 +228,7 @@ public data class AssetUploadParams(
         result = 31 * result + assetName.hashCode()
         result = 31 * result + assetMimeType.hashCode()
         result = 31 * result + (threadId?.hashCode() ?: 0)
+        result = 31 * result + (threadMessageSelfDeletionDuration?.hashCode() ?: 0)
         result = 31 * result + (audioNormalizedLoudness?.contentHashCode() ?: 0)
         return result
     }
