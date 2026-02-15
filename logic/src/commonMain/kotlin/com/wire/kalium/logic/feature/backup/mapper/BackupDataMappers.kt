@@ -35,6 +35,9 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.OtherUser
 
+private const val MULTIPART_FALLBACK_TEXT = "[multipart message]"
+private const val COMPOSITE_FALLBACK_TEXT = "[composite message]"
+
 internal fun QualifiedID.toBackupQualifiedId() = BackupQualifiedId(
     id = value,
     domain = domain
@@ -52,7 +55,7 @@ internal fun Conversation.toBackupConversation() = BackupConversation(
     lastModifiedTime = lastModifiedDate?.let { BackupDateTime(it) }
 )
 
-internal fun Message.toBackupMessage() =
+internal fun Message.toBackupMessage(threadId: String? = null) =
     backupMessageContent()?.let { content ->
         BackupMessage(
             id = id,
@@ -62,6 +65,7 @@ internal fun Message.toBackupMessage() =
             creationDate = BackupDateTime(date.toEpochMilliseconds()),
             content = content,
             lastEditTime = lastEditTime(),
+            threadId = threadId,
         )
     }
 
@@ -108,6 +112,24 @@ private fun Message.backupMessageContent(): BackupMessageContent? = when (this) 
                 latitude = latitude,
                 longitude = longitude,
                 zoom = zoom,
+            )
+        }
+
+        is MessageContent.Multipart -> with(content as MessageContent.Multipart) {
+            BackupMessageContent.Text(
+                text = value?.takeIf(String::isNotBlank) ?: MULTIPART_FALLBACK_TEXT,
+                mentions = mentions.toBackupModel(),
+                quotedMessageId = quotedMessageReference?.quotedMessageId,
+            )
+        }
+
+        is MessageContent.Composite -> with(content as MessageContent.Composite) {
+            BackupMessageContent.Text(
+                text = textContent?.value?.takeIf(String::isNotBlank)
+                    ?: buttonList.firstOrNull { it.text.isNotBlank() }?.text
+                    ?: COMPOSITE_FALLBACK_TEXT,
+                mentions = textContent?.mentions?.toBackupModel().orEmpty(),
+                quotedMessageId = textContent?.quotedMessageReference?.quotedMessageId,
             )
         }
 
