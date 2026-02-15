@@ -22,18 +22,22 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
+import com.wire.kalium.logic.data.message.fromThreadEntityToMessage
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessageExtensions
+import com.wire.kalium.persistence.dao.message.ThreadMessageEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -56,6 +60,13 @@ class MessageRepositoryExtensionsTest {
         override fun getRefreshKey(state: PagingState<Int, MessageEntity>): Int? = null
 
         override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MessageEntity> =
+            LoadResult.Error(NotImplementedError("STUB for tests. Not implemented."))
+    }
+
+    private val fakeThreadPagingSource = object : PagingSource<Int, ThreadMessageEntity>() {
+        override fun getRefreshKey(state: PagingState<Int, ThreadMessageEntity>): Int? = null
+
+        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ThreadMessageEntity> =
             LoadResult.Error(NotImplementedError("STUB for tests. Not implemented."))
     }
 
@@ -116,6 +127,67 @@ class MessageRepositoryExtensionsTest {
     }
 
     @Test
+    fun givenParameters_whenPaginatedMessagesByThread_thenShouldCallDaoExtensionsWithRightParameters() = runTest {
+        val pagingConfig = PagingConfig(20)
+        val pager = Pager(pagingConfig) { fakeThreadPagingSource }
+        val startingOffset = 0L
+
+        val kaliumPager = KaliumPager(pager, fakeThreadPagingSource, ReadDispatcher(StandardTestDispatcher()))
+        val (arrangement, messageRepositoryExtensions) = Arrangement()
+            .withThreadMessageExtensionsReturningPager(kaliumPager)
+            .arrange()
+
+        val visibilities = listOf(Message.Visibility.VISIBLE, Message.Visibility.DELETED)
+        messageRepositoryExtensions.getPaginatedMessagesByThreadIdAndVisibility(
+            conversationId = TestConversation.ID,
+            threadId = "thread-id",
+            visibility = visibilities,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset
+        )
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.messageDaoExtensions.getPagerForThread(
+                eq(CONVERSATION_ID_ENTITY),
+                eq("thread-id"),
+                matching {
+                    val list = it.toList()
+                    list.size == 2 &&
+                        list[0] == MessageEntity.Visibility.VISIBLE &&
+                        list[1] == MessageEntity.Visibility.DELETED
+                },
+                eq(pagingConfig),
+                eq(startingOffset)
+            )
+        }
+    }
+
+    @Test
+    fun givenThreadMessageEntity_whenUsingThreadMappingPath_thenMapperDelegatesToEntityMapping() {
+        val arrangement = Arrangement()
+        val entity = ThreadMessageEntity(
+            MessageEntity.Regular(
+                id = "thread-message",
+                conversationId = CONVERSATION_ID_ENTITY,
+                date = TestMessage.TEST_DATE,
+                senderUserId = TestMessage.TEST_SENDER_USER_ID.toDao(),
+                status = MessageEntity.Status.SENT,
+                content = MessageEntityContent.Text("hello"),
+                senderClientId = "client",
+                editStatus = MessageEntity.EditStatus.NotEdited,
+                readCount = 0,
+                senderName = "sender",
+            )
+        )
+
+        arrangement.messageMapper.fromThreadEntityToMessage(entity)
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.messageMapper.fromEntityToMessage(eq(entity.message))
+        }
+    }
+
+    @Test
     fun givenNomadDisabled_whenFetchingOlderMessages_thenDoesNotCallCoordinator() = runTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
@@ -167,6 +239,13 @@ class MessageRepositoryExtensionsTest {
             copy().also {
                 every {
                     it.messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
+                }.returns(kaliumPager)
+            }
+
+        fun withThreadMessageExtensionsReturningPager(kaliumPager: KaliumPager<ThreadMessageEntity>): Arrangement =
+            copy().also {
+                every {
+                    it.messageDaoExtensions.getPagerForThread(any(), any(), any(), any(), any())
                 }.returns(kaliumPager)
             }
 
