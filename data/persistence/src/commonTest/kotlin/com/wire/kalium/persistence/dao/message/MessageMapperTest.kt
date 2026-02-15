@@ -102,6 +102,102 @@ class MessageMapperTest {
         assertEquals(content.type, type)
     }
 
+    @Test
+    fun givenThreadTextRowWithMentionsAndQuote_whenMappingToThreadEntity_thenQuotedMetadataIsPreserved() {
+        val message = Arrangement().toThreadEntityFromView(
+            contentType = MessageEntity.ContentType.TEXT,
+            text = "hello @wire",
+            mentions = """[{"start":6,"length":5,"userId":{"value":"mention","domain":"domain"}}]""",
+            quotedMessageId = "quoted-id",
+            quotedSenderId = QualifiedIDEntity("quoted", "domain"),
+            isQuoteVerified = true,
+            isQuotingSelfUser = false,
+            quotedSenderName = "Quoted Sender",
+            quotedSenderAccentId = 7,
+            quotedMessageDateTime = Instant.parse("2026-01-01T00:00:00Z"),
+            quotedMessageEditTimestamp = Instant.parse("2026-01-01T00:00:01Z"),
+            quotedMessageVisibility = MessageEntity.Visibility.VISIBLE,
+            quotedMessageContentType = MessageEntity.ContentType.ASSET,
+            quotedTextBody = "quoted-text",
+            quotedAssetMimeType = "image/png",
+            quotedAssetName = "quoted.png",
+            quotedLocationName = "Zurich",
+        )
+
+        val content = message.message.content
+        assertIs<MessageEntityContent.Text>(content)
+        assertEquals("hello @wire", content.messageBody)
+        assertEquals(1, content.mentions.size)
+        assertEquals("mention", content.mentions.first().userId.value)
+        assertEquals("quoted-id", content.quotedMessageId)
+        assertEquals("quoted-id", content.quotedMessage?.id)
+        assertEquals("quoted.png", content.quotedMessage?.assetName)
+        assertEquals("Zurich", content.quotedMessage?.locationName)
+    }
+
+    @Test
+    fun givenThreadAssetRow_whenMappingToThreadEntity_thenRemoteAndLocalDataArePreserved() {
+        val message = Arrangement().toThreadEntityFromView(
+            contentType = MessageEntity.ContentType.ASSET,
+            assetSize = 1024,
+            assetName = "photo.png",
+            assetMimeType = "image/png",
+            assetOtrKey = byteArrayOf(1, 2),
+            assetSha256 = byteArrayOf(3, 4),
+            assetId = "asset-id",
+            assetToken = "token",
+            assetDomain = "wire.com",
+            assetEncryptionAlgorithm = "AES",
+            assetWidth = 100,
+            assetHeight = 200,
+            assetDuration = 300,
+            assetNormalizedLoudness = byteArrayOf(9),
+            assetDataPath = "/tmp/path/photo.png",
+        )
+
+        val content = message.message.content
+        assertIs<MessageEntityContent.Asset>(content)
+        assertEquals(1024, content.assetSizeInBytes)
+        assertEquals("photo.png", content.assetName)
+        assertEquals("image/png", content.assetMimeType)
+        assertEquals("asset-id", content.assetId)
+        assertEquals("/tmp/path/photo.png", content.assetDataPath)
+    }
+
+    @Test
+    fun givenThreadMultipartRowWithAttachments_whenMappingToThreadEntity_thenAttachmentsArePreserved() {
+        val message = Arrangement().toThreadEntityFromView(
+            contentType = MessageEntity.ContentType.MULTIPART,
+            text = "multipart",
+            attachments =
+                """[{"id":"asset-1","version_id":"v1","cell_asset":1,"mime_type":"image/png","asset_path":"remote/path","asset_size":1000,"local_path":"/tmp/local.png","asset_width":200,"asset_height":100,"asset_transfer_status":"UPLOADED","asset_duration_ms":0,"content_hash":"hash","content_url":"url","preview_url":"preview","content_url_expires_at":1234,"edit_supported":0}]"""
+        )
+
+        val content = message.message.content
+        assertIs<MessageEntityContent.Multipart>(content)
+        assertEquals("multipart", content.messageBody)
+        assertEquals(1, content.attachments.size)
+        assertEquals("asset-1", content.attachments.first().assetId)
+        assertEquals("/tmp/local.png", content.attachments.first().localPath)
+    }
+
+    @Test
+    fun givenThreadCompositeRowWithButtons_whenMappingToThreadEntity_thenButtonsArePreserved() {
+        val message = Arrangement().toThreadEntityFromView(
+            contentType = MessageEntity.ContentType.COMPOSITE,
+            text = "poll",
+            buttonsJson = """[{"text":"Accept","id":"btn-1","is_selected":1}]"""
+        )
+
+        val content = message.message.content
+        assertIs<MessageEntityContent.Composite>(content)
+        assertEquals("poll", content.text?.messageBody)
+        assertEquals(1, content.buttonList.size)
+        assertEquals("Accept", content.buttonList.first().text)
+        assertEquals("btn-1", content.buttonList.first().id)
+        assertTrue(content.buttonList.first().isSelected)
+    }
+
     private class Arrangement {
         @Suppress("LongParameterList")
         fun toEntityFromView(
@@ -322,6 +418,149 @@ class MessageMapperTest {
                 shouldNotify = 0,
                 mutedStatus = null,
                 conversationType = conversationType
+            )
+        }
+
+        @Suppress("LongParameterList")
+        fun toThreadEntityFromView(
+            id: String = "",
+            conversationId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"),
+            contentType: MessageEntity.ContentType = MessageEntity.ContentType.TEXT,
+            date: Instant = Instant.DISTANT_FUTURE,
+            senderUserId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"),
+            senderClientId: String? = "someId",
+            status: MessageEntity.Status = MessageEntity.Status.READ,
+            lastEditTimestamp: Instant? = null,
+            visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
+            expectsReadConfirmation: Boolean = false,
+            expireAfterMillis: Long? = null,
+            selfDeletionEndDate: Instant? = null,
+            readCount: Long = 0,
+            senderName: String? = null,
+            senderHandle: String? = null,
+            senderEmail: String? = null,
+            senderPhone: String? = null,
+            senderAccentId: Int = 0,
+            senderTeamId: String? = null,
+            senderConnectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
+            senderPreviewAssetId: QualifiedIDEntity? = null,
+            senderCompleteAssetId: QualifiedIDEntity? = null,
+            senderAvailabilityStatus: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.AVAILABLE,
+            senderUserType: UserTypeEntity = UserTypeEntity.STANDARD,
+            senderBotService: BotIdEntity? = null,
+            senderIsDeleted: Boolean = false,
+            senderExpiresAt: Instant? = null,
+            senderDefederated: Boolean = false,
+            senderSupportedProtocols: Set<SupportedProtocolEntity>? = null,
+            senderActiveOneOnOneConversationId: QualifiedIDEntity? = null,
+            senderIsProteusVerified: Long = 0,
+            senderIsUnderLegalHold: Long = 0,
+            isSelfMessage: Boolean = false,
+            text: String? = null,
+            isQuotingSelfUser: Boolean? = null,
+            assetSize: Long? = null,
+            assetName: String? = null,
+            assetMimeType: String? = null,
+            assetOtrKey: ByteArray? = null,
+            assetSha256: ByteArray? = null,
+            assetId: String? = null,
+            assetToken: String? = null,
+            assetDomain: String? = null,
+            assetEncryptionAlgorithm: String? = null,
+            assetWidth: Int? = null,
+            assetHeight: Int? = null,
+            assetDuration: Long? = null,
+            assetNormalizedLoudness: ByteArray? = null,
+            assetDataPath: String? = null,
+            reactionsJson: String = "[]",
+            mentions: String = "[]",
+            attachments: String = "[]",
+            quotedMessageId: String? = null,
+            quotedSenderId: QualifiedIDEntity? = null,
+            isQuoteVerified: Boolean? = null,
+            quotedSenderName: String? = null,
+            quotedSenderAccentId: Int? = null,
+            quotedMessageDateTime: Instant? = null,
+            quotedMessageEditTimestamp: Instant? = null,
+            quotedMessageVisibility: MessageEntity.Visibility? = null,
+            quotedMessageContentType: MessageEntity.ContentType? = null,
+            quotedTextBody: String? = null,
+            quotedAssetMimeType: String? = null,
+            quotedAssetName: String? = null,
+            quotedLocationName: String? = null,
+            recipientsFailedWithNoClientsList: List<QualifiedIDEntity>? = null,
+            recipientsFailedDeliveryList: List<QualifiedIDEntity>? = null,
+            buttonsJson: String = "[]",
+        ): ThreadMessageEntity {
+            return MessageMapper.toThreadMessageEntityFromView(
+                id = id,
+                conversationId = conversationId,
+                contentType = contentType,
+                date = date,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                status = status,
+                lastEditTimestamp = lastEditTimestamp,
+                visibility = visibility,
+                expectsReadConfirmation = expectsReadConfirmation,
+                expireAfterMillis = expireAfterMillis,
+                selfDeletionEndDate = selfDeletionEndDate,
+                readCount = readCount,
+                senderName = senderName,
+                senderHandle = senderHandle,
+                senderEmail = senderEmail,
+                senderPhone = senderPhone,
+                senderAccentId = senderAccentId,
+                senderTeamId = senderTeamId,
+                senderConnectionStatus = senderConnectionStatus,
+                senderPreviewAssetId = senderPreviewAssetId,
+                senderCompleteAssetId = senderCompleteAssetId,
+                senderAvailabilityStatus = senderAvailabilityStatus,
+                senderUserType = senderUserType,
+                senderBotService = senderBotService,
+                senderIsDeleted = senderIsDeleted,
+                senderExpiresAt = senderExpiresAt,
+                senderDefederated = senderDefederated,
+                senderSupportedProtocols = senderSupportedProtocols,
+                senderActiveOneOnOneConversationId = senderActiveOneOnOneConversationId,
+                senderIsProteusVerified = senderIsProteusVerified,
+                senderIsUnderLegalHold = senderIsUnderLegalHold,
+                isSelfMessage = isSelfMessage,
+                text = text,
+                isQuotingSelfUser = isQuotingSelfUser,
+                assetSize = assetSize,
+                assetName = assetName,
+                assetMimeType = assetMimeType,
+                assetOtrKey = assetOtrKey,
+                assetSha256 = assetSha256,
+                assetId = assetId,
+                assetToken = assetToken,
+                assetDomain = assetDomain,
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                assetWidth = assetWidth,
+                assetHeight = assetHeight,
+                assetDuration = assetDuration,
+                assetNormalizedLoudness = assetNormalizedLoudness,
+                assetDataPath = assetDataPath,
+                reactionsJson = reactionsJson,
+                mentions = mentions,
+                attachments = attachments,
+                quotedMessageId = quotedMessageId,
+                quotedSenderId = quotedSenderId,
+                isQuoteVerified = isQuoteVerified,
+                quotedSenderName = quotedSenderName,
+                quotedSenderAccentId = quotedSenderAccentId,
+                quotedMessageDateTime = quotedMessageDateTime,
+                quotedMessageEditTimestamp = quotedMessageEditTimestamp,
+                quotedMessageVisibility = quotedMessageVisibility,
+                quotedMessageContentType = quotedMessageContentType,
+                quotedTextBody = quotedTextBody,
+                quotedAssetMimeType = quotedAssetMimeType,
+                quotedAssetName = quotedAssetName,
+                quotedLocationName = quotedLocationName,
+                recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
+                recipientsFailedDeliveryList = recipientsFailedDeliveryList,
+                buttonsJson = buttonsJson,
             )
         }
     }

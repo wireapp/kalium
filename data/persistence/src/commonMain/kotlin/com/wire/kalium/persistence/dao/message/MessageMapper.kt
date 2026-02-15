@@ -795,6 +795,199 @@ object MessageMapper {
         )
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
+    fun toThreadMessageEntityFromView(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType,
+        date: Instant,
+        senderUserId: QualifiedIDEntity,
+        senderClientId: String?,
+        status: MessageEntity.Status,
+        lastEditTimestamp: Instant?,
+        visibility: MessageEntity.Visibility,
+        expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
+        selfDeletionEndDate: Instant?,
+        readCount: Long,
+        senderName: String?,
+        senderHandle: String?,
+        senderEmail: String?,
+        senderPhone: String?,
+        senderAccentId: Int,
+        senderTeamId: String?,
+        senderConnectionStatus: ConnectionEntity.State,
+        senderPreviewAssetId: QualifiedIDEntity?,
+        senderCompleteAssetId: QualifiedIDEntity?,
+        senderAvailabilityStatus: UserAvailabilityStatusEntity,
+        senderUserType: UserTypeEntity,
+        senderBotService: BotIdEntity?,
+        senderIsDeleted: Boolean,
+        senderExpiresAt: Instant?,
+        senderDefederated: Boolean,
+        senderSupportedProtocols: Set<SupportedProtocolEntity>?,
+        senderActiveOneOnOneConversationId: QualifiedIDEntity?,
+        senderIsProteusVerified: Long,
+        senderIsUnderLegalHold: Long,
+        isSelfMessage: Boolean,
+        text: String?,
+        isQuotingSelfUser: Boolean?,
+        assetSize: Long?,
+        assetName: String?,
+        assetMimeType: String?,
+        assetOtrKey: ByteArray?,
+        assetSha256: ByteArray?,
+        assetId: String?,
+        assetToken: String?,
+        assetDomain: String?,
+        assetEncryptionAlgorithm: String?,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        assetDuration: Long?,
+        assetNormalizedLoudness: ByteArray?,
+        assetDataPath: String?,
+        reactionsJson: String,
+        mentions: String,
+        attachments: String,
+        quotedMessageId: String?,
+        quotedSenderId: QualifiedIDEntity?,
+        isQuoteVerified: Boolean?,
+        quotedSenderName: String?,
+        quotedSenderAccentId: Int?,
+        quotedMessageDateTime: Instant?,
+        quotedMessageEditTimestamp: Instant?,
+        quotedMessageVisibility: MessageEntity.Visibility?,
+        quotedMessageContentType: MessageEntity.ContentType?,
+        quotedTextBody: String?,
+        quotedAssetMimeType: String?,
+        quotedAssetName: String?,
+        quotedLocationName: String?,
+        recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        buttonsJson: String,
+    ): ThreadMessageEntity {
+        val quotedMessage = quotedMessageContentType?.let {
+            MessageEntityContent.Text.QuotedMessage(
+                id = quotedMessageId.requireField("quotedMessageId"),
+                senderId = quotedSenderId.requireField("quotedSenderId"),
+                isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
+                isVerified = isQuoteVerified ?: false,
+                senderName = quotedSenderName,
+                dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                editTimestamp = quotedMessageEditTimestamp?.toIsoDateTimeString(),
+                visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
+                textBody = quotedTextBody,
+                assetMimeType = quotedAssetMimeType,
+                assetName = quotedAssetName,
+                locationName = quotedLocationName,
+                accentId = quotedSenderAccentId
+            )
+        }
+
+        val content = if (visibility == MessageEntity.Visibility.DELETED) {
+            MessageEntityContent.Unknown()
+        } else when (contentType) {
+            MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
+                messageBody = text ?: "",
+                mentions = messageMentionsFromJsonString(mentions),
+                quotedMessageId = quotedMessageId,
+                quotedMessage = quotedMessage
+            )
+
+            MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
+                assetSizeInBytes = assetSize.requireField("asset_size"),
+                assetName = assetName,
+                assetMimeType = assetMimeType.requireField("asset_mime_type"),
+                assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
+                assetSha256Key = assetSha256.requireField("asset_sha256"),
+                assetId = assetId.requireField("asset_id"),
+                assetToken = assetToken,
+                assetDomain = assetDomain,
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                assetWidth = assetWidth,
+                assetHeight = assetHeight,
+                assetDurationMs = assetDuration,
+                assetNormalizedLoudness = assetNormalizedLoudness,
+                assetDataPath = assetDataPath,
+            )
+
+            MessageEntity.ContentType.COMPOSITE -> {
+                val compositeText: MessageEntityContent.Text? = text?.let {
+                    MessageEntityContent.Text(
+                        messageBody = text,
+                        mentions = messageMentionsFromJsonString(mentions),
+                        quotedMessageId = quotedMessageId,
+                        quotedMessage = quotedMessage
+                    )
+                }
+                MessageEntityContent.Composite(
+                    text = compositeText,
+                    buttonList = serializer.decodeFromString(buttonsJson)
+                )
+            }
+
+            MessageEntity.ContentType.MULTIPART -> MessageEntityContent.Multipart(
+                messageBody = text,
+                mentions = messageMentionsFromJsonString(mentions),
+                quotedMessageId = quotedMessageId,
+                quotedMessage = quotedMessage,
+                attachments = messageAttachmentsFromJsonString(attachments),
+            )
+
+            else -> {
+                MessageEntityContent.Unknown("Unsupported content type for thread pagination: $contentType")
+            }
+        }
+
+        val sender = UserDetailsEntity(
+            id = senderUserId,
+            name = senderName,
+            handle = senderHandle,
+            email = senderEmail,
+            phone = senderPhone,
+            accentId = senderAccentId,
+            team = senderTeamId,
+            previewAssetId = senderPreviewAssetId,
+            completeAssetId = senderCompleteAssetId,
+            availabilityStatus = senderAvailabilityStatus,
+            userType = senderUserType,
+            botService = senderBotService,
+            deleted = senderIsDeleted,
+            expiresAt = senderExpiresAt,
+            defederated = senderDefederated,
+            supportedProtocols = senderSupportedProtocols,
+            activeOneOnOneConversationId = senderActiveOneOnOneConversationId,
+            connectionStatus = senderConnectionStatus,
+            isProteusVerified = senderIsProteusVerified == 1L,
+            isUnderLegalHold = senderIsUnderLegalHold == 1L,
+        )
+
+        val message = createMessageEntity(
+            id = id,
+            conversationId = conversationId,
+            date = date,
+            senderUserId = senderUserId,
+            senderClientId = senderClientId,
+            status = status,
+            lastEdit = lastEditTimestamp,
+            visibility = visibility,
+            content = content,
+            reactionsJson = reactionsJson,
+            senderName = senderName,
+            isSelfMessage = isSelfMessage,
+            expectsReadConfirmation = expectsReadConfirmation,
+            expireAfterMillis = expireAfterMillis,
+            selfDeletionEndDate = selfDeletionEndDate,
+            readCount = readCount,
+            recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
+            recipientsFailedDeliveryList = recipientsFailedDeliveryList,
+            sender = sender
+        ) as MessageEntity.Regular
+
+        return ThreadMessageEntity(message = message)
+    }
+
     fun fromAssetStatus(
         id: String,
         conversationId: QualifiedIDEntity,

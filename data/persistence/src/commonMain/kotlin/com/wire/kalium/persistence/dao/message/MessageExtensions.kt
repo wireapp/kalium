@@ -66,7 +66,7 @@ interface MessageExtensions {
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
         startingOffset: Long
-    ): KaliumPager<MessageEntity>
+    ): KaliumPager<ThreadMessageEntity>
 }
 
 internal class MessageExtensionsImpl internal constructor(
@@ -138,7 +138,7 @@ internal class MessageExtensionsImpl internal constructor(
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
         startingOffset: Long
-    ): KaliumPager<MessageEntity> {
+    ): KaliumPager<ThreadMessageEntity> {
         return KaliumPager(
             Pager(pagingConfig) { getThreadPagingSource(conversationId, threadId, visibilities, startingOffset) },
             getThreadPagingSource(conversationId, threadId, visibilities, startingOffset),
@@ -256,14 +256,14 @@ internal class MessageExtensionsImpl internal constructor(
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
-            kaliumLogger.d("[QueryPagingSource] Loading thread [MessageEntity] data: offset = $offset limit = $limit")
+            kaliumLogger.d("[QueryPagingSource] Loading thread [ThreadMessageEntity] data: offset = $offset limit = $limit")
             messageThreadsQueries.selectByConversationAndThreadIdAndVisibility(
                 conversation_id = conversationId,
                 thread_id = threadId,
                 visibility = visibilities,
                 limit = limit,
                 offset = offset,
-                mapper = messageMapper::toEntityMessageFromView
+                mapper = messageMapper::toThreadMessageEntityFromView
             )
         }
     )

@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.ThreadMessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -150,7 +151,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>> {
-        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForThread(
+        val pager: KaliumPager<ThreadMessageEntity> = messageDAO.platformExtensions.getPagerForThread(
             conversationId = conversationId.toDao(),
             threadId = threadId,
             visibilities = visibility.map { it.toEntityVisibility() },
@@ -159,7 +160,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         )
 
         return pager.pagingDataFlow.map {
-            it.map { messageMapper.fromEntityToMessage(it) }
+            it.map { threadMessage -> messageMapper.fromThreadEntityToMessage(threadMessage) }
         }
     }
 }

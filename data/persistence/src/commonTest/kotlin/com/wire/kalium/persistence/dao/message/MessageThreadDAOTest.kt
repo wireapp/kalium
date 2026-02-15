@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
@@ -150,13 +151,41 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         insertInitialData()
         val root = createMessage("root-thread", Instant.parse("2026-01-01T00:00:00Z"))
         val reply = createMessage("reply-thread", Instant.parse("2026-01-01T00:00:01Z"))
+        val threadKnock = createMessage(
+            id = "thread-knock",
+            date = Instant.parse("2026-01-01T00:00:01.500Z"),
+            content = MessageEntityContent.Knock(false)
+        )
+        val threadMissedCall = newSystemMessageEntity(
+            id = "thread-missed-call",
+            date = Instant.parse("2026-01-01T00:00:01.750Z"),
+            conversationId = conversation.id,
+            senderUserId = senderUser.id,
+            content = MessageEntityContent.MissedCall
+        )
         val nonThread = createMessage("non-thread", Instant.parse("2026-01-01T00:00:02Z"))
         val otherThreadMessage = createMessage("other-thread", Instant.parse("2026-01-01T00:00:03Z"))
-        messageDAO.insertOrIgnoreMessages(listOf(root, reply, nonThread, otherThreadMessage))
+        messageDAO.insertOrIgnoreMessages(listOf(root, reply, threadKnock, threadMissedCall, nonThread, otherThreadMessage))
 
         messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, Instant.parse("2026-01-01T00:00:04Z"))
         messageThreadDAO.upsertThreadItem(conversation.id, root.id, THREAD_ID_1, true, root.date, root.visibility)
         messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+        messageThreadDAO.upsertThreadItem(
+            conversation.id,
+            threadKnock.id,
+            THREAD_ID_1,
+            false,
+            threadKnock.date,
+            threadKnock.visibility
+        )
+        messageThreadDAO.upsertThreadItem(
+            conversation.id,
+            threadMissedCall.id,
+            THREAD_ID_1,
+            false,
+            threadMissedCall.date,
+            threadMissedCall.visibility
+        )
         messageThreadDAO.upsertThreadItem(
             conversation.id,
             otherThreadMessage.id,
@@ -175,10 +204,12 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         )
         val page = pager.pagingSource.load(PagingSourceLoadParamsRefresh<Int>(null, 50, false))
 
-        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(page)
-        val ids = page.data.map { it.id }
+        assertIs<PagingSourceLoadResultPage<Int, ThreadMessageEntity>>(page)
+        val ids = page.data.map { it.message.id }
         assertContains(ids, root.id)
         assertContains(ids, reply.id)
+        assertFalse(ids.contains(threadKnock.id))
+        assertFalse(ids.contains(threadMissedCall.id))
         assertFalse(ids.contains(nonThread.id))
         assertFalse(ids.contains(otherThreadMessage.id))
     }
@@ -232,6 +263,7 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         id: String,
         date: Instant,
         visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
+        content: MessageEntityContent.Regular = MessageEntityContent.Text("Test"),
         conversationId: ConversationIDEntity = conversation.id,
     ): MessageEntity = newRegularMessageEntity(
         id = id,
@@ -239,6 +271,7 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         senderUserId = senderUser.id,
         senderName = senderUser.name!!,
         sender = senderUserDetails,
+        content = content,
         visibility = visibility,
         date = date,
     )
