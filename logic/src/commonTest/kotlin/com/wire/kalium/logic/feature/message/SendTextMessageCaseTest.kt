@@ -60,6 +60,7 @@ import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.seconds
 
 class SendTextMessageCaseTest {
 
@@ -90,6 +91,7 @@ class SendTextMessageCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
                 matching { message -> message.content is MessageContent.Text },
+                any(),
                 any()
             )
         }
@@ -123,11 +125,67 @@ class SendTextMessageCaseTest {
             arrangement.persistMessage.invoke(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.messageSender.sendMessage(any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun givenThreadReplyWithSelfDeleteTimer_whenSendingText_thenShouldPersistWithoutExpiration() = runTest {
+        // Given
+        val threadId = "thread-id"
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Enabled(10.seconds))
+            .withSendMessageSuccess()
+            .arrange()
+
+        // When
+        val result = sendTextMessage(TestConversation.ID, "some-text", threadId = threadId)
+
+        // Then
+        result.toEither().shouldSucceed()
+        coVerify {
+            arrangement.persistMessage.invoke(matches { message ->
+                message.expirationData == null
+            })
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenThreadReplyWithExplicitSelfDeleteDuration_whenSendingText_thenShouldPersistWithExpiration() = runTest {
+        // Given
+        val threadId = "thread-id"
+        val threadSelfDeletionDuration = 10.seconds
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+
+        // When
+        val result = sendTextMessage(
+            conversationId = TestConversation.ID,
+            text = "some-text",
+            threadId = threadId,
+            threadSelfDeletionDuration = threadSelfDeletionDuration,
+        )
+
+        // Then
+        result.toEither().shouldSucceed()
+        coVerify {
+            arrangement.persistMessage.invoke(matches { message ->
+                message.expirationData?.expireAfter == threadSelfDeletionDuration
+            })
+        }.wasInvoked(once)
     }
 
     @Test
@@ -344,13 +402,13 @@ class SendTextMessageCaseTest {
 
         suspend fun withSendMessageSuccess() = apply {
             everySuspend {
-                messageSender.sendMessage(any(), any())
+                messageSender.sendMessage(any(), any(), any())
             } returns Either.Right(Unit)
         }
 
         suspend fun withSendMessageFailure() = apply {
             everySuspend {
-                messageSender.sendMessage(any(), any())
+                messageSender.sendMessage(any(), any(), any())
             } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
