@@ -169,6 +169,11 @@ import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.ConversationFoldersPropertyDataSource
+import com.wire.kalium.logic.data.properties.ReadReceiptsPropertyDataSource
+import com.wire.kalium.logic.data.properties.ScreenshotCensoringPropertyDataSource
+import com.wire.kalium.logic.data.properties.TypingIndicatorPropertyDataSource
+import com.wire.kalium.logic.data.properties.UserPropertiesSyncDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -717,9 +722,11 @@ public class UserSessionScope internal constructor(
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
-            authenticatedNetworkContainer.propertiesApi,
-            userConfigRepository,
-            userId
+            readReceipts = ReadReceiptsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            typingIndicator = TypingIndicatorPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            screenshotCensoring = ScreenshotCensoringPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            userPropertiesSync = UserPropertiesSyncDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            conversationFolders = ConversationFoldersPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userId),
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider

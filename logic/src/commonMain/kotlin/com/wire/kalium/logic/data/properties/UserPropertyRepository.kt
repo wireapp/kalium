@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.properties
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -31,8 +30,6 @@ import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -77,17 +74,19 @@ internal interface UserPropertyRepository :
     ConversationFoldersPropertyRepository
 
 internal class UserPropertyDataSource(
-    propertiesApi: PropertiesApi,
-    userConfigRepository: UserConfigRepository,
-    selfUserId: UserId,
+    readReceipts: ReadReceiptsPropertyRepository,
+    typingIndicator: TypingIndicatorPropertyRepository,
+    screenshotCensoring: ScreenshotCensoringPropertyRepository,
+    userPropertiesSync: UserPropertiesSyncRepository,
+    conversationFolders: ConversationFoldersPropertyRepository,
 ) : UserPropertyRepository,
-    ReadReceiptsPropertyRepository by ReadReceiptsPropertyDataSource(propertiesApi, userConfigRepository),
-    TypingIndicatorPropertyRepository by TypingIndicatorPropertyDataSource(propertiesApi, userConfigRepository),
-    ScreenshotCensoringPropertyRepository by ScreenshotCensoringPropertyDataSource(propertiesApi, userConfigRepository),
-    UserPropertiesSyncRepository by UserPropertiesSyncDataSource(propertiesApi, userConfigRepository),
-    ConversationFoldersPropertyRepository by ConversationFoldersPropertyDataSource(propertiesApi, selfUserId)
+    ReadReceiptsPropertyRepository by readReceipts,
+    TypingIndicatorPropertyRepository by typingIndicator,
+    ScreenshotCensoringPropertyRepository by screenshotCensoring,
+    UserPropertiesSyncRepository by userPropertiesSync,
+    ConversationFoldersPropertyRepository by conversationFolders
 
-private class ReadReceiptsPropertyDataSource(
+internal class ReadReceiptsPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
 ) : ReadReceiptsPropertyRepository {
@@ -112,7 +111,7 @@ private class ReadReceiptsPropertyDataSource(
     }
 }
 
-private class TypingIndicatorPropertyDataSource(
+internal class TypingIndicatorPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
 ) : TypingIndicatorPropertyRepository {
@@ -138,7 +137,7 @@ private class TypingIndicatorPropertyDataSource(
     }
 }
 
-private class ScreenshotCensoringPropertyDataSource(
+internal class ScreenshotCensoringPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
 ) : ScreenshotCensoringPropertyRepository {
@@ -156,7 +155,7 @@ private class ScreenshotCensoringPropertyDataSource(
     }
 }
 
-private class UserPropertiesSyncDataSource(
+internal class UserPropertiesSyncDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
 ) : UserPropertiesSyncRepository {
@@ -175,7 +174,7 @@ private class UserPropertiesSyncDataSource(
         }
 }
 
-private class ConversationFoldersPropertyDataSource(
+internal class ConversationFoldersPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val selfUserId: UserId,
 ) : ConversationFoldersPropertyRepository {
@@ -186,11 +185,6 @@ private class ConversationFoldersPropertyDataSource(
         labelListResponse.labels.map { label -> label.toFolder(selfUserId.domain) }
     }
 }
-
-private fun CoreFailure.isPropertyNotFound(): Boolean =
-    this is NetworkFailure.ServerMiscommunication &&
-            kaliumException is KaliumException.InvalidRequestError &&
-            (kaliumException as KaliumException.InvalidRequestError).isNotFound()
 
 private fun JsonObject.findIntValue(propertyKey: PropertyKey): Int? = this[propertyKey.key].toIntOrNull()
 

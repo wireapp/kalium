@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigResult
 import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -40,9 +40,9 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(true)
 
-        coVerify {
+        verifySuspend {
             arrangement.userPropertyRepository.setScreenshotCensoringEnabled()
-        }.wasInvoked(once)
+        }
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Success)
     }
 
@@ -53,9 +53,9 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(false)
 
-        coVerify {
+        verifySuspend {
             arrangement.userPropertyRepository.deleteScreenshotCensoringProperty()
-        }.wasInvoked(once)
+        }
 
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Success)
     }
@@ -67,9 +67,9 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(true)
 
-        coVerify {
+        verifySuspend {
             arrangement.userPropertyRepository.setScreenshotCensoringEnabled()
-        }.wasInvoked(once)
+        }
 
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Failure)
     }
@@ -81,47 +81,47 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(false)
 
-        coVerify {
+        verifySuspend {
             arrangement.userPropertyRepository.deleteScreenshotCensoringProperty()
-        }.wasInvoked(once)
+        }
 
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Failure)
     }
 
     private class Arrangement {
 
-        val userPropertyRepository = mock(UserPropertyRepository::class)
+        val userPropertyRepository = mock<UserPropertyRepository>()
 
         val persistScreenshotCensoringConfig = PersistScreenshotCensoringConfigUseCaseImpl(userPropertyRepository)
 
         suspend fun withSuccessfulCall() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.setScreenshotCensoringEnabled()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
             return this
         }
 
         suspend fun withSuccessfulDeleteCall() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.deleteScreenshotCensoringProperty()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
             return this
         }
 
         suspend fun withFailureToCallRepo() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.setScreenshotCensoringEnabled()
-            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            } returns Either.Left(CoreFailure.Unknown(RuntimeException("Some error")))
 
             return this
         }
 
         suspend fun withFailureToDeleteInRepo() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.deleteScreenshotCensoringProperty()
-            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            } returns Either.Left(CoreFailure.Unknown(RuntimeException("Some error")))
 
             return this
         }

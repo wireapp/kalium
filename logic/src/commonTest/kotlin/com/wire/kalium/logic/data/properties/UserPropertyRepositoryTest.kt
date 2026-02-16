@@ -29,12 +29,13 @@ import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -55,13 +56,13 @@ class UserPropertyRepositoryTest {
         val result = repository.setReadReceiptsEnabled()
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend {
             arrangement.propertiesApi.setProperty(any(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.setReadReceiptsStatus(eq(true))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -74,13 +75,13 @@ class UserPropertyRepositoryTest {
         val result = repository.deleteReadReceiptsProperty()
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend {
             arrangement.propertiesApi.deleteProperty(any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.setReadReceiptsStatus(eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -92,9 +93,9 @@ class UserPropertyRepositoryTest {
         val result = repository.getReadReceiptsStatus()
 
         assertFalse(result)
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.isReadReceiptsEnabled()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -117,10 +118,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }.wasInvoked(once)
+        verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
     }
 
     @Test
@@ -137,9 +138,65 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }.wasInvoked(once)
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndResponseIsEmptyJson_thenShouldPersistAllDefaults() = runTest {
+        // readReceipts defaults to false, typingIndicator defaults to true, screenshotCensoring defaults to false
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(JsonObject(emptyMap()))
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndOnlyTypingIndicatorPresent_thenOthersShouldDefaultCorrectly() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(
+                JsonObject(mapOf(PropertyKey.WIRE_TYPING_INDICATOR_MODE.key to JsonPrimitive(0)))
+            )
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesStatusesAndOnlyScreenshotCensoringPresent_thenOthersShouldDefaultCorrectly() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(
+                JsonObject(mapOf(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE.key to JsonPrimitive(1)))
+            )
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
     }
 
     @Test
@@ -162,10 +219,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }.wasInvoked(once)
+        verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
     }
 
     @Test
@@ -177,10 +234,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldFail()
-        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }.wasNotInvoked()
-        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }.wasNotInvoked()
-        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }.wasNotInvoked()
+        verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }
     }
 
     @Test
@@ -192,10 +249,10 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldFail()
-        coVerify { arrangement.propertiesApi.getPropertiesValues() }.wasInvoked(once)
-        coVerify { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }.wasNotInvoked()
-        coVerify { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }.wasNotInvoked()
-        coVerify { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }.wasNotInvoked()
+        verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }
     }
 
     @Test
@@ -208,12 +265,12 @@ class UserPropertyRepositoryTest {
         val result = repository.setScreenshotCensoringEnabled()
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend {
             arrangement.propertiesApi.setProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE), eq(1))
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend {
             arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -226,86 +283,90 @@ class UserPropertyRepositoryTest {
         val result = repository.deleteScreenshotCensoringProperty()
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend {
             arrangement.propertiesApi.deleteProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE))
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend {
             arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
-        val propertiesApi = mock(PropertiesApi::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val propertiesApi = mock<PropertiesApi>()
+        val userConfigRepository = mock<UserConfigRepository>()
 
-        private val selfUserId = TestUser.SELF.id
-
-        private val userPropertyRepository = UserPropertyDataSource(propertiesApi, userConfigRepository, selfUserId)
+        private val userPropertyRepository = UserPropertyDataSource(
+            readReceipts = ReadReceiptsPropertyDataSource(propertiesApi, userConfigRepository),
+            typingIndicator = TypingIndicatorPropertyDataSource(propertiesApi, userConfigRepository),
+            screenshotCensoring = ScreenshotCensoringPropertyDataSource(propertiesApi, userConfigRepository),
+            userPropertiesSync = UserPropertiesSyncDataSource(propertiesApi, userConfigRepository),
+            conversationFolders = ConversationFoldersPropertyDataSource(propertiesApi, TestUser.SELF.id),
+        )
 
         suspend fun withUpdateReadReceiptsSuccess() = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.setProperty(eq(PropertyKey.WIRE_RECEIPT_MODE), eq(1))
-            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withGetPropertiesValuesReturning(value: JsonObject) = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.getPropertiesValues()
-            }.returns(NetworkResponse.Success(value, mapOf(), 200))
+            } returns NetworkResponse.Success(value, mapOf(), 200)
         }
 
         suspend fun withGetPropertiesValuesNotFound() = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.getPropertiesValues()
-            }.returns(notFoundResponse())
+            } returns notFoundResponse()
         }
 
         suspend fun withGetPropertiesValuesBadRequest() = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.getPropertiesValues()
-            }.returns(badRequestResponse())
+            } returns badRequestResponse()
         }
 
         suspend fun withDeleteReadReceiptsSuccess() = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.deleteProperty(eq(PropertyKey.WIRE_RECEIPT_MODE))
-            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withSetScreenshotCensoringEnabledSuccess() = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.setProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE), eq(1))
-            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withDeleteScreenshotCensoringSuccess() = apply {
-            coEvery {
+            everySuspend {
                 propertiesApi.deleteProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE))
-            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withUpdateReadReceiptsLocallySuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setReadReceiptsStatus(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateTypingIndicatorLocallySuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setTypingIndicatorStatus(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateScreenshotCensoringLocallySuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setScreenshotCensoringConfig(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withNullReadReceiptsStatus() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isReadReceiptsEnabled()
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun arrange() = this to userPropertyRepository
