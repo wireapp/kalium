@@ -28,7 +28,6 @@ import kotlinx.serialization.json.JsonObject
 interface PropertiesApi {
 
     suspend fun getPropertiesValues(): NetworkResponse<JsonObject>
-    suspend fun getProperty(propertyKey: PropertyKey): NetworkResponse<Int>
     suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit>
     suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit>
     suspend fun getLabels(): NetworkResponse<LabelListResponseDTO>

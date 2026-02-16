@@ -85,7 +85,7 @@ class SlowSyncWorkerTest {
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertUseCases(arrangement, SlowSyncStep.values().toHashSet())
+        assertUseCases(arrangement, SlowSyncStep.entries.toTypedArray().toHashSet())
     }
 
     @Test
@@ -124,7 +124,7 @@ class SlowSyncWorkerTest {
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertUseCases(arrangement, SlowSyncStep.values().toHashSet())
+        assertUseCases(arrangement, SlowSyncStep.entries.toTypedArray().toHashSet())
     }
 
     @Test

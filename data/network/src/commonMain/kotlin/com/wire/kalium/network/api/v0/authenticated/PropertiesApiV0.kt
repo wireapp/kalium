@@ -46,10 +46,6 @@ internal open class PropertiesApiV0 internal constructor(
         httpClient.get(PATH_PROPERTIES_VALUES)
     }
 
-    override suspend fun getProperty(propertyKey: PropertyKey): NetworkResponse<Int> = wrapKaliumResponse {
-        httpClient.get("$PATH_PROPERTIES/${propertyKey.key}")
-    }
-
     override suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.put("$PATH_PROPERTIES/${propertyKey.key}") { setBody(propertyValue) }

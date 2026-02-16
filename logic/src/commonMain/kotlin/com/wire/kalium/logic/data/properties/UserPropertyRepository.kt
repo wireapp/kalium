@@ -23,7 +23,6 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -45,7 +44,6 @@ import kotlinx.serialization.json.intOrNull
 internal interface ReadReceiptsPropertyRepository {
     suspend fun getReadReceiptsStatus(): Boolean
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
-    suspend fun syncReadReceiptsStatus(): Either<CoreFailure, Unit>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
 }
@@ -53,13 +51,11 @@ internal interface ReadReceiptsPropertyRepository {
 internal interface TypingIndicatorPropertyRepository {
     suspend fun getTypingIndicatorStatus(): Boolean
     suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
-    suspend fun syncTypingIndicatorStatus(): Either<CoreFailure, Unit>
     suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
 }
 
 internal interface ScreenshotCensoringPropertyRepository {
-    suspend fun syncScreenshotCensoringStatus(): Either<CoreFailure, Unit>
     suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit>
 }
@@ -103,19 +99,6 @@ private class ReadReceiptsPropertyDataSource(
 
     override suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
 
-    override suspend fun syncReadReceiptsStatus(): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            propertiesApi.getProperty(PropertyKey.WIRE_RECEIPT_MODE)
-        }.flatMapLeft { failure ->
-            if (failure.isPropertyNotFound()) {
-                Either.Right(0)
-            } else {
-                Either.Left(failure)
-            }
-        }.flatMap { value ->
-            userConfigRepository.setReadReceiptsStatus(value == 1)
-        }
-
     override suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
         propertiesApi.setProperty(PropertyKey.WIRE_RECEIPT_MODE, 1)
     }.flatMap {
@@ -142,19 +125,6 @@ private class TypingIndicatorPropertyDataSource(
     override suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>> =
         userConfigRepository.isTypingIndicatorEnabled()
 
-    override suspend fun syncTypingIndicatorStatus(): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            propertiesApi.getProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE)
-        }.flatMapLeft { failure ->
-            if (failure.isPropertyNotFound()) {
-                Either.Right(1)
-            } else {
-                Either.Left(failure)
-            }
-        }.flatMap { value ->
-            userConfigRepository.setTypingIndicatorStatus(value != 0)
-        }
-
     override suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
         propertiesApi.deleteProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE)
     }.flatMap {
@@ -172,19 +142,6 @@ private class ScreenshotCensoringPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
 ) : ScreenshotCensoringPropertyRepository {
-
-    override suspend fun syncScreenshotCensoringStatus(): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            propertiesApi.getProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
-        }.flatMapLeft { failure ->
-            if (failure.isPropertyNotFound()) {
-                Either.Right(0)
-            } else {
-                Either.Left(failure)
-            }
-        }.flatMap { value ->
-            userConfigRepository.setScreenshotCensoringConfig(value == 1)
-        }
 
     override suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
         propertiesApi.setProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE, 1)
@@ -207,13 +164,7 @@ private class UserPropertiesSyncDataSource(
     override suspend fun syncPropertiesStatuses(): Either<CoreFailure, Unit> =
         wrapApiRequest {
             propertiesApi.getPropertiesValues()
-        }.fold({ failure ->
-            if (failure.isPropertyNotFound()) {
-                syncUsingFallbackCalls()
-            } else {
-                Either.Left(failure)
-            }
-        }, { properties ->
+        }.flatMap { properties ->
             val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE) == 1
             val typingIndicatorEnabled = properties.findIntValue(PropertyKey.WIRE_TYPING_INDICATOR_MODE)?.let { it != 0 } ?: true
             val screenshotCensoringEnabled = properties.findIntValue(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE) == 1
@@ -221,27 +172,7 @@ private class UserPropertiesSyncDataSource(
             userConfigRepository.setReadReceiptsStatus(readReceiptsEnabled)
                 .flatMap { userConfigRepository.setTypingIndicatorStatus(typingIndicatorEnabled) }
                 .flatMap { userConfigRepository.setScreenshotCensoringConfig(screenshotCensoringEnabled) }
-        })
-
-    private suspend fun syncUsingFallbackCalls(): Either<CoreFailure, Unit> {
-        suspend fun syncReadReceipts() = wrapApiRequest { propertiesApi.getProperty(PropertyKey.WIRE_RECEIPT_MODE) }
-            .flatMapLeft { if (it.isPropertyNotFound()) Either.Right(0) else Either.Left(it) }
-            .flatMap { userConfigRepository.setReadReceiptsStatus(it == 1) }
-
-        suspend fun syncTypingIndicator() = wrapApiRequest { propertiesApi.getProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE) }
-            .flatMapLeft { if (it.isPropertyNotFound()) Either.Right(1) else Either.Left(it) }
-            .flatMap { userConfigRepository.setTypingIndicatorStatus(it != 0) }
-
-        suspend fun syncScreenshotCensoring() = wrapApiRequest {
-            propertiesApi.getProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
         }
-            .flatMapLeft { if (it.isPropertyNotFound()) Either.Right(0) else Either.Left(it) }
-            .flatMap { userConfigRepository.setScreenshotCensoringConfig(it == 1) }
-
-        return syncReadReceipts()
-            .flatMap { syncTypingIndicator() }
-            .flatMap { syncScreenshotCensoring() }
-    }
 }
 
 private class ConversationFoldersPropertyDataSource(

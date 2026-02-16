@@ -57,60 +57,6 @@ internal class PropertiesApiV0Test : ApiTest() {
     }
 
     @Test
-    fun givenReadReceiptsPropertyRequest_whenGettingProperty_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = "1",
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual("$PATH_PROPERTIES/${PropertyKey.WIRE_RECEIPT_MODE.key}")
-            }
-        )
-
-        val propertiesApi: PropertiesApi = PropertiesApiV0(networkClient)
-        val result = propertiesApi.getProperty(PropertyKey.WIRE_RECEIPT_MODE)
-
-        assertTrue(result is NetworkResponse.Success)
-        assertEquals(1, result.value)
-    }
-
-    @Test
-    fun givenTypingIndicatorPropertyRequest_whenGettingProperty_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = "0",
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual("$PATH_PROPERTIES/${PropertyKey.WIRE_TYPING_INDICATOR_MODE.key}")
-            }
-        )
-
-        val propertiesApi: PropertiesApi = PropertiesApiV0(networkClient)
-        val result = propertiesApi.getProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE)
-
-        assertTrue(result is NetworkResponse.Success)
-        assertEquals(0, result.value)
-    }
-
-    @Test
-    fun givenScreenshotCensoringPropertyRequest_whenGettingProperty_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = "1",
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual("$PATH_PROPERTIES/${PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE.key}")
-            }
-        )
-
-        val propertiesApi: PropertiesApi = PropertiesApiV0(networkClient)
-        val result = propertiesApi.getProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
-
-        assertTrue(result is NetworkResponse.Success)
-        assertEquals(1, result.value)
-    }
-
-    @Test
     fun givenSetPropertyRequest_whenSettingReadReceipts_thenRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = "",
