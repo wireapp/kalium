@@ -55,6 +55,8 @@ internal interface NewMessageEventHandler {
         event: Event.Conversation.NewMLSMessage,
         deliveryInfo: EventDeliveryInfo
     )
+
+    suspend fun flushPendingSideEffects()
 }
 
 @Suppress("LongParameterList")
@@ -226,5 +228,9 @@ internal class NewMessageEventHandlerImpl(
             senderClientId = result.senderClientId,
             content = result.content
         )
+    }
+
+    override suspend fun flushPendingSideEffects() {
+        applicationMessageHandler.flushPendingSideEffects()
     }
 }
