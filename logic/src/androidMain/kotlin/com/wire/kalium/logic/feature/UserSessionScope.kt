@@ -25,9 +25,9 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.PlatformUserStorageProperties
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -55,8 +55,11 @@ internal fun UserSessionScope(
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
 ): UserSessionScope {
+    val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
     val platformUserStorageProperties =
-        PlatformUserStorageProperties(applicationContext, SecurityHelperImpl(globalPreferences.passphraseStorage))
+        PlatformUserStorageProperties(applicationContext) { userId ->
+            securityHelper.userDBSecret(userId)
+        }
 
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
 

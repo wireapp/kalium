@@ -16,25 +16,25 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.userstorage.di
 
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
-internal actual class PlatformUserStorageProvider : UserStorageProvider() {
+public actual class PlatformUserStorageProvider : UserStorageProvider() {
     actual override fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
         platformProperties: PlatformUserStorageProperties,
         dbInvalidationControlEnabled: Boolean
     ): UserStorage {
-        val userIdEntity = userId.toDao()
+        val userIdEntity = UserIDEntity(userId.value, userId.domain)
 
         val databasePassphrase = if (shouldEncryptData) {
-            platformProperties.securityHelper.userDBSecret(userId)
+            platformProperties.userDatabaseSecretProvider(userId)
         } else {
             null
         }

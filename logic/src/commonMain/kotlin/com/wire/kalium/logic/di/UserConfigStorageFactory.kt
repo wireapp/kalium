@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.persistence.config.UserConfigStorage
 
 /**
