@@ -21,11 +21,13 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -42,6 +44,7 @@ import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemo
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.toEither
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -71,6 +74,7 @@ internal class SlowSyncWorkerImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val syncSelfUser: SyncSelfUserUseCase,
+    private val syncUserProperties: SyncUserPropertiesUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase,
     private val syncConversations: SyncConversationsUseCase,
@@ -107,6 +111,13 @@ internal class SlowSyncWorkerImpl(
                 }
             }
                 .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
+                .continueWithStep(SlowSyncStep.USER_PROPERTIES) {
+                    // result of this step is intentionally ignored
+                    syncUserProperties.invoke()
+                        .onFailure {
+                            kaliumLogger.e("Failure during User Properties Sync $it")
+                        }.flatMapLeft { Unit.right() }
+                }
                 .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
                 .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().toEither().map { } }
                 .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
