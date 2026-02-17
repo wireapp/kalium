@@ -1849,6 +1849,15 @@ public class UserSessionScope internal constructor(
         persistMessageCallbackManager.unregister(callback)
     }
 
+    public suspend fun putMetadataValue(key: String, value: String): Unit =
+        userStorage.database.metadataDAO.insertValue(value, key)
+
+    public suspend fun getMetadataValue(key: String): String? =
+        userStorage.database.metadataDAO.valueByKey(key)
+
+    public suspend fun clearMetadataValue(key: String): Unit =
+        userStorage.database.metadataDAO.deleteValue(key)
+
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
         userConfigRepository = userConfigRepository
