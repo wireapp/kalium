@@ -34,6 +34,8 @@ import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -72,7 +74,6 @@ import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.network.api.model.isTeamMember
@@ -83,6 +84,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import io.ktor.http.HttpStatusCode
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -282,7 +284,7 @@ internal class UserDataSource internal constructor(
                             userDetailsApi.getMultipleUsers(
                                 ListUserRequest.qualifiedIds(
                                     qualifiedUserIdList.filter { it.domain == selfUserId.domain }
-                                    .map { userId -> userId.toApi() }
+                                        .map { userId -> userId.toApi() }
                                 )
                             )
                         }
@@ -662,17 +664,25 @@ internal class UserDataSource internal constructor(
         qualifiedUserIds: Set<UserId>,
     ): Either<CoreFailure, ListUsersDTO> = fetchResult.fold(
         fnL = { error ->
+            val malformedDomainError = error.asMalformedQualifiedIdsDomainError()
             val malformedUsers = qualifiedUserIds
                 .filter { it.value.isBlank() || it.domain.isBlank() }
                 .toSet()
 
-            if (!error.isMalformedQualifiedIdsDomainError() || malformedUsers.isEmpty()) {
+            if (malformedDomainError == null || malformedUsers.isEmpty()) {
                 Either.Left(error)
             } else {
-                kaliumLogger.e(
-                    "list-users failed due to malformed qualified_ids domain. " +
-                        "Will delete ${malformedUsers.size} malformed users and retry. " +
-                        "Sample=${malformedUsers.toObfuscatedSample()}"
+                kaliumLogger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "list-users malformed qualified_ids domain",
+                    jsonStringKeyValues = mapOf(
+                        "event" to "list_users_malformed_qualified_ids_domain",
+                        "action" to "delete_malformed_users_and_retry",
+                        "malformedUsersCount" to malformedUsers.size,
+                        "sample" to malformedUsers.toObfuscatedSample(),
+                        "cause" to malformedDomainError.errorResponse.message,
+                        "stackTrace" to malformedDomainError.stackTraceToString(),
+                    )
                 )
 
                 wrapStorageRequest {
@@ -699,12 +709,20 @@ internal class UserDataSource internal constructor(
     }
 }
 
-private fun CoreFailure.isMalformedQualifiedIdsDomainError(): Boolean {
+private fun CoreFailure.asMalformedQualifiedIdsDomainError(): KaliumException.InvalidRequestError? {
     val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
-    return invalidRequest?.isBadRequest() == true &&
-        invalidRequest.errorResponse.message.contains("qualified_ids", ignoreCase = true) &&
-        invalidRequest.errorResponse.message.contains("domain", ignoreCase = true)
+    return if (
+        invalidRequest?.errorResponse?.code == HttpStatusCode.BadRequest.value &&
+        QUALIFIED_IDS_DOMAIN_VALIDATION_ERROR_REGEX.matches(invalidRequest.errorResponse.message)
+    ) {
+        invalidRequest
+    } else {
+        null
+    }
 }
+
+private val QUALIFIED_IDS_DOMAIN_VALIDATION_ERROR_REGEX =
+    Regex("^Error in \\$\\['qualified_ids']\\[\\d+]\\.domain:.*$", setOf(RegexOption.IGNORE_CASE))
 
 private fun Set<UserId>.toObfuscatedSample(limit: Int = 3): String =
     take(limit).joinToString { "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}" }

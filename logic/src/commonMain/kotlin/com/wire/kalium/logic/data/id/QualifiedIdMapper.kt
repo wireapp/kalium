@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
@@ -57,8 +59,18 @@ internal class QualifiedIdMapperImpl internal constructor(
     }
 
     private fun selfUserDomain(): String = selfUserId?.domain?.takeIf { it.isNotBlank() } ?: run {
-        val error = IllegalStateException("Self user domain is required for qualified ID mapping")
-        kaliumLogger.e("QualifiedIdMapper fallback to empty domain because self user domain is missing", error)
+        val cause = IllegalStateException("self_user_domain_missing_or_blank")
+        kaliumLogger.logStructuredJson(
+            level = KaliumLogLevel.ERROR,
+            leadingMessage = "qualified-id mapper missing self domain",
+            jsonStringKeyValues = mapOf(
+                "event" to "qualified_id_mapper_missing_self_domain",
+                "action" to "fallback_to_empty_domain",
+                "selfUserPresent" to (selfUserId != null),
+                "cause" to (cause.message ?: "unknown"),
+                "stackTrace" to cause.stackTraceToString(),
+            )
+        )
         ""
     }
 }
