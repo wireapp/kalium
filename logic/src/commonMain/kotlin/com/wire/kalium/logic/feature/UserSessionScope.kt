@@ -1327,6 +1327,8 @@ public class UserSessionScope internal constructor(
             incrementalSyncRepository,
             clientRepository,
             recoverMLSConversationsUseCase,
+            joinExistingMLSConversations,
+            updateSupportedProtocolsAndResolveOneOnOnes,
             slowSyncRepository,
             cryptoTransactionProvider,
             userScopedLogger
@@ -1784,7 +1786,9 @@ public class UserSessionScope internal constructor(
         get() = ProtocolUpdateEventHandlerImpl(
             systemMessageInserter = systemMessageInserter,
             callRepository = callRepository,
-            updateConversationProtocolUseCase
+            conversationRepository = conversationRepository,
+            persistConversations = persistConversationsUseCase,
+            slowSyncRepository = slowSyncRepository
         )
 
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler

@@ -21,10 +21,13 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -41,6 +44,8 @@ internal class MLSConversationsRecoveryManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val clientRepository: ClientRepository,
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase,
+    private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase,
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val slowSyncRepository: SlowSyncRepository,
     private val transactionProvider: CryptoTransactionProvider,
     kaliumLogger: KaliumLogger
@@ -76,19 +81,34 @@ internal class MLSConversationsRecoveryManagerImpl(
         }
     }
 
-    private suspend fun recoverMLSConversations() = transactionProvider.transaction { transactionContext ->
-        recoverMLSConversationsUseCase.invoke(transactionContext).let { result ->
-            when (result) {
-                is RecoverMLSConversationsResult.Failure -> {
-                    logger.w("Error while recovering MLS conversations: ${result.failure}")
-                    result.failure.left()
-                }
-                is RecoverMLSConversationsResult.Success -> {
-                    logger.i("Successfully recovered MLS Conversations")
-                    slowSyncRepository.setNeedsToRecoverMLSGroups(false)
-                    Unit.right()
+    private suspend fun recoverMLSConversations() =
+        // First, join any PENDING_JOIN conversations (e.g., after fresh login with MIXED conversations)
+        joinExistingMLSConversations().flatMap {
+            logger.i("Completed joining PENDING_JOIN conversations")
+            // Update supported protocols to backend so other clients know this client now supports MLS
+            transactionProvider.transaction { transactionContext ->
+                logger.i("Updating supported protocols after joining MLS conversations")
+                updateSupportedProtocolsAndResolveOneOnOnes(
+                    transactionContext = transactionContext,
+                    synchroniseUsers = true
+                )
+            }
+        }.flatMap {
+            // Then, recover ESTABLISHED conversations that may have epoch mismatches
+            transactionProvider.transaction { transactionContext ->
+                recoverMLSConversationsUseCase.invoke(transactionContext).let { result ->
+                    when (result) {
+                        is RecoverMLSConversationsResult.Failure -> {
+                            logger.w("Error while recovering MLS conversations: ${result.failure}")
+                            result.failure.left()
+                        }
+                        is RecoverMLSConversationsResult.Success -> {
+                            logger.i("Successfully recovered MLS Conversations")
+                            slowSyncRepository.setNeedsToRecoverMLSGroups(false)
+                            Unit.right()
+                        }
+                    }
                 }
             }
         }
-    }
 }

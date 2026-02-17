@@ -119,40 +119,71 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
         }
     }
 
+    /**
+     * Calculates which protocols this client should advertise as supporting.
+     *
+     * Logic:
+     * 1. Gets current client ID from local storage
+     * 2. Fetches all self clients from backend
+     * 3. Checks if MLS client is registered locally (important for first-time login race condition)
+     * 4. Gets MLS migration configuration (or uses disabled default if not found)
+     * 5. Gets team's supported protocols configuration
+     * 6. Determines if PROTEUS should be supported:
+     *    - Always supported if team allows PROTEUS OR migration hasn't ended
+     * 7. Determines if MLS should be supported:
+     *    - Team must support MLS AND one of:
+     *      a) Migration has ended (past endTime) - force all clients to MLS
+     *      b) All active self clients have isMLSCapable=true
+     *      c) hasRegisteredMLSClient=true (fallback for race condition during first-time login
+     *         where MLS was just registered but backend hasn't populated isMLSCapable flag yet)
+     *
+     * Race condition scenario (first-time login with cleared data):
+     * - MLS client registers → backend stores public key (T0)
+     * - SlowSync starts immediately (T1)
+     * - UPDATE_SUPPORTED_PROTOCOLS fetches clients (T2)
+     * - If T2-T0 < backend processing time: isMLSCapable still false in response
+     * - Without hasRegisteredMLSClient fallback: MLS wouldn't be added to supported protocols
+     * - Result: Backend thinks client only supports PROTEUS, migration fails
+     *
+     * @return Set of protocols this client should advertise (sent to backend via PUT /self/supported-protocols)
+     */
     private suspend fun selfSupportedProtocols(): Either<CoreFailure, Set<SupportedProtocol>> =
         currentClientIdProvider().flatMap { currentClientId ->
             clientsRepository.selfListOfClients().flatMap { selfClients ->
-                userConfigRepository.getMigrationConfiguration()
-                    .flatMapLeft {
-                        if (it is StorageFailure.DataNotFound) {
-                            Either.Right(MIGRATION_CONFIGURATION_DISABLED)
-                        } else {
-                            Either.Left(it)
-                        }
-                    }
-                    .flatMap { migrationConfiguration ->
-                        userConfigRepository.getSupportedProtocols().map { teamSupportedProtocols ->
-                            val selfSupportedProtocols = mutableSetOf<SupportedProtocol>()
-                            if (proteusIsSupported(
-                                    teamSettingsSupportedProtocols = teamSupportedProtocols,
-                                    migrationConfiguration = migrationConfiguration
-                                )
-                            ) {
-                                selfSupportedProtocols.add(SupportedProtocol.PROTEUS)
+                clientsRepository.hasRegisteredMLSClient().flatMap { hasRegisteredMLSClient ->
+                    userConfigRepository.getMigrationConfiguration()
+                        .flatMapLeft {
+                            if (it is StorageFailure.DataNotFound) {
+                                Either.Right(MIGRATION_CONFIGURATION_DISABLED)
+                            } else {
+                                Either.Left(it)
                             }
+                        }
+                        .flatMap { migrationConfiguration ->
+                            userConfigRepository.getSupportedProtocols().map { teamSupportedProtocols ->
+                                val selfSupportedProtocols = mutableSetOf<SupportedProtocol>()
+                                if (proteusIsSupported(
+                                        teamSettingsSupportedProtocols = teamSupportedProtocols,
+                                        migrationConfiguration = migrationConfiguration
+                                    )
+                                ) {
+                                    selfSupportedProtocols.add(SupportedProtocol.PROTEUS)
+                                }
 
-                            if (mlsIsSupported(
-                                    teamSettingsSupportedProtocols = teamSupportedProtocols,
-                                    migrationConfiguration = migrationConfiguration,
-                                    selfClients = selfClients,
-                                    selfClientId = currentClientId
-                                )
-                            ) {
-                                selfSupportedProtocols.add(SupportedProtocol.MLS)
+                                if (mlsIsSupported(
+                                        teamSettingsSupportedProtocols = teamSupportedProtocols,
+                                        migrationConfiguration = migrationConfiguration,
+                                        selfClients = selfClients,
+                                        selfClientId = currentClientId,
+                                        hasRegisteredMLSClient = hasRegisteredMLSClient
+                                    )
+                                ) {
+                                    selfSupportedProtocols.add(SupportedProtocol.MLS)
+                                }
+                                selfSupportedProtocols
                             }
-                            selfSupportedProtocols
                         }
-                    }
+                }
             }
         }
 
@@ -160,7 +191,8 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
         teamSettingsSupportedProtocols: Set<SupportedProtocol>,
         migrationConfiguration: MLSMigrationModel,
         selfClients: List<Client>,
-        selfClientId: ClientId
+        selfClientId: ClientId,
+        hasRegisteredMLSClient: Boolean
     ): Boolean {
         val mlsIsSupported = teamSettingsSupportedProtocols.contains(SupportedProtocol.MLS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
@@ -173,10 +205,13 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
 
         logger.d(
             "mls is supported = $mlsIsSupported, " +
-                    "all active self clients are mls capable = $allSelfClientsAreMLSCapable " +
+                    "all active self clients are mls capable = $allSelfClientsAreMLSCapable, " +
+                    "hasRegisteredMLSClient = $hasRegisteredMLSClient, " +
                     "migration has ended = $mlsMigrationHasEnded"
         )
-        return mlsIsSupported && (mlsMigrationHasEnded || allSelfClientsAreMLSCapable)
+        // Use hasRegisteredMLSClient as fallback for race condition during first-time login
+        // where backend hasn't yet populated isMLSCapable flag in client response
+        return mlsIsSupported && (mlsMigrationHasEnded || allSelfClientsAreMLSCapable || hasRegisteredMLSClient)
     }
 
     private fun proteusIsSupported(

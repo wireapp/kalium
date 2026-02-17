@@ -19,13 +19,15 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import io.mockative.any
@@ -139,6 +141,8 @@ class MLSConversationsRecoveryManagerTests {
         val clientRepository = mock(ClientRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val recoverMLSConversationsUseCase = mock(RecoverMLSConversationsUseCase::class)
+        val joinExistingMLSConversations = mock(JoinExistingMLSConversationsUseCase::class)
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
         val slowSyncRepository = mock(SlowSyncRepository::class)
 
         suspend fun withMLSNeedsRecoveryReturn(state: Boolean) = apply {
@@ -174,11 +178,15 @@ class MLSConversationsRecoveryManagerTests {
             incrementalSyncRepository,
             clientRepository,
             recoverMLSConversationsUseCase,
+            joinExistingMLSConversations,
+            updateSupportedProtocolsAndResolveOneOnOnes,
             slowSyncRepository,
             cryptoTransactionProvider,
             kaliumLogger
         ).also {
             withTransactionReturning(Either.Right(Unit))
+            coEvery { joinExistingMLSConversations.invoke(any()) }.returns(Either.Right(Unit))
+            coEvery { updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any()) }.returns(Either.Right(Unit))
         }
     }
 }
