@@ -94,6 +94,10 @@ Framework output location: `logic/build/bin/<target>/debugFramework/logic.framew
 
 **Note:** iOS and JS builds require `USE_UNIFIED_CORE_CRYPTO=true`. Either set it in gradle.properties or pass `-PUSE_UNIFIED_CORE_CRYPTO=true` on the command line.
 
+User DB cache mode can be controlled at compile time with:
+- `USE_GLOBAL_USER_STORAGE_CACHE=false` (default): shared per CoreLogic instance
+- `USE_GLOBAL_USER_STORAGE_CACHE=true`: shared across CoreLogic instances in process
+
 ### CLI Application
 
 ```bash

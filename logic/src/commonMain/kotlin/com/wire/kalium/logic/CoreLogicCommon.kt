@@ -23,9 +23,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformRootPathsProvider
-import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
@@ -54,7 +52,6 @@ public abstract class CoreLogicCommon internal constructor(
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
     internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-    internal val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     internal val authenticationScopeProvider: AuthenticationScopeProvider =

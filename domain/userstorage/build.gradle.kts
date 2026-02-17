@@ -20,6 +20,39 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
+val cliUseGlobalUserStorageCache: Boolean? = gradle.startParameter
+    .projectProperties["USE_GLOBAL_USER_STORAGE_CACHE"]
+    ?.toBooleanStrictOrNull()
+
+val useGlobalUserStorageCache: Boolean = when {
+    cliUseGlobalUserStorageCache != null -> cliUseGlobalUserStorageCache
+    gradle.parent != null -> true
+    else -> providers
+        .gradleProperty("USE_GLOBAL_USER_STORAGE_CACHE")
+        .map { it.toBoolean() }
+        .getOrElse(false)
+}
+val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/userstorage/commonMain/kotlin")
+
+val generateUserStorageCacheConfig by tasks.registering {
+    inputs.property("useGlobalUserStorageCache", useGlobalUserStorageCache)
+    outputs.dir(generatedCommonMainKotlinDir)
+    doLast {
+        val packagePath = "com/wire/kalium/userstorage/di"
+        val outDir = generatedCommonMainKotlinDir.get().asFile.resolve(packagePath)
+        outDir.mkdirs()
+
+        val outputFile = outDir.resolve("UserStorageBuildConfig.kt")
+        outputFile.writeText(
+            """
+            package com.wire.kalium.userstorage.di
+
+            internal const val USE_GLOBAL_USER_STORAGE_CACHE: Boolean = $useGlobalUserStorageCache
+            """.trimIndent() + "\n"
+        )
+    }
+}
+
 kaliumLibrary {
     multiplatform {
         enableJs.set(false)
@@ -30,6 +63,7 @@ kotlin {
     explicitApi()
     sourceSets {
         val commonMain by getting {
+            kotlin.srcDir(generatedCommonMainKotlinDir)
             dependencies {
                 implementation(projects.core.data)
                 api(projects.data.persistence)
@@ -54,4 +88,10 @@ kotlin {
             }
         }
     }
+}
+
+tasks.matching { task ->
+    task.name.contains("compile", ignoreCase = true) && task.name.contains("Kotlin")
+}.configureEach {
+    dependsOn(generateUserStorageCacheConfig)
 }

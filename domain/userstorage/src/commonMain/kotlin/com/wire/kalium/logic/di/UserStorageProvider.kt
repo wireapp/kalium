@@ -25,9 +25,11 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 public data class UserStorage(public val database: UserDatabaseBuilder)
 public abstract class UserStorageProvider {
     private companion object {
-        // Shared across provider instances so all consumers reuse the same per-user DB holder.
-        val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
+        val globalInMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
     }
+
+    private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> =
+        if (USE_GLOBAL_USER_STORAGE_CACHE) globalInMemoryUserStorage else ConcurrentMutableMap()
 
     public fun get(userId: UserId): UserStorage? = inMemoryUserStorage[userId]
 

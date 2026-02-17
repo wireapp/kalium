@@ -27,6 +27,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
@@ -42,7 +43,31 @@ class UserStorageProviderTest {
     private val testUserIdEntity = UserIDEntity(testUserId.value, testUserId.domain)
 
     @Test
-    fun givenMultipleProviderInstances_whenGetOrCreateSameUser_thenStorageIsCreatedOnce() {
+    fun givenSameProvider_whenGetOrCreateSameUser_thenStorageIsCreatedOnce() {
+        val createCount = AtomicInteger(0)
+        val provider = TestUserStorageProvider(createCount)
+
+        val firstStorage = provider.getOrCreate(
+            userId = testUserId,
+            platformUserStorageProperties = testProperties,
+            shouldEncryptData = false,
+            dbInvalidationControlEnabled = false
+        )
+        val secondStorage = provider.getOrCreate(
+            userId = testUserId,
+            platformUserStorageProperties = testProperties,
+            shouldEncryptData = false,
+            dbInvalidationControlEnabled = false
+        )
+
+        assertEquals(1, createCount.get())
+        assertSame(firstStorage, secondStorage)
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenMultipleProviders_whenGetOrCreateSameUser_thenBehaviorMatchesCompileTimeMode() {
         val createCount = AtomicInteger(0)
         val firstProvider = TestUserStorageProvider(createCount)
         val secondProvider = TestUserStorageProvider(createCount)
@@ -60,45 +85,57 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled = false
         )
 
-        assertEquals(1, createCount.get())
-        assertSame(firstStorage, secondStorage)
+        if (USE_GLOBAL_USER_STORAGE_CACHE) {
+            assertEquals(1, createCount.get())
+            assertSame(firstStorage, secondStorage)
+            assertSame(firstStorage, firstProvider.get(testUserId))
+            assertSame(secondStorage, secondProvider.get(testUserId))
+        } else {
+            assertEquals(2, createCount.get())
+            assertNotSame(firstStorage, secondStorage)
+            assertSame(firstStorage, firstProvider.get(testUserId))
+            assertSame(secondStorage, secondProvider.get(testUserId))
+        }
 
         cleanup(firstProvider, secondProvider)
     }
 
     @Test
-    fun givenStorageRemovedFromOneProvider_whenReadingFromAnother_thenStorageIsGone() {
+    fun givenStorageRemovedFromAnotherProvider_whenReadingAgain_thenBehaviorMatchesCompileTimeMode() {
         val createCount = AtomicInteger(0)
         val firstProvider = TestUserStorageProvider(createCount)
         val secondProvider = TestUserStorageProvider(createCount)
 
-        val storage = firstProvider.getOrCreate(
+        val firstStorage = firstProvider.getOrCreate(
             userId = testUserId,
             platformUserStorageProperties = testProperties,
             shouldEncryptData = false,
             dbInvalidationControlEnabled = false
         )
         val removedStorage = secondProvider.remove(testUserId)
-
-        assertSame(storage, removedStorage)
-        assertNull(firstProvider.get(testUserId))
-
-        val recreatedStorage = secondProvider.getOrCreate(
+        val secondStorage = secondProvider.getOrCreate(
             userId = testUserId,
             platformUserStorageProperties = testProperties,
             shouldEncryptData = false,
             dbInvalidationControlEnabled = false
         )
 
-        assertEquals(2, createCount.get())
-        assertSame(recreatedStorage, firstProvider.get(testUserId))
+        if (USE_GLOBAL_USER_STORAGE_CACHE) {
+            assertSame(firstStorage, removedStorage)
+            assertEquals(2, createCount.get())
+            assertSame(secondStorage, firstProvider.get(testUserId))
+        } else {
+            assertNull(removedStorage)
+            assertEquals(2, createCount.get())
+            assertSame(firstStorage, firstProvider.get(testUserId))
+            assertNotSame(firstStorage, secondStorage)
+        }
 
         cleanup(firstProvider, secondProvider)
     }
 
-    private fun cleanup(firstProvider: UserStorageProvider, secondProvider: UserStorageProvider) {
-        firstProvider.remove(testUserId)?.database?.close()
-        secondProvider.remove(testUserId)?.database?.close()
+    private fun cleanup(vararg providers: UserStorageProvider) {
+        providers.forEach { it.remove(testUserId)?.database?.close() }
         clearInMemoryDatabase(testUserIdEntity)
     }
 
