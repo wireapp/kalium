@@ -42,62 +42,62 @@ internal class CallManagerImpl : CallManager {
         conversationTypeCalling: ConversationTypeCalling,
         isAudioCbr: Boolean
     ) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: startCall ignored")
     }
 
     override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: answerCall ignored")
     }
 
     override suspend fun endCall(conversationId: ConversationId) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: endCall ignored")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: rejectCall ignored")
     }
 
     override suspend fun muteCall(shouldMute: Boolean) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: muteCall ignored")
     }
 
     override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setVideoSendState ignored")
     }
 
     override suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: requestVideoStreams ignored")
     }
 
     override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: updateEpochInfo ignored")
     }
 
     override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: updateConversationClients ignored")
     }
 
     override suspend fun reportProcessNotifications(isStarted: Boolean) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: reportProcessNotifications ignored")
     }
 
     override suspend fun setTestVideoType(testVideoType: TestVideoType) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setTestVideoType ignored")
     }
 
     override suspend fun setTestPreviewActive(shouldEnable: Boolean) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setTestPreviewActive ignored")
     }
 
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setTestRemoteVideoStates ignored")
     }
 
     override suspend fun setBackground(background: Boolean) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setBackground ignored")
     }
 
     override suspend fun cancelJobs() {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: cancelJobs ignored")
     }
 }

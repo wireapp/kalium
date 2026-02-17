@@ -22,6 +22,7 @@ import com.wire.kalium.logic.framework.TestUser
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class QualifiedIdMapperTest {
 
@@ -184,33 +185,36 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun givenAnEmptyString_whenMappingToQualifiedId_thenReturnsAnEmptyQualifiedID() = runTest {
+    fun givenAnEmptyString_whenMappingToQualifiedId_thenThrowsIllegalArgumentException() = runTest {
         // Given
         val conversationId = ""
         val qualifiedIdMapper = createMapper()
 
         // When
-        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
-
-        // Then
-        assertEquals(
-            QualifiedID(value = "", domain = ""),
-            result
-        )
+        assertFailsWith<IllegalArgumentException> {
+            qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+        }
     }
 
     @Test
-    fun givenAStringWithOnlyAtSign_whenMappingToQualifiedId_thenReturnsAnEmptyQualifiedID() = runTest {
+    fun givenAStringWithOnlyAtSign_whenMappingToQualifiedId_thenThrowsIllegalArgumentException() = runTest {
         // Given
         val conversationId = "@"
         val qualifiedIdMapper = createMapper()
 
         // When
-        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+        assertFailsWith<IllegalArgumentException> {
+            qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+        }
+    }
 
-        // Then
+    @Test
+    fun givenBlankSelfDomain_whenMappingToQualifiedId_thenReturnsEmptyDomainAndDoesNotCrash() = runTest {
+        val mapper = QualifiedIdMapper(selfUserId = QualifiedID("self-id", ""))
+        val result = mapper.fromStringToQualifiedID("conversationId")
+
         assertEquals(
-            QualifiedID(value = "", domain = ""),
+            QualifiedID(value = "conversationId", domain = ""),
             result
         )
     }

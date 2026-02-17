@@ -245,7 +245,7 @@ interface MlsCoreCryptoContext {
      *
      * @return the conversation verification status
      */
-    suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState
+    suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState
 
     /**
      * Get the identity of given clients in the given conversation
