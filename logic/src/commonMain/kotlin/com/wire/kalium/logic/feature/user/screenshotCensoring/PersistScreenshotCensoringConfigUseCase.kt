@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user.screenshotCensoring
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 
@@ -32,19 +32,24 @@ public interface PersistScreenshotCensoringConfigUseCase {
 }
 
 internal class PersistScreenshotCensoringConfigUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository,
+    private val userPropertyRepository: UserPropertyRepository,
 ) : PersistScreenshotCensoringConfigUseCase {
 
     private val logger by lazy { kaliumLogger.withFeatureId(LOCAL_STORAGE) }
 
-    override suspend fun invoke(enabled: Boolean): PersistScreenshotCensoringConfigResult =
-        userConfigRepository.setScreenshotCensoringConfig(enabled)
-            .fold({
-                logger.e("Failed trying to update screenshot censoring configuration")
-                PersistScreenshotCensoringConfigResult.Failure(it)
-            }) {
-                PersistScreenshotCensoringConfigResult.Success
-            }
+    override suspend fun invoke(enabled: Boolean): PersistScreenshotCensoringConfigResult {
+        val result = when (enabled) {
+            true -> userPropertyRepository.setScreenshotCensoringEnabled()
+            false -> userPropertyRepository.deleteScreenshotCensoringProperty()
+        }
+
+        return result.fold({
+            logger.e("Failed trying to update screenshot censoring configuration")
+            PersistScreenshotCensoringConfigResult.Failure(it)
+        }) {
+            PersistScreenshotCensoringConfigResult.Success
+        }
+    }
 }
 
 public sealed class PersistScreenshotCensoringConfigResult {

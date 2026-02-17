@@ -22,8 +22,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCaseImpl
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -66,10 +67,10 @@ class IsWireCellsEnabledForConversationUseCaseTest {
 
     private class Arrangement {
 
-        private val conversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository = mock<ConversationRepository>()
 
         suspend fun withCellsEnabledForConversationReturning(result: Either<StorageFailure, Boolean>) = apply {
-            coEvery { conversationRepository.isCellEnabled(conversationId) } returns result
+            everySuspend { conversationRepository.isCellEnabled(conversationId) } returns result
         }
 
         fun arrange() = this to IsWireCellsEnabledForConversationUseCaseImpl(
