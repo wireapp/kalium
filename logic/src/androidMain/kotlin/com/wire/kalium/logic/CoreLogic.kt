@@ -38,6 +38,8 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -51,7 +53,8 @@ public actual class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,
-    kaliumConfigs: KaliumConfigs
+    kaliumConfigs: KaliumConfigs,
+    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider()
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
     private val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
@@ -104,6 +107,7 @@ public actual class CoreLogic(
             globalPreferences,
             globalCallManager,
             userStorageProvider,
+            userAuthenticatedNetworkProvider,
             networkStateObserver,
             logoutCallbackManager,
             userAgent

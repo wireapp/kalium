@@ -16,24 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-plugins {
-    id(libs.plugins.kalium.library.get().pluginId)
-}
+package com.wire.kalium.usernetwork.di
 
-kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
-}
-
-kotlin {
-    explicitApi()
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(projects.domain.usernetwork)
-                implementation(projects.domain.userstorage)
-            }
-        }
-    }
-}
+public actual class PlatformUserAuthenticatedNetworkProvider actual constructor() : UserAuthenticatedNetworkProvider()

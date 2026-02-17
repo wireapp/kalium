@@ -67,7 +67,8 @@ kotlin {
                 implementation(projects.core.util)
                 implementation(projects.domain.cells)
                 implementation(projects.domain.backup)
-                api(projects.domain.userstorage)
+                implementation(projects.domain.userstorage)
+                implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
 
                 // coroutines

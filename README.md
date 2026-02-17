@@ -40,6 +40,16 @@ Kalium currently uses the following compile-time Gradle properties:
     ./gradlew <task> -PUSE_GLOBAL_USER_STORAGE_CACHE=true
     ```
 
+- `USE_GLOBAL_USER_NETWORK_API_CACHE`
+  - Default for standalone Kalium builds: `false` (cache scoped to each `UserAuthenticatedNetworkProvider` instance).
+  - Included-build behavior (when Kalium is built from Wire Android): defaults to `true` unless explicitly overridden with `-PUSE_GLOBAL_USER_NETWORK_API_CACHE=...`.
+  - `true`: share authenticated network API containers process-wide across provider instances.
+  - `false`: cache is local to each provider instance.
+  - Override example:
+    ```bash
+    ./gradlew <task> -PUSE_GLOBAL_USER_NETWORK_API_CACHE=true
+    ```
+
 The `cli` can be executed on the terminal of any machine that 
 satisfies the dependencies mentioned above, and is capable of actions like:
 - Logging in

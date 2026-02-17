@@ -133,6 +133,7 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -200,6 +201,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserConfigStorageFactory
 import com.wire.kalium.userstorage.di.UserStorageProvider
@@ -567,6 +570,7 @@ public class UserSessionScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
+    userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val clientConfig: ClientConfig,
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
@@ -691,15 +695,19 @@ public class UserSessionScope internal constructor(
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
-    private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
-        sessionManager = sessionManager,
-        selfUserId = UserIdDTO(userId.value, userId.domain),
-        userAgent = userAgent,
-        certificatePinning = kaliumConfigs.certPinningConfig,
-        mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
-        mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
-        kaliumLogger = userScopedLogger
-    )
+    private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = userAuthenticatedNetworkProvider.getOrCreate(userId.toApi()) {
+        UserAuthenticatedNetworkApis(
+            container = AuthenticatedNetworkContainer.create(
+                sessionManager = sessionManager,
+                selfUserId = UserIdDTO(userId.value, userId.domain),
+                userAgent = userAgent,
+                certificatePinning = kaliumConfigs.certPinningConfig,
+                mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+                mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
+                kaliumLogger = userScopedLogger
+            )
+        )
+    }.container
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
