@@ -75,12 +75,13 @@ import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -113,6 +114,7 @@ internal class CallManagerImpl internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+    private val epochInfoUpdater: EpochInfoUpdater,
     private val networkStateObserver: NetworkStateObserver,
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val userConfigRepository: UserConfigRepository,
@@ -625,8 +627,7 @@ internal class CallManagerImpl internal constructor(
                     conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                     qualifiedIdMapper = qualifiedIdMapper,
                     callingScope = scope,
-                    callRepository = callRepository,
-                    epochInfoUpdater = ::updateEpochInfo,
+                    epochInfoUpdater = epochInfoUpdater,
                 ).keepingStrongReference()
 
                 wcall_set_req_clients_handler(
@@ -661,8 +662,8 @@ internal class CallManagerImpl internal constructor(
         scope.launch {
             withCalling {
                 val requestNewEpochHandler = OnRequestNewEpoch(
-                    scope = scope,
-                    callRepository = callRepository,
+                    epochInfoUpdater = epochInfoUpdater,
+                    callingScope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
                 ).keepingStrongReference()
 
