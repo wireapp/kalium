@@ -66,6 +66,7 @@ internal class PersistMessageCallbackManagerImpl(
         callbacks.remove(callback)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun onMessagePersisted(message: PersistedMessageData) {
         callbacks.forEach { callback ->
             scope.launch {
