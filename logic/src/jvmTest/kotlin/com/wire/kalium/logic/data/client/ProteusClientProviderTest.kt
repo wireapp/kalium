@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.SecureRandom
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -38,6 +39,7 @@ class ProteusClientProviderTest {
 
     private class Arrangement {
 
+        val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
         val passphraseStorage = mock(PassphraseStorage::class)
         val proteusMigrationRecoveryHandler = mock(ProteusMigrationRecoveryHandler::class)
 
@@ -66,7 +68,8 @@ class ProteusClientProviderTest {
             userId = TestUser.USER_ID,
             passphraseStorage = passphraseStorage,
             dispatcher = KaliumDispatcherImpl,
-            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
+            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler,
+            currentClientIdProvider = currentClientIdProvider,
         )
     }
 }
