@@ -67,6 +67,7 @@ sealed interface MessageContent {
      * Examples: [Text], [Asset], [Knock], Locations (coordinates).
      */
     sealed class Regular : FromProto
+    sealed interface GlobalSearchContent
 
     /**
      * Content that is transferred between clients, but
@@ -87,7 +88,7 @@ sealed interface MessageContent {
         val mentions: List<MessageMention> = emptyList(),
         val quotedMessageReference: QuoteReference? = null,
         val quotedMessageDetails: QuotedMessageDetails? = null
-    ) : Regular()
+    ) : Regular(), GlobalSearchContent
 
     data class QuoteReference(
         val quotedMessageId: String,
@@ -434,7 +435,7 @@ sealed interface MessageContent {
         val attachments: List<MessageAttachment> = emptyList(),
         val quotedMessageReference: QuoteReference? = null,
         val quotedMessageDetails: QuotedMessageDetails? = null
-    ) : Regular() {
+    ) : Regular(), GlobalSearchContent {
         data class Button(
             val text: String,
             val id: String,

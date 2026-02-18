@@ -63,6 +63,8 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.ButtonEntity
+import com.wire.kalium.persistence.dao.message.GlobalSearchContentEntity
+import com.wire.kalium.persistence.dao.message.GlobalSearchMessageEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -272,13 +274,13 @@ internal interface MessageRepository {
      * @param searchQuery The text to search for (case-insensitive, partial match)
      * @param limit Maximum number of results to return
      * @param offset Offset for pagination
-     * @return List of messages matching the search query, ordered by date descending
+     * @return List of slim global-search messages ordered by date descending
      */
     suspend fun searchMessagesByTextGlobally(
         searchQuery: String,
         limit: Int,
         offset: Int
-    ): Either<StorageFailure, List<Message.Standalone>>
+    ): Either<StorageFailure, List<GlobalSearchMessage>>
 
     val extensions: MessageRepositoryExtensions
     suspend fun getImageAssetMessagesByConversationId(
@@ -807,12 +809,30 @@ internal class MessageDataSource internal constructor(
         searchQuery: String,
         limit: Int,
         offset: Int
-    ): Either<StorageFailure, List<Message.Standalone>> = wrapStorageRequest {
+    ): Either<StorageFailure, List<GlobalSearchMessage>> = wrapStorageRequest {
         messageDAO.searchMessagesByTextGlobally(
             searchQuery = searchQuery,
             limit = limit,
             offset = offset
-        ).map { messageMapper.fromEntityToMessage(it) }
+        ).map(::fromGlobalSearchEntityToModel)
+    }
+
+    private fun fromGlobalSearchEntityToModel(entity: GlobalSearchMessageEntity): GlobalSearchMessage {
+        val content: MessageContent.GlobalSearchContent = when (val globalContent = entity.content) {
+            is GlobalSearchContentEntity.Text -> MessageContent.Text(value = globalContent.messageBody)
+            is GlobalSearchContentEntity.Multipart -> MessageContent.Multipart(value = globalContent.messageBody)
+        }
+        return GlobalSearchMessage(
+            id = entity.id,
+            conversationId = entity.conversationId.toModel(),
+            content = content,
+            date = entity.date,
+            senderUserId = entity.senderUserId.toModel(),
+            senderClientId = ClientId(entity.senderClientId),
+            senderUserName = entity.senderName,
+            status = entity.status.toModel(readCount = 0),
+            isSelfMessage = entity.isSelfMessage,
+        )
     }
 
     override suspend fun observeAssetStatuses(

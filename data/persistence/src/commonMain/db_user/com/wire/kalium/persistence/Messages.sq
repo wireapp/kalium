@@ -540,14 +540,27 @@ LIMIT :limit
 OFFSET :offset;
 
 selectAllMessagesFromSearch:
-SELECT MessageDetailsView.*
+SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.sender_user_id AS senderUserId,
+    Message.sender_client_id AS senderClientId,
+    Message.status AS status,
+    Message.visibility AS visibility,
+    User.name AS senderName,
+    TextContent.text_body AS text
 FROM MessageTextContent AS TextContent
-JOIN MessageDetailsView
-ON MessageDetailsView.id = TextContent.message_id AND MessageDetailsView.conversationId = TextContent.conversation_id
+JOIN Message
+ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN User
+ON User.qualified_id = Message.sender_user_id
 WHERE TextContent.text_body LIKE ('%' || :searchQuery || '%')
-AND (MessageDetailsView.contentType = 'TEXT' OR MessageDetailsView.contentType = 'MULTIPART')
-AND MessageDetailsView.expireAfterMillis IS NULL
-ORDER BY MessageDetailsView.date DESC
+AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
+AND Message.expire_after_millis IS NULL
+AND Message.visibility = "VISIBLE"
+ORDER BY Message.creation_date DESC
 LIMIT :limit
 OFFSET :offset;
 

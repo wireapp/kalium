@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.GlobalSearchMessage
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -44,7 +44,7 @@ public interface SearchMessagesGloballyUseCase {
     ): Result
 
     public sealed interface Result {
-        public data class Success(val messages: List<Message.Standalone>) : Result
+        public data class Success(val messages: List<GlobalSearchMessage>) : Result
         public data class Failure(val cause: CoreFailure) : Result
     }
 }

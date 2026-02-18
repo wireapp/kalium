@@ -174,13 +174,13 @@ interface MessageDAO {
      * @param searchQuery The text to search for (case-insensitive, partial match)
      * @param limit Maximum number of results to return
      * @param offset Offset for pagination
-     * @return List of messages matching the search query, ordered by date descending
+     * @return List of slim global-search results ordered by date descending
      */
     suspend fun searchMessagesByTextGlobally(
         searchQuery: String,
         limit: Int,
         offset: Int
-    ): List<MessageEntity>
+    ): List<GlobalSearchMessageEntity>
 
     val platformExtensions: MessageExtensions
 

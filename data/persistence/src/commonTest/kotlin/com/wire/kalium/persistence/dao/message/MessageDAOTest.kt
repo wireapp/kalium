@@ -88,7 +88,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingPendingMessagesByUser_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingPendingMessagesByUser_thenOnlyRelevantMessagesAreReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val userInQuestion = userDetailsEntity1
@@ -142,7 +142,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageIsInserted_whenInsertingAgainSameIdAndConversationId_thenShouldKeepOriginalData() = runTest {
+    fun givenMessageIsInserted_whenInsertingAgainSameIdAndConversationId_thenShouldKeepOriginalData() = runTest(dispatcher) {
         insertInitialData()
         val messageId = "testMessageId"
         val originalUser = userEntity1
@@ -186,7 +186,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesNoRelevantMessagesAreInserted_whenGettingPendingMessagesByUser_thenAnEmptyListIsReturned() = runTest {
+    fun givenMessagesNoRelevantMessagesAreInserted_whenGettingPendingMessagesByUser_thenAnEmptyListIsReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val userInQuestion = userEntity1
@@ -217,7 +217,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenListOfMessages_WhenMarkMessageAsDeleted_OnlyTheTargetedMessageVisibilityIsDeleted() = runTest {
+    fun givenListOfMessages_WhenMarkMessageAsDeleted_OnlyTheTargetedMessageVisibilityIsDeleted() = runTest(dispatcher) {
         insertInitialData()
         val userInQuestion = userEntity1
         val otherUser = userEntity2
@@ -256,7 +256,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreDeleted_whenGettingMessagesById_thenShouldHaveContentRemoved() = runTest {
+    fun givenMessagesAreDeleted_whenGettingMessagesById_thenShouldHaveContentRemoved() = runTest(dispatcher) {
         insertInitialData()
         val userInQuestion = userEntity1
 
@@ -298,7 +298,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesBySameMessageIdDifferentConvId_WhenMarkMessageAsDeleted_OnlyTheMessageWithCorrectConIdVisibilityIsDeleted() = runTest {
+    fun givenMessagesBySameMessageIdDifferentConvId_WhenMarkMessageAsDeleted_OnlyTheMessageWithCorrectConIdVisibilityIsDeleted() = runTest(dispatcher) {
         insertInitialData()
         val userInQuestion = userEntity1
         val otherUser = userEntity2
@@ -339,7 +339,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val conversationInQuestion = conversationEntity1
@@ -416,7 +416,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val conversationInQuestion = conversationEntity1
@@ -454,7 +454,128 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest {
+    fun givenGlobalSearchMessages_whenSearchingGlobally_thenReturnsSlimFilteredAndOrderedResults() = runTest(dispatcher) {
+        insertInitialData()
+        val selfUser = newUserEntity(selfUserId, "self")
+        userDAO.upsertUser(selfUser)
+
+        val baseInstant = Instant.parse("2025-01-01T10:00:00.000Z")
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = "global-newest",
+                conversationId = conversationEntity2.id,
+                senderUserId = selfUserId,
+                senderName = selfUser.name.orEmpty(),
+                date = baseInstant + 30.seconds,
+                content = MessageEntityContent.Multipart(
+                    messageBody = "deploy wire search",
+                ),
+            ),
+            newRegularMessageEntity(
+                id = "global-older",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                senderName = userEntity1.name.orEmpty(),
+                date = baseInstant + 20.seconds,
+                content = MessageEntityContent.Text("wire search text"),
+            ),
+            newRegularMessageEntity(
+                id = "global-expiring",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                senderName = userEntity1.name.orEmpty(),
+                date = baseInstant + 15.seconds,
+                content = MessageEntityContent.Text("wire search ephemeral"),
+                expireAfterMs = 1_000,
+            ),
+            newRegularMessageEntity(
+                id = "global-hidden",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                senderName = userEntity1.name.orEmpty(),
+                date = baseInstant + 10.seconds,
+                content = MessageEntityContent.Text("wire search hidden"),
+                visibility = MessageEntity.Visibility.HIDDEN,
+            ),
+            newRegularMessageEntity(
+                id = "global-non-matching",
+                conversationId = conversationEntity3.id,
+                senderUserId = userEntity2.id,
+                senderName = userEntity2.name.orEmpty(),
+                date = baseInstant + 5.seconds,
+                content = MessageEntityContent.Text("completely different topic"),
+            ),
+        )
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        val result = messageDAO.searchMessagesByTextGlobally(
+            searchQuery = "wire search",
+            limit = 10,
+            offset = 0,
+        )
+
+        assertEquals(listOf("global-newest", "global-older"), result.map { it.id })
+
+        val newest = result[0]
+        assertTrue(newest.isSelfMessage)
+        assertEquals(selfUser.name, newest.senderName)
+        assertEquals(
+            "deploy wire search",
+            assertIs<GlobalSearchContentEntity.Multipart>(newest.content).messageBody,
+        )
+
+        val older = result[1]
+        assertFalse(older.isSelfMessage)
+        assertEquals(
+            "wire search text",
+            assertIs<GlobalSearchContentEntity.Text>(older.content).messageBody,
+        )
+    }
+
+    @Test
+    fun givenGlobalSearchMatches_whenUsingLimitAndOffset_thenReturnsExpectedPage() = runTest(dispatcher) {
+        insertInitialData()
+
+        val baseInstant = Instant.parse("2025-02-01T10:00:00.000Z")
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = "global-page-oldest",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                senderName = userEntity1.name.orEmpty(),
+                date = baseInstant + 10.seconds,
+                content = MessageEntityContent.Text("needle one"),
+            ),
+            newRegularMessageEntity(
+                id = "global-page-middle",
+                conversationId = conversationEntity2.id,
+                senderUserId = userEntity1.id,
+                senderName = userEntity1.name.orEmpty(),
+                date = baseInstant + 20.seconds,
+                content = MessageEntityContent.Text("needle two"),
+            ),
+            newRegularMessageEntity(
+                id = "global-page-newest",
+                conversationId = conversationEntity3.id,
+                senderUserId = userEntity1.id,
+                senderName = userEntity1.name.orEmpty(),
+                date = baseInstant + 30.seconds,
+                content = MessageEntityContent.Text("needle three"),
+            ),
+        )
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        val page = messageDAO.searchMessagesByTextGlobally(
+            searchQuery = "needle",
+            limit = 1,
+            offset = 1,
+        )
+
+        assertEquals(listOf("global-page-middle"), page.map { it.id })
+    }
+
+    @Test
+    fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainAssetContentType() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessage"
@@ -502,7 +623,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAssetMessageWithMimeType_WhenGettingAssetMessages_ThenListShouldContainAssetMessageWithMimeType() = runTest {
+    fun givenAssetMessageWithMimeType_WhenGettingAssetMessages_ThenListShouldContainAssetMessageWithMimeType() = runTest(dispatcher) {
         // given
         val domain = "domain"
         val conversationId = QualifiedIDEntity("1", domain)
@@ -621,7 +742,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
+    fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "missedCall"
@@ -655,7 +776,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
+    fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
 
@@ -692,7 +813,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
+    fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(
@@ -742,7 +863,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
+    fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(
@@ -793,7 +914,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
+    fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "textMessage"
@@ -827,7 +948,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUnreadMessages_WhenInsertingSelfMessage_thenReturnZeroUnreadCount() = runTest {
+    fun givenUnreadMessages_WhenInsertingSelfMessage_thenReturnZeroUnreadCount() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(
@@ -875,7 +996,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingConfirmableMessageIds_thenOnlyMessagesWithinDateAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingConfirmableMessageIds_thenOnlyMessagesWithinDateAreReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val conversationInQuestion = conversationEntity1
@@ -957,7 +1078,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenMessagesFromSelfAreNotReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenMessagesFromSelfAreNotReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val conversationInQuestion = conversationEntity1
@@ -1002,7 +1123,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageFailedToDecrypt_WhenMarkingAsResolved_ThenTheValuesShouldBeUpdated() = runTest {
+    fun givenMessageFailedToDecrypt_WhenMarkingAsResolved_ThenTheValuesShouldBeUpdated() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val conversationId2 = QualifiedIDEntity("2", "someDomain")
@@ -1052,7 +1173,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     @Test
     @IgnoreIOS
-    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAValidUpdateAssetMessage_ThenTheKeysAndVisibilityShouldBeCorrect() = runTest {
+    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAValidUpdateAssetMessage_ThenTheKeysAndVisibilityShouldBeCorrect() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -1113,7 +1234,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     @Test
     @IgnoreIOS
-    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateWithWrongKey_ThenTheMessageVisibilityShouldBeHidden() = runTest {
+    fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateWithWrongKey_ThenTheMessageVisibilityShouldBeHidden() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -1173,7 +1294,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Test
     @IgnoreIOS
     fun givenAPreviewGenericAssetMessageInDB_WhenReceivingAnAssetUpdateFromDifferentSender_ThenTheMessageVisibilityShouldBeHidden() =
-        runTest {
+        runTest(dispatcher) {
             // given
             val conversationId = QualifiedIDEntity("1", "someDomain")
             val messageId = "assetMessageId"
@@ -1233,7 +1354,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Suppress("LongMethod")
     @Test
     @IgnoreIOS
-    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest {
+    fun givenAnAssetMessageInDB_WhenTryingAnAssetUpdate_thenIgnore() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "assetMessageId"
@@ -1328,7 +1449,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleMessagesWithTheSameIdFromTheSameUser_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+    fun givenMultipleMessagesWithTheSameIdFromTheSameUser_whenInserting_theOnlyTheFirstOneIsInserted() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "textMessage"
@@ -1363,7 +1484,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleMessagesWithTheSameIdFromDifferentUsers_whenInserting_theOnlyTheFirstOneIsInserted() = runTest {
+    fun givenMultipleMessagesWithTheSameIdFromDifferentUsers_whenInserting_theOnlyTheFirstOneIsInserted() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "textMessage"
@@ -1404,7 +1525,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun whenUpdatingMessagesTableAfterSendingAMessage_thenMessageIsMarkedAsSentDateIsUpdatedAndPendingMessagesTimeIsAdjusted() = runTest {
+    fun whenUpdatingMessagesTableAfterSendingAMessage_thenMessageIsMarkedAsSentDateIsUpdatedAndPendingMessagesTimeIsAdjusted() = runTest(dispatcher) {
         val messageToSend = newRegularMessageEntity(
             id = "messageToSend",
             conversationId = conversationEntity1.id,
@@ -1444,7 +1565,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     @Test
     fun whenUpdatingMessagesTableAfterSendingAMessageAndServerTimeIsNull_thenMessageIsMarkedAsSentAndPendingMessagesTimeIsAdjusted() =
-        runTest {
+        runTest(dispatcher) {
             val messageToSend = newRegularMessageEntity(
                 id = "messageToSend",
                 conversationId = conversationEntity1.id,
@@ -1483,7 +1604,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         }
 
     @Test
-    fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest {
+    fun givenConversationReceiptModeChangedContentType_WhenGettingMessageById_ThenContentShouldBeAsInserted() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "ConversationReceiptModeChanged Message"
@@ -1516,7 +1637,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenOneOnOneConversations_WhenPersistSystemMessageInBulk_ThenPersistedForAllConversations() = runTest {
+    fun givenOneOnOneConversations_WhenPersistSystemMessageInBulk_ThenPersistedForAllConversations() = runTest(dispatcher) {
         // given
         val conversationId1 = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(newConversationEntity(id = conversationId1))
@@ -1553,7 +1674,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMixedTypeOfConversations_WhenPersistSystemMessageInBulk_ThenMessageShouldPersistedOnlyForOneOnOneAndGroups() = runTest {
+    fun givenMixedTypeOfConversations_WhenPersistSystemMessageInBulk_ThenMessageShouldPersistedOnlyForOneOnOneAndGroups() = runTest(dispatcher) {
         // given
         val selfConversation = QualifiedIDEntity("selfConversation", "someDomain")
         conversationDAO.insertConversation(
@@ -1620,7 +1741,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenReplyMessage_WhenQuotedMessageExist_MessageShouldContainQuotedDetails() = runTest {
+    fun givenReplyMessage_WhenQuotedMessageExist_MessageShouldContainQuotedDetails() = runTest(dispatcher) {
         insertInitialData()
         val quotedUser = userEntity1
         val otherUser = userEntity2
@@ -1653,7 +1774,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenReplyMessage_WhenQuotedMessageNotExist_MessageShouldContainOnlyQuotedMessageId() = runTest {
+    fun givenReplyMessage_WhenQuotedMessageNotExist_MessageShouldContainOnlyQuotedMessageId() = runTest(dispatcher) {
         insertInitialData()
         val otherUser = userEntity2
         val conversationId = conversationEntity1.id
@@ -1681,7 +1802,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAFederatedConversation_WhenSendingAMessageWithPartialSuccess_ThenTheUsersIdsWithFailuresShouldBeInserted() = runTest {
+    fun givenAFederatedConversation_WhenSendingAMessageWithPartialSuccess_ThenTheUsersIdsWithFailuresShouldBeInserted() = runTest(dispatcher) {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "Conversation MessageSent With Partial Success"
@@ -1722,7 +1843,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAMultipleReadReceiptForAMessage_whenQueryingTheMessage_thenTheMessageHasExpectedStatus() = runTest {
+    fun givenAMultipleReadReceiptForAMessage_whenQueryingTheMessage_thenTheMessageHasExpectedStatus() = runTest(dispatcher) {
         // given
         val usersReadTheMessage = listOf(newUserEntity("2"), newUserEntity("3"), newUserEntity("4"))
 
@@ -1768,7 +1889,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenADeliveryReceiptForAMessage_whenQueryingTheMessage_thenTheMessageHasExpectedStatus() = runTest {
+    fun givenADeliveryReceiptForAMessage_whenQueryingTheMessage_thenTheMessageHasExpectedStatus() = runTest(dispatcher) {
         // given
         userDAO.upsertUsers(listOf(userEntity1))
         conversationDAO.insertConversation(
@@ -1809,7 +1930,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingMessagesAtSource_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest {
+    fun givenExistingMessagesAtSource_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest(dispatcher) {
         // given
         val source = conversationEntity1
         val destination = conversationEntity2
@@ -1851,7 +1972,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingMessagesAtSourceAndDestination_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest {
+    fun givenExistingMessagesAtSourceAndDestination_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest(dispatcher) {
         // given
         val source = conversationEntity1
         val destination = conversationEntity2
@@ -1893,7 +2014,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNoExistingMessagesAtSource_whenMovingMessages_thenExistingMessagesAreAccessibleAtDestination() = runTest {
+    fun givenNoExistingMessagesAtSource_whenMovingMessages_thenExistingMessagesAreAccessibleAtDestination() = runTest(dispatcher) {
         // given
         val source = conversationEntity1
         val destination = conversationEntity2
@@ -1935,7 +2056,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenMessageIsSelected_thenReturnMessagePosition() = runTest {
+    fun givenMessagesAreInserted_whenMessageIsSelected_thenReturnMessagePosition() = runTest(dispatcher) {
         // given
         insertInitialData()
 
@@ -1990,7 +2111,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingLastMessagesByConversations_thenOnlyLastMessagesForEachConversationAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingLastMessagesByConversations_thenOnlyLastMessagesForEachConversationAreReturned() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2012,7 +2133,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
 
     @Test
-    fun givenNewMessageIsInserted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+    fun givenNewMessageIsInserted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2029,7 +2150,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastMessageIsDeleted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+    fun givenLastMessageIsDeleted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2046,7 +2167,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastMessageIsMovedToAnotherConversation_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+    fun givenLastMessageIsMovedToAnotherConversation_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2066,7 +2187,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastMessageIsEdited_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+    fun givenLastMessageIsEdited_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2091,7 +2212,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNewAssetMessageWithIncompleteDataIsInserted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+    fun givenNewAssetMessageWithIncompleteDataIsInserted_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2109,7 +2230,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLastAssetMessageRemoteDataUpdated_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest {
+    fun givenLastAssetMessageRemoteDataUpdated_whenGettingLastMessagesByConversations_thenReturnProperLastMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2129,7 +2250,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUnverifiedWarningMessageIsInserted_whenInsertingSuchMessageAgain_thenOnlyIdIsUpdatedNoNewMessages() = runTest {
+    fun givenUnverifiedWarningMessageIsInserted_whenInsertingSuchMessageAgain_thenOnlyIdIsUpdatedNoNewMessages() = runTest(dispatcher) {
         // given
         insertInitialData()
         userDAO.upsertUser(userEntity1.copy(selfUserId))
@@ -2161,7 +2282,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingAlreadyEndedEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingAlreadyEndedEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest(dispatcher) {
         insertInitialData()
         val alreadyEndedEphemeralMessage = newRegularMessageEntity(
             "1",
@@ -2215,7 +2336,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingPendingEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingPendingEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest(dispatcher) {
         insertInitialData()
         val alreadyEndedEphemeralMessage = newRegularMessageEntity(
             "1",
@@ -2260,7 +2381,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAssetTransferStatusInProgress_whenResettingAssetTransferStatus_thenTransferStatusesAreRemoved() = runTest {
+    fun givenAssetTransferStatusInProgress_whenResettingAssetTransferStatus_thenTransferStatusesAreRemoved() = runTest(dispatcher) {
         // given
         val source = conversationEntity1
         val destination = conversationEntity2
@@ -2327,7 +2448,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenEmptyAssetTransferStatus_whenUpdatingMessageAssetTransferStatus_thenSourceIsProperlyPropagated() = runTest {
+    fun givenEmptyAssetTransferStatus_whenUpdatingMessageAssetTransferStatus_thenSourceIsProperlyPropagated() = runTest(dispatcher) {
         // given
         val source = conversationEntity1
         val destination = conversationEntity2
@@ -2392,7 +2513,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAndUsersAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
+    fun givenMessagesAndUsersAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val userInQuestion = userDetailsEntity1
@@ -2424,7 +2545,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingSenderNameByMessageId_thenOnlyRelevantNameReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val insertingMessages = listOf(
@@ -2453,7 +2574,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreButNoUserInserted_whenGettingSenderNameByMessageId_thenNullNameReturned() = runTest {
+    fun givenMessagesAreButNoUserInserted_whenGettingSenderNameByMessageId_thenNullNameReturned() = runTest(dispatcher) {
         insertInitialData()
 
         val insertingMessages = listOf(
@@ -2482,7 +2603,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheLastOne_thenNullIdReturned() = runTest {
+    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheLastOne_thenNullIdReturned() = runTest(dispatcher) {
         insertInitialData()
         messageDAO.insertOrIgnoreMessages(listOfMessageWithAudioAssets())
 
@@ -2492,7 +2613,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheFirstOne_thenCorrespondingIdReturned() = runTest {
+    fun givenAudioMessagesAreInserted_whenGettingNextAudioMessageAfterTheFirstOne_thenCorrespondingIdReturned() = runTest(dispatcher) {
         insertInitialData()
         messageDAO.insertOrIgnoreMessages(listOfMessageWithAudioAssets())
 
@@ -2502,7 +2623,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAllTypesOfMessages_whenMovingToAnotherConversation_thenItSucceeds() = runTest {
+    fun givenAllTypesOfMessages_whenMovingToAnotherConversation_thenItSucceeds() = runTest(dispatcher) {
         // Given
         insertInitialData()
         val messages = allMessageEntities(conversationId = conversationEntity1.id, senderUserId = userEntity1.id)
@@ -2528,7 +2649,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageExists_whenObservingById_thenEmitMessage() = runTest {
+    fun givenMessageExists_whenObservingById_thenEmitMessage() = runTest(dispatcher) {
         insertInitialData()
         val message = newRegularMessageEntity(
             conversationId = conversationEntity1.id,
@@ -2547,7 +2668,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageDoesNotExist_whenObservingById_thenEmitNull() = runTest {
+    fun givenMessageDoesNotExist_whenObservingById_thenEmitNull() = runTest(dispatcher) {
         insertInitialData()
 
         messageDAO.observeMessageById("non_existing_message_id", conversationEntity1.id).test {
@@ -2557,7 +2678,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageChanged_whenObservingById_thenEmitUpdatedMessage() = runTest {
+    fun givenMessageChanged_whenObservingById_thenEmitUpdatedMessage() = runTest(dispatcher) {
         insertInitialData()
         val message = newRegularMessageEntity(
             conversationId = conversationEntity1.id,
@@ -2585,7 +2706,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessageRemoved_whenObservingById_thenEmitNull() = runTest {
+    fun givenMessageRemoved_whenObservingById_thenEmitNull() = runTest(dispatcher) {
         insertInitialData()
         val message = newRegularMessageEntity(
             conversationId = conversationEntity1.id,
@@ -2608,7 +2729,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenCompositeMessageIsEdited_whenPerformingEditionIndDb_thenExecuteCleanupAndInsertNewContent() = runTest {
+    fun givenCompositeMessageIsEdited_whenPerformingEditionIndDb_thenExecuteCleanupAndInsertNewContent() = runTest(dispatcher) {
         // given
         insertInitialData()
         val initialButtons = listOf(ButtonEntity(text = "button1", id = "Button 1", isSelected = false))

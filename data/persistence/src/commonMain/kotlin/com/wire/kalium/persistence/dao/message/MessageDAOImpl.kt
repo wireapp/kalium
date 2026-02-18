@@ -38,6 +38,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent.*
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
@@ -614,13 +615,30 @@ internal class MessageDAOImpl internal constructor(
         searchQuery: String,
         limit: Int,
         offset: Int
-    ): List<MessageEntity> = withContext(readDispatcher.value) {
+    ): List<GlobalSearchMessageEntity> = withContext(readDispatcher.value) {
         queries
             .selectAllMessagesFromSearch(
                 searchQuery = searchQuery,
                 limit = limit.toLong(),
                 offset = offset.toLong(),
-                mapper = mapper::toEntityMessageFromView
+                mapper = { id, conversationId, contentType, date, senderUserId, senderClientId, status, _, senderName, text ->
+                    val content: GlobalSearchContentEntity = when (contentType) {
+                        MessageEntity.ContentType.MULTIPART -> GlobalSearchContentEntity.Multipart(messageBody = text)
+                        MessageEntity.ContentType.TEXT -> GlobalSearchContentEntity.Text(messageBody = text.orEmpty())
+                        else -> error("Unsupported content type for global search: $contentType")
+                    }
+                    GlobalSearchMessageEntity(
+                        id = id,
+                        conversationId = conversationId,
+                        content = content,
+                        date = date,
+                        senderUserId = senderUserId,
+                        senderClientId = senderClientId.orEmpty(),
+                        senderName = senderName,
+                        status = status,
+                        isSelfMessage = senderUserId == selfUserId,
+                    )
+                }
             )
             .executeAsList()
     }

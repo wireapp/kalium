@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
+import com.wire.kalium.logic.data.message.GlobalSearchMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageAssetStatus
 import com.wire.kalium.logic.data.message.MessageContent
@@ -279,5 +280,5 @@ internal open class FakeMessageRepository : MessageRepository {
         searchQuery: String,
         limit: Int,
         offset: Int
-    ): Either<StorageFailure, List<Message.Standalone>> = emptyList<Message.Standalone>().right()
+    ): Either<StorageFailure, List<GlobalSearchMessage>> = emptyList<GlobalSearchMessage>().right()
 }

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.message.GlobalSearchMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -190,7 +191,7 @@ class SearchMessagesGloballyUseCaseTest {
 
         suspend fun withSearchMessagesGloballyReturning(
             searchQuery: String,
-            response: Either<StorageFailure, List<Message.Standalone>>
+            response: Either<StorageFailure, List<GlobalSearchMessage>>
         ) = apply {
             coEvery {
                 messageRepository.searchMessagesByTextGlobally(
@@ -212,16 +213,20 @@ class SearchMessagesGloballyUseCaseTest {
         const val DEFAULT_LIMIT = 100
         const val DEFAULT_OFFSET = 0
 
-        fun createTextMessage(id: String, text: String, conversationId: com.wire.kalium.logic.data.id.ConversationId): Message.Regular = Message.Regular(
+        fun createTextMessage(
+            id: String,
+            text: String,
+            conversationId: com.wire.kalium.logic.data.id.ConversationId
+        ): GlobalSearchMessage = GlobalSearchMessage(
             id = id,
             content = MessageContent.Text(text),
             conversationId = conversationId,
             date = TestMessage.TEST_DATE,
             senderUserId = TestUser.USER_ID,
             senderClientId = TestClient.CLIENT_ID,
+            senderUserName = TestUser.OTHER.name,
             status = Message.Status.Sent,
-            editStatus = Message.EditStatus.NotEdited,
-            isSelfMessage = false
+            isSelfMessage = false,
         )
     }
 }
