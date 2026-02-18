@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlinx.datetime.Instant
 
 /**
@@ -34,6 +35,8 @@ data class GlobalSearchMessage(
     val senderUserId: UserId,
     val senderClientId: ClientId,
     val senderUserName: String?,
+    val senderUserType: UserTypeInfo?,
+    val senderAccentId: Int?,
     val status: Message.Status,
     val isSelfMessage: Boolean,
 )

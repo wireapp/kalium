@@ -52,6 +52,8 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.messaging.sending.MessageTarget
@@ -339,7 +341,8 @@ internal class MessageDataSource internal constructor(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
-    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
+    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl(),
+    private val domainUserTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
@@ -830,6 +833,8 @@ internal class MessageDataSource internal constructor(
             senderUserId = entity.senderUserId.toModel(),
             senderClientId = ClientId(entity.senderClientId),
             senderUserName = entity.senderName,
+            senderUserType = entity.senderUserType?.let { domainUserTypeMapper.fromUserTypeEntity(it) },
+            senderAccentId = entity.senderAccentId,
             status = entity.status.toModel(readCount = 0),
             isSelfMessage = entity.isSelfMessage,
         )

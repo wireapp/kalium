@@ -621,7 +621,7 @@ internal class MessageDAOImpl internal constructor(
                 searchQuery = searchQuery,
                 limit = limit.toLong(),
                 offset = offset.toLong(),
-                mapper = { id, conversationId, contentType, date, senderUserId, senderClientId, status, _, senderName, text ->
+                mapper = { id, conversationId, contentType, date, senderUserId, senderClientId, status, _, senderName, senderUserType, senderAccentId, text ->
                     val content: GlobalSearchContentEntity = when (contentType) {
                         MessageEntity.ContentType.MULTIPART -> GlobalSearchContentEntity.Multipart(messageBody = text)
                         MessageEntity.ContentType.TEXT -> GlobalSearchContentEntity.Text(messageBody = text.orEmpty())
@@ -635,6 +635,8 @@ internal class MessageDAOImpl internal constructor(
                         senderUserId = senderUserId,
                         senderClientId = senderClientId.orEmpty(),
                         senderName = senderName,
+                        senderUserType = senderUserType,
+                        senderAccentId = senderAccentId,
                         status = status,
                         isSelfMessage = senderUserId == selfUserId,
                     )

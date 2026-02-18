@@ -23,6 +23,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.GlobalSearchMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -225,6 +227,8 @@ class SearchMessagesGloballyUseCaseTest {
             senderUserId = TestUser.USER_ID,
             senderClientId = TestClient.CLIENT_ID,
             senderUserName = TestUser.OTHER.name,
+            senderUserType = UserTypeInfo.Regular(UserType.INTERNAL),
+            senderAccentId = 3,
             status = Message.Status.Sent,
             isSelfMessage = false,
         )

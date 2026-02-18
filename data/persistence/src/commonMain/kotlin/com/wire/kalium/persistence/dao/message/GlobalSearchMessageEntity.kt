@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.datetime.Instant
 
 /**
@@ -37,6 +38,8 @@ data class GlobalSearchMessageEntity(
     val senderUserId: QualifiedIDEntity,
     val senderClientId: String,
     val senderName: String?,
+    val senderUserType: UserTypeEntity?,
+    val senderAccentId: Int?,
     val status: MessageEntity.Status,
     val isSelfMessage: Boolean,
 )

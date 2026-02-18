@@ -1,4 +1,5 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.UserTypeEntity;
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
@@ -550,6 +551,8 @@ SELECT
     Message.status AS status,
     Message.visibility AS visibility,
     User.name AS senderName,
+    User.user_type AS senderUserType,
+    User.accent_id AS senderAccentId,
     TextContent.text_body AS text
 FROM MessageTextContent AS TextContent
 JOIN Message
