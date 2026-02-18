@@ -63,7 +63,7 @@ internal class ProteusClientProviderImpl(
     private val passphraseStorage: PassphraseStorage,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
-) : ProteusClientProvider {
+) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
@@ -147,6 +147,10 @@ internal class ProteusClientProviderImpl(
             _proteusClient = null
             FileUtil.deleteDirectory(rootProteusPath)
         }
+    }
+
+    override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> {
+        TODO("Not yet implemented")
     }
 
     private companion object {

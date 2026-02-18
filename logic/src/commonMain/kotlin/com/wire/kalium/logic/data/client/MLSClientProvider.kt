@@ -89,7 +89,7 @@ internal class MLSClientProviderImpl(
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val processingScope: CoroutineScope,
-) : MLSClientProvider {
+) : MLSClientProvider, CryptoBackupExporter {
 
     private var mlsClient: MLSClient? = null
     private var coreCryptoCentral: CoreCryptoCentral? = null
@@ -242,6 +242,10 @@ internal class MLSClientProviderImpl(
             ).right()
 
         })
+    }
+
+    override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> {
+        TODO("Not yet implemented")
     }
 
     private companion object {
