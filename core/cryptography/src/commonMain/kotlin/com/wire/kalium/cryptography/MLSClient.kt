@@ -166,6 +166,23 @@ interface MLSClient {
     suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite>
 
     /**
+     * Conversation E2EI verification status.
+     *
+     * Read-only operation that does not require an explicit transaction context.
+     */
+    suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState
+
+    /**
+     * Get user identities in a conversation.
+     *
+     * Read-only operation that does not require an explicit transaction context.
+     */
+    suspend fun getUserIdentities(
+        groupId: MLSGroupId,
+        users: List<CryptoQualifiedID>
+    ): Map<String, List<WireIdentity>>
+
+    /**
      * Runs a block of code inside a CoreCrypto transaction.
      *
      * @param name optional name of the transaction (used for logging)

@@ -57,13 +57,15 @@ public data class KaliumConfigs(
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
     val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
+    // Consumer-provided debug mode used by persistence and debug-only flows.
+    val isDebug: Boolean = false,
 
     /**
      * Optional transformer for call configuration JSON.
      * Applied before passing config to AVS. Used by CLI for testing purposes.
      * Should NOT be set in production mobile/web clients.
      */
-    val callConfigTransformer: ((String) -> String)? = null
+    val callConfigTransformer: ((String) -> String)? = null,
 )
 
 public sealed interface BuildFileRestrictionState {

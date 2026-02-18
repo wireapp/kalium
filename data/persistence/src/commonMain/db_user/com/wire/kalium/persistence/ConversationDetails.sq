@@ -128,7 +128,7 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = 'NOT_CONNECTED'
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
-LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1)
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id ORDER BY created_at DESC LIMIT 1) AND Call.status IS 'STILL_ONGOING'
 LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
 LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
 LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
@@ -144,7 +144,13 @@ WHERE
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
     OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
-    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND (
+        protocol IN ('PROTEUS', 'MIXED')
+        OR (
+            protocol = 'MLS'
+            AND (:strict_mls = 0 OR mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET'))
+        )
+    )
     AND archived = :fromArchive
     AND isActive
     AND deletedLocally = 0

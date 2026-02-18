@@ -63,6 +63,8 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.SetPersistentWebSocketForAllUsersUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.SetPersistentWebSocketForAllUsersUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
@@ -120,6 +122,9 @@ public class GlobalKaliumScope internal constructor(
 
     public val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
+
+    public val setAllPersistentWebSocketEnabled: SetPersistentWebSocketForAllUsersUseCase
+        get() = SetPersistentWebSocketForAllUsersUseCaseImpl(sessionRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() = NotificationTokenDataSource(globalPreferences.tokenStorage)

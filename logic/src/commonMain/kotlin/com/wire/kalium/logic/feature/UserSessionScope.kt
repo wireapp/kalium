@@ -169,6 +169,11 @@ import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.ConversationFoldersPropertyDataSource
+import com.wire.kalium.logic.data.properties.ReadReceiptsPropertyDataSource
+import com.wire.kalium.logic.data.properties.ScreenshotCensoringPropertyDataSource
+import com.wire.kalium.logic.data.properties.TypingIndicatorPropertyDataSource
+import com.wire.kalium.logic.data.properties.UserPropertiesSyncDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -376,6 +381,8 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
@@ -715,9 +722,11 @@ public class UserSessionScope internal constructor(
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
-            authenticatedNetworkContainer.propertiesApi,
-            userConfigRepository,
-            userId
+            readReceipts = ReadReceiptsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            typingIndicator = TypingIndicatorPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            screenshotCensoring = ScreenshotCensoringPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            userPropertiesSync = UserPropertiesSyncDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            conversationFolders = ConversationFoldersPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userId),
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
@@ -1173,6 +1182,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCaseImpl(userRepository)
+    private val syncUserProperties: SyncUserPropertiesUseCase get() = SyncUserPropertiesUseCaseImpl(userPropertyRepository)
     private val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
 
     private val syncSelfTeamUseCase: SyncSelfTeamUseCase
@@ -1283,6 +1293,7 @@ public class UserSessionScope internal constructor(
             isClientAsyncNotificationsCapableProvider,
             eventRepository,
             syncSelfUser,
+            syncUserProperties,
             syncFeatureConfigsUseCase,
             updateSupportedProtocols,
             syncConversations,
@@ -2508,7 +2519,7 @@ public class UserSessionScope internal constructor(
         get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository, userId)
 
     public val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
-        get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
+        get() = PersistScreenshotCensoringConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     public val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
@@ -2516,8 +2527,7 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
-            fetchMLSVerificationStatusUseCase,
-            cryptoTransactionProvider
+            fetchMLSVerificationStatusUseCase
         )
 
     public val kaliumFileSystem: KaliumFileSystem by lazy {
@@ -2559,6 +2569,7 @@ public class UserSessionScope internal constructor(
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
         FetchMLSVerificationStatusUseCaseImpl(
+            mlsClientProvider,
             conversationRepository,
             persistMessage,
             mlsConversationRepository,
@@ -2572,8 +2583,7 @@ public class UserSessionScope internal constructor(
         ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
             fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
             epochChangesObserver = epochChangesObserver,
-            kaliumLogger = userScopedLogger,
-            transactionProvider = cryptoTransactionProvider
+            kaliumLogger = userScopedLogger
         )
     }
 

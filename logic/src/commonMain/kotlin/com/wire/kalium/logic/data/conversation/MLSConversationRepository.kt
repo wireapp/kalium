@@ -40,6 +40,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.toDao
@@ -201,6 +202,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun updateKeyingMaterial(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
+    suspend fun clearProposalTimer(groupID: GroupID)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun rotateKeysAndMigrateConversations(
         mlsContext: MlsCoreCryptoContext,
@@ -222,7 +224,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     ): Either<CoreFailure, List<WireIdentity>>
 
     suspend fun getMembersIdentities(
-        mlsContext: MlsCoreCryptoContext,
+        mlsClient: MLSClient,
         conversationId: ConversationId,
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
@@ -429,6 +431,10 @@ internal class MLSConversationDataSource(
         }
     }
 
+    override suspend fun clearProposalTimer(groupID: GroupID) {
+        conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
+    }
+
     override suspend fun observeProposalTimers(): Flow<ProposalTimer> =
         merge(
             proposalTimersFlow,
@@ -577,6 +583,8 @@ internal class MLSConversationDataSource(
     override suspend fun leaveGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit> =
         wrapMLSRequest {
             mlsContext.wipeConversation(idMapper.toCryptoModel(groupID))
+        }.onSuccess {
+            clearProposalTimer(groupID)
         }
 
     override suspend fun establishMLSGroup(
@@ -744,7 +752,7 @@ internal class MLSConversationDataSource(
         }
 
     override suspend fun getMembersIdentities(
-        mlsContext: MlsCoreCryptoContext,
+        mlsClient: MLSClient,
         conversationId: ConversationId,
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>> =
@@ -754,7 +762,7 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 val userIdsAndIdentity = mutableMapOf<UserId, List<WireIdentity>>()
 
-                mlsContext.getUserIdentities(mlsGroupId, userIds.map { it.toCrypto() })
+                mlsClient.getUserIdentities(mlsGroupId, userIds.map { it.toCrypto() })
                     .forEach { (userIdValue, identities) ->
                         userIds.firstOrNull { it.value == userIdValue }?.also {
                             userIdsAndIdentity[it] = identities

@@ -48,12 +48,14 @@ actual fun userDatabaseBuilder(
             )
             databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
                 isWALEnabled = enableWAL
+                useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
         }
 
         StorageData.InMemory ->
             databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
                 isWALEnabled = false
+                useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
     }
 
