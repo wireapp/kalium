@@ -262,13 +262,11 @@ internal class MLSClientProviderImpl(
                         val dbSecret = SecurityHelperImpl(passphraseStorage)
                             .mlsDBSecret(userId, rootDir)
 
-                        Either.Right(
-                            CryptoBackupMetadata(
-                                dbPath = dbPath,
-                                passphrase = dbSecret.passphrase,
-                                clientId = clientId
-                            )
-                        )
+                        CryptoBackupMetadata(
+                            dbPath = dbPath,
+                            passphrase = dbSecret.passphrase,
+                            clientId = clientId
+                        ).right()
                     }
                 )
             }
