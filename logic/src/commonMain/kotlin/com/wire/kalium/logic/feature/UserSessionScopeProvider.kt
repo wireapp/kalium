@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.userstorage.di.UserStorageProvider
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import io.mockative.Mockable
 
@@ -54,7 +54,7 @@ internal abstract class UserSessionScopeProviderCommon(
     override suspend fun delete(userId: UserId) {
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
         userScopeStorage.remove(userId)
-        userStorageProvider.remove(userId)?.database?.close()
+        userStorageProvider.clearInMemoryUserStorage(userId)
     }
 
     internal abstract fun create(userId: UserId): UserSessionScope

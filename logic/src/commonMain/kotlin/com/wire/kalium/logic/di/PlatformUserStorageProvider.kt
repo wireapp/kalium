@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.userstorage.di
+package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
 
-public expect class PlatformUserStorageProvider constructor() : UserStorageProvider {
+internal expect class PlatformUserStorageProvider constructor() : UserStorageProvider {
     override fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
