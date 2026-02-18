@@ -30,8 +30,9 @@ import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,12 +42,12 @@ class ServerConfigMapperTest {
 
     private lateinit var serverConfigMapper: ServerConfigMapper
 
-    private val versionMapper = mock(ApiVersionMapper::class)
+    private val versionMapper = mock<ApiVersionMapper>()
 
     @BeforeTest
     fun setup() {
         serverConfigMapper = ServerConfigMapperImpl(versionMapper)
-        every{versionMapper.toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) }.returns(ApiVersionDTO.Valid(1))
+        every { versionMapper.toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) } returns ApiVersionDTO.Valid(1)
     }
 
     @Test
