@@ -190,6 +190,7 @@ class MLSClientProviderTest {
         val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdSuccess(TestClient.CLIENT_ID)
             withPassphraseStorage()
+            withCoreCryptoDatabaseDoesNotExists()
         }
 
         mlsClientProvider.exportCryptoDB().shouldFail {
