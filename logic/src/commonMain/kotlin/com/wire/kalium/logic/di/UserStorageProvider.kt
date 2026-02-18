@@ -16,19 +16,16 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.userstorage.di
+package com.wire.kalium.logic.di
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
-public data class UserStorage(public val database: UserDatabaseBuilder)
-public abstract class UserStorageProvider {
+internal data class UserStorage(val database: UserDatabaseBuilder)
+internal abstract class UserStorageProvider {
     private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
-
-    public fun get(userId: UserId): UserStorage? = inMemoryUserStorage[userId]
-
-    public fun getOrCreate(
+    internal fun getOrCreate(
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
         shouldEncryptData: Boolean = true,
@@ -44,7 +41,7 @@ public abstract class UserStorageProvider {
         dbInvalidationControlEnabled: Boolean
     ): UserStorage
 
-    public fun remove(userId: UserId): UserStorage? = inMemoryUserStorage.remove(userId)
+    internal fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)
 }
 
-public expect class PlatformUserStorageProperties
+internal expect class PlatformUserStorageProperties

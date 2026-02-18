@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.userstorage.di.UserStorage
+import com.wire.kalium.logic.di.UserStorage
 
 // todo(interface). extract interface for use case
 public class ChangeProfilingUseCase internal constructor(

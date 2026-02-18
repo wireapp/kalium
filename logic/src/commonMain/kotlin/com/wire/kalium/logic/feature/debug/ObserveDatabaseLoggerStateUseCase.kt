@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.userstorage.di.UserStorage
+import com.wire.kalium.logic.di.UserStorage
 import kotlinx.coroutines.flow.Flow
 
 /**
