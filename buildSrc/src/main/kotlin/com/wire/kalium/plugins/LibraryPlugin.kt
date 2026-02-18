@@ -27,9 +27,12 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Nested
 
 class LibraryPlugin : Plugin<Project> {
+    @Suppress("MagicNumber")
     override fun apply(target: Project): Unit = with(target) {
         group = KaliumBuild.GROUP
-        "git --rev-parse --short HEAD".execute().text().trim()
+        version = providers.environmentVariable("GITHUB_SHA")
+            .map { it.take(7) }
+
         target.pluginManager.apply {
             apply("org.jetbrains.kotlin.multiplatform")
             // android library plugin

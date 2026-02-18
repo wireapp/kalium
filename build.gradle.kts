@@ -109,7 +109,14 @@ subprojects {
 
 // Set meaningful versions on kalium modules for SBOM traceability.
 // Without this, kalium modules report "0.0.1-SNAPSHOT" in the BOM.
-val kaliumGitHash = "git --rev-parse --short HEAD".execute().text().trim()
+@Suppress("MagicNumber")
+val kaliumGitHash: Provider<String> = providers.environmentVariable("GITHUB_SHA")
+    .map { it.take(7) }
+    .orElse(
+        providers.exec {
+            commandLine("git", "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.map { it.trim() }
+    )
 
 allprojects {
     version = kaliumGitHash.get()
