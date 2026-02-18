@@ -24,13 +24,20 @@ val cliUseGlobalUserStorageCache: Boolean? = gradle.startParameter
     .projectProperties["USE_GLOBAL_USER_STORAGE_CACHE"]
     ?.toBooleanStrictOrNull()
 
+val parentUseGlobalUserStorageCache: Boolean? = gradle.parent
+    ?.rootProject
+    ?.properties?.get("USE_GLOBAL_USER_STORAGE_CACHE")
+    ?.toString()?.toBooleanStrictOrNull()
+
+val localUseGlobalUserStorageCache: Boolean = providers
+    .gradleProperty("USE_GLOBAL_USER_STORAGE_CACHE")
+    .map { it.toBoolean() }
+    .getOrElse(false)
+
 val useGlobalUserStorageCache: Boolean = when {
     cliUseGlobalUserStorageCache != null -> cliUseGlobalUserStorageCache
-    gradle.parent != null -> true
-    else -> providers
-        .gradleProperty("USE_GLOBAL_USER_STORAGE_CACHE")
-        .map { it.toBoolean() }
-        .getOrElse(false)
+    parentUseGlobalUserStorageCache != null -> parentUseGlobalUserStorageCache
+    else -> localUseGlobalUserStorageCache
 }
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/userstorage/commonMain/kotlin")
 
