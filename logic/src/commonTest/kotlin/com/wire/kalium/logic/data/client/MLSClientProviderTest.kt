@@ -52,6 +52,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class MLSClientProviderTest {
 
@@ -181,7 +182,7 @@ class MLSClientProviderTest {
         }
 
         mlsClientProvider.exportCryptoDB().shouldFail {
-            it.instanceOf(StorageFailure.DataNotFound::class)
+            assertIs<StorageFailure.DataNotFound>(it)
         }
     }
 
@@ -194,7 +195,7 @@ class MLSClientProviderTest {
         }
 
         mlsClientProvider.exportCryptoDB().shouldFail {
-            it.instanceOf(StorageFailure.DataNotFound::class)
+            assertIs<StorageFailure.DataNotFound>(it)
         }
     }
 
