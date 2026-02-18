@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
@@ -39,7 +38,6 @@ import kotlinx.coroutines.withContext
  * This class is responsible for updating epoch info in a call.
  * Called when new epoch is requested or clients are requested in MLS calls to ensure AVS has the latest epoch info.
  */
-@Mockable
 internal fun interface EpochInfoUpdater {
 
     /**
