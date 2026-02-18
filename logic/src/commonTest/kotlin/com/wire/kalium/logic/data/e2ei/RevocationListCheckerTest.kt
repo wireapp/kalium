@@ -25,16 +25,17 @@ import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,13 +53,13 @@ class RevocationListCheckerTest {
             val result = revocationListChecker.check(arrangement.mlsContext, DUMMY_URL)
 
             result.shouldFail()
-            coVerify {
+            verifySuspend {
                 arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(mode = VerifyMode.not) {
                 arrangement.mlsContext.registerCrl(any(), any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -77,9 +78,9 @@ class RevocationListCheckerTest {
                 assertEquals(EXPIRATION, it)
             }
 
-            coVerify {
+            verifySuspend {
                 arrangement.mlsContext.registerCrl(any(), any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -97,15 +98,15 @@ class RevocationListCheckerTest {
             assertEquals(E2EIFailure.Disabled, it)
         }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.mlsContext.registerCrl(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
-    internal class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-        val featureSupport = mock(FeatureSupport::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
+    internal class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val certificateRevocationListRepository = mock<CertificateRevocationListRepository>()
+        val featureSupport = mock<FeatureSupport>()
+        val userConfigRepository = mock<UserConfigRepository>()
 
         fun arrange() = this to RevocationListCheckerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
@@ -114,25 +115,25 @@ class RevocationListCheckerTest {
         )
 
         suspend fun withE2EIRepositoryFailure() = apply {
-            coEvery {
+            everySuspend {
                 certificateRevocationListRepository.getClientDomainCRL(any())
             }.returns(Either.Left(E2EIFailure.Generic(Exception())))
         }
 
         suspend fun withE2EIRepositorySuccess() = apply {
-            coEvery {
+            everySuspend {
                 certificateRevocationListRepository.getClientDomainCRL(any())
             }.returns(Either.Right("result".encodeToByteArray()))
         }
 
         suspend fun withRegisterCrl() = apply {
-            coEvery {
+            everySuspend {
                 mlsContext.registerCrl(any(), any())
             }.returns(CrlRegistration(false, EXPIRATION))
         }
 
         suspend fun withRegisterCrlFlagChanged() = apply {
-            coEvery {
+            everySuspend {
                 mlsContext.registerCrl(any(), any())
             }.returns(CrlRegistration(true, EXPIRATION))
         }
@@ -142,11 +143,11 @@ class RevocationListCheckerTest {
                 featureSupport.isMLSSupported
             }.returns(result)
 
-            coEvery {
+            everySuspend {
                 userConfigRepository.isMLSEnabled()
             }.returns(result.right())
 
-            coEvery {
+            everySuspend {
                 userConfigRepository.getE2EISettings()
             }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
         }
