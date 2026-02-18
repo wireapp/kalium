@@ -23,10 +23,8 @@ import org.gradle.kotlin.dsl.support.get
 import org.gradle.process.ExecOperations
 
 /**
- * This task will run only the tests for affected modules and dependants.
- *
- * This task dependsOn: [https://github.com/leandroBorgesFerreira/dag-command]
- * That will generate for us a list of affected modules
+ * This task will run only the tests for affected modules and dependants when affected-module
+ * information is available in [AFFECTED_MODULES_FILE].
  *
  * You can define your own task by manually.
  * Or you can add it to the [TestTaskConfiguration] enum, and it will be added automatically
@@ -42,49 +40,60 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     init {
         group = "verification"
-        description = "Installs and runs the tests for debug on connected devices (Only for affected modules)."
-        // TODO(refactor): The task should not exec other gradlew tasks,
-        //                 but rather be configured based on dagCommand, and add other tasks as dependency,
-        //                 simplifying the logic and making it cacheable
+        description = "Runs tests for affected modules when available, otherwise runs all tests."
         setDependsOn(mutableListOf("dag-command"))
     }
 
     @TaskAction
     fun runOnlyAffectedConnectedTest() {
-        var affectedModules: Set<String> = setOf()
-        project.layout.buildDirectory.file("dag-command/affected-modules.json").get().asFile.useLines {
-            affectedModules = it.joinToString()
-                .removeSurrounding("[", "]")
-                .replace("\"", "")
-                .split(",")
-                .toSet()
-        }
+        val affectedModules = readAffectedModules()
+        val missingAffectedModulesData = affectedModules == null
+        val runAllTests = hasToRunAllTests() || missingAffectedModulesData
 
-        if (!hasToRunAllTests() && (affectedModules.isEmpty() || affectedModules.first().isEmpty())) {
+        if (!runAllTests && affectedModules.orEmpty().isEmpty()) {
             println("\uD83E\uDD8B It is not necessary to run any test, ending here to free up some resources.")
             return
         }
 
-        executeTask(affectedModules)
+        executeTask(
+            affectedModules = affectedModules.orEmpty(),
+            runAllTests = runAllTests,
+            missingAffectedModulesData = missingAffectedModulesData
+        )
     }
 
-    private fun executeTask(affectedModules: Set<String>) {
+    private fun executeTask(affectedModules: Set<String>, runAllTests: Boolean, missingAffectedModulesData: Boolean) {
         val tasksName = mutableListOf<String>()
-        val hasToRunAllTests = hasToRunAllTests()
         project.subprojects
-            .filter { (hasToRunAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.name) }
+            .filter { (runAllTests || affectedModules.contains(it.path)) && !ignoredModules.contains(it.path) }
             .forEach { childProject ->
-                tasksName.addAll(
-                    childProject.tasks
-                    .filter { it.name.equals(configuration.testTarget, true) }
-                    .map { task ->
-                        println("Adding task: ${childProject.path}:${task.name}")
-                        "${childProject.path}:${task.name}"
-                    }.toList()
-                )
+                val targetTaskName = childProject.tasks.names.firstOrNull { it.equals(configuration.testTarget, true) }
+                targetTaskName?.let { taskName ->
+                    println("Adding task: ${childProject.path}:$taskName")
+                    tasksName.add("${childProject.path}:$taskName")
+                }
             }
 
+        if (missingAffectedModulesData) {
+            println("\uD83D\uDD27 Running all tests because affected-modules data is unavailable.")
+        }
         tasksName.forEach(::runTargetTask)
+    }
+
+    private fun readAffectedModules(): Set<String>? {
+        val affectedModulesFile = project.layout.buildDirectory.file(AFFECTED_MODULES_FILE).get().asFile
+        if (!affectedModulesFile.exists()) {
+            println("\uD83D\uDD27 Missing '$AFFECTED_MODULES_FILE', falling back to all modules.")
+            return null
+        }
+
+        return affectedModulesFile.readText()
+            .trim()
+            .removeSurrounding("[", "]")
+            .split(",")
+            .map { it.trim().removeSurrounding("\"") }
+            .filter { it.isNotBlank() }
+            .toSet()
     }
 
     private fun runTargetTask(targetTask: String) {
@@ -97,7 +106,7 @@ open class OnlyAffectedTestTask : DefaultTask() {
     }
 
     /**
-     * Check if we have to run all tests, by looking at untracked by dag-command files [globalBuildSettingsFiles].
+     * Check if we have to run all tests by looking at root-level build files [globalBuildSettingsFiles].
      */
     private fun hasToRunAllTests(): Boolean {
         val globalBuildSettingsFiles = listOf(
@@ -131,5 +140,6 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     private companion object {
         val IGNORED_MODULES = listOf(":data:protobuf", ":tools:protobuf-codegen")
+        const val AFFECTED_MODULES_FILE = "dag-command/affected-modules.json"
     }
 }

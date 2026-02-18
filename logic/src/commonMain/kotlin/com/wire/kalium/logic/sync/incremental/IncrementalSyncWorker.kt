@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -83,6 +84,9 @@ internal class IncrementalSyncWorkerImpl(
                                     eventId?.let(acc::add)
                                     acc
                                 }
+                            }
+                            .flatMap { eventIds ->
+                                eventProcessor.flushPendingSideEffects().map { eventIds }
                             }
                     }
                 }

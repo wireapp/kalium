@@ -51,7 +51,6 @@ plugins {
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
-    alias(libs.plugins.dagCommand)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.jetbrains) apply false
 }
@@ -70,14 +69,25 @@ tasks.withType<Test> {
 // For some reason xml and html generation is failing, looks like tests running in parallel
 subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+        val fullSqliterTraces = providers.gradleProperty("kalium.sqliter.fullTraces")
+            .orNull
+            ?.lowercase()
+            ?.let { it == "true" || it == "1" || it == "yes" }
+            ?: false
+        environment("KALIUM_SQLITER_FULL_TRACES", fullSqliterTraces.toString())
+
+        providers.gradleProperty("kalium.sqliter.traceFile").orNull?.takeIf { it.isNotBlank() }?.let {
+            environment("KALIUM_SQLITER_TRACE_FILE", it)
+        }
+
         reports.junitXml.required.set(false)
         reports.html.required.set(false)
 
-        // workaround for knowing which tests passed failed since HTML reporting is disabled for native tests
-        // can be removed once HTML reporting is working
+        // Keep failed test visibility without forwarding all native stdout/stderr to Gradle's
+        // test output store, which can fail after Gradle/Kotlin upgrades.
         testLogging {
             events("failed")
-            showStandardStreams = true
+            showStandardStreams = false
         }
     }
 
@@ -107,12 +117,6 @@ allprojects {
         google()
         mavenCentral()
     }
-}
-
-dagCommand {
-    defaultBranch = "origin/develop"
-    outputType = "json"
-    printModulesInfo = true
 }
 
 kover {

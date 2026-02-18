@@ -22,6 +22,7 @@ import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -38,85 +39,100 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import kotlinx.datetime.Clock
 
-private fun BackupQualifiedId.toQualifiedId() = QualifiedID(
-    value = id,
-    domain = domain
-)
+internal fun BackupQualifiedId.toQualifiedIdOrNull(context: String): QualifiedID? {
+    if (domain.isBlank()) {
+        kaliumLogger.e(
+            "Skipping malformed backup qualified ID in $context because domain is empty. id=$id"
+        )
+        return null
+    }
 
-internal fun BackupUser.toUser() = OtherUser(
-    id = id.toQualifiedId(),
-    name = name,
-    handle = handle,
-    accentId = 0,
-    teamId = null,
-    previewPicture = null,
-    completePicture = null,
-    userType = UserTypeInfo.Regular(UserType.NONE),
-    availabilityStatus = UserAvailabilityStatus.NONE,
-    supportedProtocols = null,
-    botService = null,
-    deleted = true,
-    defederated = false,
-    isProteusVerified = false,
-)
-
-internal fun BackupConversation.toConversation() = Conversation(
-    id = id.toQualifiedId(),
-    name = name,
-    type = if (name.isBlank()) {
-        Conversation.Type.OneOnOne
-    } else {
-        Conversation.Type.Group.Regular
-    },
-    teamId = null,
-    protocol = Conversation.ProtocolInfo.Proteus,
-    mutedStatus = MutedConversationStatus.AllMuted,
-    removedBy = null,
-    lastNotificationDate = null,
-    lastModifiedDate = lastModifiedTime?.instant,
-    lastReadDate = Clock.System.now(),
-    access = emptyList(),
-    accessRole = emptyList(),
-    creatorId = null,
-    receiptMode = Conversation.ReceiptMode.DISABLED,
-    messageTimer = null,
-    userMessageTimer = null,
-    archived = false,
-    archivedDateTime = null,
-    mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-    proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-    legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN,
-)
-
-internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone {
-
-    val isSelfMessage = senderUserId.toQualifiedId() == selfUserId
-
-    return Message.Regular(
-        id = id,
-        content = content.toMessageContent(selfUserId),
-        conversationId = conversationId.toQualifiedId(),
-        date = creationDate.instant,
-        senderUserId = senderUserId.toQualifiedId(),
-        status = if (isSelfMessage) {
-            Message.Status.Sent
-        } else {
-            Message.Status.Read(1)
-        },
-        isSelfMessage = isSelfMessage,
-        senderClientId = ClientId(senderClientId),
-        editStatus = lastEditTime?.let {
-            Message.EditStatus.Edited(it.instant)
-        } ?: Message.EditStatus.NotEdited
+    return QualifiedID(
+        value = id,
+        domain = domain
     )
 }
+
+internal fun BackupUser.toUser(): OtherUser? = id.toQualifiedIdOrNull("restore.user")?.let { qualifiedId ->
+    OtherUser(
+        id = qualifiedId,
+        name = name,
+        handle = handle,
+        accentId = 0,
+        teamId = null,
+        previewPicture = null,
+        completePicture = null,
+        userType = UserTypeInfo.Regular(UserType.NONE),
+        availabilityStatus = UserAvailabilityStatus.NONE,
+        supportedProtocols = null,
+        botService = null,
+        deleted = true,
+        defederated = false,
+        isProteusVerified = false,
+    )
+}
+
+internal fun BackupConversation.toConversation(): Conversation? = id.toQualifiedIdOrNull("restore.conversation")?.let { qualifiedId ->
+    Conversation(
+        id = qualifiedId,
+        name = name,
+        type = if (name.isBlank()) {
+            Conversation.Type.OneOnOne
+        } else {
+            Conversation.Type.Group.Regular
+        },
+        teamId = null,
+        protocol = Conversation.ProtocolInfo.Proteus,
+        mutedStatus = MutedConversationStatus.AllMuted,
+        removedBy = null,
+        lastNotificationDate = null,
+        lastModifiedDate = lastModifiedTime?.instant,
+        lastReadDate = Clock.System.now(),
+        access = emptyList(),
+        accessRole = emptyList(),
+        creatorId = null,
+        receiptMode = Conversation.ReceiptMode.DISABLED,
+        messageTimer = null,
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN,
+    )
+}
+
+internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone? =
+    conversationId.toQualifiedIdOrNull("restore.message.conversationId")?.let { conversationQualifiedId ->
+        senderUserId.toQualifiedIdOrNull("restore.message.senderUserId")?.let { senderQualifiedId ->
+            val isSelfMessage = senderQualifiedId == selfUserId
+            Message.Regular(
+                id = id,
+                content = content.toMessageContent(selfUserId),
+                conversationId = conversationQualifiedId,
+                date = creationDate.instant,
+                senderUserId = senderQualifiedId,
+                status = if (isSelfMessage) {
+                    Message.Status.Sent
+                } else {
+                    Message.Status.Read(1)
+                },
+                isSelfMessage = isSelfMessage,
+                senderClientId = ClientId(senderClientId),
+                editStatus = lastEditTime?.let {
+                    Message.EditStatus.Edited(it.instant)
+                } ?: Message.EditStatus.NotEdited
+            )
+        }
+    }
 
 private fun BackupMessageContent.toMessageContent(selfUserId: UserId) =
     when (this) {
         is BackupMessageContent.Text -> MessageContent.Text(
             value = text,
-            mentions = mentions.map { mention ->
-                val userId = mention.userId.toQualifiedId()
+            mentions = mentions.mapNotNull { mention ->
+                val userId = mention.userId.toQualifiedIdOrNull("restore.message.mentionUserId")
+                    ?: return@mapNotNull null
                 MessageMention(
                     start = mention.start,
                     length = mention.length,

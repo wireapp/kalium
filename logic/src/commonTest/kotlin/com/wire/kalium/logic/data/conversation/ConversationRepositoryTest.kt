@@ -1264,7 +1264,7 @@ class ConversationRepositoryTest {
 
         suspend fun withConversations(conversations: List<ConversationViewEntity>) = apply {
             coEvery {
-                conversationDAO.getAllConversationDetails(any(), any())
+                conversationDAO.getAllConversationDetails(any(), any(), any())
             }.returns(flowOf(conversations))
         }
 

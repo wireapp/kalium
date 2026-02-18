@@ -172,7 +172,6 @@ internal class EventDataSource(
                 emit(eventEntities.subList(emittedEventIndex + 1, eventEntities.size))
             } else {
                 logger.d("no unprocessed events found")
-                emit(emptyList())
             }
         }
             .onEach { entities ->

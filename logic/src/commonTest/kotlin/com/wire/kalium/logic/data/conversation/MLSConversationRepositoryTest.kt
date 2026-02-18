@@ -70,6 +70,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.DummyMLSClient
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
@@ -1306,7 +1307,7 @@ class MLSConversationRepositoryTest {
                     member2 to listOf(WIRE_IDENTITY.copy(clientId = CRYPTO_CLIENT_ID.copy("member_2_client_id")))
                 )
             ),
-            mlsConversationRepository.getMembersIdentities(arrangement.mlsContext, TestConversation.ID, listOf(member1, member2, member3))
+            mlsConversationRepository.getMembersIdentities(arrangement.mlsClient, TestConversation.ID, listOf(member1, member2, member3))
         )
 
         coVerify {
@@ -1396,7 +1397,7 @@ class MLSConversationRepositoryTest {
             .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
             .arrange()
         // when
-        val result = mlsConversationRepository.getMembersIdentities(arrangement.mlsContext, TestConversation.ID, listOf(TestUser.USER_ID))
+        val result = mlsConversationRepository.getMembersIdentities(arrangement.mlsClient, TestConversation.ID, listOf(TestUser.USER_ID))
         // then
         result.shouldSucceed() {
             it.values.forEach {
@@ -1480,7 +1481,7 @@ class MLSConversationRepositoryTest {
         val checkRevocationList = mock(RevocationListChecker::class)
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
         val epochChangesObserver = mock(EpochChangesObserver::class)
-
+        val mlsClient = DummyMLSClient(mlsContext)
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
