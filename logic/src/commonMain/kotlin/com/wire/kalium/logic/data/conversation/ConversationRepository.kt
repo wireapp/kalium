@@ -198,6 +198,10 @@ internal interface ConversationRepository {
         groupState: GroupState
     ): Either<StorageFailure, List<Conversation>>
 
+    suspend fun getConversationsByGroupStates(
+        groupStates: Collection<GroupState>
+    ): Either<StorageFailure, List<Conversation>>
+
     suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: Instant? = null): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
@@ -582,6 +586,14 @@ internal class ConversationDataSource internal constructor(
     ): Either<StorageFailure, List<Conversation>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState))
+                .map(conversationMapper::fromDaoModel)
+        }
+
+    override suspend fun getConversationsByGroupStates(
+        groupStates: Collection<GroupState>
+    ): Either<StorageFailure, List<Conversation>> =
+        wrapStorageRequest {
+            conversationDAO.getConversationsByGroupStates(groupStates.map(conversationMapper::toDAOGroupState))
                 .map(conversationMapper::fromDaoModel)
         }
 

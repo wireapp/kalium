@@ -395,6 +395,12 @@ internal class ConversationDAOImpl internal constructor(
                 .executeAsList()
         }
 
+    override suspend fun getConversationsByGroupStates(groupStates: Collection<ConversationEntity.GroupState>): List<ConversationEntity> =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectByGroupStates(groupStates, conversationMapper::fromViewToModel)
+                .executeAsList()
+        }
+
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.deleteConversation(qualifiedID)

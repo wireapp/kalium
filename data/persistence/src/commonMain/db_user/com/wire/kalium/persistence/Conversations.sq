@@ -238,6 +238,9 @@ SELECT * FROM Conversation WHERE mls_group_id = ? AND deleted_locally = 0;
 selectByGroupState:
 SELECT * FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND deleted_locally = 0;
 
+selectByGroupStates:
+SELECT * FROM Conversation WHERE mls_group_state IN ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND deleted_locally = 0;
+
 selectActiveOneOnOneConversation:
 SELECT * FROM Conversation
 WHERE qualified_id = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id) AND deleted_locally = 0;
