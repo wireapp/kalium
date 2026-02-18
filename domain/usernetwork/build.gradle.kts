@@ -20,47 +20,24 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
-fun Map<String, String>.findPropertyIgnoringCase(name: String): String? =
-    entries.firstOrNull { (propertyName, _) -> propertyName.equals(name, ignoreCase = true) }?.value
+val cliUseGlobalUserNetworkApiCache: Boolean? = gradle.startParameter
+    .projectProperties["USE_GLOBAL_USER_NETWORK_API_CACHE"]
+    ?.toBooleanStrictOrNull()
 
-fun readBooleanPropertyFromProjectGradleProperties(propertyName: String, defaultValue: Boolean): Boolean {
-    val gradlePropertiesFile = rootProject.layout.projectDirectory.file("gradle.properties").asFile
-    if (!gradlePropertiesFile.exists()) {
-        return defaultValue
-    }
+val parentUseGlobalUserNetworkApiCache: Boolean? = gradle.parent
+    ?.rootProject
+    ?.properties?.get("USE_GLOBAL_USER_NETWORK_API_CACHE")
+    ?.toString()?.toBooleanStrictOrNull()
 
-    val propertyValue = gradlePropertiesFile.useLines { lines ->
-        lines
-            .map(String::trim)
-            .filter { it.isNotEmpty() && !it.startsWith("#") }
-            .mapNotNull { line ->
-                val separatorIndex = line.indexOf('=')
-                if (separatorIndex < 0) {
-                    null
-                } else {
-                    line.substring(0, separatorIndex).trim() to line.substring(separatorIndex + 1).trim()
-                }
-            }
-            .firstOrNull { (name, _) -> name == propertyName }
-            ?.second
-    }
-
-    return propertyValue?.toBooleanStrictOrNull() ?: defaultValue
-}
-
-val cliUseGlobalUserNetworkApiCacheRaw: String? = gradle.startParameter
-    .projectProperties.findPropertyIgnoringCase("USE_GLOBAL_USER_NETWORK_API_CACHE")
-    ?: gradle.parent?.startParameter?.projectProperties?.findPropertyIgnoringCase("USE_GLOBAL_USER_NETWORK_API_CACHE")
-
-val cliUseGlobalUserNetworkApiCache: Boolean? = cliUseGlobalUserNetworkApiCacheRaw?.toBooleanStrictOrNull()
+val localUseGlobalUserNetworkApiCache: Boolean = providers
+    .gradleProperty("USE_GLOBAL_USER_NETWORK_API_CACHE")
+    .map { it.toBoolean() }
+    .getOrElse(false)
 
 val useGlobalUserNetworkApiCache: Boolean = when {
     cliUseGlobalUserNetworkApiCache != null -> cliUseGlobalUserNetworkApiCache
-    gradle.parent != null -> true
-    else -> readBooleanPropertyFromProjectGradleProperties(
-        propertyName = "USE_GLOBAL_USER_NETWORK_API_CACHE",
-        defaultValue = false
-    )
+    parentUseGlobalUserNetworkApiCache != null -> parentUseGlobalUserNetworkApiCache
+    else -> localUseGlobalUserNetworkApiCache
 }
 
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/usernetwork/commonMain/kotlin")
