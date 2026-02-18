@@ -71,6 +71,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -608,6 +609,80 @@ class CallRepositoryTest {
         assertNotNull(
             callRepository.getCallMetadata(Arrangement.conversationId)
         )
+    }
+
+    @Test
+    fun givenDoubledIncomingCall_whenCreatingCall_ThenDoNotAddItTwice() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(flowOf(Either.Right(Arrangement.oneOnOneConversationDetails)))
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(
+                CallEntity.Status.CLOSED,
+                CallEntity.Status.INCOMING // After creating INCOMING call, next time it should return INCOMING status
+            )
+            .givenGetCallerIdByConversationIdReturns("callerId@domain")
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        for (i in 0..1) {
+            launch {
+                callRepository.createCall(
+                    conversationId = Arrangement.conversationId,
+                    status = CallStatus.INCOMING,
+                    callerId = callerId,
+                    isMuted = true,
+                    isCameraOn = false,
+                    isCbrEnabled = false,
+                    type = ConversationTypeForCall.ConferenceMls
+                )
+            }
+        }
+        advanceUntilIdle()
+
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callDAO.insertCall(any())
+        }
+    }
+
+    @Test
+    fun givenDoubledStillOngoingCall_whenCreatingCall_ThenDoNotAddItTwice() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(flowOf(Either.Right(Arrangement.oneOnOneConversationDetails)))
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(
+                CallEntity.Status.CLOSED,
+                CallEntity.Status.STILL_ONGOING // After creating STILL_ONGOING call, next time it should return STILL_ONGOING status
+            )
+            .givenGetCallerIdByConversationIdReturns("callerId@domain")
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        for (i in 1..2) {
+            launch {
+                callRepository.createCall(
+                    conversationId = Arrangement.conversationId,
+                    status = CallStatus.STILL_ONGOING,
+                    callerId = callerId,
+                    isMuted = true,
+                    isCameraOn = false,
+                    isCbrEnabled = false,
+                    type = ConversationTypeForCall.ConferenceMls
+                )
+            }
+        }
+        advanceUntilIdle()
+
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callDAO.insertCall(any())
+        }
     }
 
     @Test
@@ -1988,10 +2063,10 @@ class CallRepositoryTest {
             } returns flowOf(TestTeam.TEAM)
         }
 
-        suspend fun givenGetCallStatusByConversationIdReturns(status: CallEntity.Status?) = apply {
+        suspend fun givenGetCallStatusByConversationIdReturns(vararg status: CallEntity.Status?) = apply {
             everySuspend {
                 callDAO.getCallStatusByConversationId(any())
-            } returns status
+            } sequentiallyReturns status.asList()
         }
 
         suspend fun givenPersistMessageSuccessful() = apply {

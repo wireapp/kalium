@@ -18,6 +18,13 @@
 package com.wire.kalium.persistence.util
 
 /**
- * Flag to indicate whether the app is running in debug mode
+ * Runtime debug mode configured by Kalium consumers.
  */
-expect val isDebug: Boolean
+private var debugMode: Boolean = false
+
+public fun configurePersistenceDebug(isDebug: Boolean) {
+    debugMode = isDebug
+}
+
+public val isDebug: Boolean
+    get() = debugMode

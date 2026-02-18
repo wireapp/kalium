@@ -19,8 +19,9 @@ package com.wire.kalium.logic.client
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -63,10 +64,10 @@ class IsAllowedToUseAsyncNotificationsUseCaseTest {
 
     private class Arrangement {
 
-        private val userConfigRepository = mock(UserConfigRepository::class)
+        private val userConfigRepository = mock<UserConfigRepository>()
 
         suspend fun withAsyncNotificationsEnabled(isEnabled: Boolean = false) = apply {
-            coEvery { userConfigRepository.isAsyncNotificationsEnabled() }.returns(isEnabled)
+            everySuspend { userConfigRepository.isAsyncNotificationsEnabled() } returns isEnabled
         }
 
         fun arrange(isAllowedByApiVersion: Boolean) = this to IsAllowedToUseAsyncNotificationsUseCaseImpl(

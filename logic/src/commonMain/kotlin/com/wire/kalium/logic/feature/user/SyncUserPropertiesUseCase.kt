@@ -15,8 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.util
 
-import com.wire.kalium.persistence.BuildConfig
+package com.wire.kalium.logic.feature.user
 
-actual val isDebug: Boolean = BuildConfig.DEBUG
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
+
+internal interface SyncUserPropertiesUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
+}
+
+internal class SyncUserPropertiesUseCaseImpl internal constructor(
+    private val userPropertyRepository: UserPropertyRepository
+) : SyncUserPropertiesUseCase {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = userPropertyRepository.syncPropertiesStatuses()
+}
