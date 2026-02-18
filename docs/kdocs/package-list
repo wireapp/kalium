@@ -508,6 +508,7 @@ com.wire.kalium.persistence.client
 com.wire.kalium.persistence.config
 com.wire.kalium.persistence.dao
 com.wire.kalium.persistence.dao.asset
+com.wire.kalium.persistence.dao.backup
 com.wire.kalium.persistence.dao.call
 com.wire.kalium.persistence.dao.client
 com.wire.kalium.persistence.dao.conversation
