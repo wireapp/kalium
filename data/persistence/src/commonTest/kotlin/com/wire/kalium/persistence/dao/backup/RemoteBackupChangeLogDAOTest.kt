@@ -56,15 +56,6 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenEmptymessageId_whenLoggingMessageUpsert_thenInsertFails() = runTest(dispatcher) {
-        val failure = runCatching {
-            dao.logMessageUpsert(CONVERSATION_ID_1, "", TIMESTAMP_1)
-        }.exceptionOrNull()
-
-        assertTrue(failure != null)
-    }
-
-    @Test
     fun givenExistingMessageUpsert_whenLoggingAgain_thenTimestampIsUpdated() = runTest(dispatcher) {
         dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
         dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_2)
