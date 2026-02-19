@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.DatabaseStorageType
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -36,6 +35,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import java.io.File
 
 @Suppress("LongParameterList")
