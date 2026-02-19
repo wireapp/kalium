@@ -131,6 +131,7 @@ internal interface EventRepository {
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
     suspend fun observeEvents(): Flow<List<EventEnvelope>>
     suspend fun setEventsAsProcessed(eventIds: List<String>): Either<StorageFailure, Unit>
+    fun setUnprocessedEventsBatchLimit(limit: Int?)
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -150,10 +151,18 @@ internal class EventDataSource(
 
     private val clearOnFirstWSMessage = MutableStateFlow(false)
     private val sentinelMarker = AtomicReference<SentinelMarker>(SentinelMarker.None)
+    private val unprocessedEventsBatchLimit = AtomicReference(EventDAO.DEFAULT_UNPROCESSED_EVENTS_LIMIT.toInt())
+
+    override fun setUnprocessedEventsBatchLimit(limit: Int?) {
+        val batchLimit = limit?.coerceAtLeast(1) ?: EventDAO.DEFAULT_UNPROCESSED_EVENTS_LIMIT.toInt()
+        unprocessedEventsBatchLimit.set(batchLimit)
+        logger.i("set unprocessed events batch limit to $batchLimit")
+    }
 
     override suspend fun observeEvents(): Flow<List<EventEnvelope>> {
         var lastEmittedEventId: String? = null
-        return eventDAO.observeUnprocessedEvents().transform { eventEntities ->
+        val batchLimit = unprocessedEventsBatchLimit.get().toLong()
+        return eventDAO.observeUnprocessedEvents(batchLimit).transform { eventEntities ->
             logger.d("got ${eventEntities.size} unprocessed events")
             if (eventEntities.isNotEmpty()) {
                 logger.d("first unprocessed event ${eventEntities.firstOrNull()?.eventId}")

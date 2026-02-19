@@ -100,6 +100,35 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
+    fun givenProteusUnknownErrorContainingDuplicateMessage_whenHandling_thenErrorShouldBeIgnored() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(
+                Either.Left(
+                    ProteusFailure(
+                        ProteusException(
+                            message = "exception=com.wire.crypto.ProteusException\$DuplicateMessage: ",
+                            code = ProteusException.Code.UNKNOWN_ERROR,
+                            intCode = null
+                        )
+                    )
+                )
+            )
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenProteus_whenHandling_thenErrorShouldBeHandled() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
@@ -125,6 +154,86 @@ class NewMessageEventHandlerTest {
 
         coVerify {
             arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProteusInformUserFailure_whenHandling_thenPersistResolvedDecryptionFailure() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(
+                Either.Left(
+                    ProteusFailure(
+                        ProteusException(
+                            message = null,
+                            code = ProteusException.Code.INVALID_SIGNATURE,
+                            intCode = 5
+                        )
+                    )
+                )
+            )
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(
+                eventId = eq(newMessageEvent.id),
+                conversationId = eq(newMessageEvent.conversationId),
+                messageInstant = eq(newMessageEvent.messageInstant),
+                senderUserId = eq(newMessageEvent.senderUserId),
+                senderClientId = eq(newMessageEvent.senderClientId),
+                content = eq(
+                    MessageContent.FailedDecryption(
+                        encodedData = newMessageEvent.encryptedExternalContent?.data,
+                        errorCode = 5,
+                        isDecryptionResolved = true,
+                        senderUserId = newMessageEvent.senderUserId,
+                        clientId = ClientId(newMessageEvent.senderClientId.value)
+                    )
+                )
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProteusRecoverSessionFailure_whenHandling_thenPersistUnresolvedDecryptionFailure() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(
+                Either.Left(
+                    ProteusFailure(
+                        ProteusException(
+                            message = null,
+                            code = ProteusException.Code.SESSION_NOT_FOUND,
+                            intCode = 2
+                        )
+                    )
+                )
+            )
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(
+                eventId = eq(newMessageEvent.id),
+                conversationId = eq(newMessageEvent.conversationId),
+                messageInstant = eq(newMessageEvent.messageInstant),
+                senderUserId = eq(newMessageEvent.senderUserId),
+                senderClientId = eq(newMessageEvent.senderClientId),
+                content = eq(
+                    MessageContent.FailedDecryption(
+                        encodedData = newMessageEvent.encryptedExternalContent?.data,
+                        errorCode = 2,
+                        isDecryptionResolved = false,
+                        senderUserId = newMessageEvent.senderUserId,
+                        clientId = ClientId(newMessageEvent.senderClientId.value)
+                    )
+                )
+            )
         }.wasInvoked(exactly = once)
     }
 

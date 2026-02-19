@@ -206,7 +206,7 @@ class MessageSystemContentTest : BaseMessageTest() {
         messageDAO.insertOrIgnoreMessage(message)
 
         // when
-        messageDAO.markMessagesAsDecryptionResolved(TEST_CONVERSATION_1.id, OTHER_USER.id, "client2")
+        messageDAO.markProteusMessagesAsDecryptionResolved(OTHER_USER.id, "client2")
 
         // then
         val result = messageDAO.getMessageById(message.id, message.conversationId)

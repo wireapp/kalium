@@ -1161,6 +1161,10 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    public fun setIncrementalSyncUnprocessedEventsBatchLimit(limit: Int?) {
+        eventRepository.setUnprocessedEventsBatchLimit(limit)
+    }
+
     private val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCaseImpl(
             conversationRepository,

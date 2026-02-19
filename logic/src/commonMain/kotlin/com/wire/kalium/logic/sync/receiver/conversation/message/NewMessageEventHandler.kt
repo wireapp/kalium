@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -95,31 +95,55 @@ internal class NewMessageEventHandlerImpl(
                 "protocol" to "Proteus"
             )
 
-            if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.DUPLICATE_MESSAGE) {
-                logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
-                return
+            when (ProteusMessageFailureHandler.handleFailure(it)) {
+                ProteusMessageFailureResolution.Ignore -> {
+                    logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
+                    eventLogger.logFailure(it, "protocol" to "Proteus", "proteusOutcome" to "IGNORE")
+                }
+
+                ProteusMessageFailureResolution.RecoverSession -> {
+                    logger.e("Proteus failure requires session recovery: ${logMap.toJsonElement()}")
+                    eventLogger.logFailure(it, "protocol" to "Proteus", "proteusOutcome" to "RECOVER_SESSION")
+                    persistProteusDecryptionFailure(
+                        failure = it,
+                        event = event,
+                        isDecryptionResolved = false
+                    )
+                }
+
+                ProteusMessageFailureResolution.InformUser -> {
+                    logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
+                    persistProteusDecryptionFailure(
+                        failure = it,
+                        event = event,
+                        isDecryptionResolved = true
+                    )
+                    eventLogger.logFailure(it, "protocol" to "Proteus")
+                }
             }
-
-            logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
-
-            val errorCode = if (it is ProteusFailure) it.proteusException.intCode else null
-
-            applicationMessageHandler.handleDecryptionError(
-                eventId = event.id,
-                conversationId = event.conversationId,
-                messageInstant = event.messageInstant,
-                senderUserId = event.senderUserId,
-                senderClientId = event.senderClientId,
-                content = MessageContent.FailedDecryption(
-                    encodedData = event.encryptedExternalContent?.data,
-                    errorCode = errorCode,
-                    isDecryptionResolved = false,
-                    senderUserId = event.senderUserId,
-                    clientId = ClientId(event.senderClientId.value)
-                )
-            )
-            eventLogger.logFailure(it, "protocol" to "Proteus")
         }
+    }
+
+    private suspend fun persistProteusDecryptionFailure(
+        failure: CoreFailure,
+        event: Event.Conversation.NewMessage,
+        isDecryptionResolved: Boolean
+    ) {
+        val errorCode = if (failure is ProteusFailure) failure.proteusException.intCode else null
+        applicationMessageHandler.handleDecryptionError(
+            eventId = event.id,
+            conversationId = event.conversationId,
+            messageInstant = event.messageInstant,
+            senderUserId = event.senderUserId,
+            senderClientId = event.senderClientId,
+            content = MessageContent.FailedDecryption(
+                encodedData = event.encryptedExternalContent?.data,
+                errorCode = errorCode,
+                isDecryptionResolved = isDecryptionResolved,
+                senderUserId = event.senderUserId,
+                clientId = ClientId(event.senderClientId.value)
+            )
+        )
     }
 
     override suspend fun handleNewMLSMessage(

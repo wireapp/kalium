@@ -77,8 +77,7 @@ internal class ResetSessionUseCaseImpl internal constructor(
                     clientId = clientId
                 ).flatMap {
                     kaliumLogger.i("Successfully sent session reset message")
-                    messageRepository.markMessagesAsDecryptionResolved(
-                        conversationId,
+                    messageRepository.markProteusMessagesAsDecryptionResolved(
                         userId,
                         clientId
                     )
