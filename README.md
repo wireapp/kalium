@@ -30,14 +30,14 @@ Kalium currently uses the following compile-time Gradle properties:
     ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
     ```
 
-- `USE_GLOBAL_USER_STORAGE_CACHE`
+- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS`
   - Default for standalone Kalium builds: `false` (per-`CoreLogic` cache, backwards-compatible behavior).
-  - Included-build behavior (when Kalium is built from Wire Android): defaults to `true` unless explicitly overridden with `-PUSE_GLOBAL_USER_STORAGE_CACHE=...`.
+  - Included-build behavior (when Kalium is built from Wire Android): defaults to `true` unless explicitly overridden with `-PSHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=...`.
   - `true`: share user DB storage cache across `CoreLogic` instances in the same process.
   - `false`: cache is scoped to each `CoreLogic` instance.
   - Override example:
     ```bash
-    ./gradlew <task> -PUSE_GLOBAL_USER_STORAGE_CACHE=true
+    ./gradlew <task> -PSHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=true
     ```
 
 The `cli` can be executed on the terminal of any machine that 

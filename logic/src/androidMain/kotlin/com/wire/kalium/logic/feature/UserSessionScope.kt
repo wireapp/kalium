@@ -55,8 +55,9 @@ internal fun UserSessionScope(
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
 ): UserSessionScope {
+    val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
     val platformUserStorageProperties =
-        PlatformUserStorageProperties(applicationContext, SecurityHelperImpl(globalPreferences.passphraseStorage))
+        PlatformUserStorageProperties(applicationContext) { userId -> securityHelper.userDBSecret(userId) }
 
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
 

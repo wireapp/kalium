@@ -19,9 +19,10 @@
 package com.wire.kalium.userstorage.di
 
 import android.content.Context
-import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.db.UserDBSecret
 
 public actual class PlatformUserStorageProperties(
     public val applicationContext: Context,
-    internal val securityHelper: SecurityHelper
+    internal val userDbSecretProvider: (UserId) -> UserDBSecret
 )

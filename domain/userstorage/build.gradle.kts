@@ -21,16 +21,16 @@ plugins {
 }
 
 val cliShareUserStorageCacheBetweenProviders: Boolean? = gradle.startParameter
-    .projectProperties["USE_GLOBAL_USER_STORAGE_CACHE"]
+    .projectProperties["SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS"]
     ?.toBooleanStrictOrNull()
 
 val parentShareUserStorageCacheBetweenProviders: Boolean? = gradle.parent
     ?.rootProject
-    ?.properties?.get("USE_GLOBAL_USER_STORAGE_CACHE")
+    ?.properties?.get("SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS")
     ?.toString()?.toBooleanStrictOrNull()
 
 val localShareUserStorageCacheBetweenProviders: Boolean = providers
-    .gradleProperty("USE_GLOBAL_USER_STORAGE_CACHE")
+    .gradleProperty("SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS")
     .map { it.toBoolean() }
     .getOrElse(false)
 
@@ -61,12 +61,6 @@ val generateUserStorageCacheConfig by tasks.registering {
              * - `false`: each provider instance keeps an isolated in-memory cache.
              */
             internal const val SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS: Boolean = $shareUserStorageCacheBetweenProviders
-
-            @Deprecated(
-                message = "Use SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS for clearer behavior.",
-                replaceWith = ReplaceWith("SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS")
-            )
-            internal const val USE_GLOBAL_USER_STORAGE_CACHE: Boolean = SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS
             """.trimIndent() + "\n"
         )
     }
@@ -110,7 +104,7 @@ kotlin {
 }
 
 tasks.matching { task ->
-    task.name.contains("compile", ignoreCase = true) && task.name.contains("Kotlin")
+    task.name.contains("compile", ignoreCase = true)
 }.configureEach {
     dependsOn(generateUserStorageCacheConfig)
 }

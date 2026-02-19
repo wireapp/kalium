@@ -34,7 +34,7 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
         val userIdEntity = UserIDEntity(userId.value, userId.domain)
 
         val databasePassphrase = if (shouldEncryptData) {
-            platformProperties.securityHelper.userDBSecret(userId)
+            platformProperties.userDbSecretProvider(userId)
         } else {
             null
         }
