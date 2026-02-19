@@ -16,15 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.userstorage.di
 
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
-internal actual class PlatformUserStorageProvider : UserStorageProvider() {
+public actual class PlatformUserStorageProvider : UserStorageProvider() {
     actual override fun create(
         userId: UserId,
         shouldEncryptData: Boolean,
@@ -33,19 +35,24 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
     ): UserStorage {
         val userIdEntity = userId.toDao()
 
-        val databasePassphrase = if (shouldEncryptData) {
-            platformProperties.securityHelper.userDBSecret(userId)
-        } else {
-            null
+        val databaseInfo = platformProperties.databaseInfo
+        val database = when (databaseInfo) {
+            is DatabaseStorageType.FiledBacked -> {
+                val storageData = StorageData.FileBacked(databaseInfo.filePath)
+                userDatabaseBuilder(
+                    platformDatabaseData = PlatformDatabaseData(storageData),
+                    userId = userIdEntity,
+                    passphrase = null,
+                    dispatcher = KaliumDispatcherImpl.io,
+                    enableWAL = false,
+                    dbInvalidationControlEnabled = dbInvalidationControlEnabled
+                )
+            }
+
+            is DatabaseStorageType.InMemory -> {
+                inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.io)
+            }
         }
-        val database = userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
-            userId = userIdEntity,
-            passphrase = databasePassphrase,
-            dispatcher = KaliumDispatcherImpl.io,
-            enableWAL = true,
-            dbInvalidationControlEnabled = dbInvalidationControlEnabled
-        )
         return UserStorage(database)
     }
 }

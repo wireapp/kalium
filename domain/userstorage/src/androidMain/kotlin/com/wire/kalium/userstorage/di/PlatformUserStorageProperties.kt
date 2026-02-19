@@ -16,9 +16,12 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.userstorage.di
 
-internal actual class PlatformUserStorageProperties internal constructor(
-    val rootPath: String,
-    val rootStoragePath: String
+import android.content.Context
+import com.wire.kalium.logic.util.SecurityHelper
+
+public actual class PlatformUserStorageProperties(
+    internal val applicationContext: Context,
+    internal val securityHelper: SecurityHelper
 )
