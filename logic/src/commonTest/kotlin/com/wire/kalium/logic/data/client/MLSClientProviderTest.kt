@@ -50,20 +50,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
-import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.time.Clock
 
 class MLSClientProviderTest {
-
-    private var testArrangement: Arrangement? = null
-
-    @AfterTest
-    fun tearDown() {
-        testArrangement?.cleanup()
-    }
 
     @Test
     fun givenMlsConfigIsnotStoredLocally_whenGetMlsClient_thenMlsFetchMlsConfigFromRemote() = runTest {
@@ -80,8 +71,7 @@ class MLSClientProviderTest {
             status = Status.ENABLED
         )
 
-        testArrangement = Arrangement(this)
-        val (arrangement, mlsClientProvider) = testArrangement!!.arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetSupportedCipherSuitesReturning(StorageFailure.DataNotFound.left())
             withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel = expected).right())
             withGetMLSEnabledReturning(true.right())
@@ -111,8 +101,7 @@ class MLSClientProviderTest {
             default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
         )
 
-        testArrangement = Arrangement(this)
-        val (arrangement, mlsClientProvider) = testArrangement!!.arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetSupportedCipherSuitesReturning(expected.right())
             withGetMLSEnabledReturning(true.right())
             withGetFeatureConfigsReturning(FeatureConfigTest.newModel().right())
@@ -137,8 +126,7 @@ class MLSClientProviderTest {
     @Test
     fun givenMLSDisabledWhenGetOrFetchMLSConfigIsCalledThenDoNotCallGetSupportedCipherSuiteOrGetFeatureConfigs() = runTest {
         // given
-        testArrangement = Arrangement(this)
-        val (arrangement, mlsClientProvider) = testArrangement!!.arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withGetMLSEnabledReturning(false.right())
             withGetSupportedCipherSuitesReturning(
                 SupportedCipherSuite(
@@ -168,11 +156,10 @@ class MLSClientProviderTest {
 
     @Test
     fun givenValidClient_whenExportingDB_thenReturnsExportData() = runTest {
-        testArrangement = Arrangement(this)
-        val (arrangement, mlsClientProvider) = testArrangement!!.arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdSuccess(TestClient.CLIENT_ID)
-            withPassphraseStorage()
             withCoreCryptoDatabaseExists()
+            withPassphraseStorage()
         }
 
         mlsClientProvider.exportCryptoDB().shouldSucceed {
@@ -190,8 +177,7 @@ class MLSClientProviderTest {
 
     @Test
     fun givenNoClient_whenExportingDB_thenReturnsFailure() = runTest {
-        testArrangement = Arrangement(this)
-        val (_, mlsClientProvider) = testArrangement!!.arrange {
+        val (_, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdFailure(StorageFailure.DataNotFound)
         }
 
@@ -202,8 +188,7 @@ class MLSClientProviderTest {
 
     @Test
     fun givenDBDoesNotExist_whenExportingDB_thenReturnsDataNotFound() = runTest {
-        testArrangement = Arrangement(this)
-        val (_, mlsClientProvider) = testArrangement!!.arrange {
+        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdSuccess(TestClient.CLIENT_ID)
             withPassphraseStorage()
             withCoreCryptoDatabaseDoesNotExists()
@@ -220,12 +205,15 @@ class MLSClientProviderTest {
         FeatureConfigRepositoryArrangement by FeatureConfigRepositoryArrangementImpl(),
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
 
-        // Use unique path per test instance to avoid CI flakiness with parallel test runs
-        val rootKeyStorePath: String = "rootKeyStorePath_${Clock.System.now().toEpochMilliseconds()}"
+        val rootKeyStorePath: String = "rootKeyStorePath"
         val userId: UserId = UserId("userId", "domain")
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
         val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
         val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+
+        init {
+            withCoreCryptoDatabaseDoesNotExists()
+        }
 
         fun withCoreCryptoDatabaseDoesNotExists() {
             val clientId = TestClient.CLIENT_ID
@@ -233,13 +221,6 @@ class MLSClientProviderTest {
             val rootDir = "$location/keystore"
 
             FileUtil.deleteDirectory(rootDir)
-        }
-
-        /**
-         * Clean up test artifacts after test completes
-         */
-        fun cleanup() {
-            FileUtil.deleteDirectory(rootKeyStorePath)
         }
 
         /**
