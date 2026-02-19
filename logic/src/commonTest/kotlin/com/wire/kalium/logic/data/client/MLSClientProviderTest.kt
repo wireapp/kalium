@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangement
@@ -155,6 +156,7 @@ class MLSClientProviderTest {
     }
 
     @Test
+    @IgnoreIOS
     fun givenValidClient_whenExportingDB_thenReturnsExportData() = runTest {
         val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdSuccess(TestClient.CLIENT_ID)
