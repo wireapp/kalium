@@ -17,11 +17,13 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
@@ -48,6 +50,7 @@ import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
 import okio.use
+import kotlin.String
 
 @Suppress("TooManyFunctions")
 internal class CellsDataSource internal constructor(
@@ -92,7 +95,12 @@ internal class CellsDataSource internal constructor(
         limit: Int,
         offset: Int,
         onlyDeleted: Boolean,
-        tags: List<String>
+        nodeType: CellNodeType,
+        tags: List<String>,
+        owners: List<String>,
+        mimeTypes: List<MIMEType>,
+        sorting: Sorting,
+        sortDescending: Boolean
     ) = withContext(dispatchers.io) {
         wrapApiRequest {
             if (path == null) {
@@ -109,8 +117,12 @@ internal class CellsDataSource internal constructor(
                     limit = limit,
                     offset = offset,
                     onlyDeleted = onlyDeleted,
-                    onlyFolders = false,
-                    tags = tags
+                    nodeType = nodeType,
+                    tags = tags,
+                    owners = owners,
+                    mimeTypes = mimeTypes,
+                    sorting = sorting,
+                    sortDescending = sortDescending
                 )
             }
         }.map { response ->
@@ -128,10 +140,20 @@ internal class CellsDataSource internal constructor(
     override suspend fun getNodesByPath(
         query: String,
         path: String,
-        onlyFolders: Boolean
+        nodeType: CellNodeType,
+        tags: List<String>,
+        owners: List<String>,
+        mimeTypes: List<MIMEType>,
     ): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNodesForPath(query = query, path = path, onlyFolders = onlyFolders).mapSuccess { response ->
+            cellsApi.getNodesForPath(
+                query = query,
+                path = path,
+                nodeType = nodeType,
+                tags = tags,
+                owners = owners,
+                mimeTypes = mimeTypes
+            ).mapSuccess { response ->
                 response.nodes.map { it.toModel() }
             }
         }

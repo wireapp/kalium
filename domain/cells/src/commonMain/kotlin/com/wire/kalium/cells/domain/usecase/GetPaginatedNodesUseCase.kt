@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.data.MIMEType
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
@@ -48,6 +50,10 @@ public interface GetPaginatedNodesUseCase {
         offset: Int = 0,
         onlyDeleted: Boolean = false,
         tags: List<String> = emptyList(),
+        owners: List<String> = emptyList(),
+        mimeTypes: List<MIMEType> = emptyList(),
+        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        sortDescending: Boolean = true,
     ): Either<CoreFailure, PaginatedList<Node>>
 }
 
@@ -64,7 +70,11 @@ internal class GetPaginatedNodesUseCaseImpl(
         limit: Int,
         offset: Int,
         onlyDeleted: Boolean,
-        tags: List<String>
+        tags: List<String>,
+        owners: List<String>,
+        mimeTypes: List<MIMEType>,
+        sorting: Sorting,
+        sortDescending: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
 
         // Collect all data required to show the file/folder
@@ -73,30 +83,41 @@ internal class GetPaginatedNodesUseCaseImpl(
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
-        return cellsRepository.getPaginatedNodes(conversationId, query, limit, offset, onlyDeleted, tags)
-            .map { nodes ->
-                PaginatedList(
-                    data = nodes.data.asSequence()
-                        .filterNot { it.isDraft }
-                        .map { node ->
-                            if (node.type == CellNodeType.FOLDER.value) {
-                                node.toFolderModel().copy(
-                                    userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                    conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                                )
-                            } else {
-                                val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
-                                node.toFileModel().copy(
-                                    localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
-                                    metadata = attachment?.metadata,
-                                    userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                    conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                                    isEditSupported = node.supportedEditors.isNotEmpty(),
-                                )
-                            }
-                        }.toList(),
-                    pagination = nodes.pagination
-                )
-            }
+        return cellsRepository.getPaginatedNodes(
+            path = conversationId,
+            query = query,
+            limit = limit,
+            offset = offset,
+            onlyDeleted = onlyDeleted,
+            nodeType = CellNodeType.ALL,
+            tags = tags,
+            owners = owners,
+            mimeTypes = mimeTypes,
+            sorting = sorting,
+            sortDescending = sortDescending
+        ).map { nodes ->
+            PaginatedList(
+                data = nodes.data.asSequence()
+                    .filterNot { it.isDraft }
+                    .map { node ->
+                        if (node.type == CellNodeType.FOLDER.value) {
+                            node.toFolderModel().copy(
+                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
+                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                            )
+                        } else {
+                            val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
+                            node.toFileModel().copy(
+                                localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
+                                metadata = attachment?.metadata,
+                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
+                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                isEditSupported = node.supportedEditors.isNotEmpty(),
+                            )
+                        }
+                    }.toList(),
+                pagination = nodes.pagination
+            )
+        }
     }
 }

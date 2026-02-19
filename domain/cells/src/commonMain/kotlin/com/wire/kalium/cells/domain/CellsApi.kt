@@ -17,10 +17,13 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.data.MIMEType
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
+import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
@@ -30,15 +33,27 @@ import com.wire.kalium.network.utils.NetworkResponse
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
-    suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO>
+    suspend fun getNodes(
+        query: String,
+        limit: Int,
+        offset: Int,
+        tags: List<String>,
+        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        sortDescending: Boolean = true,
+    ): NetworkResponse<GetNodesResponseDTO>
+
     suspend fun getNodesForPath(
         query: String,
         path: String,
         limit: Int? = null,
         offset: Int? = null,
         onlyDeleted: Boolean = false,
-        onlyFolders: Boolean = false,
+        nodeType: CellNodeType = CellNodeType.ALL,
         tags: List<String> = emptyList(),
+        owners: List<String>,
+        mimeTypes: List<MIMEType>,
+        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        sortDescending: Boolean = true,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>

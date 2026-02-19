@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.toFolderModel
 import com.wire.kalium.common.error.CoreFailure
@@ -42,7 +43,7 @@ internal class GetFoldersUseCaseImpl(
     override suspend operator fun invoke(conversationId: String): Either<CoreFailure, List<Node.Folder>> =
         cellsRepository.getNodesByPath(
             path = conversationId,
-            onlyFolders = true,
+            nodeType = CellNodeType.FOLDER,
             query = EMPTY
         ).map { nodes ->
             nodes.map { it.toFolderModel() }
