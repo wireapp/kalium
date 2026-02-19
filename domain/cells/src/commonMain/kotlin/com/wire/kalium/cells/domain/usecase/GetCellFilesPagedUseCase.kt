@@ -20,6 +20,8 @@ package com.wire.kalium.cells.domain.usecase
 import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
+import com.wire.kalium.cells.data.MIMEType
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.paging.FilePagingSource
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +35,10 @@ public interface GetCellFilesPagedUseCase {
      * @param query The search query to filter files.
      * @param onlyDeleted Whether to include only deleted files.
      * @param tags A list of tags to filter files by.
+     * @param owners A list of owner IDs to filter files by.
+     * @param mimeTypes A list of MIME types to filter files by.
+     * @param sorting The sorting method to apply to the results.
+     * @param sortDescending Whether to sort in descending order or ascending order.
      * @return A flow of paged data containing the filtered files.
      */
     public suspend operator fun invoke(
@@ -40,6 +46,10 @@ public interface GetCellFilesPagedUseCase {
         query: String,
         onlyDeleted: Boolean = false,
         tags: List<String> = emptyList(),
+        owners: List<String> = emptyList(),
+        mimeTypes: List<MIMEType> = emptyList(),
+        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        sortDescending: Boolean = true,
     ): Flow<PagingData<Node>>
 }
 
@@ -55,7 +65,11 @@ internal class GetCellFilesPagedUseCaseImpl(
         conversationId: String?,
         query: String,
         onlyDeleted: Boolean,
-        tags: List<String>
+        tags: List<String>,
+        owners: List<String>,
+        mimeTypes: List<MIMEType>,
+        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        sortDescending: Boolean = true,
     ): Flow<PagingData<Node>> {
         return Pager(
             config = PagingConfig(
@@ -68,7 +82,11 @@ internal class GetCellFilesPagedUseCaseImpl(
                     conversationId = conversationId,
                     getPaginatedNodesUseCase = getPaginatedNodesUseCase,
                     onlyDeleted = onlyDeleted,
-                    tags = tags
+                    tags = tags,
+                    owners = owners,
+                    mimeTypes = mimeTypes,
+                    sorting = sorting,
+                    sortDescending = sortDescending
                 )
             }
         ).flow

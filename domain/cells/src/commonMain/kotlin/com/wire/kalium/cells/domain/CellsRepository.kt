@@ -17,7 +17,10 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.data.MIMEType
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
@@ -42,13 +45,21 @@ internal interface CellsRepository {
         limit: Int,
         offset: Int,
         onlyDeleted: Boolean = false,
-        tags: List<String> = emptyList()
+        nodeType: CellNodeType,
+        tags: List<String> = emptyList(),
+        owners: List<String> = emptyList(),
+        mimeTypes: List<MIMEType> = emptyList(),
+        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        sortDescending: Boolean = true,
     ): Either<NetworkFailure, PaginatedList<CellNode>>
 
     suspend fun getNodesByPath(
         query: String,
         path: String,
-        onlyFolders: Boolean
+        nodeType: CellNodeType,
+        tags: List<String> = emptyList(),
+        owners: List<String> = emptyList(),
+        mimeTypes: List<MIMEType> = emptyList(),
     ): Either<NetworkFailure, List<CellNode>>
 
     suspend fun deleteFile(nodeUuid: String, permanentDelete: Boolean = false): Either<NetworkFailure, Unit>

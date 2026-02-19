@@ -23,6 +23,8 @@ import app.cash.paging.PagingSourceLoadResult
 import app.cash.paging.PagingSourceLoadResultError
 import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
+import com.wire.kalium.cells.data.MIMEType
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.common.error.NetworkFailure
@@ -35,6 +37,10 @@ internal class FilePagingSource(
     val getPaginatedNodesUseCase: GetPaginatedNodesUseCase,
     val onlyDeleted: Boolean = false,
     val tags: List<String> = emptyList(),
+    val owners: List<String> = emptyList(),
+    val mimeTypes: List<MIMEType> = emptyList(),
+    val sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
+    val sortDescending: Boolean = true,
 ) : PagingSource<Int, Node>() {
 
     private val nodeUuids = mutableSetOf<String>()
@@ -46,7 +52,11 @@ internal class FilePagingSource(
             limit = pageSize,
             offset = params.key ?: 0,
             onlyDeleted = onlyDeleted,
-            tags = tags
+            tags = tags,
+            owners = owners,
+            mimeTypes = mimeTypes,
+            sorting = sorting,
+            sortDescending = sortDescending
         ).fold(
             { error ->
                 PagingSourceLoadResultError<Int, Node>(
