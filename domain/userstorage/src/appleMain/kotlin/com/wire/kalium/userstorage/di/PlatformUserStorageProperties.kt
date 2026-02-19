@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2026 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.di
 
-internal actual class PlatformUserStorageProperties
+package com.wire.kalium.userstorage.di
+
+public actual class PlatformUserStorageProperties(
+    public val rootPath: String,
+    internal val rootStoragePath: String
+)

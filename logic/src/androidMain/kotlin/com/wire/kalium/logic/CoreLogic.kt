@@ -51,7 +51,6 @@ public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
-
     actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
         appContext,
         kaliumConfigs.shouldEncryptData()

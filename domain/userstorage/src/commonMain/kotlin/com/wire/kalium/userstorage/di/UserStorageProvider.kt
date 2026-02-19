@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,21 +16,37 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.userstorage.di
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
-internal data class UserStorage(val database: UserDatabaseBuilder)
-internal abstract class UserStorageProvider {
-    private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
-    internal fun getOrCreate(
+public data class UserStorage(public val database: UserDatabaseBuilder)
+
+/**
+ * Provides in-memory caching for [UserStorage] instances keyed by [UserId].
+ *
+ * Cache scope is controlled by [SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS]:
+ * - `true`: all [UserStorageProvider] instances share one cache map.
+ * - `false`: each [UserStorageProvider] instance owns a private cache map.
+ */
+public abstract class UserStorageProvider {
+    private companion object {
+        val sharedUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
+    }
+
+    private val providerUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> =
+        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) sharedUserStorageCache else ConcurrentMutableMap()
+
+    public fun get(userId: UserId): UserStorage? = providerUserStorageCache[userId]
+
+    public fun getOrCreate(
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
         shouldEncryptData: Boolean = true,
         dbInvalidationControlEnabled: Boolean,
-    ): UserStorage = inMemoryUserStorage.computeIfAbsent(userId) {
+    ): UserStorage = providerUserStorageCache.computeIfAbsent(userId) {
         create(userId, shouldEncryptData, platformUserStorageProperties, dbInvalidationControlEnabled)
     }
 
@@ -41,7 +57,7 @@ internal abstract class UserStorageProvider {
         dbInvalidationControlEnabled: Boolean
     ): UserStorage
 
-    internal fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)
+    public fun remove(userId: UserId): UserStorage? = providerUserStorageCache.remove(userId)
 }
 
-internal expect class PlatformUserStorageProperties
+public expect class PlatformUserStorageProperties

@@ -16,17 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.userstorage.di
 
-import java.io.File
+import android.content.Context
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.db.UserDBSecret
 
-internal actual class PlatformUserStorageProperties internal constructor(
-    val rootPath: String,
-    val databaseInfo: DatabaseStorageType
+public actual class PlatformUserStorageProperties(
+    public val applicationContext: Context,
+    internal val userDbSecretProvider: (UserId) -> UserDBSecret
 )
-
-internal sealed interface DatabaseStorageType {
-    data class FiledBacked(val filePath: File) : DatabaseStorageType
-
-    data object InMemory : DatabaseStorageType
-}

@@ -18,6 +18,28 @@
 - iOS (see the [iOS Build Guide](docs/IOS_BUILD.md))
 - JavaScript (just a tiny bit)
 
+### Compile-time flags
+
+Kalium currently uses the following compile-time Gradle properties:
+
+- `USE_UNIFIED_CORE_CRYPTO`
+  - Default: `false` (see `gradle.properties`)
+  - Controls whether Kalium uses the unified `core-crypto-kmp` artifact (`true`) or platform-specific crypto artifacts (`false`).
+  - Override example:
+    ```bash
+    ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
+    ```
+
+- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS`
+  - Default for standalone Kalium builds: `false` (per-`CoreLogic` cache, backwards-compatible behavior).
+  - Included-build behavior (when Kalium is built from Wire Android): defaults to `true` unless explicitly overridden with `-PSHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=...`.
+  - `true`: share user DB storage cache across `CoreLogic` instances in the same process.
+  - `false`: cache is scoped to each `CoreLogic` instance.
+  - Override example:
+    ```bash
+    ./gradlew <task> -PSHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=true
+    ```
+
 The `cli` can be executed on the terminal of any machine that 
 satisfies the dependencies mentioned above, and is capable of actions like:
 - Logging in
