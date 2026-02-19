@@ -51,3 +51,9 @@ LIMIT 500;
 deleteUnprocessedLiveEventsByIds:
 DELETE FROM Events
 WHERE is_processed = 0 AND is_live = 1 AND event_id IN ?;
+
+hasUnprocessedPendingEvents:
+SELECT EXISTS(
+    SELECT 1 FROM Events
+    WHERE is_processed = 0 AND is_live = 0
+);

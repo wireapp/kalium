@@ -63,13 +63,25 @@ internal class IncrementalSyncWorkerImpl(
     override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
         // We start as PENDING
         send(EventSource.PENDING)
+        var hasReachedLive = false
 
         kaliumLogger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()
             // If we ever become Up-To-Date, move to LIVE
             .onEach { eventStreamData ->
-                if (eventStreamData is EventStreamData.IsUpToDate) {
-                    send(EventSource.LIVE) // We are LIVE!!!!!!
+                if (!hasReachedLive && eventStreamData is EventStreamData.IsUpToDate) {
+                    eventRepository.hasUnprocessedPendingEvents()
+                        .onSuccess { hasPendingEvents ->
+                            if (!hasPendingEvents) {
+                                hasReachedLive = true
+                                send(EventSource.LIVE) // We are LIVE!!!!!!
+                            } else {
+                                logger.i("Staying in PENDING state: unprocessed pending events still exist")
+                            }
+                        }
+                        .onFailure {
+                            throw KaliumSyncException("Failed to inspect pending events before LIVE transition", it)
+                        }
                 }
             }
             .filterIsInstance<EventStreamData.NewEvents>()
