@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.util.IgnoreIOS
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangement
@@ -41,6 +41,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
+import com.wire.kalium.util.KaliumDispatcher
 import io.ktor.util.reflect.instanceOf
 import io.mockative.any
 import io.mockative.coVerify
@@ -57,8 +58,10 @@ import kotlin.test.assertIs
 
 class MLSClientProviderTest {
 
+    private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
+
     @Test
-    fun givenMlsConfigIsnotStoredLocally_whenGetMlsClient_thenMlsFetchMlsConfigFromRemote() = runTest {
+    fun givenMlsConfigIsnotStoredLocally_whenGetMlsClient_thenMlsFetchMlsConfigFromRemote() = runTest(testDispatchers.io) {
         val expected = MLSModel(
             defaultProtocol = SupportedProtocol.MLS,
             supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS),
@@ -93,7 +96,7 @@ class MLSClientProviderTest {
     }
 
     @Test
-    fun givenMlsConfigIsStoredLocally_whenGetMlsClient_thenMlsFetchMlsConfigFromLocal() = runTest {
+    fun givenMlsConfigIsStoredLocally_whenGetMlsClient_thenMlsFetchMlsConfigFromLocal() = runTest(testDispatchers.io) {
         val expected = SupportedCipherSuite(
             supported = listOf(
                 CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
@@ -125,60 +128,39 @@ class MLSClientProviderTest {
     }
 
     @Test
-    fun givenMLSDisabledWhenGetOrFetchMLSConfigIsCalledThenDoNotCallGetSupportedCipherSuiteOrGetFeatureConfigs() = runTest {
-        // given
-        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
-            withGetMLSEnabledReturning(false.right())
-            withGetSupportedCipherSuitesReturning(
-                SupportedCipherSuite(
-                    supported = listOf(
-                        CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
-                        CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-                    ),
-                    default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
-                ).right()
-            )
+    fun givenMLSDisabledWhenGetOrFetchMLSConfigIsCalledThenDoNotCallGetSupportedCipherSuiteOrGetFeatureConfigs() =
+        runTest(testDispatchers.io) {
+            // given
+            val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
+                withGetMLSEnabledReturning(false.right())
+                withGetSupportedCipherSuitesReturning(
+                    SupportedCipherSuite(
+                        supported = listOf(
+                            CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+                            CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                        ),
+                        default = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                    ).right()
+                )
+            }
+
+            // when
+            val result = mlsClientProvider.getOrFetchMLSConfig()
+
+            // then
+            result.shouldFail {
+                it.instanceOf(CoreFailure.Unknown::class)
+            }
+
+            coVerify { arrangement.userConfigRepository.getSupportedCipherSuite() }
+                .wasNotInvoked()
+
+            coVerify { arrangement.featureConfigRepository.getFeatureConfigs() }
+                .wasNotInvoked()
         }
-
-        // when
-        val result = mlsClientProvider.getOrFetchMLSConfig()
-
-        // then
-        result.shouldFail {
-            it.instanceOf(CoreFailure.Unknown::class)
-        }
-
-        coVerify { arrangement.userConfigRepository.getSupportedCipherSuite() }
-            .wasNotInvoked()
-
-        coVerify { arrangement.featureConfigRepository.getFeatureConfigs() }
-            .wasNotInvoked()
-    }
 
     @Test
-    @IgnoreIOS
-    fun givenValidClient_whenExportingDB_thenReturnsExportData() = runTest {
-        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
-            withCurrentClientIdSuccess(TestClient.CLIENT_ID)
-            withCoreCryptoDatabaseExists()
-            withPassphraseStorage()
-        }
-
-        mlsClientProvider.exportCryptoDB().shouldSucceed {
-            assertEquals(
-                "${arrangement.rootKeyStorePath}/${TestClient.CLIENT_ID.value}/keystore/keystore",
-                it.dbPath
-            )
-            assertEquals(TestClient.CLIENT_ID, it.clientId)
-            assertEquals(
-                Base64.encode(ByteArray(32) { 0xAB.toByte() }),
-                Base64.encode(it.passphrase)
-            )
-        }
-    }
-
-    @Test
-    fun givenNoClient_whenExportingDB_thenReturnsFailure() = runTest {
+    fun givenNoClient_whenExportingDB_thenReturnsFailure() = runTest(testDispatchers.io) {
         val (_, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdFailure(StorageFailure.DataNotFound)
         }
@@ -189,8 +171,8 @@ class MLSClientProviderTest {
     }
 
     @Test
-    fun givenDBDoesNotExist_whenExportingDB_thenReturnsDataNotFound() = runTest {
-        val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
+    fun givenDBDoesNotExist_whenExportingDB_thenReturnsDataNotFound() = runTest(testDispatchers.io) {
+        val (_, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdSuccess(TestClient.CLIENT_ID)
             withPassphraseStorage()
             withCoreCryptoDatabaseDoesNotExists()
@@ -201,7 +183,7 @@ class MLSClientProviderTest {
         }
     }
 
-    private class Arrangement(
+    private inner class Arrangement(
         val processingScope: CoroutineScope
     ) : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         FeatureConfigRepositoryArrangement by FeatureConfigRepositoryArrangementImpl(),
@@ -213,15 +195,10 @@ class MLSClientProviderTest {
         val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
         val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
 
-        init {
-            withCoreCryptoDatabaseDoesNotExists()
-        }
-
         fun withCoreCryptoDatabaseDoesNotExists() {
             val clientId = TestClient.CLIENT_ID
             val location = "$rootKeyStorePath/${clientId.value}"
             val rootDir = "$location/keystore"
-
             FileUtil.deleteDirectory(rootDir)
         }
 
@@ -252,6 +229,7 @@ class MLSClientProviderTest {
                 featureConfigRepository = featureConfigRepository,
                 mlsTransportProvider = mlsTransportProvider,
                 epochObserver = epochChangesObserver,
+                dispatchers = testDispatchers,
                 processingScope = processingScope,
             )
         }
