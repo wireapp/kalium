@@ -44,4 +44,4 @@ public abstract class UserAuthenticatedNetworkProvider {
     public fun remove(userId: UserId): UserAuthenticatedNetworkApis? = inMemoryUserAuthenticatedNetworkApis.remove(userId)
 }
 
-public class PlatformUserAuthenticatedNetworkProvider constructor() : UserAuthenticatedNetworkProvider()
+public class PlatformUserAuthenticatedNetworkProvider : UserAuthenticatedNetworkProvider()

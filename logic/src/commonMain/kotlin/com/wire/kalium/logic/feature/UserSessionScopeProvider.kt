@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.userstorage.di.UserStorageProvider
 import io.mockative.Mockable
 
 @Mockable

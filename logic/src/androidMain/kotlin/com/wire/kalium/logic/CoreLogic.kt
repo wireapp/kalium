@@ -40,8 +40,6 @@ import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
-import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
-import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
