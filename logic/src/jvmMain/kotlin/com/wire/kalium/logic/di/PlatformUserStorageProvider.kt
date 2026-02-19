@@ -44,7 +44,7 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
                     userId = userIdEntity,
                     passphrase = null,
                     dispatcher = KaliumDispatcherImpl.io,
-                    enableWAL = false,
+                    enableWAL = true,
                     dbInvalidationControlEnabled = dbInvalidationControlEnabled
                 )
             }
