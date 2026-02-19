@@ -148,6 +148,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageCallback
+import com.wire.kalium.logic.data.message.PersistMessageCallbackManagerImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -1048,7 +1050,7 @@ public class UserSessionScope internal constructor(
         )
 
     internal val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl, persistMessageCallbackManager)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
         get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
@@ -1838,6 +1840,15 @@ public class UserSessionScope internal constructor(
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
+    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
+
+    public fun registerMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.register(callback)
+    }
+
+    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.unregister(callback)
+    }
 
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
@@ -2282,6 +2293,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
+            persistMessageCallbackManager,
             this,
             userScopedLogger
         )

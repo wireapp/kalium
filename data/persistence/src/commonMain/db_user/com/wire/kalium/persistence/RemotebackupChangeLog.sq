@@ -1,0 +1,54 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.backup.ChangeLogEventType;
+
+CREATE TABLE RemotebackupChangeLog (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_id TEXT,
+    event_type INTEGER AS ChangeLogEventType NOT NULL,
+    timestamp_ms INTEGER NOT NULL,
+    CHECK (
+        (event_type >= 500 AND message_id IS NULL )
+        OR
+        (event_type < 500 AND message_id IS NOT NULL)
+    ),
+    PRIMARY KEY (conversation_id, message_id, event_type)
+);
+
+CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timestamp_ms);
+
+insertMessageUpsert:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_id, event_type, timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+
+insertMessageDelete:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_id, event_type, timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+
+insertReactionsSync:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_id, event_type, timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+
+insertReadReceiptsSync:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_id, event_type, timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+
+insertConversationDelete {
+    DELETE FROM RemotebackupChangeLog WHERE conversation_id = :conversationId;
+    INSERT INTO RemotebackupChangeLog(
+        conversation_id, message_id, event_type, timestamp_ms
+    ) VALUES (:conversationId, NULL, :eventType, :timestampMs);
+}
+
+insertConversationClear {
+    DELETE FROM RemotebackupChangeLog WHERE conversation_id = :conversationId;
+    INSERT INTO RemotebackupChangeLog(
+        conversation_id, message_id, event_type, timestamp_ms
+    ) VALUES (:conversationId, NULL, :eventType, :timestampMs);
+}
+
+getPendingChanges:
+SELECT * FROM RemotebackupChangeLog ORDER BY timestamp_ms ASC;
