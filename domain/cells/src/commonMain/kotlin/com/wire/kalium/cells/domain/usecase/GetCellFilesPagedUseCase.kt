@@ -68,8 +68,8 @@ internal class GetCellFilesPagedUseCaseImpl(
         tags: List<String>,
         owners: List<String>,
         mimeTypes: List<MIMEType>,
-        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
-        sortDescending: Boolean = true,
+        sorting: Sorting,
+        sortDescending: Boolean,
     ): Flow<PagingData<Node>> {
         return Pager(
             config = PagingConfig(
