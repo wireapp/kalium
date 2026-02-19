@@ -232,6 +232,8 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
@@ -1534,6 +1536,7 @@ public class UserSessionScope internal constructor(
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            epochInfoUpdater = epochInfoUpdater,
             getCallConversationType = getCallConversationType,
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
@@ -1561,6 +1564,12 @@ public class UserSessionScope internal constructor(
             callManager = callManager,
             conversationRepository = conversationRepository,
             federatedIdMapper = federatedIdMapper
+        )
+
+    private val epochInfoUpdater: EpochInfoUpdater
+        get() = EpochInfoUpdaterImpl(
+            callManager = callManager,
+            callRepository = callRepository
         )
 
     private val getCallConversationType: GetCallConversationTypeProvider by lazy {
