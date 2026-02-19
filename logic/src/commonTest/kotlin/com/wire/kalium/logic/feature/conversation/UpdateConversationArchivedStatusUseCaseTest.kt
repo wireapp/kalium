@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.common.functional.Either
 import io.mockative.any
 import io.mockative.coEvery
@@ -132,6 +133,39 @@ class UpdateConversationArchivedStatusUseCaseTest {
     }
 
     @Test
+    fun givenRemoteNoConversationError_whenInvokingAnArchivedStatusChange_thenShouldArchiveLocallyAndReturnSuccess() = runTest {
+        val conversationId = TestConversation.ID
+        val isConversationArchived = true
+        val archivedStatusTimestamp = 123456789L
+        val onlyLocally = false
+
+        val (arrangement, updateConversationArchivedStatus) = Arrangement()
+            .withRemoteNoConversationFailure()
+            .arrange()
+
+        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
+        assertEquals(ArchiveStatusUpdateResult.Success::class, result::class)
+
+        with(arrangement) {
+            coVerify {
+                conversationRepository.updateArchivedStatusRemotely(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
+
+            coVerify {
+                conversationRepository.updateArchivedStatusLocally(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsOnlyLocally_thenShouldReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
@@ -184,6 +218,16 @@ class UpdateConversationArchivedStatusUseCaseTest {
             coEvery {
                 conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
             }.returns(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error"))))
+        }
+
+        suspend fun withRemoteNoConversationFailure() = apply {
+            coEvery {
+                conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
+            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation)))
+
+            coEvery {
+                conversationRepository.updateArchivedStatusLocally(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         suspend fun withLocalUpdateArchivedStatusFailure() = apply {
