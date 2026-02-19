@@ -18,8 +18,8 @@
 
 package com.wire.kalium.userstorage.di
 
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -31,7 +31,7 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
         platformProperties: PlatformUserStorageProperties,
         dbInvalidationControlEnabled: Boolean
     ): UserStorage {
-        val userIdEntity = userId.toDao()
+        val userIdEntity = UserIDEntity(userId.value, userId.domain)
 
         val databasePassphrase = if (shouldEncryptData) {
             platformProperties.securityHelper.userDBSecret(userId)

@@ -22,6 +22,6 @@ import android.content.Context
 import com.wire.kalium.logic.util.SecurityHelper
 
 public actual class PlatformUserStorageProperties(
-    internal val applicationContext: Context,
+    public val applicationContext: Context,
     internal val securityHelper: SecurityHelper
 )

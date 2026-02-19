@@ -38,8 +38,6 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
-import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
@@ -53,8 +51,6 @@ public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
-    private val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
-
     actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
         appContext,
         kaliumConfigs.shouldEncryptData()

@@ -19,6 +19,6 @@
 package com.wire.kalium.userstorage.di
 
 public actual class PlatformUserStorageProperties(
-    internal val rootPath: String,
+    public val rootPath: String,
     internal val rootStoragePath: String
 )

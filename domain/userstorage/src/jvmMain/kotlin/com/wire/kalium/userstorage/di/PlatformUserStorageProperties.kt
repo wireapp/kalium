@@ -21,7 +21,7 @@ package com.wire.kalium.userstorage.di
 import java.io.File
 
 public actual class PlatformUserStorageProperties(
-    internal val rootPath: String,
+    public val rootPath: String,
     internal val databaseInfo: DatabaseStorageType
 )
 

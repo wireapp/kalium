@@ -20,29 +20,29 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
-val cliUseGlobalUserStorageCache: Boolean? = gradle.startParameter
+val cliShareUserStorageCacheBetweenProviders: Boolean? = gradle.startParameter
     .projectProperties["USE_GLOBAL_USER_STORAGE_CACHE"]
     ?.toBooleanStrictOrNull()
 
-val parentUseGlobalUserStorageCache: Boolean? = gradle.parent
+val parentShareUserStorageCacheBetweenProviders: Boolean? = gradle.parent
     ?.rootProject
     ?.properties?.get("USE_GLOBAL_USER_STORAGE_CACHE")
     ?.toString()?.toBooleanStrictOrNull()
 
-val localUseGlobalUserStorageCache: Boolean = providers
+val localShareUserStorageCacheBetweenProviders: Boolean = providers
     .gradleProperty("USE_GLOBAL_USER_STORAGE_CACHE")
     .map { it.toBoolean() }
     .getOrElse(false)
 
-val useGlobalUserStorageCache: Boolean = when {
-    cliUseGlobalUserStorageCache != null -> cliUseGlobalUserStorageCache
-    parentUseGlobalUserStorageCache != null -> parentUseGlobalUserStorageCache
-    else -> localUseGlobalUserStorageCache
+val shareUserStorageCacheBetweenProviders: Boolean = when {
+    cliShareUserStorageCacheBetweenProviders != null -> cliShareUserStorageCacheBetweenProviders
+    parentShareUserStorageCacheBetweenProviders != null -> parentShareUserStorageCacheBetweenProviders
+    else -> localShareUserStorageCacheBetweenProviders
 }
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/userstorage/commonMain/kotlin")
 
 val generateUserStorageCacheConfig by tasks.registering {
-    inputs.property("useGlobalUserStorageCache", useGlobalUserStorageCache)
+    inputs.property("shareUserStorageCacheBetweenProviders", shareUserStorageCacheBetweenProviders)
     outputs.dir(generatedCommonMainKotlinDir)
     doLast {
         val packagePath = "com/wire/kalium/userstorage/di"
@@ -54,7 +54,19 @@ val generateUserStorageCacheConfig by tasks.registering {
             """
             package com.wire.kalium.userstorage.di
 
-            internal const val USE_GLOBAL_USER_STORAGE_CACHE: Boolean = $useGlobalUserStorageCache
+            /**
+             * Controls [UserStorageProvider] cache scope.
+             *
+             * - `true`: all provider instances share one in-memory cache.
+             * - `false`: each provider instance keeps an isolated in-memory cache.
+             */
+            internal const val SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS: Boolean = $shareUserStorageCacheBetweenProviders
+
+            @Deprecated(
+                message = "Use SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS for clearer behavior.",
+                replaceWith = ReplaceWith("SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS")
+            )
+            internal const val USE_GLOBAL_USER_STORAGE_CACHE: Boolean = SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS
             """.trimIndent() + "\n"
         )
     }
