@@ -56,7 +56,6 @@ public actual class CoreLogic(
     kaliumConfigs: KaliumConfigs,
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider()
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
-    private val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
         appContext,

@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.UserConfigStorageFactory as PersistenceUserConfigStorageFactory
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 
 @Suppress("DEPRECATION")
 internal actual class UserConfigStorageFactory actual constructor() {

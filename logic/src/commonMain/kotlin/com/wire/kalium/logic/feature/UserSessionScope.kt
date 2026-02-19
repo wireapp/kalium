@@ -205,6 +205,8 @@ import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserConfigStorageFactory
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
@@ -235,6 +237,8 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
@@ -1543,6 +1547,7 @@ public class UserSessionScope internal constructor(
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            epochInfoUpdater = epochInfoUpdater,
             getCallConversationType = getCallConversationType,
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
@@ -1570,6 +1575,12 @@ public class UserSessionScope internal constructor(
             callManager = callManager,
             conversationRepository = conversationRepository,
             federatedIdMapper = federatedIdMapper
+        )
+
+    private val epochInfoUpdater: EpochInfoUpdater
+        get() = EpochInfoUpdaterImpl(
+            callManager = callManager,
+            callRepository = callRepository
         )
 
     private val getCallConversationType: GetCallConversationTypeProvider by lazy {
@@ -1848,6 +1859,15 @@ public class UserSessionScope internal constructor(
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
+    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
+
+    public fun registerMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.register(callback)
+    }
+
+    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.unregister(callback)
+    }
 
     public fun registerMessageCallback(callback: PersistMessageCallback) {
         persistMessageCallbackManager.register(callback)

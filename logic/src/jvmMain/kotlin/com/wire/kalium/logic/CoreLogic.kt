@@ -59,7 +59,6 @@ public actual class CoreLogic(
     kaliumConfigs = kaliumConfigs,
     userAgent = userAgent
 ) {
-    private val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(

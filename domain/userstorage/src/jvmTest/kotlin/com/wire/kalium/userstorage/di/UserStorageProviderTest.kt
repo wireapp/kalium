@@ -85,7 +85,7 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled = false
         )
 
-        if (USE_GLOBAL_USER_STORAGE_CACHE) {
+        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) {
             assertEquals(1, createCount.get())
             assertSame(firstStorage, secondStorage)
             assertSame(firstStorage, firstProvider.get(testUserId))
@@ -120,7 +120,7 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled = false
         )
 
-        if (USE_GLOBAL_USER_STORAGE_CACHE) {
+        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) {
             assertSame(firstStorage, removedStorage)
             assertEquals(2, createCount.get())
             assertSame(secondStorage, firstProvider.get(testUserId))
@@ -135,7 +135,7 @@ class UserStorageProviderTest {
     }
 
     private fun cleanup(vararg providers: UserStorageProvider) {
-        providers.forEach { it.remove(testUserId)?.database?.close() }
+        providers.forEach { it.remove(testUserId)?.database?.nuke() }
         clearInMemoryDatabase(testUserIdEntity)
     }
 

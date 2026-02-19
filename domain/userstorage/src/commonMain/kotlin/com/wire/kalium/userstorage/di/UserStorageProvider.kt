@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,22 +23,30 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 public data class UserStorage(public val database: UserDatabaseBuilder)
+
+/**
+ * Provides in-memory caching for [UserStorage] instances keyed by [UserId].
+ *
+ * Cache scope is controlled by [SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS]:
+ * - `true`: all [UserStorageProvider] instances share one cache map.
+ * - `false`: each [UserStorageProvider] instance owns a private cache map.
+ */
 public abstract class UserStorageProvider {
     private companion object {
-        val globalInMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
+        val sharedUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
     }
 
-    private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> =
-        if (USE_GLOBAL_USER_STORAGE_CACHE) globalInMemoryUserStorage else ConcurrentMutableMap()
+    private val providerUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> =
+        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) sharedUserStorageCache else ConcurrentMutableMap()
 
-    public fun get(userId: UserId): UserStorage? = inMemoryUserStorage[userId]
+    public fun get(userId: UserId): UserStorage? = providerUserStorageCache[userId]
 
     public fun getOrCreate(
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
         shouldEncryptData: Boolean = true,
         dbInvalidationControlEnabled: Boolean,
-    ): UserStorage = inMemoryUserStorage.computeIfAbsent(userId) {
+    ): UserStorage = providerUserStorageCache.computeIfAbsent(userId) {
         create(userId, shouldEncryptData, platformUserStorageProperties, dbInvalidationControlEnabled)
     }
 
@@ -49,7 +57,7 @@ public abstract class UserStorageProvider {
         dbInvalidationControlEnabled: Boolean
     ): UserStorage
 
-    public fun remove(userId: UserId): UserStorage? = inMemoryUserStorage.remove(userId)
+    public fun remove(userId: UserId): UserStorage? = providerUserStorageCache.remove(userId)
 }
 
 public expect class PlatformUserStorageProperties

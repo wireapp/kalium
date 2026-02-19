@@ -36,6 +36,8 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
+import com.wire.kalium.userstorage.di.UserStorageProvider
 
 @Suppress("LongParameterList")
 internal actual open class UserSessionScopeProviderImpl(
