@@ -307,7 +307,7 @@ class OneOnOneMigratorTest {
     }
 
     @Test
-    fun givenNoProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateToBeCurrentDate() = runTest {
+    fun givenNoProteusConversation_whenMigratingToMLS_thenUpdateLastModifiedDateNotUpdated() = runTest {
         val resolvedConversationId = ConversationId("resolvedMLSConversationId", "anotherDomain")
         val lastModified = DateTimeUtil.currentInstant()
         val user = TestUser.OTHER.copy(activeOneOnOneConversationId = null)
@@ -317,7 +317,6 @@ class OneOnOneMigratorTest {
             withMoveMessagesToAnotherConversation(Either.Right(Unit))
             withUpdateConversationModifiedDate(Either.Right(Unit))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
-            withCurrentInstant(lastModified)
         }
 
         oneOnOneMigrator.migrateToMLS(arrangement.transactionContext, user)
@@ -325,7 +324,7 @@ class OneOnOneMigratorTest {
 
         coVerify {
             arrangement.conversationRepository.updateConversationModifiedDate(eq(resolvedConversationId), eq(lastModified))
-        }.wasInvoked(exactly = once)
+        }.wasNotInvoked()
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
@@ -335,17 +334,6 @@ class OneOnOneMigratorTest {
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val currentInstantProvider: CurrentInstantProvider = mock(CurrentInstantProvider::class)
-
-        fun withCurrentInstant(currentInstant: Instant) {
-            every {
-                currentInstantProvider()
-            }.returns(currentInstant)
-        }
-
-        init {
-            withCurrentInstant(DateTimeUtil.currentInstant())
-        }
 
         fun arrange() = run {
             runBlocking { block() }
@@ -356,7 +344,6 @@ class OneOnOneMigratorTest {
                 messageRepository = messageRepository,
                 userRepository = userRepository,
                 systemMessageInserter = systemMessageInserter,
-                currentInstant = currentInstantProvider,
             )
         }
     }
