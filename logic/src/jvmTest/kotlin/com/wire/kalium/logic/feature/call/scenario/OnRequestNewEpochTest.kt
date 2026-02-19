@@ -18,9 +18,8 @@
 package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.types.Handle
-import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.MockMode
@@ -34,25 +33,17 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class OnClientsRequestTest {
+class OnRequestNewEpochTest {
 
     @Test
-    fun givenOngoingCall_whenClientsRequested_thenCallClientsInCallUpdater() = runTest {
+    fun givenOngoingCall_whenNewEpochRequested_thenCallEpochInfoUpdate() = runTest {
         val (arrangement, callback) = Arrangement(backgroundScope).arrange()
 
-        callback.onClientsRequest(inst = handle, conversationId = conversationId.toString(), arg = null)
-        runCurrent()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationClientsInCallUpdater(conversationId)
-        }
-    }
-
-    @Test
-    fun givenOngoingCall_whenClientsRequested_thenCallEpochInfoUpdate() = runTest {
-        val (arrangement, callback) = Arrangement(backgroundScope).arrange()
-
-        callback.onClientsRequest(inst = handle, conversationId = conversationId.toString(), arg = null)
+        callback.onRequestNewEpoch(
+            inst = handle,
+            conversationId = conversationId.toString(),
+            arg = null
+        )
         runCurrent()
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -60,21 +51,20 @@ class OnClientsRequestTest {
         }
     }
 
-    private class Arrangement(val testScope: CoroutineScope) {
-        val conversationClientsInCallUpdater: ConversationClientsInCallUpdater = mock(MockMode.autoUnit)
-        val epochInfoUpdater: EpochInfoUpdater = mock(MockMode.autoUnit)
-        val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
+    inner class Arrangement(private val testScope: CoroutineScope) {
+        internal val epochInfoUpdater: EpochInfoUpdater = mock(MockMode.autoUnit)
+        internal val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
-        fun arrange() = this to OnClientsRequest(
-            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+
+        internal fun arrange() = this to OnRequestNewEpoch(
             epochInfoUpdater = epochInfoUpdater,
             qualifiedIdMapper = qualifiedIdMapper,
-            callingScope = testScope,
+            callingScope = testScope
         )
     }
 
     companion object {
         val handle = Handle(42)
-        val conversationId = MockConversation.ID
+        private val conversationId = ConversationId("conversationId", "wire.com")
     }
 }
