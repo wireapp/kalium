@@ -25,11 +25,7 @@ import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.userstorage.di.DatabaseStorageType
-import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
-import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -37,6 +33,10 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
+import com.wire.kalium.userstorage.di.DatabaseStorageType
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import java.io.File
 
 @Suppress("LongParameterList")
@@ -54,7 +54,12 @@ internal actual open class UserSessionScopeProviderImpl(
     private val logoutCallback: LogoutCallback,
     userAgent: String,
     private val useInMemoryDatabase: Boolean
-) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAuthenticatedNetworkProvider, userAgent), UserSessionScopeProvider {
+) : UserSessionScopeProviderCommon(
+    globalCallManager,
+    userStorageProvider,
+    userAuthenticatedNetworkProvider,
+    userAgent
+), UserSessionScopeProvider {
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
