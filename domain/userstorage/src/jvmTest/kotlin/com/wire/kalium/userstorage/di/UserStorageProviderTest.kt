@@ -135,7 +135,7 @@ class UserStorageProviderTest {
     }
 
     private fun cleanup(vararg providers: UserStorageProvider) {
-        providers.forEach { it.remove(testUserId)?.database?.close() }
+        providers.forEach { it.remove(testUserId)?.database?.nuke() }
         clearInMemoryDatabase(testUserIdEntity)
     }
 
