@@ -36,6 +36,8 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -49,11 +51,13 @@ public actual class CoreLogic(
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
     useInMemoryStorage: Boolean = false,
+    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider(),
 ) : CoreLogicCommon(
     rootPath = rootPath,
     kaliumConfigs = kaliumConfigs,
     userAgent = userAgent
 ) {
+
     actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,
@@ -99,6 +103,7 @@ public actual class CoreLogic(
             globalCallManager,
             globalDatabaseBuilder,
             userStorageProvider,
+            userAuthenticatedNetworkProvider,
             networkStateObserver,
             logoutCallbackManager,
             userAgent,
