@@ -902,6 +902,8 @@ public class UserSessionScope internal constructor(
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
         InMemoryIncrementalSyncRepository(userScopedLogger)
     }
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+    private val persistMessageCallbackManager: PersistMessageCallbackManagerImpl = PersistMessageCallbackManagerImpl(this)
 
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
         selfUserId = userId,
@@ -1847,9 +1849,6 @@ public class UserSessionScope internal constructor(
             mlsResetConversationEventHandler,
         )
     }
-    override val coroutineContext: CoroutineContext = SupervisorJob()
-    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
-
     public fun registerMessageCallback(callback: PersistMessageCallback) {
         persistMessageCallbackManager.register(callback)
     }
