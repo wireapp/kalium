@@ -904,8 +904,6 @@ public class UserSessionScope internal constructor(
         InMemoryIncrementalSyncRepository(userScopedLogger)
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
-    private val persistMessageCallbackManager: PersistMessageCallbackManagerImpl = PersistMessageCallbackManagerImpl(this)
-
     private val legalHoldSystemMessagesHandler by lazy {
         LegalHoldSystemMessagesHandlerImpl(
             selfUserId = userId,
@@ -1852,13 +1850,6 @@ public class UserSessionScope internal constructor(
             mlsResetConversationEventHandler,
         )
     }
-    public fun registerMessageCallback(callback: PersistMessageCallback) {
-        persistMessageCallbackManager.register(callback)
-    }
-
-    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
-        persistMessageCallbackManager.unregister(callback)
-    }
 
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
@@ -2303,7 +2294,6 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
-            NoOpPersistMessageCallbackNotifier,
             this,
             userScopedLogger
         )
