@@ -95,7 +95,10 @@ internal class CellsApiImpl(
         sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
-            val metadataFilters = fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS)
+            val metadataFilters = fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS) +
+                    fileFilters.owners.toMetaDataFilters(MetadataKeys.OWNER_UUID) +
+                    fileFilters.mimeTypes.toMimeMetaDataFilters()
+
             getNodeServiceApi().lookup(
                 RestLookupRequest(
                     limit = limit.toString(),
