@@ -18,7 +18,6 @@
 package com.wire.kalium.cells.domain
 
 import com.wire.kalium.cells.data.FileFilters
-import com.wire.kalium.cells.data.SortingCriteria
 import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO

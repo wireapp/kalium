@@ -34,7 +34,8 @@ public interface GetCellFilesPagedUseCase {
      *
      * @param conversationId The ID of the conversation to filter files by (optional).
      * @param query The search query to filter files.
-     * @param fileFilters The filters to apply when fetching files, such as deletion status, tags, owners, MIME types, and public link status.
+     * @param fileFilters The filters to apply when fetching files, such as deletion status, tags,
+     * owners, MIME types, and public link status.
      * @param sortingSpec The sorting specification to apply when fetching files, including criteria and order
      * @return A flow of paged data containing the filtered files.
      */
