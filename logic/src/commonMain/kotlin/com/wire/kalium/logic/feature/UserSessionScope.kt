@@ -148,8 +148,7 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.PersistMessageCallback
-import com.wire.kalium.logic.data.message.PersistMessageCallbackManagerImpl
+import com.wire.kalium.logic.data.message.NoOpPersistMessageCallbackNotifier
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -541,6 +540,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import io.mockative.Mockable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -1053,7 +1053,7 @@ public class UserSessionScope internal constructor(
         )
 
     internal val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl, persistMessageCallbackManager)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
         get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
@@ -2294,7 +2294,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
-            persistMessageCallbackManager,
+            NoOpPersistMessageCallbackNotifier,
             this,
             userScopedLogger
         )
@@ -2678,9 +2678,15 @@ public class UserSessionScope internal constructor(
      */
     init {
         launch {
-            apiMigrationManager.performMigrations()
-            callRepository.updateOpenCallsToClosedStatus()
-            messageRepository.resetAssetTransferStatus()
+            try {
+                apiMigrationManager.performMigrations()
+                callRepository.updateOpenCallsToClosedStatus()
+                messageRepository.resetAssetTransferStatus()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Throwable) {
+                userScopedLogger.e("Unable to run startup migrations and reset tasks", exception)
+            }
         }
 
         launch {
