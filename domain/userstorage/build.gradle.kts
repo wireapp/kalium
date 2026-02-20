@@ -20,29 +20,19 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
-val cliShareUserStorageCacheBetweenProviders: Boolean? = gradle.startParameter
-    .projectProperties["SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS"]
-    ?.toBooleanStrictOrNull()
+// Shared compile-time cache policy for provider-level caches across modules.
+val providerCacheScopeFlag = "kalium.providerCacheScope"
+val providerCacheScopeValues = linkedSetOf("LOCAL", "GLOBAL")
 
-val parentShareUserStorageCacheBetweenProviders: Boolean? = gradle.parent
-    ?.rootProject
-    ?.properties?.get("SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS")
-    ?.toString()?.toBooleanStrictOrNull()
-
-val localShareUserStorageCacheBetweenProviders: Boolean = providers
-    .gradleProperty("SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS")
-    .map { it.toBoolean() }
-    .getOrElse(false)
-
-val shareUserStorageCacheBetweenProviders: Boolean = when {
-    cliShareUserStorageCacheBetweenProviders != null -> cliShareUserStorageCacheBetweenProviders
-    parentShareUserStorageCacheBetweenProviders != null -> parentShareUserStorageCacheBetweenProviders
-    else -> localShareUserStorageCacheBetweenProviders
-}
+val providerCacheScope: String = resolveRequiredEnumGradleProperty(
+    propertyName = providerCacheScopeFlag,
+    allowedValues = providerCacheScopeValues,
+    purpose = "it defines provider cache scope (instance-local vs process-global)"
+)
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/userstorage/commonMain/kotlin")
 
 val generateUserStorageCacheConfig by tasks.registering {
-    inputs.property("shareUserStorageCacheBetweenProviders", shareUserStorageCacheBetweenProviders)
+    inputs.property("providerCacheScope", providerCacheScope)
     outputs.dir(generatedCommonMainKotlinDir)
     doLast {
         val packagePath = "com/wire/kalium/userstorage/di"
@@ -55,12 +45,13 @@ val generateUserStorageCacheConfig by tasks.registering {
             package com.wire.kalium.userstorage.di
 
             /**
-             * Controls [UserStorageProvider] cache scope.
+             * Controls provider cache scope via shared compile-time policy.
              *
-             * - `true`: all provider instances share one in-memory cache.
-             * - `false`: each provider instance keeps an isolated in-memory cache.
+             * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
+             * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
              */
-            internal const val SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS: Boolean = $shareUserStorageCacheBetweenProviders
+            internal enum class ProviderCacheScope { LOCAL, GLOBAL }
+            internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
             """.trimIndent() + "\n"
         )
     }

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.usernetwork.di
 
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import java.lang.reflect.Proxy
 import java.util.concurrent.atomic.AtomicInteger
@@ -71,7 +71,7 @@ class UserAuthenticatedNetworkProviderTest {
             testApis("second")
         }
 
-        if (USE_GLOBAL_USER_NETWORK_API_CACHE) {
+        if (PROVIDER_CACHE_SCOPE == ProviderCacheScope.GLOBAL) {
             assertEquals(1, createCount.get())
             assertSame(firstApis, secondApis)
             assertSame(firstApis, firstProvider.get(testUserId))
@@ -102,7 +102,7 @@ class UserAuthenticatedNetworkProviderTest {
             testApis("second")
         }
 
-        if (USE_GLOBAL_USER_NETWORK_API_CACHE) {
+        if (PROVIDER_CACHE_SCOPE == ProviderCacheScope.GLOBAL) {
             assertSame(firstApis, removedApis)
             assertEquals(2, createCount.get())
             assertSame(secondApis, firstProvider.get(testUserId))
@@ -118,7 +118,7 @@ class UserAuthenticatedNetworkProviderTest {
 
     @Test
     fun givenGlobalMode_whenMultipleProvidersRaceToCreateSameUser_thenFirstWriterWins() {
-        if (!USE_GLOBAL_USER_NETWORK_API_CACHE) {
+        if (PROVIDER_CACHE_SCOPE != ProviderCacheScope.GLOBAL) {
             return
         }
 
