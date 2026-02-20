@@ -16,11 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.messaging.hooks
 
-import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.MessageContent
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -28,11 +30,11 @@ import kotlin.test.assertTrue
 class PersistMessageCallbackManagerTest {
 
     private val persistedMessageData = PersistedMessageData(
-        conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-        messageId = TestMessage.TEXT_MESSAGE.id,
-        content = TestMessage.TEXT_MESSAGE.content,
-        date = TestMessage.TEXT_MESSAGE.date,
-        expireAfter = TestMessage.TEXT_MESSAGE.expirationData?.expireAfter
+        conversationId = QualifiedID("conversation-id", "domain"),
+        messageId = "message-id",
+        content = MessageContent.Unknown(),
+        date = Instant.parse("2026-01-01T00:00:00Z"),
+        expireAfter = null
     )
 
     @Test

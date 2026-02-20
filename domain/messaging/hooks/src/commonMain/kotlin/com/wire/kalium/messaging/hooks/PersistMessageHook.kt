@@ -16,11 +16,12 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.messaging.hooks
 
 import co.touchlab.stately.collections.ConcurrentMutableList
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.MessageContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -48,13 +49,13 @@ public interface PersistMessageCallback {
     public suspend operator fun invoke(message: PersistedMessageData)
 }
 
-internal fun interface PersistMessageCallbackNotifier {
-    fun onMessagePersisted(message: PersistedMessageData)
+public fun interface PersistMessageHookNotifier {
+    public fun onMessagePersisted(message: PersistedMessageData)
 }
 
-internal class PersistMessageCallbackManagerImpl(
+public class PersistMessageCallbackManagerImpl(
     private val scope: CoroutineScope
-) : PersistMessageCallbackManager, PersistMessageCallbackNotifier {
+) : PersistMessageCallbackManager, PersistMessageHookNotifier {
 
     private val callbacks = ConcurrentMutableList<PersistMessageCallback>()
 
@@ -82,6 +83,6 @@ internal class PersistMessageCallbackManagerImpl(
     }
 }
 
-internal object NoOpPersistMessageCallbackNotifier : PersistMessageCallbackNotifier {
+public object NoOpPersistMessageHookNotifier : PersistMessageHookNotifier {
     override fun onMessagePersisted(message: PersistedMessageData) = Unit
 }

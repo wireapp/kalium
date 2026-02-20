@@ -36,9 +36,6 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 class PersistMessageUseCaseTest {
 
@@ -117,55 +114,14 @@ class PersistMessageUseCaseTest {
             }
         }
 
-    @Test
-    fun givenMessageRepositorySuccess_whenPersistingMessage_thenNotifyRegisteredCallbacksWithPersistedMessage() =
-        runTest {
-            val (arrangement, persistMessage) = Arrangement()
-                .withPersistMessageSuccess()
-                .withReceiptMode()
-                .arrange()
-            val expireAfter = 42.seconds
-            val message = TestMessage.TEXT_MESSAGE.copy(
-                expectsReadConfirmation = false,
-                expirationData = Message.ExpirationData(expireAfter)
-            )
-
-            val result = persistMessage.invoke(message)
-
-            result.shouldSucceed()
-            assertEquals(1, arrangement.persistMessageCallbackNotifier.persistedMessages.size)
-            val persistedMessage = arrangement.persistMessageCallbackNotifier.persistedMessages.single()
-            assertEquals(message.conversationId, persistedMessage.conversationId)
-            assertEquals(message.id, persistedMessage.messageId)
-            assertEquals(message.content, persistedMessage.content)
-            assertEquals(message.date, persistedMessage.date)
-            assertEquals(expireAfter, persistedMessage.expireAfter)
-        }
-
-    @Test
-    fun givenMessageRepositoryFailure_whenPersistingMessage_thenDoNotNotifyRegisteredCallbacks() = runTest {
-        val (arrangement, persistMessage) = Arrangement()
-            .withPersistMessageFailure()
-            .withReceiptMode()
-            .arrange()
-        val message = TestMessage.TEXT_MESSAGE
-
-        val result = persistMessage.invoke(message)
-
-        result.shouldFail()
-        assertTrue(arrangement.persistMessageCallbackNotifier.persistedMessages.isEmpty())
-    }
-
     private class Arrangement {
         val messageRepository = mock<MessageRepository>()
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
-        val persistMessageCallbackNotifier = RecordingPersistMessageCallbackNotifier()
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = TestUser.USER_ID,
-            notificationEventsManager = notificationEventsManager,
-            persistMessageCallbackNotifier = persistMessageCallbackNotifier
+            notificationEventsManager = notificationEventsManager
         )
 
         fun withPersistMessageSuccess() = apply {
@@ -184,14 +140,6 @@ class PersistMessageUseCaseTest {
             everySuspend {
                 messageRepository.getReceiptModeFromGroupConversationByQualifiedID(any())
             } returns Either.Right(Conversation.ReceiptMode.ENABLED)
-        }
-    }
-
-    private class RecordingPersistMessageCallbackNotifier : PersistMessageCallbackNotifier {
-        val persistedMessages = mutableListOf<PersistedMessageData>()
-
-        override fun onMessagePersisted(message: PersistedMessageData) {
-            persistedMessages += message
         }
     }
 }
