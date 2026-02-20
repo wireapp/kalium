@@ -29,6 +29,8 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -103,22 +105,69 @@ public class WrapperWorkerFactory(
         val userId = workerParameters.getSerializable<UserId>(USER_ID_KEY)
         val workerType = workerParameters.inputData.getString(WORKER_TYPE_KEY)
         val innerWorkerClassName = workerParameters.inputData.getString(WORKER_CLASS_KEY)
-            ?: throw IllegalArgumentException("No worker class name specified")
+        if (innerWorkerClassName == null) {
+            val fallbackWorker = createFallbackWorker(
+                workerClassName = MISSING_WORKER_CLASS_NAME,
+                fallbackReason = FALLBACK_REASON_MISSING_WORKER_CLASS_NAME,
+                workerType = workerType,
+                resolvedType = null,
+                hasUserId = userId != null
+            )
+            return WrapperWorker(fallbackWorker, appContext, workerParameters, foregroundNotificationDetailsProvider)
+        }
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
         val resolvedType = resolveWorkerType(workerType, innerWorkerClassName)
         val worker = runCatching {
             when (resolvedType) {
-                WORKER_TYPE_PENDING_MESSAGES -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
-                WORKER_TYPE_USER_CONFIG_SYNC -> withSessionScope(userId) { it.userConfigSyncWorker }
+                WORKER_TYPE_PENDING_MESSAGES -> withSessionScope(userId)
+                    { it.pendingMessagesSenderWorker } ?: createFallbackWorker(
+                    workerClassName = innerWorkerClassName,
+                    fallbackReason = FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE,
+                    workerType = workerType,
+                    resolvedType = resolvedType,
+                    hasUserId = userId != null
+                )
+
+                WORKER_TYPE_USER_CONFIG_SYNC -> withSessionScope(userId)
+                    { it.userConfigSyncWorker } ?: createFallbackWorker(
+                    workerClassName = innerWorkerClassName,
+                    fallbackReason = FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE,
+                    workerType = workerType,
+                    resolvedType = resolvedType,
+                    hasUserId = userId != null
+                )
+
                 WORKER_TYPE_UPDATE_API_VERSIONS -> coreLogic.getGlobalScope().updateApiVersionsWorker
-                WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS -> createAudioNormalizedLoudnessWorker(userId, workerParameters)
-                else -> instantiateWorker(innerWorkerClassName)
+                WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS -> createAudioNormalizedLoudnessWorker(
+                    userId,
+                    workerParameters
+                ) ?: createFallbackWorker(
+                    workerClassName = innerWorkerClassName,
+                    fallbackReason = FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE,
+                    workerType = workerType,
+                    resolvedType = resolvedType,
+                    hasUserId = userId != null
+                )
+
+                else -> instantiateWorker(innerWorkerClassName) ?: createFallbackWorker(
+                    workerClassName = innerWorkerClassName,
+                    fallbackReason = FALLBACK_REASON_INSTANTIATION_FAILED,
+                    workerType = workerType,
+                    resolvedType = resolvedType,
+                    hasUserId = userId != null
+                )
             }
         }.getOrElse { error ->
-            kaliumLogger.e("Unable to create worker for class: $innerWorkerClassName", error)
-            null
-        } ?: MissingWorker(innerWorkerClassName)
+            createFallbackWorker(
+                workerClassName = innerWorkerClassName,
+                fallbackReason = FALLBACK_REASON_CREATE_WORKER_EXCEPTION,
+                workerType = workerType,
+                resolvedType = resolvedType,
+                hasUserId = userId != null,
+                throwable = error
+            )
+        }
         return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
@@ -162,18 +211,28 @@ public class WrapperWorkerFactory(
         }
     }
 
-    private fun instantiateWorker(innerWorkerClassName: String): DefaultWorker {
+    private fun instantiateWorker(innerWorkerClassName: String): DefaultWorker? {
         kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
         return runCatching {
             Class.forName(innerWorkerClassName).getDeclaredConstructor().newInstance() as DefaultWorker
         }.getOrElse { error ->
             kaliumLogger.e("Unable to instantiate worker: $innerWorkerClassName", error)
-            MissingWorker(innerWorkerClassName)
+            null
         }
     }
 
     private fun withSessionScope(userId: UserId?, action: (UserSessionScope) -> DefaultWorker): DefaultWorker? {
-        require(userId != null) { "No user id specified" }
+        if (userId == null) {
+            kaliumLogger.logStructuredJson(
+                level = KaliumLogLevel.WARN,
+                leadingMessage = "WorkManager session scope unavailable",
+                jsonStringKeyValues = mapOf(
+                    "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
+                    "reason" to SESSION_SCOPE_REASON_MISSING_USER_ID
+                )
+            )
+            return null
+        }
         val doesValidSessionExist = runCatching {
             runBlocking {
                 coreLogic.globalScope {
@@ -181,19 +240,78 @@ public class WrapperWorkerFactory(
                 }
             }
         }.getOrElse { error ->
+            kaliumLogger.logStructuredJson(
+                level = KaliumLogLevel.ERROR,
+                leadingMessage = "WorkManager session validation failed",
+                jsonStringKeyValues = mapOf(
+                    "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
+                    "reason" to SESSION_SCOPE_REASON_VALIDATION_EXCEPTION,
+                    "throwableType" to error::class.simpleName,
+                    "throwableMessage" to error.message
+                )
+            )
             kaliumLogger.e("Unable to validate session for worker user: $userId", error)
             false
         }
         return if (!doesValidSessionExist) {
+            kaliumLogger.logStructuredJson(
+                level = KaliumLogLevel.INFO,
+                leadingMessage = "WorkManager session scope unavailable",
+                jsonStringKeyValues = mapOf(
+                    "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
+                    "reason" to SESSION_SCOPE_REASON_NO_VALID_SESSION
+                )
+            )
             null
         } else {
             runCatching {
                 action(coreLogic.getSessionScope(userId))
             }.getOrElse { error ->
+                kaliumLogger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "WorkManager session scope creation failed",
+                    jsonStringKeyValues = mapOf(
+                        "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
+                        "reason" to SESSION_SCOPE_REASON_CREATE_SCOPE_EXCEPTION,
+                        "throwableType" to error::class.simpleName,
+                        "throwableMessage" to error.message
+                    )
+                )
                 kaliumLogger.e("Unable to create session scope for worker user: $userId", error)
                 null
             }
         }
+    }
+
+    private fun createFallbackWorker(
+        workerClassName: String,
+        fallbackReason: String,
+        workerType: String?,
+        resolvedType: String?,
+        hasUserId: Boolean,
+        throwable: Throwable? = null
+    ): DefaultWorker {
+        kaliumLogger.logStructuredJson(
+            level = KaliumLogLevel.ERROR,
+            leadingMessage = "WorkManager wrapper fallback",
+            jsonStringKeyValues = mapOf(
+                "event" to WORK_MANAGER_EVENT_FALLBACK,
+                "reason" to fallbackReason,
+                "workerClassName" to workerClassName,
+                "workerType" to workerType,
+                "resolvedType" to resolvedType,
+                "hasUserId" to hasUserId,
+                "throwableType" to throwable?.let { it::class.simpleName },
+                "throwableMessage" to throwable?.message
+            )
+        )
+        throwable?.let {
+            kaliumLogger.e(
+                "WorkManager wrapper fallback for class: $workerClassName, reason: $fallbackReason",
+                it
+            )
+        }
+        return MissingWorker(workerClassName, fallbackReason)
     }
 
     internal companion object {
@@ -218,6 +336,18 @@ public class WrapperWorkerFactory(
             "com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker"
         private const val LEGACY_AUDIO_NORMALIZED_LOUDNESS_WORKER_CLASS_NAME =
             "com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker"
+
+        private const val WORK_MANAGER_EVENT_FALLBACK = "wm_wrapper_fallback"
+        private const val WORK_MANAGER_EVENT_SESSION_SCOPE = "wm_wrapper_session_scope"
+        private const val FALLBACK_REASON_MISSING_WORKER_CLASS_NAME = "missing_worker_class_name"
+        private const val FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE = "session_scope_unavailable"
+        private const val FALLBACK_REASON_INSTANTIATION_FAILED = "instantiation_failed"
+        private const val FALLBACK_REASON_CREATE_WORKER_EXCEPTION = "worker_creation_exception"
+        private const val SESSION_SCOPE_REASON_MISSING_USER_ID = "missing_user_id"
+        private const val SESSION_SCOPE_REASON_NO_VALID_SESSION = "no_valid_session"
+        private const val SESSION_SCOPE_REASON_VALIDATION_EXCEPTION = "session_validation_exception"
+        private const val SESSION_SCOPE_REASON_CREATE_SCOPE_EXCEPTION = "session_scope_creation_exception"
+        private const val MISSING_WORKER_CLASS_NAME = "<missing_worker_class_name>"
 
         fun workData(
             work: KClass<out DefaultWorker>,
@@ -244,9 +374,21 @@ public class WrapperWorkerFactory(
     }
 }
 
-private class MissingWorker(private val workerClassName: String) : DefaultWorker {
+private class MissingWorker(
+    private val workerClassName: String,
+    private val fallbackReason: String
+) : DefaultWorker {
     override suspend fun doWork(): KaliumResult {
-        kaliumLogger.e("Skipping unknown worker class: $workerClassName")
+        kaliumLogger.logStructuredJson(
+            level = KaliumLogLevel.ERROR,
+            leadingMessage = "WorkManager wrapper skipped worker",
+            jsonStringKeyValues = mapOf(
+                "event" to "wm_wrapper_skipped_worker",
+                "reason" to fallbackReason,
+                "workerClassName" to workerClassName
+            )
+        )
+        kaliumLogger.e("Skipping worker due to wrapper fallback, class: $workerClassName, reason: $fallbackReason")
         return KaliumResult.Failure
     }
 }
