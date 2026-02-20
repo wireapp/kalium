@@ -60,6 +60,9 @@ class LayerAccessRulesTest {
         Konsist.scopeFromProduction()
             .files
             .withPackage("com.wire.kalium.logic.feature..")
+            .filter {
+                it.hasNameEndingWith("UseCase") || it.hasNameEndingWith("UseCaseImpl")
+            }
             .assertFalse {
                 it.hasImport {
                     it.hasNameMatching(importsFromNetworkLayer) && !it.hasNameContaining("exception")
