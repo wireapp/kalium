@@ -148,7 +148,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.NoOpPersistMessageCallbackNotifier
+import com.wire.kalium.logic.data.message.PersistMessageCallback
+import com.wire.kalium.logic.data.message.PersistMessageCallbackManagerImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -902,6 +903,8 @@ public class UserSessionScope internal constructor(
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
         InMemoryIncrementalSyncRepository(userScopedLogger)
     }
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+    private val persistMessageCallbackManager: PersistMessageCallbackManagerImpl = PersistMessageCallbackManagerImpl(this)
 
     private val legalHoldSystemMessagesHandler by lazy {
         LegalHoldSystemMessagesHandlerImpl(
@@ -1849,7 +1852,13 @@ public class UserSessionScope internal constructor(
             mlsResetConversationEventHandler,
         )
     }
-    override val coroutineContext: CoroutineContext = SupervisorJob()
+    public fun registerMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.register(callback)
+    }
+
+    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.unregister(callback)
+    }
 
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
