@@ -67,7 +67,7 @@ class GetPaginatedNodesUseCaseTest {
         )
 
         assertTrue(result.isRight())
-        assertTrue(result.getOrNull()?.data?.all { (it as Node.File).localPath == "local_path" } == true)
+        assertEquals(result.getOrNull()?.data?.all { (it as Node.File).localPath == "local_path" }, true)
     }
 
     @Test
@@ -82,7 +82,7 @@ class GetPaginatedNodesUseCaseTest {
         )
 
         assertTrue(result.isRight())
-        assertTrue(result.getOrNull()?.data?.all { (it as Node.File).metadata is AssetContent.AssetMetadata.Image } == true)
+        assertEquals(result.getOrNull()?.data?.all { (it as Node.File).metadata is AssetContent.AssetMetadata.Image }, true)
     }
 
     @Test
@@ -97,7 +97,7 @@ class GetPaginatedNodesUseCaseTest {
         )
 
         assertTrue(result.isRight())
-        assertTrue(result.getOrNull()?.data?.all { it.userName == "user_name" } == true)
+        assertEquals(result.getOrNull()?.data?.all { it.userName == "user_name" }, true)
     }
 
     @Test
@@ -112,7 +112,7 @@ class GetPaginatedNodesUseCaseTest {
         )
 
         assertTrue(result.isRight())
-        assertTrue(result.getOrNull()?.data?.all { it.conversationName == "conversation_name" } == true)
+        assertEquals(result.getOrNull()?.data?.all { it.conversationName == "conversation_name" }, true)
     }
 
     private inner class Arrangement {
@@ -124,7 +124,22 @@ class GetPaginatedNodesUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
 
-            coEvery { cellsRepository.getPaginatedNodes(any(), any(), any(), any(), any(), any()) }.returns(
+            coEvery {
+                cellsRepository.getPaginatedNodes(
+                    path = any(),
+                    query = any(),
+                    limit = any(),
+                    offset = any(),
+                    onlyDeleted = any(),
+                    nodeType = any(),
+                    tags = any(),
+                    owners = any(),
+                    mimeTypes = any(),
+                    hasPublicLink = any(),
+                    sorting = any(),
+                    sortDescending = any()
+                )
+            }.returns(
                 PaginatedList(
                     data = testNodes,
                     pagination = null,
