@@ -150,7 +150,6 @@ import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageCallback
-import com.wire.kalium.logic.data.message.PersistMessageCallbackManagerImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -587,8 +586,6 @@ public class UserSessionScope internal constructor(
         kaliumConfigs.shouldEncryptData(),
         kaliumConfigs.dbInvalidationControlEnabled
     )
-    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
-
     private var _clientId: ClientId? = null
 
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
@@ -1860,13 +1857,6 @@ public class UserSessionScope internal constructor(
             mlsResetConversationEventHandler,
         )
     }
-    public fun registerMessageCallback(callback: PersistMessageCallback) {
-        persistMessageCallbackManager.register(callback)
-    }
-
-    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
-        persistMessageCallbackManager.unregister(callback)
-    }
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
         userConfigRepository = userConfigRepository
@@ -2310,7 +2300,6 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
-            persistMessageCallbackManager,
             this,
             userScopedLogger
         )

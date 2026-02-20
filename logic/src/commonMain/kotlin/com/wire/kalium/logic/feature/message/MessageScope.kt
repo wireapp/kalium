@@ -157,7 +157,6 @@ public class MessageScope internal constructor(
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val persistMessageCallbackNotifier: PersistMessageCallbackNotifier,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -254,7 +253,7 @@ public class MessageScope internal constructor(
         )
 
     internal val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl, persistMessageCallbackNotifier)
+        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl)
 
     public val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
