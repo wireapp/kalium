@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.unread.UnreadContentMapper
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

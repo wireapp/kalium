@@ -70,5 +70,9 @@ actual open class BaseDatabaseTest actual constructor() {
         )
     }
 
-    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(storePath))
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData =
+        PlatformDatabaseData(
+            storageData = StorageData.FileBacked(storePath),
+            useGradleSafeSqliterLogging = true
+        )
 }

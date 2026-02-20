@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.persistence.cache.FlowCache
+import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -42,12 +43,17 @@ import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.ServiceDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
+import com.wire.kalium.persistence.dao.UserConfigDAO
+import com.wire.kalium.persistence.dao.UserConfigDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.UserPrefsDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
+import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAOImpl
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -84,8 +90,6 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
-import com.wire.kalium.persistence.dao.unread.UserConfigDAOImpl
 import com.wire.kalium.persistence.db.feeders.MentionsFeeder
 import com.wire.kalium.persistence.db.feeders.MessagesFeeder
 import com.wire.kalium.persistence.db.feeders.ReactionsFeeder
@@ -185,7 +189,8 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
+        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter
     )
 
     init {
@@ -204,8 +209,9 @@ class UserDatabaseBuilder internal constructor(
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)
 
-    val userConfigDAO: UserConfigDAO
-        get() = UserConfigDAOImpl(metadataDAO)
+    val userConfigDAO: UserConfigDAO by lazy { UserConfigDAOImpl(metadataDAO) }
+
+    val userPrefsDAO: UserConfigStorage by lazy { UserPrefsDAO(metadataDAO) }
 
     val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(
@@ -377,6 +383,9 @@ class UserDatabaseBuilder internal constructor(
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
+
+    val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
+        get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

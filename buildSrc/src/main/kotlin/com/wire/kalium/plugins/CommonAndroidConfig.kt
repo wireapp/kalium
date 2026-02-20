@@ -18,21 +18,10 @@
 
 package com.wire.kalium.plugins
 
-import com.android.build.gradle.LibraryExtension
-import org.gradle.api.JavaVersion
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryExtension
+import org.gradle.api.Project
 
 private const val BASE_NAMESPACE = "com.wire.kalium"
-
-fun KotlinAndroidTarget.commmonKotlinAndroidTargetConfig() {
-    @OptIn(ExperimentalKotlinGradlePluginApi::class) // this is experimental API and will likely change in the future into more robust DSL
-    instrumentedTestVariant {
-        sourceSetTree.set(KotlinSourceSetTree.test)
-    }
-    /** NO-OP. Nothing to do here for now **/
-}
 
 /**
  * @param includeNativeInterop if true, this android library
@@ -41,41 +30,38 @@ fun KotlinAndroidTarget.commmonKotlinAndroidTargetConfig() {
  * that this Kalium library will use for generating R and BuildConfig classes.
  * Invalid characters like "-" are replaced with a dot (.).
  */
-fun LibraryExtension.commonAndroidLibConfig(
+fun KotlinMultiplatformAndroidLibraryExtension.commonAndroidLibConfig(
+    project: Project,
     includeNativeInterop: Boolean,
     namespaceSuffix: String
 ) {
     val sanitizedSuffix = namespaceSuffix.replace('-', '.')
     namespace = "$BASE_NAMESPACE.$sanitizedSuffix"
     compileSdk = Android.Sdk.compile
-    sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    defaultConfig {
-        minSdk = Android.Sdk.min
-        lint.targetSdk = Android.Sdk.target
-        consumerProguardFiles("consumer-proguard-rules.pro")
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
+    minSdk = Android.Sdk.min
+    lint.targetSdk = Android.Sdk.target
+    enableCoreLibraryDesugaring = true
 
     packaging {
         resources.pickFirsts.add("google/protobuf/*.proto")
         jniLibs.pickFirsts.add("**/libsodium.so")
     }
 
-    // No Android Unit test. JVM does that. Android runs on emulator
-    sourceSets.remove(sourceSets.getByName("test"))
+    withDeviceTestBuilder {
+        sourceSetTreeName = "test"
+    }.configure {
+        instrumentationRunner = Android.testRunner
+    }
+    withHostTestBuilder {
+        sourceSetTreeName = "test"
+    }
+
+    if (project.file("consumer-proguard-rules.pro").exists()) {
+        optimization.consumerKeepRules.file("consumer-proguard-rules.pro")
+    }
 
     if (includeNativeInterop) {
-        externalNativeBuild {
-            cmake {
-                version = Android.Ndk.cMakeVersion
-            }
-            ndkBuild {
-                ndkVersion = Android.Ndk.version
-                // path(File("src/androidMain/jni/Android.mk"))
-            }
-        }
+        // Android-KMP does not expose the legacy externalNativeBuild DSL used with com.android.library.
+        // Native interop in Kalium is configured through module-level dependencies/targets.
     }
 }

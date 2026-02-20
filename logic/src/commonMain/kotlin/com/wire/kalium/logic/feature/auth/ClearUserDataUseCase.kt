@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.userstorage.di.UserStorage
 import io.mockative.Mockable
 
 /**
@@ -39,7 +39,5 @@ internal class ClearUserDataUseCaseImpl internal constructor(
 
     private fun clearUserStorage() {
         userStorage.database.nuke()
-        // exclude clientId clear from this step
-        userStorage.preferences.clear()
     }
 }

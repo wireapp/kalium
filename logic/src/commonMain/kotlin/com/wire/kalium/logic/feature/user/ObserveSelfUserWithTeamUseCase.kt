@@ -25,16 +25,16 @@ import kotlinx.coroutines.flow.Flow
 /**
  * This use case is responsible for retrieving the current user and his/her team.
  */
-internal interface ObserveSelfUserWithTeamUseCase {
+public interface ObserveSelfUserWithTeamUseCase {
 
     /**
      * @return a [Flow] of Pair, where [Pair.first] is the current user [SelfUser] and [Pair.second] is the Team of the current User [Team]
      */
-    suspend operator fun invoke(): Flow<Pair<SelfUser, Team?>>
+    public suspend operator fun invoke(): Flow<Pair<SelfUser, Team?>>
 
 }
 
-internal class ObserveSelfUserWithTeamUseCaseImpl internal constructor(private val userRepository: UserRepository) :
+public class ObserveSelfUserWithTeamUseCaseImpl internal constructor(private val userRepository: UserRepository) :
     ObserveSelfUserWithTeamUseCase {
 
     override suspend operator fun invoke(): Flow<Pair<SelfUser, Team?>> {

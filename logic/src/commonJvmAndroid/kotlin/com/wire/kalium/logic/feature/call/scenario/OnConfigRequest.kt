@@ -33,7 +33,8 @@ import kotlinx.coroutines.launch
 internal class OnConfigRequest(
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val callingScope: CoroutineScope
+    private val callingScope: CoroutineScope,
+    private val configTransformer: ((String) -> String)? = null
 ) : CallConfigRequestHandler {
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         callingLogger.i("[OnConfigRequest] - STARTED")
@@ -53,10 +54,11 @@ internal class OnConfigRequest(
                         jsonString = ""
                     )
                 }, { config ->
+                    val finalConfig = configTransformer?.invoke(config) ?: config
                     calling.wcall_config_update(
                         inst = inst,
                         error = 0,
-                        jsonString = config
+                        jsonString = finalConfig
                     )
                     callingLogger.i("[OnConfigRequest] - wcall_config_update()")
                 })

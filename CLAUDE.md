@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging platform. It handles end-to-end encryption, messaging protocols, voice/video calling, and backup functionality across JVM, Android, iOS, and JavaScript platforms.
 
-**Requirements:** JDK 21, macOS Apple Silicon for iOS builds
+**Requirements:** JDK 21, Git, macOS Apple Silicon for iOS builds
 
 **Key Technologies:**
 - Kotlin 2.2.21 with Kotlin Multiplatform
@@ -93,6 +93,10 @@ xcodebuild -create-xcframework \
 Framework output location: `logic/build/bin/<target>/debugFramework/logic.framework`
 
 **Note:** iOS and JS builds require `USE_UNIFIED_CORE_CRYPTO=true`. Either set it in gradle.properties or pass `-PUSE_UNIFIED_CORE_CRYPTO=true` on the command line.
+
+User DB cache mode can be controlled at compile time with:
+- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=false` (default): shared per CoreLogic instance
+- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=true`: shared across CoreLogic instances in process
 
 ### CLI Application
 

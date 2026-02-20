@@ -114,6 +114,22 @@ class ProteusClientTest : BaseProteusClientTest() {
     }
 
     @Test
+    fun givenProteusRawErrorCode209_whenMapping_thenDuplicateMessage() {
+        assertEquals(
+            ProteusException.Code.DUPLICATE_MESSAGE,
+            ProteusException.fromProteusCode(209)
+        )
+    }
+
+    @Test
+    fun givenProteusRawErrorCode204_whenMapping_thenRemoteIdentityChanged() {
+        assertEquals(
+            ProteusException.Code.REMOTE_IDENTITY_CHANGED,
+            ProteusException.fromProteusCode(204)
+        )
+    }
+
+    @Test
     fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)

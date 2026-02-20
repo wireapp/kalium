@@ -23,9 +23,9 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformRootPathsProvider
-import com.wire.kalium.logic.di.PlatformUserStorageProvider
+import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
@@ -39,6 +39,7 @@ import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.configurePersistenceDebug
 
 public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
@@ -46,6 +47,10 @@ public abstract class CoreLogicCommon internal constructor(
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
+    init {
+        configurePersistenceDebug(kaliumConfigs.isDebug)
+    }
+
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
     internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>

@@ -80,6 +80,8 @@ internal interface ApplicationMessageHandler {
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
     )
+
+    suspend fun flushPendingSideEffects()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -259,7 +261,17 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.Text -> handleTextMessage(message, content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
-            is MessageContent.Asset -> assetMessageHandler.handle(message)
+            is MessageContent.Asset -> {
+                try {
+                    assetMessageHandler.handle(message)
+                } catch (exception: IllegalStateException) {
+                    logger.e(
+                        "AssetMessageHandler failed for messageId=${message.id} conversationId=${message.conversationId}",
+                        exception
+                    )
+                }
+            }
+
             is MessageContent.RestrictedAsset -> {
                 /* no-op */
             }
@@ -353,6 +365,10 @@ internal class ApplicationMessageHandlerImpl(
             isSelfMessage = senderUserId == selfUserId
         )
         processMessage(message)
+    }
+
+    override suspend fun flushPendingSideEffects() {
+        lastReadContentHandler.flushPendingLastReads()
     }
 }
 

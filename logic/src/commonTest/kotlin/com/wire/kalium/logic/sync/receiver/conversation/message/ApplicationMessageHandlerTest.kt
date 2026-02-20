@@ -373,8 +373,8 @@ class ApplicationMessageHandlerTest {
             }.returns(result)
         }
 
-        fun withFileSharingEnabled() = apply {
-            every {
+        suspend fun withFileSharingEnabled() = apply {
+            coEvery {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(
                 Either.Right(

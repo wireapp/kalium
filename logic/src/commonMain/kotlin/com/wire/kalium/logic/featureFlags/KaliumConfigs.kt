@@ -26,9 +26,11 @@ import kotlin.time.Duration.Companion.hours
 
 public data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
-    val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
+    // Lazy provider for file restriction state - evaluated when needed
+    val fileRestrictionState: Lazy<BuildFileRestrictionState> = lazy { BuildFileRestrictionState.NoRestriction },
+    // Lazy provider for encryption setting - evaluated when needed
     // Disabling db-encryption will crash on android-api level below 30
-    val shouldEncryptData: Boolean = true,
+    val shouldEncryptData: () -> Boolean = { true },
     val encryptProteusStorage: Boolean = false, // TODO not used can be removed
     val lowerKeyPackageLimits: Boolean = false,
     val developmentApiEnabled: Boolean = false,
@@ -38,7 +40,6 @@ public data class KaliumConfigs(
     val wipeOnCookieInvalid: Boolean = false,
     val wipeOnDeviceRemoval: Boolean = false,
     val wipeOnRootedDevice: Boolean = false,
-    val isWebSocketEnabledByDefault: Boolean = false,
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
     val mockedRequests: List<TestRequestHandler>? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
@@ -56,6 +57,15 @@ public data class KaliumConfigs(
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
     val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
+    // Consumer-provided debug mode used by persistence and debug-only flows.
+    val isDebug: Boolean = false,
+
+    /**
+     * Optional transformer for call configuration JSON.
+     * Applied before passing config to AVS. Used by CLI for testing purposes.
+     * Should NOT be set in production mobile/web clients.
+     */
+    val callConfigTransformer: ((String) -> String)? = null,
 )
 
 public sealed interface BuildFileRestrictionState {

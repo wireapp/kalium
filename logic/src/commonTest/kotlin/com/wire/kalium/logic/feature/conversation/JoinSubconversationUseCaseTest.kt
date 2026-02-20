@@ -44,7 +44,6 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
@@ -145,12 +144,11 @@ class JoinSubconversationUseCaseTest {
         }
 
     @Test
-    fun givenStaleMessageFailure_whenInvokingUseCase_ThenRetry() = runTest {
+    fun givenStaleMessageFailure_whenInvokingUseCase_ThenRetryInSeparateTransaction() = runTest {
         val (arrangement, joinSubconversationUseCase) = Arrangement()
             .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
             .withFetchingSubconversationGroupInfoSuccessful()
-            .withJoinByExternalCommitSuccessful()
-            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
+            .withJoinByExternalCommitGroupReturning(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), Either.Right(Unit))
             .arrange()
 
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
@@ -162,6 +160,10 @@ class JoinSubconversationUseCaseTest {
                 any()
             )
         }.wasInvoked(twice)
+
+        coVerify {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(eq("JoinSubconversation"), any())
+        }.wasInvoked(twice)
     }
 
     @Test
@@ -169,7 +171,7 @@ class JoinSubconversationUseCaseTest {
         val (_, joinSubconversationUseCase) = Arrangement()
             .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH)
             .withFetchingSubconversationGroupInfoSuccessful()
-            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
+            .withJoinByExternalCommitGroupReturning(Either.Left(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE))
             .arrange()
 
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
@@ -201,15 +203,10 @@ class JoinSubconversationUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
-            var invocationCounter = 0
+        suspend fun withJoinByExternalCommitGroupReturning(vararg result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                mlsConversationRepository.joinGroupByExternalCommit(
-                    any(),
-                    matches { invocationCounter += 1; invocationCounter <= times },
-                    any()
-                )
-            }.returns(Either.Left(failure))
+                mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+            }.returnsMany(*result)
         }
 
         suspend fun withFetchingSubconversationGroupInfoSuccessful() = apply {

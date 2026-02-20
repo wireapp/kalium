@@ -33,7 +33,6 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -61,6 +60,7 @@ internal interface SessionRepository {
         accountTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
@@ -77,6 +77,7 @@ internal interface SessionRepository {
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
     suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
@@ -91,7 +92,6 @@ internal class SessionDataSource internal constructor(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
     private val serverConfigDAO: ServerConfigurationDAO,
-    private val kaliumConfigs: KaliumConfigs,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
@@ -103,6 +103,7 @@ internal class SessionDataSource internal constructor(
         accountTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
+        isPersistentWebSocketEnabled: Boolean,
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
@@ -110,7 +111,7 @@ internal class SessionDataSource internal constructor(
                 ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
                 managedByEntity = managedBy?.toDao(),
                 serverConfigId = serverConfigId,
-                isPersistentWebSocketEnabled = kaliumConfigs.isWebSocketEnabledByDefault
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
             )
         }.flatMap {
             wrapStorageRequest {
@@ -197,6 +198,9 @@ internal class SessionDataSource internal constructor(
         wrapStorageRequest {
             accountsDAO.updatePersistentWebSocketStatus(userId.toDao(), isPersistentWebSocketEnabled)
         }
+
+    override suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { accountsDAO.setAllAccountsPersistentWebSocketEnabled(enabled) }
 
     override suspend fun updateSsoIdAndScimInfo(
         userId: UserId,

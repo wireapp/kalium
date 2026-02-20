@@ -47,7 +47,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -272,6 +272,9 @@ public class ConversationScope internal constructor(
             conversationWorkQueue,
             kaliumLogger
         )
+
+    public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
+        get() = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository)
 
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)

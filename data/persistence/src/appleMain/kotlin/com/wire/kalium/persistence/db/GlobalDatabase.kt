@@ -35,12 +35,14 @@ actual fun globalDatabaseProvider(
             val schema = GlobalDatabase.Schema
             databaseDriver(data.storePath, FileNameUtil.globalDBName(), schema) {
                 isWALEnabled = false
+                useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
         }
 
         StorageData.InMemory ->
             databaseDriver(null, FileNameUtil.globalDBName(), GlobalDatabase.Schema) {
                 isWALEnabled = false
+                useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
     }
 

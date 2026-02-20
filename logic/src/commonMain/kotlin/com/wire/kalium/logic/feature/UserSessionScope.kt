@@ -148,6 +148,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageCallback
+import com.wire.kalium.logic.data.message.PersistMessageCallbackManagerImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -169,6 +171,11 @@ import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.properties.ConversationFoldersPropertyDataSource
+import com.wire.kalium.logic.data.properties.ReadReceiptsPropertyDataSource
+import com.wire.kalium.logic.data.properties.ScreenshotCensoringPropertyDataSource
+import com.wire.kalium.logic.data.properties.TypingIndicatorPropertyDataSource
+import com.wire.kalium.logic.data.properties.UserPropertiesSyncDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyDataSource
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -192,9 +199,10 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.di.UserConfigStorageFactory
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
+import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
@@ -224,6 +232,8 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
@@ -375,6 +385,8 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
@@ -558,14 +570,14 @@ public class UserSessionScope internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
-    platformUserStorageProperties: PlatformUserStorageProperties,
+    private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
-        kaliumConfigs.shouldEncryptData,
+        kaliumConfigs.shouldEncryptData(),
         kaliumConfigs.dbInvalidationControlEnabled
     )
 
@@ -707,16 +719,18 @@ public class UserSessionScope internal constructor(
 
     internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
-            userStorage.preferences.userConfigStorage,
+            userStorage.database.userPrefsDAO,
             userStorage.database.userConfigDAO,
             kaliumConfigs
         )
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
-            authenticatedNetworkContainer.propertiesApi,
-            userConfigRepository,
-            userId
+            readReceipts = ReadReceiptsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            typingIndicator = TypingIndicatorPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            screenshotCensoring = ScreenshotCensoringPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            userPropertiesSync = UserPropertiesSyncDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            conversationFolders = ConversationFoldersPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userId),
         )
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
@@ -1037,7 +1051,7 @@ public class UserSessionScope internal constructor(
         )
 
     internal val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl, persistMessageCallbackManager)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
         get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
@@ -1172,6 +1186,7 @@ public class UserSessionScope internal constructor(
         )
 
     private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCaseImpl(userRepository)
+    private val syncUserProperties: SyncUserPropertiesUseCase get() = SyncUserPropertiesUseCaseImpl(userPropertyRepository)
     private val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
 
     private val syncSelfTeamUseCase: SyncSelfTeamUseCase
@@ -1282,6 +1297,7 @@ public class UserSessionScope internal constructor(
             isClientAsyncNotificationsCapableProvider,
             eventRepository,
             syncSelfUser,
+            syncUserProperties,
             syncFeatureConfigsUseCase,
             updateSupportedProtocols,
             syncConversations,
@@ -1299,7 +1315,14 @@ public class UserSessionScope internal constructor(
         get() = SlowSyncRecoveryHandlerImpl(logout)
 
     private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider = {
-        SyncMigrationStepsProviderImpl(lazy { accountRepository }, selfTeamId)
+        SyncMigrationStepsProviderImpl(
+            accountRepository = lazy { accountRepository },
+            selfTeamIdProvider = selfTeamId,
+            oldUserConfigStorage = lazy {
+                UserConfigStorageFactory().create(userId, kaliumConfigs.shouldEncryptData(), platformUserStorageProperties)
+            },
+            newUserConfigStorage = lazy { userStorage.database.userPrefsDAO }
+        )
     }
 
     private val slowSyncManager: SlowSyncManager by lazy {
@@ -1513,6 +1536,7 @@ public class UserSessionScope internal constructor(
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            epochInfoUpdater = epochInfoUpdater,
             getCallConversationType = getCallConversationType,
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
@@ -1540,6 +1564,12 @@ public class UserSessionScope internal constructor(
             callManager = callManager,
             conversationRepository = conversationRepository,
             federatedIdMapper = federatedIdMapper
+        )
+
+    private val epochInfoUpdater: EpochInfoUpdater
+        get() = EpochInfoUpdaterImpl(
+            callManager = callManager,
+            callRepository = callRepository
         )
 
     private val getCallConversationType: GetCallConversationTypeProvider by lazy {
@@ -1818,6 +1848,15 @@ public class UserSessionScope internal constructor(
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
+    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
+
+    public fun registerMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.register(callback)
+    }
+
+    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
+        persistMessageCallbackManager.unregister(callback)
+    }
 
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
@@ -2262,6 +2301,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
+            persistMessageCallbackManager,
             this,
             userScopedLogger
         )
@@ -2500,7 +2540,7 @@ public class UserSessionScope internal constructor(
         get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository, userId)
 
     public val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
-        get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
+        get() = PersistScreenshotCensoringConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     public val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
@@ -2508,8 +2548,7 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
-            fetchMLSVerificationStatusUseCase,
-            cryptoTransactionProvider
+            fetchMLSVerificationStatusUseCase
         )
 
     public val kaliumFileSystem: KaliumFileSystem by lazy {
@@ -2551,6 +2590,7 @@ public class UserSessionScope internal constructor(
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
         FetchMLSVerificationStatusUseCaseImpl(
+            mlsClientProvider,
             conversationRepository,
             persistMessage,
             mlsConversationRepository,
@@ -2564,8 +2604,7 @@ public class UserSessionScope internal constructor(
         ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
             fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
             epochChangesObserver = epochChangesObserver,
-            kaliumLogger = userScopedLogger,
-            transactionProvider = cryptoTransactionProvider
+            kaliumLogger = userScopedLogger
         )
     }
 

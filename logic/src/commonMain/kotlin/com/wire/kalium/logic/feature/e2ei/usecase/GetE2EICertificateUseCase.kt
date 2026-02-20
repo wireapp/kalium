@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
@@ -38,6 +39,12 @@ public sealed class GetMLSClientIdentityResult {
 
     public sealed class Failure : GetMLSClientIdentityResult() {
         public data object IdentityNotFound : Failure()
+
+        /**
+         * E2EI identity cannot be fetched because there is no common MLS conversation
+         * with the user whose device identity is being queried.
+         */
+        public data object E2EINotAvailable : Failure()
         public data class Generic(val coreFailure: CoreFailure) : Failure()
     }
 }
@@ -52,7 +59,12 @@ internal class GetMLSClientIdentityUseCaseImpl internal constructor(
                 mlsConversationRepository.getClientIdentity(mlsContext, clientId)
             }
             .fold(
-                { GetMLSClientIdentityResult.Failure.Generic(it) },
+                { failure ->
+                    when (failure) {
+                        is StorageFailure.DataNotFound -> GetMLSClientIdentityResult.Failure.E2EINotAvailable
+                        else -> GetMLSClientIdentityResult.Failure.Generic(failure)
+                    }
+                },
                 { wireIdentity ->
                     wireIdentity?.let {
                         GetMLSClientIdentityResult.Success(MLSClientIdentity.fromWireIdentity(it))

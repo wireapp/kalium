@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatten
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -164,6 +166,66 @@ class PendingProposalSchedulerTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenExpiredProposalTimer_whenCommitFailsWithConversationNotFound_thenTimerIsCleared() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withCommitPendingProposalsFailing(MLSFailure.ConversationNotFound)
+            .withClearProposalTimerSuccessful()
+            .arrange()
+
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        yield()
+
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.clearProposalTimer(eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenExpiredProposalTimer_whenCommitFailsWithStaleProposal_thenTimerIsCleared() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withCommitPendingProposalsFailing(MLSFailure.StaleProposal)
+            .withClearProposalTimerSuccessful()
+            .arrange()
+
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        yield()
+
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.clearProposalTimer(eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenExpiredProposalTimer_whenCommitFailsWithOtherError_thenTimerIsNotCleared() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withCommitPendingProposalsFailing(CoreFailure.Unknown(null))
+            .withClearProposalTimerSuccessful()
+            .arrange()
+
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        yield()
+
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.clearProposalTimer(any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
@@ -204,6 +266,18 @@ class PendingProposalSchedulerTest {
             coEvery {
                 mlsConversationRepository.commitPendingProposals(any(), any())
             }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withCommitPendingProposalsFailing(failure: CoreFailure) = apply {
+            coEvery {
+                mlsConversationRepository.commitPendingProposals(any(), any())
+            }.returns(Either.Left(failure))
+        }
+
+        suspend fun withClearProposalTimerSuccessful() = apply {
+            coEvery {
+                mlsConversationRepository.clearProposalTimer(any())
+            }.returns(Unit)
         }
 
         suspend fun withScheduledProposalTimers(timers: List<ProposalTimer>) = apply {

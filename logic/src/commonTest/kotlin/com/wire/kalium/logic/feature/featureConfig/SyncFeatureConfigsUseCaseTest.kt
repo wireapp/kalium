@@ -67,7 +67,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
@@ -878,7 +878,6 @@ class SyncFeatureConfigsUseCaseTest {
         init {
             runBlocking {
                 withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
-
                 withGuestRoomLinkEnabledReturning(
                     GuestRoomLinkStatus(
                         isGuestRoomLinkEnabled = true,
@@ -891,7 +890,7 @@ class SyncFeatureConfigsUseCaseTest {
         fun withBuildConfigFileSharing(
             state: BuildFileRestrictionState
         ) = apply {
-            kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
+            kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = lazy { state })
             userConfigRepository = UserConfigDataSource(
                 inMemoryStorage,
                 userConfigDAO,
@@ -908,7 +907,7 @@ class SyncFeatureConfigsUseCaseTest {
             }.returns(result)
         }
 
-        fun withLocalSharingEnabledReturning(
+        suspend fun withLocalSharingEnabledReturning(
             status: Boolean,
             isStatusChanged: Boolean?
         ) = apply {
@@ -918,7 +917,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
         }
 
-        fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
+        suspend fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
             inMemoryStorage.persistGuestRoomLinkFeatureFlag(
                 guestRoomLinkStatus.isGuestRoomLinkEnabled ?: false,
                 guestRoomLinkStatus.isStatusChanged

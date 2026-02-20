@@ -35,6 +35,7 @@ internal sealed interface SlowSyncStatus {
 internal enum class SlowSyncStep {
     MIGRATION,
     SELF_USER,
+    USER_PROPERTIES,
     FEATURE_FLAGS,
     UPDATE_SUPPORTED_PROTOCOLS,
     CONVERSATIONS,

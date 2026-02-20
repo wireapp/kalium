@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageCallbackNotifier
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -156,6 +157,7 @@ public class MessageScope internal constructor(
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
+    private val persistMessageCallbackNotifier: PersistMessageCallbackNotifier,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -252,7 +254,7 @@ public class MessageScope internal constructor(
         )
 
     internal val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl)
+        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl, persistMessageCallbackNotifier)
 
     public val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
@@ -531,6 +533,16 @@ public class MessageScope internal constructor(
 
     public val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
         get() = GetSearchedConversationMessagePositionUseCaseImpl(
+            messageRepository = messageRepository
+        )
+
+    public val searchMessagesInConversation: SearchMessagesInConversationUseCase
+        get() = SearchMessagesInConversationUseCaseImpl(
+            messageRepository = messageRepository
+        )
+
+    public val searchMessagesGlobally: SearchMessagesGloballyUseCase
+        get() = SearchMessagesGloballyUseCaseImpl(
             messageRepository = messageRepository
         )
 

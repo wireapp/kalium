@@ -57,6 +57,9 @@ SELECT isPersistentWebSocketEnabled FROM Accounts WHERE logout_reason IS NULL AN
 updatePersistentWebSocketStatus:
 UPDATE Accounts SET isPersistentWebSocketEnabled = :isPersistentWebSocketEnabled WHERE id = :userId;
 
+updateAllPersistentWebSocketStatus:
+UPDATE Accounts SET isPersistentWebSocketEnabled = :enabled WHERE logout_reason IS NULL;
+
 updateSsoId:
 UPDATE Accounts SET scim_external_id = :scimExternalId, subject = :subject, tenant = :tenant WHERE id = :userId;
 

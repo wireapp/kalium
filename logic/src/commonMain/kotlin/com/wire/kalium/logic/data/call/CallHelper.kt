@@ -17,9 +17,12 @@
  */
 package com.wire.kalium.logic.data.call
 
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mockable
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Helper class to handle call related operations.
@@ -28,46 +31,39 @@ import io.mockative.Mockable
 internal interface CallHelper {
 
     /**
-     * Check if the OneOnOne call that uses SFT should be ended.
-     * For Proteus, the call should be ended if the call has one participant after having 2 in the call.
-     * For MLS, the call should be ended if the call has two participants and the second participant has lost audio.
+     * Check if the OneOnOne call that uses SFT should be ended when the participants of that call are changed.
+     * The call should be ended in that case when:
+     * - the config states that SFT should be used for 1on1 calls
+     * - the call for given conversationId is established
+     * - the conversation is 1on1
+     * - the participants of the call are changed from 2 to 1, for both Proteus and MLS
      *
      * @param conversationId the conversation id.
-     * @param callProtocol the call protocol.
-     * @param conversationType the conversation type.
      * @param newCallParticipants the new call participants.
-     * @param previousCallParticipants the previous call participants.
      * @return true if the call should be ended, false otherwise.
      */
-    fun shouldEndSFTOneOnOneCall(
+    suspend fun shouldEndSFTOneOnOneCall(
         conversationId: ConversationId,
-        callProtocol: Conversation.ProtocolInfo?,
-        conversationType: Conversation.Type,
         newCallParticipants: List<ParticipantMinimized>,
-        previousCallParticipants: List<Participant>
     ): Boolean
 }
 
-internal class CallHelperImpl : CallHelper {
+internal class CallHelperImpl(
+    private val userConfigRepository: UserConfigRepository,
+    private val callRepository: CallRepository,
+) : CallHelper {
 
-    override fun shouldEndSFTOneOnOneCall(
+    override suspend fun shouldEndSFTOneOnOneCall(
         conversationId: ConversationId,
-        callProtocol: Conversation.ProtocolInfo?,
-        conversationType: Conversation.Type,
         newCallParticipants: List<ParticipantMinimized>,
-        previousCallParticipants: List<Participant>
-    ): Boolean {
-        return if (callProtocol is Conversation.ProtocolInfo.Proteus) {
-            conversationType == Conversation.Type.OneOnOne &&
-                    newCallParticipants.size == ONE_PARTICIPANTS &&
-                    previousCallParticipants.size == TWO_PARTICIPANTS
-        } else {
-            conversationType == Conversation.Type.OneOnOne &&
-                    newCallParticipants.size == TWO_PARTICIPANTS &&
-                    previousCallParticipants.size == TWO_PARTICIPANTS &&
-                    previousCallParticipants[1].hasEstablishedAudio && !newCallParticipants[1].hasEstablishedAudio
-        }
-    }
+    ): Boolean =
+        userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false).takeIf { it }?.let {
+            callRepository.establishedCallsFlow().firstOrNull()?.firstOrNull { it.conversationId == conversationId }?.let { call ->
+                call.conversationType == Conversation.Type.OneOnOne &&
+                        call.participants.size == TWO_PARTICIPANTS &&
+                        newCallParticipants.size == ONE_PARTICIPANTS
+            }
+        } ?: false
 
     internal companion object {
         internal const val TWO_PARTICIPANTS = 2

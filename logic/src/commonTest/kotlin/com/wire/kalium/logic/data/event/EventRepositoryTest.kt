@@ -246,64 +246,50 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenLastProcessedIdExistsInBatch_whenObservingEvents_thenShouldFilterCorrectly() = runTest {
-        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT))
+    fun givenLastEmittedIdExistsInBatch_whenObservingEvents_thenShouldFilterCorrectly() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 0)
+        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 1)
+        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 2)
 
         val unprocessedEventsChannel = Channel<List<EventEntity>>(capacity = Channel.UNLIMITED)
 
-        val entities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
-            EventEntity(
-                id = index.toLong(),
-                eventId = e.id,
-                isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e.payload),
-                isLive = true,
-                transient = e.transient
-            )
-        }
+        val entities = listOf(eventA, eventB, eventC)
 
         val (arrangement, repository) = Arrangement()
             .withUnprocessedEvents(unprocessedEventsChannel.consumeAsFlow())
             .arrange()
 
-        repository.setEventAsProcessed(eventB.id)
-
         repository.observeEvents().test {
-            unprocessedEventsChannel.send(entities)
-            val emitted = awaitItem()
-            assertEquals(entities.size, emitted.size)
-            unprocessedEventsChannel.send(entities)
+            unprocessedEventsChannel.send(listOf(eventA)) // set last emitted id to "a"
+            awaitItem() // ignore emitted "a" event as it's just to set the initial conditions for this test
+
+            unprocessedEventsChannel.send(entities) // send batch that contains "a", so "a" should be filtered and only "b" and "c" emitted
             val secondEmitted = awaitItem()
-            assertEquals(0, secondEmitted.size)
+            assertEquals(listOf("b", "c"), secondEmitted.map { it.event.id })
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun givenLastProcessedIdNotInBatch_whenObservingEvents_thenShouldNotFilterAnything() = runTest {
-        val eventX = EventResponse(id = "x", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventY = EventResponse(id = "y", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventZ = EventResponse(id = "z", payload = listOf(MEMBER_JOIN_EVENT))
+    fun givenLastEmittedIdNotInBatch_whenObservingEvents_thenShouldNotFilterAnything() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 0)
+        val eventX = EventResponse(id = "x", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 1)
+        val eventY = EventResponse(id = "y", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 2)
+        val eventZ = EventResponse(id = "z", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(id = 3)
 
-        val entities = listOf(eventX, eventY, eventZ).mapIndexed { index, e ->
-            EventEntity(
-                id = index.toLong(),
-                eventId = e.id,
-                isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e.payload),
-                isLive = true,
-                transient = e.transient
-            )
-        }
+        val unprocessedEventsChannel = Channel<List<EventEntity>>(capacity = Channel.UNLIMITED)
+
+        val entities = listOf(eventX, eventY, eventZ)
 
         val (arrangement, repository) = Arrangement()
-            .withLastStoredEventId("not-present")
-            .withUnprocessedEvents(flowOf(entities))
+            .withUnprocessedEvents(unprocessedEventsChannel.consumeAsFlow())
             .arrange()
 
         repository.observeEvents().test {
+            unprocessedEventsChannel.send(listOf(eventA)) // set last emitted id to "a"
+            awaitItem() // ignore emitted "a" event as it's just to set the initial conditions for this test
+
+            unprocessedEventsChannel.send(entities) // send batch that doesn't contain "a", so no filtering and all should be emitted
             val emitted = awaitItem()
             assertEquals(listOf("x", "y", "z"), emitted.map { it.event.id })
             cancelAndIgnoreRemainingEvents()
@@ -437,31 +423,12 @@ class EventRepositoryTest {
 
     @Test
     fun givenEventsPreviouslyEmitted_whenEmittingSameEventsAgain_thenTheyAreFilteredCorrectly() = runTest {
-        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT))
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(0)
+        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(1)
+        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(2)
 
-        val initialEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
-            EventEntity(
-                id = index.toLong(),
-                eventId = e.id,
-                isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e.payload),
-                isLive = true,
-                transient = e.transient
-            )
-        }
-
-        val repeatEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
-            EventEntity(
-                id = index.toLong() + 10,
-                eventId = e.id,
-                isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e.payload),
-                isLive = true,
-                transient = e.transient
-            )
-        }
+        val initialEntities = listOf(eventA, eventB, eventC)
+        val repeatEntities = listOf(eventA, eventB, eventC).map { it.copy(id = it.id + 10) }
 
         val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
 
@@ -470,34 +437,24 @@ class EventRepositoryTest {
             .arrange()
 
         repository.observeEvents().test {
-            channel.send(initialEntities)
+            channel.send(initialEntities) // send initial batch of events
             val first = awaitItem()
-            assertEquals(listOf("a", "b", "c"), first.map { it.event.id })
+            assertEquals(listOf("a", "b", "c"), first.map { it.event.id }) // all events emitted at first
 
-            channel.send(repeatEntities)
-            val second = awaitItem()
-            assertEquals(emptyList(), second.map { it.event.id })
+            channel.send(repeatEntities) // repeat sending batch with the same events
+            expectNoEvents() // no new events should be emitted, even empty list, since the whole batch is the same
 
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun givenLastProcessedEventIsSecond_whenReceivingThreeEvents_thenShouldEmitOnlyLast() = runTest {
-        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT))
-        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT))
+    fun givenLastEmittedEventIsSecond_whenReceivingThreeEvents_thenShouldEmitOnlyLast() = runTest {
+        val eventA = EventResponse(id = "a", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(0)
+        val eventB = EventResponse(id = "b", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(1)
+        val eventC = EventResponse(id = "c", payload = listOf(MEMBER_JOIN_EVENT)).toEventEntity(2)
 
-        val allEntities = listOf(eventA, eventB, eventC).mapIndexed { index, e ->
-            EventEntity(
-                id = index.toLong(),
-                eventId = e.id,
-                isProcessed = false,
-                payload = KtxSerializer.json.encodeToString(e.payload),
-                isLive = true,
-                transient = e.transient
-            )
-        }
+        val allEntities = listOf(eventA, eventB, eventC)
 
         val channel = Channel<List<EventEntity>>(Channel.UNLIMITED)
 
@@ -508,14 +465,14 @@ class EventRepositoryTest {
         repository.observeEvents().test {
             val abEvents = allEntities.take(2)
 
-            channel.send(abEvents)
+            channel.send(abEvents) // send first two events
             val first = awaitItem()
-            assertEquals(listOf("a", "b"), first.map { it.event.id })
+            assertEquals(listOf("a", "b"), first.map { it.event.id }) // "a" and "b" emitted, last emitted event is now "b"
 
-            channel.send(allEntities)
+            channel.send(allEntities) // send all three events, "a" and "b" is sent again and "c" for the first time
             val second = awaitItem()
 
-            assertTrue(second.size == 1, "Expected one new event, but got: ${second.map { it.event.id }}")
+            assertEquals(listOf("c"), second.map { it.event.id }) // only "c" should be emitted, duplicated "a" and "b" should be filtered
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -583,6 +540,32 @@ class EventRepositoryTest {
 
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun givenWebSocketClosedWithNullCause_whenHandlingClosure_thenShouldThrowKaliumSyncException() = runTest {
+        val (_, repository) = Arrangement()
+            .withClientHasConsumableNotifications(true)
+            .withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            .withConsumeLiveEventsReturning(
+                NetworkResponse.Success(
+                    value = flowOf(WebSocketEvent.Close(cause = null)),
+                    headers = emptyMap(),
+                    httpCode = 200
+                )
+            )
+            .arrange()
+
+        val eitherFlow = repository.liveEvents()
+        assertTrue(eitherFlow is Either.Right)
+
+        val flow = eitherFlow.value
+
+        val thrown = assertFailsWith<KaliumSyncException> {
+            flow.collect {}
+        }
+
+        assertIs<CoreFailure.Unknown>(thrown.coreFailureCause)
     }
 
     private companion object {
@@ -711,4 +694,18 @@ class EventRepositoryTest {
             return this to eventRepository
         }
     }
+
+    private fun EventResponse.toEventEntity(
+        id: Long,
+        isProcessed: Boolean = false,
+        isLive: Boolean = true,
+        transient: Boolean = false
+    ): EventEntity = EventEntity(
+        id = id,
+        eventId = this.id,
+        isProcessed = isProcessed,
+        payload = KtxSerializer.json.encodeToString(this.payload),
+        isLive = isLive,
+        transient = transient
+    )
 }
