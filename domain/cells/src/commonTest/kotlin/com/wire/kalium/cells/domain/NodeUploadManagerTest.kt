@@ -19,7 +19,10 @@ package com.wire.kalium.cells.domain
 
 import app.cash.turbine.test
 import com.wire.kalium.cells.data.CellUploadManagerImpl
+import com.wire.kalium.cells.data.MIMEType
+import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
@@ -301,13 +304,26 @@ private class TestRepository : CellsRepository {
         limit: Int,
         offset: Int,
         onlyDeleted: Boolean,
-        tags: List<String>
-    ) = PaginatedList<CellNode>(
+        nodeType: CellNodeType,
+        tags: List<String>,
+        owners: List<String>,
+        mimeTypes: List<MIMEType>,
+        hasPublicLink: Boolean?,
+        sorting: Sorting,
+        sortDescending: Boolean
+    ): Either<NetworkFailure, PaginatedList<CellNode>> = PaginatedList<CellNode>(
         data = emptyList(),
         pagination = null
     ).right()
 
-    override suspend fun getNodesByPath(query: String, path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
+    override suspend fun getNodesByPath(
+        query: String,
+        path: String,
+        nodeType: CellNodeType,
+        tags: List<String>,
+        owners: List<String>,
+        mimeTypes: List<MIMEType>
+    ): Either<NetworkFailure, List<CellNode>> {
         TODO("Not yet implemented")
     }
 
