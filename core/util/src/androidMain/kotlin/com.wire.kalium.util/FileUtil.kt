@@ -30,4 +30,8 @@ actual object FileUtil {
     actual fun isDirectoryNonEmpty(path: String): Boolean {
         return File(path).listFiles()?.isNotEmpty() ?: false
     }
+
+    actual fun exists(path: String): Boolean {
+        return File(path).exists()
+    }
 }

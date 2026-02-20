@@ -66,4 +66,17 @@ class FileUtilTest {
         FileUtil.mkDirs(path)
         assertTrue(FileTestHelper.directoryExists(path))
     }
+
+    @Test
+    fun givenFileExists_whenCallingExists_thenReturnsTrue() {
+        val path = FileTestHelper.createRandomDirectory()
+        assertTrue(FileUtil.exists(path))
+    }
+
+    @Test
+    fun givenFileDoesNOTExists_whenCallingExists_thenReturnsTrue() {
+        val path = FileTestHelper.createRandomDirectory()
+        FileUtil.deleteDirectory(path)
+        assertFalse(FileUtil.exists(path))
+    }
 }

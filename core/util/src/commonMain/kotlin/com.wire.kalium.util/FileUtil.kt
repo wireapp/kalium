@@ -24,4 +24,6 @@ expect object FileUtil {
     fun deleteDirectory(path: String): Boolean
 
     fun isDirectoryNonEmpty(path: String): Boolean
+
+    fun exists(path: String): Boolean
 }

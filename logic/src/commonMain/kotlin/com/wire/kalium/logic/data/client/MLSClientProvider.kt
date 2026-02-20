@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
@@ -89,7 +90,7 @@ internal class MLSClientProviderImpl(
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val processingScope: CoroutineScope,
-) : MLSClientProvider {
+) : MLSClientProvider, CryptoBackupExporter {
 
     private var mlsClient: MLSClient? = null
     private var coreCryptoCentral: CoreCryptoCentral? = null
@@ -243,6 +244,33 @@ internal class MLSClientProviderImpl(
 
         })
     }
+
+    override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> =
+        coreCryptoCentralMutex.withLock {
+            withContext(dispatchers.io) {
+                currentClientIdProvider().fold(
+                    { return@withContext it.left() },
+                    { clientId ->
+                        val location = "$rootKeyStorePath/${clientId.value}"
+                        val rootDir = "$location/$KEYSTORE_NAME"
+                        val dbPath = "$rootDir/keystore"
+
+                        if (!FileUtil.exists(dbPath)) {
+                            return@withContext StorageFailure.DataNotFound.left()
+                        }
+
+                        val dbSecret = SecurityHelperImpl(passphraseStorage)
+                            .mlsDBSecret(userId, rootDir)
+
+                        CryptoBackupMetadata(
+                            dbPath = dbPath,
+                            passphrase = dbSecret.passphrase,
+                            clientId = clientId
+                        ).right()
+                    }
+                )
+            }
+        }
 
     private companion object {
         const val KEYSTORE_NAME = "keystore"

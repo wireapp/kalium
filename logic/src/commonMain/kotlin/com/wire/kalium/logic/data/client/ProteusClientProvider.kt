@@ -19,8 +19,12 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CoreCryptoCentral
@@ -29,6 +33,7 @@ import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -61,9 +66,10 @@ internal class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
-) : ProteusClientProvider {
+) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
     private val mutex = Mutex()
@@ -149,7 +155,32 @@ internal class ProteusClientProviderImpl(
         }
     }
 
+    override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> {
+        return withContext(dispatcher.io) {
+            currentClientIdProvider().fold(
+                { return@withContext it.left() },
+                { clientId ->
+                    _proteusClient?.let { _ ->
+                        val dbPath = "$rootProteusPath/${KEYSTORE_NAME}"
+                        if (!FileUtil.exists(dbPath)) {
+                            return@withContext StorageFailure.DataNotFound.left()
+                        } else {
+                            val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
+                            CryptoBackupMetadata(
+                                dbPath = dbPath,
+                                passphrase = dbSecret.passphrase,
+                                clientId = clientId
+                            ).right()
+                        }
+
+                    } ?: StorageFailure.DataNotFound.left()
+                }
+            )
+        }
+    }
+
     private companion object {
+        const val KEYSTORE_NAME = "keystore"
         const val TAG = "ProteusClientProvider"
     }
 }
