@@ -54,7 +54,6 @@ public actual class CoreLogic(
     kaliumConfigs = kaliumConfigs,
     userAgent = userAgent
 ) {
-
     actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,

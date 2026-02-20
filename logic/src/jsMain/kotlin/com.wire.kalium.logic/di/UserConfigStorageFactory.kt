@@ -19,6 +19,7 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 
 @Suppress("DEPRECATION")
 internal actual class UserConfigStorageFactory actual constructor() {
