@@ -19,9 +19,7 @@
 package com.wire.kalium.logic.feature
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import io.mockative.Mockable
@@ -37,7 +35,7 @@ internal interface UserSessionScopeProvider {
 internal abstract class UserSessionScopeProviderCommon(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
-    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
+    private val removeAuthenticatedNetworkForUser: suspend (UserId) -> Unit,
     protected val userAgent: String
 ) : UserSessionScopeProvider {
 
@@ -58,7 +56,7 @@ internal abstract class UserSessionScopeProviderCommon(
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
         userScopeStorage.remove(userId)
         userStorageProvider.remove(userId)?.database?.nuke()
-        userAuthenticatedNetworkProvider.remove(userId.toApi())
+        removeAuthenticatedNetworkForUser(userId)
     }
 
     internal abstract fun create(userId: UserId): UserSessionScope

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
@@ -57,7 +58,7 @@ internal actual open class UserSessionScopeProviderImpl(
 ) : UserSessionScopeProviderCommon(
     globalCallManager,
     userStorageProvider,
-    userAuthenticatedNetworkProvider,
+    { userId -> userAuthenticatedNetworkProvider.remove(userId.toApi()) },
     userAgent
 ),
     UserSessionScopeProvider {
