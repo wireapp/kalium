@@ -24,7 +24,6 @@ import com.wire.kalium.cells.data.model.PreCheckResultDTO
 import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
-import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.domain.model.toTreeNodeType
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
@@ -92,13 +91,11 @@ internal class CellsApiImpl(
         query: String,
         limit: Int,
         offset: Int,
-        tags: List<String>,
-        sorting: Sorting,
-        sortDescending: Boolean,
-        hasPublicLink: Boolean?,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
-            val lookupTags = tags.map {
+            val lookupTags = fileFilters.tags.map {
                 LookupFilterMetaFilter(
                     namespace = MetadataKeys.TAGS,
                     term = it.quoted(),
@@ -116,10 +113,10 @@ internal class CellsApiImpl(
                             term = query
                         ),
                         metadata = lookupTags,
-                        status = hasPublicLink?.let { LookupFilterStatusFilter(hasPublicLink = it) }
+                        status = fileFilters.hasPublicLink?.let { LookupFilterStatusFilter(hasPublicLink = it) }
                     ),
-                    sortField = sorting.apiValue,
-                    sortDirDesc = sortDescending,
+                    sortField = sortingSpec.criteria.apiValue,
+                    sortDirDesc = sortingSpec.descending,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )
@@ -130,20 +127,14 @@ internal class CellsApiImpl(
         path: String,
         limit: Int?,
         offset: Int?,
-        onlyDeleted: Boolean,
-        nodeType: CellNodeType,
-        tags: List<String>,
-        owners: List<String>,
-        mimeTypes: List<MIMEType>,
-        sorting: Sorting,
-        sortDescending: Boolean,
-        hasPublicLink: Boolean?,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val metadataFilters =
-                tags.toMetaFilters(MetadataKeys.TAGS) +
-                        owners.toMetaFilters(MetadataKeys.OWNER_UUID) +
-                        mimeTypes.toMimeMetaFilters()
+                fileFilters.tags.toMetaFilters(MetadataKeys.TAGS) +
+                        fileFilters.owners.toMetaFilters(MetadataKeys.OWNER_UUID) +
+                        fileFilters.mimeTypes.toMimeMetaFilters()
 
             getNodeServiceApi().lookup(
                 RestLookupRequest(
@@ -152,10 +143,10 @@ internal class CellsApiImpl(
                     scope = RestLookupScope(root = RestNodeLocator(path = path)),
                     filters = RestLookupFilter(
                         status = LookupFilterStatusFilter(
-                            deleted = if (onlyDeleted) StatusFilterDeletedStatus.Only else null,
-                            hasPublicLink = hasPublicLink
+                            deleted = if (fileFilters.onlyDeleted) StatusFilterDeletedStatus.Only else null,
+                            hasPublicLink = fileFilters.hasPublicLink
                         ),
-                        type = nodeType.toTreeNodeType(),
+                        type = fileFilters.nodeType.toTreeNodeType(),
                         metadata = metadataFilters,
                         text = LookupFilterTextSearch(
                             searchIn = LookupFilterTextSearchIn.BaseName,
@@ -163,8 +154,8 @@ internal class CellsApiImpl(
                         ),
                     ),
                     flags = listOf(RestFlag.WithPreSignedURLs),
-                    sortField = sorting.apiValue,
-                    sortDirDesc = sortDescending,
+                    sortField = sortingSpec.criteria.apiValue,
+                    sortDirDesc = sortingSpec.descending,
                 )
             )
         }.mapSuccess { response -> response.toDto() }

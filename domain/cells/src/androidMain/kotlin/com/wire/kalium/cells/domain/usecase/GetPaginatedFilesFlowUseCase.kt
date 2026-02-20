@@ -18,8 +18,9 @@
 package com.wire.kalium.cells.domain.usecase
 
 import androidx.paging.PagingData
-import com.wire.kalium.cells.data.MIMEType
-import com.wire.kalium.cells.data.Sorting
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingCriteria
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.Node
 import kotlinx.coroutines.flow.Flow
 
@@ -28,11 +29,8 @@ public interface GetPaginatedFilesFlowUseCase {
      * Use case to get a paginated flow of file [Node]s from cells.
      * @param conversationId The unique identifier of the conversation to filter files by (optional).
      * @param query The search query to filter files.
-     * @param onlyDeleted Flag to indicate whether to fetch only deleted files.
-     * @param tags List of tags to filter files.
-     * @param owners List of owner IDs to filter files.
-     * @param mimeTypes List of MIME types to filter files.
-     * @param sorting The sorting method to apply to the results.
+     * @param fileFilters The filters to apply when fetching files, such as deletion status, tags, owners, MIME types, and public link status.
+     * @param sortingSpec The sorting specification to apply when fetching files, including criteria and order.
      * @param sortDescending Flag to indicate whether to sort in descending order.
      * @return a flow of paginated file nodes.
      */
@@ -40,13 +38,11 @@ public interface GetPaginatedFilesFlowUseCase {
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
-        onlyDeleted: Boolean = false,
-        tags: List<String> = emptyList(),
-        owners: List<String> = emptyList(),
-        mimeTypes: List<MIMEType> = emptyList(),
-        hasPublicLink: Boolean? = null,
-        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
-        sortDescending: Boolean = true,
+        fileFilters: FileFilters = FileFilters(),
+        sortingSpec: SortingSpec = SortingSpec(
+            criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
+            descending = true
+        ),
     ): Flow<PagingData<Node>>
 }
 
@@ -57,14 +53,9 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
-        onlyDeleted: Boolean,
-        tags: List<String>,
-        owners: List<String>,
-        mimeTypes: List<MIMEType>,
-        hasPublicLink: Boolean?,
-        sorting: Sorting,
-        sortDescending: Boolean,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, onlyDeleted, tags, owners, mimeTypes, hasPublicLink, sorting, sortDescending)
+        return getCellFilesUseCase(conversationId, query, fileFilters, sortingSpec)
     }
 }

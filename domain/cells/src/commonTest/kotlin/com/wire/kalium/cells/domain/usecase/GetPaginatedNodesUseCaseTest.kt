@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
@@ -48,7 +49,8 @@ class GetPaginatedNodesUseCaseTest {
             conversationId = null,
             query = "",
             limit = 100,
-            offset = 0
+            offset = 0,
+            fileFilters = FileFilters()
         )
 
         assertTrue(result.isRight())
@@ -63,7 +65,8 @@ class GetPaginatedNodesUseCaseTest {
             conversationId = null,
             query = "",
             limit = 100,
-            offset = 0
+            offset = 0,
+            fileFilters = FileFilters()
         )
 
         assertTrue(result.isRight())
@@ -78,7 +81,8 @@ class GetPaginatedNodesUseCaseTest {
             conversationId = null,
             query = "",
             limit = 100,
-            offset = 0
+            offset = 0,
+            fileFilters = FileFilters(),
         )
 
         assertTrue(result.isRight())
@@ -93,7 +97,8 @@ class GetPaginatedNodesUseCaseTest {
             conversationId = null,
             query = "",
             limit = 100,
-            offset = 0
+            offset = 0,
+            fileFilters = FileFilters()
         )
 
         assertTrue(result.isRight())
@@ -108,7 +113,8 @@ class GetPaginatedNodesUseCaseTest {
             conversationId = null,
             query = "",
             limit = 100,
-            offset = 0
+            offset = 0,
+            fileFilters = FileFilters()
         )
 
         assertTrue(result.isRight())
@@ -130,12 +136,7 @@ class GetPaginatedNodesUseCaseTest {
                     query = any(),
                     limit = any(),
                     offset = any(),
-                    onlyDeleted = any(),
-                    nodeType = any(),
-                    tags = any(),
-                    owners = any(),
-                    mimeTypes = any(),
-                    hasPublicLink = any(),
+                    fileFilters = any(),
                     sorting = any(),
                     sortDescending = any()
                 )
