@@ -578,6 +578,9 @@ public class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
@@ -1857,9 +1860,6 @@ public class UserSessionScope internal constructor(
             mlsResetConversationEventHandler,
         )
     }
-    override val coroutineContext: CoroutineContext = SupervisorJob()
-    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
-
     public fun registerMessageCallback(callback: PersistMessageCallback) {
         persistMessageCallbackManager.register(callback)
     }
@@ -1867,24 +1867,6 @@ public class UserSessionScope internal constructor(
     public fun unregisterMessageCallback(callback: PersistMessageCallback) {
         persistMessageCallbackManager.unregister(callback)
     }
-
-    public fun registerMessageCallback(callback: PersistMessageCallback) {
-        persistMessageCallbackManager.register(callback)
-    }
-
-    public fun unregisterMessageCallback(callback: PersistMessageCallback) {
-        persistMessageCallbackManager.unregister(callback)
-    }
-
-    public suspend fun putMetadataValue(key: String, value: String): Unit =
-        userStorage.database.metadataDAO.insertValue(value, key)
-
-    public suspend fun getMetadataValue(key: String): String? =
-        userStorage.database.metadataDAO.valueByKey(key)
-
-    public suspend fun clearMetadataValue(key: String): Unit =
-        userStorage.database.metadataDAO.deleteValue(key)
-
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
         selfUserId = userId,
         userConfigRepository = userConfigRepository
