@@ -100,7 +100,7 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
-    fun givenProteusUnknownErrorContainingDuplicateMessage_whenHandling_thenErrorShouldBeIgnored() = runTest {
+    fun givenProteusUnknownErrorContainingDuplicateMessage_whenHandling_thenErrorShouldBeHandled() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withProteusUnpackerReturning(
                 Either.Left(
@@ -125,7 +125,7 @@ class NewMessageEventHandlerTest {
 
         coVerify {
             arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }.wasInvoked(exactly = once)
     }
 
     @Test

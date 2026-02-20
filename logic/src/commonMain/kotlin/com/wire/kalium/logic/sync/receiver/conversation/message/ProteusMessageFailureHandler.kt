@@ -47,18 +47,7 @@ internal object ProteusMessageFailureHandler {
             ProteusException.Code.INVALID_MESSAGE,
             ProteusException.Code.DECODE_ERROR,
             ProteusException.Code.IDENTITY_ERROR,
-            ProteusException.Code.UNKNOWN_ERROR -> {
-                if (failure.proteusException.isDuplicateMessage()) {
-                    ProteusMessageFailureResolution.Ignore
-                } else {
-                    ProteusMessageFailureResolution.InformUser
-                }
-            }
+            ProteusException.Code.UNKNOWN_ERROR -> ProteusMessageFailureResolution.InformUser
         }
     }
-
-    private fun ProteusException.isDuplicateMessage(): Boolean =
-        code == ProteusException.Code.DUPLICATE_MESSAGE ||
-            message.orEmpty().contains("DuplicateMessage", ignoreCase = true) ||
-            cause?.toString().orEmpty().contains("DuplicateMessage", ignoreCase = true)
 }

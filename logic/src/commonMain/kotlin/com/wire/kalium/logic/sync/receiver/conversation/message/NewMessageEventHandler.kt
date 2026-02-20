@@ -97,7 +97,7 @@ internal class NewMessageEventHandlerImpl(
 
             when (ProteusMessageFailureHandler.handleFailure(it)) {
                 ProteusMessageFailureResolution.Ignore -> {
-                    logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
+                    logger.i("Ignoring event: ${logMap.toJsonElement()}")
                     eventLogger.logFailure(it, "protocol" to "Proteus", "proteusOutcome" to "IGNORE")
                 }
 

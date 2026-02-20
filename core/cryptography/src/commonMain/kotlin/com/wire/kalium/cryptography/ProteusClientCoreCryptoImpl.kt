@@ -157,22 +157,27 @@ class ProteusClientCoreCryptoImpl private constructor(
         try {
             return b()
         } catch (e: ProteusExceptionNative) {
+            val mappedError = mapProteusException(e)
             throw ProteusException(
                 message = e.message,
-                code = mapProteusExceptionToErrorCode(e),
-                intCode = mapProteusExceptionToRawIntErrorCode(e),
+                code = mappedError.code,
+                intCode = mappedError.intCode,
                 cause = e
             )
         } catch (e: CoreCryptoException.Proteus) {
+            val mappedError = mapProteusException(e.exception)
+
             throw ProteusException(
                 message = e.message,
-                code = mapProteusExceptionToErrorCode(e.exception),
-                intCode = mapProteusExceptionToRawIntErrorCode(e.exception),
+                code = mappedError.code,
+                intCode = mappedError.intCode,
                 cause = e
             )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            kaliumLogger.e("Unexpected non-Proteus exception in " +
+                    "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e")
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
     }
@@ -205,22 +210,26 @@ class ProteusClientCoreCryptoImpl private constructor(
                 }
                 return ProteusClientCoreCryptoImpl(coreCrypto)
             } catch (e: ProteusExceptionNative) {
+                val mappedError = mapProteusException(e)
                 throw ProteusException(
                     message = e.message,
-                    code = mapProteusExceptionToErrorCode(e),
-                    intCode = mapProteusExceptionToRawIntErrorCode(e),
+                    code = mappedError.code,
+                    intCode = mappedError.intCode,
                     cause = e
                 )
             } catch (exception: ProteusStorageMigrationException) {
                 throw exception
             } catch (e: CoreCryptoException.Proteus) {
+                val mappedError = mapProteusException(e.exception)
                 throw ProteusException(
                     message = e.message,
-                    code = mapProteusExceptionToErrorCode(e.exception),
-                    intCode = mapProteusExceptionToRawIntErrorCode(e.exception),
+                    code = mappedError.code,
+                    intCode = mappedError.intCode,
                     cause = e.cause
                 )
             } catch (e: Exception) {
+                kaliumLogger.e("Unexpected non-Proteus exception during " +
+                        "ProteusClientCoreCrypto initialization: ${e::class.simpleName}: $e")
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }
@@ -240,23 +249,31 @@ class ProteusClientCoreCryptoImpl private constructor(
             }
         }
 
-        private fun mapProteusExceptionToErrorCode(proteusException: ProteusExceptionNative): ProteusException.Code {
+        @Suppress("MagicNumber")
+        private fun mapProteusException(proteusException: ProteusExceptionNative): MappedProteusError {
             return when (proteusException) {
-                is ProteusExceptionNative.SessionNotFound -> ProteusException.Code.SESSION_NOT_FOUND
-                is ProteusExceptionNative.DuplicateMessage -> ProteusException.Code.DUPLICATE_MESSAGE
-                is ProteusExceptionNative.RemoteIdentityChanged -> ProteusException.Code.REMOTE_IDENTITY_CHANGED
-                is ProteusExceptionNative.Other -> ProteusException.fromProteusCode(proteusException.errorCode.toInt())
+                is ProteusExceptionNative.SessionNotFound ->
+                    MappedProteusError(ProteusException.Code.SESSION_NOT_FOUND, 102)
+
+                is ProteusExceptionNative.DuplicateMessage ->
+                    MappedProteusError(ProteusException.Code.DUPLICATE_MESSAGE, 209)
+
+                is ProteusExceptionNative.RemoteIdentityChanged ->
+                    MappedProteusError(ProteusException.Code.REMOTE_IDENTITY_CHANGED, 204)
+
+                is ProteusExceptionNative.Other -> {
+                    val errorCode = proteusException.errorCode.toInt()
+                    MappedProteusError(
+                        code = ProteusException.fromProteusCode(errorCode),
+                        intCode = errorCode
+                    )
+                }
             }
         }
 
-        @Suppress("MagicNumber")
-        private fun mapProteusExceptionToRawIntErrorCode(proteusException: ProteusExceptionNative): Int {
-            return when (proteusException) {
-                is ProteusExceptionNative.SessionNotFound -> 102
-                is ProteusExceptionNative.DuplicateMessage -> 209
-                is ProteusExceptionNative.RemoteIdentityChanged -> 204
-                is ProteusExceptionNative.Other -> proteusException.errorCode.toInt()
-            }
-        }
+        private data class MappedProteusError(
+            val code: ProteusException.Code,
+            val intCode: Int
+        )
     }
 }

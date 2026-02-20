@@ -41,7 +41,7 @@ class ProteusMessageFailureHandlerTest {
     }
 
     @Test
-    fun givenUnknownCodeWithDuplicateMessageText_whenHandlingProteusFailure_thenIgnore() {
+    fun givenUnknownCodeWithDuplicateMessageText_whenHandlingProteusFailure_thenInformUser() {
         val failure = ProteusFailure(
             ProteusException(
                 message = "exception=com.wire.crypto.ProteusException\$DuplicateMessage: ",
@@ -52,7 +52,7 @@ class ProteusMessageFailureHandlerTest {
 
         val result = ProteusMessageFailureHandler.handleFailure(failure)
 
-        assertEquals(ProteusMessageFailureResolution.Ignore, result)
+        assertEquals(ProteusMessageFailureResolution.InformUser, result)
     }
 
     @Test
