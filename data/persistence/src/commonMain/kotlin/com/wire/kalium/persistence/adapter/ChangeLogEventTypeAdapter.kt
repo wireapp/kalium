@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.persistence.adapter
 
-import java.io.File
+import app.cash.sqldelight.ColumnAdapter
+import com.wire.kalium.persistence.dao.backup.ChangeLogEventType
 
-internal actual class PlatformUserStorageProperties internal constructor(
-    val rootPath: String,
-    val databaseInfo: DatabaseStorageType
-)
+internal object ChangeLogEventTypeAdapter : ColumnAdapter<ChangeLogEventType, Long> {
 
-internal sealed interface DatabaseStorageType {
-    data class FiledBacked(val filePath: File) : DatabaseStorageType
+    override fun decode(databaseValue: Long): ChangeLogEventType =
+        ChangeLogEventType.fromCodeOrThrow(databaseValue.toInt())
 
-    data object InMemory : DatabaseStorageType
+    override fun encode(value: ChangeLogEventType): Long = value.code.toLong()
 }

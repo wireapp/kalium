@@ -15,15 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.di
 
-import com.wire.kalium.logic.data.user.UserId
+package com.wire.kalium.persistence.dao.backup
 
-internal expect class PlatformUserStorageProvider constructor() : UserStorageProvider {
-    override fun create(
-        userId: UserId,
-        shouldEncryptData: Boolean,
-        platformProperties: PlatformUserStorageProperties,
-        dbInvalidationControlEnabled: Boolean
-    ): UserStorage
-}
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+
+/**
+ * Represents a single entry in the remote backup change log.
+ *
+ * @property conversationId The conversation where the change occurred
+ * @property messageId The message identifier (empty for conversation-level events)
+ * @property eventType The type of change that occurred
+ * @property timestampMs The timestamp when the change was recorded (epoch milliseconds)
+ */
+data class ChangeLogEntry(
+    val conversationId: QualifiedIDEntity,
+    val messageId: String?,
+    val eventType: ChangeLogEventType,
+    val timestampMs: Long
+)

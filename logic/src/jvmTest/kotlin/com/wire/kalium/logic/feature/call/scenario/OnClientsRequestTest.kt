@@ -18,124 +18,63 @@
 package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.types.Handle
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.MockConversation
-import com.wire.kalium.logic.data.call.CallClientList
-import com.wire.kalium.logic.data.call.CallMetadata
-import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.EpochInfo
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
-import com.wire.kalium.logic.framework.TestCall.oneOnOneCallMetadata
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnClientsRequestTest {
 
-    val testScope = TestScope()
-
     @Test
-    fun givenOngoingCall_whenClientsRequested_thenCallClientsInCallUpdater() = testScope.runTest() {
-        val (arrangement, callback) = Arrangement(testScope)
-            .withCallMetadata(conversationId, oneOnOneCallMetadata())
-            .arrange()
+    fun givenOngoingCall_whenClientsRequested_thenCallClientsInCallUpdater() = runTest {
+        val (arrangement, callback) = Arrangement(backgroundScope).arrange()
 
         callback.onClientsRequest(inst = handle, conversationId = conversationId.toString(), arg = null)
-        advanceUntilIdle()
+        runCurrent()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationClientsInCallUpdater(conversationId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
-    fun givenOngoingMLSCall_whenClientsRequested_thenCallEpochInfoUpdate() = testScope.runTest() {
-        val callMetadata = oneOnOneCallMetadata().copy(
-            protocol = Conversation.ProtocolInfo.MLS(
-                groupId = GroupID(""),
-                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                epoch = ULong.MAX_VALUE,
-                keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
-                cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
-            )
-        )
-        val (arrangement, callback) = Arrangement(testScope)
-            .withCallMetadata(conversationId, callMetadata)
-            .withEpochInfo(conversationId, epochInfo)
-            .arrange()
+    fun givenOngoingCall_whenClientsRequested_thenCallEpochInfoUpdate() = runTest {
+        val (arrangement, callback) = Arrangement(backgroundScope).arrange()
 
         callback.onClientsRequest(inst = handle, conversationId = conversationId.toString(), arg = null)
-        advanceUntilIdle()
+        runCurrent()
 
-        coVerify {
-            arrangement.epochInfoUpdater.updateEpochInfo(conversationId, epochInfo)
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.epochInfoUpdater(conversationId)
+        }
     }
 
-    @Test
-    fun givenOngoingNonMLSCall_whenClientsRequested_thenDoNotCallEpochInfoUpdate() = testScope.runTest() {
-        val callMetadata = oneOnOneCallMetadata().copy(
-            protocol = Conversation.ProtocolInfo.Proteus
-        )
-        val (arrangement, callback) = Arrangement(testScope)
-            .withCallMetadata(conversationId, callMetadata)
-            .withEpochInfo(conversationId, epochInfo)
-            .arrange()
-
-        callback.onClientsRequest(inst = handle, conversationId = conversationId.toString(), arg = null)
-        advanceUntilIdle()
-
-        coVerify {
-            arrangement.epochInfoUpdater.updateEpochInfo(conversationId, epochInfo)
-        }.wasNotInvoked()
-    }
-
-    private class Arrangement(val testScope: TestScope) {
-        val callRepository: CallRepository = mock(CallRepository::class)
-        val conversationClientsInCallUpdater: ConversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
-        val epochInfoUpdater: EpochInfoUpdater = mock(EpochInfoUpdater::class)
+    private class Arrangement(val testScope: CoroutineScope) {
+        val conversationClientsInCallUpdater: ConversationClientsInCallUpdater = mock(MockMode.autoUnit)
+        val epochInfoUpdater: EpochInfoUpdater = mock(MockMode.autoUnit)
         val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
-
-        fun withCallMetadata(id: ConversationId, metadata: CallMetadata): Arrangement = apply {
-            every {
-                callRepository.getCallMetadata(id)
-            }.returns(metadata)
-        }
-
-        suspend fun withEpochInfo(id: ConversationId, epochInfo: EpochInfo): Arrangement = apply {
-            coEvery {
-                callRepository.observeEpochInfo(id)
-            }.returns(flowOf(epochInfo).right())
-        }
 
         fun arrange() = this to OnClientsRequest(
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             epochInfoUpdater = epochInfoUpdater,
             qualifiedIdMapper = qualifiedIdMapper,
             callingScope = testScope,
-            callRepository = callRepository,
         )
     }
 
     companion object {
         val handle = Handle(42)
         val conversationId = MockConversation.ID
-        val epochInfo = EpochInfo(epoch = 1.toULong(), members = CallClientList(emptyList()), sharedSecret = byteArrayOf())
     }
 }

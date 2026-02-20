@@ -15,6 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.di
 
-internal actual class PlatformUserStorageProperties
+plugins {
+    id(libs.plugins.kalium.library.get().pluginId)
+}
+
+kaliumLibrary {
+    multiplatform {
+        enableJs.set(false)
+    }
+}
+
+kotlin {
+    explicitApi()
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(projects.data.persistence)
+            }
+        }
+    }
+}

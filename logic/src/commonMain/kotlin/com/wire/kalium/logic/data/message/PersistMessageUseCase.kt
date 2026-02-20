@@ -41,7 +41,8 @@ internal interface PersistMessageUseCase {
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
-    private val notificationEventsManager: NotificationEventsManager
+    private val notificationEventsManager: NotificationEventsManager,
+    private val persistMessageCallbackNotifier: PersistMessageCallbackNotifier = NoOpPersistMessageCallbackNotifier
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
@@ -56,8 +57,18 @@ internal class PersistMessageUseCaseImpl(
             if (!isConversationMuted && !isSelfSender && message.content.shouldNotifyUser()) {
                 notificationEventsManager.scheduleRegularNotificationChecking()
             }
+
+            persistMessageCallbackNotifier.onMessagePersisted(modifiedMessage.toPersistedMessageData())
         }.map { }
     }
+
+    private fun Message.Standalone.toPersistedMessageData() = PersistedMessageData(
+        conversationId = conversationId,
+        messageId = id,
+        content = content,
+        date = date,
+        expireAfter = expirationData?.expireAfter
+    )
 
     private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
 
