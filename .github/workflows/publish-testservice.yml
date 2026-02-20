@@ -31,4 +31,4 @@ jobs:
           file: ./tools/testservice/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: quay.io/wire/testservice:latest,quay.io/wire/:${{ github.sha }}
+          tags: quay.io/wire/testservice:latest,quay.io/wire/testservice:${{ github.sha }}
