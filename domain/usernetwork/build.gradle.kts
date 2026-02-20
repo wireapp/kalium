@@ -51,7 +51,7 @@ val generateUserNetworkApiCacheConfig by tasks.registering {
              * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
              * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
              */
-            internal enum class ProviderCacheScope { LOCAL, GLOBAL }
+            internal enum class ProviderCacheScope { GLOBAL, LOCAL }
             internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
             """.trimIndent() + "\n"
         )
