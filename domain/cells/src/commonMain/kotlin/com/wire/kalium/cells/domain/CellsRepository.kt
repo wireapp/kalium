@@ -49,6 +49,7 @@ internal interface CellsRepository {
         tags: List<String> = emptyList(),
         owners: List<String> = emptyList(),
         mimeTypes: List<MIMEType> = emptyList(),
+        hasPublicLink: Boolean? = null,
         sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
         sortDescending: Boolean = true,
     ): Either<NetworkFailure, PaginatedList<CellNode>>

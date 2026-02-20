@@ -99,6 +99,7 @@ internal class CellsDataSource internal constructor(
         tags: List<String>,
         owners: List<String>,
         mimeTypes: List<MIMEType>,
+        hasPublicLink: Boolean?,
         sorting: Sorting,
         sortDescending: Boolean
     ) = withContext(dispatchers.io) {
@@ -121,6 +122,7 @@ internal class CellsDataSource internal constructor(
                     tags = tags,
                     owners = owners,
                     mimeTypes = mimeTypes,
+                    hasPublicLink = hasPublicLink,
                     sorting = sorting,
                     sortDescending = sortDescending
                 )

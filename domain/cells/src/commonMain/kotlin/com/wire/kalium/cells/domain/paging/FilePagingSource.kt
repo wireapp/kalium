@@ -39,6 +39,7 @@ internal class FilePagingSource(
     val tags: List<String> = emptyList(),
     val owners: List<String> = emptyList(),
     val mimeTypes: List<MIMEType> = emptyList(),
+    val hasPublicLink: Boolean? = null,
     val sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
     val sortDescending: Boolean = true,
 ) : PagingSource<Int, Node>() {
@@ -54,6 +55,7 @@ internal class FilePagingSource(
             onlyDeleted = onlyDeleted,
             tags = tags,
             owners = owners,
+            hasPublicLink = hasPublicLink,
             mimeTypes = mimeTypes,
             sorting = sorting,
             sortDescending = sortDescending
