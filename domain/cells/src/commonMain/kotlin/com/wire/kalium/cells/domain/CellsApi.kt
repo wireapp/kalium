@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
@@ -30,15 +32,21 @@ import com.wire.kalium.network.utils.NetworkResponse
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface CellsApi {
     suspend fun getNode(uuid: String): NetworkResponse<CellNodeDTO>
-    suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO>
+    suspend fun getNodes(
+        query: String,
+        limit: Int,
+        offset: Int,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
+    ): NetworkResponse<GetNodesResponseDTO>
+
     suspend fun getNodesForPath(
         query: String,
         path: String,
         limit: Int? = null,
         offset: Int? = null,
-        onlyDeleted: Boolean = false,
-        onlyFolders: Boolean = false,
-        tags: List<String> = emptyList(),
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>

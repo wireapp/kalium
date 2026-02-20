@@ -18,6 +18,9 @@
 package com.wire.kalium.cells.domain.usecase
 
 import androidx.paging.PagingData
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingCriteria
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.Node
 import kotlinx.coroutines.flow.Flow
 
@@ -26,15 +29,19 @@ public interface GetPaginatedFilesFlowUseCase {
      * Use case to get a paginated flow of file [Node]s from cells.
      * @param conversationId The unique identifier of the conversation to filter files by (optional).
      * @param query The search query to filter files.
-     * @param onlyDeleted Flag to indicate whether to fetch only deleted files.
-     * @param tags List of tags to filter files.
+     * @param fileFilters The filters to apply when fetching files, such as deletion status, tags,
+     * owners, MIME types, and public link status.
+     * @param sortingSpec The sorting specification to apply when fetching files, including criteria and order.
      * @return a flow of paginated file nodes.
      */
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
-        onlyDeleted: Boolean = false,
-        tags: List<String> = emptyList(),
+        fileFilters: FileFilters = FileFilters(),
+        sortingSpec: SortingSpec = SortingSpec(
+            criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
+            descending = true
+        ),
     ): Flow<PagingData<Node>>
 }
 
@@ -45,9 +52,9 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: String?,
         query: String,
-        onlyDeleted: Boolean,
-        tags: List<String>
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, onlyDeleted, tags)
+        return getCellFilesUseCase(conversationId, query, fileFilters, sortingSpec)
     }
 }
