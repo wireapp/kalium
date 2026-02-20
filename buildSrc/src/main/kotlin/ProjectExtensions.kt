@@ -91,16 +91,22 @@ fun Project.registerCopyTestResourcesTask(target: String) {
     tasks.findByName("${target}Test")?.dependsOn(task)
 }
 
-private fun parseRequiredBooleanOrFail(propertyName: String, source: String, rawValue: String?): Boolean? {
+private fun parseRequiredEnumOrFail(
+    propertyName: String,
+    source: String,
+    rawValue: String?,
+    allowedValues: Set<String>
+): String? {
     if (rawValue == null) return null
-    return rawValue.toBooleanStrictOrNull() ?: error(
+    val normalizedValue = rawValue.trim().uppercase()
+    return normalizedValue.takeIf { it in allowedValues } ?: error(
         "Invalid value '$rawValue' for Gradle property '$propertyName' from $source. " +
-            "Expected 'true' or 'false'."
+            "Expected one of: ${allowedValues.joinToString(", ")}."
     )
 }
 
 /**
- * Resolves a required boolean Gradle property with strong validation and consumer-first semantics.
+ * Resolves a required enum-like Gradle property with strong validation and consumer-first semantics.
  *
  * Resolution order:
  * 1) CLI project property (`-P<propertyName>=...`)
@@ -109,22 +115,30 @@ private fun parseRequiredBooleanOrFail(propertyName: String, source: String, raw
  *
  * No default is applied. A descriptive failure is raised when missing or invalid.
  */
-fun Project.resolveRequiredBooleanGradleProperty(propertyName: String, purpose: String): Boolean {
-    val fromCli = parseRequiredBooleanOrFail(
+fun Project.resolveRequiredEnumGradleProperty(
+    propertyName: String,
+    allowedValues: Set<String>,
+    purpose: String
+): String {
+    val valuesForExample = allowedValues.joinToString("|")
+    val valuesForDisplay = allowedValues.joinToString(", ")
+    val fromCli = parseRequiredEnumOrFail(
         propertyName = propertyName,
         source = "command line (-P$propertyName=...)",
-        rawValue = gradle.startParameter.projectProperties[propertyName]
+        rawValue = gradle.startParameter.projectProperties[propertyName],
+        allowedValues = allowedValues
     )
     if (fromCli != null) return fromCli
 
-    val fromParent = parseRequiredBooleanOrFail(
+    val fromParent = parseRequiredEnumOrFail(
         propertyName = propertyName,
         source = "consumer root gradle.properties",
         rawValue = gradle.parent
             ?.rootProject
             ?.properties
             ?.get(propertyName)
-            ?.toString()
+            ?.toString(),
+        allowedValues = allowedValues
     )
     if (fromParent != null) return fromParent
 
@@ -133,23 +147,27 @@ fun Project.resolveRequiredBooleanGradleProperty(propertyName: String, purpose: 
             "Missing required Gradle property '$propertyName'. " +
                 "Kalium intentionally has no default for this flag because $purpose and that behavior " +
                 "must be explicitly chosen by the consumer build. " +
-                "Set '$propertyName=true|false' in the consumer root gradle.properties, " +
-                "or pass -P$propertyName=true|false."
+                "Set '$propertyName=$valuesForExample' in the consumer root gradle.properties, " +
+                "or pass -P$propertyName=$valuesForExample. " +
+                "Allowed values: $valuesForDisplay."
         )
     }
 
-    val fromLocal = parseRequiredBooleanOrFail(
+    val fromLocal = parseRequiredEnumOrFail(
         propertyName = propertyName,
         source = "local gradle.properties",
         rawValue = providers
             .gradleProperty(propertyName)
-            .orNull
+            .orNull,
+        allowedValues = allowedValues
     )
     if (fromLocal != null) return fromLocal
 
     error(
         "Missing required Gradle property '$propertyName'. " +
             "Kalium intentionally has no default for this flag because $purpose. " +
-            "Set '$propertyName=true|false' in gradle.properties, or pass -P$propertyName=true|false."
+            "Set '$propertyName=$valuesForExample' in gradle.properties, " +
+            "or pass -P$propertyName=$valuesForExample. " +
+            "Allowed values: $valuesForDisplay."
     )
 }

@@ -27,28 +27,31 @@ public data class UserAuthenticatedNetworkApis(public val container: Authenticat
 /**
  * Provides in-memory caching for [UserAuthenticatedNetworkApis] keyed by [UserId].
  *
- * Cache scope is controlled by the shared provider policy [USE_GLOBAL_PROVIDER_CACHE]:
- * - `true`: all [UserAuthenticatedNetworkProvider] instances share one cache map.
- * - `false`: each [UserAuthenticatedNetworkProvider] instance owns a private cache map.
+ * Cache scope is controlled by the shared provider policy [PROVIDER_CACHE_SCOPE]:
+ * - [ProviderCacheScope.GLOBAL]: all [UserAuthenticatedNetworkProvider] instances share one cache map.
+ * - [ProviderCacheScope.LOCAL]: each [UserAuthenticatedNetworkProvider] instance owns a private cache map.
  */
 public abstract class UserAuthenticatedNetworkProvider {
     private companion object {
-        val globalInMemoryUserAuthenticatedNetworkApis: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> = ConcurrentMutableMap()
+        val sharedApisCacheByUserId: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> = ConcurrentMutableMap()
     }
 
-    private val inMemoryUserAuthenticatedNetworkApis: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> =
-        if (USE_GLOBAL_PROVIDER_CACHE) globalInMemoryUserAuthenticatedNetworkApis else ConcurrentMutableMap()
+    private val apisCacheByUserId: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> =
+        when (PROVIDER_CACHE_SCOPE) {
+            ProviderCacheScope.GLOBAL -> sharedApisCacheByUserId
+            ProviderCacheScope.LOCAL -> ConcurrentMutableMap()
+        }
 
-    public fun get(userId: UserId): UserAuthenticatedNetworkApis? = inMemoryUserAuthenticatedNetworkApis[userId]
+    public fun get(userId: UserId): UserAuthenticatedNetworkApis? = apisCacheByUserId[userId]
 
     public fun getOrCreate(
         userId: UserId,
         creator: () -> UserAuthenticatedNetworkApis
-    ): UserAuthenticatedNetworkApis = inMemoryUserAuthenticatedNetworkApis.computeIfAbsent(userId) {
+    ): UserAuthenticatedNetworkApis = apisCacheByUserId.computeIfAbsent(userId) {
         creator()
     }
 
-    public fun remove(userId: UserId): UserAuthenticatedNetworkApis? = inMemoryUserAuthenticatedNetworkApis.remove(userId)
+    public fun remove(userId: UserId): UserAuthenticatedNetworkApis? = apisCacheByUserId.remove(userId)
 }
 
 public class PlatformUserAuthenticatedNetworkProvider : UserAuthenticatedNetworkProvider()

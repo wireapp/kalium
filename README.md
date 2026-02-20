@@ -30,18 +30,19 @@ Kalium currently uses the following compile-time Gradle properties:
     ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
     ```
 
-- `USE_GLOBAL_PROVIDER_CACHE`
+- `kalium.providerCacheScope`
   - Purpose: shared compile-time policy that defines cache scope for provider-level in-memory caches.
   - Required: Kalium defines no default; consumer builds must set it explicitly.
-  - `true`: process-global caches shared across provider instances.
-  - `false`: each provider instance keeps its own cache.
+  - Allowed values:
+    - `GLOBAL`: process-global caches shared across provider instances.
+    - `LOCAL`: each provider instance keeps its own cache.
   - Current consumers:
     - `UserStorageProvider`
     - `UserAuthenticatedNetworkProvider`
   - Extension rule: any new provider cache should follow this same policy instead of introducing a new compile-time flag.
   - Override example:
     ```bash
-    ./gradlew <task> -PUSE_GLOBAL_PROVIDER_CACHE=true
+    ./gradlew <task> -Pkalium.providerCacheScope=GLOBAL
     ```
 
 The `cli` can be executed on the terminal of any machine that 

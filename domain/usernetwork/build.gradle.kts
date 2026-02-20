@@ -21,17 +21,19 @@ plugins {
 }
 
 // Shared compile-time cache policy for provider-level caches across modules.
-val providerCacheFlag = "USE_GLOBAL_PROVIDER_CACHE"
+val providerCacheScopeFlag = "kalium.providerCacheScope"
+val providerCacheScopeValues = linkedSetOf("LOCAL", "GLOBAL")
 
-val useGlobalProviderCache: Boolean = resolveRequiredBooleanGradleProperty(
-    propertyName = providerCacheFlag,
+val providerCacheScope: String = resolveRequiredEnumGradleProperty(
+    propertyName = providerCacheScopeFlag,
+    allowedValues = providerCacheScopeValues,
     purpose = "it defines provider cache scope (instance-local vs process-global)"
 )
 
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/usernetwork/commonMain/kotlin")
 
 val generateUserNetworkApiCacheConfig by tasks.registering {
-    inputs.property("useGlobalProviderCache", useGlobalProviderCache)
+    inputs.property("providerCacheScope", providerCacheScope)
     outputs.dir(generatedCommonMainKotlinDir)
     doLast {
         val packagePath = "com/wire/kalium/usernetwork/di"
@@ -46,10 +48,11 @@ val generateUserNetworkApiCacheConfig by tasks.registering {
             /**
              * Controls provider cache scope via shared compile-time policy.
              *
-             * - `true`: all provider instances share one in-memory cache.
-             * - `false`: each provider instance keeps an isolated in-memory cache.
+             * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
+             * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
              */
-            internal const val USE_GLOBAL_PROVIDER_CACHE: Boolean = $useGlobalProviderCache
+            internal enum class ProviderCacheScope { LOCAL, GLOBAL }
+            internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
             """.trimIndent() + "\n"
         )
     }

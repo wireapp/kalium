@@ -57,7 +57,7 @@ internal abstract class UserSessionScopeProviderCommon(
     override suspend fun delete(userId: UserId) {
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
         userScopeStorage.remove(userId)
-        userStorageProvider.remove(userId)?.database?.close()
+        userStorageProvider.remove(userId)?.database?.nuke()
         userAuthenticatedNetworkProvider.remove(userId.toApi())
     }
 
