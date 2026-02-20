@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Kalium is a Kotlin Multiplatform (KMP) messaging SDK for the Wire messaging platform. It handles end-to-end encryption, messaging protocols, voice/video calling, and backup functionality across JVM, Android, iOS, and JavaScript platforms.
 
-**Requirements:** JDK 21, macOS Apple Silicon for iOS builds
+**Requirements:** JDK 21, Git, macOS Apple Silicon for iOS builds
 
 **Key Technologies:**
 - Kotlin 2.2.21 with Kotlin Multiplatform
