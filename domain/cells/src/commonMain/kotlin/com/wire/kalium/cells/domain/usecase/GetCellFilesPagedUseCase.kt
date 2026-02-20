@@ -41,6 +41,7 @@ public interface GetCellFilesPagedUseCase {
      * @param sortDescending Whether to sort in descending order or ascending order.
      * @return A flow of paged data containing the filtered files.
      */
+    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,

@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.Sorting
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.data.model.toModel
 import com.wire.kalium.cells.domain.CellsApi
@@ -50,7 +49,6 @@ import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
 import okio.use
-import kotlin.String
 
 @Suppress("TooManyFunctions")
 internal class CellsDataSource internal constructor(

@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.data
 
-public enum class NamespaceMetaData (public val apiValue: String) {
+public enum class NamespaceMetaData(public val apiValue: String) {
     TAGS_METADATA("usermeta-tags"),
     OWNER_METADATA("usermeta-owner-uuid"),
     TYPE_METADATA("mime"),

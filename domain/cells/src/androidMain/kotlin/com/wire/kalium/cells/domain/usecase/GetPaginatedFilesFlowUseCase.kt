@@ -36,6 +36,7 @@ public interface GetPaginatedFilesFlowUseCase {
      * @param sortDescending Flag to indicate whether to sort in descending order.
      * @return a flow of paginated file nodes.
      */
+    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,

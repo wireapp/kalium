@@ -30,6 +30,7 @@ import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
 
+@Suppress("LongParameterList")
 internal class FilePagingSource(
     val query: String,
     val conversationId: String?,
