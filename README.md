@@ -10,6 +10,7 @@
 ### Dependencies
 
 - JDK 21 (ex: openjdk-21-jdk on Ubuntu)
+- Git (required for build process)
 
 ### Supported Platforms
 
