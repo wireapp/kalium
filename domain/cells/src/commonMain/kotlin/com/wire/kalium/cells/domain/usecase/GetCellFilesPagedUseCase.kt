@@ -48,6 +48,7 @@ public interface GetCellFilesPagedUseCase {
         tags: List<String> = emptyList(),
         owners: List<String> = emptyList(),
         mimeTypes: List<MIMEType> = emptyList(),
+        hasPublicLink: Boolean? = null,
         sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
         sortDescending: Boolean = true,
     ): Flow<PagingData<Node>>
@@ -68,6 +69,7 @@ internal class GetCellFilesPagedUseCaseImpl(
         tags: List<String>,
         owners: List<String>,
         mimeTypes: List<MIMEType>,
+        hasPublicLink: Boolean?,
         sorting: Sorting,
         sortDescending: Boolean,
     ): Flow<PagingData<Node>> {
@@ -85,6 +87,7 @@ internal class GetCellFilesPagedUseCaseImpl(
                     tags = tags,
                     owners = owners,
                     mimeTypes = mimeTypes,
+                    hasPublicLink = hasPublicLink,
                     sorting = sorting,
                     sortDescending = sortDescending
                 )

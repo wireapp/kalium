@@ -40,6 +40,7 @@ internal interface CellsApi {
         tags: List<String>,
         sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
         sortDescending: Boolean = true,
+        hasPublicLink: Boolean? = null,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getNodesForPath(
@@ -54,6 +55,7 @@ internal interface CellsApi {
         mimeTypes: List<MIMEType>,
         sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
         sortDescending: Boolean = true,
+        hasPublicLink: Boolean? = null,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>

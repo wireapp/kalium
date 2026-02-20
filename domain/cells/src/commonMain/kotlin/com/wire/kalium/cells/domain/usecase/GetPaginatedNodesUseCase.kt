@@ -52,6 +52,7 @@ public interface GetPaginatedNodesUseCase {
         tags: List<String> = emptyList(),
         owners: List<String> = emptyList(),
         mimeTypes: List<MIMEType> = emptyList(),
+        hasPublicLink: Boolean? = null,
         sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
         sortDescending: Boolean = true,
     ): Either<CoreFailure, PaginatedList<Node>>
@@ -73,6 +74,7 @@ internal class GetPaginatedNodesUseCaseImpl(
         tags: List<String>,
         owners: List<String>,
         mimeTypes: List<MIMEType>,
+        hasPublicLink: Boolean?,
         sorting: Sorting,
         sortDescending: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
@@ -93,6 +95,7 @@ internal class GetPaginatedNodesUseCaseImpl(
             tags = tags,
             owners = owners,
             mimeTypes = mimeTypes,
+            hasPublicLink = hasPublicLink,
             sorting = sorting,
             sortDescending = sortDescending
         ).map { nodes ->

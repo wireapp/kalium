@@ -43,6 +43,7 @@ public interface GetPaginatedFilesFlowUseCase {
         tags: List<String> = emptyList(),
         owners: List<String> = emptyList(),
         mimeTypes: List<MIMEType> = emptyList(),
+        hasPublicLink: Boolean? = null,
         sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
         sortDescending: Boolean = true,
     ): Flow<PagingData<Node>>
@@ -59,9 +60,10 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
         tags: List<String>,
         owners: List<String>,
         mimeTypes: List<MIMEType>,
+        hasPublicLink: Boolean?,
         sorting: Sorting,
         sortDescending: Boolean,
     ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, onlyDeleted, tags, owners, mimeTypes, sorting, sortDescending)
+        return getCellFilesUseCase(conversationId, query, onlyDeleted, tags, owners, mimeTypes, hasPublicLink, sorting, sortDescending)
     }
 }

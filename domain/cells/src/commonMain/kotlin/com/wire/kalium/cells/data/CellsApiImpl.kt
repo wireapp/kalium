@@ -95,6 +95,7 @@ internal class CellsApiImpl(
         tags: List<String>,
         sorting: Sorting,
         sortDescending: Boolean,
+        hasPublicLink: Boolean?,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val lookupTags = tags.map {
@@ -114,7 +115,8 @@ internal class CellsApiImpl(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
                         ),
-                        metadata = lookupTags
+                        metadata = lookupTags,
+                        status = hasPublicLink?.let { LookupFilterStatusFilter(hasPublicLink = it) }
                     ),
                     sortField = sorting.apiValue,
                     sortDirDesc = sortDescending,
@@ -135,6 +137,7 @@ internal class CellsApiImpl(
         mimeTypes: List<MIMEType>,
         sorting: Sorting,
         sortDescending: Boolean,
+        hasPublicLink: Boolean?,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val metadataFilters =
@@ -148,11 +151,10 @@ internal class CellsApiImpl(
                     offset = offset?.toString(),
                     scope = RestLookupScope(root = RestNodeLocator(path = path)),
                     filters = RestLookupFilter(
-                        status = if (onlyDeleted) {
-                            LookupFilterStatusFilter(deleted = StatusFilterDeletedStatus.Only)
-                        } else {
-                            null
-                        },
+                        status = LookupFilterStatusFilter(
+                            deleted = if (onlyDeleted) StatusFilterDeletedStatus.Only else null,
+                            hasPublicLink = hasPublicLink
+                        ),
                         type = nodeType.toTreeNodeType(),
                         metadata = metadataFilters,
                         text = LookupFilterTextSearch(
