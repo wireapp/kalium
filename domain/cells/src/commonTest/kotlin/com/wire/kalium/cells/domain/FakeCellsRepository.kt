@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.data.MIMEType
 import com.wire.kalium.cells.data.SortingCriteria
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
@@ -65,14 +67,8 @@ class FakeCellsRepository : CellsRepository {
         query: String,
         limit: Int,
         offset: Int,
-        onlyDeleted: Boolean,
-        nodeType: CellNodeType,
-        tags: List<String>,
-        owners: List<String>,
-        mimeTypes: List<MIMEType>,
-        hasPublicLink: Boolean?,
-        sorting: SortingCriteria,
-        sortDescending: Boolean
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec
     ): Either<NetworkFailure, PaginatedList<CellNode>> {
         TODO("Not yet implemented")
     }
@@ -80,10 +76,8 @@ class FakeCellsRepository : CellsRepository {
     override suspend fun getNodesByPath(
         query: String,
         path: String,
-        nodeType: CellNodeType,
-        tags: List<String>,
-        owners: List<String>,
-        mimeTypes: List<MIMEType>
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec
     ): Either<NetworkFailure, List<CellNode>> {
         TODO("Not yet implemented")
     }
