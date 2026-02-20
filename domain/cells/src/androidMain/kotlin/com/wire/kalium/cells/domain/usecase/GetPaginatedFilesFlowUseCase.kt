@@ -29,7 +29,8 @@ public interface GetPaginatedFilesFlowUseCase {
      * Use case to get a paginated flow of file [Node]s from cells.
      * @param conversationId The unique identifier of the conversation to filter files by (optional).
      * @param query The search query to filter files.
-     * @param fileFilters The filters to apply when fetching files, such as deletion status, tags, owners, MIME types, and public link status.
+     * @param fileFilters The filters to apply when fetching files, such as deletion status, tags,
+     * owners, MIME types, and public link status.
      * @param sortingSpec The sorting specification to apply when fetching files, including criteria and order.
      * @return a flow of paginated file nodes.
      */
