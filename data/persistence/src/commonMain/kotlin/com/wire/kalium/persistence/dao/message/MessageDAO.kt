@@ -110,8 +110,7 @@ interface MessageDAO {
 
     suspend fun resetAssetTransferStatus()
 
-    suspend fun markMessagesAsDecryptionResolved(
-        conversationId: QualifiedIDEntity,
+    suspend fun markProteusMessagesAsDecryptionResolved(
         userId: QualifiedIDEntity,
         clientId: String,
     )

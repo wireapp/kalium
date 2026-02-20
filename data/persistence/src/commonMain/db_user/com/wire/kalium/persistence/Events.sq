@@ -46,7 +46,7 @@ selectUnprocessedEvents:
 SELECT * FROM Events
 WHERE is_processed = 0
 ORDER BY id ASC
-LIMIT 500;
+LIMIT ?;
 
 deleteUnprocessedLiveEventsByIds:
 DELETE FROM Events

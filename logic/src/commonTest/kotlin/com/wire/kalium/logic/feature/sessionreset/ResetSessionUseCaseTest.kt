@@ -73,14 +73,14 @@ class ResetSessionUseCaseTest {
     fun givenMarkingDecryptionFailureAsResolvedFailed_whenResettingSession_ThenReturnFailure() = runTest(TestKaliumDispatcher.io) {
         val (arrangement, useCase) = Arrangement()
             .withSessionResetReturning(Either.Right(Unit))
-            .withMarkMessagesAsDecryptionResolvedReturning(Either.Left(failure))
+            .withMarkProteusMessagesAsDecryptionResolvedReturning(Either.Left(failure))
             .arrange {
                 withProteusTransactionReturning(Either.Right(Unit))
             }
 
         val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        coVerify { arrangement.messageRepository.markMessagesAsDecryptionResolved(any(), any(), any()) }.wasInvoked(once)
+        coVerify { arrangement.messageRepository.markProteusMessagesAsDecryptionResolved(any(), any()) }.wasInvoked(once)
         assertEquals(ResetSessionResult.Failure(failure), result)
     }
 
@@ -88,7 +88,7 @@ class ResetSessionUseCaseTest {
     fun givenResetSessionCalled_whenRunningSuccessfully_thenReturnSuccessResult() = runTest(TestKaliumDispatcher.io) {
         val (arrangement, useCase) = Arrangement()
             .withSessionResetReturning(Either.Right(Unit))
-            .withMarkMessagesAsDecryptionResolvedReturning(Either.Right(Unit))
+            .withMarkProteusMessagesAsDecryptionResolvedReturning(Either.Right(Unit))
             .arrange {
                 withProteusTransactionReturning(Either.Right(Unit))
             }
@@ -112,9 +112,9 @@ class ResetSessionUseCaseTest {
             coEvery { sessionResetSender.invoke(any(), any(), any()) } returns result
         }
 
-        suspend fun withMarkMessagesAsDecryptionResolvedReturning(result: Either<CoreFailure, Unit>) = apply {
+        suspend fun withMarkProteusMessagesAsDecryptionResolvedReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                messageRepository.markMessagesAsDecryptionResolved(any(), any(), any())
+                messageRepository.markProteusMessagesAsDecryptionResolved(any(), any())
             } returns result
         }
 

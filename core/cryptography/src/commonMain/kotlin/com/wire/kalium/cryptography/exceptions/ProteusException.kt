@@ -155,8 +155,6 @@ open class ProteusException(message: String?, val code: Code, val intCode: Int?,
 
     companion object {
 
-        const val SESSION_NOT_FOUND_INT = 2
-
         @Suppress("MagicNumber")
         fun fromNativeCode(code: Int): Code {
             return when (code) {
@@ -184,7 +182,7 @@ open class ProteusException(message: String?, val code: Code, val intCode: Int?,
          *
          * See the mapping: [com.wire.kalium.cryptography.ProteusClientCoreCryptoImpl.Companion.mapProteusExceptionToErrorCode]
          *
-         * [Mapping sources](https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs)
+         * [Mapping sources](https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs)
          *
          * [Mapping source README](https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md)
          */
