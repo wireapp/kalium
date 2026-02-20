@@ -95,12 +95,7 @@ internal class CellsApiImpl(
         sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
-            val lookupTags = fileFilters.tags.map {
-                LookupFilterMetaFilter(
-                    namespace = MetadataKeys.TAGS,
-                    term = it.quoted(),
-                )
-            }
+            val metadataFilters = fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS)
             getNodeServiceApi().lookup(
                 RestLookupRequest(
                     limit = limit.toString(),
@@ -112,7 +107,7 @@ internal class CellsApiImpl(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
                         ),
-                        metadata = lookupTags,
+                        metadata = metadataFilters,
                         status = fileFilters.hasPublicLink?.let { LookupFilterStatusFilter(hasPublicLink = it) }
                     ),
                     sortField = sortingSpec.criteria.apiValue,
@@ -132,9 +127,9 @@ internal class CellsApiImpl(
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val metadataFilters =
-                fileFilters.tags.toMetaFilters(MetadataKeys.TAGS) +
-                        fileFilters.owners.toMetaFilters(MetadataKeys.OWNER_UUID) +
-                        fileFilters.mimeTypes.toMimeMetaFilters()
+                fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS) +
+                        fileFilters.owners.toMetaDataFilters(MetadataKeys.OWNER_UUID) +
+                        fileFilters.mimeTypes.toMimeMetaDataFilters()
 
             getNodeServiceApi().lookup(
                 RestLookupRequest(
@@ -245,7 +240,6 @@ internal class CellsApiImpl(
         }
     }
 
-    // Helper function to fetch public link before updating it
     private suspend fun withPublicLink(uuid: String, block: suspend (RestShareLink) -> Unit) =
         wrapCellsResponse {
             getNodeServiceApi().getPublicLink(uuid)
@@ -477,36 +471,36 @@ private fun String.quoted(): String = "\"$this\""
 private fun LookupFilterMetaFilter.Companion.termFilter(
     namespace: String,
     term: String,
-    op: LookupFilterMetaFilterOp? = null,
+    operation: LookupFilterMetaFilterOp? = null,
 ) = LookupFilterMetaFilter(
     namespace = namespace,
     term = term,
-    operation = op,
+    operation = operation,
 )
 
-private fun List<String>.toMetaFilters(
+private fun List<String>.toMetaDataFilters(
     namespace: String,
 ): List<LookupFilterMetaFilter> {
-    val op = if (size == 1) LookupFilterMetaFilterOp.Must else LookupFilterMetaFilterOp.Should
+    val operation = if (size == 1) LookupFilterMetaFilterOp.Must else LookupFilterMetaFilterOp.Should
     return map { value ->
         LookupFilterMetaFilter.termFilter(
             namespace = namespace,
             term = value.quoted(),
-            op = op
+            operation = operation
         )
     }
 }
 
-private fun List<MIMEType>.toMimeMetaFilters(): List<LookupFilterMetaFilter> {
+private fun List<MIMEType>.toMimeMetaDataFilters(): List<LookupFilterMetaFilter> {
     val expanded = flatMap { mime -> mime.expandTerms() }
 
-    val op = if (expanded.size == 1) LookupFilterMetaFilterOp.Must else LookupFilterMetaFilterOp.Should
+    val operation = if (expanded.size == 1) LookupFilterMetaFilterOp.Must else LookupFilterMetaFilterOp.Should
 
     return expanded.map { term ->
         LookupFilterMetaFilter.termFilter(
             namespace = MetadataKeys.TYPE,
             term = term,
-            op = op
+            operation = operation
         )
     }
 }
