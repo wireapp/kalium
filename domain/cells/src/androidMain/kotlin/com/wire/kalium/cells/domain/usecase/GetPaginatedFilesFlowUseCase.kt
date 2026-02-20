@@ -31,10 +31,8 @@ public interface GetPaginatedFilesFlowUseCase {
      * @param query The search query to filter files.
      * @param fileFilters The filters to apply when fetching files, such as deletion status, tags, owners, MIME types, and public link status.
      * @param sortingSpec The sorting specification to apply when fetching files, including criteria and order.
-     * @param sortDescending Flag to indicate whether to sort in descending order.
      * @return a flow of paginated file nodes.
      */
-    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         conversationId: String?,
         query: String,
