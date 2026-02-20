@@ -107,16 +107,19 @@ public class WrapperWorkerFactory(
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
         val resolvedType = resolveWorkerType(workerType, innerWorkerClassName)
-        val worker = when (resolvedType) {
-            WORKER_TYPE_PENDING_MESSAGES -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
-            WORKER_TYPE_USER_CONFIG_SYNC -> withSessionScope(userId) { it.userConfigSyncWorker }
-            WORKER_TYPE_UPDATE_API_VERSIONS -> coreLogic.getGlobalScope().updateApiVersionsWorker
-            WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS -> createAudioNormalizedLoudnessWorker(userId, workerParameters)
-            else -> instantiateWorker(innerWorkerClassName)
-        }
-        return worker?.let {
-            WrapperWorker(it, appContext, workerParameters, foregroundNotificationDetailsProvider)
-        }
+        val worker = runCatching {
+            when (resolvedType) {
+                WORKER_TYPE_PENDING_MESSAGES -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
+                WORKER_TYPE_USER_CONFIG_SYNC -> withSessionScope(userId) { it.userConfigSyncWorker }
+                WORKER_TYPE_UPDATE_API_VERSIONS -> coreLogic.getGlobalScope().updateApiVersionsWorker
+                WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS -> createAudioNormalizedLoudnessWorker(userId, workerParameters)
+                else -> instantiateWorker(innerWorkerClassName)
+            }
+        }.getOrElse { error ->
+            kaliumLogger.e("Unable to create worker for class: $innerWorkerClassName", error)
+            null
+        } ?: MissingWorker(innerWorkerClassName)
+        return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
     private fun resolveWorkerType(workerType: String?, innerWorkerClassName: String): String? {
@@ -171,12 +174,25 @@ public class WrapperWorkerFactory(
 
     private fun withSessionScope(userId: UserId?, action: (UserSessionScope) -> DefaultWorker): DefaultWorker? {
         require(userId != null) { "No user id specified" }
-        return runBlocking {
-            coreLogic.globalScope {
-                doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
+        val doesValidSessionExist = runCatching {
+            runBlocking {
+                coreLogic.globalScope {
+                    doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
+                }
             }
-        }.let { doesValidSessionExist ->
-            if (doesValidSessionExist) action(coreLogic.getSessionScope(userId)) else null
+        }.getOrElse { error ->
+            kaliumLogger.e("Unable to validate session for worker user: $userId", error)
+            false
+        }
+        return if (!doesValidSessionExist) {
+            null
+        } else {
+            runCatching {
+                action(coreLogic.getSessionScope(userId))
+            }.getOrElse { error ->
+                kaliumLogger.e("Unable to create session scope for worker user: $userId", error)
+                null
+            }
         }
     }
 
