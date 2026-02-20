@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.domain
 
 import com.wire.kalium.cells.data.MIMEType
-import com.wire.kalium.cells.data.Sorting
+import com.wire.kalium.cells.data.SortingCriteria
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
@@ -71,7 +71,7 @@ class FakeCellsRepository : CellsRepository {
         owners: List<String>,
         mimeTypes: List<MIMEType>,
         hasPublicLink: Boolean?,
-        sorting: Sorting,
+        sorting: SortingCriteria,
         sortDescending: Boolean
     ): Either<NetworkFailure, PaginatedList<CellNode>> {
         TODO("Not yet implemented")

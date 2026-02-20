@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.Node
@@ -43,8 +44,10 @@ internal class GetFoldersUseCaseImpl(
     override suspend operator fun invoke(conversationId: String): Either<CoreFailure, List<Node.Folder>> =
         cellsRepository.getNodesByPath(
             path = conversationId,
-            nodeType = CellNodeType.FOLDER,
-            query = EMPTY
+            query = EMPTY,
+            fileFilters = FileFilters(
+                nodeType = CellNodeType.FOLDER
+            ),
         ).map { nodes ->
             nodes.map { it.toFolderModel() }
         }

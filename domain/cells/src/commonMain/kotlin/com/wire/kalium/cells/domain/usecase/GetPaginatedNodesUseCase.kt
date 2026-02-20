@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.data.MIMEType
-import com.wire.kalium.cells.data.Sorting
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingCriteria
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
@@ -48,13 +49,11 @@ public interface GetPaginatedNodesUseCase {
         query: String,
         limit: Int = 100,
         offset: Int = 0,
-        onlyDeleted: Boolean = false,
-        tags: List<String> = emptyList(),
-        owners: List<String> = emptyList(),
-        mimeTypes: List<MIMEType> = emptyList(),
-        hasPublicLink: Boolean? = null,
-        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
-        sortDescending: Boolean = true,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec = SortingSpec(
+            criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
+            descending = true
+        ),
     ): Either<CoreFailure, PaginatedList<Node>>
 }
 
@@ -70,13 +69,8 @@ internal class GetPaginatedNodesUseCaseImpl(
         query: String,
         limit: Int,
         offset: Int,
-        onlyDeleted: Boolean,
-        tags: List<String>,
-        owners: List<String>,
-        mimeTypes: List<MIMEType>,
-        hasPublicLink: Boolean?,
-        sorting: Sorting,
-        sortDescending: Boolean
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec
     ): Either<CoreFailure, PaginatedList<Node>> {
 
         // Collect all data required to show the file/folder
@@ -90,14 +84,8 @@ internal class GetPaginatedNodesUseCaseImpl(
             query = query,
             limit = limit,
             offset = offset,
-            onlyDeleted = onlyDeleted,
-            nodeType = CellNodeType.ALL,
-            tags = tags,
-            owners = owners,
-            mimeTypes = mimeTypes,
-            hasPublicLink = hasPublicLink,
-            sorting = sorting,
-            sortDescending = sortDescending
+            fileFilters = fileFilters,
+            sortingSpec = sortingSpec,
         ).map { nodes ->
             PaginatedList(
                 data = nodes.data.asSequence()

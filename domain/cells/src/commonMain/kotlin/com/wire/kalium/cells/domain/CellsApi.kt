@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.cells.domain
 
-import com.wire.kalium.cells.data.MIMEType
-import com.wire.kalium.cells.data.Sorting
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingCriteria
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.data.model.GetNodesResponseDTO
 import com.wire.kalium.cells.data.model.NodeVersionDTO
 import com.wire.kalium.cells.data.model.PreCheckResultDTO
-import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.cells.sdk.kmp.model.RestFlag
 import com.wire.kalium.cells.sdk.kmp.model.RestNodeVersionsFilter
@@ -37,10 +37,8 @@ internal interface CellsApi {
         query: String,
         limit: Int,
         offset: Int,
-        tags: List<String>,
-        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
-        sortDescending: Boolean = true,
-        hasPublicLink: Boolean? = null,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getNodesForPath(
@@ -48,14 +46,8 @@ internal interface CellsApi {
         path: String,
         limit: Int? = null,
         offset: Int? = null,
-        onlyDeleted: Boolean = false,
-        nodeType: CellNodeType = CellNodeType.ALL,
-        tags: List<String> = emptyList(),
-        owners: List<String>,
-        mimeTypes: List<MIMEType>,
-        sorting: Sorting = Sorting.FOLDERS_FIRST_THEN_ALPHABETICAL,
-        sortDescending: Boolean = true,
-        hasPublicLink: Boolean? = null,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>

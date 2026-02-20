@@ -17,10 +17,13 @@
  */
 package com.wire.kalium.cells.data
 
-public enum class Sorting(public val apiValue: String) {
-    FOLDERS_FIRST_THEN_ALPHABETICAL("natural"),
-    NAME_CASE_SENSITIVE("name"),
-    NAME_CASE_INSENSITIVE("name_ci"),
-    SIZE("size"),
-    MODIFICATION_TIME("mtime"),
-}
+import com.wire.kalium.cells.domain.model.CellNodeType
+
+public data class FileFilters(
+    val onlyDeleted: Boolean = false,
+    val nodeType: CellNodeType = CellNodeType.ALL,
+    val tags: List<String> = emptyList(),
+    val owners: List<String> = emptyList(),
+    val mimeTypes: List<MIMEType> = emptyList(),
+    val hasPublicLink: Boolean? = null,
+)
