@@ -18,80 +18,88 @@
 
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.client.AuthTokenStorage
-import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import io.mockative.coEvery
-import io.mockative.mock
-import kotlinx.coroutines.flow.Flow
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class SessionRepositoryTest {
 
-    /*
     @Test
-    fun givenASession_whenObservingAllSessions_thenChangesArePropagated() = runTest {
-        val sessionsStateFlow = MutableStateFlow(listOf(AccountInfoEntity(userIDEntity = UserIDEntity("1", "domain"), null)))
-        val (arrangement, sessionRepository) = Arrangement()
-            .withObserveAllAccountList(sessionsStateFlow)
-            .arrange()
+    fun givenNativePushValue_whenPersistingFlag_thenValueIsWrittenToServerConfiguration() = runTest {
+        val (arrangement, sessionRepository) = Arrangement().arrange()
 
-        val sessionsMapExpectedValue = listOf(arrangement.accountInfoValid)
-        sessionRepository.allSessionsFlow().test {
-            assertEquals(listOf(), awaitItem())
-            sessionsStateFlow.emit(listOf(arrangement.validAccountIndoEntity))
-            assertEquals(sessionsMapExpectedValue, awaitItem())
-            sessionsStateFlow.emit(listOf())
-            assertEquals(listOf(), awaitItem())
-        }
-    }
-     */
+        sessionRepository.setNativePushEnabledForUser(TEST_USER_ID, false).shouldSucceed()
 
-    /*
-    @Test
-    fun givenASession_whenObservingAllValidSessions_thenOnlyValidOnesArePropagated() = runTest {
-        val sessionsStateFlow = MutableStateFlow(mapOf<UserIDEntity, AuthSessionEntity>())
-        val (arrangement, sessionRepository) = Arrangement()
-            .arrange()
-        val sessionsMapExpectedValue = listOf(arrangement.sessionValid)
-        sessionRepository.allValidSessionsFlow().test {
-            assertEquals(listOf(), awaitItem())
-            sessionsStateFlow.emit(
-                mapOf(
-                    arrangement.sessionEntityValid.userId to arrangement.sessionEntityValid,
-                    arrangement.sessionEntityInvalid.userId to arrangement.sessionEntityInvalid
-                )
-            )
-            assertEquals(sessionsMapExpectedValue, awaitItem())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.serverConfigurationDAO.updateNativePushEnabledByUser(eq(TEST_USER_ID.toDao()), eq(false))
         }
     }
 
-     */
+    @Test
+    fun givenNativePushDisabledOnServerConfig_whenReadingFlag_thenDisabledIsReturned() = runTest {
+        val (arrangement, sessionRepository) = Arrangement()
+            .withNativePushEnabledByUser(false)
+            .arrange()
 
-    @Suppress("UnusedPrivateClass")
+        sessionRepository.isNativePushEnabledForUser(TEST_USER_ID).shouldSucceed {
+            assertEquals(false, it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.serverConfigurationDAO.nativePushEnabledByUser(eq(TEST_USER_ID.toDao()))
+        }
+    }
+
+    @Test
+    fun givenNoServerConfigForUser_whenReadingFlag_thenNativePushDefaultsToEnabled() = runTest {
+        val (arrangement, sessionRepository) = Arrangement()
+            .withNativePushEnabledByUser(null)
+            .arrange()
+
+        sessionRepository.isNativePushEnabledForUser(TEST_USER_ID).shouldSucceed {
+            assertEquals(true, it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.serverConfigurationDAO.nativePushEnabledByUser(eq(TEST_USER_ID.toDao()))
+        }
+    }
+
     private class Arrangement {
+        val accountsDAO: AccountsDAO = mock(mode = MockMode.autoUnit)
+        val authTokenStorage: AuthTokenStorage = mock(mode = MockMode.autoUnit)
+        val serverConfigurationDAO: ServerConfigurationDAO = mock(mode = MockMode.autoUnit)
 
-        val sessionMapper = MapperProvider.sessionMapper()
-        val accountsDAO: AccountsDAO = mock(AccountsDAO::class)
-        val authTokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
+        private val sessionRepository = SessionDataSource(
+            accountsDAO = accountsDAO,
+            authTokenStorage = authTokenStorage,
+            serverConfigDAO = serverConfigurationDAO
+        )
 
-        val serverConfigurationDAO: ServerConfigurationDAO = mock(ServerConfigurationDAO::class)
-
-        private val sessionRepository =
-            SessionDataSource(accountsDAO, authTokenStorage, serverConfigurationDAO)
-
-        val validAccountIndoEntity = AccountInfoEntity(userIDEntity = UserIDEntity("1", "domain"), null)
-
-        val accountInfoValid = sessionMapper.fromAccountInfoEntity(validAccountIndoEntity)
-
-        suspend fun withObserveAllAccountList(allSessionsFlow: Flow<List<AccountInfoEntity>>) = apply {
-            coEvery {
-                accountsDAO.observeAllAccountList()
-            }.returns(allSessionsFlow)
+        suspend fun withNativePushEnabledByUser(enabled: Boolean?) = apply {
+            everySuspend {
+                serverConfigurationDAO.nativePushEnabledByUser(any())
+            } returns enabled
         }
 
-        internal fun arrange() = this to sessionRepository
+        suspend fun arrange() = this to sessionRepository
+    }
+
+    companion object {
+        private val TEST_USER_ID = UserId(value = "self", domain = "wire.com")
     }
 }

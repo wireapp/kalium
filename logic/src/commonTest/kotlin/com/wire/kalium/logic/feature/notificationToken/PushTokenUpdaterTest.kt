@@ -20,21 +20,26 @@ package com.wire.kalium.logic.feature.notificationToken
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.notification.NotificationToken
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.notification.PushTokenRepository
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.network.api.model.PushTokenBody
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -49,21 +54,21 @@ class PushTokenUpdaterTest {
 
         pushTokenUpdater.monitorTokenChanges()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.observeCurrentClientId()
-        }.wasNotInvoked()
+        }
 
-        verify {
+        verify(VerifyMode.not) {
             arrangement.notificationTokenRepository.getNotificationToken()
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.registerToken(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -75,17 +80,40 @@ class PushTokenUpdaterTest {
 
         pushTokenUpdater.monitorTokenChanges()
 
-        verify {
+        verify(VerifyMode.not) {
             arrangement.notificationTokenRepository.getNotificationToken()
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.registerToken(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(any())
-        }.wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenNativePushDisabledForServer_thenTokenRegistrationIsSkippedAndRetryFlagIsCleared() = runTest {
+        val (arrangement, pushTokenUpdater) = Arrangement()
+            .withUpdateFirebaseTokenFlag(true)
+            .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+            .withServerNativePushEnabled(false)
+            .arrange()
+
+        pushTokenUpdater.monitorTokenChanges()
+
+        verify(VerifyMode.not) {
+            arrangement.notificationTokenRepository.getNotificationToken()
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.clientRepository.registerToken(any(), any(), any(), any())
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
+        }
     }
 
     @Test
@@ -93,6 +121,7 @@ class PushTokenUpdaterTest {
         val (arrangement, pushTokenUpdater) = Arrangement()
             .withUpdateFirebaseTokenFlag(true)
             .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+            .withServerNativePushEnabled(true)
             .withNotificationToken(
                 Either.Right(
                     NotificationToken(
@@ -107,18 +136,51 @@ class PushTokenUpdaterTest {
 
         pushTokenUpdater.monitorTokenChanges()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.registerToken(
                 eq(pushTokenRequestBody.senderId),
                 eq(pushTokenRequestBody.client),
                 eq(pushTokenRequestBody.token),
                 eq(pushTokenRequestBody.transport),
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
-        }.wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenNativePushRegistrationReturnsAppNotFound_thenDisableRetriesAndForcePersistentWebSocket() = runTest {
+        val (arrangement, pushTokenUpdater) = Arrangement()
+            .withUpdateFirebaseTokenFlag(true)
+            .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+            .withServerNativePushEnabled(true)
+            .withNotificationToken(
+                Either.Right(
+                    NotificationToken(
+                        MOCK_TOKEN,
+                        MOCK_TRANSPORT,
+                        MOCK_APP_ID
+                    )
+                )
+            )
+            .withRegisterTokenResult(Either.Left(serverMiscommunicationFailure(code = 404, label = "app-not-found")))
+            .arrange()
+
+        pushTokenUpdater.monitorTokenChanges()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionRepository.setNativePushEnabledForUser(eq(MOCK_USER_ID), eq(false))
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionRepository.updatePersistentWebSocketStatus(eq(MOCK_USER_ID), eq(true))
+        }
     }
 
     companion object {
@@ -126,6 +188,7 @@ class PushTokenUpdaterTest {
         private const val MOCK_TRANSPORT = "GCM"
         private const val MOCK_APP_ID = "applicationId"
         private const val MOCK_CLIENT_ID = "clientId"
+        private val MOCK_USER_ID = UserId("self", "wire.com")
 
         private val pushTokenRequestBody = PushTokenBody(
             senderId = MOCK_APP_ID,
@@ -136,44 +199,59 @@ class PushTokenUpdaterTest {
     }
 
     private class Arrangement {
-        val clientRepository: ClientRepository = mock(ClientRepository::class)
-        val notificationTokenRepository: NotificationTokenRepository = mock(NotificationTokenRepository::class)
-        val pushTokenRepository: PushTokenRepository = mock(PushTokenRepository::class)
+        val clientRepository: ClientRepository = mock(mode = MockMode.autoUnit)
+        val notificationTokenRepository: NotificationTokenRepository = mock(mode = MockMode.autoUnit)
+        val pushTokenRepository: PushTokenRepository = mock(mode = MockMode.autoUnit)
+        val sessionRepository: SessionRepository = mock(mode = MockMode.autoUnit)
 
         private val pushTokenUpdater: PushTokenUpdater = PushTokenUpdater(
             clientRepository,
             notificationTokenRepository,
-            pushTokenRepository
+            pushTokenRepository,
+            sessionRepository,
+            MOCK_USER_ID
         )
 
         suspend fun withCurrentClientId(clientId: ClientId?) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeCurrentClientId()
-            }.returns(flowOf(clientId))
+            } returns flowOf(clientId)
         }
 
         suspend fun withRegisterTokenResult(result: Either<NetworkFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.registerToken(any(), any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateFirebaseTokenFlag(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 pushTokenRepository.observeUpdateFirebaseTokenFlag()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
+        }
+
+        suspend fun withServerNativePushEnabled(enabled: Boolean) = apply {
+            everySuspend {
+                sessionRepository.isNativePushEnabledForUser(any())
+            } returns Either.Right(enabled)
         }
 
         fun withNotificationToken(result: Either<StorageFailure, NotificationToken>) = apply {
             every {
                 notificationTokenRepository.getNotificationToken()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange() = this to pushTokenUpdater.also {
-            coEvery {
+            everySuspend {
                 pushTokenRepository.setUpdateFirebaseTokenFlag(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
+            everySuspend {
+                sessionRepository.setNativePushEnabledForUser(any(), any())
+            } returns Either.Right(Unit)
+            everySuspend {
+                sessionRepository.updatePersistentWebSocketStatus(any(), any())
+            } returns Either.Right(Unit)
         }
     }
 }

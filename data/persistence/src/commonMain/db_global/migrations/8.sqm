@@ -1,0 +1,4 @@
+import kotlin.Boolean;
+
+ALTER TABLE ServerConfiguration
+ADD COLUMN nativePushEnabled INTEGER AS Boolean NOT NULL DEFAULT 1;

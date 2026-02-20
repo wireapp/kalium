@@ -78,6 +78,9 @@ internal interface SessionRepository {
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun setNativePushEnabledForUser(userId: UserId, enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isNativePushEnabledForUser(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
     suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
@@ -201,6 +204,19 @@ internal class SessionDataSource internal constructor(
 
     override suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { accountsDAO.setAllAccountsPersistentWebSocketEnabled(enabled) }
+
+    override suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { accountsDAO.setAllAccountsPersistentWebSocketEnabled(enabled) }
+
+    override suspend fun setNativePushEnabledForUser(userId: UserId, enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            serverConfigDAO.updateNativePushEnabledByUser(userId.toDao(), enabled)
+        }
+
+    override suspend fun isNativePushEnabledForUser(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageNullableRequest {
+            serverConfigDAO.nativePushEnabledByUser(userId.toDao())
+        }.map { it ?: true }
 
     override suspend fun updateSsoIdAndScimInfo(
         userId: UserId,

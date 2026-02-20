@@ -50,7 +50,7 @@ internal class PushTokenDataSource internal constructor(private val metadataDAO:
         .map {
             // if the flag is absent (null, or empty) it means it's a new user
             // so we need to register Firebase token for such a user too
-            it == null || it.isEmpty() || it.toBoolean()
+            it.isNullOrEmpty() || it.toBoolean()
         }
 
     internal companion object {

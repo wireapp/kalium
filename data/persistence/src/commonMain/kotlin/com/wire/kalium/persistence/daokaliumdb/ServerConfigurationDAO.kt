@@ -52,7 +52,8 @@ internal object ServerConfigMapper {
         apiProxyHost: String?,
         apiProxyNeedsAuthentication: Boolean?,
         apiProxyPort: Int?,
-        lastBlackListCheck: String?
+        lastBlackListCheck: String?,
+        nativePushEnabled: Boolean,
     ): ServerConfigEntity = ServerConfigEntity(
         id,
         ServerConfigEntity.Links(
@@ -96,6 +97,7 @@ internal object ServerConfigMapper {
         apiProxyNeedsAuthentication: Boolean?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?,
+        nativePushEnabled: Boolean?,
         id_: QualifiedIDEntity,
     ): ServerConfigWithUserIdEntity = ServerConfigWithUserIdEntity(
         userId = id_,
@@ -115,7 +117,8 @@ internal object ServerConfigMapper {
             apiProxyHost = apiProxyHost,
             apiProxyNeedsAuthentication = apiProxyNeedsAuthentication,
             apiProxyPort = apiProxyPort,
-            lastBlackListCheck = lastBlackListCheck
+            lastBlackListCheck = lastBlackListCheck,
+            nativePushEnabled = nativePushEnabled!!,
         ),
     )
 }
@@ -133,6 +136,8 @@ interface ServerConfigurationDAO {
     suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
+    suspend fun updateNativePushEnabledByUser(userId: UserIDEntity, enabled: Boolean)
+    suspend fun nativePushEnabledByUser(userId: UserIDEntity): Boolean?
     suspend fun teamUrlForUser(userId: UserIDEntity): String?
     suspend fun setFederationToTrue(id: String)
     suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
@@ -242,6 +247,16 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity? = withContext(queriesContext) {
         queries.getByUser(userId, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+    }
+
+    override suspend fun updateNativePushEnabledByUser(userId: UserIDEntity, enabled: Boolean) {
+        withContext(queriesContext) {
+            queries.updateNativePushEnabledByUser(enabled, userId)
+        }
+    }
+
+    override suspend fun nativePushEnabledByUser(userId: UserIDEntity): Boolean? = withContext(queriesContext) {
+        queries.getNativePushEnabledByUser(userId).executeAsOneOrNull()
     }
 
     override suspend fun setFederationToTrue(id: String) {
