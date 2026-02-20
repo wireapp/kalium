@@ -24,13 +24,20 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 
 public data class UserAuthenticatedNetworkApis(public val container: AuthenticatedNetworkContainer)
 
+/**
+ * Provides in-memory caching for [UserAuthenticatedNetworkApis] keyed by [UserId].
+ *
+ * Cache scope is controlled by the shared provider policy [USE_GLOBAL_PROVIDER_CACHE]:
+ * - `true`: all [UserAuthenticatedNetworkProvider] instances share one cache map.
+ * - `false`: each [UserAuthenticatedNetworkProvider] instance owns a private cache map.
+ */
 public abstract class UserAuthenticatedNetworkProvider {
     private companion object {
         val globalInMemoryUserAuthenticatedNetworkApis: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> = ConcurrentMutableMap()
     }
 
     private val inMemoryUserAuthenticatedNetworkApis: ConcurrentMutableMap<UserId, UserAuthenticatedNetworkApis> =
-        if (USE_GLOBAL_USER_NETWORK_API_CACHE) globalInMemoryUserAuthenticatedNetworkApis else ConcurrentMutableMap()
+        if (USE_GLOBAL_PROVIDER_CACHE) globalInMemoryUserAuthenticatedNetworkApis else ConcurrentMutableMap()
 
     public fun get(userId: UserId): UserAuthenticatedNetworkApis? = inMemoryUserAuthenticatedNetworkApis[userId]
 

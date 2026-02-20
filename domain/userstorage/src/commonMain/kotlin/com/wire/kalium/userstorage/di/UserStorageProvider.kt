@@ -27,7 +27,7 @@ public data class UserStorage(public val database: UserDatabaseBuilder)
 /**
  * Provides in-memory caching for [UserStorage] instances keyed by [UserId].
  *
- * Cache scope is controlled by [SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS]:
+ * Cache scope is controlled by the shared provider policy [USE_GLOBAL_PROVIDER_CACHE]:
  * - `true`: all [UserStorageProvider] instances share one cache map.
  * - `false`: each [UserStorageProvider] instance owns a private cache map.
  */
@@ -37,7 +37,7 @@ public abstract class UserStorageProvider {
     }
 
     private val providerUserStorageCache: ConcurrentMutableMap<UserId, UserStorage> =
-        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) sharedUserStorageCache else ConcurrentMutableMap()
+        if (USE_GLOBAL_PROVIDER_CACHE) sharedUserStorageCache else ConcurrentMutableMap()
 
     public fun get(userId: UserId): UserStorage? = providerUserStorageCache[userId]
 

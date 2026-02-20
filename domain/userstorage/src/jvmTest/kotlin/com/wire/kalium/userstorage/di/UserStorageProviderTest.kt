@@ -85,7 +85,7 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled = false
         )
 
-        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) {
+        if (USE_GLOBAL_PROVIDER_CACHE) {
             assertEquals(1, createCount.get())
             assertSame(firstStorage, secondStorage)
             assertSame(firstStorage, firstProvider.get(testUserId))
@@ -120,7 +120,7 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled = false
         )
 
-        if (SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS) {
+        if (USE_GLOBAL_PROVIDER_CACHE) {
             assertSame(firstStorage, removedStorage)
             assertEquals(2, createCount.get())
             assertSame(secondStorage, firstProvider.get(testUserId))

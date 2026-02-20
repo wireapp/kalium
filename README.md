@@ -30,24 +30,19 @@ Kalium currently uses the following compile-time Gradle properties:
     ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
     ```
 
-- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS`
-  - Default for standalone Kalium builds: `false` (per-`CoreLogic` cache, backwards-compatible behavior).
-  - Included-build behavior (when Kalium is built from Wire Android): defaults to `true` unless explicitly overridden with `-PSHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=...`.
-  - `true`: share user DB storage cache across `CoreLogic` instances in the same process.
-  - `false`: cache is scoped to each `CoreLogic` instance.
+- `USE_GLOBAL_PROVIDER_CACHE`
+  - Purpose: shared compile-time policy that defines cache scope for provider-level in-memory caches.
+  - Required: Kalium defines no default; consumer builds must set it explicitly.
+  - `true`: process-global caches shared across provider instances.
+  - `false`: each provider instance keeps its own cache.
+  - Current consumers:
+    - `UserStorageProvider`
+    - `UserAuthenticatedNetworkProvider`
+  - Extension rule: any new provider cache should follow this same policy instead of introducing a new compile-time flag.
   - Override example:
     ```bash
-    ./gradlew <task> -PSHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=true
+    ./gradlew <task> -PUSE_GLOBAL_PROVIDER_CACHE=true
     ```
-- `USE_GLOBAL_USER_NETWORK_API_CACHE`
-    - Default for standalone Kalium builds: `false` (cache scoped to each `UserAuthenticatedNetworkProvider` instance).
-    - Included-build behavior (when Kalium is built from Wire Android): defaults to `true` unless explicitly overridden with `-PUSE_GLOBAL_USER_NETWORK_API_CACHE=...`.
-    - `true`: share authenticated network API containers process-wide across provider instances.
-    - `false`: cache is local to each provider instance.
-    - Override example:
-      ```bash
-      ./gradlew <task> -PUSE_GLOBAL_USER_NETWORK_API_CACHE=true
-      ```
 
 The `cli` can be executed on the terminal of any machine that 
 satisfies the dependencies mentioned above, and is capable of actions like:

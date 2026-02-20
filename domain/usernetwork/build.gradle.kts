@@ -20,30 +20,18 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
-val cliUseGlobalUserNetworkApiCache: Boolean? = gradle.startParameter
-    .projectProperties["USE_GLOBAL_USER_NETWORK_API_CACHE"]
-    ?.toBooleanStrictOrNull()
+// Shared compile-time cache policy for provider-level caches across modules.
+val providerCacheFlag = "USE_GLOBAL_PROVIDER_CACHE"
 
-val parentUseGlobalUserNetworkApiCache: Boolean? = gradle.parent
-    ?.rootProject
-    ?.properties?.get("USE_GLOBAL_USER_NETWORK_API_CACHE")
-    ?.toString()?.toBooleanStrictOrNull()
-
-val localUseGlobalUserNetworkApiCache: Boolean = providers
-    .gradleProperty("USE_GLOBAL_USER_NETWORK_API_CACHE")
-    .map { it.toBoolean() }
-    .getOrElse(false)
-
-val useGlobalUserNetworkApiCache: Boolean = when {
-    cliUseGlobalUserNetworkApiCache != null -> cliUseGlobalUserNetworkApiCache
-    parentUseGlobalUserNetworkApiCache != null -> parentUseGlobalUserNetworkApiCache
-    else -> localUseGlobalUserNetworkApiCache
-}
+val useGlobalProviderCache: Boolean = resolveRequiredBooleanGradleProperty(
+    propertyName = providerCacheFlag,
+    purpose = "it defines provider cache scope (instance-local vs process-global)"
+)
 
 val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/usernetwork/commonMain/kotlin")
 
 val generateUserNetworkApiCacheConfig by tasks.registering {
-    inputs.property("useGlobalUserNetworkApiCache", useGlobalUserNetworkApiCache)
+    inputs.property("useGlobalProviderCache", useGlobalProviderCache)
     outputs.dir(generatedCommonMainKotlinDir)
     doLast {
         val packagePath = "com/wire/kalium/usernetwork/di"
@@ -55,7 +43,13 @@ val generateUserNetworkApiCacheConfig by tasks.registering {
             """
             package com.wire.kalium.usernetwork.di
 
-            internal const val USE_GLOBAL_USER_NETWORK_API_CACHE: Boolean = $useGlobalUserNetworkApiCache
+            /**
+             * Controls provider cache scope via shared compile-time policy.
+             *
+             * - `true`: all provider instances share one in-memory cache.
+             * - `false`: each provider instance keeps an isolated in-memory cache.
+             */
+            internal const val USE_GLOBAL_PROVIDER_CACHE: Boolean = $useGlobalProviderCache
             """.trimIndent() + "\n"
         )
     }
@@ -82,7 +76,7 @@ kotlin {
 }
 
 tasks.matching { task ->
-    task.name.contains("compile", ignoreCase = true) && task.name.contains("Kotlin")
+    task.name.contains("compile", ignoreCase = true)
 }.configureEach {
     dependsOn(generateUserNetworkApiCacheConfig)
 }

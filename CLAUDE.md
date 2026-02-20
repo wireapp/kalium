@@ -94,15 +94,15 @@ Framework output location: `logic/build/bin/<target>/debugFramework/logic.framew
 
 **Note:** iOS and JS builds require `USE_UNIFIED_CORE_CRYPTO=true`. Either set it in gradle.properties or pass `-PUSE_UNIFIED_CORE_CRYPTO=true` on the command line.
 
-User DB cache mode can be controlled at compile time with:
-- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=false` (default): shared per CoreLogic instance
-- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=true`: shared across CoreLogic instances in process
-- `USE_GLOBAL_USER_NETWORK_API_CACHE=false` (default standalone): cache scoped to each `UserAuthenticatedNetworkProvider` instance
-- `USE_GLOBAL_USER_NETWORK_API_CACHE=true` (default in included builds): process-global authenticated network API cache shared across provider instances
+User provider cache mode can be controlled at compile time with:
+- `USE_GLOBAL_PROVIDER_CACHE` is required and has no Kalium default; consumer builds must set it explicitly
+- `USE_GLOBAL_PROVIDER_CACHE=false`: each provider instance owns a local cache map
+- `USE_GLOBAL_PROVIDER_CACHE=true`: provider instances share process-global cache maps
+- Current consumers: `UserStorageProvider` and `UserAuthenticatedNetworkProvider`
+- Extension rule: new provider-level caches should reuse this policy flag
 
 CLI override examples:
-- `./gradlew <task> -PUSE_GLOBAL_USER_STORAGE_CACHE=true|false`
-- `./gradlew <task> -PUSE_GLOBAL_USER_NETWORK_API_CACHE=true|false`
+- `./gradlew <task> -PUSE_GLOBAL_PROVIDER_CACHE=true|false`
 
 ### CLI Application
 
