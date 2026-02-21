@@ -49,6 +49,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 internal open class NotificationApiV9 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -56,6 +58,7 @@ internal open class NotificationApiV9 internal constructor(
     val serverLinks: ServerConfigDTO.Links
 ) : NotificationApiV8(authenticatedNetworkClient, authenticatedWebSocketClient, serverLinks) {
     private var session: WebSocketSession? = null
+    private var lastIncomingFrameAt = TimeSource.Monotonic.markNow()
     val mutex = Mutex()
 
     /**
@@ -71,6 +74,7 @@ internal open class NotificationApiV9 internal constructor(
                     parameter(CLIENT_QUERY_KEY, clientId)
                     parameter(SYNC_MARKER_KEY, markerId)
                 }
+                lastIncomingFrameAt = TimeSource.Monotonic.markNow()
             }
             return session!!
         }
@@ -126,6 +130,11 @@ internal open class NotificationApiV9 internal constructor(
                 emit(WebSocketEvent.Close(it))
             }
             .collect { frame ->
+                val gap = lastIncomingFrameAt.elapsedNow()
+                if (gap > 20.seconds) {
+                    logger.w("Websocket frame gap detected: ${gap.inWholeMilliseconds}ms before frame $frame")
+                }
+                lastIncomingFrameAt = TimeSource.Monotonic.markNow()
                 logger.v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {

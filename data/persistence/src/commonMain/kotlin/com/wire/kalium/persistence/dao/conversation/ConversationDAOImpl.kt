@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.persistence.util.sqliteBusyRetry
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
@@ -67,6 +68,13 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
     override val platformExtensions: ConversationExtensions =
         ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, readDispatcher)
+
+    private suspend inline fun <T> withWriteRetry(crossinline block: () -> T): T =
+        withContext(writeDispatcher.value) {
+            sqliteBusyRetry {
+                block()
+            }
+        }
 
     // region Get/Observe by ID
 
@@ -123,11 +131,11 @@ internal class ConversationDAOImpl internal constructor(
                 ?.mls_group_id
         }
 
-    override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(writeDispatcher.value) {
+    override suspend fun insertConversation(conversationEntity: ConversationEntity) = withWriteRetry {
         nonSuspendingInsertConversation(conversationEntity)
     }
 
-    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) = withContext(writeDispatcher.value) {
+    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) = withWriteRetry {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 nonSuspendingInsertConversation(conversationEntity)
@@ -135,7 +143,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>) = withContext(writeDispatcher.value) {
+    override suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>) = withWriteRetry {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 with(conversationEntity) {
@@ -448,7 +456,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant) {
-        withContext(writeDispatcher.value) {
+        withWriteRetry {
             conversationQueries.transaction {
                 unreadEventsQueries.deleteUnreadEvents(date, conversationID)
                 conversationQueries.updateConversationReadDate(date, conversationID)
@@ -681,7 +689,7 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateReadDateAndGetHasUnreadEvents(
         conversationID: QualifiedIDEntity,
         date: Instant
-    ): Boolean = withContext(writeDispatcher.value) {
+    ): Boolean = withWriteRetry {
         conversationQueries.transactionWithResult {
             unreadEventsQueries.deleteUnreadEvents(date, conversationID)
             conversationQueries.updateConversationReadDate(date, conversationID)

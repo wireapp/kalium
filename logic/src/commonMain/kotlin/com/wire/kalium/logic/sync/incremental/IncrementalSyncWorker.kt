@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.onEach
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 /**
  * Gathers and processes IncrementalSync events.
@@ -76,7 +78,9 @@ internal class IncrementalSyncWorkerImpl(
             .collect { streamData ->
                 val envelopes = streamData.eventList
                 kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
+                val batchStart = TimeSource.Monotonic.markNow()
                 transactionProvider.transaction("processEvents") { context ->
+                    val transactionStart = TimeSource.Monotonic.markNow()
                     databaseBuilder.dbInvalidationController.runMuted {
                         envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
                             .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
@@ -89,6 +93,12 @@ internal class IncrementalSyncWorkerImpl(
                                 eventProcessor.flushPendingSideEffects().map { eventIds }
                             }
                     }
+                        .onSuccess {
+                            val transactionDuration = transactionStart.elapsedNow()
+                            if (transactionDuration > 2.seconds) {
+                                logger.w("Slow sync transaction (${transactionDuration.inWholeMilliseconds}ms) for ${envelopes.size} events")
+                            }
+                        }
                 }
                     .onSuccess { eventIds ->
                         if (eventIds.isEmpty()) {
@@ -104,6 +114,10 @@ internal class IncrementalSyncWorkerImpl(
                     .onFailure {
                         throw KaliumSyncException("Processing failed", it)
                     }
+                val batchDuration = batchStart.elapsedNow()
+                if (batchDuration > 5.seconds) {
+                    logger.w("Slow event batch processing (${batchDuration.inWholeMilliseconds}ms) for ${envelopes.size} events")
+                }
             }
         logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()

@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
+import com.wire.kalium.persistence.util.sqliteBusyRetry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,13 +47,17 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun insertValue(value: String, key: String) {
         withContext(writeDispatcher.value) {
-            metadataQueries.insertValue(key, value)
+            sqliteBusyRetry {
+                metadataQueries.insertValue(key, value)
+            }
         }
     }
 
     override suspend fun deleteValue(key: String) {
         withContext(writeDispatcher.value) {
-            metadataQueries.deleteValue(key)
+            sqliteBusyRetry {
+                metadataQueries.deleteValue(key)
+            }
         }
     }
 
@@ -69,10 +74,12 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun clear(keysToKeep: List<String>?) {
         withContext(writeDispatcher.value) {
-            if (keysToKeep == null) {
-                metadataQueries.deleteAll()
-            } else {
-                metadataQueries.deleteAllExcept(keysToKeep)
+            sqliteBusyRetry {
+                if (keysToKeep == null) {
+                    metadataQueries.deleteAll()
+                } else {
+                    metadataQueries.deleteAllExcept(keysToKeep)
+                }
             }
         }
     }

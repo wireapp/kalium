@@ -76,6 +76,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 @Mockable
 internal interface EventRepository {
@@ -153,6 +155,7 @@ internal class EventDataSource(
 
     override suspend fun observeEvents(): Flow<List<EventEnvelope>> {
         var lastEmittedEventId: String? = null
+        var lastEmissionAt = TimeSource.Monotonic.markNow()
         return eventDAO.observeUnprocessedEvents().transform { eventEntities ->
             logger.d("got ${eventEntities.size} unprocessed events")
             if (eventEntities.isNotEmpty()) {
@@ -175,9 +178,17 @@ internal class EventDataSource(
             }
         }
             .onEach { entities ->
+                val timeSinceLastEmission = lastEmissionAt.elapsedNow()
+                if (timeSinceLastEmission > 15.seconds) {
+                    logger.w(
+                        "observeEvents resumed after ${timeSinceLastEmission.inWholeMilliseconds}ms; " +
+                            "emitting ${entities.size} pending entities"
+                    )
+                }
                 entities.lastOrNull()?.let {
                     lastEmittedEventId = it.eventId
                 }
+                lastEmissionAt = TimeSource.Monotonic.markNow()
             }
             .map { eventEntities ->
                 eventEntities.map { entity ->
@@ -421,6 +432,7 @@ internal class EventDataSource(
         var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
 
         while (coroutineContext.isActive && hasMore) {
+            val pageStart = TimeSource.Monotonic.markNow()
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
 
             if (notificationsPageResult.isSuccessful()) {
@@ -449,6 +461,13 @@ internal class EventDataSource(
                             updateLastSavedEventId(it.id)
                         }
                     }
+                }
+                val pageDuration = pageStart.elapsedNow()
+                if (pageDuration > 5.seconds) {
+                    logger.w(
+                        "Slow pending events page processing (${pageDuration.inWholeMilliseconds}ms), " +
+                            "inserted=${entities.size}, hasMore=$hasMore"
+                    )
                 }
             } else {
                 return Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException))
