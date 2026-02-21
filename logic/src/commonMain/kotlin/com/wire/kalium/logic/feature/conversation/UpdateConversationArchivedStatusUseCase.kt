@@ -22,10 +22,14 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
 
 public interface UpdateConversationArchivedStatusUseCase {
@@ -58,6 +62,7 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
     ): ArchiveStatusUpdateResult =
         if (!onlyLocally) {
             archiveRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
+                .ignoreConversationNotFoundError(conversationId, shouldArchiveConversation)
         } else {
             Either.Right(Unit)
         }
@@ -95,6 +100,24 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
                         "status to archived = ($shouldArchiveConversation)"
             )
         }
+
+    private fun Either<NetworkFailure, Unit>.ignoreConversationNotFoundError(
+        conversationId: ConversationId,
+        shouldArchiveConversation: Boolean
+    ): Either<NetworkFailure, Unit> = flatMapLeft { failure ->
+        if (failure is NetworkFailure.ServerMiscommunication &&
+            failure.kaliumException is KaliumException.InvalidRequestError &&
+            (failure.kaliumException as KaliumException.InvalidRequestError).isConversationNotFound()
+        ) {
+            kaliumLogger.w(
+                "Remote archive update returned no-conversation for convId (${conversationId.toLogString()}) " +
+                        "and archived = ($shouldArchiveConversation). Proceeding with local update."
+            )
+            Either.Right(Unit)
+        } else {
+            Either.Left(failure)
+        }
+    }
 }
 
 public sealed class ArchiveStatusUpdateResult {
