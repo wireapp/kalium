@@ -16,30 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-plugins {
-    id(libs.plugins.kalium.library.get().pluginId)
-}
+package com.wire.kalium.nomaddevice
 
-kaliumLibrary {
-    multiplatform()
-}
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistedMessageData
 
-kotlin {
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(projects.core.common)
-                api(projects.core.data)
-                implementation(projects.core.logger)
-                implementation(libs.concurrentCollections)
-                implementation(libs.coroutines.core)
-                api(libs.ktxDateTime)
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(libs.coroutines.test)
-            }
-        }
+/**
+ * Nomad-side hook implementation that can be registered into CoreLogic.
+ * Invocation from Logic is synchronous; the callback can perform async work if needed.
+ */
+public class NomadPersistMessageHookNotifier(
+    private val onPersistedMessage: (PersistedMessageData, UserId) -> Unit
+) : PersistMessageHookNotifier {
+    public override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+        onPersistedMessage(message, selfUserId)
     }
 }

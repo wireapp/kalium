@@ -18,14 +18,9 @@
 
 package com.wire.kalium.messaging.hooks
 
-import co.touchlab.stately.collections.ConcurrentMutableList
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
@@ -52,36 +47,6 @@ public interface PersistMessageCallback {
 
 public fun interface PersistMessageHookNotifier {
     public fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId)
-}
-
-public class PersistMessageCallbackManagerImpl(
-    private val scope: CoroutineScope
-) : PersistMessageCallbackManager, PersistMessageHookNotifier {
-
-    private val callbacks = ConcurrentMutableList<PersistMessageCallback>()
-
-    override fun register(callback: PersistMessageCallback) {
-        callbacks.add(callback)
-    }
-
-    override fun unregister(callback: PersistMessageCallback) {
-        callbacks.remove(callback)
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
-        callbacks.forEach { callback ->
-            scope.launch {
-                try {
-                    callback(message, selfUserId)
-                } catch (cancellationException: CancellationException) {
-                    throw cancellationException
-                } catch (throwable: Throwable) {
-                    kaliumLogger.w("PersistMessage callback execution failed", throwable)
-                }
-            }
-        }
-    }
 }
 
 public object NoOpPersistMessageHookNotifier : PersistMessageHookNotifier {

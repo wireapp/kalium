@@ -110,7 +110,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
@@ -157,7 +156,6 @@ public class MessageScope internal constructor(
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val persistMessageHookNotifier: PersistMessageHookNotifier?,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -257,8 +255,7 @@ public class MessageScope internal constructor(
         get() = PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = selfUserId,
-            notificationEventsManager = NotificationEventsManagerImpl,
-            persistMessageHookNotifier = persistMessageHookNotifier
+            notificationEventsManager = NotificationEventsManagerImpl
         )
 
     public val sendTextMessage: SendTextMessageUseCase

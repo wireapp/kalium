@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.featureFlags
 
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.logic.util.KaliumMockWebsocket
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.utils.TestRequestHandler
@@ -67,7 +66,6 @@ public data class KaliumConfigs(
      * Should NOT be set in production mobile/web clients.
      */
     val callConfigTransformer: ((String) -> String)? = null,
-    val persistMessageHookNotifier: PersistMessageHookNotifier? = null,
 )
 
 public sealed interface BuildFileRestrictionState {
