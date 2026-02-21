@@ -36,6 +36,12 @@ kotlin {
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.userstorage)
                 implementation(projects.data.persistence)
+                implementation(libs.coroutines.core)
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.coroutines.test)
             }
         }
     }

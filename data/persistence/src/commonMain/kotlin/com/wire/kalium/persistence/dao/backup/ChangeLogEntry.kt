@@ -26,11 +26,13 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
  * @property conversationId The conversation where the change occurred
  * @property messageId The message identifier (empty for conversation-level events)
  * @property eventType The type of change that occurred
- * @property timestampMs The timestamp when the change was recorded (epoch milliseconds)
+ * @property timestampMs The insertion timestamp when the changelog event was recorded (epoch milliseconds)
+ * @property messageTimestampMs The original message timestamp used for chronology (epoch milliseconds)
  */
 data class ChangeLogEntry(
     val conversationId: QualifiedIDEntity,
     val messageId: String?,
     val eventType: ChangeLogEventType,
-    val timestampMs: Long
+    val timestampMs: Long,
+    val messageTimestampMs: Long
 )

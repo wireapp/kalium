@@ -1,0 +1,5 @@
+ALTER TABLE RemotebackupChangeLog
+ADD COLUMN message_timestamp_ms INTEGER NOT NULL DEFAULT 0;
+
+UPDATE RemotebackupChangeLog
+SET message_timestamp_ms = timestamp_ms;

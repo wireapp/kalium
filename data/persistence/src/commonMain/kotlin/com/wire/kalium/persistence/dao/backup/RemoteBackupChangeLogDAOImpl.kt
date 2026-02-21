@@ -33,13 +33,15 @@ internal class RemoteBackupChangeLogDAOImpl(
     override suspend fun logMessageUpsert(
         conversationId: QualifiedIDEntity,
         messageId: String,
-        timestampMs: Long
+        timestampMs: Long,
+        messageTimestampMs: Long
     ): Unit = withContext(writeDispatcher.value) {
         queries.insertMessageUpsert(
             conversationId = conversationId,
             messageId = messageId,
             eventType = ChangeLogEventType.MESSAGE_UPSERT,
-            timestampMs = timestampMs
+            timestampMs = timestampMs,
+            messageTimestampMs = messageTimestampMs
         )
     }
 
@@ -115,11 +117,13 @@ internal class RemoteBackupChangeLogDAOImpl(
         message_id: String?,
         event_type: ChangeLogEventType,
         timestamp_ms: Long,
+        message_timestamp_ms: Long,
     ): ChangeLogEntry =
         ChangeLogEntry(
             conversationId = conversation_id,
             messageId = message_id,
             eventType = event_type,
-            timestampMs = timestamp_ms
+            timestampMs = timestamp_ms,
+            messageTimestampMs = message_timestamp_ms
         )
 }
