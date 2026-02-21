@@ -1060,7 +1060,12 @@ public class UserSessionScope internal constructor(
         )
 
     internal val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)
+        get() = PersistMessageUseCaseImpl(
+            messageRepository = messageRepository,
+            selfUserId = userId,
+            notificationEventsManager = NotificationEventsManagerImpl,
+            persistMessageHookNotifier = kaliumConfigs.persistMessageHookNotifier
+        )
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
         get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
@@ -2299,6 +2304,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
+            kaliumConfigs.persistMessageHookNotifier,
             this,
             userScopedLogger
         )

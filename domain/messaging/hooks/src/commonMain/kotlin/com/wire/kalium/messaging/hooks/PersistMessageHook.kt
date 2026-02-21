@@ -22,6 +22,7 @@ import co.touchlab.stately.collections.ConcurrentMutableList
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -46,11 +47,11 @@ public data class PersistedMessageData(
 )
 
 public interface PersistMessageCallback {
-    public suspend operator fun invoke(message: PersistedMessageData)
+    public suspend operator fun invoke(message: PersistedMessageData, selfUserId: UserId)
 }
 
 public fun interface PersistMessageHookNotifier {
-    public fun onMessagePersisted(message: PersistedMessageData)
+    public fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId)
 }
 
 public class PersistMessageCallbackManagerImpl(
@@ -68,11 +69,11 @@ public class PersistMessageCallbackManagerImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun onMessagePersisted(message: PersistedMessageData) {
+    override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
         callbacks.forEach { callback ->
             scope.launch {
                 try {
-                    callback(message)
+                    callback(message, selfUserId)
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
                 } catch (throwable: Throwable) {
@@ -84,5 +85,5 @@ public class PersistMessageCallbackManagerImpl(
 }
 
 public object NoOpPersistMessageHookNotifier : PersistMessageHookNotifier {
-    override fun onMessagePersisted(message: PersistedMessageData) = Unit
+    override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) = Unit
 }

@@ -20,6 +20,7 @@ package com.wire.kalium.messaging.hooks
 
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -28,6 +29,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PersistMessageCallbackManagerTest {
+
+    private val selfUserId = UserId("self-user-id", "domain")
 
     private val persistedMessageData = PersistedMessageData(
         conversationId = QualifiedID("conversation-id", "domain"),
@@ -42,13 +45,13 @@ class PersistMessageCallbackManagerTest {
         val manager = PersistMessageCallbackManagerImpl(this)
         var invoked = false
         val callback = object : PersistMessageCallback {
-            override suspend fun invoke(message: PersistedMessageData) {
+            override suspend fun invoke(message: PersistedMessageData, selfUserId: UserId) {
                 invoked = true
             }
         }
         manager.register(callback)
 
-        manager.onMessagePersisted(persistedMessageData)
+        manager.onMessagePersisted(persistedMessageData, selfUserId)
 
         assertFalse(invoked)
         advanceUntilIdle()
@@ -60,14 +63,14 @@ class PersistMessageCallbackManagerTest {
         val manager = PersistMessageCallbackManagerImpl(this)
         var invoked = false
         val callback = object : PersistMessageCallback {
-            override suspend fun invoke(message: PersistedMessageData) {
+            override suspend fun invoke(message: PersistedMessageData, selfUserId: UserId) {
                 invoked = true
             }
         }
         manager.register(callback)
         manager.unregister(callback)
 
-        manager.onMessagePersisted(persistedMessageData)
+        manager.onMessagePersisted(persistedMessageData, selfUserId)
 
         advanceUntilIdle()
         assertFalse(invoked)

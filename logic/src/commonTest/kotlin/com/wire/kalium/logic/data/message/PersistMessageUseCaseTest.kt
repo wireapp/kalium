@@ -26,6 +26,8 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -36,6 +38,9 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class PersistMessageUseCaseTest {
 
@@ -114,14 +119,56 @@ class PersistMessageUseCaseTest {
             }
         }
 
+    @Test
+    fun givenMessageRepositorySuccess_whenPersistingMessage_thenNotifyHookWithPersistedMessageAndSelfUserId() =
+        runTest {
+            val (arrangement, persistMessage) = Arrangement()
+                .withPersistMessageSuccess()
+                .withReceiptMode()
+                .arrange()
+            val expireAfter = 42.seconds
+            val message = TestMessage.TEXT_MESSAGE.copy(
+                expectsReadConfirmation = false,
+                expirationData = Message.ExpirationData(expireAfter)
+            )
+
+            val result = persistMessage.invoke(message)
+
+            result.shouldSucceed()
+            assertEquals(1, arrangement.persistMessageHookNotifier.calls.size)
+            val (persistedMessage, selfUserId) = arrangement.persistMessageHookNotifier.calls.single()
+            assertEquals(TestUser.USER_ID, selfUserId)
+            assertEquals(message.conversationId, persistedMessage.conversationId)
+            assertEquals(message.id, persistedMessage.messageId)
+            assertEquals(message.content, persistedMessage.content)
+            assertEquals(message.date, persistedMessage.date)
+            assertEquals(expireAfter, persistedMessage.expireAfter)
+        }
+
+    @Test
+    fun givenMessageRepositoryFailure_whenPersistingMessage_thenDoNotNotifyHook() = runTest {
+        val (arrangement, persistMessage) = Arrangement()
+            .withPersistMessageFailure()
+            .withReceiptMode()
+            .arrange()
+        val message = TestMessage.TEXT_MESSAGE
+
+        val result = persistMessage.invoke(message)
+
+        result.shouldFail()
+        assertTrue(arrangement.persistMessageHookNotifier.calls.isEmpty())
+    }
+
     private class Arrangement {
         val messageRepository = mock<MessageRepository>()
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
+        val persistMessageHookNotifier = RecordingPersistMessageHookNotifier()
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = TestUser.USER_ID,
-            notificationEventsManager = notificationEventsManager
+            notificationEventsManager = notificationEventsManager,
+            persistMessageHookNotifier = persistMessageHookNotifier
         )
 
         fun withPersistMessageSuccess() = apply {
@@ -140,6 +187,14 @@ class PersistMessageUseCaseTest {
             everySuspend {
                 messageRepository.getReceiptModeFromGroupConversationByQualifiedID(any())
             } returns Either.Right(Conversation.ReceiptMode.ENABLED)
+        }
+    }
+
+    private class RecordingPersistMessageHookNotifier : PersistMessageHookNotifier {
+        val calls = mutableListOf<Pair<PersistedMessageData, UserId>>()
+
+        override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+            calls += message to selfUserId
         }
     }
 }
