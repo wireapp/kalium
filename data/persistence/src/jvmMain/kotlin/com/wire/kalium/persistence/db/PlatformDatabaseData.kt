@@ -36,6 +36,7 @@ fun databaseDriver(uri: String, config: DriverConfigurationBuilder.() -> Unit = 
     val sqliteConfig = SQLiteConfig()
     val journalMode = if (driverConfiguration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE
     sqliteConfig.setJournalMode(journalMode)
+    sqliteConfig.setBusyTimeout(driverConfiguration.busyTimeoutMs.toInt())
     sqliteConfig.enforceForeignKeys(driverConfiguration.areForeignKeyConstraintsEnforced)
     return JdbcSqliteDriver(uri, sqliteConfig.toProperties())
 }
