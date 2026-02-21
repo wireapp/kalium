@@ -26,7 +26,8 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageHookRegistry
+import com.wire.kalium.messaging.hooks.NoOpPersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import io.mockative.Mockable
@@ -43,7 +44,8 @@ internal interface PersistMessageUseCase {
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
-    private val notificationEventsManager: NotificationEventsManager
+    private val notificationEventsManager: NotificationEventsManager,
+    private val persistMessageHookNotifier: PersistMessageHookNotifier = NoOpPersistMessageHookNotifier
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
@@ -59,7 +61,7 @@ internal class PersistMessageUseCaseImpl(
                 notificationEventsManager.scheduleRegularNotificationChecking()
             }
 
-            MessageHookRegistry.onMessagePersisted(
+            persistMessageHookNotifier.onMessagePersisted(
                 modifiedMessage.toPersistedMessageData(),
                 selfUserId
             )

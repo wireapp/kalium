@@ -24,27 +24,33 @@ import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import kotlin.concurrent.Volatile
 
-internal class MessageHookRegistry() : PersistMessageHookNotifier {
+internal class MessageHookRegistry : PersistMessageHookNotifier {
 
     @Volatile
-    private var hookNotifiers: PersistMessageHookNotifier? = null
+    private var hookNotifier: PersistMessageHookNotifier? = null
 
     fun register(hookNotifier: PersistMessageHookNotifier) {
-        if (hookNotifiers == null) {
-            hookNotifiers = hookNotifier
+        if (this.hookNotifier == null) {
+            this.hookNotifier = hookNotifier
         } else {
             error("Hook notifier already registered")
         }
     }
 
+    fun unregister(hookNotifier: PersistMessageHookNotifier) {
+        if (this.hookNotifier === hookNotifier) {
+            this.hookNotifier = null
+        }
+    }
+
     fun clear() {
-        hookNotifiers = null
+        hookNotifier = null
     }
 
     @Suppress("TooGenericExceptionCaught")
     override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
         try {
-            hookNotifiers?.onMessagePersisted(message, selfUserId)
+            hookNotifier?.onMessagePersisted(message, selfUserId)
         } catch (throwable: Throwable) {
             kaliumLogger.w("PersistMessage hook execution failed", throwable)
         }

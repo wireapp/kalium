@@ -53,7 +53,9 @@ public abstract class CoreLogicCommon internal constructor(
         configurePersistenceDebug(kaliumConfigs.isDebug)
     }
 
-    private val messageHookRegistry: MessageHookRegistry by lazy { MessageHookRegistry() }
+    private val messageHookRegistry = MessageHookRegistry()
+    internal val persistMessageHookNotifier: PersistMessageHookNotifier
+        get() = messageHookRegistry
 
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
@@ -118,6 +120,10 @@ public abstract class CoreLogicCommon internal constructor(
      */
     public fun registerMessageHook(hookNotifier: PersistMessageHookNotifier) {
         messageHookRegistry.register(hookNotifier)
+    }
+
+    public fun unregisterMessageHook(hookNotifier: PersistMessageHookNotifier) {
+        messageHookRegistry.unregister(hookNotifier)
     }
 
     public fun clearHook() {
