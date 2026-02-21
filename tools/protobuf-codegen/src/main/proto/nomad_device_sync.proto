@@ -1,0 +1,112 @@
+/*
+ * Wire
+ * Copyright (C) 2026 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+syntax = "proto2";
+
+option java_package = "com.wire.kalium.protobuf.nomaddevice";
+
+message NomadDeviceQualifiedId {
+    required string value = 1;
+    required string domain = 2;
+}
+
+message NomadDeviceMessagePayload {
+    required NomadDeviceQualifiedId sender_user_id = 1;
+    required string sender_client_id = 2;
+    required int64 creation_date = 3;
+    required NomadDeviceMessageContent content = 4;
+    optional int64 last_edit_time = 5;
+}
+
+message NomadDeviceMessageContent {
+    oneof content {
+        NomadDeviceText text = 1;
+        NomadDeviceAsset asset = 2;
+        NomadDeviceLocation location = 3;
+        NomadDeviceMultipart multipart = 4;
+    }
+}
+
+message NomadDeviceText {
+    required string text = 1;
+    repeated NomadDeviceMention mentions = 2;
+    optional string quoted_message_id = 3;
+}
+
+message NomadDeviceMention {
+    required NomadDeviceQualifiedId user_id = 1;
+    required int32 start = 2;
+    required int32 length = 3;
+}
+
+message NomadDeviceMultipart {
+    optional NomadDeviceText text = 1;
+    repeated NomadDeviceAttachment attachments = 2;
+}
+
+message NomadDeviceAttachment {
+    oneof content {
+        NomadDeviceAsset asset = 1;
+    }
+}
+
+message NomadDeviceAsset {
+    required string mime_type = 1;
+    required int64 size = 2;
+    optional string name = 3;
+    required bytes otr_key = 4;
+    required bytes sha256 = 5;
+    required string asset_id = 6;
+    optional string asset_token = 7;
+    optional string asset_domain = 8;
+    optional string encryption = 9;
+    oneof meta_data {
+        NomadDeviceImageMetaData image = 10;
+        NomadDeviceVideoMetaData video = 11;
+        NomadDeviceAudioMetaData audio = 12;
+        NomadDeviceGenericMetaData generic = 13;
+    }
+}
+
+message NomadDeviceImageMetaData {
+    required int32 width = 1;
+    required int32 height = 2;
+    optional string tag = 3;
+}
+
+message NomadDeviceVideoMetaData {
+    optional int32 width = 1;
+    optional int32 height = 2;
+    optional int64 duration_in_millis = 3;
+}
+
+message NomadDeviceAudioMetaData {
+    optional bytes normalization = 1;
+    optional int64 duration_in_millis = 2;
+}
+
+message NomadDeviceGenericMetaData {
+    optional string name = 1;
+}
+
+message NomadDeviceLocation {
+    required float longitude = 1;
+    required float latitude = 2;
+    optional string name = 3;
+    optional int32 zoom = 4;
+}

@@ -16,27 +16,19 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-plugins {
-    id(libs.plugins.kalium.library.get().pluginId)
-}
+package com.wire.kalium.nomaddevice
 
-kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
-}
+import com.wire.kalium.protobuf.decodeFromByteArray
+import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 
-kotlin {
-    explicitApi()
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(projects.data.protobuf)
-                implementation(projects.domain.messaging.hooks)
-                implementation(projects.domain.usernetwork)
-                implementation(projects.domain.userstorage)
-                implementation(projects.data.persistence)
-            }
-        }
-    }
+/**
+ * Nomad-local codec for Nomad Device message payloads.
+ */
+public object NomadDeviceMessageCodec {
+    public fun decode(bytes: ByteArray): NomadDeviceMessagePayload =
+        NomadDeviceMessagePayload.decodeFromByteArray(bytes)
+
+    public fun encode(message: NomadDeviceMessagePayload): ByteArray =
+        message.encodeToByteArray()
 }
