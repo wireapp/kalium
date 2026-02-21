@@ -36,7 +36,6 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 import io.mockative.Mockable
 
@@ -66,7 +65,6 @@ internal class OneOnOneMigratorImpl(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val systemMessageInserter: SystemMessageInserter,
-    private val currentInstant: CurrentInstantProvider = CurrentInstantProvider { DateTimeUtil.currentInstant() },
 ) : OneOnOneMigrator {
 
     override suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId> =
@@ -159,17 +157,11 @@ internal class OneOnOneMigratorImpl(
                         listOfNotNull(lastModifiedDate, it).maxOrNull()
                     }
                 }
-            }.map { lastModifiedDate ->
-                // Fallback to current time if not found as it means that it's completely new conversation without any history
-                lastModifiedDate ?: currentInstant()
             }
         }.flatMap { lastModifiedDate ->
-            conversationRepository.updateConversationModifiedDate(targetConversation, lastModifiedDate)
+            lastModifiedDate?.let {
+                conversationRepository.updateConversationModifiedDate(targetConversation, lastModifiedDate)
+            } ?: Either.Right(Unit)
         }
     }
-}
-
-@Mockable
-internal fun interface CurrentInstantProvider {
-    operator fun invoke(): Instant
 }
