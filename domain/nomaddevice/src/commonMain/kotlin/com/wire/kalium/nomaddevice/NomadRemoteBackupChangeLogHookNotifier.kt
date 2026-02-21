@@ -22,29 +22,26 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.userstorage.di.UserStorageProvider
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.datetime.Clock
 
 /**
  * Nomad-side [PersistMessageHookNotifier] that writes syncable MESSAGE_UPSERT events to the remote backup changelog.
  */
 public class NomadRemoteBackupChangeLogHookNotifier internal constructor(
-    private val onPersistedMessage: (PersistedMessageData, UserId) -> Unit
+    private val onPersistedMessage: suspend (PersistedMessageData, UserId) -> Unit
 ) : PersistMessageHookNotifier {
 
     public constructor(
         userStorageProvider: UserStorageProvider,
-        coroutineScope: CoroutineScope,
         eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     ) : this(
         createNomadRemoteBackupChangeLogCallback(
             userStorageProvider = userStorageProvider,
-            coroutineScope = coroutineScope,
             eventTimestampMsProvider = eventTimestampMsProvider
         )
     )
 
-    public override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+    public override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
         onPersistedMessage(message, selfUserId)
     }
 }

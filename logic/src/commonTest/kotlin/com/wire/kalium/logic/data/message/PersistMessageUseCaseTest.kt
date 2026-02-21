@@ -192,7 +192,7 @@ class PersistMessageUseCaseTest {
     private class RecordingPersistMessageHookNotifier : PersistMessageHookNotifier {
         val calls = mutableListOf<Pair<PersistedMessageData, UserId>>()
 
-        override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+        override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
             calls += message to selfUserId
         }
     }

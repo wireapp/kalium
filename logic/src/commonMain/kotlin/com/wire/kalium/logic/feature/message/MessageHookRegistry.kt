@@ -48,7 +48,7 @@ internal class MessageHookRegistry : PersistMessageHookNotifier {
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+    override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
         try {
             hookNotifier?.onMessagePersisted(message, selfUserId)
         } catch (throwable: Throwable) {

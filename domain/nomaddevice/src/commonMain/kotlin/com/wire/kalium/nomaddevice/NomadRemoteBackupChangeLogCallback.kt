@@ -28,8 +28,6 @@ import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 private val nomadRemoteBackupChangeLogLogger = KaliumLogger(
@@ -47,14 +45,12 @@ private val nomadRemoteBackupChangeLogLogger = KaliumLogger(
  */
 public fun createNomadRemoteBackupChangeLogCallback(
     userStorageProvider: UserStorageProvider,
-    coroutineScope: CoroutineScope,
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-): (PersistedMessageData, UserId) -> Unit =
+): suspend (PersistedMessageData, UserId) -> Unit =
     createNomadRemoteBackupChangeLogCallbackInternal(
         remoteBackupChangeLogDAOProvider = { userId ->
             userStorageProvider.get(userId)?.database?.remoteBackupChangeLogDAO
         },
-        coroutineScope = coroutineScope,
         eventTimestampMsProvider = eventTimestampMsProvider,
         warnLogger = { nomadRemoteBackupChangeLogLogger.w(it) },
         errorLogger = { message, throwable -> nomadRemoteBackupChangeLogLogger.e(message, throwable) }
@@ -62,34 +58,52 @@ public fun createNomadRemoteBackupChangeLogCallback(
 
 internal fun createNomadRemoteBackupChangeLogCallbackInternal(
     remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
-    coroutineScope: CoroutineScope,
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     warnLogger: (String) -> Unit = { nomadRemoteBackupChangeLogLogger.w(it) },
     errorLogger: (String, Throwable) -> Unit = { message, throwable -> nomadRemoteBackupChangeLogLogger.e(message, throwable) },
-): (PersistedMessageData, UserId) -> Unit = { message, selfUserId ->
-    if (message.shouldLogMessageUpsert()) {
+): suspend (PersistedMessageData, UserId) -> Unit {
+    val repository = NomadRemoteBackupChangeLogRepositoryImpl(
+        remoteBackupChangeLogDAOProvider = remoteBackupChangeLogDAOProvider,
+        eventTimestampMsProvider = eventTimestampMsProvider,
+        warnLogger = warnLogger,
+        errorLogger = errorLogger
+    )
+    return { message, selfUserId ->
+        repository.logSyncableMessageUpsert(message, selfUserId)
+    }
+}
+
+internal class NomadRemoteBackupChangeLogRepositoryImpl(
+    private val remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
+    private val eventTimestampMsProvider: () -> Long,
+    private val warnLogger: (String) -> Unit,
+    private val errorLogger: (String, Throwable) -> Unit,
+) : NomadRemoteBackupChangeLogRepository {
+
+    override suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId) {
+        if (!message.shouldLogMessageUpsert()) return
+
         val remoteBackupChangeLogDAO = remoteBackupChangeLogDAOProvider(selfUserId)
         if (remoteBackupChangeLogDAO == null) {
             warnLogger("Skipping MESSAGE_UPSERT changelog write: missing user storage for '${selfUserId.toLogString()}'.")
-        } else {
-            val eventTimestampMs = eventTimestampMsProvider()
-            val messageTimestampMs = message.date.toEpochMilliseconds()
+            return
+        }
 
-            coroutineScope.launch {
-                runCatching {
-                    remoteBackupChangeLogDAO.logMessageUpsert(
-                        conversationId = message.conversationId.toDao(),
-                        messageId = message.messageId,
-                        timestampMs = eventTimestampMs,
-                        messageTimestampMs = messageTimestampMs
-                    )
-                }.onFailure { throwable ->
-                    errorLogger(
-                        "Failed to write MESSAGE_UPSERT changelog for conversation '${message.conversationId.toLogString()}' and message '${message.messageId}'.",
-                        throwable
-                    )
-                }
-            }
+        val eventTimestampMs = eventTimestampMsProvider()
+        val messageTimestampMs = message.date.toEpochMilliseconds()
+
+        runCatching {
+            remoteBackupChangeLogDAO.logMessageUpsert(
+                conversationId = message.conversationId.toDao(),
+                messageId = message.messageId,
+                timestampMs = eventTimestampMs,
+                messageTimestampMs = messageTimestampMs
+            )
+        }.onFailure { throwable ->
+            errorLogger(
+                "Failed to write MESSAGE_UPSERT changelog for conversation '${message.conversationId.toLogString()}' and message '${message.messageId}'.",
+                throwable
+            )
         }
     }
 }
@@ -103,7 +117,14 @@ private fun PersistedMessageData.shouldLogMessageUpsert(): Boolean = when (val m
     else -> false
 }
 
-private fun MessageContent.Multipart.hasSupportedPartForChangelog(): Boolean =
-    value != null || attachments.any { it is AssetContent }
+private fun MessageContent.Multipart.hasSupportedPartForChangelog(): Boolean {
+    // `value` is the textual part of a multipart message.
+    val hasTextPart = value != null
+    // Only regular message assets are currently syncable in this changelog flow.
+    // Multipart payloads with only CellAssetContent attachments are intentionally skipped.
+    val hasSyncableAssetPart = attachments.any { it is AssetContent }
+    return hasTextPart || hasSyncableAssetPart
+}
 
+// TODO: delete this one once the logic mappers are moved to a shared module
 private fun QualifiedID.toDao(): QualifiedIDEntity = QualifiedIDEntity(value, domain)

@@ -28,8 +28,6 @@ import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.ChangeLogEntry
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -41,12 +39,11 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     @Test
     fun givenTextAssetLocation_whenCallbackInvoked_thenMessageUpsertsAreLogged() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
-        val callback = createCallback(coroutineScope = this, daoProvider = { dao })
+        val callback = createCallback(daoProvider = { dao })
 
         callback(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
         callback(persistedMessage(content = MessageContent.Asset(assetContent("asset-1"))), SELF_USER_ID)
         callback(persistedMessage(content = MessageContent.Location(1.0f, 2.0f)), SELF_USER_ID)
-        runCurrent()
 
         assertEquals(3, dao.messageUpsertCalls.size)
         assertEquals(EVENT_TIMESTAMP_MS, dao.messageUpsertCalls[0].timestampMs)
@@ -56,7 +53,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     @Test
     fun givenMultipartWithSupportedPart_whenCallbackInvoked_thenMessageUpsertIsLogged() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
-        val callback = createCallback(coroutineScope = this, daoProvider = { dao })
+        val callback = createCallback(daoProvider = { dao })
 
         callback(
             persistedMessage(
@@ -67,7 +64,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             ),
             SELF_USER_ID
         )
-        runCurrent()
 
         assertEquals(1, dao.messageUpsertCalls.size)
     }
@@ -75,7 +71,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     @Test
     fun givenMultipartWithOnlyUnsupportedParts_whenCallbackInvoked_thenEntryIsSkipped() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
-        val callback = createCallback(coroutineScope = this, daoProvider = { dao })
+        val callback = createCallback(daoProvider = { dao })
 
         callback(
             persistedMessage(
@@ -86,7 +82,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             ),
             SELF_USER_ID
         )
-        runCurrent()
 
         assertTrue(dao.messageUpsertCalls.isEmpty())
     }
@@ -94,13 +89,12 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     @Test
     fun givenUnsupportedMessageContent_whenCallbackInvoked_thenEntryIsSkipped() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
-        val callback = createCallback(coroutineScope = this, daoProvider = { dao })
+        val callback = createCallback(daoProvider = { dao })
 
         callback(
             persistedMessage(content = MessageContent.Reaction(messageId = MESSAGE_ID, emojiSet = setOf(":+1:"))),
             SELF_USER_ID
         )
-        runCurrent()
 
         assertTrue(dao.messageUpsertCalls.isEmpty())
     }
@@ -109,13 +103,11 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     fun givenMissingStorage_whenCallbackInvoked_thenItWarnsAndSkips() = runTest {
         val warnings = mutableListOf<String>()
         val callback = createCallback(
-            coroutineScope = this,
             daoProvider = { null },
             warnLogger = { warnings.add(it) }
         )
 
         callback(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
-        runCurrent()
 
         assertEquals(1, warnings.size)
         assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
@@ -125,20 +117,18 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     fun givenDaoFailure_whenCallbackInvoked_thenFailureIsCaughtAndLogged() = runTest {
         val errors = mutableListOf<String>()
         val callback = createCallback(
-            coroutineScope = this,
             daoProvider = { RecordingRemoteBackupChangeLogDAO(throwOnMessageUpsert = IllegalStateException("boom")) },
             errorLogger = { message, _ -> errors.add(message) }
         )
 
         callback(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
-        runCurrent()
 
         assertEquals(1, errors.size)
         assertTrue(errors.first().contains("Failed to write MESSAGE_UPSERT changelog"))
     }
 
     @Test
-    fun givenDedicatedNotifier_whenInvoked_thenItDelegatesToCallback() {
+    fun givenDedicatedNotifier_whenInvoked_thenItDelegatesToCallback() = runTest {
         var invocationCount = 0
         val notifier = NomadRemoteBackupChangeLogHookNotifier { _, _ -> invocationCount++ }
 
@@ -150,26 +140,26 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     @Test
     fun givenCallbackPath_whenInvoked_thenItNeverThrowsSynchronously() = runTest {
         val callback = createCallback(
-            coroutineScope = this,
             daoProvider = { RecordingRemoteBackupChangeLogDAO(throwOnMessageUpsert = IllegalStateException("boom")) }
         )
 
-        val result = runCatching {
+        var didThrow = false
+        try {
             callback(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
+        } catch (throwable: Throwable) {
+            didThrow = true
         }
 
-        assertTrue(result.isSuccess)
+        assertTrue(!didThrow)
     }
 
     private fun createCallback(
-        coroutineScope: CoroutineScope,
         daoProvider: (UserId) -> RemoteBackupChangeLogDAO?,
         warnLogger: (String) -> Unit = {},
         errorLogger: (String, Throwable) -> Unit = { _, _ -> }
-    ): (PersistedMessageData, UserId) -> Unit =
+    ): suspend (PersistedMessageData, UserId) -> Unit =
         createNomadRemoteBackupChangeLogCallbackInternal(
             remoteBackupChangeLogDAOProvider = daoProvider,
-            coroutineScope = coroutineScope,
             eventTimestampMsProvider = { EVENT_TIMESTAMP_MS },
             warnLogger = warnLogger,
             errorLogger = errorLogger
