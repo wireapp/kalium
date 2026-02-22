@@ -69,6 +69,24 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     }
 
     @Test
+    fun givenMultipartWithTextPartOnly_whenCallbackInvoked_thenMessageUpsertIsLogged() = runTest {
+        val dao = RecordingRemoteBackupChangeLogDAO()
+        val callback = createCallback(daoProvider = { dao })
+
+        callback(
+            persistedMessage(
+                content = MessageContent.Multipart(
+                    value = "multipart-text-only",
+                    attachments = emptyList()
+                )
+            ),
+            SELF_USER_ID
+        )
+
+        assertEquals(1, dao.messageUpsertCalls.size)
+    }
+
+    @Test
     fun givenMultipartWithOnlyUnsupportedParts_whenCallbackInvoked_thenEntryIsSkipped() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
         val callback = createCallback(daoProvider = { dao })
