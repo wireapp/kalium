@@ -312,16 +312,26 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_2)
 
         val result = dao.getPendingChanges()
-
-        assertEquals(5, result.size)
-        assertEquals(CONVERSATION_ID_1, result[0].conversationId)
-        assertEquals(MESSAGE_NONCE_2, result[0].messageId)
-        assertEquals(CONVERSATION_ID_2, result[1].conversationId)
-        assertEquals(MESSAGE_NONCE_1, result[1].messageId)
-        assertEquals(CONVERSATION_ID_1, result[2].conversationId)
-        assertEquals(MESSAGE_NONCE_1, result[2].messageId)
-        assertEquals(ChangeLogEventType.MESSAGE_UPSERT, result[3].eventType)
-        assertEquals(ChangeLogEventType.MESSAGE_DELETE, result[4].eventType)
+        assertEquals(
+            listOf(
+                Triple(CONVERSATION_ID_1, MESSAGE_NONCE_2, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_2, MESSAGE_NONCE_1, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_1, MESSAGE_NONCE_1, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_2, MESSAGE_NONCE_2, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_2, MESSAGE_NONCE_2, ChangeLogEventType.MESSAGE_DELETE),
+            ),
+            result.map { Triple(it.conversationId, it.messageId, it.eventType) }
+        )
+        assertEquals(
+            listOf(
+                Pair(TIMESTAMP_1, MESSAGE_TIMESTAMP_1),
+                Pair(TIMESTAMP_1, MESSAGE_TIMESTAMP_1),
+                Pair(TIMESTAMP_1, MESSAGE_TIMESTAMP_2),
+                Pair(TIMESTAMP_1, TIMESTAMP_1),
+                Pair(TIMESTAMP_1, TIMESTAMP_1),
+            ),
+            result.map { Pair(it.timestampMs, it.messageTimestampMs) }
+        )
     }
 
     private companion object {
@@ -336,4 +346,5 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         const val MESSAGE_TIMESTAMP_2 = 200L
         const val MESSAGE_TIMESTAMP_3 = 300L
     }
+
 }
