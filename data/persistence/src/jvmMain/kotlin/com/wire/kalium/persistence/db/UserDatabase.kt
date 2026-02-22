@@ -28,6 +28,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
 
 private const val DATABASE_NAME = "main.db"
+private const val SQLITE_WAL_SUFFIX = "-wal"
+private const val SQLITE_SHM_SUFFIX = "-shm"
+private const val SQLITE_JOURNAL_SUFFIX = "-journal"
 
 @Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
@@ -55,7 +58,7 @@ actual fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
 
-    val rawDriver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+    var rawDriver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
     }
@@ -152,5 +155,14 @@ internal actual fun nuke(
     platformDatabaseData: PlatformDatabaseData
 ): Boolean = when (val storageData = platformDatabaseData.storageData) {
     StorageData.InMemory -> clearInMemoryDatabase(userId)
-    is StorageData.FileBacked -> storageData.file.resolve(DATABASE_NAME).delete()
+    is StorageData.FileBacked -> deleteUserDatabaseFiles(storageData.file)
+}
+
+private fun deleteUserDatabaseFiles(directory: File): Boolean {
+    val mainDb = directory.resolve(DATABASE_NAME)
+    val wal = directory.resolve(DATABASE_NAME + SQLITE_WAL_SUFFIX)
+    val shm = directory.resolve(DATABASE_NAME + SQLITE_SHM_SUFFIX)
+    val journal = directory.resolve(DATABASE_NAME + SQLITE_JOURNAL_SUFFIX)
+    val targets = listOf(mainDb, wal, shm, journal)
+    return targets.all { file -> !file.exists() || file.delete() }
 }
