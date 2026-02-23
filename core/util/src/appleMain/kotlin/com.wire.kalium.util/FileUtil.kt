@@ -40,8 +40,4 @@ actual object FileUtil {
         val error = alloc<ObjCObjectVar<NSError?>>()
         NSFileManager.defaultManager.contentsOfDirectoryAtPath(path, error.ptr)?.isNotEmpty() ?: false
     }
-
-    actual fun exists(path: String): Boolean {
-        return NSFileManager.defaultManager.fileExistsAtPath(path)
-    }
 }

@@ -30,8 +30,4 @@ actual object FileUtil {
     actual fun isDirectoryNonEmpty(path: String): Boolean {
         TODO("Not yet implemented")
     }
-
-    actual fun exists(path: String): Boolean {
-        TODO("Not yet implemented")
-    }
 }
