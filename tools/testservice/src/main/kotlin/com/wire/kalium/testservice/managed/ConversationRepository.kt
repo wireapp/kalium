@@ -45,6 +45,7 @@ import com.wire.kalium.logic.feature.message.ToggleReactionResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.LinkPreview
+import com.wire.kalium.testservice.models.ConversationCreateResponse
 import com.wire.kalium.testservice.models.SendTextResponse
 import kotlinx.coroutines.flow.first
 import okio.Path.Companion.toOkioPath
@@ -134,7 +135,14 @@ sealed class ConversationRepository {
                             )
                         ) {
                             is ConversationCreationResult.Success -> {
-                                Response.status(Response.Status.OK).build()
+                                val conversationId = result.conversation.id
+                                Response.status(Response.Status.OK).entity(
+                                    ConversationCreateResponse(
+                                        conversationId = conversationId.value,
+                                        conversationDomain = conversationId.domain,
+                                        name = result.conversation.name
+                                    )
+                                ).build()
                             }
 
                             else -> {

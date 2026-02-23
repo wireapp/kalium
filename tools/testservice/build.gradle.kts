@@ -98,6 +98,7 @@ dependencies {
 
     // Okio
     implementation(libs.okio.core)
+    implementation(libs.ktxSerialization)
 
     // Test
     testImplementation(libs.kotlin.test)
