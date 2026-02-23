@@ -21,20 +21,24 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform {
-        enableJs.set(false)
-    }
+    multiplatform()
 }
 
 kotlin {
-    explicitApi()
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(projects.domain.messaging.hooks)
-                implementation(projects.domain.usernetwork)
-                implementation(projects.domain.userstorage)
-                implementation(projects.data.persistence)
+                implementation(projects.core.common)
+                api(projects.core.data)
+                implementation(projects.core.logger)
+                implementation(libs.concurrentCollections)
+                implementation(libs.coroutines.core)
+                api(libs.ktxDateTime)
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.coroutines.test)
             }
         }
     }

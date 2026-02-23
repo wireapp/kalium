@@ -29,20 +29,21 @@ val providerCacheScope: String = resolveRequiredEnumGradleProperty(
     allowedValues = providerCacheScopeValues,
     purpose = "it defines provider cache scope (instance-local vs process-global)"
 )
-val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/userstorage/commonMain/kotlin")
 
-val generateUserStorageCacheConfig by tasks.registering {
+val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/usernetwork/commonMain/kotlin")
+
+val generateUserNetworkApiCacheConfig by tasks.registering {
     inputs.property("providerCacheScope", providerCacheScope)
     outputs.dir(generatedCommonMainKotlinDir)
     doLast {
-        val packagePath = "com/wire/kalium/userstorage/di"
+        val packagePath = "com/wire/kalium/usernetwork/di"
         val outDir = generatedCommonMainKotlinDir.get().asFile.resolve(packagePath)
         outDir.mkdirs()
 
-        val outputFile = outDir.resolve("UserStorageBuildConfig.kt")
+        val outputFile = outDir.resolve("UserNetworkBuildConfig.kt")
         outputFile.writeText(
             """
-            package com.wire.kalium.userstorage.di
+            package com.wire.kalium.usernetwork.di
 
             /**
              * Controls provider cache scope via shared compile-time policy.
@@ -50,7 +51,7 @@ val generateUserStorageCacheConfig by tasks.registering {
              * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
              * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
              */
-            internal enum class ProviderCacheScope { LOCAL, GLOBAL }
+            internal enum class ProviderCacheScope { GLOBAL, LOCAL }
             internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
             """.trimIndent() + "\n"
         )
@@ -69,26 +70,9 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir(generatedCommonMainKotlinDir)
             dependencies {
-                implementation(projects.core.data)
-                api(projects.data.persistence)
-                implementation(libs.coroutines.core)
+                api(projects.data.network)
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)
-            }
-        }
-        val androidMain by getting {
-            dependencies {
-                implementation(projects.core.util)
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                implementation(projects.core.util)
-            }
-        }
-        val appleMain by getting {
-            dependencies {
-                implementation(projects.core.util)
             }
         }
     }
@@ -97,5 +81,5 @@ kotlin {
 tasks.matching { task ->
     task.name.contains("compile", ignoreCase = true)
 }.configureEach {
-    dependsOn(generateUserStorageCacheConfig)
+    dependsOn(generateUserNetworkApiCacheConfig)
 }
