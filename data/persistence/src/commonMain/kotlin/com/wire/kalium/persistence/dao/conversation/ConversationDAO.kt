@@ -57,6 +57,10 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()

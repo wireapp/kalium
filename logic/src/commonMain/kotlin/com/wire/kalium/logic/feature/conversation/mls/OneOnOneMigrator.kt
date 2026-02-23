@@ -32,11 +32,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import kotlinx.datetime.Instant
 import io.mockative.Mockable
 
 @Mockable
@@ -147,21 +145,18 @@ internal class OneOnOneMigratorImpl(
         ).flatMap { proteusOneOnOneConversations ->
             // We can theoretically have more than one proteus 1-1 conversation with
             // team members since there was no backend safeguards against this
-            proteusOneOnOneConversations.foldToEitherWhileRight(null as Instant?) { proteusOneOnOneConversation, lastModifiedDate ->
+            proteusOneOnOneConversations.foldToEitherWhileRight(Unit) { proteusOneOnOneConversation, _ ->
                 messageRepository.moveMessagesToAnotherConversation(
                     originalConversation = proteusOneOnOneConversation,
                     targetConversation = targetConversation
-                ).map {
-                    // Emit most recent last modified date of the proteus conversations to pass it to the target conversation
-                    conversationRepository.getConversationById(proteusOneOnOneConversation).getOrNull()?.lastModifiedDate.let {
-                        listOfNotNull(lastModifiedDate, it).maxOrNull()
-                    }
-                }
+                )
+            }.flatMap {
+                if (proteusOneOnOneConversations.isEmpty()) Either.Right(Unit)
+                else conversationRepository.updateConversationModifiedDateToMaxOfSources(
+                    targetId = targetConversation,
+                    sourceIds = proteusOneOnOneConversations
+                )
             }
-        }.flatMap { lastModifiedDate ->
-            lastModifiedDate?.let {
-                conversationRepository.updateConversationModifiedDate(targetConversation, lastModifiedDate)
-            } ?: Either.Right(Unit)
         }
     }
 }
