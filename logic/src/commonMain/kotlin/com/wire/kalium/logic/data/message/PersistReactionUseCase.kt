@@ -66,7 +66,7 @@ internal class PersistReactionUseCaseImpl(
             senderUserId,
             date,
             emojiSet
-        ).onSuccess {
+        ).also {
             persistenceEventHookNotifier.onReactionPersisted(
                 ReactionEventData(conversationId, reaction.messageId, date),
                 selfUserId

@@ -76,12 +76,12 @@ internal class DeleteMessageHandlerImpl internal constructor(
                     )
                 }
             }
-            persistenceEventHookNotifier.onMessageDeleted(
-                MessageDeleteEventData(conversationId, content.messageId),
-                selfUserId
-            )
             removeAssetIfExists(messageToRemove)
         }
+        persistenceEventHookNotifier.onMessageDeleted(
+            MessageDeleteEventData(conversationId, content.messageId),
+            selfUserId
+        )
     }
 
     /**

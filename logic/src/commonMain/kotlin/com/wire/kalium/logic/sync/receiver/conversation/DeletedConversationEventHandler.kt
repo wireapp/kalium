@@ -70,12 +70,12 @@ internal class DeletedConversationEventHandlerImpl(
                         val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
                         val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
                         notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
-                        persistenceEventHookNotifier.onConversationDeleted(
-                            ConversationDeleteEventData(event.conversationId),
-                            selfUserId
-                        )
                         logger.logSuccess()
                     }
             }
+        persistenceEventHookNotifier.onConversationDeleted(
+            ConversationDeleteEventData(event.conversationId),
+            selfUserId
+        )
     }
 }

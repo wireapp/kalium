@@ -139,6 +139,44 @@ class DeletedConversationEventHandlerTest {
         assertEquals(TestUser.USER_ID, selfUserId)
     }
 
+    @Test
+    fun givenADeletedConversationEvent_whenHandlingItWithError_thenHookIsStillNotified() = runTest {
+        val event = TestEvent.deletedConversation()
+        val conversation = TestConversation.CONVERSATION
+        val otherUser = TestUser.OTHER
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (arrangement, eventHandler) = arrange(hookNotifier) {
+            withGetConversationByIdReturning(conversation)
+            withObserveUser(flowOf(otherUser), EqualsMatcher(event.senderUserId))
+            withDeletingConversationFailing()
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        assertEquals(1, hookNotifier.conversationDeleteCalls.size)
+        val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
+        assertEquals(event.conversationId, data.conversationId)
+        assertEquals(TestUser.USER_ID, selfUserId)
+    }
+
+    @Test
+    fun givenADeletedConversationEvent_whenConversationNotFound_thenHookIsStillNotified() = runTest {
+        val event = TestEvent.deletedConversation()
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (arrangement, eventHandler) = arrange(hookNotifier) {
+            withGetConversationByIdReturning(null)
+            withObserveUser(userId = EqualsMatcher(event.senderUserId))
+            withDeletingConversationSucceeding(EqualsMatcher(TestConversation.ID))
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        assertEquals(1, hookNotifier.conversationDeleteCalls.size)
+        val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
+        assertEquals(event.conversationId, data.conversationId)
+        assertEquals(TestUser.USER_ID, selfUserId)
+    }
+
     private fun arrange(
         hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
         block: suspend Arrangement.() -> Unit

@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
+import com.wire.kalium.common.error.StorageFailure
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -79,6 +80,28 @@ class PersistReactionUseCaseTest {
         assertEquals(TestUser.USER_ID, selfUserId)
     }
 
+    @Test
+    fun givenReactionPersistFails_whenPersisting_thenHookIsStillNotified() = runTest {
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (_, persistReactionUseCase) = Arrangement(hookNotifier = hookNotifier).arrangeWithFailure()
+
+        persistReactionUseCase(
+            reaction = MessageContent.Reaction(
+                messageId = "messageId",
+                emojiSet = setOf("👍")
+            ),
+            conversationId = TestConversation.ID,
+            senderUserId = TestUser.USER_ID,
+            date = Instant.DISTANT_PAST
+        )
+
+        assertEquals(1, hookNotifier.reactionCalls.size)
+        val (data, selfUserId) = hookNotifier.reactionCalls.single()
+        assertEquals(TestConversation.ID, data.conversationId)
+        assertEquals("messageId", data.messageId)
+        assertEquals(TestUser.USER_ID, selfUserId)
+    }
+
     private class Arrangement(
         private val hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier
     ) {
@@ -93,6 +116,16 @@ class PersistReactionUseCaseTest {
             coEvery {
                 reactionRepository.updateReaction(any(), any(), any(), any(), any())
             }.returns(Either.Right(Unit))
+        }
+
+        suspend fun arrangeWithFailure() = this to PersistReactionUseCaseImpl(
+            reactionRepository = reactionRepository,
+            selfUserId = TestUser.USER_ID,
+            persistenceEventHookNotifier = hookNotifier,
+        ).also {
+            coEvery {
+                reactionRepository.updateReaction(any(), any(), any(), any(), any())
+            }.returns(Either.Left(StorageFailure.DataNotFound))
         }
     }
 

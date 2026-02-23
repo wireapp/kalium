@@ -32,6 +32,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerA
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.common.error.StorageFailure
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -253,6 +254,30 @@ class DeleteMessageHandlerTest {
         val (_, handler) = arrange(hookNotifier) {
             withGetMessageById(Either.Right(originalMessage))
             withDeleteMessage(Either.Right(Unit))
+        }
+
+        handler(
+            content = content,
+            senderUserId = UserId("requesterID", "requesterDomain"),
+            conversationId = conversationId
+        )
+
+        assertEquals(1, hookNotifier.deleteMessageCalls.size)
+        val (data, selfUserId) = hookNotifier.deleteMessageCalls.single()
+        assertEquals(conversationId, data.conversationId)
+        assertEquals(originalMessageID, data.messageId)
+        assertEquals(SELF_USER_ID, selfUserId)
+    }
+
+    @Test
+    fun givenGetMessageByIdFails_whenHandled_thenHookIsStillNotified() = runTest {
+        val originalMessageID = "originalMessageID"
+        val content = MessageContent.DeleteMessage(originalMessageID)
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (_, handler) = arrange(hookNotifier) {
+            withGetMessageById(Either.Left(StorageFailure.DataNotFound))
         }
 
         handler(
