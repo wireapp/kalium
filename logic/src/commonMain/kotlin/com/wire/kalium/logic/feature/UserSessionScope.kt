@@ -580,6 +580,7 @@ public class UserSessionScope internal constructor(
         kaliumConfigs.shouldEncryptData(),
         kaliumConfigs.dbInvalidationControlEnabled
     )
+    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
 
     private var _clientId: ClientId? = null
 
@@ -1848,8 +1849,6 @@ public class UserSessionScope internal constructor(
         )
     }
     override val coroutineContext: CoroutineContext = SupervisorJob()
-    private val persistMessageCallbackManager = PersistMessageCallbackManagerImpl(this)
-
     public fun registerMessageCallback(callback: PersistMessageCallback) {
         persistMessageCallbackManager.register(callback)
     }
