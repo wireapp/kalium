@@ -171,14 +171,14 @@ class MLSClientProviderTest {
     }
 
     @Test
-    fun givenDBDoesNotExist_whenExportingDB_thenReturnsDataNotFound() = runTest(testDispatchers.io) {
+    fun givenCoreClientNotInitialized_whenExportingDB_thenReturnsDataNotFound() = runTest(testDispatchers.io) {
         val (_, mlsClientProvider) = Arrangement(this).arrange {
             withCurrentClientIdSuccess(TestClient.CLIENT_ID)
             withPassphraseStorage()
-            withCoreCryptoDatabaseDoesNotExists()
         }
 
         mlsClientProvider.exportCryptoDB().shouldFail {
+            // CoreCryptoCentral was never initialized, so should return DataNotFound
             assertIs<StorageFailure.DataNotFound>(it)
         }
     }

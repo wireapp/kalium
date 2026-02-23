@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -70,12 +71,12 @@ class ProteusClientProviderTest {
     }
 
     @Test
-    fun givenDBDoesNotExist_whenExportingDB_thenReturnsDataNotFound() = runTest {
+    fun givenDBDoesNotExist_whenExportingDB_thenReturnsFailure() = runTest {
         val (_, proteusClientProvider) = Arrangement()
             .withProteusClient()
             .arrange()
 
-        // Don't create the database file, so FileUtil.exists() will return false
+        // Proteus client was never initialized, so it should fail
         proteusClientProvider.exportCryptoDB().shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }

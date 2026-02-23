@@ -72,6 +72,7 @@ internal class ProteusClientProviderImpl(
 ) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
+    private var _coreCryptoCentral: CoreCryptoCentral? = null
     private val mutex = Mutex()
 
     override suspend fun clearLocalFiles() {
@@ -124,6 +125,7 @@ internal class ProteusClientProviderImpl(
             kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
             throw e
         }
+        _coreCryptoCentral = central
         return getCentralProteusClientOrError(central)
     }
 
@@ -151,6 +153,7 @@ internal class ProteusClientProviderImpl(
         withContext(dispatcher.io) {
             _proteusClient?.close()
             _proteusClient = null
+            _coreCryptoCentral = null
             FileUtil.deleteDirectory(rootProteusPath)
         }
     }
@@ -160,20 +163,25 @@ internal class ProteusClientProviderImpl(
             currentClientIdProvider().fold(
                 { return@withContext it.left() },
                 { clientId ->
-                    _proteusClient?.let { _ ->
-                        val dbPath = "$rootProteusPath/${KEYSTORE_NAME}"
-                        if (!FileUtil.exists(dbPath)) {
-                            return@withContext StorageFailure.DataNotFound.left()
-                        } else {
-                            val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
-                            CryptoBackupMetadata(
-                                dbPath = dbPath,
-                                passphrase = dbSecret.passphrase,
-                                clientId = clientId
-                            ).right()
-                        }
+                    val central = mutex.withLock { _coreCryptoCentral }
+                        ?: return@withContext StorageFailure.DataNotFound.left()
 
-                    } ?: StorageFailure.DataNotFound.left()
+                    val exportPath = "$rootProteusPath/${KEYSTORE_NAME}_export"
+
+                    try {
+                        central.exportDatabaseCopy(exportPath)
+                    } catch (e: Exception) {
+                        return@withContext CoreFailure.Unknown(e).left()
+                    }
+
+                    val dbSecret = SecurityHelperImpl(passphraseStorage)
+                        .proteusDBSecret(userId, rootProteusPath)
+
+                    CryptoBackupMetadata(
+                        dbPath = exportPath,
+                        passphrase = dbSecret.passphrase,
+                        clientId = clientId
+                    ).right()
                 }
             )
         }

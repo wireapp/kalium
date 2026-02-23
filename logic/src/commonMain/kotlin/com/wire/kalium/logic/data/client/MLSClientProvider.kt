@@ -246,30 +246,33 @@ internal class MLSClientProviderImpl(
     }
 
     override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> =
-        coreCryptoCentralMutex.withLock {
-            withContext(dispatchers.io) {
-                currentClientIdProvider().fold(
-                    { return@withContext it.left() },
-                    { clientId ->
-                        val location = "$rootKeyStorePath/${clientId.value}"
-                        val rootDir = "$location/$KEYSTORE_NAME"
-                        val dbPath = "$rootDir/keystore"
+        withContext(dispatchers.io) {
+            currentClientIdProvider().fold(
+                { return@withContext it.left() },
+                { clientId ->
+                    val location = "$rootKeyStorePath/${clientId.value}"
+                    val rootDir = "$location/$KEYSTORE_NAME"
+                    val exportPath = "$rootDir/keystore_export"
 
-                        if (!FileUtil.exists(dbPath)) {
-                            return@withContext StorageFailure.DataNotFound.left()
-                        }
+                    val cc = coreCryptoCentralMutex.withLock { coreCryptoCentral }
+                        ?: return@withContext StorageFailure.DataNotFound.left()
 
-                        val dbSecret = SecurityHelperImpl(passphraseStorage)
-                            .mlsDBSecret(userId, rootDir)
-
-                        CryptoBackupMetadata(
-                            dbPath = dbPath,
-                            passphrase = dbSecret.passphrase,
-                            clientId = clientId
-                        ).right()
+                    try {
+                        cc.exportDatabaseCopy(exportPath)
+                    } catch (e: Exception) {
+                        return@withContext CoreFailure.Unknown(e).left()
                     }
-                )
-            }
+
+                    val dbSecret = SecurityHelperImpl(passphraseStorage)
+                        .mlsDBSecret(userId, rootDir)
+
+                    CryptoBackupMetadata(
+                        dbPath = exportPath,
+                        passphrase = dbSecret.passphrase,
+                        clientId = clientId
+                    ).right()
+                }
+            )
         }
 
     private companion object {

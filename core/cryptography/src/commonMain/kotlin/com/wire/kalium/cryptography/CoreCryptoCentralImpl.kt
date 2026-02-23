@@ -24,11 +24,14 @@ import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
+import com.wire.crypto.DatabaseKey
 import com.wire.crypto.EpochObserver
 import com.wire.crypto.HistorySecret
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
+import com.wire.crypto.exportDatabaseCopy
+import com.wire.crypto.openDatabase
 import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
@@ -54,7 +57,8 @@ internal object CoreCryptoLoggerImpl : CoreCryptoLogger {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCryptoClient,
-    private val rootDir: String
+    private val rootDir: String,
+    private val databaseKey: DatabaseKey
 ) : CoreCryptoCentral {
 
     suspend fun transaction(name: String, block: suspend (context: CoreCryptoContext) -> Unit) = cc.transaction(name) {
@@ -211,6 +215,16 @@ class CoreCryptoCentralImpl(
             }
         } catch (exception: Exception) {
             kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
+        }
+    }
+
+    override suspend fun exportDatabaseCopy(destinationPath: String) {
+        val keystorePath = "$rootDir/$KEYSTORE_NAME"
+        val database = openDatabase(keystorePath, databaseKey)
+        try {
+            exportDatabaseCopy(database, destinationPath)
+        } finally {
+            database.close()
         }
     }
 
