@@ -101,33 +101,71 @@ public class WrapperWorkerFactory(
         }
 
         val userId = workerParameters.getSerializable<UserId>(USER_ID_KEY)
+        val workerType = workerParameters.inputData.getString(WORKER_TYPE_KEY)
         val innerWorkerClassName = workerParameters.inputData.getString(WORKER_CLASS_KEY)
             ?: throw IllegalArgumentException("No worker class name specified")
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
-        return when (innerWorkerClassName) {
-            PendingMessagesSenderWorker::class.java.canonicalName -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
+        val resolvedType = resolveWorkerType(workerType, innerWorkerClassName)
+        val worker = when (resolvedType) {
+            WORKER_TYPE_PENDING_MESSAGES -> withSessionScope(userId) { it.pendingMessagesSenderWorker }
+            WORKER_TYPE_USER_CONFIG_SYNC -> withSessionScope(userId) { it.userConfigSyncWorker }
+            WORKER_TYPE_UPDATE_API_VERSIONS -> coreLogic.getGlobalScope().updateApiVersionsWorker
+            WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS -> createAudioNormalizedLoudnessWorker(userId, workerParameters)
+            else -> instantiateWorker(innerWorkerClassName)
+        }
+        return worker?.let {
+            WrapperWorker(it, appContext, workerParameters, foregroundNotificationDetailsProvider)
+        }
+    }
 
-            UserConfigSyncWorker::class.java.canonicalName -> withSessionScope(userId) { it.userConfigSyncWorker }
+    private fun resolveWorkerType(workerType: String?, innerWorkerClassName: String): String? {
+        if (workerType != null) return workerType
+        return when {
+            innerWorkerClassName.matchesWorkerClass(
+                PendingMessagesSenderWorker::class.java.canonicalName,
+                LEGACY_PENDING_MESSAGES_WORKER_CLASS_NAME
+            ) -> WORKER_TYPE_PENDING_MESSAGES
 
-            UpdateApiVersionsWorker::class.java.canonicalName -> coreLogic.getGlobalScope().updateApiVersionsWorker
+            innerWorkerClassName.matchesWorkerClass(
+                UserConfigSyncWorker::class.java.canonicalName,
+                LEGACY_USER_CONFIG_SYNC_WORKER_CLASS_NAME
+            ) -> WORKER_TYPE_USER_CONFIG_SYNC
 
-            AudioNormalizedLoudnessWorker::class.java.canonicalName -> withSessionScope(userId) { sessionScope ->
-                val conversationId: ConversationId? = workerParameters.getSerializable(CONVERSATION_ID_KEY)
-                val messageId: String? = workerParameters.inputData.getString(MESSAGE_ID_KEY)
-                if (conversationId == null || messageId == null) {
-                    throw IllegalArgumentException("Missing parameters for ${AudioNormalizedLoudnessWorker.NAME}")
-                } else {
-                    sessionScope.buildAudioNormalizedLoudnessWorker(conversationId, messageId)
-                }
-            }
+            innerWorkerClassName.matchesWorkerClass(
+                UpdateApiVersionsWorker::class.java.canonicalName,
+                LEGACY_UPDATE_API_VERSIONS_WORKER_CLASS_NAME
+            ) -> WORKER_TYPE_UPDATE_API_VERSIONS
 
-            else -> {
-                kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
-                Class.forName(innerWorkerClassName).getDeclaredConstructor().newInstance() as DefaultWorker
-            }
-        }?.let { worker ->
-            WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
+            innerWorkerClassName.matchesWorkerClass(
+                AudioNormalizedLoudnessWorker::class.java.canonicalName,
+                LEGACY_AUDIO_NORMALIZED_LOUDNESS_WORKER_CLASS_NAME
+            ) -> WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS
+
+            else -> null
+        }
+    }
+
+    private fun createAudioNormalizedLoudnessWorker(
+        userId: UserId?,
+        workerParameters: WorkerParameters
+    ): DefaultWorker? = withSessionScope(userId) { sessionScope ->
+        val conversationId: ConversationId? = workerParameters.getSerializable(CONVERSATION_ID_KEY)
+        val messageId: String? = workerParameters.inputData.getString(MESSAGE_ID_KEY)
+        if (conversationId == null || messageId == null) {
+            throw IllegalArgumentException("Missing parameters for ${AudioNormalizedLoudnessWorker.NAME}")
+        } else {
+            sessionScope.buildAudioNormalizedLoudnessWorker(conversationId, messageId)
+        }
+    }
+
+    private fun instantiateWorker(innerWorkerClassName: String): DefaultWorker {
+        kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
+        return runCatching {
+            Class.forName(innerWorkerClassName).getDeclaredConstructor().newInstance() as DefaultWorker
+        }.getOrElse { error ->
+            kaliumLogger.e("Unable to instantiate worker: $innerWorkerClassName", error)
+            MissingWorker(innerWorkerClassName)
         }
     }
 
@@ -144,9 +182,26 @@ public class WrapperWorkerFactory(
 
     internal companion object {
         private const val WORKER_CLASS_KEY = "worker_class"
+        private const val WORKER_TYPE_KEY = "worker_type"
         internal const val USER_ID_KEY = "user-id-worker-param"
         internal const val CONVERSATION_ID_KEY: String = "conversation-id-param"
         internal const val MESSAGE_ID_KEY: String = "message-id-param"
+
+        private const val WORKER_TYPE_PENDING_MESSAGES = "pending_messages"
+        private const val WORKER_TYPE_USER_CONFIG_SYNC = "user_config_sync"
+        private const val WORKER_TYPE_UPDATE_API_VERSIONS = "update_api_versions"
+        private const val WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS = "audio_normalized_loudness"
+
+        // Keep compatibility with tasks enqueued before obfuscation/minification changes.
+        // See: docs/minification-workmanager-compat.md
+        private const val LEGACY_PENDING_MESSAGES_WORKER_CLASS_NAME =
+            "com.wire.kalium.logic.sync.PendingMessagesSenderWorker"
+        private const val LEGACY_USER_CONFIG_SYNC_WORKER_CLASS_NAME =
+            "com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker"
+        private const val LEGACY_UPDATE_API_VERSIONS_WORKER_CLASS_NAME =
+            "com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker"
+        private const val LEGACY_AUDIO_NORMALIZED_LOUDNESS_WORKER_CLASS_NAME =
+            "com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker"
 
         fun workData(
             work: KClass<out DefaultWorker>,
@@ -155,14 +210,33 @@ public class WrapperWorkerFactory(
             messageId: String? = null
         ) = Data.Builder()
             .putString(WORKER_CLASS_KEY, work.java.canonicalName)
+            .putString(WORKER_TYPE_KEY, resolveWorkerType(work))
             .apply {
                 userId?.let { putSerializable(USER_ID_KEY, it) }
                 conversationId?.let { putSerializable(CONVERSATION_ID_KEY, it) }
                 messageId?.let { putString(MESSAGE_ID_KEY, it) }
             }
             .build()
+
+        private fun resolveWorkerType(work: KClass<out DefaultWorker>): String? = when (work) {
+            PendingMessagesSenderWorker::class -> WORKER_TYPE_PENDING_MESSAGES
+            UserConfigSyncWorker::class -> WORKER_TYPE_USER_CONFIG_SYNC
+            UpdateApiVersionsWorker::class -> WORKER_TYPE_UPDATE_API_VERSIONS
+            AudioNormalizedLoudnessWorker::class -> WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS
+            else -> null
+        }
     }
 }
+
+private class MissingWorker(private val workerClassName: String) : DefaultWorker {
+    override suspend fun doWork(): KaliumResult {
+        kaliumLogger.e("Skipping unknown worker class: $workerClassName")
+        return KaliumResult.Failure
+    }
+}
+
+private fun String.matchesWorkerClass(currentName: String?, legacyName: String): Boolean =
+    this == currentName || this == legacyName
 
 private inline fun <reified T> Data.Builder.putSerializable(key: String, value: T) = putString(key, Json.encodeToString(value))
 private inline fun <reified T> WorkerParameters.getSerializable(key: String): T? =

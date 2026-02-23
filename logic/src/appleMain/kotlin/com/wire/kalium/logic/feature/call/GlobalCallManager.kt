@@ -39,6 +39,7 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
 
@@ -94,6 +95,7 @@ internal actual class GlobalCallManager(
         qualifiedIdMapper: QualifiedIdMapper,
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+        epochInfoUpdater: EpochInfoUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
         networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs,

@@ -15,6 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.di
 
-internal actual class PlatformUserStorageProperties
+package com.wire.kalium.nomaddevice
+
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistedMessageData
+
+/**
+ * Nomad-side hook implementation that can be registered into CoreLogic.
+ * Invocation from Logic is synchronous; the callback can perform async work if needed.
+ */
+public class NomadPersistMessageHookNotifier(
+    private val onPersistedMessage: (PersistedMessageData, UserId) -> Unit
+) : PersistMessageHookNotifier {
+    public override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+        onPersistedMessage(message, selfUserId)
+    }
+}

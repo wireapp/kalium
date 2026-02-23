@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.userstorage.di.UserStorage
 import io.mockative.Mockable
 
 /**

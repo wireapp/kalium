@@ -16,9 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+package com.wire.kalium.userstorage.di
 
-internal actual class PlatformUserStorageProperties internal constructor(
-    val rootPath: String,
-    val rootStoragePath: String
+import java.io.File
+
+public actual class PlatformUserStorageProperties(
+    public val rootPath: String,
+    internal val databaseInfo: DatabaseStorageType
 )
+
+public sealed interface DatabaseStorageType {
+    public data class FiledBacked(val filePath: File) : DatabaseStorageType
+
+    public data object InMemory : DatabaseStorageType
+}

@@ -10,6 +10,7 @@
 ### Dependencies
 
 - JDK 21 (ex: openjdk-21-jdk on Ubuntu)
+- Git (required for build process)
 
 ### Supported Platforms
 
@@ -17,6 +18,33 @@
 - JVM (see the [cli](https://github.com/wireapp/kalium/tree/develop/cli) module)
 - iOS (see the [iOS Build Guide](docs/IOS_BUILD.md))
 - JavaScript (just a tiny bit)
+
+### Compile-time flags
+
+Kalium currently uses the following compile-time Gradle properties:
+
+- `USE_UNIFIED_CORE_CRYPTO`
+  - Default: `false` (see `gradle.properties`)
+  - Controls whether Kalium uses the unified `core-crypto-kmp` artifact (`true`) or platform-specific crypto artifacts (`false`).
+  - Override example:
+    ```bash
+    ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
+    ```
+
+- `kalium.providerCacheScope`
+  - Purpose: shared compile-time policy that defines cache scope for provider-level in-memory caches.
+  - Required: Kalium defines no default; consumer builds must set it explicitly.
+  - Allowed values:
+    - `GLOBAL`: process-global caches shared across provider instances.
+    - `LOCAL`: each provider instance keeps its own cache.
+  - Current consumers:
+    - `UserStorageProvider`
+    - `UserAuthenticatedNetworkProvider`
+  - Extension rule: any new provider cache should follow this same policy instead of introducing a new compile-time flag.
+  - Override example:
+    ```bash
+    ./gradlew <task> -Pkalium.providerCacheScope=GLOBAL
+    ```
 
 The `cli` can be executed on the terminal of any machine that 
 satisfies the dependencies mentioned above, and is capable of actions like:
