@@ -36,8 +36,8 @@ import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 
 /**
@@ -90,6 +90,27 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             logoutRepository.onLogout(reason)
             userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
 
+            kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
+
+            val willWipeData = reason == LogoutReason.SELF_HARD_LOGOUT ||
+                (reason == LogoutReason.REMOVED_CLIENT && kaliumConfigs.wipeOnDeviceRemoval) ||
+                (reason == LogoutReason.DELETED_ACCOUNT && kaliumConfigs.wipeOnDeviceRemoval) ||
+                (reason == LogoutReason.SESSION_EXPIRED && kaliumConfigs.wipeOnCookieInvalid)
+
+            // Cancel the session scope and drain all in-flight coroutines before wiping
+            // the database. Without this, coroutines still holding JDBC connections to the
+            // DB path can execute statements after nuke() deletes the file, causing SQLite
+            // to auto-recreate an empty schema-less file at the same path. The next login
+            // then opens a 0-byte DB and fails with "no such table".
+            if (willWipeData) {
+                userSessionScopeProvider.get(userId)?.let { scope ->
+                    scope.cancel()
+                    scope.coroutineContext.job.join()
+                }
+            }
+
+            userConfigRepository.clearE2EISettings()
+
             when (reason) {
                 LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
                 LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
@@ -110,12 +131,12 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
                 LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoMigrationRecovery()
-            }.also {
-                kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
             }
 
-            userConfigRepository.clearE2EISettings()
-            userSessionScopeProvider.get(userId)?.cancel()
+            // Non-wipe paths: cancel the scope now (it was not cancelled early above).
+            if (!willWipeData) {
+                userSessionScopeProvider.get(userId)?.cancel()
+            }
             userSessionScopeProvider.delete(userId)
             logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
@@ -138,9 +159,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private suspend fun wipeAllData() {
-        // we put this delay here to avoid a race condition when
-        // receiving web socket events at the exact time of logging put
-        delay(CLEAR_DATA_DELAY)
+        // UserSessionScope is cancelled and joined before this is called (see invoke()),
+        // so no in-flight coroutines can write to the DB path after nuke() deletes the file.
         clearClientDataUseCase()
         clearUserDataUseCase() // this clears also current client id
     }
@@ -159,7 +179,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     companion object {
-        const val CLEAR_DATA_DELAY = 1000L
         const val TAG = "LogoutUseCase"
     }
 }
