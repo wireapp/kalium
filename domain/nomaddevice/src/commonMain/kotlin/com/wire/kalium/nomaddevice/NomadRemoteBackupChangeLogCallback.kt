@@ -78,30 +78,36 @@ internal class NomadRemoteBackupChangeLogDataSource(
     private val warnLogger: (String) -> Unit,
 ) : NomadRemoteBackupChangeLogRepository {
 
-    override suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId): Either<StorageFailure, Unit> {
-        if (!message.shouldLogMessageUpsert()) return Unit.right()
-
-        val remoteBackupChangeLogDAO = remoteBackupChangeLogDAOProvider(selfUserId)
-        if (remoteBackupChangeLogDAO == null) {
-            warnLogger("Skipping MESSAGE_UPSERT changelog write: missing user storage for '${selfUserId.toLogString()}'.")
-            return Unit.right()
+    override suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId): Either<StorageFailure, Unit> =
+        when (val dao = resolveDao(message, selfUserId)) {
+            null -> Unit.right()
+            else -> persistChangeLog(dao, message)
         }
 
-        val eventTimestampMs = eventTimestampMsProvider()
-        val messageTimestampMs = message.date.toEpochMilliseconds()
-        return wrapStorageRequest {
-            remoteBackupChangeLogDAO.logMessageUpsert(
-                conversationId = message.conversationId.toDao(),
-                messageId = message.messageId,
-                timestampMs = eventTimestampMs,
-                messageTimestampMs = messageTimestampMs
-            )
-        }.onFailure { _ ->
-            nomadLogger.i(
-                "Failed to write MESSAGE_UPSERT changelog for conversation " +
-                        "'${message.conversationId.toLogString()}' and message '${message.messageId}'."
-            )
+    private fun resolveDao(message: PersistedMessageData, selfUserId: UserId): RemoteBackupChangeLogDAO? {
+        if (!message.shouldLogMessageUpsert()) return null
+        return remoteBackupChangeLogDAOProvider(selfUserId).also { dao ->
+            if (dao == null) {
+                warnLogger("Skipping MESSAGE_UPSERT changelog write: missing user storage for '${selfUserId.toLogString()}'.")
+            }
         }
+    }
+
+    private suspend fun persistChangeLog(
+        dao: RemoteBackupChangeLogDAO,
+        message: PersistedMessageData,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        dao.logMessageUpsert(
+            conversationId = message.conversationId.toDao(),
+            messageId = message.messageId,
+            timestampMs = eventTimestampMsProvider(),
+            messageTimestampMs = message.date.toEpochMilliseconds()
+        )
+    }.onFailure { _ ->
+        nomadLogger.i(
+            "Failed to write MESSAGE_UPSERT changelog for conversation " +
+                    "'${message.conversationId.toLogString()}' and message '${message.messageId}'."
+        )
     }
 }
 
@@ -112,64 +118,7 @@ private fun PersistedMessageData.shouldLogMessageUpsert(): Boolean = when (val m
 
     is MessageContent.Multipart -> messageContent.hasSupportedPartForChangelog()
 
-    is MessageContent.Composite,
-    is MessageContent.FailedDecryption,
-    is MessageContent.Knock,
-    is MessageContent.RestrictedAsset,
-    is MessageContent.Unknown,
-    is MessageContent.Availability,
-    is MessageContent.ButtonAction,
-    is MessageContent.ButtonActionConfirmation,
-    is MessageContent.Calling,
-    is MessageContent.Cleared,
-    MessageContent.ClientAction,
-    is MessageContent.CompositeEdited,
-    is MessageContent.DataTransfer,
-    is MessageContent.DeleteForMe,
-    is MessageContent.DeleteMessage,
-    MessageContent.History.ClientsRequest,
-    is MessageContent.History.ClientsResponse,
-    is MessageContent.History.NewClientAvailable,
-    MessageContent.Ignored,
-    is MessageContent.InCallEmoji,
-    is MessageContent.LastRead,
-    is MessageContent.MultipartEdited,
-    is MessageContent.Reaction,
-    is MessageContent.Receipt,
-    is MessageContent.TextEdited,
-    is MessageContent.ConversationAppsEnabledChanged,
-    MessageContent.ConversationCreated,
-    MessageContent.ConversationDegradedMLS,
-    MessageContent.ConversationDegradedProteus,
-    is MessageContent.ConversationMessageTimerChanged,
-    is MessageContent.ConversationProtocolChanged,
-    MessageContent.ConversationProtocolChangedDuringACall,
-    is MessageContent.ConversationReceiptModeChanged,
-    is MessageContent.ConversationRenamed,
-    MessageContent.ConversationStartedUnverifiedWarning,
-    MessageContent.ConversationVerifiedMLS,
-    MessageContent.ConversationVerifiedProteus,
-    MessageContent.CryptoSessionReset,
-    is MessageContent.FederationStopped.ConnectionRemoved,
-    is MessageContent.FederationStopped.Removed,
-    MessageContent.HistoryLost,
-    MessageContent.HistoryLostProtocolChanged,
-    MessageContent.LegalHold.ForConversation.Disabled,
-    MessageContent.LegalHold.ForConversation.Enabled,
-    is MessageContent.LegalHold.ForMembers.Disabled,
-    is MessageContent.LegalHold.ForMembers.Enabled,
-    MessageContent.MLSWrongEpochWarning,
-    is MessageContent.MemberChange.Added,
-    is MessageContent.MemberChange.CreationAdded,
-    is MessageContent.MemberChange.FailedToAdd,
-    is MessageContent.MemberChange.FederationRemoved,
-    is MessageContent.MemberChange.Removed,
-    is MessageContent.MemberChange.RemovedFromTeam,
-    MessageContent.MissedCall,
-    is MessageContent.NewConversationReceiptMode,
-    MessageContent.NewConversationWithCellMessage,
-    MessageContent.NewConversationWithCellSelfDeleteDisabledMessage,
-    is MessageContent.TeamMemberRemoved -> false
+    else -> false
 }
 
 private fun MessageContent.Multipart.hasSupportedPartForChangelog(): Boolean {
