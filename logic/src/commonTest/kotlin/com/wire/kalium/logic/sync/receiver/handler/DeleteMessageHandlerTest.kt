@@ -17,18 +17,21 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -36,6 +39,7 @@ import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration
 
 class DeleteMessageHandlerTest {
@@ -231,13 +235,52 @@ class DeleteMessageHandlerTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenMessageDeletedSuccessfully_whenHandled_thenHookIsNotified() = runTest {
+        val originalMessageID = "originalMessageID"
+        val content = MessageContent.DeleteMessage(originalMessageID)
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val originalMessage =
+            TestMessage.TEXT_MESSAGE.copy(
+                senderUserId = SELF_USER_ID,
+                id = originalMessageID,
+                conversationId = conversationId,
+                expirationData = Message.ExpirationData(expireAfter = Duration.parse("PT1H"))
+            )
+
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (_, handler) = arrange(hookNotifier) {
+            withGetMessageById(Either.Right(originalMessage))
+            withDeleteMessage(Either.Right(Unit))
+        }
+
+        handler(
+            content = content,
+            senderUserId = UserId("requesterID", "requesterDomain"),
+            conversationId = conversationId
+        )
+
+        assertEquals(1, hookNotifier.deleteMessageCalls.size)
+        val (data, selfUserId) = hookNotifier.deleteMessageCalls.single()
+        assertEquals(conversationId, data.conversationId)
+        assertEquals(originalMessageID, data.messageId)
+        assertEquals(SELF_USER_ID, selfUserId)
+    }
+
     private companion object {
         val SELF_USER_ID = UserId("selfID", "selfDomain")
     }
 
-    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private fun arrange(
+        hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
+        block: suspend Arrangement.() -> Unit
+    ) = Arrangement(hookNotifier, block).arrange()
+
+    private fun arrange(block: suspend Arrangement.() -> Unit) = arrange(NoOpPersistenceEventHookNotifier, block)
 
     private class Arrangement(
+        private val hookNotifier: PersistenceEventHookNotifier,
         private val block: suspend Arrangement.() -> Unit
     ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
@@ -249,8 +292,17 @@ class DeleteMessageHandlerTest {
                 messageRepository = messageRepository,
                 assetRepository = assetRepository,
                 notificationEventsManager = notificationEventsManager,
-                selfUserId = SELF_USER_ID
+                selfUserId = SELF_USER_ID,
+                persistenceEventHookNotifier = hookNotifier,
             )
+        }
+    }
+
+    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
+        val deleteMessageCalls = mutableListOf<Pair<MessageDeleteEventData, UserId>>()
+
+        override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
+            deleteMessageCalls += data to selfUserId
         }
     }
 }

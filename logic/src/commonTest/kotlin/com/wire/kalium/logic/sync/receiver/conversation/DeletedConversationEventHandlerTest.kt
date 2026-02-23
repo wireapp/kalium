@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -32,6 +33,9 @@ import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangem
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
+import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -41,6 +45,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class DeletedConversationEventHandlerTest {
 
@@ -114,9 +119,35 @@ class DeletedConversationEventHandlerTest {
         }
     }
 
-    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
+    @Test
+    fun givenADeletedConversationEvent_whenHandlingItSuccessfully_thenHookIsNotified() = runTest {
+        val event = TestEvent.deletedConversation()
+        val conversation = TestConversation.CONVERSATION
+        val otherUser = TestUser.OTHER
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (arrangement, eventHandler) = arrange(hookNotifier) {
+            withGetConversationByIdReturning(conversation)
+            withObserveUser(flowOf(otherUser), EqualsMatcher(event.senderUserId))
+            withDeletingConversationSucceeding(EqualsMatcher(TestConversation.ID))
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        assertEquals(1, hookNotifier.conversationDeleteCalls.size)
+        val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
+        assertEquals(event.conversationId, data.conversationId)
+        assertEquals(TestUser.USER_ID, selfUserId)
+    }
+
+    private fun arrange(
+        hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
+        block: suspend Arrangement.() -> Unit
+    ) = Arrangement(hookNotifier, block).arrange()
+
+    private fun arrange(block: suspend Arrangement.() -> Unit) = arrange(NoOpPersistenceEventHookNotifier, block)
 
     private class Arrangement(
+        private val hookNotifier: PersistenceEventHookNotifier,
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
@@ -130,9 +161,18 @@ class DeletedConversationEventHandlerTest {
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,
                 notificationEventsManager = notificationEventsManager,
-                deleteConversation = deleteConversation
+                deleteConversation = deleteConversation,
+                persistenceEventHookNotifier = hookNotifier,
+                selfUserId = TestUser.USER_ID,
             )
         }
     }
 
+    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
+        val conversationDeleteCalls = mutableListOf<Pair<ConversationDeleteEventData, UserId>>()
+
+        override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
+            conversationDeleteCalls += data to selfUserId
+        }
+    }
 }

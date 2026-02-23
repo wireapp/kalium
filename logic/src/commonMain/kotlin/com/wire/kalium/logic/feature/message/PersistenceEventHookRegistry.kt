@@ -16,8 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.nomaddevice
+package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
@@ -26,49 +27,64 @@ import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
-import com.wire.kalium.userstorage.di.UserStorageProvider
-import kotlinx.datetime.Clock
+import kotlin.concurrent.Volatile
+import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Nomad-side [PersistenceEventHookNotifier] that writes syncable events to the remote backup changelog.
- */
-public class NomadRemoteBackupChangeLogHookNotifier internal constructor(
-    private val repository: NomadRemoteBackupChangeLogRepository
-) : PersistenceEventHookNotifier {
+internal class PersistenceEventHookRegistry : PersistenceEventHookNotifier {
 
-    public constructor(
-        userStorageProvider: UserStorageProvider,
-        eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    ) : this(
-        NomadRemoteBackupChangeLogDataSource(
-            remoteBackupChangeLogDAOProvider = { userId ->
-                userStorageProvider.get(userId)?.database?.remoteBackupChangeLogDAO
-            },
-            eventTimestampMsProvider = eventTimestampMsProvider,
-        )
-    )
+    @Volatile
+    private var hookNotifier: PersistenceEventHookNotifier? = null
+
+    fun register(hookNotifier: PersistenceEventHookNotifier) {
+        if (this.hookNotifier == null) {
+            this.hookNotifier = hookNotifier
+        } else {
+            error("Hook notifier already registered")
+        }
+    }
+
+    fun unregister(hookNotifier: PersistenceEventHookNotifier) {
+        if (this.hookNotifier === hookNotifier) {
+            this.hookNotifier = null
+        }
+    }
+
+    fun clear() {
+        hookNotifier = null
+    }
 
     override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
-        repository.logSyncableMessageUpsert(message, selfUserId)
+        safeInvoke("PersistMessage") { it.onMessagePersisted(message, selfUserId) }
     }
 
     override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
-        repository.logSyncableMessageDelete(data, selfUserId)
+        safeInvoke("MessageDelete") { it.onMessageDeleted(data, selfUserId) }
     }
 
     override suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {
-        repository.logSyncableReaction(data, selfUserId)
+        safeInvoke("ReactionPersist") { it.onReactionPersisted(data, selfUserId) }
     }
 
     override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
-        repository.logSyncableReadReceipt(data, selfUserId)
+        safeInvoke("ReadReceipt") { it.onReadReceiptPersisted(data, selfUserId) }
     }
 
     override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
-        repository.logSyncableConversationDelete(data, selfUserId)
+        safeInvoke("ConversationDelete") { it.onConversationDeleted(data, selfUserId) }
     }
 
     override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
-        repository.logSyncableConversationClear(data, selfUserId)
+        safeInvoke("ConversationClear") { it.onConversationCleared(data, selfUserId) }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend inline fun safeInvoke(tag: String, block: (PersistenceEventHookNotifier) -> Unit) {
+        try {
+            hookNotifier?.let(block)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (throwable: Exception) {
+            kaliumLogger.w("$tag hook execution failed", throwable)
+        }
     }
 }

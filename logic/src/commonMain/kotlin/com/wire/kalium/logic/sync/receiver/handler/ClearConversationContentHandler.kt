@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.messaging.hooks.ConversationClearEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.Mockable
 
 @Mockable
@@ -45,6 +47,7 @@ internal class ClearConversationContentHandlerImpl(
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
     private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
     private val deleteConversation: DeleteConversationUseCase,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
@@ -83,5 +86,9 @@ internal class ClearConversationContentHandlerImpl(
     private suspend fun clearConversation(conversationId: ConversationId) {
         conversationRepository.clearContent(conversationId)
         clearLocalConversationAssets(conversationId)
+        persistenceEventHookNotifier.onConversationCleared(
+            ConversationClearEventData(conversationId),
+            selfUserId
+        )
     }
 }
