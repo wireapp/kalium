@@ -217,6 +217,7 @@ class CoreCryptoCentralImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun exportDatabaseCopy(destinationPath: String) {
         val keystorePath = "$rootDir/$KEYSTORE_NAME"
         val database = openDatabase(keystorePath, databaseKey)
