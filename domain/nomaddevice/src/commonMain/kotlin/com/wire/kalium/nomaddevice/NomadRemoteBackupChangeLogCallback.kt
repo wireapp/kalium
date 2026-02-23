@@ -45,7 +45,6 @@ import kotlinx.datetime.Clock
  */
 public fun createNomadRemoteBackupChangeLogCallback(
     userStorageProvider: UserStorageProvider,
-    logger: KaliumLogger = kaliumLogger.withTextTag("NomadDevice"),
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ): suspend (PersistedMessageData, UserId) -> Unit =
     createNomadRemoteBackupChangeLogCallbackInternal(
@@ -53,19 +52,15 @@ public fun createNomadRemoteBackupChangeLogCallback(
             userStorageProvider.get(userId)?.database?.remoteBackupChangeLogDAO
         },
         eventTimestampMsProvider = eventTimestampMsProvider,
-        warnLogger = { logger.w(it) },
-        errorLogger = { message, throwable -> logger.e(message, throwable) }
     )
 
 internal fun createNomadRemoteBackupChangeLogCallbackInternal(
     remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    warnLogger: (String) -> Unit,
 ): suspend (PersistedMessageData, UserId) -> Unit {
     val repository = NomadRemoteBackupChangeLogDataSource(
         remoteBackupChangeLogDAOProvider = remoteBackupChangeLogDAOProvider,
         eventTimestampMsProvider = eventTimestampMsProvider,
-        warnLogger = warnLogger,
     )
     return { message, selfUserId ->
         repository.logSyncableMessageUpsert(message, selfUserId)
@@ -75,7 +70,6 @@ internal fun createNomadRemoteBackupChangeLogCallbackInternal(
 internal class NomadRemoteBackupChangeLogDataSource(
     private val remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     private val eventTimestampMsProvider: () -> Long,
-    private val warnLogger: (String) -> Unit,
 ) : NomadRemoteBackupChangeLogRepository {
 
     override suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId): Either<StorageFailure, Unit> =
@@ -88,7 +82,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
         if (!message.shouldLogMessageUpsert()) return null
         return remoteBackupChangeLogDAOProvider(selfUserId).also { dao ->
             if (dao == null) {
-                warnLogger("Skipping MESSAGE_UPSERT changelog write: missing user storage for '${selfUserId.toLogString()}'.")
+                nomadLogger.w("Skipping MESSAGE_UPSERT changelog write: missing user storage for '${selfUserId.toLogString()}'.")
             }
         }
     }
