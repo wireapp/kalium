@@ -26,6 +26,8 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -41,7 +43,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class PersistMessageUseCaseTest {
-
     @Test
     fun givenMessageRepositoryFailure_whenPersistingMessage_thenReturnFailure() = runTest {
         val (arrangement, persistMessage) = Arrangement()
@@ -118,7 +119,7 @@ class PersistMessageUseCaseTest {
         }
 
     @Test
-    fun givenMessageRepositorySuccess_whenPersistingMessage_thenNotifyRegisteredCallbacksWithPersistedMessage() =
+    fun givenMessageRepositorySuccess_whenPersistingMessage_thenNotifyHookWithPersistedMessageAndSelfUserId() =
         runTest {
             val (arrangement, persistMessage) = Arrangement()
                 .withPersistMessageSuccess()
@@ -133,8 +134,9 @@ class PersistMessageUseCaseTest {
             val result = persistMessage.invoke(message)
 
             result.shouldSucceed()
-            assertEquals(1, arrangement.persistMessageCallbackNotifier.persistedMessages.size)
-            val persistedMessage = arrangement.persistMessageCallbackNotifier.persistedMessages.single()
+            assertEquals(1, arrangement.persistMessageHookNotifier.calls.size)
+            val (persistedMessage, selfUserId) = arrangement.persistMessageHookNotifier.calls.single()
+            assertEquals(TestUser.USER_ID, selfUserId)
             assertEquals(message.conversationId, persistedMessage.conversationId)
             assertEquals(message.id, persistedMessage.messageId)
             assertEquals(message.content, persistedMessage.content)
@@ -143,7 +145,7 @@ class PersistMessageUseCaseTest {
         }
 
     @Test
-    fun givenMessageRepositoryFailure_whenPersistingMessage_thenDoNotNotifyRegisteredCallbacks() = runTest {
+    fun givenMessageRepositoryFailure_whenPersistingMessage_thenDoNotNotifyHook() = runTest {
         val (arrangement, persistMessage) = Arrangement()
             .withPersistMessageFailure()
             .withReceiptMode()
@@ -153,19 +155,19 @@ class PersistMessageUseCaseTest {
         val result = persistMessage.invoke(message)
 
         result.shouldFail()
-        assertTrue(arrangement.persistMessageCallbackNotifier.persistedMessages.isEmpty())
+        assertTrue(arrangement.persistMessageHookNotifier.calls.isEmpty())
     }
 
     private class Arrangement {
         val messageRepository = mock<MessageRepository>()
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
-        val persistMessageCallbackNotifier = RecordingPersistMessageCallbackNotifier()
+        val persistMessageHookNotifier = RecordingPersistMessageHookNotifier()
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = TestUser.USER_ID,
             notificationEventsManager = notificationEventsManager,
-            persistMessageCallbackNotifier = persistMessageCallbackNotifier
+            persistMessageHookNotifier = persistMessageHookNotifier
         )
 
         fun withPersistMessageSuccess() = apply {
@@ -187,11 +189,11 @@ class PersistMessageUseCaseTest {
         }
     }
 
-    private class RecordingPersistMessageCallbackNotifier : PersistMessageCallbackNotifier {
-        val persistedMessages = mutableListOf<PersistedMessageData>()
+    private class RecordingPersistMessageHookNotifier : PersistMessageHookNotifier {
+        val calls = mutableListOf<Pair<PersistedMessageData, UserId>>()
 
-        override fun onMessagePersisted(message: PersistedMessageData) {
-            persistedMessages += message
+        override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+            calls += message to selfUserId
         }
     }
 }

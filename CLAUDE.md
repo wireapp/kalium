@@ -94,9 +94,15 @@ Framework output location: `logic/build/bin/<target>/debugFramework/logic.framew
 
 **Note:** iOS and JS builds require `USE_UNIFIED_CORE_CRYPTO=true`. Either set it in gradle.properties or pass `-PUSE_UNIFIED_CORE_CRYPTO=true` on the command line.
 
-User DB cache mode can be controlled at compile time with:
-- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=false` (default): shared per CoreLogic instance
-- `SHARE_USER_STORAGE_CACHE_BETWEEN_PROVIDERS=true`: shared across CoreLogic instances in process
+User provider cache mode can be controlled at compile time with:
+- `kalium.providerCacheScope` is required and has no Kalium default; consumer builds must set it explicitly
+- `kalium.providerCacheScope=LOCAL`: each provider instance owns a local cache map
+- `kalium.providerCacheScope=GLOBAL`: provider instances share process-global cache maps
+- Current consumers: `UserStorageProvider` and `UserAuthenticatedNetworkProvider`
+- Extension rule: new provider-level caches should reuse this policy flag
+
+CLI override examples:
+- `./gradlew <task> -Pkalium.providerCacheScope=LOCAL|GLOBAL`
 
 ### CLI Application
 
