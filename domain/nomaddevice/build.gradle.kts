@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,26 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.di
+plugins {
+    id(libs.plugins.kalium.library.get().pluginId)
+}
 
-import java.io.File
+kaliumLibrary {
+    multiplatform {
+        enableJs.set(false)
+    }
+}
 
-internal actual class PlatformUserStorageProperties internal constructor(
-    val rootPath: String,
-    val databaseInfo: DatabaseStorageType
-)
-
-internal sealed interface DatabaseStorageType {
-    data class FiledBacked(val filePath: File) : DatabaseStorageType
-
-    data object InMemory : DatabaseStorageType
+kotlin {
+    explicitApi()
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(projects.domain.messaging.hooks)
+                implementation(projects.domain.usernetwork)
+                implementation(projects.domain.userstorage)
+                implementation(projects.data.persistence)
+            }
+        }
+    }
 }
