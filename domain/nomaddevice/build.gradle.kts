@@ -31,6 +31,9 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(projects.domain.messaging.hooks)
+                implementation(projects.domain.usernetwork)
+                implementation(projects.domain.userstorage)
                 implementation(projects.data.persistence)
             }
         }
