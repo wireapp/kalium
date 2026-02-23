@@ -176,8 +176,10 @@ class ProteusClientCoreCryptoImpl private constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            kaliumLogger.e("Unexpected non-Proteus exception in " +
-                    "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e")
+            kaliumLogger.e(
+                "Unexpected non-Proteus exception in " +
+                    "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e"
+            )
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
     }
@@ -228,8 +230,10 @@ class ProteusClientCoreCryptoImpl private constructor(
                     cause = e.cause
                 )
             } catch (e: Exception) {
-                kaliumLogger.e("Unexpected non-Proteus exception during " +
-                        "ProteusClientCoreCrypto initialization: ${e::class.simpleName}: $e")
+                kaliumLogger.e(
+                    "Unexpected non-Proteus exception during " +
+                        "ProteusClientCoreCrypto initialization: ${e::class.simpleName}: $e"
+                )
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
         }
