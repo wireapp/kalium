@@ -56,7 +56,7 @@ class ProteusMessageFailureHandlerTest {
     }
 
     @Test
-    fun givenTooDistantFuture_whenHandlingProteusFailure_thenIgnore() {
+    fun givenTooDistantFuture_whenHandlingProteusFailure_thenRecoverSession() {
         val failure = ProteusFailure(
             ProteusException(
                 message = null,
@@ -67,7 +67,7 @@ class ProteusMessageFailureHandlerTest {
 
         val result = ProteusMessageFailureHandler.handleFailure(failure)
 
-        assertEquals(ProteusMessageFailureResolution.Ignore, result)
+        assertEquals(ProteusMessageFailureResolution.RecoverSession, result)
     }
 
     @Test
