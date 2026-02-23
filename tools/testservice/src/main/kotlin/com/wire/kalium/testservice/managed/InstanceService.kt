@@ -77,6 +77,8 @@ This service makes sure that instances are destroyed (used files deleted) on
 shutdown of the service and also periodically checks for leftover instances
 which are not needed anymore.
  */
+
+@Suppress("TooManyFunctions", "ThrowsCount")
 class InstanceService(
     val metricRegistry: MetricRegistry,
     private val cleanupPool: ScheduledExecutorService,
