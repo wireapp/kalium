@@ -214,30 +214,9 @@ public class WrapperWorkerFactory(
     }
 
     private fun withSessionScope(userId: UserId?, action: (UserSessionScope) -> DefaultWorker): DefaultWorker? {
-        if (userId == null) {
-            kaliumLogger.logStructuredJson(
-                level = KaliumLogLevel.WARN,
-                leadingMessage = "WorkManager session scope unavailable",
-                jsonStringKeyValues = mapOf(
-                    "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
-                    "reason" to SESSION_SCOPE_REASON_MISSING_USER_ID
-                )
-            )
-            return null
-        }
-        if (!isValidSession(userId)) {
-            kaliumLogger.logStructuredJson(
-                level = KaliumLogLevel.INFO,
-                leadingMessage = "WorkManager session scope unavailable",
-                jsonStringKeyValues = mapOf(
-                    "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
-                    "reason" to SESSION_SCOPE_REASON_NO_VALID_SESSION
-                )
-            )
-            return null
-        }
+        val validUserId = validateSessionUserId(userId) ?: return null
         return runCatching {
-            action(coreLogic.getSessionScope(userId))
+            action(coreLogic.getSessionScope(validUserId))
         }.getOrElse { error ->
             kaliumLogger.logStructuredJson(
                 level = KaliumLogLevel.ERROR,
@@ -249,9 +228,32 @@ public class WrapperWorkerFactory(
                     "throwableMessage" to error.message
                 )
             )
-            kaliumLogger.e("Unable to create session scope for worker user: $userId", error)
+            kaliumLogger.e("Unable to create session scope for worker user: $validUserId", error)
             null
         }
+    }
+
+    private fun validateSessionUserId(userId: UserId?): UserId? = when {
+        userId == null -> {
+            logSessionScopeUnavailable(KaliumLogLevel.WARN, SESSION_SCOPE_REASON_MISSING_USER_ID)
+            null
+        }
+        !isValidSession(userId) -> {
+            logSessionScopeUnavailable(KaliumLogLevel.INFO, SESSION_SCOPE_REASON_NO_VALID_SESSION)
+            null
+        }
+        else -> userId
+    }
+
+    private fun logSessionScopeUnavailable(level: KaliumLogLevel, reason: String) {
+        kaliumLogger.logStructuredJson(
+            level = level,
+            leadingMessage = "WorkManager session scope unavailable",
+            jsonStringKeyValues = mapOf(
+                "event" to WORK_MANAGER_EVENT_SESSION_SCOPE,
+                "reason" to reason
+            )
+        )
     }
 
     private fun isValidSession(userId: UserId): Boolean = runCatching {

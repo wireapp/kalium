@@ -2690,6 +2690,7 @@ public class UserSessionScope internal constructor(
      */
     init {
         launch {
+            @Suppress("TooGenericExceptionCaught")
             try {
                 apiMigrationManager.performMigrations()
                 callRepository.updateOpenCallsToClosedStatus()
