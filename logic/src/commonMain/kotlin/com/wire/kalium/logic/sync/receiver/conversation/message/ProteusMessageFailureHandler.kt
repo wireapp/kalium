@@ -32,14 +32,14 @@ internal object ProteusMessageFailureHandler {
         if (failure !is ProteusFailure) return ProteusMessageFailureResolution.InformUser
 
         return when (failure.proteusException.code) {
-            ProteusException.Code.DUPLICATE_MESSAGE,
-            ProteusException.Code.TOO_DISTANT_FUTURE,
-            ProteusException.Code.OUTDATED_MESSAGE -> ProteusMessageFailureResolution.Ignore
+            ProteusException.Code.DUPLICATE_MESSAGE -> ProteusMessageFailureResolution.Ignore
 
             ProteusException.Code.SESSION_NOT_FOUND,
+            ProteusException.Code.TOO_DISTANT_FUTURE,
             ProteusException.Code.STORAGE_ERROR,
             ProteusException.Code.PREKEY_NOT_FOUND,
             ProteusException.Code.PANIC,
+            ProteusException.Code.OUTDATED_MESSAGE,
             ProteusException.Code.LOCAL_FILES_NOT_FOUND -> ProteusMessageFailureResolution.RecoverSession
 
             ProteusException.Code.REMOTE_IDENTITY_CHANGED,
