@@ -37,8 +37,12 @@ class CoreCryptoCentralTest {
             val central = coreCryptoCentral(keyStorePath, passphrase)
             central.exportDatabaseCopy(exportPath)
 
-            assertTrue(File(exportPath).exists())
-            assertTrue(File(exportPath).length() > 0)
+            val originalDbFile = File("$keyStorePath/keystore")
+            val exportedDbFile = File(exportPath)
+
+            assertTrue(originalDbFile.exists())
+            assertTrue(exportedDbFile.exists())
+            assertTrue(exportedDbFile.length() > 0)
         } finally {
             root.deleteRecursively()
         }

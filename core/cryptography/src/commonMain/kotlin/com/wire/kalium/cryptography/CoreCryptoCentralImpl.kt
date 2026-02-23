@@ -30,7 +30,6 @@ import com.wire.crypto.HistorySecret
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
 import com.wire.crypto.MlsTransportResponse
-import com.wire.crypto.exportDatabaseCopy
 import com.wire.crypto.openDatabase
 import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
@@ -222,7 +221,10 @@ class CoreCryptoCentralImpl(
         val keystorePath = "$rootDir/$KEYSTORE_NAME"
         val database = openDatabase(keystorePath, databaseKey)
         try {
-            exportDatabaseCopy(database, destinationPath)
+            com.wire.crypto.exportDatabaseCopy(database, destinationPath)
+        } catch (exception: Exception) {
+            kaliumLogger.e("Exporting crypto database copy failed: $exception")
+            throw exception
         } finally {
             database.close()
         }
