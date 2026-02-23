@@ -158,6 +158,7 @@ internal class ProteusClientProviderImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> {
         return withContext(dispatcher.io) {
             currentClientIdProvider().fold(

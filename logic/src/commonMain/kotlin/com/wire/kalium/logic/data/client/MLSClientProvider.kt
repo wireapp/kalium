@@ -245,6 +245,7 @@ internal class MLSClientProviderImpl(
         })
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> =
         withContext(dispatchers.io) {
             currentClientIdProvider().fold(
