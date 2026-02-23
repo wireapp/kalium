@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import kotlin.concurrent.Volatile
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class MessageHookRegistry : PersistMessageHookNotifier {
 
@@ -51,7 +52,9 @@ internal class MessageHookRegistry : PersistMessageHookNotifier {
     override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
         try {
             hookNotifier?.onMessagePersisted(message, selfUserId)
-        } catch (throwable: Throwable) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (throwable: Exception) {
             kaliumLogger.w("PersistMessage hook execution failed", throwable)
         }
     }

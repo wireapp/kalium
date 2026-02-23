@@ -18,7 +18,12 @@
 
 package com.wire.kalium.nomaddevice
 
-import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -30,11 +35,6 @@ import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.datetime.Clock
 
-private val nomadRemoteBackupChangeLogLogger = KaliumLogger(
-    config = KaliumLogger.Config(initialLevel = KaliumLogLevel.WARN),
-    tag = "NomadRemoteBackupChangeLog"
-)
-
 /**
  * Factory used with [NomadPersistMessageHookNotifier]:
  *
@@ -45,6 +45,7 @@ private val nomadRemoteBackupChangeLogLogger = KaliumLogger(
  */
 public fun createNomadRemoteBackupChangeLogCallback(
     userStorageProvider: UserStorageProvider,
+    logger: KaliumLogger = kaliumLogger.withTextTag("NomadDevice"),
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ): suspend (PersistedMessageData, UserId) -> Unit =
     createNomadRemoteBackupChangeLogCallbackInternal(
@@ -52,57 +53,53 @@ public fun createNomadRemoteBackupChangeLogCallback(
             userStorageProvider.get(userId)?.database?.remoteBackupChangeLogDAO
         },
         eventTimestampMsProvider = eventTimestampMsProvider,
-        warnLogger = { nomadRemoteBackupChangeLogLogger.w(it) },
-        errorLogger = { message, throwable -> nomadRemoteBackupChangeLogLogger.e(message, throwable) }
+        warnLogger = { logger.w(it) },
+        errorLogger = { message, throwable -> logger.e(message, throwable) }
     )
 
 internal fun createNomadRemoteBackupChangeLogCallbackInternal(
     remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    warnLogger: (String) -> Unit = { nomadRemoteBackupChangeLogLogger.w(it) },
-    errorLogger: (String, Throwable) -> Unit = { message, throwable -> nomadRemoteBackupChangeLogLogger.e(message, throwable) },
+    warnLogger: (String) -> Unit,
 ): suspend (PersistedMessageData, UserId) -> Unit {
-    val repository = NomadRemoteBackupChangeLogRepositoryImpl(
+    val repository = NomadRemoteBackupChangeLogDataSource(
         remoteBackupChangeLogDAOProvider = remoteBackupChangeLogDAOProvider,
         eventTimestampMsProvider = eventTimestampMsProvider,
         warnLogger = warnLogger,
-        errorLogger = errorLogger
     )
     return { message, selfUserId ->
         repository.logSyncableMessageUpsert(message, selfUserId)
     }
 }
 
-internal class NomadRemoteBackupChangeLogRepositoryImpl(
+internal class NomadRemoteBackupChangeLogDataSource(
     private val remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     private val eventTimestampMsProvider: () -> Long,
     private val warnLogger: (String) -> Unit,
-    private val errorLogger: (String, Throwable) -> Unit,
 ) : NomadRemoteBackupChangeLogRepository {
 
-    override suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId) {
-        if (!message.shouldLogMessageUpsert()) return
+    override suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId): Either<StorageFailure, Unit> {
+        if (!message.shouldLogMessageUpsert()) return Unit.right()
 
         val remoteBackupChangeLogDAO = remoteBackupChangeLogDAOProvider(selfUserId)
         if (remoteBackupChangeLogDAO == null) {
             warnLogger("Skipping MESSAGE_UPSERT changelog write: missing user storage for '${selfUserId.toLogString()}'.")
-            return
+            return Unit.right()
         }
 
         val eventTimestampMs = eventTimestampMsProvider()
         val messageTimestampMs = message.date.toEpochMilliseconds()
-
-        runCatching {
+        return wrapStorageRequest {
             remoteBackupChangeLogDAO.logMessageUpsert(
                 conversationId = message.conversationId.toDao(),
                 messageId = message.messageId,
                 timestampMs = eventTimestampMs,
                 messageTimestampMs = messageTimestampMs
             )
-        }.onFailure { throwable ->
-            errorLogger(
-                "Failed to write MESSAGE_UPSERT changelog for conversation '${message.conversationId.toLogString()}' and message '${message.messageId}'.",
-                throwable
+        }.onFailure { _ ->
+            nomadLogger.i(
+                "Failed to write MESSAGE_UPSERT changelog for conversation " +
+                        "'${message.conversationId.toLogString()}' and message '${message.messageId}'."
             )
         }
     }

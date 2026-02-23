@@ -34,5 +34,5 @@ data class ChangeLogEntry(
     val messageId: String?,
     val eventType: ChangeLogEventType,
     val timestampMs: Long,
-    val messageTimestampMs: Long
+    val messageTimestampMs: Long,
 )

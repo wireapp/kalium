@@ -18,6 +18,8 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
@@ -33,10 +35,12 @@ public class NomadRemoteBackupChangeLogHookNotifier internal constructor(
 
     public constructor(
         userStorageProvider: UserStorageProvider,
+        logger: KaliumLogger = kaliumLogger.withTextTag("NomadDevice"),
         eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     ) : this(
         createNomadRemoteBackupChangeLogCallback(
             userStorageProvider = userStorageProvider,
+            logger = logger,
             eventTimestampMsProvider = eventTimestampMsProvider
         )
     )

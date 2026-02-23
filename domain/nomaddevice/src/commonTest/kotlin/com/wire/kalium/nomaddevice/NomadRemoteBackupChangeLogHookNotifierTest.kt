@@ -225,7 +225,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             val conversationId: QualifiedIDEntity,
             val messageId: String,
             val timestampMs: Long,
-            val messageTimestampMs: Long
+            val messageTimestampMs: Long,
         )
 
         val messageUpsertCalls = mutableListOf<MessageUpsertCall>()

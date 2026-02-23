@@ -31,6 +31,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(projects.core.common)
                 implementation(projects.data.protobuf)
                 implementation(projects.domain.messaging.hooks)
                 implementation(projects.domain.usernetwork)

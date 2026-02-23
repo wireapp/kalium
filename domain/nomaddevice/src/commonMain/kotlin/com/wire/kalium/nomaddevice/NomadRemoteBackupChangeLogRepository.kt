@@ -18,6 +18,8 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 
@@ -25,6 +27,5 @@ import com.wire.kalium.messaging.hooks.PersistedMessageData
  * Repository for writing persisted message hook events to remote backup changelog.
  */
 internal interface NomadRemoteBackupChangeLogRepository {
-    suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId)
+    suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId): Either<StorageFailure, Unit>
 }
-
