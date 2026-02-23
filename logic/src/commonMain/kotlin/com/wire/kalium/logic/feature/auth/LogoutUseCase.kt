@@ -92,54 +92,58 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
             kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
 
-            val willWipeData = reason == LogoutReason.SELF_HARD_LOGOUT ||
-                (reason == LogoutReason.REMOVED_CLIENT && kaliumConfigs.wipeOnDeviceRemoval) ||
-                (reason == LogoutReason.DELETED_ACCOUNT && kaliumConfigs.wipeOnDeviceRemoval) ||
-                (reason == LogoutReason.SESSION_EXPIRED && kaliumConfigs.wipeOnCookieInvalid)
-
-            // Cancel the session scope and drain all in-flight coroutines before wiping
-            // the database. Without this, coroutines still holding JDBC connections to the
-            // DB path can execute statements after nuke() deletes the file, causing SQLite
-            // to auto-recreate an empty schema-less file at the same path. The next login
-            // then opens a 0-byte DB and fails with "no such table".
-            if (willWipeData) {
-                userSessionScopeProvider.get(userId)?.let { scope ->
-                    scope.cancel()
-                    scope.coroutineContext.job.join()
-                }
-            }
-
             userConfigRepository.clearE2EISettings()
-
-            when (reason) {
-                LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
-                LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
-                    if (kaliumConfigs.wipeOnDeviceRemoval) {
-                        wipeAllData()
-                    } else {
-                        wipeTokenAndMetadata()
-                    }
-                }
-
-                LogoutReason.SESSION_EXPIRED -> {
-                    if (kaliumConfigs.wipeOnCookieInvalid) {
-                        wipeAllData()
-                    } else {
-                        clearCurrentClientIdAndFirebaseTokenFlag()
-                    }
-                }
-
-                LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
-                LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoMigrationRecovery()
-            }
-
-            // Non-wipe paths: cancel the scope now (it was not cancelled early above).
-            if (!willWipeData) {
-                userSessionScopeProvider.get(userId)?.cancel()
-            }
+            performLogoutActions(reason)
             userSessionScopeProvider.delete(userId)
             logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
+    }
+
+    /**
+     * Dispatches the per-reason logout actions and manages [UserSessionScope] lifecycle.
+     *
+     * On any path that wipes the database, the scope is cancelled and fully drained
+     * **before** [wipeAllData] is called. Without this, in-flight coroutines still holding
+     * JDBC connections can write to the DB path after [nuke][ClearUserDataUseCase] deletes
+     * the file, causing SQLite to auto-recreate an empty schema-less file. The next login
+     * would then open a 0-byte DB and fail with "no such table".
+     */
+    private suspend fun performLogoutActions(reason: LogoutReason) {
+        val willWipeData = willWipeData(reason)
+        if (willWipeData) drainSessionScope()
+        clearLocalData(reason)
+        if (!willWipeData) userSessionScopeProvider.get(userId)?.cancel()
+    }
+
+    private fun willWipeData(reason: LogoutReason): Boolean =
+        reason == LogoutReason.SELF_HARD_LOGOUT ||
+            (reason == LogoutReason.REMOVED_CLIENT && kaliumConfigs.wipeOnDeviceRemoval) ||
+            (reason == LogoutReason.DELETED_ACCOUNT && kaliumConfigs.wipeOnDeviceRemoval) ||
+            (reason == LogoutReason.SESSION_EXPIRED && kaliumConfigs.wipeOnCookieInvalid)
+
+    private suspend fun clearLocalData(reason: LogoutReason) {
+        when (reason) {
+            LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
+            LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
+                if (kaliumConfigs.wipeOnDeviceRemoval) wipeAllData() else wipeTokenAndMetadata()
+            }
+            LogoutReason.SESSION_EXPIRED -> {
+                if (kaliumConfigs.wipeOnCookieInvalid) wipeAllData() else clearCurrentClientIdAndFirebaseTokenFlag()
+            }
+            LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
+            LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoMigrationRecovery()
+        }
+    }
+
+    /**
+     * Cancels the [UserSessionScope] for this user and suspends until all its child
+     * coroutines have finished. Must be called before any DB wipe operation.
+     */
+    private suspend fun drainSessionScope() {
+        userSessionScopeProvider.get(userId)?.let { scope ->
+            scope.cancel()
+            scope.coroutineContext.job.join()
+        }
     }
 
     private suspend fun prepareForCoreCryptoMigrationRecovery() {
