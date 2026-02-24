@@ -39,11 +39,17 @@ import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScop
 import com.wire.kalium.logic.feature.client.GetProteusFingerprintResult
 import com.wire.kalium.logic.feature.client.RegisterClientParam
 import com.wire.kalium.logic.feature.client.RegisterClientResult
+import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
+import com.wire.kalium.logic.feature.e2ei.usecase.FinalizeEnrollmentResult
+import com.wire.kalium.logic.feature.e2ei.usecase.InitialEnrollmentResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncRequestResult
 import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
+import com.wire.kalium.testservice.models.E2EIFinalizeRequest
+import com.wire.kalium.testservice.models.E2EIFinalizeResponse
+import com.wire.kalium.testservice.models.E2EIInitializationResponse
 import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
@@ -71,6 +77,8 @@ This service makes sure that instances are destroyed (used files deleted) on
 shutdown of the service and also periodically checks for leftover instances
 which are not needed anymore.
  */
+
+@Suppress("TooManyFunctions", "ThrowsCount")
 class InstanceService(
     val metricRegistry: MetricRegistry,
     private val cleanupPool: ScheduledExecutorService,
@@ -84,6 +92,7 @@ class InstanceService(
     private val deleteLocalFilesTimeoutInMinutes: Duration = Duration.ofMinutes(2)
     private val cleanupPeriod: Duration = Duration.ofMinutes(configuration.getInstanceCleanupPeriodInMinutes())
     private var cleanupTask: ScheduledFuture<*>? = null
+    private val e2eiInitializations: MutableMap<String, E2EIEnrollmentResult.Initialized> = ConcurrentHashMap()
 
     override fun start() {
         log.info("Instance service started.")
@@ -240,13 +249,14 @@ class InstanceService(
                 if (client.needsToRegisterClient()) {
                     when (
                         val result = client.getOrRegister(
-                            RegisterClientParam(
-                                password = instanceRequest.password,
-                                capabilities = emptyList(),
-                                clientType = ClientType.Permanent,
-                                model = instanceRequest.deviceName
-                            )
+                        RegisterClientParam(
+                            password = instanceRequest.password,
+                            capabilities = emptyList(),
+                            clientType = ClientType.Permanent,
+                            model = instanceRequest.deviceName,
+                            secondFactorVerificationCode = instanceRequest.verificationCode
                         )
+                    )
                     ) {
                         is RegisterClientResult.Success -> {
                             val clientId = result.client.id.value
@@ -260,6 +270,7 @@ class InstanceService(
                                 clientId,
                                 instanceId,
                                 instanceRequest.name,
+                                false,
                                 coreLogic,
                                 instancePath,
                                 instanceRequest.password,
@@ -270,16 +281,25 @@ class InstanceService(
 
                             syncExecutor.request {
                                 keepSyncAlwaysOn()
-                                val result = waitUntilLiveOrFailure()
-                                if (result is SyncRequestResult.Failure) {
-                                    log.error("Instance $instanceId: Sync failed with ${result.error}")
+                                when (val syncResult = waitUntilLiveOrFailure()) {
+                                    is SyncRequestResult.Failure ->
+                                        log.error("Instance $instanceId: Sync failed with ${syncResult.error}")
+
+                                    SyncRequestResult.Success -> Unit
                                 }
                             }
                             return@runBlocking instance
                         }
 
                         is RegisterClientResult.E2EICertificateRequired ->
-                            throw WebApplicationException("Instance $instanceId: Client registration blocked by e2ei")
+                            return@runBlocking handleE2EIRequired(
+                                instanceId = instanceId,
+                                clientId = result.client.id.value,
+                                instanceRequest = instanceRequest,
+                                coreLogic = coreLogic,
+                                instancePath = instancePath,
+                                before = before
+                            )
 
                         is RegisterClientResult.Failure.TooManyClients ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
@@ -306,9 +326,104 @@ class InstanceService(
         return response
     }
 
+    private fun handleE2EIRequired(
+        instanceId: String,
+        clientId: String,
+        instanceRequest: InstanceRequest,
+        coreLogic: CoreLogic,
+        instancePath: String,
+        before: Long
+    ): Instance {
+        log.info("Instance $instanceId: Client registration requires E2EI enrollment")
+        val startTime = System.currentTimeMillis()
+        val startupTime = startTime - before
+        val instance = Instance(
+            instanceRequest.backend,
+            clientId,
+            instanceId,
+            instanceRequest.name,
+            true,
+            coreLogic,
+            instancePath,
+            instanceRequest.password,
+            startupTime,
+            startTime
+        )
+        instances[instanceId] = instance
+        return instance
+    }
+
+    suspend fun initializeE2EI(instanceId: String): E2EIInitializationResponse {
+        val instance = getInstanceOrThrow(instanceId)
+        val userId = getUserId(instance)
+        val result = instance.coreLogic.sessionScope(userId) {
+            users.enrollE2EI.initialEnrollment(isNewClientRegistration = true)
+        }
+        return when (result) {
+            is InitialEnrollmentResult.Success -> {
+                val initialization = result.initializationResult
+                e2eiInitializations[instanceId] = initialization
+                E2EIInitializationResponse(
+                    target = initialization.target,
+                    oAuthClaimsJson = initialization.oAuthClaims.toString()
+                )
+            }
+            InitialEnrollmentResult.Failure.E2EIDisabled ->
+                throw WebApplicationException("Instance $instanceId: E2EI init failed: E2EI disabled")
+
+            InitialEnrollmentResult.Failure.MissingTeamSettings ->
+                throw WebApplicationException("Instance $instanceId: E2EI init failed: Missing team settings")
+
+            is InitialEnrollmentResult.Failure.Generic ->
+                throw WebApplicationException("Instance $instanceId: E2EI init failed: ${result.e2EIFailure}")
+        }
+    }
+
+    suspend fun finalizeE2EI(instanceId: String, request: E2EIFinalizeRequest): E2EIFinalizeResponse {
+        val instance = getInstanceOrThrow(instanceId)
+        val userId = getUserId(instance)
+        val initialization = e2eiInitializations[instanceId]
+            ?: throw WebApplicationException("Instance $instanceId: E2EI init missing, call /e2ei/init first")
+        val result = instance.coreLogic.sessionScope(userId) {
+            users.enrollE2EI.finalizeEnrollment(
+                request.idToken,
+                request.oAuthState,
+                initialization
+            )
+        }
+        return when (result) {
+            is FinalizeEnrollmentResult.Success -> {
+                instance.coreLogic.sessionScope(userId) {
+                    users.finalizeMLSClientAfterE2EIEnrollment.invoke()
+                    syncExecutor.request {
+                        keepSyncAlwaysOn()
+                        when (val syncResult = waitUntilLiveOrFailure()) {
+                            is SyncRequestResult.Failure ->
+                                log.error("Instance $instanceId: Sync failed with ${syncResult.error}")
+
+                            SyncRequestResult.Success -> Unit
+                        }
+                    }
+                }
+                e2eiInitializations.remove(instanceId)
+                instances[instanceId] = instance.copy(isE2EIRequired = false)
+                E2EIFinalizeResponse(result.certificate)
+            }
+            is FinalizeEnrollmentResult.Failure.OAuthError ->
+                throw WebApplicationException("Instance $instanceId: E2EI finalize failed: OAuth error: ${result.reason}")
+
+            FinalizeEnrollmentResult.Failure.InvalidChallenge ->
+                throw WebApplicationException("Instance $instanceId: E2EI finalize failed: Invalid challenge")
+
+            is FinalizeEnrollmentResult.Failure.Generic ->
+                throw WebApplicationException("Instance $instanceId: E2EI finalize failed: ${result.e2EIFailure}")
+        }
+    }
+
     fun deleteInstance(id: String) {
         val instance = getInstanceOrThrow(id)
         log.info("Instance $id: Remove device ${instance.clientId}")
+        e2eiInitializations.remove(id)
         instance.coreLogic?.globalScope {
             scope.launch {
                 val result = session.currentSession()
@@ -343,6 +458,17 @@ class InstanceService(
                 }
             }
         }, deleteLocalFilesTimeoutInMinutes.toMinutes(), TimeUnit.MINUTES)
+    }
+
+    private suspend fun getUserId(instance: Instance): com.wire.kalium.logic.data.user.UserId {
+        return instance.coreLogic.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                result.accountInfo.userId
+            } else {
+                throw WebApplicationException("Instance ${instance.instanceId}: No current session found")
+            }
+        }
     }
 
     private suspend fun provideVersionedAuthenticationScope(

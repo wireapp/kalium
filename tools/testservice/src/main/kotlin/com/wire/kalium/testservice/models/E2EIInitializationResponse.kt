@@ -18,21 +18,7 @@
 
 package com.wire.kalium.testservice.models
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.wire.kalium.logic.CoreLogic
-
-data class Instance(
-    val backend: String,
-    val clientId: String?,
-    val instanceId: String,
-    val name: String?,
-    val isE2EIRequired: Boolean,
-    @JsonIgnore
-    val coreLogic: CoreLogic,
-    @JsonIgnore
-    val instancePath: String?,
-    @JsonIgnore
-    val password: String,
-    val startupTime: Long,
-    val startTime: Long
+data class E2EIInitializationResponse(
+    val target: String,
+    val oAuthClaimsJson: String
 )
