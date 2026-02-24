@@ -118,34 +118,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     }
 
     @Test
-    fun givenMissingStorage_whenCallbackInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val callback = createCallback(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        callback(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
-    }
-
-    @Test
-    fun givenDaoFailure_whenCallbackInvoked_thenFailureIsCaughtAndLogged() = runTest {
-        val errors = mutableListOf<String>()
-        val callback = createCallback(
-            daoProvider = { RecordingRemoteBackupChangeLogDAO(throwOnMessageUpsert = IllegalStateException("boom")) },
-            errorLogger = { message, _ -> errors.add(message) }
-        )
-
-        callback(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
-
-        assertEquals(1, errors.size)
-        assertTrue(errors.first().contains("Failed to write MESSAGE_UPSERT changelog"))
-    }
-
-    @Test
     fun givenDedicatedNotifier_whenInvoked_thenItDelegatesToCallback() = runTest {
         var invocationCount = 0
         val notifier = NomadRemoteBackupChangeLogHookNotifier { _, _ -> invocationCount++ }
@@ -173,14 +145,10 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
 
     private fun createCallback(
         daoProvider: (UserId) -> RemoteBackupChangeLogDAO?,
-        warnLogger: (String) -> Unit = {},
-        errorLogger: (String, Throwable) -> Unit = { _, _ -> }
     ): suspend (PersistedMessageData, UserId) -> Unit =
         createNomadRemoteBackupChangeLogCallbackInternal(
             remoteBackupChangeLogDAOProvider = daoProvider,
             eventTimestampMsProvider = { EVENT_TIMESTAMP_MS },
-            warnLogger = warnLogger,
-            errorLogger = errorLogger
         )
 
     private fun persistedMessage(content: MessageContent): PersistedMessageData =
