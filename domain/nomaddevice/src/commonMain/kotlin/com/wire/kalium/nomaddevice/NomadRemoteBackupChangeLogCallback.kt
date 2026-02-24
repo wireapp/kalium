@@ -23,8 +23,6 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
