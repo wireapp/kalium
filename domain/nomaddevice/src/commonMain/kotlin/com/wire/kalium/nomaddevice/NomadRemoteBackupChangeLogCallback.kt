@@ -66,8 +66,6 @@ internal fun createNomadRemoteBackupChangeLogHookNotifierInternal(
     val repository = NomadRemoteBackupChangeLogDataSource(
         remoteBackupChangeLogDAOProvider = remoteBackupChangeLogDAOProvider,
         eventTimestampMsProvider = eventTimestampMsProvider,
-        warnLogger = warnLogger,
-        errorLogger = errorLogger,
     )
     return NomadRemoteBackupChangeLogHookNotifier(repository)
 }
