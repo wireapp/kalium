@@ -27,13 +27,10 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -46,9 +43,7 @@ internal class DeletedConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val notificationEventsManager: NotificationEventsManager,
-    private val deleteConversation: DeleteConversationUseCase,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val selfUserId: UserId,
+    private val deleteConversation: DeleteConversationUseCase
 ) : DeletedConversationEventHandler {
 
     override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation) {
@@ -73,9 +68,5 @@ internal class DeletedConversationEventHandlerImpl(
                         logger.logSuccess()
                     }
             }
-        persistenceEventHookNotifier.onConversationDeleted(
-            ConversationDeleteEventData(event.conversationId),
-            selfUserId
-        )
     }
 }

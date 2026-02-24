@@ -1609,9 +1609,7 @@ public class UserSessionScope internal constructor(
     private val receiptRepository = ReceiptRepositoryImpl(userStorage.database.receiptDAO)
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
-            reactionRepository = reactionRepository,
-            selfUserId = userId,
-            persistenceEventHookNotifier = persistenceEventHookNotifier,
+            reactionRepository
         )
 
     private val mlsUnpacker: MLSMessageUnpacker
@@ -1636,8 +1634,7 @@ public class UserSessionScope internal constructor(
         get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
             receiptRepository = receiptRepository,
-            messageRepository = messageRepository,
-            persistenceEventHookNotifier = persistenceEventHookNotifier,
+            messageRepository = messageRepository
         )
 
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
@@ -1690,16 +1687,14 @@ public class UserSessionScope internal constructor(
                 userId,
                 isMessageSentInSelfConversation,
                 conversations.clearConversationAssetsLocally,
-                deleteConversationUseCase,
-                persistenceEventHookNotifier,
+                deleteConversationUseCase
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             DeleteMessageHandlerImpl(
                 messageRepository,
                 assetRepository,
                 NotificationEventsManagerImpl,
-                userId,
-                persistenceEventHookNotifier
+                userId
             ),
             messageEncoder,
             receiptMessageHandler,
@@ -1760,9 +1755,7 @@ public class UserSessionScope internal constructor(
             userRepository,
             conversationRepository,
             NotificationEventsManagerImpl,
-            deleteConversationUseCase,
-            persistenceEventHookNotifier,
-            userId,
+            deleteConversationUseCase
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
