@@ -126,34 +126,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     }
 
     @Test
-    fun givenMissingStorage_whenCallbackInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        notifier.onMessagePersisted(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
-    }
-
-    @Test
-    fun givenDaoFailure_whenCallbackInvoked_thenFailureIsCaughtAndLogged() = runTest {
-        val errors = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { RecordingRemoteBackupChangeLogDAO(throwOnMessageUpsert = IllegalStateException("boom")) },
-            errorLogger = { message, _ -> errors.add(message) }
-        )
-
-        notifier.onMessagePersisted(persistedMessage(content = MessageContent.Text("hello")), SELF_USER_ID)
-
-        assertEquals(1, errors.size)
-        assertTrue(errors.first().contains("Failed to write MESSAGE_UPSERT changelog"))
-    }
-
-    @Test
     fun givenDedicatedNotifier_whenInvoked_thenItDelegatesToRepository() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
         val notifier = createNotifier(daoProvider = { dao })
@@ -199,34 +171,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         assertEquals(EVENT_TIMESTAMP_MS, dao.messageDeleteCalls[0].timestampMs)
     }
 
-    @Test
-    fun givenMissingStorageForMessageDelete_whenNotifierInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        notifier.onMessageDeleted(MessageDeleteEventData(CONVERSATION_ID_MODEL, MESSAGE_ID), SELF_USER_ID)
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
-    }
-
-    @Test
-    fun givenDaoFailureForMessageDelete_whenNotifierInvoked_thenFailureIsCaughtAndLogged() = runTest {
-        val errors = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { RecordingRemoteBackupChangeLogDAO(throwOnMessageDelete = IllegalStateException("boom")) },
-            errorLogger = { message, _ -> errors.add(message) }
-        )
-
-        notifier.onMessageDeleted(MessageDeleteEventData(CONVERSATION_ID_MODEL, MESSAGE_ID), SELF_USER_ID)
-
-        assertEquals(1, errors.size)
-        assertTrue(errors.first().contains("Failed to write MESSAGE_DELETE changelog"))
-    }
-
     // endregion
 
     // region REACTIONS_SYNC tests
@@ -245,23 +189,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         assertEquals(CONVERSATION_ID_MODEL.toQualifiedIDEntity(), dao.reactionsSyncCalls[0].conversationId)
         assertEquals(MESSAGE_ID, dao.reactionsSyncCalls[0].messageId)
         assertEquals(EVENT_TIMESTAMP_MS, dao.reactionsSyncCalls[0].timestampMs)
-    }
-
-    @Test
-    fun givenMissingStorageForReaction_whenNotifierInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        notifier.onReactionPersisted(
-            ReactionEventData(CONVERSATION_ID_MODEL, MESSAGE_ID, Instant.fromEpochMilliseconds(MESSAGE_TIMESTAMP_MS)),
-            SELF_USER_ID
-        )
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
     }
 
     // endregion
@@ -285,23 +212,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         assertEquals("msg-3", dao.readReceiptsSyncCalls[2].messageId)
     }
 
-    @Test
-    fun givenMissingStorageForReadReceipt_whenNotifierInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        notifier.onReadReceiptPersisted(
-            ReadReceiptEventData(CONVERSATION_ID_MODEL, listOf("msg-1"), Instant.fromEpochMilliseconds(MESSAGE_TIMESTAMP_MS)),
-            SELF_USER_ID
-        )
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
-    }
-
     // endregion
 
     // region CONVERSATION_DELETE tests
@@ -319,20 +229,6 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         assertEquals(1, dao.conversationDeleteCalls.size)
         assertEquals(CONVERSATION_ID_MODEL.toQualifiedIDEntity(), dao.conversationDeleteCalls[0].conversationId)
         assertEquals(EVENT_TIMESTAMP_MS, dao.conversationDeleteCalls[0].timestampMs)
-    }
-
-    @Test
-    fun givenMissingStorageForConversationDelete_whenNotifierInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        notifier.onConversationDeleted(ConversationDeleteEventData(CONVERSATION_ID_MODEL), SELF_USER_ID)
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
     }
 
     // endregion
@@ -354,32 +250,14 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         assertEquals(EVENT_TIMESTAMP_MS, dao.conversationClearCalls[0].timestampMs)
     }
 
-    @Test
-    fun givenMissingStorageForConversationClear_whenNotifierInvoked_thenItWarnsAndSkips() = runTest {
-        val warnings = mutableListOf<String>()
-        val notifier = createNotifier(
-            daoProvider = { null },
-            warnLogger = { warnings.add(it) }
-        )
-
-        notifier.onConversationCleared(ConversationClearEventData(CONVERSATION_ID_MODEL), SELF_USER_ID)
-
-        assertEquals(1, warnings.size)
-        assertTrue(warnings.first().contains("missing user storage", ignoreCase = true))
-    }
-
     // endregion
 
     private fun createNotifier(
         daoProvider: (UserId) -> RemoteBackupChangeLogDAO?,
-        warnLogger: (String) -> Unit = {},
-        errorLogger: (String, Throwable) -> Unit = { _, _ -> }
     ): PersistenceEventHookNotifier =
         createNomadRemoteBackupChangeLogHookNotifierInternal(
             remoteBackupChangeLogDAOProvider = daoProvider,
             eventTimestampMsProvider = { EVENT_TIMESTAMP_MS },
-            warnLogger = warnLogger,
-            errorLogger = errorLogger
         )
 
     private fun persistedMessage(content: MessageContent): PersistedMessageData =

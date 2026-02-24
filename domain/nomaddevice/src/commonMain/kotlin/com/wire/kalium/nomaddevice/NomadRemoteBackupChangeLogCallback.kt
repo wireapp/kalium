@@ -60,8 +60,6 @@ public fun createNomadRemoteBackupChangeLogHookNotifier(
 internal fun createNomadRemoteBackupChangeLogHookNotifierInternal(
     remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    warnLogger: (String) -> Unit = { nomadLogger.w(it) },
-    errorLogger: (String, Throwable) -> Unit = { msg, _ -> nomadLogger.i(msg) },
 ): PersistenceEventHookNotifier {
     val repository = NomadRemoteBackupChangeLogDataSource(
         remoteBackupChangeLogDAOProvider = remoteBackupChangeLogDAOProvider,
