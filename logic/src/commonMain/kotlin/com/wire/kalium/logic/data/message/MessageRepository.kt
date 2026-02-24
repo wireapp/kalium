@@ -194,8 +194,7 @@ internal interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetTransferStatus()
-    suspend fun markMessagesAsDecryptionResolved(
-        conversationId: ConversationId,
+    suspend fun markProteusMessagesAsDecryptionResolved(
         userId: UserId,
         clientId: ClientId,
     ): Either<CoreFailure, Unit>
@@ -666,13 +665,11 @@ internal class MessageDataSource internal constructor(
         }
     }
 
-    override suspend fun markMessagesAsDecryptionResolved(
-        conversationId: ConversationId,
+    override suspend fun markProteusMessagesAsDecryptionResolved(
         userId: UserId,
         clientId: ClientId,
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.markMessagesAsDecryptionResolved(
-            conversationId = conversationId.toDao(),
+        messageDAO.markProteusMessagesAsDecryptionResolved(
             userId = userId.toDao(),
             clientId = clientId.value
         )

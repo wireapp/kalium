@@ -22,14 +22,17 @@ import kotlinx.coroutines.flow.Flow
 
 @Mockable
 interface EventDAO {
+    companion object {
+        const val DEFAULT_UNPROCESSED_EVENTS_LIMIT = 500L
+    }
+
     suspend fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>>
     suspend fun insertEvents(events: List<NewEventEntity>)
     suspend fun deleteProcessedEventsBefore(id: Long)
     suspend fun deleteAllProcessedEvents()
     suspend fun getEventById(id: String): EventEntity?
     suspend fun markEventAsProcessed(eventId: String)
-    suspend fun observeUnprocessedEvents(): Flow<List<EventEntity>>
-    suspend fun getUnprocessedEvents(): List<EventEntity>
+    suspend fun observeUnprocessedEvents(limit: Long = DEFAULT_UNPROCESSED_EVENTS_LIMIT): Flow<List<EventEntity>>
     suspend fun setAllUnprocessedEventsAsPending()
     suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>)
     suspend fun markEventsAsProcessed(eventIds: List<String>)
