@@ -21,15 +21,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.backup.BackupCoder
-import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.client.CryptoBackupMetadata
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -42,6 +38,8 @@ import okio.Path.Companion.toPath
 import okio.Source
 import okio.buffer
 import okio.use
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
  * Performs the backup of the cryptographic database by exporting it, creating a metadata file, and packaging them into a ZIP file.
@@ -52,32 +50,29 @@ public interface BackupCryptoDBUseCase {
 
 internal class BackupCryptoDBUseCaseImpl(
     private val userId: UserId,
-    private val clientIdProvider: CurrentClientIdProvider,
     private val cryptoTransactionProvider: CryptoTransactionProvider,
-    private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : BackupCryptoDBUseCase {
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
-        val dbBytes = cryptoTransactionProvider.mlsTransaction("backup_read") { _ ->
-            val exportData = cryptoTransactionProvider.mlsClientProvider
+        val (exportData, dbBytes) = cryptoTransactionProvider.mlsTransaction("backup_read") { _ ->
+            cryptoTransactionProvider.mlsClientProvider
                 .exportCryptoDB()
                 .fold(
-                    { return@mlsTransaction Either.Left(it) },
-                    { it }
+                    { Either.Left(it) },
+                    { exportData ->
+                        try {
+                            val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
+                                it.buffer().readByteArray()
+                            }
+                            Either.Right(exportData to bytes)
+                        } catch (e: Exception) {
+                            Either.Left(StorageFailure.Generic(e))
+                        }
+                    }
                 )
-
-            try {
-                val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
-                    it.buffer().readByteArray()
-                }
-
-                Either.Right(bytes)
-            } catch (e: Exception) {
-                Either.Left(StorageFailure.Generic(e))
-            }
         }.fold(
             { return@withContext BackupCryptoDBResult.Failure(it) },
             { it }
@@ -87,7 +82,7 @@ internal class BackupCryptoDBUseCaseImpl(
             val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
             val backupName = "corecrypto_backup_${userId}_$timeStamp.zip"
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
-            val metadataPath = createMetadataFile(userId)
+            val metadataPath = createMetadataFile(exportData)
 
             createBackupZip(dbBytes, metadataPath, backupFilePath).fold(
                 { error -> BackupCryptoDBResult.Failure(error) },
@@ -104,15 +99,12 @@ internal class BackupCryptoDBUseCaseImpl(
         }
     }
 
-    private suspend fun createMetadataFile(userId: UserId): Path {
-        val clientId = clientIdProvider().nullableFold({ null }, { it.value })
-        val creationTime = DateTimeUtil.currentIsoDateTimeString()
-        val metadata = BackupMetadata(
-            clientPlatform,
-            BackupCoder.version,
-            userId.toString(),
-            creationTime,
-            clientId
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun createMetadataFile(exportData: CryptoBackupMetadata): Path {
+        val metadata = CryptoStateBackupMetadata(
+            version = CryptoStateBackupMetadata.CURRENT_VERSION,
+            clientId = exportData.clientId.value,
+            mlsDbPassphrase = Base64.encode(exportData.passphrase)
         )
         val metadataJson = Json.encodeToString(metadata)
 

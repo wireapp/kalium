@@ -74,9 +74,7 @@ public class BackupScope internal constructor(
     internal val backupCryptoDB: BackupCryptoDBUseCase by lazy {
         BackupCryptoDBUseCaseImpl(
             userId,
-            clientIdProvider,
             cryptoTransactionProvider,
-            userRepository,
             kaliumFileSystem,
         )
     }

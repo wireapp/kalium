@@ -50,9 +50,11 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.Json
 import okio.buffer
 import okio.use
 import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -75,12 +77,14 @@ class BackupCryptoDBUseCaseTest {
         Dispatchers.resetMain()
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     @Test
     fun givenValidCryptoBackupData_whenCreatingNonEncryptedBackup_thenCreatesBackupZip() = runTest(dispatcher.default) {
         val dbData: ByteArray = Base64.decode("c29tZS1jYy1kYi1ieXRlcw==")
+        val passphrase = ByteArray(32) { 0xAB.toByte() }
         val (arrangement, useCase) = Arrangement()
             .withClientId(TestClient.CLIENT_ID)
-            .withExportedCryptoDB("keystore_export", dbData)
+            .withExportedCryptoDB("keystore_export", dbData, passphrase, TestClient.CLIENT_ID)
             .withMlsTransactionSuccess()
             .arrange()
 
@@ -98,7 +102,15 @@ class BackupCryptoDBUseCaseTest {
             createDirectory(extractedFilesPath)
             extractCompressedFile(source(result.backupFilePath), extractedFilesPath, ExtractFilesParam.All, fakeFileSystem)
 
-            assertTrue(listDirectories(extractedFilesPath).firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME } != null)
+            val metadataPath = listDirectories(extractedFilesPath).firstOrNull {
+                it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
+            }
+            assertTrue(metadataPath != null)
+            val metadataJson = source(metadataPath!!).buffer().use { it.readUtf8() }
+            val metadata = Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
+            assertTrue(metadata.version == CryptoStateBackupMetadata.CURRENT_VERSION)
+            assertTrue(metadata.clientId == TestClient.CLIENT_ID.value)
+            assertTrue(metadata.mlsDbPassphrase == Base64.encode(passphrase))
             val extractedDB = listDirectories(extractedFilesPath).firstOrNull {
                 it.name == "keystore"
             }?.let {
@@ -144,7 +156,7 @@ class BackupCryptoDBUseCaseTest {
             everySuspend { clientIdProvider.invoke() }.returns(Either.Right(clientId))
         }
 
-        fun withExportedCryptoDB(path: String, dbData: ByteArray) = apply {
+        fun withExportedCryptoDB(path: String, dbData: ByteArray, passphrase: ByteArray, clientId: ClientId) = apply {
             with(fakeFileSystem) {
                 val exportPath = fakeFileSystem.tempFilePath(path)
                 sink(exportPath).buffer().use { it.write(dbData) }
@@ -153,8 +165,8 @@ class BackupCryptoDBUseCaseTest {
                 }.returns(
                     com.wire.kalium.logic.data.client.CryptoBackupMetadata(
                         dbPath = exportPath.toString(),
-                        passphrase = ByteArray(32) { 0xAB.toByte() },
-                        clientId = ClientId("client-id")
+                        passphrase = passphrase,
+                        clientId = clientId
                     ).right()
                 )
             }
@@ -181,9 +193,7 @@ class BackupCryptoDBUseCaseTest {
 
         fun arrange(): Pair<Arrangement, BackupCryptoDBUseCase> = this to BackupCryptoDBUseCaseImpl(
             userId = TestUser.USER_ID,
-            clientIdProvider = clientIdProvider,
             cryptoTransactionProvider = cryptoTransactionProvider,
-            userRepository = userRepository,
             kaliumFileSystem = fakeFileSystem,
             dispatchers = dispatcher
         )
