@@ -354,7 +354,10 @@ internal interface ConversationRepository {
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
     suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean>
-    suspend fun updateReadDatesAndGetHasUnreadEvents(conversationDates: Map<QualifiedID, Instant>): Either<StorageFailure, Map<QualifiedID, Boolean>>
+    suspend fun updateReadDatesAndGetHasUnreadEvents(
+        conversationDates: Map<QualifiedID, Instant>
+    ): Either<StorageFailure, Map<QualifiedID, Boolean>>
+
     suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>>
 }
 
