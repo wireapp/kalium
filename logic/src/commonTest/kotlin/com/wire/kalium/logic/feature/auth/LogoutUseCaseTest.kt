@@ -535,6 +535,22 @@ class LogoutUseCaseTest {
             coEvery {
                 userConfigRepository.clearE2EISettings()
             }.returns(Unit)
+
+            coEvery {
+                userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
+            }.returns(Unit)
+
+            coEvery {
+                logoutRepository.onLogout(any())
+            }.returns(Unit)
+
+            coEvery {
+                logoutCallback(any(), any())
+            }.returns(Unit)
+
+            coEvery {
+                userSessionScopeProvider.delete(any())
+            }.returns(Unit)
         }
 
         companion object {

@@ -39,6 +39,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Logs out the user from the current session
@@ -136,13 +137,25 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     /**
-     * Cancels the [UserSessionScope] for this user and suspends until all its child
-     * coroutines have finished. Must be called before any DB wipe operation.
+     * Cancels the [UserSessionScope] for this user and waits for all its child coroutines
+     * to finish, up to [SCOPE_DRAIN_TIMEOUT_MS]. Must be called before any DB wipe operation.
+     *
+     * The timeout guards against stuck coroutines (e.g. blocking I/O that ignores
+     * cancellation): after [SCOPE_DRAIN_TIMEOUT_MS] the scope is considered drained and the
+     * DB wipe proceeds anyway. Without this bound, a misbehaving child could cause logout
+     * to hang indefinitely.
      */
     private suspend fun drainSessionScope() {
         userSessionScopeProvider.get(userId)?.let { scope ->
             scope.cancel()
-            scope.coroutineContext.job.join()
+            val drained = withTimeoutOrNull(SCOPE_DRAIN_TIMEOUT_MS) {
+                scope.coroutineContext.job.join()
+            }
+            if (drained == null) {
+                kaliumLogger.withTextTag(TAG).w(
+                    "UserSessionScope did not drain within ${SCOPE_DRAIN_TIMEOUT_MS}ms; proceeding with DB wipe anyway"
+                )
+            }
         }
     }
 
@@ -184,5 +197,12 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     companion object {
         const val TAG = "LogoutUseCase"
+
+        /**
+         * Maximum time (ms) to wait for the [UserSessionScope] to drain before proceeding
+         * with a DB wipe on hard logout. Guards against stuck coroutines blocking logout
+         * indefinitely.
+         */
+        const val SCOPE_DRAIN_TIMEOUT_MS = 2_000L
     }
 }
