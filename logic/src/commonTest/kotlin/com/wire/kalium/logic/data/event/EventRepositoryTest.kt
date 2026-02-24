@@ -658,7 +658,7 @@ class EventRepositoryTest {
 
         suspend fun withUnprocessedEvents(events: Flow<List<EventEntity>>) = apply {
             coEvery {
-                eventDAO.observeUnprocessedEvents()
+                eventDAO.observeUnprocessedEvents(any())
             }.returns(events)
         }
 
