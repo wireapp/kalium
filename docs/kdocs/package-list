@@ -534,6 +534,7 @@ com.wire.kalium.protobuf
 com.wire.kalium.protobuf.backup
 com.wire.kalium.protobuf.messages
 com.wire.kalium.protobuf.mls
+com.wire.kalium.protobuf.nomaddevice
 com.wire.kalium.protobuf.otr
 module:backup
 com.wire.backup.data
