@@ -47,7 +47,7 @@ class LastReadContentHandlerTest {
         val older = Instant.parse("2026-02-10T11:59:59Z")
         val (arrangement, handler) = Arrangement()
             .withIsMessageSentInSelfConversation(true)
-            .withUpdateReadDateAndGetHasUnreadEvents(Either.Right(false))
+            .withUpdateReadDatesAndGetHasUnreadEvents(Either.Right(mapOf(CONVERSATION_ID to false)))
             .arrange()
 
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, newer))
@@ -55,7 +55,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         coVerify {
-            arrangement.conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(CONVERSATION_ID), eq(newer))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to newer)))
         }.wasInvoked(exactly = once)
     }
 
@@ -64,7 +64,7 @@ class LastReadContentHandlerTest {
         val timestamp = Instant.parse("2026-02-10T12:00:00Z")
         val (arrangement, handler) = Arrangement()
             .withIsMessageSentInSelfConversation(true)
-            .withUpdateReadDateAndGetHasUnreadEvents(Either.Right(false))
+            .withUpdateReadDatesAndGetHasUnreadEvents(Either.Right(mapOf(CONVERSATION_ID to false)))
             .arrange()
 
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, timestamp))
@@ -72,7 +72,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         coVerify {
-            arrangement.conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(CONVERSATION_ID), eq(timestamp))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
         }.wasInvoked(exactly = once)
     }
 
@@ -81,7 +81,14 @@ class LastReadContentHandlerTest {
         val timestamp = Instant.parse("2026-02-10T12:00:00Z")
         val (arrangement, handler) = Arrangement()
             .withIsMessageSentInSelfConversation(true)
-            .withUpdateReadDateAndGetHasUnreadEvents(Either.Right(true))
+            .withUpdateReadDatesAndGetHasUnreadEvents(
+                Either.Right(
+                    mapOf(
+                        CONVERSATION_ID to true,
+                        OTHER_CONVERSATION_ID to true
+                    )
+                )
+            )
             .arrange()
 
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, timestamp))
@@ -89,10 +96,14 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         coVerify {
-            arrangement.conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(CONVERSATION_ID), eq(timestamp))
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(OTHER_CONVERSATION_ID), eq(timestamp))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
+                eq(
+                    mapOf(
+                        CONVERSATION_ID to timestamp,
+                        OTHER_CONVERSATION_ID to timestamp
+                    )
+                )
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -107,7 +118,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         coVerify {
-            arrangement.conversationRepository.updateReadDateAndGetHasUnreadEvents(any(), any())
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(any())
         }.wasNotInvoked()
         coVerify {
             arrangement.notificationEventsManager.scheduleConversationSeenNotification(any())
@@ -119,7 +130,7 @@ class LastReadContentHandlerTest {
         val timestamp = Instant.parse("2026-02-10T12:00:00Z")
         val (arrangement, handler) = Arrangement()
             .withIsMessageSentInSelfConversation(true)
-            .withUpdateReadDateAndGetHasUnreadEvents(Either.Right(true))
+            .withUpdateReadDatesAndGetHasUnreadEvents(Either.Right(mapOf(CONVERSATION_ID to true)))
             .arrange()
 
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, timestamp))
@@ -127,7 +138,7 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
 
         coVerify {
-            arrangement.conversationRepository.updateReadDateAndGetHasUnreadEvents(eq(CONVERSATION_ID), eq(timestamp))
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
         }.wasInvoked(exactly = once)
     }
 
@@ -140,9 +151,9 @@ class LastReadContentHandlerTest {
             coEvery { isMessageSentInSelfConversation.invoke(any()) }.returns(isSelfConversation)
         }
 
-        suspend fun withUpdateReadDateAndGetHasUnreadEvents(result: Either<StorageFailure, Boolean>) = apply {
+        suspend fun withUpdateReadDatesAndGetHasUnreadEvents(result: Either<StorageFailure, Map<ConversationId, Boolean>>) = apply {
             coEvery {
-                conversationRepository.updateReadDateAndGetHasUnreadEvents(any(), any())
+                conversationRepository.updateReadDatesAndGetHasUnreadEvents(any())
             }.returns(result)
         }
 

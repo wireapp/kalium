@@ -6,6 +6,7 @@ CREATE TABLE RemotebackupChangeLog (
     message_id TEXT,
     event_type INTEGER AS ChangeLogEventType NOT NULL,
     timestamp_ms INTEGER NOT NULL,
+    message_timestamp_ms INTEGER NOT NULL,
     CHECK (
         (event_type >= 500 AND message_id IS NULL )
         OR
@@ -18,37 +19,37 @@ CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timest
 
 insertMessageUpsert:
 INSERT OR REPLACE INTO RemotebackupChangeLog(
-    conversation_id, message_id, event_type, timestamp_ms
-) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+    conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs, :messageTimestampMs);
 
 insertMessageDelete:
 INSERT OR REPLACE INTO RemotebackupChangeLog(
-    conversation_id, message_id, event_type, timestamp_ms
-) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+    conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs, :timestampMs);
 
 insertReactionsSync:
 INSERT OR REPLACE INTO RemotebackupChangeLog(
-    conversation_id, message_id, event_type, timestamp_ms
-) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+    conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs, :timestampMs);
 
 insertReadReceiptsSync:
 INSERT OR REPLACE INTO RemotebackupChangeLog(
-    conversation_id, message_id, event_type, timestamp_ms
-) VALUES (:conversationId, :messageId, :eventType, :timestampMs);
+    conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+) VALUES (:conversationId, :messageId, :eventType, :timestampMs, :timestampMs);
 
 insertConversationDelete {
     DELETE FROM RemotebackupChangeLog WHERE conversation_id = :conversationId;
     INSERT INTO RemotebackupChangeLog(
-        conversation_id, message_id, event_type, timestamp_ms
-    ) VALUES (:conversationId, NULL, :eventType, :timestampMs);
+        conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+    ) VALUES (:conversationId, NULL, :eventType, :timestampMs, :timestampMs);
 }
 
 insertConversationClear {
     DELETE FROM RemotebackupChangeLog WHERE conversation_id = :conversationId;
     INSERT INTO RemotebackupChangeLog(
-        conversation_id, message_id, event_type, timestamp_ms
-    ) VALUES (:conversationId, NULL, :eventType, :timestampMs);
+        conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+    ) VALUES (:conversationId, NULL, :eventType, :timestampMs, :timestampMs);
 }
 
 getPendingChanges:
-SELECT * FROM RemotebackupChangeLog ORDER BY timestamp_ms ASC;
+SELECT * FROM RemotebackupChangeLog ORDER BY timestamp_ms ASC, message_timestamp_ms ASC, conversation_id ASC, message_id ASC, event_type ASC;
