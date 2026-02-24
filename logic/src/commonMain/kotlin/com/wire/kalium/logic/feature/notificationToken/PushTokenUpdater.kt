@@ -105,14 +105,18 @@ internal class PushTokenUpdater(
             "$TAG Backend doesn't support native push for client ${clientId.toString().obfuscateId()}, " +
                     "forcing persistent websocket and stopping push token retries"
         )
+        // Enable WebSocket FIRST — ensures the user always has a notification channel
+        // even if the process dies before we finish persisting all flags.
+        // If we disabled push first and crashed, the user would have no notifications
+        // and `shouldTryRegisteringPushToken()` would skip re-registration on next launch.
+        sessionRepository.updatePersistentWebSocketStatus(userId, true).onFailure {
+            kaliumLogger.w("$TAG Failed to force persistent websocket: $it")
+        }
         sessionRepository.setNativePushEnabledForUser(userId, false).onFailure {
-            kaliumLogger.i("$TAG Failed to persist native push disabled flag: $it")
+            kaliumLogger.w("$TAG Failed to persist native push disabled flag: $it")
         }
         pushTokenRepository.setUpdateFirebaseTokenFlag(false).onFailure {
-            kaliumLogger.i("$TAG Failed to disable push token retry flag: $it")
-        }
-        sessionRepository.updatePersistentWebSocketStatus(userId, true).onFailure {
-            kaliumLogger.i("$TAG Failed to force persistent websocket: $it")
+            kaliumLogger.w("$TAG Failed to disable push token retry flag: $it")
         }
     }
 

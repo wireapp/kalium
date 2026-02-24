@@ -151,7 +151,7 @@ class PushTokenUpdaterTest {
     }
 
     @Test
-    fun givenNativePushRegistrationReturnsAppNotFound_thenDisableRetriesAndForcePersistentWebSocket() = runTest {
+    fun givenNativePushRegistrationReturnsAppNotFound_thenWebSocketIsEnabledBeforeDisablingPush() = runTest {
         val (arrangement, pushTokenUpdater) = Arrangement()
             .withUpdateFirebaseTokenFlag(true)
             .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
@@ -170,16 +170,42 @@ class PushTokenUpdaterTest {
 
         pushTokenUpdater.monitorTokenChanges()
 
-        verifySuspend(VerifyMode.exactly(1)) {
+        // WebSocket must be enabled BEFORE disabling native push.
+        // If the process dies after disabling push but before enabling WebSocket,
+        // the user would have no notification channel and no recovery path.
+        verifySuspend(VerifyMode.order) {
+            arrangement.sessionRepository.updatePersistentWebSocketStatus(eq(MOCK_USER_ID), eq(true))
             arrangement.sessionRepository.setNativePushEnabledForUser(eq(MOCK_USER_ID), eq(false))
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
         }
+    }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.updatePersistentWebSocketStatus(eq(MOCK_USER_ID), eq(true))
+    @Test
+    fun givenNonAppNotFoundError_thenPersistentWebSocketIsNotEnabled() = runTest {
+        val (arrangement, pushTokenUpdater) = Arrangement()
+            .withUpdateFirebaseTokenFlag(true)
+            .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+            .withServerNativePushEnabled(true)
+            .withNotificationToken(
+                Either.Right(
+                    NotificationToken(
+                        MOCK_TOKEN,
+                        MOCK_TRANSPORT,
+                        MOCK_APP_ID
+                    )
+                )
+            )
+            .withRegisterTokenResult(Either.Left(serverMiscommunicationFailure(code = 403, label = "forbidden")))
+            .arrange()
+
+        pushTokenUpdater.monitorTokenChanges()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.sessionRepository.updatePersistentWebSocketStatus(any(), any())
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.sessionRepository.setNativePushEnabledForUser(any(), any())
         }
     }
 
