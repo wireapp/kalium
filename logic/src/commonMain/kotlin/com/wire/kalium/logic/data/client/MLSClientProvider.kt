@@ -61,7 +61,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 @Mockable
-internal interface MLSClientProvider {
+internal interface MLSClientProvider : CryptoBackupExporter {
     suspend fun isMLSClientInitialised(): Boolean
 
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
@@ -90,7 +90,7 @@ internal class MLSClientProviderImpl(
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val processingScope: CoroutineScope,
-) : MLSClientProvider, CryptoBackupExporter {
+) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
     private var coreCryptoCentral: CoreCryptoCentral? = null

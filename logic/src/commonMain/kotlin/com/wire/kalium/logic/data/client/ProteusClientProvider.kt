@@ -47,7 +47,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Mockable
-internal interface ProteusClientProvider {
+internal interface ProteusClientProvider : CryptoBackupExporter {
     suspend fun clearLocalFiles()
 
     /**
@@ -69,7 +69,7 @@ internal class ProteusClientProviderImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
-) : ProteusClientProvider, CryptoBackupExporter {
+) : ProteusClientProvider {
 
     private var _proteusClient: ProteusClient? = null
     private var _coreCryptoCentral: CoreCryptoCentral? = null

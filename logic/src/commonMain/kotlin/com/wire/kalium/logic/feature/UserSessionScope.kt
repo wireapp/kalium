@@ -1052,6 +1052,7 @@ public class UserSessionScope internal constructor(
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
+            cryptoTransactionProvider = cryptoTransactionProvider,
             globalPreferences = globalPreferences,
         )
 
@@ -2763,6 +2764,10 @@ public class UserSessionScope internal constructor(
         launch {
             waitUntilClientIdIsAvailable()
             callBackgroundManager.startProcessing()
+        }
+
+        launch {
+            backup.backupCryptoDB()
         }
     }
 }

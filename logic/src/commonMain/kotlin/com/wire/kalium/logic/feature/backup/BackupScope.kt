@@ -20,12 +20,13 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.userstorage.di.UserStorage
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
@@ -35,6 +36,7 @@ public class BackupScope internal constructor(
     private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userStorage: UserStorage,
+    private val cryptoTransactionProvider: CryptoTransactionProvider,
     internal val globalPreferences: GlobalPrefProvider,
 ) {
     public val create: CreateBackupUseCase
@@ -68,4 +70,15 @@ public class BackupScope internal constructor(
             kaliumFileSystem,
             userStorage.database.obfuscatedCopyExporter,
         )
+
+    internal val backupCryptoDB: BackupCryptoDBUseCase by lazy {
+        BackupCryptoDBUseCaseImpl(
+            userId,
+            clientIdProvider,
+            cryptoTransactionProvider,
+            userRepository,
+            kaliumFileSystem,
+        )
+    }
+
 }
