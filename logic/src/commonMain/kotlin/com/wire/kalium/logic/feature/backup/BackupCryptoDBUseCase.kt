@@ -39,7 +39,6 @@ import okio.Source
 import okio.buffer
 import okio.use
 import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
  * Performs the backup of the cryptographic database by exporting it, creating a metadata file, and packaging them into a ZIP file.
@@ -57,9 +56,10 @@ internal class BackupCryptoDBUseCaseImpl(
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
+        val (cryptoBackupRootPath, mlsBackupPath) = createBackupDirectories()
         val (exportData, dbBytes) = cryptoTransactionProvider.mlsTransaction("backup_read") { _ ->
             cryptoTransactionProvider.mlsClientProvider
-                .exportCryptoDB()
+                .exportCryptoDB(mlsBackupPath.toString())
                 .fold(
                     { Either.Left(it) },
                     { exportData ->
@@ -79,11 +79,9 @@ internal class BackupCryptoDBUseCaseImpl(
         )
 
         try {
-            val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
-            val backupName = "corecrypto_backup_${userId}_$timeStamp.zip"
+            val backupName = createBackupFileName()
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
             val metadataPath = createMetadataFile(exportData)
-
             createBackupZip(dbBytes, metadataPath, backupFilePath).fold(
                 { error -> BackupCryptoDBResult.Failure(error) },
                 {
@@ -95,12 +93,25 @@ internal class BackupCryptoDBUseCaseImpl(
             BackupCryptoDBResult.Failure(StorageFailure.Generic(e))
         } finally {
             // todo(ym): add logic to replace last or delete old once a new one is created.
-//             kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME))
+            kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME))
+            kaliumFileSystem.deleteContents(cryptoBackupRootPath)
         }
     }
 
-    @OptIn(ExperimentalEncodingApi::class)
-    private suspend fun createMetadataFile(exportData: CryptoBackupMetadata): Path {
+    private fun createBackupDirectories(): Pair<Path, Path> {
+        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath("crypto_backup")
+        kaliumFileSystem.createDirectories(cryptoBackupRootPath)
+        val mlsBackupPath = cryptoBackupRootPath.resolve("keystore")
+        return Pair(cryptoBackupRootPath, mlsBackupPath)
+    }
+
+    private fun createBackupFileName(): String {
+        val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
+        val backupName = "corecrypto_backup_${userId}_$timeStamp.zip"
+        return backupName
+    }
+
+    private fun createMetadataFile(exportData: CryptoBackupMetadata): Path {
         val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
             clientId = exportData.clientId.value,
