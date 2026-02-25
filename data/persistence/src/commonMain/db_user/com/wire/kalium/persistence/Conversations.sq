@@ -190,14 +190,14 @@ WHERE qualified_id = ?;
 
 updateConversationModifiedDateToMaxOfSources:
 UPDATE Conversation
-SET last_modified_date = MAX(
-    last_modified_date,
-    COALESCE(
-        (SELECT MAX(last_modified_date) FROM Conversation WHERE qualified_id IN :sourceConversationIds),
-        last_modified_date
-    )
+SET last_modified_date = (
+    SELECT MAX(last_modified_date)
+    FROM Conversation
+    WHERE qualified_id IN :sourceConversationIds
+       OR qualified_id = :targetConversationId
 )
 WHERE qualified_id = :targetConversationId;
+
 
 getConversationLastReadDate:
 SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
