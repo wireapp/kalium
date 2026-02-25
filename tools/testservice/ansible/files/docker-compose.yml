@@ -1,0 +1,9 @@
+services:
+  testservice:
+    image: quay.io/wire/testservice:latest
+    restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./config.yml:/app/testservice/config.yml:ro
+      - ./logs:/var/log/kalium-testservice
