@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
@@ -54,7 +56,6 @@ internal class BackupCryptoDBUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : BackupCryptoDBUseCase {
 
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
         val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
