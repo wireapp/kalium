@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -94,7 +93,7 @@ class BackupCryptoDBUseCaseTest {
         assertIs<BackupCryptoDBResult.Success>(result)
         assertTrue(result.backupFilePath.name.contains(".zip"))
         verifySuspend(VerifyMode.atMost(1)) {
-            arrangement.mlsClientProvider.exportCryptoDB()
+            arrangement.mlsClientProvider.exportCryptoDB(any())
         }
 
         with(fakeFileSystem) {
@@ -135,13 +134,29 @@ class BackupCryptoDBUseCaseTest {
         assertIs<BackupCryptoDBResult.Failure>(result)
         assertTrue(result.error is StorageFailure.DataNotFound)
         verifySuspend(VerifyMode.atMost(1)) {
-            arrangement.mlsClientProvider.exportCryptoDB()
+            arrangement.mlsClientProvider.exportCryptoDB(any())
+        }
+    }
+
+    @Test
+    fun givenMissingExportedDb_whenBackingUpCryptoDb_thenReturnsFailure() = runTest(dispatcher.default) {
+        val (arrangement, useCase) = Arrangement()
+            .withMissingExportedCryptoDB("keystore_export", TestClient.CLIENT_ID)
+            .withMlsTransactionSuccess()
+            .arrange()
+
+        val result = useCase()
+        advanceUntilIdle()
+
+        assertIs<BackupCryptoDBResult.Failure>(result)
+        assertIs<StorageFailure.Generic>(result.error)
+        verifySuspend(VerifyMode.atMost(1)) {
+            arrangement.mlsClientProvider.exportCryptoDB(any())
         }
     }
 
     private inner class Arrangement {
         val clientIdProvider = mock<CurrentClientIdProvider>()
-        val userRepository = mock<UserRepository>()
         val mlsClientProvider = mock<MLSClientProvider>()
         val proteusClientProvider = mock<ProteusClientProvider>()
         private val mlsClient = mock<MLSClient>()
@@ -161,7 +176,7 @@ class BackupCryptoDBUseCaseTest {
                 val exportPath = fakeFileSystem.tempFilePath(path)
                 sink(exportPath).buffer().use { it.write(dbData) }
                 everySuspend {
-                    mlsClientProvider.exportCryptoDB()
+                    mlsClientProvider.exportCryptoDB(any())
                 }.returns(
                     com.wire.kalium.logic.data.client.CryptoBackupMetadata(
                         dbPath = exportPath.toString(),
@@ -170,6 +185,19 @@ class BackupCryptoDBUseCaseTest {
                     ).right()
                 )
             }
+        }
+
+        fun withMissingExportedCryptoDB(path: String, clientId: ClientId) = apply {
+            val exportPath = fakeFileSystem.tempFilePath(path)
+            everySuspend {
+                mlsClientProvider.exportCryptoDB(any())
+            }.returns(
+                com.wire.kalium.logic.data.client.CryptoBackupMetadata(
+                    dbPath = exportPath.toString(),
+                    passphrase = ByteArray(32) { 0xAB.toByte() },
+                    clientId = clientId
+                ).right()
+            )
         }
 
         fun withMlsTransactionSuccess() = apply {
@@ -187,7 +215,7 @@ class BackupCryptoDBUseCaseTest {
 
         fun withExportFailure(failure: CoreFailure) = apply {
             everySuspend {
-                mlsClientProvider.exportCryptoDB()
+                mlsClientProvider.exportCryptoDB(any())
             }.returns(Either.Left(failure))
         }
 
