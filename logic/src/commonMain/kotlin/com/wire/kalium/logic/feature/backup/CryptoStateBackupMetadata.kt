@@ -27,7 +27,9 @@ internal data class CryptoStateBackupMetadata(
     @SerialName("client_id")
     val clientId: String,
     @SerialName("mls_db_passphrase")
-    val mlsDbPassphrase: String
+    val mlsDbPassphrase: String,
+    @SerialName("proteus_db_passphrase")
+    val proteusDbPassphrase: String
 ) {
     internal companion object {
         const val CURRENT_VERSION: String = "1"

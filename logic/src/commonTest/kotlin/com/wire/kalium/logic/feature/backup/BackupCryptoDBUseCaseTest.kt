@@ -24,6 +24,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.util.InternalCryptoAccess
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
@@ -81,11 +84,15 @@ class BackupCryptoDBUseCaseTest {
     @Test
     fun givenValidCryptoBackupData_whenCreatingNonEncryptedBackup_thenCreatesBackupZip() = runTest(dispatcher.default) {
         val dbData: ByteArray = Base64.decode("c29tZS1jYy1kYi1ieXRlcw==")
+        val proteusDbData: ByteArray = Base64.decode("cHJvdGV1cy1kYi1ieXRlcw==")
         val passphrase = ByteArray(32) { 0xAB.toByte() }
+        val proteusPassphrase = ByteArray(32) { 0xBC.toByte() }
         val (arrangement, useCase) = Arrangement()
             .withClientId(TestClient.CLIENT_ID)
-            .withExportedCryptoDB("keystore_export", dbData, passphrase, TestClient.CLIENT_ID)
+            .withMlsExportedCryptoDB("keystore_export", dbData, passphrase, TestClient.CLIENT_ID)
+            .withProteusExportedCryptoDB("keystore_export_proteus", proteusDbData, proteusPassphrase, TestClient.CLIENT_ID)
             .withMlsTransactionSuccess()
+            .withProteusTransactionSuccess()
             .arrange()
 
         val result = useCase()
@@ -95,6 +102,9 @@ class BackupCryptoDBUseCaseTest {
         assertTrue(result.backupFilePath.name.contains(".zip"))
         verifySuspend(VerifyMode.atMost(1)) {
             arrangement.mlsClientProvider.exportCryptoDB(any())
+        }
+        verifySuspend(VerifyMode.atMost(1)) {
+            arrangement.proteusClientProvider.exportCryptoDB(any())
         }
 
         with(fakeFileSystem) {
@@ -111,14 +121,23 @@ class BackupCryptoDBUseCaseTest {
             assertEquals(metadata.version, CryptoStateBackupMetadata.CURRENT_VERSION)
             assertEquals(metadata.clientId, TestClient.CLIENT_ID.value)
             assertEquals(metadata.mlsDbPassphrase, Base64.encode(passphrase))
-            val extractedDB = listDirectories(extractedFilesPath).firstOrNull {
-                it.name == "keystore"
+            assertEquals(metadata.proteusDbPassphrase, Base64.encode(proteusPassphrase))
+            val extractedMlsDB = listDirectories(extractedFilesPath).firstOrNull {
+                it.name == "keystore-mls"
             }?.let {
                 source(it).buffer().use { bufferedSource ->
                     bufferedSource.readByteArray()
                 }
             }
-            assertTrue(extractedDB.contentEquals(dbData))
+            val extractedProteusDB = listDirectories(extractedFilesPath).firstOrNull {
+                it.name == "keystore-proteus"
+            }?.let {
+                source(it).buffer().use { bufferedSource ->
+                    bufferedSource.readByteArray()
+                }
+            }
+            assertTrue(extractedMlsDB.contentEquals(dbData))
+            assertTrue(extractedProteusDB.contentEquals(proteusDbData))
         }
     }
 
@@ -127,6 +146,7 @@ class BackupCryptoDBUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withExportFailure(StorageFailure.DataNotFound)
             .withMlsTransactionSuccess()
+            .withProteusTransactionSuccess()
             .arrange()
 
         val result = useCase()
@@ -144,6 +164,7 @@ class BackupCryptoDBUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withMissingExportedCryptoDB("keystore_export", TestClient.CLIENT_ID)
             .withMlsTransactionSuccess()
+            .withProteusTransactionSuccess()
             .arrange()
 
         val result = useCase()
@@ -162,6 +183,8 @@ class BackupCryptoDBUseCaseTest {
         val proteusClientProvider = mock<ProteusClientProvider>()
         private val mlsClient = mock<MLSClient>()
         private val mlsContext = mock<MlsCoreCryptoContext>()
+        private val proteusClient = mock<ProteusClient>()
+        private val proteusContext = mock<ProteusCoreCryptoContext>()
 
         private val cryptoTransactionProvider: CryptoTransactionProvider = CryptoTransactionProviderImpl(
             mlsClientProvider = mlsClientProvider,
@@ -172,7 +195,7 @@ class BackupCryptoDBUseCaseTest {
             everySuspend { clientIdProvider.invoke() }.returns(Either.Right(clientId))
         }
 
-        fun withExportedCryptoDB(path: String, dbData: ByteArray, passphrase: ByteArray, clientId: ClientId) = apply {
+        fun withMlsExportedCryptoDB(path: String, dbData: ByteArray, passphrase: ByteArray, clientId: ClientId) = apply {
             with(fakeFileSystem) {
                 val exportPath = fakeFileSystem.tempFilePath(path)
                 sink(exportPath).buffer().use { it.write(dbData) }
@@ -188,10 +211,35 @@ class BackupCryptoDBUseCaseTest {
             }
         }
 
+        fun withProteusExportedCryptoDB(path: String, dbData: ByteArray, passphrase: ByteArray, clientId: ClientId) = apply {
+            with(fakeFileSystem) {
+                val exportPath = fakeFileSystem.tempFilePath(path)
+                sink(exportPath).buffer().use { it.write(dbData) }
+                everySuspend {
+                    proteusClientProvider.exportCryptoDB(any())
+                }.returns(
+                    com.wire.kalium.logic.data.client.CryptoBackupMetadata(
+                        dbPath = exportPath.toString(),
+                        passphrase = passphrase,
+                        clientId = clientId
+                    ).right()
+                )
+            }
+        }
+
         fun withMissingExportedCryptoDB(path: String, clientId: ClientId) = apply {
             val exportPath = fakeFileSystem.tempFilePath(path)
             everySuspend {
                 mlsClientProvider.exportCryptoDB(any())
+            }.returns(
+                com.wire.kalium.logic.data.client.CryptoBackupMetadata(
+                    dbPath = exportPath.toString(),
+                    passphrase = ByteArray(32) { 0xAB.toByte() },
+                    clientId = clientId
+                ).right()
+            )
+            everySuspend {
+                proteusClientProvider.exportCryptoDB(any())
             }.returns(
                 com.wire.kalium.logic.data.client.CryptoBackupMetadata(
                     dbPath = exportPath.toString(),
@@ -214,9 +262,26 @@ class BackupCryptoDBUseCaseTest {
             }
         }
 
+        @OptIn(InternalCryptoAccess::class)
+        fun withProteusTransactionSuccess() = apply {
+            everySuspend { proteusClientProvider.getOrError() }.returns(proteusClient.right())
+            everySuspend {
+                proteusClient.transaction(
+                    any(),
+                    any<suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, ByteArray>>()
+                )
+            }.calls { invocation ->
+                val block = invocation.args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, ByteArray>
+                block(proteusContext)
+            }
+        }
+
         fun withExportFailure(failure: CoreFailure) = apply {
             everySuspend {
                 mlsClientProvider.exportCryptoDB(any())
+            }.returns(Either.Left(failure))
+            everySuspend {
+                proteusClientProvider.exportCryptoDB(any())
             }.returns(Either.Left(failure))
         }
 

@@ -56,24 +56,12 @@ internal class BackupCryptoDBUseCaseImpl(
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
-        val (cryptoBackupRootPath, mlsBackupPath) = createBackupDirectories()
-        val (exportData, dbBytes) = cryptoTransactionProvider.mlsTransaction("backup_read") { _ ->
-            cryptoTransactionProvider.mlsClientProvider
-                .exportCryptoDB(mlsBackupPath.toString())
-                .fold(
-                    { Either.Left(it) },
-                    { exportData ->
-                        try {
-                            val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
-                                it.buffer().readByteArray()
-                            }
-                            Either.Right(exportData to bytes)
-                        } catch (e: Exception) {
-                            Either.Left(StorageFailure.Generic(e))
-                        }
-                    }
-                )
-        }.fold(
+        val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
+        val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
+            { return@withContext BackupCryptoDBResult.Failure(it) },
+            { it }
+        )
+        val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
             { return@withContext BackupCryptoDBResult.Failure(it) },
             { it }
         )
@@ -81,8 +69,8 @@ internal class BackupCryptoDBUseCaseImpl(
         try {
             val backupName = createBackupFileName()
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
-            val metadataPath = createMetadataFile(exportData)
-            createBackupZip(dbBytes, metadataPath, backupFilePath).fold(
+            val metadataPath = createMetadataFile(mlsExportData, proteusExportData)
+            createBackupZip(mlsDbBytes, proteusDbBytes, metadataPath, backupFilePath).fold(
                 { error -> BackupCryptoDBResult.Failure(error) },
                 {
                     BackupCryptoDBResult.Success(backupFilePath, backupName)
@@ -98,11 +86,50 @@ internal class BackupCryptoDBUseCaseImpl(
         }
     }
 
-    private fun createBackupDirectories(): Pair<Path, Path> {
+    private suspend fun createMLSBackup(mlsBackupPath: Path): Either<CoreFailure, Pair<CryptoBackupMetadata, ByteArray>> =
+        cryptoTransactionProvider.mlsTransaction("backup_read_mls") { _ ->
+            cryptoTransactionProvider.mlsClientProvider
+                .exportCryptoDB(mlsBackupPath.toString())
+                .fold(
+                    { Either.Left(it) },
+                    { exportData ->
+                        try {
+                            val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
+                                it.buffer().readByteArray()
+                            }
+                            Either.Right(exportData to bytes)
+                        } catch (e: Exception) {
+                            Either.Left(StorageFailure.Generic(e))
+                        }
+                    }
+                )
+        }
+
+    private suspend fun createProteusBackup(proteusBackupPath: Path): Either<CoreFailure, Pair<CryptoBackupMetadata, ByteArray>> =
+        cryptoTransactionProvider.proteusTransaction("backup_read_proteus") { _ ->
+            cryptoTransactionProvider.proteusClientProvider
+                .exportCryptoDB(proteusBackupPath.toString())
+                .fold(
+                    { Either.Left(it) },
+                    { exportData ->
+                        try {
+                            val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
+                                it.buffer().readByteArray()
+                            }
+                            Either.Right(exportData to bytes)
+                        } catch (e: Exception) {
+                            Either.Left(StorageFailure.Generic(e))
+                        }
+                    }
+                )
+        }
+
+    private fun createBackupDirectories(): Triple<Path, Path, Path> {
         val cryptoBackupRootPath = kaliumFileSystem.tempFilePath("crypto_backup")
         kaliumFileSystem.createDirectories(cryptoBackupRootPath)
-        val mlsBackupPath = cryptoBackupRootPath.resolve("keystore")
-        return Pair(cryptoBackupRootPath, mlsBackupPath)
+        val mlsBackupPath = cryptoBackupRootPath.resolve("keystore-mls")
+        val proteusBackupPath = cryptoBackupRootPath.resolve("keystore-proteus")
+        return Triple(cryptoBackupRootPath, mlsBackupPath, proteusBackupPath)
     }
 
     private fun createBackupFileName(): String {
@@ -111,11 +138,15 @@ internal class BackupCryptoDBUseCaseImpl(
         return backupName
     }
 
-    private fun createMetadataFile(exportData: CryptoBackupMetadata): Path {
+    private fun createMetadataFile(
+        mlsExportData: CryptoBackupMetadata,
+        proteusExportData: CryptoBackupMetadata,
+    ): Path {
         val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
-            clientId = exportData.clientId.value,
-            mlsDbPassphrase = Base64.encode(exportData.passphrase)
+            clientId = mlsExportData.clientId.value,
+            mlsDbPassphrase = Base64.encode(mlsExportData.passphrase),
+            proteusDbPassphrase = Base64.encode(proteusExportData.passphrase)
         )
         val metadataJson = Json.encodeToString(metadata)
 
@@ -127,7 +158,8 @@ internal class BackupCryptoDBUseCaseImpl(
     }
 
     private fun createBackupZip(
-        dbBytes: ByteArray,
+        mlsDbBytes: ByteArray,
+        proteusDbBytes: ByteArray,
         metadataPath: Path,
         backupZipPath: Path
     ): Either<CoreFailure, Unit> {
@@ -135,7 +167,8 @@ internal class BackupCryptoDBUseCaseImpl(
             val backupSink = kaliumFileSystem.sink(backupZipPath)
             val filesList = listOf(
                 kaliumFileSystem.source(metadataPath) to BackupConstants.BACKUP_METADATA_FILE_NAME,
-                Buffer().apply { write(dbBytes) } as Source to "keystore"
+                Buffer().apply { write(mlsDbBytes) } as Source to "keystore-mls",
+                Buffer().apply { write(proteusDbBytes) } as Source to "keystore-proteus"
             )
 
             createCompressedFile(filesList, backupSink).fold(
