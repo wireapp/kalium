@@ -68,11 +68,15 @@ internal class BackupCryptoDBUseCaseImpl(
 
         try {
             val backupName = createBackupFileName()
+            val tempBackupName = createTempBackupFileName(backupName)
+            val tempBackupPath = cryptoBackupRootPath.resolve(tempBackupName)
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
             val metadataPath = createMetadataFile(mlsExportData, proteusExportData)
-            createBackupZip(mlsDbBytes, proteusDbBytes, metadataPath, backupFilePath).fold(
+            createBackupZip(mlsDbBytes, proteusDbBytes, metadataPath, tempBackupPath).fold(
                 { error -> BackupCryptoDBResult.Failure(error) },
                 {
+                    persistBackup(tempBackupPath, backupFilePath)
+                    deleteOlderBackups(backupFilePath.parent!!, backupFilePath)
                     BackupCryptoDBResult.Success(backupFilePath, backupName)
                 }
             )
@@ -80,7 +84,6 @@ internal class BackupCryptoDBUseCaseImpl(
             kaliumLogger.e("CoreCrypto export failed", e)
             BackupCryptoDBResult.Failure(StorageFailure.Generic(e))
         } finally {
-            // todo(ym): add logic to replace last or delete old once a new one is created.
             kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME))
             kaliumFileSystem.deleteContents(cryptoBackupRootPath)
         }
@@ -125,17 +128,36 @@ internal class BackupCryptoDBUseCaseImpl(
         }
 
     private fun createBackupDirectories(): Triple<Path, Path, Path> {
-        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath("crypto_backup")
+        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath(TEMP_CRYPTO_BACKUP_DIR)
         kaliumFileSystem.createDirectories(cryptoBackupRootPath)
-        val mlsBackupPath = cryptoBackupRootPath.resolve("keystore-mls")
-        val proteusBackupPath = cryptoBackupRootPath.resolve("keystore-proteus")
+        val mlsBackupPath = cryptoBackupRootPath.resolve(MLS_KEYSTORE_NAME)
+        val proteusBackupPath = cryptoBackupRootPath.resolve(PROTEUS_KEYSTORE_NAME)
         return Triple(cryptoBackupRootPath, mlsBackupPath, proteusBackupPath)
     }
 
     private fun createBackupFileName(): String {
         val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
-        val backupName = "corecrypto_backup_${userId}_$timeStamp.zip"
-        return backupName
+        return "${CRYPTO_BACKUP_PREFIX}_${userId}_${timeStamp.replace(":", "-")}.zip"
+    }
+
+    private fun createTempBackupFileName(backupName: String): String = "$backupName.tmp"
+
+    private fun persistBackup(tempBackupPath: Path, backupFilePath: Path) {
+        kaliumFileSystem.copy(tempBackupPath, backupFilePath)
+        kaliumFileSystem.delete(tempBackupPath)
+    }
+
+    private suspend fun deleteOlderBackups(backupRootPath: Path, latestBackupPath: Path) {
+        val backups = runCatching { kaliumFileSystem.listDirectories(backupRootPath) }
+            .getOrElse { emptyList() }
+            .filter { it.name.startsWith("${CRYPTO_BACKUP_PREFIX}_${userId}_") }
+            .filter { it.name.endsWith(".zip") }
+            .filter { it != latestBackupPath }
+
+        backups.forEach { backup ->
+            runCatching { kaliumFileSystem.delete(backup) }
+                .onFailure { kaliumLogger.w("Failed to delete old backup at $backup", it) }
+        }
     }
 
     private fun createMetadataFile(
@@ -167,8 +189,8 @@ internal class BackupCryptoDBUseCaseImpl(
             val backupSink = kaliumFileSystem.sink(backupZipPath)
             val filesList = listOf(
                 kaliumFileSystem.source(metadataPath) to BackupConstants.BACKUP_METADATA_FILE_NAME,
-                Buffer().apply { write(mlsDbBytes) } as Source to "keystore-mls",
-                Buffer().apply { write(proteusDbBytes) } as Source to "keystore-proteus"
+                Buffer().apply { write(mlsDbBytes) } as Source to MLS_KEYSTORE_NAME,
+                Buffer().apply { write(proteusDbBytes) } as Source to PROTEUS_KEYSTORE_NAME
             )
 
             createCompressedFile(filesList, backupSink).fold(
@@ -179,6 +201,13 @@ internal class BackupCryptoDBUseCaseImpl(
             kaliumLogger.e("CoreCrypto backup ZIP creation failed", e)
             Either.Left(StorageFailure.Generic(e))
         }
+    }
+
+    companion object {
+        const val CRYPTO_BACKUP_PREFIX = "crypto_backup"
+        const val MLS_KEYSTORE_NAME = "keystore-mls"
+        const val PROTEUS_KEYSTORE_NAME = "keystore-proteus"
+        const val TEMP_CRYPTO_BACKUP_DIR = "crypto_backup_temp"
     }
 }
 

@@ -26,7 +26,6 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
-import com.wire.kalium.util.InternalCryptoAccess
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
@@ -39,6 +38,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
+import com.wire.kalium.util.InternalCryptoAccess
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -177,6 +177,27 @@ class BackupCryptoDBUseCaseTest {
         }
     }
 
+    @Test
+    fun givenExistingBackup_whenNewBackupSucceeds_thenDeletesOlderBackup() = runTest(dispatcher.default) {
+        val existingBackup = fakeFileSystem.tempFilePath("${CRYPTO_BACKUP_PREFIX}_${TestUser.USER_ID}_old.zip")
+        fakeFileSystem.sink(existingBackup).buffer().use { it.write(byteArrayOf(0x1)) }
+
+        val (_, useCase) = Arrangement()
+            .withClientId(TestClient.CLIENT_ID)
+            .withMlsExportedCryptoDB("keystore_export", byteArrayOf(0x1), ByteArray(32) { 0xAB.toByte() }, TestClient.CLIENT_ID)
+            .withProteusExportedCryptoDB("keystore_export_proteus", byteArrayOf(0x2), ByteArray(32) { 0xBC.toByte() }, TestClient.CLIENT_ID)
+            .withMlsTransactionSuccess()
+            .withProteusTransactionSuccess()
+            .arrange()
+
+        val result = useCase()
+        advanceUntilIdle()
+
+        assertIs<BackupCryptoDBResult.Success>(result)
+        assertTrue(!fakeFileSystem.exists(existingBackup))
+        assertTrue(fakeFileSystem.exists(result.backupFilePath))
+    }
+
     private inner class Arrangement {
         val clientIdProvider = mock<CurrentClientIdProvider>()
         val mlsClientProvider = mock<MLSClientProvider>()
@@ -291,5 +312,9 @@ class BackupCryptoDBUseCaseTest {
             kaliumFileSystem = fakeFileSystem,
             dispatchers = dispatcher
         )
+    }
+
+    companion object {
+        internal const val CRYPTO_BACKUP_PREFIX = "crypto_backup"
     }
 }
