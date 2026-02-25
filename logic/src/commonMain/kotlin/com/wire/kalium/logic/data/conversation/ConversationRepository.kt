@@ -354,6 +354,10 @@ internal interface ConversationRepository {
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
     suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean>
+    suspend fun updateReadDatesAndGetHasUnreadEvents(
+        conversationDates: Map<QualifiedID, Instant>
+    ): Either<StorageFailure, Map<QualifiedID, Boolean>>
+
     suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>>
 }
 
@@ -846,6 +850,15 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean> =
         wrapStorageRequest { conversationDAO.updateReadDateAndGetHasUnreadEvents(qualifiedID.toDao(), date) }
+
+    override suspend fun updateReadDatesAndGetHasUnreadEvents(
+        conversationDates: Map<QualifiedID, Instant>
+    ): Either<StorageFailure, Map<QualifiedID, Boolean>> =
+        wrapStorageRequest {
+            conversationDAO.updateReadDatesAndGetHasUnreadEvents(conversationDates.mapKeys { it.key.toDao() })
+        }.map { hasUnreadByConversation ->
+            hasUnreadByConversation.mapKeys { it.key.toModel() }
+        }
 
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,

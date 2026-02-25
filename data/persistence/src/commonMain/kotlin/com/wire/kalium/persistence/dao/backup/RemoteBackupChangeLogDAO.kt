@@ -33,7 +33,8 @@ interface RemoteBackupChangeLogDAO {
     suspend fun logMessageUpsert(
         conversationId: QualifiedIDEntity,
         messageId: String,
-        timestampMs: Long
+        timestampMs: Long,
+        messageTimestampMs: Long = timestampMs
     )
 
     /**
@@ -84,7 +85,7 @@ interface RemoteBackupChangeLogDAO {
     )
 
     /**
-     * Get all pending changes ordered by timestamp.
+     * Get all pending changes ordered deterministically for replay.
      */
     suspend fun getPendingChanges(): List<ChangeLogEntry>
 
