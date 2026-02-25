@@ -117,14 +117,6 @@ internal class RemoteBackupChangeLogDAOImpl(
             queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
         }
 
-    override suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity> =
-        withContext(readDispatcher.value) {
-            queries.getConversationLastReadForLastPendingChanges(
-                limit = limit,
-                mapper = mapper::toConversationLastReadSyncEntity
-            ).executeAsList()
-        }
-
     override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch =
         withContext(readDispatcher.value) {
             queries.transactionWithResult {
