@@ -355,6 +355,61 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenPagedEventsAcrossConversations_whenGettingConversationLastRead_thenReturnsOneLastReadPerConversationInPage() = runTest(dispatcher) {
+        val conv3 = QualifiedIDEntity("conv3", "domain.com")
+        val conv1LastRead = Instant.fromEpochMilliseconds(11)
+        val conv2LastRead = Instant.fromEpochMilliseconds(22)
+        val conv3LastRead = Instant.fromEpochMilliseconds(33)
+        conversationDAO.insertConversation(newConversationEntity(CONVERSATION_ID_1, lastReadDate = conv1LastRead))
+        conversationDAO.insertConversation(newConversationEntity(CONVERSATION_ID_2, lastReadDate = conv2LastRead))
+        conversationDAO.insertConversation(newConversationEntity(conv3, lastReadDate = conv3LastRead))
+
+        dao.logMessageUpsert(conv3, MESSAGE_NONCE_1, 500, 500)
+        dao.logMessageUpsert(CONVERSATION_ID_2, MESSAGE_NONCE_1, 2500, 2500)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, 2000, 2000)
+        dao.logMessageDelete(CONVERSATION_ID_1, MESSAGE_NONCE_2, 3000)
+
+        val result = dao.getConversationLastReadForLastPendingChanges(limit = 2)
+
+        assertEquals(
+            listOf(
+                ConversationLastReadSyncEntity(
+                    conversationId = CONVERSATION_ID_1,
+                    lastReadDate = conv1LastRead
+                ),
+                ConversationLastReadSyncEntity(
+                    conversationId = CONVERSATION_ID_2,
+                    lastReadDate = conv2LastRead
+                ),
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun givenPagedEvents_whenGettingAndObservingBatch_thenEventsAndLastReadsAreReturnedTogether() = runTest(dispatcher) {
+        val conv1LastRead = Instant.fromEpochMilliseconds(1100)
+        val conv2LastRead = Instant.fromEpochMilliseconds(2200)
+        conversationDAO.insertConversation(newConversationEntity(CONVERSATION_ID_1, lastReadDate = conv1LastRead))
+        conversationDAO.insertConversation(newConversationEntity(CONVERSATION_ID_2, lastReadDate = conv2LastRead))
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageDelete(CONVERSATION_ID_2, MESSAGE_NONCE_2, TIMESTAMP_2)
+
+        val snapshot = dao.getLastPendingChangesBatch(limit = 2)
+        val observed = dao.observeLastPendingChangesBatch(limit = 2).first()
+
+        assertEquals(
+            dao.getLastPendingChangesWithPayload(limit = 2),
+            snapshot.events
+        )
+        assertEquals(
+            dao.getConversationLastReadForLastPendingChanges(limit = 2),
+            snapshot.conversationLastReads
+        )
+        assertEquals(snapshot, observed)
+    }
+
+    @Test
     fun givenMultipleEntries_whenGettingPendingChanges_thenEntriesAreOrderedByTimestamp() = runTest(dispatcher) {
         dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_3, MESSAGE_TIMESTAMP_3)
         dao.logMessageDelete(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_1)

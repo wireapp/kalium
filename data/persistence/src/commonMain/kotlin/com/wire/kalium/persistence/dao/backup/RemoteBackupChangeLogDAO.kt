@@ -100,4 +100,19 @@ interface RemoteBackupChangeLogDAO {
      */
     fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<ChangeLogSyncEvent>>
 
+    /**
+     * Get a single last-read date per conversation that appears in the latest [limit] pending changes window.
+     */
+    suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity>
+
+    /**
+     * Get a transactional snapshot of the latest [limit] pending changes and their conversations' last-read dates.
+     */
+    suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch
+
+    /**
+     * Observe transactional snapshots of the latest [limit] pending changes and their conversations' last-read dates.
+     */
+    fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch>
+
 }

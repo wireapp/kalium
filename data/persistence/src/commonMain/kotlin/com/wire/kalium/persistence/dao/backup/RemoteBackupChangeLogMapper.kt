@@ -44,6 +44,16 @@ internal object RemoteBackupChangeLogMapper {
             messageTimestampMs = message_timestamp_ms
         )
 
+    @Suppress("FunctionParameterNaming")
+    fun toConversationLastReadSyncEntity(
+        conversation_id: QualifiedIDEntity,
+        last_read_date: Instant,
+    ): ConversationLastReadSyncEntity =
+        ConversationLastReadSyncEntity(
+            conversationId = conversation_id,
+            lastReadDate = last_read_date
+        )
+
     @Suppress("LongParameterList", "FunctionParameterNaming")
     fun toChangeLogSyncEvent(
         conversation_id: QualifiedIDEntity,

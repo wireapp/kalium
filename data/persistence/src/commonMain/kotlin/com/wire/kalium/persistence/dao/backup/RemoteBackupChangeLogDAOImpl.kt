@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 internal class RemoteBackupChangeLogDAOImpl(
@@ -116,14 +117,35 @@ internal class RemoteBackupChangeLogDAOImpl(
             queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
         }
 
-    override suspend fun getLastPendingChangesWithPayload(limit: Long): List<ChangeLogSyncEvent> =
+    override suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity> =
         withContext(readDispatcher.value) {
-            queries.getLastPendingChangesWithPayload(limit = limit, mapper = mapper::toChangeLogSyncEvent).executeAsList()
+            queries.getConversationLastReadForLastPendingChanges(
+                limit = limit,
+                mapper = mapper::toConversationLastReadSyncEntity
+            ).executeAsList()
         }
 
-    override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<ChangeLogSyncEvent>> =
+    override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch =
+        withContext(readDispatcher.value) {
+            queries.transactionWithResult {
+                val events = queries.getLastPendingChangesWithPayload(
+                    limit = limit,
+                    mapper = mapper::toChangeLogSyncEvent
+                ).executeAsList()
+                val conversationLastReads = queries.getConversationLastReadForLastPendingChanges(
+                    limit = limit,
+                    mapper = mapper::toConversationLastReadSyncEntity
+                ).executeAsList()
+                ChangeLogSyncBatch(
+                    events = events,
+                    conversationLastReads = conversationLastReads
+                )
+            }
+        }
+
+    override fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch> =
         queries.getLastPendingChangesWithPayload(limit = limit, mapper = mapper::toChangeLogSyncEvent)
             .asFlow()
-            .mapToList()
+            .map { getLastPendingChangesBatch(limit) }
             .flowOn(readDispatcher.value)
 }

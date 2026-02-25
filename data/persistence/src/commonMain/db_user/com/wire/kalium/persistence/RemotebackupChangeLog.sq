@@ -166,3 +166,18 @@ LEFT JOIN MessageConversationLocationContent AS LocationContent
     ON Message.id = LocationContent.message_id
     AND Message.conversation_id = LocationContent.conversation_id
 ORDER BY latest.timestamp_ms ASC, latest.message_timestamp_ms ASC, latest.conversation_id ASC, latest.message_id ASC;
+
+getConversationLastReadForLastPendingChanges:
+WITH latest AS (
+    SELECT *
+    FROM RemotebackupChangeLog
+    ORDER BY timestamp_ms DESC, message_timestamp_ms DESC, conversation_id DESC, message_id DESC, event_type DESC
+    LIMIT :limit
+)
+SELECT DISTINCT
+    latest.conversation_id AS conversation_id,
+    Conversation.last_read_date AS last_read_date
+FROM latest
+JOIN Conversation
+    ON Conversation.qualified_id = latest.conversation_id
+ORDER BY conversation_id ASC;

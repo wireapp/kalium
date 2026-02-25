@@ -386,15 +386,21 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
 
         override suspend fun getPendingChanges(): List<ChangeLogEntry> = emptyList()
 
-        override suspend fun getLastPendingChanges(limit: Long): List<ChangeLogEntry> = emptyList()
-
-        override fun observeLastPendingChanges(limit: Long): Flow<List<ChangeLogEntry>> = flowOf(emptyList())
-
         override suspend fun getLastPendingChangesWithPayload(limit: Long): List<com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent> =
             emptyList()
 
         override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent>> =
             flowOf(emptyList())
+
+        override suspend fun getConversationLastReadForLastPendingChanges(
+            limit: Long
+        ): List<com.wire.kalium.persistence.dao.backup.ConversationLastReadSyncEntity> = emptyList()
+
+        override suspend fun getLastPendingChangesBatch(limit: Long): com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch =
+            com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch(emptyList(), emptyList())
+
+        override fun observeLastPendingChangesBatch(limit: Long): Flow<com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch> =
+            flowOf(com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch(emptyList(), emptyList()))
     }
 
     private companion object {
