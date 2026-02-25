@@ -115,4 +115,9 @@ interface RemoteBackupChangeLogDAO {
      */
     fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch>
 
+    /**
+     * Delete the given changelog [changes] after they were successfully synced.
+     */
+    suspend fun deleteChanges(changes: List<ChangeLogEntry>)
+
 }

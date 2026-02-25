@@ -117,6 +117,23 @@ internal class RemoteBackupChangeLogDAOImpl(
             queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
         }
 
+    override suspend fun getLastPendingChangesWithPayload(limit: Long): List<ChangeLogSyncEvent> =
+        withContext(readDispatcher.value) {
+            queries.getLastPendingChangesWithPayload(
+                limit = limit,
+                mapper = mapper::toChangeLogSyncEvent
+            ).executeAsList()
+        }
+
+    override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<ChangeLogSyncEvent>> =
+        queries.getLastPendingChangesWithPayload(
+            limit = limit,
+            mapper = mapper::toChangeLogSyncEvent
+        )
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+
     override suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity> =
         withContext(readDispatcher.value) {
             queries.getConversationLastReadForLastPendingChanges(
@@ -148,4 +165,16 @@ internal class RemoteBackupChangeLogDAOImpl(
             .asFlow()
             .map { getLastPendingChangesBatch(limit) }
             .flowOn(readDispatcher.value)
+
+    override suspend fun deleteChanges(changes: List<ChangeLogEntry>): Unit = withContext(writeDispatcher.value) {
+        queries.transaction {
+            changes.forEach { change ->
+                queries.deleteChange(
+                    conversationId = change.conversationId,
+                    messageId = change.messageId,
+                    eventType = change.eventType
+                )
+            }
+        }
+    }
 }
