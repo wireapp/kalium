@@ -57,6 +57,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -107,9 +108,9 @@ class BackupCryptoDBUseCaseTest {
             assertTrue(metadataPath != null)
             val metadataJson = source(metadataPath!!).buffer().use { it.readUtf8() }
             val metadata = Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
-            assertTrue(metadata.version == CryptoStateBackupMetadata.CURRENT_VERSION)
-            assertTrue(metadata.clientId == TestClient.CLIENT_ID.value)
-            assertTrue(metadata.mlsDbPassphrase == Base64.encode(passphrase))
+            assertEquals(metadata.version, CryptoStateBackupMetadata.CURRENT_VERSION)
+            assertEquals(metadata.clientId, TestClient.CLIENT_ID.value)
+            assertEquals(metadata.mlsDbPassphrase, Base64.encode(passphrase))
             val extractedDB = listDirectories(extractedFilesPath).firstOrNull {
                 it.name == "keystore"
             }?.let {
