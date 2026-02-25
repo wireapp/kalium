@@ -18,16 +18,21 @@
 
 package com.wire.kalium.persistence.dao.backup
 
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.RemotebackupChangeLogQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
+import com.wire.kalium.persistence.util.mapToList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 internal class RemoteBackupChangeLogDAOImpl(
     private val queries: RemotebackupChangeLogQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
+    private val mapper: RemoteBackupChangeLogMapper = RemoteBackupChangeLogMapper,
 ) : RemoteBackupChangeLogDAO {
 
     override suspend fun logMessageUpsert(
@@ -108,22 +113,17 @@ internal class RemoteBackupChangeLogDAOImpl(
 
     override suspend fun getPendingChanges(): List<ChangeLogEntry> =
         withContext(readDispatcher.value) {
-            queries.getPendingChanges(mapper = ::toChangeLogEntry).executeAsList()
+            queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
         }
 
-    @Suppress("FunctionParameterNaming")
-    private fun toChangeLogEntry(
-        conversation_id: QualifiedIDEntity,
-        message_id: String?,
-        event_type: ChangeLogEventType,
-        timestamp_ms: Long,
-        message_timestamp_ms: Long,
-    ): ChangeLogEntry =
-        ChangeLogEntry(
-            conversationId = conversation_id,
-            messageId = message_id,
-            eventType = event_type,
-            timestampMs = timestamp_ms,
-            messageTimestampMs = message_timestamp_ms
-        )
+    override suspend fun getLastPendingChangesWithPayload(limit: Long): List<ChangeLogSyncEvent> =
+        withContext(readDispatcher.value) {
+            queries.getLastPendingChangesWithPayload(limit = limit, mapper = mapper::toChangeLogSyncEvent).executeAsList()
+        }
+
+    override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<ChangeLogSyncEvent>> =
+        queries.getLastPendingChangesWithPayload(limit = limit, mapper = mapper::toChangeLogSyncEvent)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
 }

@@ -20,17 +20,36 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
+import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     private lateinit var dao: RemoteBackupChangeLogDAO
+    private lateinit var userDAO: UserDAO
+    private lateinit var conversationDAO: ConversationDAO
+    private lateinit var messageDAO: MessageDAO
+    private lateinit var reactionDAO: ReactionDAO
+    private lateinit var receiptDAO: ReceiptDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -38,6 +57,11 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         dao = db.remoteBackupChangeLogDAO
+        userDAO = db.userDAO
+        conversationDAO = db.conversationDAO
+        messageDAO = db.messageDAO
+        receiptDAO = db.receiptDAO
+        reactionDAO = db.reactionDAO
     }
 
     @Test
@@ -249,6 +273,85 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         val result = dao.getPendingChanges()
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenMessageUpsertEvent_whenGettingPayloadBatch_thenMessagePayloadIsIncluded() = runTest(dispatcher) {
+        val senderId = QualifiedIDEntity("sender", "wire.com")
+        userDAO.upsertUser(newUserEntity(selfUserId, "self"))
+        userDAO.upsertUser(newUserEntity(senderId, "sender"))
+        conversationDAO.insertConversation(newConversationEntity(CONVERSATION_ID_1))
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = MESSAGE_NONCE_1,
+                content = com.wire.kalium.persistence.dao.message.MessageEntityContent.Text("hello-sync"),
+                conversationId = CONVERSATION_ID_1,
+                senderUserId = senderId,
+                status = MessageEntity.Status.SENT
+            )
+        )
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+
+        val result = dao.getLastPendingChangesWithPayload(limit = 1).first()
+        val upsertEvent = assertIs<ChangeLogSyncEvent.MessageUpsert>(result)
+        val payload = assertIs<SyncableMessagePayloadEntity.Text>(assertNotNull(upsertEvent.message))
+
+        assertEquals(ChangeLogEventType.MESSAGE_UPSERT, upsertEvent.change.eventType)
+        assertEquals(CONVERSATION_ID_1, upsertEvent.conversationId)
+        assertEquals(MESSAGE_NONCE_1, upsertEvent.messageId)
+        assertEquals(MessageEntity.ContentType.TEXT, payload.contentType)
+        assertEquals("hello-sync", payload.text)
+    }
+
+    @Test
+    fun givenReactionAndReadReceiptEvents_whenGettingPayloadBatch_thenAggregatedPayloadsAreIncluded() = runTest(dispatcher) {
+        val senderId = QualifiedIDEntity("sender", "wire.com")
+        val reactorId = QualifiedIDEntity("reactor", "wire.com")
+        userDAO.upsertUser(newUserEntity(selfUserId, "self"))
+        userDAO.upsertUser(newUserEntity(senderId, "sender"))
+        userDAO.upsertUser(newUserEntity(reactorId, "reactor"))
+        conversationDAO.insertConversation(newConversationEntity(CONVERSATION_ID_1))
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = MESSAGE_NONCE_1,
+                content = com.wire.kalium.persistence.dao.message.MessageEntityContent.Text("event-data"),
+                conversationId = CONVERSATION_ID_1,
+                senderUserId = senderId,
+                status = MessageEntity.Status.SENT
+            )
+        )
+
+        reactionDAO.insertReaction(MESSAGE_NONCE_1, CONVERSATION_ID_1, senderId, Instant.fromEpochMilliseconds(100), "👍")
+        reactionDAO.insertReaction(MESSAGE_NONCE_1, CONVERSATION_ID_1, reactorId, Instant.fromEpochMilliseconds(101), "😂")
+        receiptDAO.insertReceipts(
+            userId = reactorId,
+            conversationId = CONVERSATION_ID_1,
+            date = Instant.fromEpochMilliseconds(102),
+            type = ReceiptTypeEntity.READ,
+            messageIds = listOf(MESSAGE_NONCE_1)
+        )
+
+        dao.logReactionsSync(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
+        dao.logReadReceiptsSync(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_2)
+
+        val result = dao.getLastPendingChangesWithPayload(limit = 2)
+        val reactionsEvent = assertIs<ChangeLogSyncEvent.ReactionsSync>(result.first { it.change.eventType == ChangeLogEventType.REACTIONS_SYNC })
+        val receiptsEvent = assertIs<ChangeLogSyncEvent.ReadReceiptSync>(
+            result.first { it.change.eventType == ChangeLogEventType.READ_RECEIPT_SYNC }
+        )
+        assertEquals(CONVERSATION_ID_1, reactionsEvent.conversationId)
+        assertEquals(MESSAGE_NONCE_1, reactionsEvent.messageId)
+        assertEquals(CONVERSATION_ID_1, receiptsEvent.conversationId)
+        assertEquals(MESSAGE_NONCE_1, receiptsEvent.messageId)
+
+        val reactions = reactionsEvent.reactions
+        assertEquals(2, reactions.reactionsByUser.size)
+        assertTrue(reactions.reactionsByUser.any { it.userId == senderId && it.emojis.contains("👍") })
+        assertTrue(reactions.reactionsByUser.any { it.userId == reactorId && it.emojis.contains("😂") })
+
+        val readReceipts = receiptsEvent.readReceipts
+        assertEquals(1, readReceipts.receipts.size)
+        assertEquals(reactorId, readReceipts.receipts.first().userId)
     }
 
     @Test

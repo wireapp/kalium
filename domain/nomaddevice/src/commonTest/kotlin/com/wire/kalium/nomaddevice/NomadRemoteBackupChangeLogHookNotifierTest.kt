@@ -34,6 +34,8 @@ import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.ChangeLogEntry
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -383,6 +385,16 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         }
 
         override suspend fun getPendingChanges(): List<ChangeLogEntry> = emptyList()
+
+        override suspend fun getLastPendingChanges(limit: Long): List<ChangeLogEntry> = emptyList()
+
+        override fun observeLastPendingChanges(limit: Long): Flow<List<ChangeLogEntry>> = flowOf(emptyList())
+
+        override suspend fun getLastPendingChangesWithPayload(limit: Long): List<com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent> =
+            emptyList()
+
+        override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent>> =
+            flowOf(emptyList())
     }
 
     private companion object {
