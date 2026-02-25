@@ -2767,6 +2767,8 @@ public class UserSessionScope internal constructor(
         }
 
         launch {
+            // todo (ym):
+            //  temporary solution to trigger crypto-db backup. Later moved/hooked with callbacks mechanism on state mutation + debounce
             backup.backupCryptoDB()
         }
     }
