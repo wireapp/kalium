@@ -9,6 +9,7 @@ Deploys `quay.io/wire/testservice` as a Docker container on `kalium.qa.zinfra.io
 ansible-playbook -i hosts.ini kalium.yml --diff -u firstname.lastname
 
 # Deploy a new container version (on the host)
+ssh firstname.lastname@kalium.qa.zinfra.io
 cd /opt/kalium-testservice
 sudo docker compose down; sudo docker compose pull; sudo docker compose up -d --remove-orphans
 ```
