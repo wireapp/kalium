@@ -18,15 +18,29 @@
 
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.session.SessionRepository
 
-public class SessionScope internal constructor(
+/**
+ * This use case will return all sessions, including those that are invalid
+ * (e.g. soft-logged-out accounts). Useful for displaying sessions on a login
+ * screen where re-authentication is possible.
+ *
+ * @see [GetAllSessionsResult.Success.sessions]
+ */
+public class GetAllSessionsUseCase internal constructor(
     private val sessionRepository: SessionRepository
 ) {
-    public val allSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    public val allSessionsIncludingInvalid: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
-    public val allSessionsFlow: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
-    public val currentSession: CurrentSessionUseCase get() = CurrentSessionUseCase(sessionRepository)
-    public val currentSessionFlow: CurrentSessionFlowUseCase get() = CurrentSessionFlowUseCase(sessionRepository)
-    public val updateCurrentSession: UpdateCurrentSessionUseCase get() = UpdateCurrentSessionUseCase(sessionRepository)
+    public suspend operator fun invoke(): GetAllSessionsResult = sessionRepository.allSessions().fold(
+        {
+            when (it) {
+                StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound
+                is StorageFailure.Generic -> GetAllSessionsResult.Failure.Generic(it)
+            }
+        },
+        {
+            GetAllSessionsResult.Success(it)
+        }
+    )
 }
