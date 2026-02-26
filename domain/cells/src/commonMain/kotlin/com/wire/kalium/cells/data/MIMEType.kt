@@ -18,13 +18,15 @@
 package com.wire.kalium.cells.data
 
 public enum class MIMEType(public val value: String) {
+    PDF("application/pdf"),
     DOCUMENT("*word*"),
+    IMAGE("image/*"),
     EXCEL("*spreadsheet*|*excel*"),
     PRESENTATION("*presentation*|*powerpoint*"),
-    PDF("application/pdf"),
-    IMAGES("image/*"),
-    VIDEOS("video/*"),
-    AUDIOS("audio/*"),
+    VIDEO("video/*"),
+    AUDIO("audio/*"),
+    ARCHIVE("application/zip|application/vnd.rar|application/x-7z-compressed|application/x-tar|application/gzip|application/x-bzip2"),
+    TEXT("*text/plain*"),
 }
 
 public fun MIMEType.expandTerms(): List<String> =
