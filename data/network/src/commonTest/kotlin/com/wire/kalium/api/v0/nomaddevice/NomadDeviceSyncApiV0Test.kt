@@ -69,8 +69,8 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             events = listOf(
                 NomadMessageEvent.LastReadEvent(
                     lastRead = listOf(
-                        LastRead(conversationId = "conv_1", lastRead = "2026-02-25T10:15:00Z"),
-                        LastRead(conversationId = "conv_2", lastRead = "2026-02-25T10:20:00Z")
+                        LastRead(conversationId = "conv_1", lastReadTimestamp = 1772014500000),
+                        LastRead(conversationId = "conv_2", lastReadTimestamp = 1772014800000)
                     )
                 )
             )
@@ -85,11 +85,11 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                   "lastRead": [
                     {
                       "conversation_id": "conv_1",
-                      "last_read": "2026-02-25T10:15:00Z"
+                      "last_read": 1772014500000
                     },
                     {
                       "conversation_id": "conv_2",
-                      "last_read": "2026-02-25T10:20:00Z"
+                      "last_read": 1772014800000
                     }
                   ]
                 }

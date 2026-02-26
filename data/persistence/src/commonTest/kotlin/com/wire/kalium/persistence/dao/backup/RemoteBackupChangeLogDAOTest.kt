@@ -375,11 +375,11 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             listOf(
                 ConversationLastReadSyncEntity(
                     conversationId = CONVERSATION_ID_1,
-                    lastReadDate = conv1LastRead
+                    lastReadTimestampMs = conv1LastRead.toEpochMilliseconds()
                 ),
                 ConversationLastReadSyncEntity(
                     conversationId = CONVERSATION_ID_2,
-                    lastReadDate = conv2LastRead
+                    lastReadTimestampMs = conv2LastRead.toEpochMilliseconds()
                 ),
             ),
             result
