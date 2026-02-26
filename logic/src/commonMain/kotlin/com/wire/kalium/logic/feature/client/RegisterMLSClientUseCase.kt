@@ -52,6 +52,7 @@ internal interface RegisterMLSClientUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }
 
+@Suppress("LongParameterList")
 internal class RegisterMLSClientUseCaseImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val clientRepository: ClientRepository,
