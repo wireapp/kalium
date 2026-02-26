@@ -26,6 +26,7 @@ data class Instance(
     val clientId: String?,
     val instanceId: String,
     val name: String?,
+    val isE2EIRequired: Boolean,
     @JsonIgnore
     val coreLogic: CoreLogic,
     @JsonIgnore

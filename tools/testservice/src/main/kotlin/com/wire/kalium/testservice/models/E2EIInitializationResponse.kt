@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2026 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,19 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.nomaddevice
+package com.wire.kalium.testservice.models
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
-import com.wire.kalium.messaging.hooks.PersistedMessageData
-
-/**
- * Nomad-side hook implementation that can be registered into CoreLogic.
- */
-public class NomadPersistMessageHookNotifier(
-    private val onPersistedMessage: suspend (PersistedMessageData, UserId) -> Unit
-) : PersistMessageHookNotifier {
-    public override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
-        onPersistedMessage(message, selfUserId)
-    }
-}
+data class E2EIInitializationResponse(
+    val target: String,
+    val oAuthClaimsJson: String
+)
