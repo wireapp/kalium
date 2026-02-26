@@ -43,6 +43,8 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapE2EIRequest
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
@@ -109,6 +111,8 @@ internal class E2EIRepositoryImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userConfigRepository: UserConfigRepository,
+    private val selfUserId: UserId,
+    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     private val acmeMapper: AcmeMapper = MapperProvider.acmeMapper()
 ) : E2EIRepository {
 
@@ -133,6 +137,7 @@ internal class E2EIRepositoryImpl(
                         wrapE2EIRequest {
                             coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
                         }.onSuccess {
+                            cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
                             userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
                         }
                     })
@@ -379,6 +384,8 @@ internal class E2EIRepositoryImpl(
                 data.foldToEitherWhileRight(Unit) { item, _ ->
                     wrapE2EIRequest {
                         coreCrypto.registerIntermediateCa(item)
+                    }.onSuccess {
+                        cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
                     }
                 }
             })
