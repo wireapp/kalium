@@ -142,9 +142,8 @@ internal class EI2EIClientProviderImpl(
                 teamId = selfUser.teamId?.value,
                 expiry = defaultE2EIExpiry,
                 defaultCipherSuite = defaultCipherSuite.toCrypto()
-            ).also {
-                cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
-            }
+            )
+            cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
             e2EIClient = newE2EIClient
             Either.Right(newE2EIClient)
         })

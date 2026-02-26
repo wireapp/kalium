@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
@@ -44,6 +45,7 @@ internal class ObservableMLSConversationRepository(
     private val hookNotifier: CryptoStateChangeHookNotifier
 ) : MLSConversationRepository {
 
+    // todo(ym). Probably this should also trigger, but maybe too expensive? or we don't care :)
     override suspend fun decryptMessage(
         mlsContext: MlsCoreCryptoContext,
         message: ByteArray,

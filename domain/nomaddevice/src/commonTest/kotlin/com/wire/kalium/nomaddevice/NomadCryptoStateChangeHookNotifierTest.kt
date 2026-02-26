@@ -48,6 +48,26 @@ class NomadCryptoStateChangeHookNotifierTest {
     }
 
     @Test
+    fun givenMultipleSignals_forSameUser_whenDebounced_thenBackupInvokedOnce() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val notifier = NomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { calls += it },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        notifier.onCryptoStateChanged(USER_ID)
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+    }
+
+    @Test
     fun givenMultipleSignals_forDifferentUsers_whenDebounced_thenBackupInvokedPerUser() = runTest {
         val scheduler = TestCoroutineScheduler()
         val scope = TestScope(scheduler)

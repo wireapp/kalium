@@ -137,8 +137,8 @@ internal class E2EIRepositoryImpl(
                         wrapE2EIRequest {
                             coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
                         }.onSuccess {
-                            cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
                             userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
+                            cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
                         }
                     })
                 })
