@@ -126,7 +126,25 @@ class ProteusClientCoreCryptoImpl private constructor(
             message: ByteArray,
             handleDecryptedMessage: suspend (decryptedMessage: ByteArray) -> T
         ): T {
-            val decrypted = coreContext.proteusDecryptSafe(sessionId.value, message)
+            val decrypted = try {
+                coreContext.proteusDecryptSafe(sessionId.value, message)
+            } catch (e: ProteusExceptionNative) {
+                val mappedError = mapProteusException(e)
+                throw ProteusException(
+                    message = e.message,
+                    code = mappedError.code,
+                    intCode = mappedError.intCode,
+                    cause = e
+                )
+            } catch (e: CoreCryptoException.Proteus) {
+                val mappedError = mapProteusException(e.exception)
+                throw ProteusException(
+                    message = e.message,
+                    code = mappedError.code,
+                    intCode = mappedError.intCode,
+                    cause = e
+                )
+            }
             return handleDecryptedMessage(decrypted)
         }
     }
@@ -173,12 +191,14 @@ class ProteusClientCoreCryptoImpl private constructor(
                 intCode = mappedError.intCode,
                 cause = e
             )
+        } catch (e: ProteusException) {
+            throw e
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             kaliumLogger.e(
                 "Unexpected non-Proteus exception in " +
-                    "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e"
+                        "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e"
             )
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }
@@ -229,10 +249,12 @@ class ProteusClientCoreCryptoImpl private constructor(
                     intCode = mappedError.intCode,
                     cause = e.cause
                 )
+            } catch (e: ProteusException) {
+                throw e
             } catch (e: Exception) {
                 kaliumLogger.e(
                     "Unexpected non-Proteus exception during " +
-                        "ProteusClientCoreCrypto initialization: ${e::class.simpleName}: $e"
+                            "ProteusClientCoreCrypto initialization: ${e::class.simpleName}: $e"
                 )
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e.cause)
             }
@@ -267,8 +289,11 @@ class ProteusClientCoreCryptoImpl private constructor(
 
                 is ProteusExceptionNative.Other -> {
                     val errorCode = proteusException.errorCode.toInt()
+                    val mappedCode = ProteusException.fromProteusCode(errorCode).takeUnless {
+                        it == ProteusException.Code.UNKNOWN_ERROR
+                    } ?: ProteusException.fromNativeCode(errorCode)
                     MappedProteusError(
-                        code = ProteusException.fromProteusCode(errorCode),
+                        code = mappedCode,
                         intCode = errorCode
                     )
                 }
