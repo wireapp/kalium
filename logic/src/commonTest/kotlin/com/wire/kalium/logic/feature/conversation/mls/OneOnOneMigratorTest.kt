@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSOneOnOneConversationResolverArrangementImpl
@@ -40,6 +41,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -302,7 +304,7 @@ class OneOnOneMigratorTest {
             .shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.updateConversationModifiedDate(eq(resolvedConversationId), eq(lastModified))
+            arrangement.conversationRepository.updateConversationModifiedDateToMaxOfSources(eq(resolvedConversationId), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -336,7 +338,11 @@ class OneOnOneMigratorTest {
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                coEvery { conversationRepository.updateConversationModifiedDateToMaxOfSources(any(), any()) } returns Unit.right()
+                block()
+            }
+
             this@Arrangement to OneOnOneMigratorImpl(
                 getResolvedMLSOneOnOne = mlsOneOnOneConversationResolver,
                 conversationGroupRepository = conversationGroupRepository,
