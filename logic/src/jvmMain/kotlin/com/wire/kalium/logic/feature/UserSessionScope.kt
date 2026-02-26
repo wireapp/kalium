@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -50,6 +51,7 @@ internal fun UserSessionScope(
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
     persistMessageHookNotifier: PersistMessageHookNotifier,
+    cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     userStorageProvider: UserStorageProvider,
     userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
@@ -72,6 +74,7 @@ internal fun UserSessionScope(
         dataStoragePaths,
         kaliumConfigs,
         persistMessageHookNotifier,
+        cryptoStateChangeHookNotifier,
         userSessionScopeProvider,
         userStorageProvider,
         userAuthenticatedNetworkProvider,
