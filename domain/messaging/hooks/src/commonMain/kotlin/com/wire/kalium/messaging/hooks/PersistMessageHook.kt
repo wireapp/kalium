@@ -46,9 +46,9 @@ public interface PersistMessageCallback {
 }
 
 public fun interface PersistMessageHookNotifier {
-    public fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId)
+    public suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId)
 }
 
 public object NoOpPersistMessageHookNotifier : PersistMessageHookNotifier {
-    override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) = Unit
+    override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) = Unit
 }

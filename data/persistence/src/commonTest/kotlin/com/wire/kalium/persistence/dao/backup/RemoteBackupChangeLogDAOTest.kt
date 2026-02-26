@@ -42,7 +42,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenNoEntries_whenLoggingMessageUpsert_thenEntryIsStored() = runTest(dispatcher) {
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
 
         val result = dao.getPendingChanges()
 
@@ -52,18 +52,22 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             assertEquals(MESSAGE_NONCE_1, messageId)
             assertEquals(ChangeLogEventType.MESSAGE_UPSERT, eventType)
             assertEquals(TIMESTAMP_1, timestampMs)
+            assertEquals(MESSAGE_TIMESTAMP_1, messageTimestampMs)
         }
     }
 
     @Test
     fun givenExistingMessageUpsert_whenLoggingAgain_thenTimestampIsUpdated() = runTest(dispatcher) {
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_2)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_2, MESSAGE_TIMESTAMP_2)
 
         val result = dao.getPendingChanges()
 
         assertEquals(1, result.size)
-        assertEquals(TIMESTAMP_2, result.first().timestampMs)
+        with(result.first()) {
+            assertEquals(TIMESTAMP_2, timestampMs)
+            assertEquals(MESSAGE_TIMESTAMP_2, messageTimestampMs)
+        }
     }
 
     @Test
@@ -78,6 +82,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             assertEquals(MESSAGE_NONCE_1, messageId)
             assertEquals(ChangeLogEventType.MESSAGE_DELETE, eventType)
             assertEquals(TIMESTAMP_1, timestampMs)
+            assertEquals(TIMESTAMP_1, messageTimestampMs)
         }
     }
 
@@ -89,7 +94,10 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         val result = dao.getPendingChanges()
 
         assertEquals(1, result.size)
-        assertEquals(TIMESTAMP_2, result.first().timestampMs)
+        with(result.first()) {
+            assertEquals(TIMESTAMP_2, timestampMs)
+            assertEquals(TIMESTAMP_2, messageTimestampMs)
+        }
     }
 
     @Test
@@ -104,6 +112,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             assertEquals(MESSAGE_NONCE_1, messageId)
             assertEquals(ChangeLogEventType.REACTIONS_SYNC, eventType)
             assertEquals(TIMESTAMP_1, timestampMs)
+            assertEquals(TIMESTAMP_1, messageTimestampMs)
         }
     }
 
@@ -115,7 +124,10 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         val result = dao.getPendingChanges()
 
         assertEquals(1, result.size)
-        assertEquals(TIMESTAMP_2, result.first().timestampMs)
+        with(result.first()) {
+            assertEquals(TIMESTAMP_2, timestampMs)
+            assertEquals(TIMESTAMP_2, messageTimestampMs)
+        }
     }
 
     @Test
@@ -130,6 +142,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             assertEquals(MESSAGE_NONCE_1, messageId)
             assertEquals(ChangeLogEventType.READ_RECEIPT_SYNC, eventType)
             assertEquals(TIMESTAMP_1, timestampMs)
+            assertEquals(TIMESTAMP_1, messageTimestampMs)
         }
     }
 
@@ -141,7 +154,10 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         val result = dao.getPendingChanges()
 
         assertEquals(1, result.size)
-        assertEquals(TIMESTAMP_2, result.first().timestampMs)
+        with(result.first()) {
+            assertEquals(TIMESTAMP_2, timestampMs)
+            assertEquals(TIMESTAMP_2, messageTimestampMs)
+        }
     }
 
     @Test
@@ -156,6 +172,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             assertNull(messageId)
             assertEquals(ChangeLogEventType.CONVERSATION_DELETE, eventType)
             assertEquals(TIMESTAMP_1, timestampMs)
+            assertEquals(TIMESTAMP_1, messageTimestampMs)
         }
     }
 
@@ -197,6 +214,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
             assertNull(messageId)
             assertEquals(ChangeLogEventType.CONVERSATION_CLEAR, eventType)
             assertEquals(TIMESTAMP_1, timestampMs)
+            assertEquals(TIMESTAMP_1, messageTimestampMs)
         }
     }
 
@@ -235,7 +253,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenMultipleEntries_whenGettingPendingChanges_thenEntriesAreOrderedByTimestamp() = runTest(dispatcher) {
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_3)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_3, MESSAGE_TIMESTAMP_3)
         dao.logMessageDelete(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_1)
         dao.logReactionsSync(CONVERSATION_ID_2, MESSAGE_NONCE_1, TIMESTAMP_2)
 
@@ -249,8 +267,8 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenSameMessageInDifferentConversations_whenLogging_thenBothEntriesAreStored() = runTest(dispatcher) {
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
-        dao.logMessageUpsert(CONVERSATION_ID_2, MESSAGE_NONCE_1, TIMESTAMP_2)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_2, MESSAGE_NONCE_1, TIMESTAMP_2, MESSAGE_TIMESTAMP_2)
 
         val result = dao.getPendingChanges()
 
@@ -261,7 +279,7 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenSameMessageWithDifferentEventTypes_whenLogging_thenAllEntriesAreStored() = runTest(dispatcher) {
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
         dao.logMessageDelete(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_2)
         dao.logReactionsSync(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_3)
 
@@ -275,14 +293,45 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenDifferentMessagesInSameConversation_whenLogging_thenAllEntriesAreStored() = runTest(dispatcher) {
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1)
-        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_2)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_2, MESSAGE_TIMESTAMP_2)
 
         val result = dao.getPendingChanges()
 
         assertEquals(2, result.size)
         assertTrue(result.any { it.messageId == MESSAGE_NONCE_1 })
         assertTrue(result.any { it.messageId == MESSAGE_NONCE_2 })
+    }
+
+    @Test
+    fun givenMessageAndEventTimestampsAreTied_whenGettingPendingChanges_thenOrderingIsDeterministic() = runTest(dispatcher) {
+        dao.logMessageUpsert(CONVERSATION_ID_2, MESSAGE_NONCE_2, TIMESTAMP_1, TIMESTAMP_1)
+        dao.logMessageDelete(CONVERSATION_ID_2, MESSAGE_NONCE_2, TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_2, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_2)
+
+        val result = dao.getPendingChanges()
+        assertEquals(
+            listOf(
+                Triple(CONVERSATION_ID_1, MESSAGE_NONCE_2, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_2, MESSAGE_NONCE_1, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_1, MESSAGE_NONCE_1, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_2, MESSAGE_NONCE_2, ChangeLogEventType.MESSAGE_UPSERT),
+                Triple(CONVERSATION_ID_2, MESSAGE_NONCE_2, ChangeLogEventType.MESSAGE_DELETE),
+            ),
+            result.map { Triple(it.conversationId, it.messageId, it.eventType) }
+        )
+        assertEquals(
+            listOf(
+                Pair(TIMESTAMP_1, MESSAGE_TIMESTAMP_1),
+                Pair(TIMESTAMP_1, MESSAGE_TIMESTAMP_1),
+                Pair(TIMESTAMP_1, MESSAGE_TIMESTAMP_2),
+                Pair(TIMESTAMP_1, TIMESTAMP_1),
+                Pair(TIMESTAMP_1, TIMESTAMP_1),
+            ),
+            result.map { Pair(it.timestampMs, it.messageTimestampMs) }
+        )
     }
 
     private companion object {
@@ -293,5 +342,9 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         const val TIMESTAMP_1 = 1000L
         const val TIMESTAMP_2 = 2000L
         const val TIMESTAMP_3 = 3000L
+        const val MESSAGE_TIMESTAMP_1 = 100L
+        const val MESSAGE_TIMESTAMP_2 = 200L
+        const val MESSAGE_TIMESTAMP_3 = 300L
     }
+
 }

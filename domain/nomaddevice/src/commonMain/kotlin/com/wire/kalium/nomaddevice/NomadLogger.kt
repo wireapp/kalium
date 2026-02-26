@@ -18,17 +18,6 @@
 
 package com.wire.kalium.nomaddevice
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
-import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.common.logger.kaliumLogger
 
-/**
- * Nomad-side hook implementation that can be registered into CoreLogic.
- */
-public class NomadPersistMessageHookNotifier(
-    private val onPersistedMessage: suspend (PersistedMessageData, UserId) -> Unit
-) : PersistMessageHookNotifier {
-    public override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
-        onPersistedMessage(message, selfUserId)
-    }
-}
+internal val nomadLogger = kaliumLogger.withTextTag("NomadDevice")
