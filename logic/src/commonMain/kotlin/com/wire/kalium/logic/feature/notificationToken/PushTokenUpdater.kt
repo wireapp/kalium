@@ -57,7 +57,7 @@ internal class PushTokenUpdater(
             .filterNotNull()
             .map { clientId ->
                 if (!shouldTryRegisteringPushToken()) {
-                    kaliumLogger.i("$TAG Native push is disabled, skipping token registration")
+                    kaliumLogger.i("$TAG Server does not support native push, skipping token registration")
                     pushTokenRepository.setUpdateFirebaseTokenFlag(false)
                     return@map Either.Left(NetworkFailure.FeatureNotSupported)
                 }
@@ -90,8 +90,11 @@ internal class PushTokenUpdater(
     }
 
     private suspend fun shouldTryRegisteringPushToken(): Boolean =
-        sessionRepository.isNativePushEnabledForUser(userId).getOrElse {
-            kaliumLogger.i("$TAG Failed to read native push status, retrying token registration")
+        sessionRepository.isNativePushSupportedByServer(userId).getOrElse {
+            kaliumLogger.e(
+                "$TAG Failed to read native push server support status, retrying token registration. " +
+                        "If this persists, the app may loop indefinitely on app-not-found errors: $it"
+            )
             true
         }
 
@@ -110,13 +113,22 @@ internal class PushTokenUpdater(
         // If we disabled push first and crashed, the user would have no notifications
         // and `shouldTryRegisteringPushToken()` would skip re-registration on next launch.
         sessionRepository.updatePersistentWebSocketStatus(userId, true).onFailure {
-            kaliumLogger.w("$TAG Failed to force persistent websocket: $it")
+            kaliumLogger.e(
+                "$TAG Failed to force persistent websocket: $it. " +
+                        "User may not receive notifications until this is resolved."
+            )
         }
-        sessionRepository.setNativePushEnabledForUser(userId, false).onFailure {
-            kaliumLogger.w("$TAG Failed to persist native push disabled flag: $it")
+        sessionRepository.setNativePushSupportedByServer(userId, false).onFailure {
+            kaliumLogger.e(
+                "$TAG Failed to persist native push unsupported flag: $it. " +
+                        "This may cause repeated app-not-found registration attempts on each app launch."
+            )
         }
         pushTokenRepository.setUpdateFirebaseTokenFlag(false).onFailure {
-            kaliumLogger.w("$TAG Failed to disable push token retry flag: $it")
+            kaliumLogger.e(
+                "$TAG Failed to disable push token retry flag: $it. " +
+                        "Push token registration may retry indefinitely."
+            )
         }
     }
 

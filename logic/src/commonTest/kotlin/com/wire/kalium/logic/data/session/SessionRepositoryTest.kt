@@ -42,40 +42,40 @@ class SessionRepositoryTest {
     fun givenNativePushValue_whenPersistingFlag_thenValueIsWrittenToServerConfiguration() = runTest {
         val (arrangement, sessionRepository) = Arrangement().arrange()
 
-        sessionRepository.setNativePushEnabledForUser(TEST_USER_ID, false).shouldSucceed()
+        sessionRepository.setNativePushSupportedByServer(TEST_USER_ID, false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigurationDAO.updateNativePushEnabledByUser(eq(TEST_USER_ID.toDao()), eq(false))
+            arrangement.serverConfigurationDAO.setNativePushSupportedByServer(eq(TEST_USER_ID.toDao()), eq(false))
         }
     }
 
     @Test
     fun givenNativePushDisabledOnServerConfig_whenReadingFlag_thenDisabledIsReturned() = runTest {
         val (arrangement, sessionRepository) = Arrangement()
-            .withNativePushEnabledByUser(false)
+            .withNativePushSupportedByServer(false)
             .arrange()
 
-        sessionRepository.isNativePushEnabledForUser(TEST_USER_ID).shouldSucceed {
+        sessionRepository.isNativePushSupportedByServer(TEST_USER_ID).shouldSucceed {
             assertEquals(false, it)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigurationDAO.nativePushEnabledByUser(eq(TEST_USER_ID.toDao()))
+            arrangement.serverConfigurationDAO.isNativePushSupportedByServer(eq(TEST_USER_ID.toDao()))
         }
     }
 
     @Test
     fun givenNoServerConfigForUser_whenReadingFlag_thenNativePushDefaultsToEnabled() = runTest {
         val (arrangement, sessionRepository) = Arrangement()
-            .withNativePushEnabledByUser(null)
+            .withNativePushSupportedByServer(null)
             .arrange()
 
-        sessionRepository.isNativePushEnabledForUser(TEST_USER_ID).shouldSucceed {
+        sessionRepository.isNativePushSupportedByServer(TEST_USER_ID).shouldSucceed {
             assertEquals(true, it)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.serverConfigurationDAO.nativePushEnabledByUser(eq(TEST_USER_ID.toDao()))
+            arrangement.serverConfigurationDAO.isNativePushSupportedByServer(eq(TEST_USER_ID.toDao()))
         }
     }
 
@@ -90,10 +90,10 @@ class SessionRepositoryTest {
             serverConfigDAO = serverConfigurationDAO
         )
 
-        suspend fun withNativePushEnabledByUser(enabled: Boolean?) = apply {
+        suspend fun withNativePushSupportedByServer(supported: Boolean?) = apply {
             everySuspend {
-                serverConfigurationDAO.nativePushEnabledByUser(any())
-            } returns enabled
+                serverConfigurationDAO.isNativePushSupportedByServer(any())
+            } returns supported
         }
 
         suspend fun arrange() = this to sessionRepository

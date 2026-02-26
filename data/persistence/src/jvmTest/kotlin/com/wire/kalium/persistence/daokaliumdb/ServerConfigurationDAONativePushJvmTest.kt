@@ -65,7 +65,7 @@ class ServerConfigurationDAONativePushJvmTest {
         insertConfig(config)
         insertAccount(userId, config.id)
 
-        val result = globalDatabaseBuilder.serverConfigurationDAO.nativePushEnabledByUser(userId)
+        val result = globalDatabaseBuilder.serverConfigurationDAO.isNativePushSupportedByServer(userId)
 
         assertEquals(true, result)
     }
@@ -77,8 +77,8 @@ class ServerConfigurationDAONativePushJvmTest {
         insertConfig(config)
         insertAccount(userId, config.id)
 
-        globalDatabaseBuilder.serverConfigurationDAO.updateNativePushEnabledByUser(userId, false)
-        val result = globalDatabaseBuilder.serverConfigurationDAO.nativePushEnabledByUser(userId)
+        globalDatabaseBuilder.serverConfigurationDAO.setNativePushSupportedByServer(userId, false)
+        val result = globalDatabaseBuilder.serverConfigurationDAO.isNativePushSupportedByServer(userId)
 
         assertEquals(false, result)
     }

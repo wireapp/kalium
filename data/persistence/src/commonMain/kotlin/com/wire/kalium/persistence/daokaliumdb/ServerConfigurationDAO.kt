@@ -53,7 +53,7 @@ internal object ServerConfigMapper {
         apiProxyNeedsAuthentication: Boolean?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?,
-        nativePushEnabled: Boolean,
+        isNativePushSupportedByServer: Boolean,
     ): ServerConfigEntity = ServerConfigEntity(
         id,
         ServerConfigEntity.Links(
@@ -97,7 +97,7 @@ internal object ServerConfigMapper {
         apiProxyNeedsAuthentication: Boolean?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?,
-        nativePushEnabled: Boolean?,
+        isNativePushSupportedByServer: Boolean?,
         id_: QualifiedIDEntity,
     ): ServerConfigWithUserIdEntity = ServerConfigWithUserIdEntity(
         userId = id_,
@@ -118,7 +118,7 @@ internal object ServerConfigMapper {
             apiProxyNeedsAuthentication = apiProxyNeedsAuthentication,
             apiProxyPort = apiProxyPort,
             lastBlackListCheck = lastBlackListCheck,
-            nativePushEnabled = nativePushEnabled!!,
+            isNativePushSupportedByServer = isNativePushSupportedByServer ?: true,
         ),
     )
 }
@@ -136,8 +136,8 @@ interface ServerConfigurationDAO {
     suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
     suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
-    suspend fun updateNativePushEnabledByUser(userId: UserIDEntity, enabled: Boolean)
-    suspend fun nativePushEnabledByUser(userId: UserIDEntity): Boolean?
+    suspend fun setNativePushSupportedByServer(userId: UserIDEntity, supported: Boolean)
+    suspend fun isNativePushSupportedByServer(userId: UserIDEntity): Boolean?
     suspend fun teamUrlForUser(userId: UserIDEntity): String?
     suspend fun setFederationToTrue(id: String)
     suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
@@ -249,14 +249,14 @@ internal class ServerConfigurationDAOImpl internal constructor(
         queries.getByUser(userId, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
     }
 
-    override suspend fun updateNativePushEnabledByUser(userId: UserIDEntity, enabled: Boolean) {
+    override suspend fun setNativePushSupportedByServer(userId: UserIDEntity, supported: Boolean) {
         withContext(queriesContext) {
-            queries.updateNativePushEnabledByUser(enabled, userId)
+            queries.updateNativePushSupportedByServer(supported, userId)
         }
     }
 
-    override suspend fun nativePushEnabledByUser(userId: UserIDEntity): Boolean? = withContext(queriesContext) {
-        queries.getNativePushEnabledByUser(userId).executeAsOneOrNull()
+    override suspend fun isNativePushSupportedByServer(userId: UserIDEntity): Boolean? = withContext(queriesContext) {
+        queries.isNativePushSupportedByServer(userId).executeAsOneOrNull()
     }
 
     override suspend fun setFederationToTrue(id: String) {

@@ -112,7 +112,7 @@ class PushTokenUpdaterTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(false)
         }
     }
 
@@ -138,15 +138,15 @@ class PushTokenUpdaterTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.registerToken(
-                eq(pushTokenRequestBody.senderId),
-                eq(pushTokenRequestBody.client),
-                eq(pushTokenRequestBody.token),
-                eq(pushTokenRequestBody.transport),
+                pushTokenRequestBody.senderId,
+                pushTokenRequestBody.client,
+                pushTokenRequestBody.token,
+                pushTokenRequestBody.transport,
             )
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(false)
         }
     }
 
@@ -174,9 +174,9 @@ class PushTokenUpdaterTest {
         // If the process dies after disabling push but before enabling WebSocket,
         // the user would have no notification channel and no recovery path.
         verifySuspend(VerifyMode.order) {
-            arrangement.sessionRepository.updatePersistentWebSocketStatus(eq(MOCK_USER_ID), eq(true))
-            arrangement.sessionRepository.setNativePushEnabledForUser(eq(MOCK_USER_ID), eq(false))
-            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(false))
+            arrangement.sessionRepository.updatePersistentWebSocketStatus(MOCK_USER_ID, true)
+            arrangement.sessionRepository.setNativePushSupportedByServer(MOCK_USER_ID, false)
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(false)
         }
     }
 
@@ -205,7 +205,7 @@ class PushTokenUpdaterTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.sessionRepository.setNativePushEnabledForUser(any(), any())
+            arrangement.sessionRepository.setNativePushSupportedByServer(any(), any())
         }
     }
 
@@ -238,27 +238,27 @@ class PushTokenUpdaterTest {
             MOCK_USER_ID
         )
 
-        suspend fun withCurrentClientId(clientId: ClientId?) = apply {
+        fun withCurrentClientId(clientId: ClientId?) = apply {
             everySuspend {
                 clientRepository.observeCurrentClientId()
             } returns flowOf(clientId)
         }
 
-        suspend fun withRegisterTokenResult(result: Either<NetworkFailure, Unit>) = apply {
+        fun withRegisterTokenResult(result: Either<NetworkFailure, Unit>) = apply {
             everySuspend {
                 clientRepository.registerToken(any(), any(), any(), any())
             } returns result
         }
 
-        suspend fun withUpdateFirebaseTokenFlag(result: Boolean) = apply {
+        fun withUpdateFirebaseTokenFlag(result: Boolean) = apply {
             everySuspend {
                 pushTokenRepository.observeUpdateFirebaseTokenFlag()
             } returns flowOf(result)
         }
 
-        suspend fun withServerNativePushEnabled(enabled: Boolean) = apply {
+        fun withServerNativePushEnabled(enabled: Boolean) = apply {
             everySuspend {
-                sessionRepository.isNativePushEnabledForUser(any())
+                sessionRepository.isNativePushSupportedByServer(any())
             } returns Either.Right(enabled)
         }
 
@@ -268,12 +268,12 @@ class PushTokenUpdaterTest {
             } returns result
         }
 
-        suspend fun arrange() = this to pushTokenUpdater.also {
+        fun arrange() = this to pushTokenUpdater.also {
             everySuspend {
                 pushTokenRepository.setUpdateFirebaseTokenFlag(any())
             } returns Either.Right(Unit)
             everySuspend {
-                sessionRepository.setNativePushEnabledForUser(any(), any())
+                sessionRepository.setNativePushSupportedByServer(any(), any())
             } returns Either.Right(Unit)
             everySuspend {
                 sessionRepository.updatePersistentWebSocketStatus(any(), any())
