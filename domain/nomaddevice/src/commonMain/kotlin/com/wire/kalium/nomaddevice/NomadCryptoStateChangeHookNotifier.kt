@@ -27,6 +27,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/**
+ * Nomad implementation of [CryptoStateChangeHookNotifier] that debounces calls to [backupForUser] when crypto state changes for a user.
+ * Handles multiple rapid calls for the same user by cancelling the previous job and starting a new one, ensuring that [backupForUser]
+ * is called only once after the last change within the debounce period.
+ */
 public class NomadCryptoStateChangeHookNotifier(
     private val scope: CoroutineScope,
     private val backupForUser: suspend (UserId) -> Unit,
