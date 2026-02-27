@@ -85,14 +85,13 @@ sealed interface NomadMessageEvent {
     @SerialName("last_read")
     data class LastReadEvent(
         @SerialName("last_read")
-         val lastRead: List<LastRead>
+        val lastRead: List<LastRead>
     ) : NomadMessageEvent {
         init {
             require(lastRead.isNotEmpty()) { "last_read must not be empty." }
         }
     }
 }
-
 
 @Serializable
 data class LastRead(
