@@ -21,6 +21,11 @@ package com.wire.kalium.nomaddevice
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.LastRead
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
+import com.wire.kalium.network.api.authenticated.nomaddevice.ReadReceiptEntry
+import com.wire.kalium.network.api.authenticated.nomaddevice.ReadReceiptsPayload
+import com.wire.kalium.network.api.authenticated.nomaddevice.ReactionByUser
+import com.wire.kalium.network.api.authenticated.nomaddevice.ReactionsPayload
+import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
@@ -44,10 +49,6 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMultipart
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceText
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceVideoMetaData
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import pbandk.ByteArr
 import pbandk.encodeToByteArray
 import kotlin.io.encoding.Base64
@@ -77,13 +78,13 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         is ChangeLogSyncEvent.ReactionsSync -> NomadMessageEvent.UpsertMessageStatusEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),
-            reaction = reactions.toReactionJsonElement()
+            reaction = reactions.toReactionPayload()
         )
 
         is ChangeLogSyncEvent.ReadReceiptSync -> NomadMessageEvent.UpsertMessageStatusEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),
-            readReceipt = readReceipts.toReadReceiptJsonElement()
+            readReceipt = readReceipts.toReadReceiptsPayload()
         )
 
         is ChangeLogSyncEvent.ConversationDelete -> NomadMessageEvent.WipeConversationEvent(
@@ -228,43 +229,27 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         is SyncableMessagePayloadEntity.Unsupported -> null
     }
 
-    private fun MessageReactionsSyncEntity.toReactionJsonElement() = buildJsonObject {
-        put(
-            "reactions_by_user",
-            buildJsonArray {
-                reactionsByUser.forEach { reactionByUser ->
-                    add(reactionByUser.toJson())
-                }
-            }
-        )
-    }
+    private fun MessageReactionsSyncEntity.toReactionPayload() = ReactionsPayload(
+        reactionsByUser = reactionsByUser.map { it.toReactionByUser() }
+    )
 
-    private fun UserReactionsSyncEntity.toJson() = buildJsonObject {
-        put("user_id", userId.toJson())
-        put("emojis", buildJsonArray {
-            emojis.sorted().forEach { add(JsonPrimitive(it)) }
-        })
-    }
+    private fun UserReactionsSyncEntity.toReactionByUser() = ReactionByUser(
+        userId = userId.toApiQualifiedId(),
+        emojis = emojis.sorted()
+    )
 
-    private fun MessageReadReceiptsSyncEntity.toReadReceiptJsonElement() = buildJsonObject {
-        put("read_receipts", buildJsonArray {
-            receipts.forEach { receipt ->
-                add(receipt.toJson())
-            }
-        })
-    }
+    private fun MessageReadReceiptsSyncEntity.toReadReceiptsPayload() = ReadReceiptsPayload(
+        readReceipts = receipts.map { it.toReadReceiptEntry() }
+    )
 
-    private fun UserReadReceiptSyncEntity.toJson() = buildJsonObject {
-        put("user_id", userId.toJson())
-        put("date", date.toString())
-    }
+    private fun UserReadReceiptSyncEntity.toReadReceiptEntry() = ReadReceiptEntry(
+        userId = userId.toApiQualifiedId(),
+        date = date.toString()
+    )
 
     private fun QualifiedIDEntity.toApiConversation(): Conversation = Conversation(id = value, domain = domain)
 
-    private fun QualifiedIDEntity.toJson() = buildJsonObject {
-        put("id", value)
-        put("domain", domain)
-    }
+    private fun QualifiedIDEntity.toApiQualifiedId() = QualifiedID(value = value, domain = domain)
 
     private fun QualifiedIDEntity.toNomadDeviceQualifiedId(): NomadDeviceQualifiedId =
         NomadDeviceQualifiedId(value = value, domain = domain)
