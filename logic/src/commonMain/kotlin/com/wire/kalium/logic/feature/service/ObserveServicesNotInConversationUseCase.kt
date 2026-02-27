@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
@@ -32,45 +33,38 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
- * This use case returns all services currently in the database.
- * In case it is empty, the repository will request the list from the API.
+ * This use case returns services that are currently in the database and not in the Conversation.
  *
  * @return Flow<List<ServiceDetails>>
  */
-public interface ObserveAllServicesUseCase {
-
-    public suspend operator fun invoke(): Flow<List<ServiceDetails>>
+public interface ObserveServicesNotInConversationUseCase {
+    public suspend operator fun invoke(conversationId: ConversationId): Flow<List<ServiceDetails>>
 }
 
-internal class ObserveAllServicesUseCaseImpl internal constructor(
+internal class ObserveServicesNotInConversationUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository,
     private val teamRepository: TeamRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider
-) : ObserveAllServicesUseCase {
+) : ObserveServicesNotInConversationUseCase {
 
-    override suspend fun invoke(): Flow<List<ServiceDetails>> = flow {
-        // TODO: This should be called only one time preferably by the view model to
-        //  avoid unnecessary updates each time the use case is invoked
-        //  or have a in memory timer to avoid calling it too often
+    override suspend fun invoke(conversationId: ConversationId): Flow<List<ServiceDetails>> = flow {
         val scope = CoroutineScope(currentCoroutineContext())
         scope.launch {
-
-//             if (mls && appsEnabled) {
-//                 search in DB for user with type=app
-//             } else {
-                selfTeamIdProvider().getOrNull()?.let { teamId ->
-                    teamRepository.syncServices(teamId = teamId)
-                }
-            // }
+            selfTeamIdProvider().getOrNull()?.let { teamId ->
+                teamRepository.syncServices(teamId = teamId)
+            }
         }
 
         emitAll(
-            serviceRepository.observeAllServices().map { either ->
-                either.fold(
-                    { emptyList() },
-                    { it }
-                )
-            }
+            serviceRepository.observeAllKnownServicesNotInConversation(
+                conversationId = conversationId
+            )
+                .map { either ->
+                    either.fold(
+                        { emptyList() },
+                        { it }
+                    )
+                }
         )
     }
 }

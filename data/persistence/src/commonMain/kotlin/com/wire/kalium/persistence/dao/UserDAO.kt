@@ -303,6 +303,10 @@ interface UserDAO {
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
+    fun observeAppsDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
+    fun observeAllApps(): Flow<List<UserDetailsEntity>>
+
+    suspend fun searchAppsByName(query: String): Flow<List<UserDetailsEntity>>
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
     suspend fun insertOrIgnoreIncompleteUserWithOnlyEmail(userId: QualifiedIDEntity, email: String)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(

@@ -974,7 +974,8 @@ public class UserSessionScope internal constructor(
 
     private val serviceRepository: ServiceRepository
         get() = ServiceDataSource(
-            serviceDAO = userStorage.database.serviceDAO
+            serviceDAO = userStorage.database.serviceDAO,
+            userDAO = userStorage.database.userDAO
         )
 
     private val persistConversationsUseCase: PersistConversationsUseCase

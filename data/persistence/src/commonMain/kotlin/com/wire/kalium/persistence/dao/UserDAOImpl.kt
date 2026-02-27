@@ -27,10 +27,12 @@ import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 import com.wire.kalium.persistence.User as SQLDelightUser
 import com.wire.kalium.persistence.UserDetails as SQLDelightUserDetails
 
@@ -540,4 +542,24 @@ class UserDAOImpl internal constructor(
         userQueries.countTeamMembersFromTeam(teamId).executeAsOneOrNull()?.toInt() ?: 0
     }
 
+    override fun observeAppsDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>> =
+        userQueries.getAppsDetailsNotInConversation(conversationId)
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
+
+    override fun observeAllApps(): Flow<List<UserDetailsEntity>> =
+        userQueries.getAllApps()
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
+
+    override suspend fun searchAppsByName(query: String): Flow<List<UserDetailsEntity>> =
+        userQueries.searchAppsByName(query)
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toDetailsModel) }
+            .flowOn(readDispatcher.value)
 }

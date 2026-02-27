@@ -246,6 +246,22 @@ SELECT * FROM UserDetails AS user
  AND connection_status = 'ACCEPTED'
  AND defederated = 0;
 
+getAppsDetailsNotInConversation:
+SELECT * FROM UserDetails AS user
+WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user AND user.user_type == 'APP')
+AND connection_status = 'ACCEPTED'
+AND defederated = 0;
+
+getAllApps:
+SELECT * FROM UserDetails AS user
+WHERE user.user_type == 'APP'
+AND connection_status = 'ACCEPTED'
+AND defederated = 0;
+
+searchAppsByName:
+SELECT * FROM UserDetails AS user
+WHERE user.user_type == 'APP' AND user.name LIKE ('%' || :query || '%');
+
 updateUserDisplayName:
 UPDATE User SET name = ? WHERE qualified_id = ?;
 

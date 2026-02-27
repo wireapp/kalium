@@ -360,6 +360,10 @@ internal class UserDataSource internal constructor(
                     selfUserId = selfUserId,
                     selfTeamId = selfTeamId
                 )
+
+                if (userProfileDTO.type == UserTypeDTO.APP) {
+                    // TODO(Alexandre): Add to newly created Apps table (to save metadata)
+                }
             }
         val otherUsers = listUserProfileDTO
             .filter { userProfileDTO -> !mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
